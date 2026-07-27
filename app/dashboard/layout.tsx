@@ -6,8 +6,8 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-[#F5FAF8] text-text-dark selection:bg-primary selection:text-white">
-      <main className="max-w-7xl xl:max-w-[1440px] mx-auto p-4 lg:p-6 w-full">{children}</main>
+    <div suppressHydrationWarning className="min-h-screen bg-[#F5FAF8] text-text-dark selection:bg-primary selection:text-white">
+      <main suppressHydrationWarning className="max-w-7xl xl:max-w-[1440px] mx-auto p-4 lg:p-6 w-full">{children}</main>
     </div>
   );
 }

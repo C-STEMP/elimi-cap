@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
-import { saveIcon } from "@/assets";
+import { eyeClosedIcon, saveIcon } from "@/assets";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import { SecurityFormData } from "../types/settings.types";
 
@@ -29,7 +29,7 @@ export const ChangePasswordSection: React.FC<ChangePasswordSectionProps> = ({
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-      <h2 className="text-lg lg:text-xl font-bold text-[#1e1e1e]">
+      <h2 className="text-lg lg:text-2xl font-extrabold text-neutral-primary">
         Change Password
       </h2>
 
@@ -49,9 +49,15 @@ export const ChangePasswordSection: React.FC<ChangePasswordSectionProps> = ({
               className="text-gray-400 hover:text-gray-600 focus:outline-none"
             >
               {showCurrent ? (
-                <FiEye className="w-4 h-4" />
+                <FiEye className="w-5 h-5 text-text-dark/70" />
               ) : (
-                <FiEyeOff className="w-4 h-4" />
+                <Image
+                  src={eyeClosedIcon}
+                  alt="Hide password"
+                  width={20}
+                  height={20}
+                  className="w-5 h-5 opacity-70 hover:opacity-100 transition-opacity"
+                />
               )}
             </button>
           }
@@ -72,9 +78,15 @@ export const ChangePasswordSection: React.FC<ChangePasswordSectionProps> = ({
               className="text-gray-400 hover:text-gray-600 focus:outline-none"
             >
               {showNew ? (
-                <FiEye className="w-4 h-4" />
+                <FiEye className="w-5 h-5 text-text-dark/70" />
               ) : (
-                <FiEyeOff className="w-4 h-4" />
+                <Image
+                  src={eyeClosedIcon}
+                  alt="Hide password"
+                  width={20}
+                  height={20}
+                  className="w-5 h-5 opacity-70 hover:opacity-100 transition-opacity"
+                />
               )}
             </button>
           }
@@ -95,9 +107,15 @@ export const ChangePasswordSection: React.FC<ChangePasswordSectionProps> = ({
               className="text-gray-400 hover:text-gray-600 focus:outline-none"
             >
               {showConfirm ? (
-                <FiEye className="w-4 h-4" />
+                <FiEye className="w-5 h-5 text-text-dark/70" />
               ) : (
-                <FiEyeOff className="w-4 h-4" />
+                <Image
+                  src={eyeClosedIcon}
+                  alt="Hide password"
+                  width={20}
+                  height={20}
+                  className="w-5 h-5 opacity-70 hover:opacity-100 transition-opacity"
+                />
               )}
             </button>
           }

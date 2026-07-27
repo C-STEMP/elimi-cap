@@ -21,7 +21,7 @@ export const Logo: React.FC<LogoProps> = ({
   const computedHeight = height ?? Math.round(width / (141 / 80));
 
   const content = (
-    <div className={`flex items-center select-none ${className}`} {...props}>
+    <div suppressHydrationWarning className={`flex items-center select-none ${className}`} {...props}>
       <Image
         src={logoIcon}
         alt="ELIMI Logo"

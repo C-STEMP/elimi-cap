@@ -13,17 +13,17 @@ export const NotificationPrefSection: React.FC<
 > = ({ formData, onChange }) => {
   return (
     <div className="flex flex-col gap-4">
-      <h2 className="text-lg lg:text-xl font-bold text-[#1e1e1e]">
+      <h2 className="text-lg lg:text-2xl font-extrabold text-neutral-primary">
         Notification Preference
       </h2>
       <div className="flex flex-col gap-3">
         {/* Email Notifications Toggle */}
-        <div className="bg-[#f5f6fa] rounded-xl p-4 flex items-center justify-between transition-colors">
+        <div className="bg-input-bg rounded-xl p-4 flex items-center justify-between transition-colors">
           <div className="flex flex-col">
-            <span className="font-bold text-[#1e1e1e] text-sm">
+            <span className="font-bold text-black text-sm">
               Email Notifications
             </span>
-            <span className="text-xs text-[#7a6b6e] mt-0.5">
+            <span className="text-xs text-black/50 mt-0.5">
               Receive notification via email
             </span>
           </div>
@@ -47,12 +47,12 @@ export const NotificationPrefSection: React.FC<
         </div>
 
         {/* Session Reminders Toggle */}
-        <div className="bg-[#f5f6fa] rounded-xl p-4 flex items-center justify-between transition-colors">
+        <div className="bg-input-bg rounded-xl p-4 flex items-center justify-between transition-colors">
           <div className="flex flex-col">
-            <span className="font-bold text-[#1e1e1e] text-sm">
+            <span className="font-bold text-blacktext-sm">
               Session Reminders
             </span>
-            <span className="text-xs text-[#7a6b6e] mt-0.5">
+            <span className="text-xs text-black/50 mt-0.5">
               24h and 1h before sessions
             </span>
           </div>

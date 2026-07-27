@@ -60,23 +60,23 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="bg-[#8a1832] hover:bg-[#721328] text-white text-[11px] font-semibold px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+            className="bg-primary font-sans hover:bg-[#721328] text-white text-[11px] font-semibold px-4 py-1.5 rounded-xl transition-colors cursor-pointer"
           >
             Change Picture
           </button>
-          <span className="text-[10px] text-gray-400 mt-1 font-medium">
+          <span className="text-[10px] font-sans text-[#191913] mt-1 font-medium">
             JPG or PNG 10mb
           </span>
 
           {/* Verification Badge */}
-          <div className="mt-2">
+          <div className="mt-4">
             {isVerified ? (
-              <div className="flex items-center gap-1 text-[11px] font-bold text-[#2e7d32]">
+              <div className="flex items-center gap-1 text-[11px] font-medium text-[#1E7F4C]">
                 <FiCheckCircle className="w-3.5 h-3.5 stroke-[2.5]" />
                 <span>Verified</span>
               </div>
             ) : (
-              <div className="flex items-center gap-1 text-[11px] font-bold text-[#d9383a]">
+              <div className="flex items-center gap-1 text-[11px] font-medium text-border-secondary">
                 <FiShield className="w-3.5 h-3.5 stroke-[2.5]" />
                 <span>Not Verified</span>
               </div>
@@ -86,14 +86,14 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
       </div>
 
       {/* Navigation Options */}
-      <nav className="flex flex-col gap-1.5 pt-2">
+      <nav className="flex flex-col gap-1.5 lg:gap-6 pt-2">
         <button
           type="button"
           onClick={() => onTabChange("profile")}
           className={`w-full text-left px-4 py-3 rounded-xl text-sm transition-all cursor-pointer ${
             activeTab === "profile"
-              ? "bg-[#fbebee] text-[#8a1832] font-bold shadow-2xs"
-              : "text-[#1e1e1e] font-medium hover:bg-gray-50"
+              ? "bg-primary/10 text-black font-semibold shadow-2xs"
+              : "text-black font-medium hover:bg-gray-50"
           }`}
         >
           Profile Information
@@ -104,18 +104,18 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
           onClick={() => onTabChange("security")}
           className={`w-full text-left px-4 py-3 rounded-xl text-sm transition-all cursor-pointer ${
             activeTab === "security"
-              ? "bg-[#fbebee] text-[#8a1832] font-bold shadow-2xs"
-              : "text-[#1e1e1e] font-medium hover:bg-gray-50"
+              ? "bg-primary/10 text-black font-semibold shadow-2xs"
+              : "text-black font-medium hover:bg-gray-50"
           }`}
         >
           Security
         </button>
 
-        <div className="pt-2">
+        <div className="">
           <button
             type="button"
             onClick={onOpenDeleteModal}
-            className="w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-[#c5221f] hover:bg-red-50 transition-all cursor-pointer"
+            className="w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-border-secondary hover:bg-red-50 transition-all cursor-pointer"
           >
             Delete Account
           </button>

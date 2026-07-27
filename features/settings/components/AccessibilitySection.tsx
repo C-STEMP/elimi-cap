@@ -23,7 +23,7 @@ export const AccessibilitySection: React.FC<AccessibilitySectionProps> = ({
 }) => {
   return (
     <div className="flex flex-col gap-4">
-      <h2 className="text-lg lg:text-xl font-bold text-[#1e1e1e]">
+      <h2 className="text-lg lg:text-2xl font-extrabold text-neutral-primary">
         Accessibility
       </h2>
       <div className="w-full">

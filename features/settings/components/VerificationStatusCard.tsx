@@ -17,7 +17,7 @@ export const VerificationStatusCard: React.FC<VerificationStatusCardProps> = ({
 
   return (
     <div className="flex flex-col gap-4">
-      <h2 className="text-lg lg:text-xl font-bold text-text-dark">
+      <h2 className="text-lg lg:text-2xl font-extrabold text-neutral-primary">
         Verification Status
       </h2>
 
@@ -42,10 +42,10 @@ export const VerificationStatusCard: React.FC<VerificationStatusCardProps> = ({
         /* Not Verified State (Pink/Red Banner) */
         <div className="bg-[#fbebee] border border-[#f5c6cb]/40 rounded-xl p-4 flex items-center justify-between transition-all">
           <div className="flex flex-col">
-            <span className="font-semibold text-[#c5221f] text-sm lg:text-base">
+            <span className="font-medium text-border-secondary text-sm lg:text-base">
               NIN Verification
             </span>
-            <span className="text-xs text-[#d9383a] mt-0.5">
+            <span className="text-xs text-[#B3261EB2] mt-0.5">
               Not Verified
             </span>
           </div>
@@ -53,7 +53,7 @@ export const VerificationStatusCard: React.FC<VerificationStatusCardProps> = ({
           <button
             type="button"
             onClick={onVerifyNow}
-            className="bg-white text-[#8a1832] hover:bg-[#8a1832] hover:text-white font-semibold text-xs px-5 py-2.5 rounded-xl border border-[#8a1832]/20 shadow-xs transition-all cursor-pointer"
+            className="bg-white text-border-secondary hover:bg-[#8a1832] hover:text-white font-semibold text-xs px-5 py-2.5 rounded-xl shadow-xs transition-all cursor-pointer"
           >
             Verify Now
           </button>

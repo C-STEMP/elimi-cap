@@ -9,6 +9,7 @@ import { ContactInfoSection } from "./ContactInfoSection";
 import { ResidentialAddressSection } from "./ResidentialAddressSection";
 import { AccessibilitySection } from "./AccessibilitySection";
 import { NotificationPrefSection } from "./NotificationPrefSection";
+import { Button } from "@/components/ui/button";
 
 interface ProfileInfoTabProps {
   formData: ProfileFormData;
@@ -43,9 +44,10 @@ export const ProfileInfoTab: React.FC<ProfileInfoTabProps> = ({
 
       {/* Submit Button */}
       <div className="flex justify-end pt-2">
-        <button
+        <Button
           type="submit"
-          className="bg-[#fbab2a] hover:bg-[#e89b1f] active:scale-95 text-white font-semibold px-8 py-3 rounded-xl flex items-center gap-2.5 shadow-sm transition-all cursor-pointer text-sm"
+          size="small"
+          className="bg-[#fbab2a]! hover:bg-[#e89b1f]! active:scale-95 text-white font-semibold px-8 py-3 rounded-xl flex items-center gap-2.5 shadow-sm transition-all cursor-pointer text-sm"
         >
           <span>Save</span>
           <Image
@@ -55,7 +57,7 @@ export const ProfileInfoTab: React.FC<ProfileInfoTabProps> = ({
             height={18}
             className="brightness-0 invert"
           />
-        </button>
+        </Button>
       </div>
     </form>
   );

@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import { FiX } from "react-icons/fi";
-import { Logo } from "@/components/ui/logo";
+import { logoIcon2 } from "@/assets";
+import { Input } from "@/components/ui/input";
 
 interface DeleteAccountModalProps {
   isOpen: boolean;
@@ -27,7 +29,7 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
       <div
-        className="bg-white rounded-2xl max-w-md w-full p-6 lg:p-8 shadow-2xl relative animate-in zoom-in-95 duration-200 text-center flex flex-col items-center"
+        className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl relative animate-in zoom-in-95 duration-200 text-center flex flex-col items-center select-text"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}
@@ -35,44 +37,51 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
           type="button"
           onClick={onClose}
           aria-label="Close modal"
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 bg-gray-100/80 hover:bg-gray-200 p-1.5 rounded-lg transition-colors cursor-pointer"
+          className="mb-4 w-11 h-11 rounded-xl bg-primary/10 text-primary hover:bg-[#FBE8ED] flex items-center justify-center transition-colors cursor-pointer"
         >
-          <FiX className="w-4 h-4" />
+          <FiX className="w-6 h-6 stroke-[2.5]" />
         </button>
 
-        {/* Logo */}
-        <div className="flex justify-center mt-2">
-          <Logo theme="dark" height={28} width={63} />
+        {/* Logo Icon from Assets */}
+        <div className="flex justify-center mb-4">
+          <Image
+            src={logoIcon2}
+            alt="ELIMI Logo"
+            width={85}
+            height={48}
+            className="w-auto h-9 object-contain"
+            style={{ width: "auto", height: "auto" }}
+          />
         </div>
 
         {/* Title */}
-        <h3 className="text-xl font-bold text-[#1e1e1e] mt-4 mb-2">
+        <h3 className="text-xl sm:text-2xl font-extrabold text-neutral-primary mb-2 tracking-tight">
           Delete Account
         </h3>
 
         {/* Description */}
-        <p className="text-xs lg:text-sm text-gray-500 leading-relaxed mb-6 px-1">
+        <p className="text-xs sm:text-sm lg:text-base text-neutral-secondary leading-relaxed max-w-xs mb-6 font-normal">
           Permanently remove your account and all associated data. This action
           cannot be undone, so please ensure you want to proceed
         </p>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="w-full text-left">
-          <label className="text-xs font-semibold text-gray-700 mb-1.5 block">
-            Last Name
-          </label>
-          <input
+        <form
+          onSubmit={handleSubmit}
+          className="w-full text-left flex flex-col gap-5"
+        >
+          <Input
+            label="Last Name"
             type="text"
             required
             value={surname}
             onChange={(e) => setSurname(e.target.value)}
             placeholder="Enter your surname"
-            className="w-full bg-[#f5f6fa] rounded-xl px-4 py-3 text-sm text-[#1e1e1e] border border-transparent focus:border-[#c5221f] focus:bg-white outline-none transition-all"
           />
 
           <button
             type="submit"
-            className="bg-[#c5221f] hover:bg-[#a81c19] active:scale-98 text-white font-semibold w-full py-3.5 rounded-xl shadow-sm transition-all mt-5 cursor-pointer text-sm"
+            className="bg-border-secondary hover:bg-[#A81C19] active:scale-98 text-white font-bold w-full py-3.5 rounded-xl shadow-sm transition-all cursor-pointer text-sm sm:text-base mt-1"
           >
             Delete Account
           </button>

@@ -12,22 +12,37 @@ import {
   errorSymbolIcon,
 } from "@/assets";
 
+import { validateNIN } from "@/lib/validation";
+import { useToast } from "@/components/ui/toast";
+
 type VerificationStep = "input" | "verifying" | "success" | "error";
 
 export const NinVerificationPage: React.FC = () => {
   const router = useRouter();
+  const { toast } = useToast();
   const [nin, setNin] = useState("");
+  const [ninError, setNinError] = useState<string | undefined>(undefined);
   const [step, setStep] = useState<VerificationStep>("input");
 
   const handleSubmitNin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nin.trim()) return;
+    const error = validateNIN(nin);
+    if (error) {
+      setNinError(error);
+      toast({
+        type: "error",
+        title: "NIN Validation Error",
+        description: error,
+      });
+      return;
+    }
 
+    setNinError(undefined);
     setStep("verifying");
 
     // Simulate verification API check
     setTimeout(() => {
-      if (nin === "000" || nin === "00000000000" || nin.length < 5) {
+      if (nin.trim() === "00000000000" || nin.trim().endsWith("000")) {
         setStep("error");
       } else {
         setStep("success");
@@ -140,22 +155,33 @@ export const NinVerificationPage: React.FC = () => {
             <label className="text-xs font-semibold text-text-dark block">
               National Identification Number
             </label>
-            <div className="flex items-center gap-3">
-              <input
-                type="text"
-                required
-                maxLength={11}
-                value={nin}
-                onChange={(e) => setNin(e.target.value)}
-                placeholder="00000000000"
-                className="bg-[#f5f6fa] rounded-xl px-4 py-3 text-sm text-text-dark border border-transparent focus:border-primary-solid/40 focus:bg-white outline-none flex-1 font-mono tracking-wider h-12 transition-all"
-              />
-              <button
-                type="submit"
-                className="bg-secondary hover:bg-secondary-hover active:scale-95 text-white w-12 h-12 rounded-xl transition-all flex items-center justify-center shrink-0 cursor-pointer shadow-xs"
-              >
-                <FiArrowRight className="w-5 h-5 stroke-[2.5]" />
-              </button>
+            <div className="flex flex-col gap-1.5 w-full">
+              <div className="flex items-center gap-3">
+                <input
+                  type="text"
+                  maxLength={11}
+                  value={nin}
+                  onChange={(e) => {
+                    setNin(e.target.value);
+                    if (ninError) setNinError(undefined);
+                  }}
+                  placeholder="00000000000"
+                  className={`bg-[#f5f6fa] rounded-xl px-4 py-3 text-sm text-text-dark border ${
+                    ninError ? "border-primary-solid ring-2 ring-border-secondary" : "border-transparent"
+                  } focus:border-primary-solid/40 focus:bg-white outline-none flex-1 font-mono tracking-wider h-12 transition-all`}
+                />
+                <button
+                  type="submit"
+                  className="bg-secondary hover:bg-secondary-hover active:scale-95 text-white w-12 h-12 rounded-xl transition-all flex items-center justify-center shrink-0 cursor-pointer shadow-xs"
+                >
+                  <FiArrowRight className="w-5 h-5 stroke-[2.5]" />
+                </button>
+              </div>
+              {ninError && (
+                <span className="text-primary-solid text-xs font-semibold leading-[1.4] transition-all duration-200 animate-fadeIn">
+                  {ninError}
+                </span>
+              )}
             </div>
           </form>
         </div>

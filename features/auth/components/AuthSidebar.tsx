@@ -125,7 +125,7 @@ export const AuthSidebar: React.FC = () => {
                   from one ELIMI account.
                 </p>
 
-                <div className="pt-1">
+                <div suppressHydrationWarning className="pt-1">
                   <Link
                     href="#"
                     className="inline-flex items-center gap-2 text-white text-sm font-semibold hover:opacity-80 transition-opacity"
@@ -140,7 +140,7 @@ export const AuthSidebar: React.FC = () => {
             </div>
 
             <div suppressHydrationWarning className="w-full">
-              <div className="w-full h-px bg-white/20 mb-5" />
+              <div suppressHydrationWarning className="w-full h-px bg-white/20 mb-5" />
               <blockquote className="text-neutral-burgundy text-sm xl:text-[15px] leading-relaxed mb-3 font-medium max-w-lg">
                 &ldquo;ELIMI helped me get NSQ Level 3 certified as a carpenter
                 after 9 years on the job — no classroom needed.&rdquo;

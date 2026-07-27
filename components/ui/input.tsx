@@ -29,18 +29,19 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     const inputId = id || React.useId();
 
     return (
-      <div className={`flex flex-col gap-1.5 w-full ${containerClassName}`}>
+      <div suppressHydrationWarning className={`flex flex-col gap-1.5 w-full ${containerClassName}`}>
         {label && (
           <label
+            suppressHydrationWarning
             htmlFor={inputId}
             className="font-sans text-text-dark font-medium text-xs xl:text-sm leading-[1.4] select-none"
           >
             {label}
           </label>
         )}
-        <div className="relative w-full">
+        <div suppressHydrationWarning className="relative w-full">
           {prefix && (
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center justify-center text-text-dark/60 select-none pointer-events-none">
+            <div suppressHydrationWarning className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center justify-center text-text-dark/60 select-none pointer-events-none">
               {prefix}
             </div>
           )}
@@ -73,18 +74,18 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             {...props}
           />
           {suffix && (
-            <div className="absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center justify-center text-text-dark/60 hover:text-text-dark transition-colors cursor-pointer select-none">
+            <div suppressHydrationWarning className="absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center justify-center text-text-dark/60 hover:text-text-dark transition-colors cursor-pointer select-none">
               {suffix}
             </div>
           )}
         </div>
         {error && (
-          <span className="text-primary-solid text-xs font-semibold leading-[1.4] transition-all duration-200 animate-fadeIn">
+          <span suppressHydrationWarning className="text-primary-solid text-xs font-semibold leading-[1.4] transition-all duration-200 animate-fadeIn">
             {error}
           </span>
         )}
         {!error && helperText && (
-          <div className="text-neutral-secondary text-xs leading-[1.4]">
+          <div suppressHydrationWarning className="text-neutral-secondary text-xs leading-[1.4]">
             {helperText}
           </div>
         )}

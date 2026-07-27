@@ -38,7 +38,7 @@ export const UpcomingCard: React.FC<UpcomingCardProps> = ({ interview }) => {
       ) : (
         <div className="flex flex-col gap-3 w-full">
           {/* Event 1: Panel Interview */}
-          <div className="bg-[#F3F5F9] rounded-[16px] p-4 flex items-stretch gap-3 w-full">
+          <div className="bg-[#F3F5F9] rounded-2xl p-4 flex items-stretch gap-3 w-full">
             {/* Inside Vertical Line Bar */}
             <span className="w-1.5 bg-[#FBAB2A] rounded-full shrink-0 my-0.5" />
 
@@ -61,7 +61,7 @@ export const UpcomingCard: React.FC<UpcomingCardProps> = ({ interview }) => {
 
                 <button
                   type="button"
-                  className="bg-[#FBAB2A] hover:bg-[#E89B1F] active:scale-95 text-white font-bold text-xs lg:text-sm px-4 lg:px-5 py-2 rounded-[12px] transition-all shadow-xs cursor-pointer shrink-0"
+                  className="bg-[#FBAB2A] hover:bg-[#E89B1F] active:scale-95 text-white font-bold text-xs lg:text-sm px-4 lg:px-5 py-2 rounded-xl transition-all shadow-xs cursor-pointer shrink-0"
                 >
                   Join Now
                 </button>
@@ -70,7 +70,7 @@ export const UpcomingCard: React.FC<UpcomingCardProps> = ({ interview }) => {
           </div>
 
           {/* Event 2: Physical Demonstration */}
-          <div className="bg-[#F3F5F9] rounded-[16px] p-4 flex items-stretch gap-3 w-full">
+          <div className="bg-[#F3F5F9] rounded-2xl p-4 flex items-stretch gap-3 w-full">
             {/* Inside Vertical Line Bar */}
             <span className="w-1.5 bg-primary rounded-full shrink-0 my-0.5" />
 

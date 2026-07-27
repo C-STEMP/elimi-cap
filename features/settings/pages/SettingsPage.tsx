@@ -59,7 +59,10 @@ export const SettingsPage: React.FC = () => {
     setProfileForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSecurityChange = (field: keyof SecurityFormData, value: string) => {
+  const handleSecurityChange = (
+    field: keyof SecurityFormData,
+    value: string,
+  ) => {
     setSecurityForm((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -82,7 +85,7 @@ export const SettingsPage: React.FC = () => {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      className="w-full flex flex-col gap-6"
+      className="w-full flex flex-col gap-4"
     >
       <HeaderBanner title="Settings" userName={firstName} />
 

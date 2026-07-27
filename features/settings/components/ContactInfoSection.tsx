@@ -15,7 +15,7 @@ export const ContactInfoSection: React.FC<ContactInfoSectionProps> = ({
 }) => {
   return (
     <div className="flex flex-col gap-4">
-      <h2 className="text-lg lg:text-xl font-bold text-[#1e1e1e]">
+      <h2 className="text-lg lg:text-2xl font-extrabold text-neutral-primary">
         Contact Information
       </h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 xl:gap-5">

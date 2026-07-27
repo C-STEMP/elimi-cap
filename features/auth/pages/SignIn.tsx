@@ -232,11 +232,12 @@ export const SignIn: React.FC = () => {
   }, [showSuccessModal, router]);
 
   return (
-    <div className="w-full max-w-110 mx-auto flex flex-col justify-center select-text">
+    <div suppressHydrationWarning className="w-full max-w-110 mx-auto flex flex-col justify-center select-text">
       <AnimatePresence mode="wait">
         {/* VIEW 1: Standard Sign In */}
         {viewMode === "signin" && (
           <motion.div
+            suppressHydrationWarning
             key="signin"
             initial={{ opacity: 0, x: -15 }}
             animate={{ opacity: 1, x: 0 }}
@@ -244,7 +245,7 @@ export const SignIn: React.FC = () => {
             transition={{ duration: 0.25, ease: "easeOut" }}
             className="w-full"
           >
-            <div className="mb-8 text-center lg:text-left w-full flex flex-col items-center lg:items-start">
+            <div suppressHydrationWarning className="mb-8 text-center lg:text-left w-full flex flex-col items-center lg:items-start">
               <h1 className="text-2xl xl:text-3xl font-extrabold tracking-tight text-neutral-primary text-center lg:text-left">
                 Sign in to ELIMI
               </h1>
@@ -302,7 +303,7 @@ export const SignIn: React.FC = () => {
                 disabled={isSubmitting}
               />
 
-              <div className="flex justify-between items-center w-full text-sm -mt-1 select-none">
+              <div suppressHydrationWarning className="flex justify-between items-center w-full text-sm -mt-1 select-none">
                 <Link
                   href="/enter-otp"
                   className="text-primary-solid font-bold text-xs xl:text-sm hover:text-primary-hover transition-colors"
@@ -317,7 +318,7 @@ export const SignIn: React.FC = () => {
                 </Link>
               </div>
 
-              <div className="w-full mt-2">
+              <div suppressHydrationWarning className="w-full mt-2">
                 <Button
                   type="submit"
                   variant="secondary"
@@ -354,12 +355,12 @@ export const SignIn: React.FC = () => {
                 </Button>
               </div>
 
-              <div className="w-full flex items-center gap-4 my-3 select-none">
-                <div className="flex-1 h-[1.5px] bg-border-gray" />
+              <div suppressHydrationWarning className="w-full flex items-center gap-4 my-3 select-none">
+                <div suppressHydrationWarning className="flex-1 h-[1.5px] bg-border-gray" />
                 <span className="text-neutral-secondary text-xs xl:text-sm font-medium whitespace-nowrap">
                   or continue with
                 </span>
-                <div className="flex-1 h-[1.5px] bg-border-gray" />
+                <div suppressHydrationWarning className="flex-1 h-[1.5px] bg-border-gray" />
               </div>
 
               <Button
@@ -380,7 +381,7 @@ export const SignIn: React.FC = () => {
                 Continue with Google
               </Button>
 
-              <div className="w-full text-center mt-3 text-sm select-none">
+              <div suppressHydrationWarning className="w-full text-center mt-3 text-sm select-none">
                 <span className="text-neutral-secondary font-normal">
                   Don&apos;t have an account?
                 </span>
@@ -398,6 +399,7 @@ export const SignIn: React.FC = () => {
         {/* VIEW 2: Enter Your Email (Image 1) */}
         {viewMode === "enter-email" && (
           <motion.div
+            suppressHydrationWarning
             key="enter-email"
             initial={{ opacity: 0, x: 15 }}
             animate={{ opacity: 1, x: 0 }}
@@ -405,7 +407,7 @@ export const SignIn: React.FC = () => {
             transition={{ duration: 0.25, ease: "easeOut" }}
             className="w-full"
           >
-            <div className="mb-8 text-center lg:text-left w-full flex flex-col items-center lg:items-start">
+            <div suppressHydrationWarning className="mb-8 text-center lg:text-left w-full flex flex-col items-center lg:items-start">
               <h1 className="text-2xl xl:text-3xl font-extrabold tracking-tight text-neutral-primary text-center lg:text-left">
                 Enter Your Email
               </h1>
@@ -429,7 +431,7 @@ export const SignIn: React.FC = () => {
                 disabled={isSubmitting}
               />
 
-              <div className="w-full mt-2">
+              <div suppressHydrationWarning className="w-full mt-2">
                 <Button
                   type="submit"
                   variant="secondary"
@@ -466,7 +468,7 @@ export const SignIn: React.FC = () => {
                 </Button>
               </div>
 
-              <div className="w-full text-center mt-3 text-sm select-none">
+              <div suppressHydrationWarning className="w-full text-center mt-3 text-sm select-none">
                 <span className="text-neutral-secondary font-normal">
                   Go to
                 </span>
@@ -485,6 +487,7 @@ export const SignIn: React.FC = () => {
         {/* VIEW 3: Verify your Email (Image 2) */}
         {viewMode === "verify-email" && (
           <motion.div
+            suppressHydrationWarning
             key="verify-email"
             initial={{ opacity: 0, x: 15 }}
             animate={{ opacity: 1, x: 0 }}
@@ -492,7 +495,7 @@ export const SignIn: React.FC = () => {
             transition={{ duration: 0.25, ease: "easeOut" }}
             className="w-full"
           >
-            <div className="mb-6 text-center lg:text-left w-full flex flex-col items-center lg:items-start">
+            <div suppressHydrationWarning className="mb-6 text-center lg:text-left w-full flex flex-col items-center lg:items-start">
               <h1 className="text-2xl xl:text-3xl font-extrabold tracking-tight text-neutral-primary text-center lg:text-left">
                 Verify your Email
               </h1>
@@ -504,7 +507,7 @@ export const SignIn: React.FC = () => {
             </div>
 
             <form onSubmit={handleVerifyEmailSubmit} className="w-full flex flex-col gap-6">
-              <div className="flex justify-between gap-2 w-full">
+              <div suppressHydrationWarning className="flex justify-between gap-2 w-full">
                 {otpCode.map((val, index) => {
                   const firstEmptyIndex = otpCode.findIndex((v) => v === "");
                   const isFocused =
@@ -535,7 +538,7 @@ export const SignIn: React.FC = () => {
                 })}
               </div>
 
-              <div className="w-full">
+              <div suppressHydrationWarning className="w-full">
                 <Button
                   type="submit"
                   variant="secondary"
@@ -572,11 +575,11 @@ export const SignIn: React.FC = () => {
                 </Button>
               </div>
 
-              <div className="text-center text-sm font-semibold text-neutral-secondary -mt-2 select-none">
+              <div suppressHydrationWarning className="text-center text-sm font-semibold text-neutral-secondary -mt-2 select-none">
                 {formatTime(timeLeft)}
               </div>
 
-              <div className="w-full text-center text-sm select-none -mt-2">
+              <div suppressHydrationWarning className="w-full text-center text-sm select-none -mt-2">
                 <span className="text-neutral-secondary font-normal">
                   Didn&apos;t get a code?
                 </span>
