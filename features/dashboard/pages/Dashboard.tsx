@@ -81,15 +81,15 @@ export const Dashboard: React.FC = () => {
     >
       <HeaderBanner userName={firstName} />
 
-      <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Main Content Area (9 Columns) */}
-        <div className="w-full lg:col-span-8 xl:col-span-9 flex flex-col gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Left Main Content Area (8 Columns) */}
+        <div className="lg:col-span-9 flex flex-col gap-6">
           {/* Top Row: Promo Card & Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch">
-            <div className="md:col-span-7 xl:col-span-8">
+            <div className="md:col-span-8">
               <LearningPromoCard />
             </div>
-            <div className="md:col-span-5 xl:col-span-4">
+            <div className="md:col-span-4">
               <StatsCards
                 activeCount={activeCount}
                 completedCount={completedCount}
@@ -101,8 +101,8 @@ export const Dashboard: React.FC = () => {
           <ApplicationsList applications={applications} />
         </div>
 
-        {/* Right Sidebar Column (3 Columns) */}
-        <div className="w-full lg:col-span-4 xl:col-span-3 flex flex-col gap-6">
+        {/* Right Sidebar Column (4 Columns) */}
+        <div className="lg:col-span-3 flex flex-col gap-6">
           <CalendarWidget />
           <UpcomingCard interview={interview} />
           <VerifiedBadge isVerified={isPopulated} />
