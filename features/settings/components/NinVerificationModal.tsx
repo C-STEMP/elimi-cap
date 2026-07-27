@@ -1,0 +1,332 @@
+"use client";
+
+import React, { useState } from "react";
+import Image from "next/image";
+import { Logo } from "@/components/ui/logo";
+import { FiX, FiArrowRight, FiCheck } from "react-icons/fi";
+import { successCheckmarkImg, loadingIcon, errorSymbolIcon } from "@/assets";
+
+interface NinVerificationModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccessComplete: () => void;
+  onReviewInfo: () => void;
+}
+
+type ModalStep = "input" | "verifying" | "success" | "error";
+
+export const NinVerificationModal: React.FC<NinVerificationModalProps> = ({
+  isOpen,
+  onClose,
+  onSuccessComplete,
+  onReviewInfo,
+}) => {
+  const [nin, setNin] = useState("");
+  const [step, setStep] = useState<ModalStep>("input");
+
+  if (!isOpen) return null;
+
+  const handleSubmitNin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!nin.trim()) return;
+
+    setStep("verifying");
+
+    setTimeout(() => {
+      if (nin === "000" || nin === "00000000000" || nin.length < 5) {
+        setStep("error");
+      } else {
+        setStep("success");
+      }
+    }, 2000);
+  };
+
+  const handleClose = () => {
+    setStep("input");
+    setNin("");
+    onClose();
+  };
+
+  const handleSuccessDone = () => {
+    setStep("input");
+    setNin("");
+    onSuccessComplete();
+  };
+
+  return (
+    <div className="flex items-center justify-center p-4 lg:p-6 animate-in fade-in duration-200">
+      {/* Container Card */}
+      <div
+        className="w-full  overflow-hidden relative flex flex-col md:flex-row"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Close Button */}
+        <button
+          type="button"
+          onClick={handleClose}
+          aria-label="Close modal"
+          className="absolute top-4 right-4 z-20 text-gray-400 hover:text-gray-600 bg-gray-100/80 hover:bg-gray-200 p-2 rounded-full transition-colors cursor-pointer"
+        >
+          <FiX className="w-5 h-5" />
+        </button>
+
+        {/* Left Panel - Burgundy Branding */}
+        <div className="bg-[#8a1832] w-full md:w-2/5 p-8 lg:p-10 text-white flex flex-col justify-between relative overflow-hidden shrink-0">
+          {/* Background Decorative Shapes */}
+          <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-white/5 pointer-events-none" />
+          <div className="absolute -bottom-20 -left-20 w-80 h-80 rounded-full bg-white/5 pointer-events-none" />
+
+          <div className="relative z-10">
+            <Logo theme="light" height={32} width={71} />
+          </div>
+
+          <div className="relative z-10 my-8">
+            <h2 className="text-2xl lg:text-3xl font-bold tracking-tight text-white mb-4">
+              NIN Verification
+            </h2>
+            <p className="text-xs lg:text-sm text-white/85 leading-relaxed font-normal">
+              To maintain the integrity of the National Skills Qualification
+              process, every candidate must complete a one-time identity
+              verification using their National Identification Number (NIN).
+              Your verified identity will be used across all ELIMI services and
+              future applications.
+            </p>
+          </div>
+
+          <div className="relative z-10 hidden md:block text-[11px] text-white/60">
+            © ELIMI. All rights reserved.
+          </div>
+        </div>
+
+        {/* Right Panel - Verification Content */}
+        <div className="w-full md:w-3/5 p-8 lg:p-10 flex flex-col justify-center text-left bg-white relative">
+          <h3 className="text-xl lg:text-2xl font-bold text-[#8a1832] mb-3">
+            Verify Your Identity
+          </h3>
+
+          <p className="text-xs lg:text-sm text-gray-500 mb-6 leading-relaxed">
+            To maintain the integrity of the National Skills Qualification
+            process, every candidate must complete a one-time identity
+            verification using their National Identification Number (NIN). Your
+            verified identity will be used across all ELIMI services and future
+            applications.
+          </p>
+
+          <div className="flex flex-col gap-2 mb-6">
+            <h4 className="text-sm lg:text-base font-bold text-[#1e1e1e]">
+              Before You Begin
+            </h4>
+            <p className="text-xs lg:text-sm text-gray-600">
+              We&apos;ll compare the information you&apos;ve entered with your
+              official NIN records.
+            </p>
+            <p className="text-xs lg:text-sm text-gray-600 font-medium mt-2">
+              For your privacy:
+            </p>
+            <ul className="text-xs lg:text-sm text-gray-500 space-y-1 pl-1">
+              <li className="flex items-start gap-1.5">
+                <span className="text-gray-400">•</span>
+                <span>
+                  We do not display NIN information unless the details you
+                  entered closely match the official record.
+                </span>
+              </li>
+              <li className="flex items-start gap-1.5">
+                <span className="text-gray-400">•</span>
+                <span>Your NIN is encrypted and securely stored.</span>
+              </li>
+              <li className="flex items-start gap-1.5">
+                <span className="text-gray-400">•</span>
+                <span>Identity verification is required only once.</span>
+              </li>
+            </ul>
+          </div>
+
+          {/* Form */}
+          <form onSubmit={handleSubmitNin} className="flex flex-col gap-2">
+            <label className="text-xs font-semibold text-gray-700 block">
+              National Identification Number
+            </label>
+            <div className="flex items-center gap-3">
+              <input
+                type="text"
+                required
+                maxLength={11}
+                value={nin}
+                onChange={(e) => setNin(e.target.value)}
+                placeholder="00000000000"
+                className="bg-[#f5f6fa] rounded-xl px-4 py-3.5 text-sm text-[#1e1e1e] border border-transparent focus:border-[#8a1832] focus:bg-white outline-none flex-1 font-mono tracking-wider transition-all"
+              />
+              <button
+                type="submit"
+                className="bg-[#fbab2a] hover:bg-[#e89b1f] active:scale-95 text-white p-3.5 rounded-xl transition-all flex items-center justify-center shrink-0 cursor-pointer shadow-xs"
+              >
+                <FiArrowRight className="w-5 h-5 stroke-[2.5]" />
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {/* --- SUB-MODALS OVERLAY --- */}
+
+        {/* 1. Verifying... State (Image 2) */}
+        {step === "verifying" && (
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-xs z-30 flex items-center justify-center p-4 animate-in fade-in duration-200">
+            <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center flex flex-col items-center shadow-2xl relative animate-in zoom-in-95 duration-200">
+              <div className="w-16 h-16 relative flex items-center justify-center my-2">
+                {loadingIcon ? (
+                  <Image
+                    src={loadingIcon}
+                    alt="Loading"
+                    width={64}
+                    height={64}
+                    className="animate-spin"
+                  />
+                ) : (
+                  <div className="w-12 h-12 border-4 border-[#8a1832] border-t-transparent rounded-full animate-spin" />
+                )}
+              </div>
+
+              <h4 className="text-xl font-bold text-[#1e1e1e] mt-4 mb-2">
+                Verifying...
+              </h4>
+
+              <p className="text-xs text-gray-500 leading-relaxed text-center">
+                We&apos;re securely verifying your identity with the National
+                Identity Management Commission (NIMC).
+                <br />
+                Please wait...
+                <br />
+                This usually takes a few seconds.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* 2. Identity Confirmed State (Image 3) */}
+        {step === "success" && (
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-xs z-30 flex items-center justify-center p-4 animate-in fade-in duration-200">
+            <div className="bg-white rounded-3xl p-8 max-w-md w-full text-center flex flex-col items-center shadow-2xl relative animate-in zoom-in-95 duration-200">
+              <div className="relative w-24 h-24 mb-2 flex items-center justify-center">
+                {successCheckmarkImg ? (
+                  <Image
+                    src={successCheckmarkImg}
+                    alt="Success"
+                    width={96}
+                    height={96}
+                    className="object-contain drop-shadow-md"
+                  />
+                ) : (
+                  <div className="w-20 h-20 rounded-full bg-gradient-to-b from-[#66bb6a] to-[#2e7d32] flex items-center justify-center shadow-lg shadow-green-600/30">
+                    <FiCheck className="w-10 h-10 text-white stroke-[3]" />
+                  </div>
+                )}
+              </div>
+
+              <h4 className="text-2xl font-bold text-[#1e1e1e] mb-2">
+                Identity Confirmed
+              </h4>
+
+              <p className="text-xs lg:text-sm text-gray-500 leading-relaxed mb-6">
+                Your identity has been successfully verified.
+                <br />
+                We&apos;ve confirmed that the information you entered matches
+                your National Identity record.
+                <br />
+                For security reasons, only verified information is displayed.
+              </p>
+
+              <button
+                type="button"
+                onClick={handleSuccessDone}
+                className="bg-[#fbab2a] hover:bg-[#e89b1f] active:scale-98 text-white font-semibold w-full py-3.5 rounded-xl shadow-sm transition-all text-sm cursor-pointer"
+              >
+                Go To Dashboard
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 3. Error / We couldn't verify your identity State (Image 4) */}
+        {step === "error" && (
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-xs z-30 flex items-center justify-center p-4 animate-in fade-in duration-200">
+            <div className="bg-white rounded-3xl p-6 lg:p-8 max-w-md w-full text-center flex flex-col items-center shadow-2xl relative animate-in zoom-in-95 duration-200">
+              <div className="relative w-24 h-24 mb-2 flex items-center justify-center">
+                {errorSymbolIcon ? (
+                  <Image
+                    src={errorSymbolIcon}
+                    alt="Error"
+                    width={96}
+                    height={96}
+                    className="object-contain drop-shadow-md"
+                  />
+                ) : (
+                  <div className="w-20 h-20 rounded-full bg-red-500 flex items-center justify-center shadow-lg shadow-red-500/30">
+                    <FiX className="w-10 h-10 text-white stroke-[3]" />
+                  </div>
+                )}
+              </div>
+
+              <h4 className="text-xl font-bold text-[#1e1e1e] mb-2">
+                We couldn&apos;t verify your identity
+              </h4>
+
+              <p className="text-xs text-gray-500 leading-relaxed mb-4">
+                The details you entered do not sufficiently match your National
+                Identity record.
+                <br />
+                Please review your information and try again.
+              </p>
+
+              <div className="bg-[#fffdf0] border border-[#fde68a] rounded-2xl p-4 text-left font-medium text-xs mb-5 w-full space-y-1">
+                <span className="text-[#92400e] font-bold block mb-1.5">
+                  Before trying again, check that:
+                </span>
+                <p className="text-[#92400e]/90 flex items-start gap-1">
+                  <span>•</span>
+                  <span>
+                    Your full name is entered exactly as it appears on your
+                    National Identification record.
+                  </span>
+                </p>
+                <p className="text-[#92400e]/90 flex items-start gap-1">
+                  <span>•</span>
+                  <span>Your date of birth is correct.</span>
+                </p>
+                <p className="text-[#92400e]/90 flex items-start gap-1">
+                  <span>•</span>
+                  <span>Your NIN is valid and entered without mistakes.</span>
+                </p>
+                <p className="text-[#92400e]/90 flex items-start gap-1">
+                  <span>•</span>
+                  <span>
+                    You are using your own National Identification Number.
+                  </span>
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setStep("input");
+                  onReviewInfo();
+                }}
+                className="bg-[#fbab2a] hover:bg-[#e89b1f] active:scale-98 text-white font-semibold w-full py-3.5 rounded-xl shadow-sm transition-all text-sm mb-3 cursor-pointer"
+              >
+                Review Personal Information
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setStep("input")}
+                className="bg-white hover:bg-amber-50 text-[#fbab2a] font-semibold w-full py-3.5 rounded-xl border border-[#fbab2a] transition-all text-sm cursor-pointer"
+              >
+                Try Again
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};

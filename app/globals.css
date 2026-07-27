@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #aa1d3f;
+  --color-primary-solid: #75152b;
+  --color-primary-hover: #8f1532;
+  --color-secondary: #f9a825;
+  --color-secondary-hover: #e0931b;
+  --color-text-dark: #1e1e1e;
+  --color-input-bg: #f5f6fa;
+  --color-neutral-burgundy: #fffdf0;
+  --color-neutral-primary: #241014;
+  --color-neutral-secondary: #7a6b6e;
+  --color-border-secondary: #b3261e;
+  --color-border-gray: #d9d9d9;
+  --color-error-focus: rgba(170, 29, 63, 0.1);
+
+  /* Custom Tokens */
+  --radius-radius-200: 8px;
+  --border-width-stroke: 1px;
+
+  /* Custom Fonts */
+  --font-sans: var(--font-inter), sans-serif;
+  --font-work: var(--font-work-sans), sans-serif;
+
+  /* Custom Animations */
+  --animate-float-slow: float-slow 12s ease-in-out infinite;
+  --animate-float-slow-reverse: float-slow-reverse 15s ease-in-out infinite;
+  --animate-slide-in: slide-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes float-slow {
+  0%,
+  100% {
+    transform: scale(0.9) translate(0px, 0px);
+  }
+  50% {
+    transform: scale(1.25) translate(-20px, 15px);
+  }
+}
+
+@keyframes float-slow-reverse {
+  0%,
+  100% {
+    transform: scale(1.25) translate(0px, 0px);
+  }
+  50% {
+    transform: scale(0.9) translate(20px, -15px);
+  }
+}
+
+@keyframes slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Base resets & typography */
+@layer base {
+  body {
+    color: var(--color-text-dark);
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+}

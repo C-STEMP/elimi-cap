@@ -1,0 +1,138 @@
+"use client";
+
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { HeaderBanner } from "@/features/dashboard/components/HeaderBanner";
+import { userAvatar as defaultAvatar } from "@/assets";
+import { useAppSelector } from "@/store/hooks";
+import {
+  SettingsTab,
+  VerificationStatus,
+  ProfileFormData,
+  SecurityFormData,
+} from "../types/settings.types";
+import { SettingsSidebar } from "../components/SettingsSidebar";
+import { ProfileInfoTab } from "../components/ProfileInfoTab";
+import { SecurityTab } from "../components/SecurityTab";
+import { DeleteAccountModal } from "../components/DeleteAccountModal";
+import { SuccessModal } from "../components/SuccessModal";
+
+export const SettingsPage: React.FC = () => {
+  const router = useRouter();
+  const user = useAppSelector((state) => state.auth.user);
+  const firstName = user?.fullName?.split(" ")[0] || "Chidi";
+  const lastName = user?.fullName?.split(" ")[1] || "Umeh";
+
+  const [activeTab, setActiveTab] = useState<SettingsTab>("profile");
+  const [verificationStatus, setVerificationStatus] =
+    useState<VerificationStatus>("not_verified");
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+
+  const [avatarSrc, setAvatarSrc] = useState<any>(defaultAvatar);
+
+  const [profileForm, setProfileForm] = useState<ProfileFormData>({
+    firstName: firstName,
+    lastName: lastName,
+    middleName: "Isaac",
+    dateOfBirth: "",
+    gender: "",
+    nationality: "",
+    email: user?.email || "chidi.umeh@example.com",
+    phone: user?.phoneNumber || "",
+    stateOfResidence: "",
+    lga: "",
+    residentialAddress: "",
+    impairment: "",
+    emailNotifications: true,
+    sessionReminders: false,
+  });
+
+  const [securityForm, setSecurityForm] = useState<SecurityFormData>({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+
+  const handleProfileChange = (field: keyof ProfileFormData, value: any) => {
+    setProfileForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSecurityChange = (field: keyof SecurityFormData, value: string) => {
+    setSecurityForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleAvatarChange = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      if (e.target?.result) {
+        setAvatarSrc(e.target.result as string);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSaveProfile = () => {
+    console.log("Saving profile data:", profileForm);
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
+      className="w-full flex flex-col gap-6"
+    >
+      <HeaderBanner title="Settings" userName={firstName} />
+
+      <div className="flex flex-col lg:flex-row items-start gap-6 w-full">
+        {/* Left Sidebar Card */}
+        <SettingsSidebar
+          userAvatarSrc={avatarSrc}
+          verificationStatus={verificationStatus}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          onOpenDeleteModal={() => setIsDeleteModalOpen(true)}
+          onAvatarChange={handleAvatarChange}
+        />
+
+        {/* Right Active Tab Content Area */}
+        <main className="flex-1 w-full min-w-0">
+          {activeTab === "profile" ? (
+            <ProfileInfoTab
+              formData={profileForm}
+              onChange={handleProfileChange}
+              onSave={handleSaveProfile}
+            />
+          ) : (
+            <SecurityTab
+              status={verificationStatus}
+              onVerifyNow={() =>
+                router.push("/dashboard/settings/nin-verification")
+              }
+              securityFormData={securityForm}
+              onChangeSecurityForm={handleSecurityChange}
+              onPasswordChangeSuccess={() => setIsSuccessModalOpen(true)}
+            />
+          )}
+        </main>
+      </div>
+
+      {/* Modals */}
+      <DeleteAccountModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirmDelete={(surname) => {
+          console.log("Delete account confirmed for:", surname);
+          setIsDeleteModalOpen(false);
+        }}
+      />
+
+      <SuccessModal
+        isOpen={isSuccessModalOpen}
+        onClose={() => setIsSuccessModalOpen(false)}
+      />
+    </motion.div>
+  );
+};
