@@ -181,7 +181,7 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
           <Button
             type="submit"
             variant="secondary"
-            size="small"
+            size="sm"
             disabled={isSubmitting}
             className="px-8 h-11 bg-secondary hover:bg-secondary-hover text-white font-bold text-sm rounded-lg flex items-center gap-2 shadow-sm cursor-pointer"
           >

@@ -46,7 +46,7 @@ export const ProfileInfoTab: React.FC<ProfileInfoTabProps> = ({
       <div className="flex justify-end pt-2">
         <Button
           type="submit"
-          size="small"
+          size="sm"
           className="bg-[#fbab2a]! hover:bg-[#e89b1f]! active:scale-95 text-white font-semibold px-8 py-3 rounded-xl flex items-center gap-2.5 shadow-sm transition-all cursor-pointer text-sm"
         >
           <span>Save</span>

@@ -21,10 +21,9 @@ export const ApplicationsList: React.FC<ApplicationsListProps> = ({
   const hasApplications = applications.length > 0;
 
   return (
-    <div className="bg-white rounded-[22px] p-6 lg:p-7 shadow-sm border border-gray-100 flex flex-col justify-between h-full min-h-75">
-      {/* Header */}
+    <div className="bg-white rounded-[22px] p-4 shadow-sm border border-gray-100 flex flex-col justify-between h-full min-h-75">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-black font-bold text-lg tracking-tight">
+        <h3 className="text-black font-medium text-lg tracking-tight">
           My Applications
         </h3>
         {hasApplications && (
@@ -38,14 +37,12 @@ export const ApplicationsList: React.FC<ApplicationsListProps> = ({
         )}
       </div>
 
-      {/* Body Content */}
       {!hasApplications ? (
-        /* Empty State */
         <div className="flex-1 flex flex-col items-center justify-center py-10 text-center">
-          <div className="w-20 h-20 rounded-full bg-[#fdf4f5] flex items-center justify-center mb-4 border border-[#fbd8de]">
-            <FiFolder className="w-8 h-8 text-[#e07b8d] stroke-[1.5]" />
+          <div className="w-30 h-30 rounded-full bg-input-bg flex items-center justify-center mb-4">
+            <FiFolder className="w-10 h-8.5 text-primary/12" />
           </div>
-          <h4 className="text-black font-bold text-base mb-1.5">
+          <h4 className="text-[#191918] font-semibold text-xl mb-1.5">
             No applications yet
           </h4>
           <p className="text-gray-400 text-xs leading-relaxed max-w-xs mb-6">
@@ -64,28 +61,28 @@ export const ApplicationsList: React.FC<ApplicationsListProps> = ({
           </button>
         </div>
       ) : (
-        /* Populated State List */
         <div className="flex flex-col gap-3.5 flex-1 justify-center">
           {applications.map((app) => (
-            <div
+            <Link
               key={app.id}
+              href={`/dashboard/applications/${app.id}`}
               className="bg-input-bg rounded-xl p-4 flex items-center justify-between border-l-[5px] border-secondary hover:bg-[#f0f2f7] transition-all cursor-pointer group shadow-2xs"
             >
               <div className="flex flex-col gap-1">
                 <div className="flex items-center gap-3">
-                  <span className="text-[#191918] font-bold text-base lg:text-2xl">
+                  <span className="text-[#191918] font-bold text-base lg:text-xl">
                     {app.title}
                   </span>
-                  <span className="bg-black/20 text-black text-xs font-semibold px-2.5 py-1.5 rounded-full">
+                  <span className="bg-amber-100 text-amber-700 text-xs font-semibold px-2.5 py-1 rounded-full">
                     {app.status}
                   </span>
                 </div>
-                <span className="text-[#19191880] text-xs lg:text-base font-normal">
+                <span className="text-gray-400 text-xs lg:text-sm font-normal">
                   {app.subtitle}
                 </span>
               </div>
-              <FiChevronRight className="w-5 h-5 text-[#141B34] group-hover:text-gray-700 transition-colors" />
-            </div>
+              <FiChevronRight className="w-5 h-5 text-[#141B34] group-hover:translate-x-1 transition-transform" />
+            </Link>
           ))}
         </div>
       )}

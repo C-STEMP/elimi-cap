@@ -92,8 +92,9 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
 
   const selectedDate = parseDateString(value);
+  const defaultViewYear = maxYear || new Date().getFullYear() - 18;
   const [viewDate, setViewDate] = useState<Date>(
-    () => selectedDate || new Date()
+    () => selectedDate || new Date(defaultViewYear, 0, 1)
   );
 
   useEffect(() => {

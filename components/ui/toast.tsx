@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
+import { ToastSuccessIcon, ToastErrorIcon, ToastInfoIcon } from "./svg-icons";
 
 export interface Toast {
   id: string;
@@ -25,45 +26,6 @@ export const useToast = () => {
   }
   return context;
 };
-
-const SuccessIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0 mt-0.5">
-    <circle cx="10" cy="10" r="10" fill="#1E7F4C" />
-    <path
-      d="M6 10L9 13L14 7"
-      stroke="white"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
-
-const ErrorIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0 mt-0.5">
-    <circle cx="10" cy="10" r="10" fill="#B3261E" />
-    <path
-      d="M7 7L13 13M13 7L7 13"
-      stroke="white"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
-
-const InfoIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0 mt-0.5">
-    <circle cx="10" cy="10" r="10" fill="#0284C7" />
-    <path
-      d="M10 6V10M10 14H10.01"
-      stroke="white"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
 
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -128,9 +90,9 @@ const ToastItem: React.FC<{ toast: Toast; onDismiss: () => void }> = ({ toast, o
       : "bg-[#0284C7]";
 
   const renderToastIcon = () => {
-    if (type === "success") return <SuccessIcon />;
-    if (type === "error") return <ErrorIcon />;
-    return <InfoIcon />;
+    if (type === "success") return <ToastSuccessIcon />;
+    if (type === "error") return <ToastErrorIcon />;
+    return <ToastInfoIcon />;
   };
 
   return (

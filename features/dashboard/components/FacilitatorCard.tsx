@@ -14,10 +14,14 @@ export interface FacilitatorData {
 
 interface FacilitatorCardProps {
   facilitator?: FacilitatorData | null;
+  onRequestCall?: () => void;
+  countdownTimer?: string;
 }
 
 export const FacilitatorCard: React.FC<FacilitatorCardProps> = ({
   facilitator,
+  onRequestCall,
+  countdownTimer,
 }) => {
   const isAssigned = !!facilitator;
 
@@ -81,12 +85,21 @@ export const FacilitatorCard: React.FC<FacilitatorCardProps> = ({
             </div>
           </div>
 
-          <button
-            type="button"
-            className="w-full bg-[#fbab2a] hover:bg-[#e89b1f] active:scale-95 text-white font-semibold text-xs py-3 rounded-xl transition-all shadow-sm cursor-pointer mt-auto"
-          >
-            Request A Call
-          </button>
+          {countdownTimer ? (
+            /* Countdown Timer Box (Matching Image 1) */
+            <div className="w-full bg-[#fff8eb] border border-[#fde68a] text-[#fbab2a] font-bold text-base py-3 rounded-xl select-none mt-auto shadow-2xs">
+              {countdownTimer}
+            </div>
+          ) : (
+            /* Request A Call Button (Matching Image 4 & 5) */
+            <button
+              type="button"
+              onClick={onRequestCall}
+              className="w-full bg-[#fbab2a] hover:bg-[#e89b1f] active:scale-95 text-white font-semibold text-xs sm:text-sm py-3.5 rounded-xl transition-all shadow-sm cursor-pointer mt-auto"
+            >
+              Request A Call
+            </button>
+          )}
         </div>
       )}
     </div>

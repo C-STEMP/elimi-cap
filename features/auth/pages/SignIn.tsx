@@ -322,36 +322,11 @@ export const SignIn: React.FC = () => {
                 <Button
                   type="submit"
                   variant="secondary"
-                  size="normal"
+                  size="lg"
                   className="w-full h-12.5 text-white font-bold text-base bg-secondary hover:bg-secondary-hover focus:ring-secondary/30 transition-all shadow-sm cursor-pointer"
-                  disabled={isSubmitting}
+                  loading={isSubmitting}
                 >
-                  {isSubmitting ? (
-                    <span className="flex items-center gap-2 justify-center text-white font-semibold leading-tight">
-                      <svg
-                        className="animate-spin h-5 w-5 text-white"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        />
-                      </svg>
-                      Signing In...
-                    </span>
-                  ) : (
-                    "Sign In"
-                  )}
+                  Sign In
                 </Button>
               </div>
 
@@ -366,7 +341,7 @@ export const SignIn: React.FC = () => {
               <Button
                 type="button"
                 variant="outline"
-                size="normal"
+                size="lg"
                 onClick={() =>
                   toast({
                     type: "info",
@@ -375,9 +350,9 @@ export const SignIn: React.FC = () => {
                   })
                 }
                 disabled={isSubmitting}
+                leftIcon={<FcGoogle className="w-4 h-4 sm:w-5 sm:h-5" />}
                 className="w-full h-12.5 text-text-dark font-medium text-sm xl:text-base cursor-pointer"
               >
-                <FcGoogle className="w-5 h-5 mr-3 shrink-0" />
                 Continue with Google
               </Button>
 
@@ -435,36 +410,11 @@ export const SignIn: React.FC = () => {
                 <Button
                   type="submit"
                   variant="secondary"
-                  size="normal"
+                  size="lg"
                   className="w-full h-12.5 text-white font-bold text-base bg-secondary hover:bg-secondary-hover focus:ring-secondary/30 transition-all shadow-sm cursor-pointer"
-                  disabled={isSubmitting}
+                  loading={isSubmitting}
                 >
-                  {isSubmitting ? (
-                    <span className="flex items-center gap-2 justify-center text-white font-semibold leading-tight">
-                      <svg
-                        className="animate-spin h-5 w-5 text-white"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        />
-                      </svg>
-                      Sending Code...
-                    </span>
-                  ) : (
-                    "Send Verification Code"
-                  )}
+                  Send Verification Code
                 </Button>
               </div>
 
@@ -542,36 +492,11 @@ export const SignIn: React.FC = () => {
                 <Button
                   type="submit"
                   variant="secondary"
-                  size="normal"
+                  size="lg"
                   className="w-full h-12.5 text-white font-bold text-base bg-secondary hover:bg-secondary-hover focus:ring-secondary/30 transition-all shadow-sm cursor-pointer"
-                  disabled={isSubmitting}
+                  loading={isSubmitting}
                 >
-                  {isSubmitting ? (
-                    <span className="flex items-center gap-2 justify-center text-white font-semibold leading-tight">
-                      <svg
-                        className="animate-spin h-5 w-5 text-white"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        />
-                      </svg>
-                      Verifying...
-                    </span>
-                  ) : (
-                    "Verify Email"
-                  )}
+                  Verify Email
                 </Button>
               </div>
 

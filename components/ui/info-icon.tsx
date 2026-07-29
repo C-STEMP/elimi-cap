@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import { FiInfo } from "react-icons/fi";
 
 export interface InfoIconProps extends React.SVGProps<SVGSVGElement> {
   size?: number;
@@ -12,7 +13,7 @@ export interface InfoIconProps extends React.SVGProps<SVGSVGElement> {
 const DEFAULT_SECTION_INFO: Record<string, string> = {
   "Personal Details": "Provide your official personal details, date of birth, and nationality as they appear on your identification documents.",
   "Contact Information": "Enter your valid email address and primary telephone number for identity verification and updates.",
-  "Residential Address": "Provide your current residential address, state of residence, and Local Government Area (LGA).",
+  "Residential Address": "Provide your country, current residential address, state of residence, and Local Government Area (LGA).",
   "Have You Completed An Assessment Before": "Indicate whether you have previously taken an ELIMI competency assessment or have a Unique Learner ID.",
   "Accessibility": "Specify any special impairment or accessibility support required for your assessment process.",
   "Qualification Applying For": "Select the target qualification title, assessment type, and specific units for your RPL evaluation.",
@@ -72,33 +73,11 @@ export const InfoIcon: React.FC<InfoIconProps> = ({
         aria-label="Section Information"
         className="focus:outline-none cursor-pointer transition-transform hover:scale-110 active:scale-95 p-0.5 inline-flex items-center select-none"
       >
-        <svg
-          width={size}
-          height={size}
-          viewBox="0 0 24 24"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
+        <FiInfo
+          size={size}
+          color={color}
           className={`shrink-0 ${className}`}
-          {...props}
-        >
-          <circle
-            cx="12"
-            cy="12"
-            r="9"
-            stroke={color}
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M12 11V16"
-            stroke={color}
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <circle cx="12" cy="7.5" r="1" fill={color} />
-        </svg>
+        />
       </button>
 
       {isVisible && (

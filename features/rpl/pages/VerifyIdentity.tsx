@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
 import { FiArrowLeft, FiArrowRight, FiCheckCircle } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
@@ -144,9 +145,9 @@ export const RPLVerifyIdentity: React.FC<RPLVerifyIdentityProps> = ({
           <div className="flex flex-col gap-1.5 w-full">
             <form
               onSubmit={handleStartVerification}
-              className="flex items-center gap-2"
+              className="flex items-start gap-2"
             >
-              <input
+              <Input
                 type="text"
                 placeholder="00000000000"
                 maxLength={11}
@@ -155,23 +156,19 @@ export const RPLVerifyIdentity: React.FC<RPLVerifyIdentityProps> = ({
                   setNin(e.target.value);
                   if (ninError) setNinError(undefined);
                 }}
-                className={`flex-1 p-3.5 bg-input-bg text-text-dark font-normal text-sm border ${
-                  ninError ? "border-primary-solid ring-2 ring-border-secondary" : "border-transparent"
-                } rounded-radius-200 outline-none focus:border-primary-solid/40 focus:ring-2 focus:ring-primary-solid/10 placeholder:text-gray-400 transition-all`}
+                error={ninError}
+                className="flex-1 font-mono tracking-wider"
+                containerClassName="flex-1"
               />
-              <button
+              <Button
                 type="submit"
-                className="h-12 px-5 bg-secondary hover:bg-secondary-hover text-white rounded-radius-200 flex items-center justify-center cursor-pointer transition-all shadow-sm shrink-0"
+                variant="secondary"
+                size="lg"
+                leftIcon={<FiArrowRight className="w-5 h-5" />}
+                className="shrink-0 h-12"
                 title="Verify NIN"
-              >
-                <FiArrowRight className="w-5 h-5" />
-              </button>
+              />
             </form>
-            {ninError && (
-              <span className="text-primary-solid text-xs font-semibold leading-[1.4] transition-all duration-200 animate-fadeIn">
-                {ninError}
-              </span>
-            )}
           </div>
         )}
       </div>
@@ -207,14 +204,12 @@ export const RPLVerifyIdentity: React.FC<RPLVerifyIdentityProps> = ({
             type="button"
             onClick={onContinue || (() => router.push("/rpl/review-submit"))}
             disabled={!isVerified}
-            className={`px-8 h-11 text-white font-semibold text-sm rounded-lg flex items-center justify-center gap-2 transition-all shadow-sm ${
-              isVerified
-                ? "bg-secondary hover:bg-secondary-hover cursor-pointer"
-                : "bg-secondary/40 text-white/80 cursor-not-allowed"
-            }`}
+            variant="amber"
+            size="lg"
+            rightIcon={<FiArrowRight className="w-5 h-5" />}
+            className="w-full max-w-sm"
           >
             Continue
-            <FiArrowRight className="w-4 h-4" />
           </Button>
         </div>
       </div>
@@ -289,7 +284,9 @@ export const RPLVerifyIdentity: React.FC<RPLVerifyIdentityProps> = ({
                         router.push("/rpl/review-submit");
                       }
                     }}
-                    className="w-full h-11 bg-secondary hover:bg-secondary-hover text-white font-semibold text-sm rounded-lg shadow-sm cursor-pointer"
+                    variant="amber"
+                    size="lg"
+                    className="w-full"
                   >
                     Continue to Step 4
                   </Button>

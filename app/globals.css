@@ -67,3 +67,21 @@
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 }
+
+/* Phone Input Dropdown Positioning */
+.phone-input-wrapper .react-tel-input .country-list {
+  top: calc(100% + 4px) !important;
+  bottom: auto !important;
+  max-height: 200px !important;
+  overflow-y: auto !important;
+}
+
+/* Hide react-phone-input-2 default label */
+.phone-input-wrapper .react-tel-input .label {
+  display: none !important;
+}
+
+/* Add space between flag and phone number */
+.phone-input-wrapper .react-tel-input .form-control {
+  padding-left: 70px !important;
+}

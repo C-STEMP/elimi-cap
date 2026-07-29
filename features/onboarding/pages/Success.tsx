@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
+import { PartyPopperIllustration } from "@/components/ui/svg-icons";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 
@@ -42,57 +43,7 @@ export const Success: React.FC<SuccessProps> = ({
       {/* Party Popper Icon */}
       <div className="mb-5 flex justify-center">
         <div className="w-24 h-24 flex items-center justify-center">
-          <svg
-            width="88"
-            height="88"
-            viewBox="0 0 88 88"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            className="w-full h-full object-contain"
-          >
-            {/* Confetti specs */}
-            <path
-              d="M54 14L60 20M60 14L54 20"
-              stroke="#E11D48"
-              strokeWidth="3"
-              strokeLinecap="round"
-            />
-            <circle cx="34" cy="18" r="3.5" fill="#3B82F6" />
-            <circle cx="68" cy="30" r="4" fill="#8B5CF6" />
-            <rect
-              x="44"
-              y="24"
-              width="7"
-              height="7"
-              rx="2"
-              fill="#10B981"
-              transform="rotate(25 44 24)"
-            />
-            <path
-              d="M24 30C24 30 29 25 34 29"
-              stroke="#F59E0B"
-              strokeWidth="3"
-              strokeLinecap="round"
-            />
-            <path
-              d="M62 14C62 14 67 19 70 14"
-              stroke="#EC4899"
-              strokeWidth="3"
-              strokeLinecap="round"
-            />
-
-            {/* Party Popper cone */}
-            <path
-              d="M28 66L48 46L56 54L36 74C33.2 76.8 28.8 76.8 26 74C23.2 71.2 23.2 66.8 26 64L28 66Z"
-              fill="#FF7A59"
-            />
-            <path
-              d="M48 46L28 66L21 59C18.2 56.2 18.2 51.8 21 49L41 29L48 46Z"
-              fill="#FFC107"
-            />
-            <path d="M48 46L56 54L66 36L48 46Z" fill="#38BDF8" />
-            <path d="M48 46L66 36L41 29L48 46Z" fill="#A855F7" />
-          </svg>
+          <PartyPopperIllustration className="w-full h-full object-contain" />
         </div>
       </div>
 
@@ -114,7 +65,7 @@ export const Success: React.FC<SuccessProps> = ({
           type="button"
           onClick={handleStart}
           variant="secondary"
-          size="normal"
+          size="md"
           className="w-full h-12.5 text-white font-bold text-base bg-secondary hover:bg-secondary-hover focus:ring-secondary/30 transition-all shadow-sm cursor-pointer"
         >
           Start Application

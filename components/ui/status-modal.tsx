@@ -1,19 +1,56 @@
 import React from "react";
 import Image from "next/image";
+import { FiX } from "react-icons/fi";
 import { Button } from "./button";
 import { successCheckmarkImg, progressSavedIcon, submitedIcon } from "@/assets";
+import {
+  PaymentSuccessIllustration,
+  PaymentCancelledIllustration,
+  PaymentUnsuccessfulIllustration,
+  ErrorCircleIcon,
+} from "./svg-icons";
+
+export type StatusModalVariant =
+  | "default"
+  | "draft-saved"
+  | "application-submitted"
+  | "payment-successful"
+  | "payment-cancelled"
+  | "payment-unsuccessful"
+  | "processing-payment";
 
 interface StatusModalProps {
   isOpen: boolean;
   onClose?: () => void;
   type?: "success" | "error";
-  variant?: "default" | "draft-saved" | "application-submitted";
+  variant?: StatusModalVariant;
   title?: string;
   description?: string;
   actionLabel?: string;
   onAction?: () => void;
   iconSrc?: string;
+  customIcon?: React.ReactNode;
 }
+
+const ProcessingPaymentIllustration = () => (
+  <div className="relative w-16 h-16 animate-spin my-2">
+    {Array.from({ length: 8 }).map((_, i) => {
+      const angle = i * 45;
+      const opacity = (i + 1) / 8;
+      return (
+        <div
+          key={i}
+          className="absolute top-0 left-1/2 -ml-1 w-2.5 h-4.5 rounded-full bg-black"
+          style={{
+            transformOrigin: "50% 32px",
+            transform: `rotate(${angle}deg)`,
+            opacity: opacity < 0.2 ? 0.2 : opacity,
+          }}
+        />
+      );
+    })}
+  </div>
+);
 
 export const StatusModal: React.FC<StatusModalProps> = ({
   isOpen,
@@ -22,13 +59,20 @@ export const StatusModal: React.FC<StatusModalProps> = ({
   variant = "default",
   title,
   description,
-  actionLabel = "Go To Dashboard",
+  actionLabel,
   onAction,
   iconSrc,
+  customIcon,
 }) => {
   if (!isOpen) return null;
 
   const renderIcon = () => {
+    if (customIcon) return customIcon;
+    if (variant === "payment-successful") return <PaymentSuccessIllustration />;
+    if (variant === "payment-cancelled") return <PaymentCancelledIllustration />;
+    if (variant === "payment-unsuccessful") return <PaymentUnsuccessfulIllustration />;
+    if (variant === "processing-payment") return <ProcessingPaymentIllustration />;
+
     if (variant === "draft-saved") {
       return (
         <Image
@@ -87,22 +131,7 @@ export const StatusModal: React.FC<StatusModalProps> = ({
 
     return (
       <div className="w-35 h-35 flex items-center justify-center bg-red-50 rounded-full border-4 border-red-100 shadow-sm animate-pulse">
-        <svg
-          width="80"
-          height="80"
-          viewBox="0 0 24 24"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <circle cx="12" cy="12" r="10" fill="#B3261E" />
-          <path
-            d="M8 8L16 16M16 8L8 16"
-            stroke="white"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+        <ErrorCircleIcon />
       </div>
     );
   };
@@ -112,73 +141,87 @@ export const StatusModal: React.FC<StatusModalProps> = ({
     (variant === "draft-saved"
       ? "Progress Saved"
       : variant === "application-submitted"
-        ? "Application Submit"
-        : "Success");
+      ? "Application Submit"
+      : variant === "payment-successful"
+      ? "Payment Successful"
+      : variant === "payment-cancelled"
+      ? "Payment Cancelled"
+      : variant === "payment-unsuccessful"
+      ? "Payment Unsuccessful"
+      : variant === "processing-payment"
+      ? "Processing Payment"
+      : "Success");
 
   const modalDescription =
     description ||
     (variant === "draft-saved"
       ? "Great! Your progress has been securely saved as a draft. You can return at any time to continue your application from where you left off. No information you've entered will be lost."
       : variant === "application-submitted"
-        ? "Thank you for submitting your Recognition of Prior Learning (RPL) application. Your application has been successfully submitted and is now awaiting review by your selected Assessment Centre."
-        : "");
+      ? "Thank you for submitting your Recognition of Prior Learning (RPL) application. Your application has been successfully submitted and is now awaiting review by your selected Assessment Centre."
+      : variant === "payment-successful"
+      ? "Your payment was made successfully"
+      : variant === "payment-cancelled"
+      ? "Your payment was cancelled"
+      : variant === "payment-unsuccessful"
+      ? "Your payment was not successful"
+      : variant === "processing-payment"
+      ? "Please wait while we process your payment"
+      : "");
+
+  const modalActionLabel =
+    actionLabel !== undefined
+      ? actionLabel
+      : variant === "payment-successful"
+      ? "Start Folder Arrangement"
+      : variant === "payment-cancelled" || variant === "payment-unsuccessful"
+      ? "Try again"
+      : variant === "processing-payment"
+      ? undefined
+      : "Go To Dashboard";
 
   return (
     <div
-      className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 transition-opacity duration-300"
+      className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 transition-opacity duration-300 backdrop-blur-xs"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-4xl p-10 max-w-105 w-full flex flex-col items-center text-center shadow-2xl relative animate-in zoom-in-95 duration-200"
+        className="bg-white rounded-4xl p-8 sm:p-10 max-w-105 w-full flex flex-col items-center text-center shadow-2xl relative animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
-        {onClose && (
+        {onClose && variant !== "processing-payment" && (
           <button
             onClick={onClose}
-            className="absolute top-6 right-6 text-neutral-secondary hover:text-text-dark transition-colors focus:outline-none cursor-pointer"
+            className="absolute top-6 right-6 text-neutral-secondary hover:text-text-dark transition-colors focus:outline-none cursor-pointer p-1 rounded-full hover:bg-gray-100"
             aria-label="Close modal"
           >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 20 20"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M15 5L5 15M5 5L15 15"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            <FiX className="w-5 h-5" />
           </button>
         )}
 
-        <div className="w-35 h-35 mt-6 relative flex items-center justify-center">
+        <div className="mt-4 relative flex items-center justify-center">
           {renderIcon()}
         </div>
 
-        <h2 className="text-2xl font-extrabold text-neutral-primary mt-6 tracking-tight">
+        <h2 className="text-xl sm:text-2xl font-extrabold text-neutral-primary mt-6 tracking-tight">
           {modalTitle}
         </h2>
 
-        <p className="text-neutral-secondary text-[14px] leading-relaxed mt-2 font-normal max-w-70">
+        <p className="text-neutral-secondary text-xs sm:text-[14px] leading-relaxed mt-2 font-normal max-w-75">
           {modalDescription}
         </p>
 
-        {actionLabel && onAction && (
+        {modalActionLabel && (onAction || onClose) && (
           <Button
-            onClick={onAction}
+            onClick={onAction || onClose}
             variant="secondary"
-            size="normal"
-            className="w-full h-12.5 text-white font-bold text-base bg-secondary hover:bg-secondary-hover mt-8 transition-all shadow-sm cursor-pointer"
+            size="lg"
+            className="w-full h-12.5 text-white font-bold text-base bg-secondary hover:bg-secondary-hover mt-8 transition-all shadow-sm cursor-pointer rounded-xl"
           >
-            {actionLabel}
+            {modalActionLabel}
           </Button>
         )}
       </div>
     </div>
   );
 };
+

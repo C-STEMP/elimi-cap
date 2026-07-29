@@ -576,19 +576,13 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
 
             <Button
               type="submit"
-              variant="secondary"
-              size="normal"
-              disabled={form.isSubmitting}
-              className="px-8 h-11 bg-secondary hover:bg-secondary-hover text-white font-semibold text-sm rounded-lg flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+              variant="amber"
+              size="lg"
+              loading={form.isSubmitting}
+              rightIcon={<FiArrowRight className="w-5 h-5" />}
+              className="w-full max-w-sm"
             >
-              {form.isSubmitting ? (
-                <span>Saving...</span>
-              ) : (
-                <>
-                  Continue
-                  <FiArrowRight className="w-4 h-4" />
-                </>
-              )}
+              Continue
             </Button>
           </div>
         </div>

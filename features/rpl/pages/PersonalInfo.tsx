@@ -17,10 +17,7 @@ import { saveIcon } from "@/assets";
 import { StatusModal } from "@/components/ui/status-modal";
 import { useAppDispatch } from "@/store/hooks";
 import { setSidebarVariant, setRplStep } from "@/store/slices/authSlice";
-import {
-  personalInfoSchema,
-  extractZodErrors,
-} from "@/lib/validation";
+import { personalInfoSchema, extractZodErrors } from "@/lib/validation";
 
 export interface RPLPersonalInfoProps {
   onBack?: () => void;
@@ -35,8 +32,8 @@ const initialForm = {
   gender: "",
   nationality: "",
   email: "",
-  countryCode: "NGN",
   phoneNumber: "",
+  country: "",
   state: "",
   lga: "",
   streetAddress: "",
@@ -98,7 +95,8 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
       toast({
         type: "error",
         title: "Input Required",
-        description: "Please upload your passport photograph and fill in all required fields.",
+        description:
+          "Please upload your passport photograph and fill in all required fields.",
       });
       return;
     }
@@ -267,11 +265,11 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
                   <span className="text-primary-solid ml-0.5">*</span>
                 </span>
               }
-              countryCode={form.countryCode}
-              onCountryCodeChange={(v) => update("countryCode", v)}
-              phoneNumber={form.phoneNumber}
+              value={form.phoneNumber}
+              onChange={(v) => update("phoneNumber", v)}
               error={errors.phoneNumber}
-              onPhoneNumberChange={(v) => update("phoneNumber", v)}
+              country="ng"
+              preferredCountries={["ng", "gh", "ke", "za"]}
             />
           </div>
         </div>
@@ -283,6 +281,20 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Select
+              label={
+                <span>
+                  Country
+                  <span className="text-primary-solid ml-0.5">*</span>
+                </span>
+              }
+              placeholder="Select"
+              options={["Nigeria", "Ghana", "Kenya", "South Africa", "Other"]}
+              value={form.country}
+              error={errors.country}
+              onChange={(e) => update("country", e.target.value)}
+            />
+
             <Select
               label={
                 <span>
@@ -327,34 +339,34 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
               onChange={(e) => update("lga", e.target.value)}
             />
 
-            <div className="sm:col-span-2">
-              <Input
-                label={
-                  <span>
-                    Residential Address
-                    <span className="text-primary-solid ml-0.5">*</span>
-                  </span>
-                }
-                type="text"
-                placeholder="Street Address"
-                value={form.streetAddress}
-                error={errors.streetAddress}
-                onChange={(e) => update("streetAddress", e.target.value)}
-              />
-            </div>
+            <Input
+              label={
+                <span>
+                  Residential Address
+                  <span className="text-primary-solid ml-0.5">*</span>
+                </span>
+              }
+              type="text"
+              placeholder="Street Address"
+              value={form.streetAddress}
+              error={errors.streetAddress}
+              onChange={(e) => update("streetAddress", e.target.value)}
+            />
           </div>
         </div>
 
         {/* Section 4: Have You Completed An Assessment Before */}
         <div className="flex flex-col gap-4 mt-2">
           <h2 className="text-base sm:text-lg font-bold text-text-dark flex items-center gap-1.5">
-            Have You Completed An Assessment Before <InfoIcon sectionName="Have You Completed An Assessment Before" />
+            Have You Completed An Assessment Before{" "}
+            <InfoIcon sectionName="Have You Completed An Assessment Before" />
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
             <div className="flex flex-col gap-1.5">
               <label className="font-sans text-text-dark font-medium text-xs xl:text-sm">
-                Select An Option<span className="text-primary-solid ml-0.5">*</span>
+                Select An Option
+                <span className="text-primary-solid ml-0.5">*</span>
               </label>
               <div className="grid grid-cols-2 gap-3 h-11 xl:h-12">
                 <button
@@ -367,8 +379,12 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
                   }`}
                 >
                   <span>Yes</span>
-                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${form.completedBefore === "yes" ? "border-primary-solid bg-primary-solid" : "border-gray-400"}`}>
-                    {form.completedBefore === "yes" && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                  <div
+                    className={`w-4 h-4 rounded-full border flex items-center justify-center ${form.completedBefore === "yes" ? "border-primary-solid bg-primary-solid" : "border-gray-400"}`}
+                  >
+                    {form.completedBefore === "yes" && (
+                      <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                    )}
                   </div>
                 </button>
 
@@ -382,8 +398,12 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
                   }`}
                 >
                   <span>No</span>
-                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${form.completedBefore === "no" ? "border-primary-solid bg-primary-solid" : "border-gray-400"}`}>
-                    {form.completedBefore === "no" && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                  <div
+                    className={`w-4 h-4 rounded-full border flex items-center justify-center ${form.completedBefore === "no" ? "border-primary-solid bg-primary-solid" : "border-gray-400"}`}
+                  >
+                    {form.completedBefore === "no" && (
+                      <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                    )}
                   </div>
                 </button>
               </div>
@@ -392,7 +412,8 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
             <Input
               label={
                 <span>
-                  If Yes, Enter Unique Learner ID<span className="text-primary-solid ml-0.5">*</span>
+                  If Yes, Enter Unique Learner ID
+                  <span className="text-primary-solid ml-0.5">*</span>
                 </span>
               }
               placeholder="000000000"
@@ -459,19 +480,13 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
 
             <Button
               type="submit"
-              variant="secondary"
-              size="small"
-              disabled={isSubmitting}
-              className="px-8 h-11 bg-secondary hover:bg-secondary-hover text-white font-bold text-sm rounded-lg flex items-center gap-2 shadow-sm cursor-pointer"
+              variant="amber"
+              size="lg"
+              loading={isSubmitting}
+              rightIcon={<FiArrowRight className="w-5 h-5" />}
+              className="w-full max-w-sm"
             >
-              {isSubmitting ? (
-                <span>Submitting...</span>
-              ) : (
-                <>
-                  Continue
-                  <FiArrowRight className="w-4 h-4" />
-                </>
-              )}
+              Continue
             </Button>
           </div>
         </div>

@@ -33,8 +33,8 @@ const initialForm = {
   gender: "",
   nationality: "",
   email: "",
-  countryCode: "NGN",
   phoneNumber: "",
+  country: "",
   state: "",
   lga: "",
   streetAddress: "",
@@ -270,11 +270,11 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
                   <span className="text-primary-solid ml-0.5">*</span>
                 </span>
               }
-              countryCode={form.countryCode}
-              onCountryCodeChange={(v) => update("countryCode", v)}
-              phoneNumber={form.phoneNumber}
+              value={form.phoneNumber}
+              onChange={(v) => update("phoneNumber", v)}
               error={errors.phoneNumber}
-              onPhoneNumberChange={(v) => update("phoneNumber", v)}
+              country="ng"
+              preferredCountries={["ng", "gh", "ke", "za"]}
             />
           </div>
         </div>
@@ -286,6 +286,26 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Select
+              label={
+                <span>
+                  Country
+                  <span className="text-primary-solid ml-0.5">*</span>
+                </span>
+              }
+              placeholder="Select"
+              options={[
+                "Nigeria",
+                "Ghana",
+                "Kenya",
+                "South Africa",
+                "Other",
+              ]}
+              value={form.country}
+              error={errors.country}
+              onChange={(e) => update("country", e.target.value)}
+            />
+
             <Select
               label={
                 <span>
@@ -330,21 +350,19 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
               onChange={(e) => update("lga", e.target.value)}
             />
 
-            <div className="sm:col-span-2">
-              <Input
-                label={
-                  <span>
-                    Residential Address
-                    <span className="text-primary-solid ml-0.5">*</span>
-                  </span>
-                }
-                type="text"
-                placeholder="Street Address"
-                value={form.streetAddress}
-                error={errors.streetAddress}
-                onChange={(e) => update("streetAddress", e.target.value)}
-              />
-            </div>
+            <Input
+              label={
+                <span>
+                  Residential Address
+                  <span className="text-primary-solid ml-0.5">*</span>
+                </span>
+              }
+              type="text"
+              placeholder="Street Address"
+              value={form.streetAddress}
+              error={errors.streetAddress}
+              onChange={(e) => update("streetAddress", e.target.value)}
+            />
           </div>
         </div>
 
@@ -381,19 +399,13 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
         <div className="flex items-center justify-end mt-6 pt-4 border-t border-gray-100">
           <Button
             type="submit"
-            variant="secondary"
-            size="small"
-            disabled={isSubmitting}
-            className="px-8 h-11 bg-secondary hover:bg-secondary-hover text-white font-semibold text-sm rounded-lg flex items-center gap-2 shadow-sm cursor-pointer"
+            variant="amber"
+            size="lg"
+            loading={isSubmitting}
+            rightIcon={<FiArrowRight className="w-5 h-5" />}
+            className="w-full max-w-sm"
           >
-            {isSubmitting ? (
-              <span>Submitting...</span>
-            ) : (
-              <>
-                Continue
-                <FiArrowRight className="w-4 h-4" />
-              </>
-            )}
+            Continue
           </Button>
         </div>
       </form>

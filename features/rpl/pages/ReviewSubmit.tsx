@@ -291,7 +291,7 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
 
           <Button
             type="button"
-            size="normal"
+            size="md"
             onClick={handleSubmit}
             disabled={!allChecked}
             className={`px-8 h-11 text-white font-semibold text-sm rounded-lg flex items-center justify-center gap-2 transition-all shadow-sm ${

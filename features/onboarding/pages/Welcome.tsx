@@ -54,7 +54,7 @@ export const Welcome: React.FC<WelcomeProps> = ({ onGetStarted }) => {
           type="button"
           onClick={handleGetStarted}
           variant="secondary"
-          size="normal"
+          size="md"
           className="w-full h-12.5 text-white font-bold text-base bg-secondary hover:bg-secondary-hover focus:ring-secondary/30 transition-all shadow-sm cursor-pointer"
         >
           Get Started
