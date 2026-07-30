@@ -2,14 +2,14 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
-import { FiX } from "react-icons/fi";
-import { logoIcon2 } from "@/assets";
+import { FiX, FiEye } from "react-icons/fi";
+import { ASSETS_URL } from "@/assets";
 import { Input } from "@/components/ui/input";
 
 interface DeleteAccountModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirmDelete: (surname: string) => void;
+  onConfirmDelete: (password: string) => void;
 }
 
 export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
@@ -17,13 +17,20 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
   onClose,
   onConfirmDelete,
 }) => {
-  const [surname, setSurname] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState<string | undefined>(undefined);
 
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onConfirmDelete(surname);
+    if (!password.trim()) {
+      setError("Password is required");
+      return;
+    }
+    setError(undefined);
+    onConfirmDelete(password);
   };
 
   return (
@@ -35,7 +42,11 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
         {/* Close Button */}
         <button
           type="button"
-          onClick={onClose}
+          onClick={() => {
+            setError(undefined);
+            setPassword("");
+            onClose();
+          }}
           aria-label="Close modal"
           className="mb-4 w-11 h-11 rounded-xl bg-primary/10 text-primary hover:bg-[#FBE8ED] flex items-center justify-center transition-colors cursor-pointer"
         >
@@ -45,7 +56,7 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
         {/* Logo Icon from Assets */}
         <div className="flex justify-center mb-4">
           <Image
-            src={logoIcon2}
+            src={ASSETS_URL.logoIcon2}
             alt="ELIMI Logo"
             width={85}
             height={48}
@@ -68,15 +79,40 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
         {/* Form */}
         <form
           onSubmit={handleSubmit}
+          noValidate
           className="w-full text-left flex flex-col gap-5"
         >
           <Input
-            label="Last Name"
-            type="text"
-            required
-            value={surname}
-            onChange={(e) => setSurname(e.target.value)}
-            placeholder="Enter your surname"
+            label="Password"
+            type={showPassword ? "text" : "password"}
+            value={password}
+            error={error}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              if (error) setError(undefined);
+            }}
+            placeholder="Enter your password"
+            suffix={
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                className="text-gray-400 hover:text-gray-600 focus:outline-none cursor-pointer p-1"
+              >
+                {showPassword ? (
+                  <FiEye className="w-5 h-5 text-text-dark/70" />
+                ) : (
+                  <Image
+                    src={ASSETS_URL.eyeClosedIcon}
+                    alt="Hide password"
+                    width={20}
+                    height={20}
+                    className="w-5 h-5 opacity-70 hover:opacity-100 transition-opacity"
+                    style={{ width: "auto", height: "auto" }}
+                  />
+                )}
+              </button>
+            }
           />
 
           <button

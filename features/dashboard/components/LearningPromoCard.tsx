@@ -2,7 +2,7 @@
 
 import React from "react";
 import Image from "next/image";
-import { learningBooks } from "@/assets";
+import { ASSETS_URL } from "@/assets";
 
 export const LearningPromoCard: React.FC = () => {
   return (
@@ -27,7 +27,7 @@ export const LearningPromoCard: React.FC = () => {
 
       <div className="relative w-36 h-36 lg:w-44 lg:h-44 shrink-0 flex items-center justify-center self-center">
         <Image
-          src={learningBooks}
+          src={ASSETS_URL.learningBooks}
           alt="3D Learning Books and Mortarboard Cap"
           fill
           sizes="(max-width: 1024px) 144px, 176px"

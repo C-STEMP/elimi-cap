@@ -10,16 +10,13 @@ import { FiArrowLeft, FiArrowRight, FiCheck } from "react-icons/fi";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { saveIcon } from "@/assets";
+import { ASSETS_URL } from "@/assets";
 import { StatusModal } from "@/components/ui/status-modal";
 import { InfoIcon } from "@/components/ui/info-icon";
 import { useAppDispatch } from "@/store/hooks";
 import { setSidebarVariant, setRplStep } from "@/store/slices/authSlice";
 
-import {
-  rplExperienceTradeSchema,
-  extractZodErrors,
-} from "@/lib/validation";
+import { rplExperienceTradeSchema, extractZodErrors } from "@/lib/validation";
 
 export interface RPLExperienceTradeProps {
   onBack?: () => void;
@@ -101,14 +98,45 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
   };
 
   const updateEmployment = (id: string, field: string, value: any) => {
-    setForm((prev) => ({
-      ...prev,
-      employments: prev.employments.map((emp) =>
+    setForm((prev) => {
+      const updatedEmployments = prev.employments.map((emp) =>
         emp.id === id ? { ...emp, [field]: value } : emp,
-      ),
-    }));
-    if (field === "startDate" || field === "endDate") {
-      setErrors((prev) => ({ ...prev, [`empDate_${id}`]: "" }));
+      );
+
+      const targetEmp = updatedEmployments.find((emp) => emp.id === id);
+      if (targetEmp && (field === "startDate" || field === "endDate")) {
+        const sVal = targetEmp.startDate;
+        const eVal = targetEmp.endDate;
+        if (sVal && eVal) {
+          const start = parseDate(sVal);
+          const end = parseDate(eVal);
+          if (start && end && end <= start) {
+            setErrors((errs) => ({
+              ...errs,
+              [`empDate_${id}`]: "End date must be greater than start date",
+            }));
+          } else {
+            setErrors((errs) => ({
+              ...errs,
+              [`empDate_${id}`]: "",
+            }));
+          }
+        } else {
+          setErrors((errs) => ({
+            ...errs,
+            [`empDate_${id}`]: "",
+          }));
+        }
+      }
+
+      return {
+        ...prev,
+        employments: updatedEmployments,
+      };
+    });
+
+    if (field !== "startDate" && field !== "endDate" && errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: "" }));
     }
   };
 
@@ -182,7 +210,8 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
         const start = parseDate(emp.startDate);
         const end = parseDate(emp.endDate);
         if (start && end && end <= start) {
-          newErrors[`empDate_${emp.id}`] = "End date must be greater than start date";
+          newErrors[`empDate_${emp.id}`] =
+            "End date must be greater than start date";
           valid = false;
         }
       }
@@ -199,7 +228,8 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
       toast({
         type: "error",
         title: "Input Required",
-        description: "Please check form errors. End date must be greater than start date.",
+        description:
+          "Please check form errors. End date must be greater than start date.",
       });
       return;
     }
@@ -243,24 +273,20 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
         {/* Section 1: Qualification Applying For */}
         <div className="flex flex-col gap-4 lg:gap-6 mt-1">
           <h2 className="text-lg xl:text-2xl font-extrabold tracking-tight text-neutral-primary flex items-center gap-1.5">
-            Qualification Applying For <InfoIcon sectionName="Qualification Applying For" />
+            Qualification Applying For{" "}
+            <InfoIcon sectionName="Qualification Applying For" />
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Select
+            <Input
               label={
                 <span>
                   Qualification Title
                   <span className="text-primary-solid ml-0.5">*</span>
                 </span>
               }
-              placeholder="Select"
-              options={[
-                "National Skills Qualification Level 1",
-                "National Skills Qualification Level 2",
-                "National Skills Qualification Level 3",
-                "Master Craftsman Certificate",
-              ]}
+              type="text"
+              placeholder="Enter qualification title"
               value={form.qualificationTitle}
               error={errors.qualificationTitle}
               onChange={(e) => update("qualificationTitle", e.target.value)}
@@ -285,12 +311,17 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
               placeholder="Select"
               options={[
                 "Full Qualification Assessment",
-                "Recognition of Prior Learning (RPL)",
                 "Modular Assessment",
               ]}
               value={form.assessmentType}
               error={errors.assessmentType}
-              onChange={(e) => update("assessmentType", e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value;
+                update("assessmentType", val);
+                if (val === "Full Qualification Assessment") {
+                  update("individualUnit", "");
+                }
+              }}
             />
 
             <Select
@@ -303,6 +334,8 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
                 </span>
               }
               placeholder="Select"
+              disabled={form.assessmentType === "Full Qualification Assessment"}
+              multiple={form.assessmentType === "Modular Assessment"}
               options={[
                 "Unit 1: Health & Safety Practices",
                 "Unit 2: Trade Operations & Tools",
@@ -445,11 +478,6 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
                       align="right"
                     />
                   </div>
-                  {errors[`empDate_${emp.id}`] && (
-                    <span className="text-primary-solid text-xs font-semibold leading-[1.4] animate-fadeIn">
-                      {errors[`empDate_${emp.id}`]}
-                    </span>
-                  )}
                 </div>
               </div>
 
@@ -482,7 +510,8 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
         {/* Section 4: Why are you applying for RPL? */}
         <div className="flex flex-col gap-4 lg:gap-6  mt-2">
           <h2 className="text-lg xl:text-2xl font-extrabold tracking-tight text-neutral-primary flex items-center gap-1.5">
-            Why are you applying for RPL? <InfoIcon sectionName="Why are you applying for RPL?" />
+            Why are you applying for RPL?{" "}
+            <InfoIcon sectionName="Why are you applying for RPL?" />
           </h2>
 
           <div className="flex flex-col gap-1.5 w-full">
@@ -566,7 +595,7 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
             >
               <span>Save As Draft</span>
               <Image
-                src={saveIcon}
+                src={ASSETS_URL.saveIcon}
                 alt="Save icon"
                 width={20}
                 height={20}
@@ -577,10 +606,10 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
             <Button
               type="submit"
               variant="amber"
-              size="lg"
+              size="md"
               loading={form.isSubmitting}
-              rightIcon={<FiArrowRight className="w-5 h-5" />}
-              className="w-full max-w-sm"
+              rightIcon={<FiArrowRight className="w-4.5 h-4.5" />}
+              className="px-8 h-11 text-white font-bold text-sm rounded-xl shadow-sm cursor-pointer whitespace-nowrap"
             >
               Continue
             </Button>

@@ -23,7 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
-import { userAvatar } from "@/assets";
+import { ASSETS_URL } from "@/assets";
 
 interface EvidenceRecord {
   id: string;
@@ -37,7 +37,7 @@ interface EvidenceRecord {
 
 const MOCK_FACILITATOR: FacilitatorData = {
   name: "Ngozi Eze",
-  avatar: userAvatar,
+  avatar: ASSETS_URL.userAvatar,
   role: "Facilitator · Carpentry (Level 3)",
   tags: ["Carpentry", "RPL Coordinator"],
 };

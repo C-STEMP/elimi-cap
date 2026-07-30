@@ -195,3 +195,40 @@ export function validateNIN(nin: string): string | null {
   const res = ninSchema.safeParse(nin);
   return res.success ? null : res.error.issues[0]?.message || "Invalid NIN";
 }
+
+export interface PasswordCriterion {
+  id: string;
+  label: string;
+  isValid: boolean;
+}
+
+export function getPasswordCriteria(password: string): PasswordCriterion[] {
+  return [
+    {
+      id: "length",
+      label: "At least 8 characters long",
+      isValid: password.length >= 8,
+    },
+    {
+      id: "uppercase",
+      label: "One uppercase letter (A-Z)",
+      isValid: /[A-Z]/.test(password),
+    },
+    {
+      id: "lowercase",
+      label: "One lowercase letter (a-z)",
+      isValid: /[a-z]/.test(password),
+    },
+    {
+      id: "number",
+      label: "One number (0-9)",
+      isValid: /[0-9]/.test(password),
+    },
+    {
+      id: "special",
+      label: "One special character (e.g. @, #, $, %)",
+      isValid: /[@$!%*?&#_]/.test(password),
+    },
+  ];
+}
+

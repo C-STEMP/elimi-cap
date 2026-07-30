@@ -1,10 +1,10 @@
-import { userAvatar } from "@/assets";
+import { ASSETS_URL } from "@/assets";
 import { FacilitatorData } from "@/features/dashboard/components/FacilitatorCard";
 import { ApplicationFormState, FolderStatus } from "../types";
 
 export const MOCK_FACILITATOR: FacilitatorData = {
   name: "Ngozi Eze",
-  avatar: userAvatar,
+  avatar: ASSETS_URL.userAvatar,
   role: "Facilitator · Carpentry (Level 3)",
   tags: ["Carpentry", "RPL Coordinator"],
 };

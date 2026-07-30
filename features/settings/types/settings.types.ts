@@ -11,6 +11,7 @@ export interface ProfileFormData {
   nationality: string;
   email: string;
   phone: string;
+  country: string;
   stateOfResidence: string;
   lga: string;
   residentialAddress: string;

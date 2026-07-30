@@ -4,7 +4,8 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
-import { eyeClosedIcon, googleIcon } from "@/assets";
+import { ASSETS_URL } from "@/assets";
+import { PasswordRequirements } from "@/components/ui/password-requirements";
 import { FiEye } from "react-icons/fi";
 import { FaApple } from "react-icons/fa";
 import Image from "next/image";
@@ -102,43 +103,54 @@ export const SignUpEmail: React.FC = () => {
           disabled={isSubmitting}
         />
 
-        <Input
-          label={
-            <span>
-              Password<span className="text-primary-solid ml-0.5">*</span>
-            </span>
-          }
-          type={showPassword ? "text" : "password"}
-          name="password"
-          placeholder="••••••••••"
-          value={password}
-          error={errors.password}
-          onChange={(e) => {
-            setPassword(e.target.value);
-            if (errors.password) setErrors((prev) => ({ ...prev, password: undefined }));
-          }}
-          suffix={
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="focus:outline-none flex items-center justify-center p-1 cursor-pointer"
-              aria-label={showPassword ? "Hide password" : "Show password"}
-            >
-              {showPassword ? (
-                <FiEye className="w-5 h-5 text-text-dark/70" />
-              ) : (
-                <Image
-                  src={eyeClosedIcon}
-                  alt="Hide password"
-                  width={20}
-                  height={20}
-                  className="w-5 h-5 opacity-70 hover:opacity-100 transition-opacity"
-                />
-              )}
-            </button>
-          }
-          disabled={isSubmitting}
-        />
+        <div className="w-full flex flex-col">
+          <Input
+            label={
+              <span>
+                Password<span className="text-primary-solid ml-0.5">*</span>
+              </span>
+            }
+            type={showPassword ? "text" : "password"}
+            name="password"
+            placeholder="••••••••••"
+            value={password}
+            error={errors.password}
+            onChange={(e) => {
+              const val = e.target.value;
+              setPassword(val);
+              if (errors.password) setErrors((prev) => ({ ...prev, password: undefined }));
+              if (confirmPassword) {
+                if (val !== confirmPassword) {
+                  setErrors((prev) => ({ ...prev, confirmPassword: "Passwords do not match" }));
+                } else {
+                  setErrors((prev) => ({ ...prev, confirmPassword: undefined }));
+                }
+              }
+            }}
+            suffix={
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="focus:outline-none flex items-center justify-center p-1 cursor-pointer"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? (
+                  <FiEye className="w-5 h-5 text-text-dark/70" />
+                ) : (
+                  <Image
+                    src={ASSETS_URL.eyeClosedIcon}
+                    alt="Hide password"
+                    width={20}
+                    height={20}
+                    className="w-5 h-5 opacity-70 hover:opacity-100 transition-opacity"
+                  />
+                )}
+              </button>
+            }
+            disabled={isSubmitting}
+          />
+          <PasswordRequirements password={password} />
+        </div>
 
         <div className="flex flex-col gap-1 w-full">
           <Input
@@ -154,9 +166,13 @@ export const SignUpEmail: React.FC = () => {
             value={confirmPassword}
             error={errors.confirmPassword}
             onChange={(e) => {
-              setConfirmPassword(e.target.value);
-              if (errors.confirmPassword)
+              const val = e.target.value;
+              setConfirmPassword(val);
+              if (val && password && val !== password) {
+                setErrors((prev) => ({ ...prev, confirmPassword: "Passwords do not match" }));
+              } else {
                 setErrors((prev) => ({ ...prev, confirmPassword: undefined }));
+              }
             }}
             suffix={
               <button
@@ -171,7 +187,7 @@ export const SignUpEmail: React.FC = () => {
                   <FiEye className="w-5 h-5 text-text-dark/70" />
                 ) : (
                   <Image
-                    src={eyeClosedIcon}
+                    src={ASSETS_URL.eyeClosedIcon}
                     alt="Hide password"
                     width={20}
                     height={20}
@@ -182,11 +198,6 @@ export const SignUpEmail: React.FC = () => {
             }
             disabled={isSubmitting}
           />
-          <p className="text-xs xl:text-xs text-text-dark italic leading-relaxed font-normal mt-1">
-            Your password must be at least 8 characters long and include one
-            uppercase letter, one lowercase letter, one number, and one special
-            character (e.g., @, #, $, %).
-          </p>
         </div>
 
         <div className="w-full flex justify-end -mt-1 select-none">
@@ -231,7 +242,7 @@ export const SignUpEmail: React.FC = () => {
             disabled={isSubmitting}
             leftIcon={
               <Image
-                src={googleIcon}
+                src={ASSETS_URL.googleIcon}
                 alt="Google"
                 width={20}
                 height={20}

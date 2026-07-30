@@ -3,7 +3,8 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
-import { eyeClosedIcon, saveIcon } from "@/assets";
+import { ASSETS_URL } from "@/assets";
+import { PasswordRequirements } from "@/components/ui/password-requirements";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import { SecurityFormData } from "../types/settings.types";
 
@@ -52,7 +53,7 @@ export const ChangePasswordSection: React.FC<ChangePasswordSectionProps> = ({
                 <FiEye className="w-5 h-5 text-text-dark/70" />
               ) : (
                 <Image
-                  src={eyeClosedIcon}
+                  src={ASSETS_URL.eyeClosedIcon}
                   alt="Hide password"
                   width={20}
                   height={20}
@@ -64,39 +65,49 @@ export const ChangePasswordSection: React.FC<ChangePasswordSectionProps> = ({
         />
 
         {/* New Password */}
-        <Input
-          label="New Password"
-          type={showNew ? "text" : "password"}
-          value={formData.newPassword}
-          onChange={(e) => onChange("newPassword", e.target.value)}
-          placeholder="•••••••••"
-          suffix={
-            <button
-              type="button"
-              onClick={() => setShowNew(!showNew)}
-              aria-label="Toggle new password visibility"
-              className="text-gray-400 hover:text-gray-600 focus:outline-none"
-            >
-              {showNew ? (
-                <FiEye className="w-5 h-5 text-text-dark/70" />
-              ) : (
-                <Image
-                  src={eyeClosedIcon}
-                  alt="Hide password"
-                  width={20}
-                  height={20}
-                  className="w-5 h-5 opacity-70 hover:opacity-100 transition-opacity"
-                />
-              )}
-            </button>
-          }
-        />
+        <div className="w-full flex flex-col">
+          <Input
+            label="New Password"
+            type={showNew ? "text" : "password"}
+            value={formData.newPassword}
+            onChange={(e) => onChange("newPassword", e.target.value)}
+            placeholder="•••••••••"
+            suffix={
+              <button
+                type="button"
+                onClick={() => setShowNew(!showNew)}
+                aria-label="Toggle new password visibility"
+                className="text-gray-400 hover:text-gray-600 focus:outline-none"
+              >
+                {showNew ? (
+                  <FiEye className="w-5 h-5 text-text-dark/70" />
+                ) : (
+                  <Image
+                    src={ASSETS_URL.eyeClosedIcon}
+                    alt="Hide password"
+                    width={20}
+                    height={20}
+                    className="w-5 h-5 opacity-70 hover:opacity-100 transition-opacity"
+                  />
+                )}
+              </button>
+            }
+          />
+          <PasswordRequirements password={formData.newPassword} />
+        </div>
 
         {/* Confirm Password */}
         <Input
           label="Confirm Password"
           type={showConfirm ? "text" : "password"}
           value={formData.confirmPassword}
+          error={
+            formData.confirmPassword &&
+            formData.newPassword &&
+            formData.confirmPassword !== formData.newPassword
+              ? "Passwords do not match"
+              : undefined
+          }
           onChange={(e) => onChange("confirmPassword", e.target.value)}
           placeholder="•••••••••"
           suffix={
@@ -110,7 +121,7 @@ export const ChangePasswordSection: React.FC<ChangePasswordSectionProps> = ({
                 <FiEye className="w-5 h-5 text-text-dark/70" />
               ) : (
                 <Image
-                  src={eyeClosedIcon}
+                  src={ASSETS_URL.eyeClosedIcon}
                   alt="Hide password"
                   width={20}
                   height={20}
@@ -130,7 +141,7 @@ export const ChangePasswordSection: React.FC<ChangePasswordSectionProps> = ({
         >
           <span>Change Passowrd</span>
           <Image
-            src={saveIcon}
+            src={ASSETS_URL.saveIcon}
             alt="Save"
             width={18}
             height={18}

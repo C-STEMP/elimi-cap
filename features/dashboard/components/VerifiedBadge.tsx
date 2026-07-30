@@ -2,7 +2,7 @@
 
 import React from "react";
 import Image from "next/image";
-import { validationApprovalIcon } from "@/assets";
+import { ASSETS_URL } from "@/assets";
 import { FiChevronRight } from "react-icons/fi";
 import { useRouter } from "next/navigation";
 
@@ -24,7 +24,7 @@ export const VerifiedBadge: React.FC<VerifiedBadgeProps> = ({
         <div className="flex items-center gap-3.5">
           <div className="w-10 h-10 rounded-full bg-[#f8d7da] flex items-center justify-center shrink-0">
             <Image
-              src={validationApprovalIcon}
+              src={ASSETS_URL.validationApprovalIcon}
               alt="Not Verified"
               width={24}
               height={24}
@@ -52,7 +52,7 @@ export const VerifiedBadge: React.FC<VerifiedBadgeProps> = ({
     <div className="bg-[#c9e7d2] rounded-[22px] p-4 lg:p-5 flex items-center gap-3.5 shadow-2xs border border-[#b8dfc3]">
       <div className="w-10 h-10 rounded-full bg-[#a9d9b6] flex items-center justify-center shrink-0">
         <Image
-          src={validationApprovalIcon}
+          src={ASSETS_URL.validationApprovalIcon}
           alt="Verified"
           width={24}
           height={24}

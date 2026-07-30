@@ -6,7 +6,7 @@ import { Logo } from "@/components/ui/logo";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { FiX, FiArrowRight, FiCheck } from "react-icons/fi";
-import { successCheckmarkImg, loadingIcon, errorSymbolIcon } from "@/assets";
+import { ASSETS_URL } from "@/assets";
 
 import { validateNIN } from "@/lib/validation";
 import { useToast } from "@/components/ui/toast";
@@ -177,9 +177,10 @@ export const NinVerificationModal: React.FC<NinVerificationModalProps> = ({
                   type="submit"
                   variant="amber"
                   size="icon"
-                  leftIcon={<FiArrowRight className="w-5 h-5 stroke-[2.5]" />}
-                  className="shrink-0"
-                />
+                  className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center"
+                >
+                  <FiArrowRight className="w-4 h-4 text-white stroke-[2.5]" />
+                </Button>
               }
               className="font-mono tracking-wider"
             />
@@ -193,9 +194,9 @@ export const NinVerificationModal: React.FC<NinVerificationModalProps> = ({
           <div className="absolute inset-0 bg-black/40 backdrop-blur-xs z-30 flex items-center justify-center p-4 animate-in fade-in duration-200">
             <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center flex flex-col items-center shadow-2xl relative animate-in zoom-in-95 duration-200">
               <div className="w-16 h-16 relative flex items-center justify-center my-2">
-                {loadingIcon ? (
+                {ASSETS_URL.loadingIcon ? (
                   <Image
-                    src={loadingIcon}
+                    src={ASSETS_URL.loadingIcon}
                     alt="Loading"
                     width={64}
                     height={64}
@@ -227,13 +228,14 @@ export const NinVerificationModal: React.FC<NinVerificationModalProps> = ({
           <div className="absolute inset-0 bg-black/50 backdrop-blur-xs z-30 flex items-center justify-center p-4 animate-in fade-in duration-200">
             <div className="bg-white rounded-3xl p-8 max-w-md w-full text-center flex flex-col items-center shadow-2xl relative animate-in zoom-in-95 duration-200">
               <div className="relative w-24 h-24 mb-2 flex items-center justify-center">
-                {successCheckmarkImg ? (
+                {ASSETS_URL.successCheckmarkImg ? (
                   <Image
-                    src={successCheckmarkImg}
+                    src={ASSETS_URL.successCheckmarkImg}
                     alt="Success"
                     width={96}
                     height={96}
-                    className="object-contain drop-shadow-md"
+                    className="object-contain drop-shadow-md w-auto h-auto"
+                    style={{ width: "auto", height: "auto" }}
                   />
                 ) : (
                   <div className="w-20 h-20 rounded-full bg-gradient-to-b from-[#66bb6a] to-[#2e7d32] flex items-center justify-center shadow-lg shadow-green-600/30">
@@ -271,9 +273,9 @@ export const NinVerificationModal: React.FC<NinVerificationModalProps> = ({
           <div className="absolute inset-0 bg-black/50 backdrop-blur-xs z-30 flex items-center justify-center p-4 animate-in fade-in duration-200">
             <div className="bg-white rounded-3xl p-6 lg:p-8 max-w-md w-full text-center flex flex-col items-center shadow-2xl relative animate-in zoom-in-95 duration-200">
               <div className="relative w-24 h-24 mb-2 flex items-center justify-center">
-                {errorSymbolIcon ? (
+                {ASSETS_URL.errorSymbolIcon ? (
                   <Image
-                    src={errorSymbolIcon}
+                    src={ASSETS_URL.errorSymbolIcon}
                     alt="Error"
                     width={96}
                     height={96}

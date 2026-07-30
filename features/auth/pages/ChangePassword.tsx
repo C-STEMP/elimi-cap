@@ -4,7 +4,8 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
-import { eyeClosedIcon } from "@/assets";
+import { ASSETS_URL } from "@/assets";
+import { PasswordRequirements } from "@/components/ui/password-requirements";
 import { FiEye } from "react-icons/fi";
 import Image from "next/image";
 import Link from "next/link";
@@ -72,39 +73,50 @@ export const ChangePassword: React.FC = () => {
       </div>
 
       <form onSubmit={handleSubmit} className="w-full flex flex-col gap-6">
-        <Input
-          label="Password"
-          type={showPassword ? "text" : "password"}
-          name="password"
-          placeholder="••••••••••••"
-          value={password}
-          error={errors.password}
-          onChange={(e) => {
-            setPassword(e.target.value);
-            if (errors.password) setErrors((prev) => ({ ...prev, password: undefined }));
-          }}
-          suffix={
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="focus:outline-none flex items-center justify-center p-1 cursor-pointer"
-              aria-label={showPassword ? "Hide password" : "Show password"}
-            >
-              {showPassword ? (
-                <FiEye className="w-5 h-5 text-text-dark/70" />
-              ) : (
-                <Image
-                  src={eyeClosedIcon}
-                  alt="Hide password"
-                  width={20}
-                  height={20}
-                  className="w-5 h-5 opacity-70 hover:opacity-100 transition-opacity"
-                />
-              )}
-            </button>
-          }
-          disabled={isSubmitting}
-        />
+        <div className="w-full flex flex-col">
+          <Input
+            label="Password"
+            type={showPassword ? "text" : "password"}
+            name="password"
+            placeholder="••••••••••••"
+            value={password}
+            error={errors.password}
+            onChange={(e) => {
+              const val = e.target.value;
+              setPassword(val);
+              if (errors.password) setErrors((prev) => ({ ...prev, password: undefined }));
+              if (confirmPassword) {
+                if (val !== confirmPassword) {
+                  setErrors((prev) => ({ ...prev, confirmPassword: "Passwords do not match" }));
+                } else {
+                  setErrors((prev) => ({ ...prev, confirmPassword: undefined }));
+                }
+              }
+            }}
+            suffix={
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="focus:outline-none flex items-center justify-center p-1 cursor-pointer"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? (
+                  <FiEye className="w-5 h-5 text-text-dark/70" />
+                ) : (
+                  <Image
+                    src={ASSETS_URL.eyeClosedIcon}
+                    alt="Hide password"
+                    width={20}
+                    height={20}
+                    className="w-5 h-5 opacity-70 hover:opacity-100 transition-opacity"
+                  />
+                )}
+              </button>
+            }
+            disabled={isSubmitting}
+          />
+          <PasswordRequirements password={password} />
+        </div>
 
         <Input
           label="Confirm Password"
@@ -114,9 +126,13 @@ export const ChangePassword: React.FC = () => {
           value={confirmPassword}
           error={errors.confirmPassword}
           onChange={(e) => {
-            setConfirmPassword(e.target.value);
-            if (errors.confirmPassword)
+            const val = e.target.value;
+            setConfirmPassword(val);
+            if (val && password && val !== password) {
+              setErrors((prev) => ({ ...prev, confirmPassword: "Passwords do not match" }));
+            } else {
               setErrors((prev) => ({ ...prev, confirmPassword: undefined }));
+            }
           }}
           suffix={
             <button
@@ -129,7 +145,7 @@ export const ChangePassword: React.FC = () => {
                 <FiEye className="w-5 h-5 text-text-dark/70" />
               ) : (
                 <Image
-                  src={eyeClosedIcon}
+                  src={ASSETS_URL.eyeClosedIcon}
                   alt="Hide password"
                   width={20}
                   height={20}

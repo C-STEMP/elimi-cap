@@ -13,7 +13,7 @@ import { FiArrowLeft, FiArrowRight } from "react-icons/fi";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { saveIcon } from "@/assets";
+import { ASSETS_URL } from "@/assets";
 import { StatusModal } from "@/components/ui/status-modal";
 import { useAppDispatch } from "@/store/hooks";
 import { setSidebarVariant, setRplStep } from "@/store/slices/authSlice";
@@ -277,7 +277,7 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
         {/* Section 3: Residential Address */}
         <div className="flex flex-col gap-4 mt-2">
           <h2 className="text-base sm:text-lg font-bold text-text-dark flex items-center gap-1.5">
-            Residential Address <InfoIcon sectionName="Residential Address" />
+            Street Address <InfoIcon sectionName="Residential Address" />
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -470,7 +470,7 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
             >
               <span>Save As Draft</span>
               <Image
-                src={saveIcon}
+                src={ASSETS_URL.saveIcon}
                 alt="Save icon"
                 width={20}
                 height={20}
@@ -481,10 +481,10 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
             <Button
               type="submit"
               variant="amber"
-              size="lg"
+              size="md"
               loading={isSubmitting}
-              rightIcon={<FiArrowRight className="w-5 h-5" />}
-              className="w-full max-w-sm"
+              rightIcon={<FiArrowRight className="w-4.5 h-4.5" />}
+              className="px-8 h-11 text-white font-bold text-sm rounded-xl shadow-sm cursor-pointer whitespace-nowrap"
             >
               Continue
             </Button>

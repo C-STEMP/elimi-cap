@@ -180,19 +180,13 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
 
           <Button
             type="submit"
-            variant="secondary"
-            size="sm"
-            disabled={isSubmitting}
-            className="px-8 h-11 bg-secondary hover:bg-secondary-hover text-white font-bold text-sm rounded-lg flex items-center gap-2 shadow-sm cursor-pointer"
+            variant="amber"
+            size="md"
+            loading={isSubmitting}
+            rightIcon={<FiArrowRight className="w-4.5 h-4.5" />}
+            className="px-8 h-11 font-bold text-sm rounded-xl shadow-sm cursor-pointer whitespace-nowrap"
           >
-            {isSubmitting ? (
-              <span>Processing...</span>
-            ) : (
-              <>
-                Continue
-                <FiArrowRight className="w-4 h-4" />
-              </>
-            )}
+            Continue
           </Button>
         </div>
       </form>

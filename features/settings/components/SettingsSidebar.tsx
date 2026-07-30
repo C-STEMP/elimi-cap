@@ -52,6 +52,8 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
             fill
             sizes="80px"
             className="object-cover"
+            priority
+            loading="eager"
           />
         </div>
 

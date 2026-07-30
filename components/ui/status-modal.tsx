@@ -2,7 +2,7 @@ import React from "react";
 import Image from "next/image";
 import { FiX } from "react-icons/fi";
 import { Button } from "./button";
-import { successCheckmarkImg, progressSavedIcon, submitedIcon } from "@/assets";
+import { ASSETS_URL } from "@/assets";
 import {
   PaymentSuccessIllustration,
   PaymentCancelledIllustration,
@@ -76,7 +76,7 @@ export const StatusModal: React.FC<StatusModalProps> = ({
     if (variant === "draft-saved") {
       return (
         <Image
-          src={progressSavedIcon}
+          src={ASSETS_URL.progressSavedIcon}
           alt="Progress Saved"
           width={180}
           height={180}
@@ -90,7 +90,7 @@ export const StatusModal: React.FC<StatusModalProps> = ({
     if (variant === "application-submitted") {
       return (
         <Image
-          src={submitedIcon}
+          src={ASSETS_URL.submitedIcon}
           alt="Application Submitted"
           width={180}
           height={180}
@@ -118,7 +118,7 @@ export const StatusModal: React.FC<StatusModalProps> = ({
     if (type === "success") {
       return (
         <Image
-          src={successCheckmarkImg}
+          src={ASSETS_URL.successCheckmarkImg}
           alt="Success Checkmark"
           width={180}
           height={180}

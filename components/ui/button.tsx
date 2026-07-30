@@ -38,7 +38,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ref
   ) => {
     const baseStyles =
-      "relative inline-flex items-center justify-center font-medium transition-all duration-200 ease-out focus:outline-none focus:ring-2 focus:ring-offset-2 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none cursor-pointer";
+      "relative inline-flex items-center justify-center font-medium transition-all duration-200 ease-out focus:outline-none focus:ring-2 focus:ring-offset-2 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none cursor-pointer whitespace-nowrap select-none";
 
     const sizeStyles = {
       xs: "text-xs px-3 py-1.5 gap-1.5",
@@ -71,7 +71,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         "bg-transparent hover:bg-gray-100 text-text-dark border-transparent focus:ring-gray-100",
       link: "bg-transparent hover:underline text-primary hover:text-primary-hover border-transparent focus:ring-primary/50 p-0",
       amber:
-        "bg-[#fbab2a] hover:bg-[#e89b1f] text-white border-transparent focus:ring-amber-500/50 shadow-sm",
+        "bg-[#fbab2a] hover:bg-[#e89b1f] text-white border-transparent focus:ring-amber-500/30 shadow-sm font-bold",
       success:
         "bg-green-600 hover:bg-green-700 text-white border-transparent focus:ring-green-500/50 shadow-sm",
     };
@@ -90,9 +90,17 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         {loading && (
           <LuLoader className="animate-spin h-4 w-4 shrink-0" aria-hidden="true" />
         )}
-        {!loading && leftIcon && <span className="shrink-0">{leftIcon}</span>}
-        <span>{children}</span>
-        {!loading && rightIcon && <span className="shrink-0">{rightIcon}</span>}
+        {!loading && leftIcon && (
+          <span className="shrink-0 inline-flex items-center justify-center">{leftIcon}</span>
+        )}
+        {children !== undefined && children !== null && children !== "" && (
+          <span className="inline-flex items-center justify-center gap-2 whitespace-nowrap">
+            {children}
+          </span>
+        )}
+        {!loading && rightIcon && (
+          <span className="shrink-0 inline-flex items-center justify-center">{rightIcon}</span>
+        )}
       </button>
     );
   }

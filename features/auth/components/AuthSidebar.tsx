@@ -5,7 +5,8 @@ import { Logo } from "@/components/ui/logo";
 import { FloatingCircles } from "./FloatingCircles";
 import { usePathname } from "next/navigation";
 import { useAppSelector } from "@/store/hooks";
-import { FiCheck, FiArrowRight } from "react-icons/fi";
+import { FiCheck } from "react-icons/fi";
+import { HiOutlineArrowRight } from "react-icons/hi";
 import Link from "next/link";
 
 const RPL_STEPS = [
@@ -133,14 +134,17 @@ export const AuthSidebar: React.FC = () => {
                     <span className="underline underline-offset-4">
                       Learn More
                     </span>
-                    <FiArrowRight className="w-6 h-6" />
+                    <HiOutlineArrowRight className="w-6 h-6" />
                   </Link>
                 </div>
               </div>
             </div>
 
             <div suppressHydrationWarning className="w-full">
-              <div suppressHydrationWarning className="w-full h-px bg-white/20 mb-5" />
+              <div
+                suppressHydrationWarning
+                className="w-full h-px bg-white/20 mb-5"
+              />
               <blockquote className="text-neutral-burgundy text-sm xl:text-[15px] leading-relaxed mb-3 font-medium max-w-lg">
                 &ldquo;ELIMI helped me get NSQ Level 3 certified as a carpenter
                 after 9 years on the job — no classroom needed.&rdquo;

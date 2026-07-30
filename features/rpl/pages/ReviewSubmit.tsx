@@ -7,7 +7,7 @@ import { FiArrowLeft, FiArrowRight, FiCheck, FiEdit2 } from "react-icons/fi";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { saveIcon } from "@/assets";
+import { ASSETS_URL } from "@/assets";
 import { useAppDispatch } from "@/store/hooks";
 import { setSidebarVariant, setRplStep } from "@/store/slices/authSlice";
 
@@ -281,7 +281,7 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
           >
             <span>Save As Draft</span>
             <Image
-              src={saveIcon}
+              src={ASSETS_URL.saveIcon}
               alt="Save icon"
               width={20}
               height={20}
@@ -291,17 +291,14 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
 
           <Button
             type="button"
+            variant="amber"
             size="md"
             onClick={handleSubmit}
             disabled={!allChecked}
-            className={`px-8 h-11 text-white font-semibold text-sm rounded-lg flex items-center justify-center gap-2 transition-all shadow-sm ${
-              allChecked
-                ? "bg-secondary hover:bg-secondary-hover cursor-pointer"
-                : "bg-[#FDE68A] text-white cursor-not-allowed"
-            }`}
+            rightIcon={<FiArrowRight className="w-4.5 h-4.5" />}
+            className="px-8 h-11 text-white font-bold text-sm rounded-xl shadow-sm cursor-pointer whitespace-nowrap"
           >
             Submit
-            <FiArrowRight className="w-4 h-4" />
           </Button>
         </div>
       </div>

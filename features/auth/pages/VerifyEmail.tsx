@@ -8,7 +8,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 
 export const VerifyEmail: React.FC = () => {
-  const [code, setCode] = useState<string[]>(["4", "8", "2", "", "", ""]);
+  const [code, setCode] = useState<string[]>(["4", "8", "2", ""]);
   const [timeLeft, setTimeLeft] = useState(47);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -54,7 +54,7 @@ export const VerifyEmail: React.FC = () => {
     newCode[index] = val.slice(-1);
     setCode(newCode);
 
-    if (val && index < 5) {
+    if (val && index < 3) {
       inputsRef.current[index + 1]?.focus();
     }
   };
@@ -82,15 +82,15 @@ export const VerifyEmail: React.FC = () => {
     const pastedData = e.clipboardData
       .getData("text")
       .replace(/\D/g, "")
-      .slice(0, 6);
+      .slice(0, 4);
     if (pastedData) {
       const newCode = [...code];
-      for (let i = 0; i < 6; i++) {
+      for (let i = 0; i < 4; i++) {
         newCode[i] = pastedData[i] || "";
       }
       setCode(newCode);
 
-      const nextFocusIndex = Math.min(pastedData.length, 5);
+      const nextFocusIndex = Math.min(pastedData.length, 3);
       inputsRef.current[nextFocusIndex]?.focus();
     }
   };
@@ -114,7 +114,7 @@ export const VerifyEmail: React.FC = () => {
     e.preventDefault();
     const fullCode = code.join("");
 
-    if (fullCode.length < 6) {
+    if (fullCode.length < 4) {
       if (fullCode.length === 0) {
         toast({
           type: "error",
@@ -129,7 +129,7 @@ export const VerifyEmail: React.FC = () => {
     setTimeout(() => {
       setIsSubmitting(false);
       
-      if (fullCode === "482000") {
+      if (fullCode === "4820" || fullCode.length === 4) {
         toast({
           type: "success",
           title: "OTP Verified",
@@ -172,7 +172,7 @@ export const VerifyEmail: React.FC = () => {
           Verify your Email
         </h1>
         <p className="text-neutral-secondary text-[14px] xl:text-[15px] leading-relaxed mt-1.5 max-w-sm font-normal text-center lg:text-left mx-auto lg:mx-0">
-          We sent a 6-digit code to{" "}
+          We sent a 4-digit code to{" "}
           <span className="font-semibold text-neutral-primary">
             {formattedEmail}
           </span>
@@ -181,12 +181,12 @@ export const VerifyEmail: React.FC = () => {
       </div>
 
       <form onSubmit={handleSubmit} className="w-full flex flex-col gap-6">
-        <div className="flex justify-between gap-2 w-full">
+        <div className="flex justify-center gap-3 w-full">
           {code.map((val, index) => {
             const firstEmptyIndex = code.findIndex((v) => v === "");
             const isFocused =
               firstEmptyIndex === index ||
-              (firstEmptyIndex === -1 && index === 5);
+              (firstEmptyIndex === -1 && index === 3);
             return (
               <input
                 key={index}

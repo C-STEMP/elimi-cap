@@ -21,23 +21,11 @@ import {
 import { CalendarWidget } from "@/features/dashboard/components/CalendarWidget";
 import { VerifiedBadge } from "@/features/dashboard/components/VerifiedBadge";
 import { useAppSelector } from "@/store/hooks";
-import { userAvatar } from "@/assets";
+import { ASSETS_URL } from "@/assets";
 
 const POPULATED_APPLICATIONS: ApplicationItem[] = [
   {
     id: "app-1",
-    title: "Carpentry",
-    subtitle: "Recognition Of Prior Learning",
-    status: "Not Started",
-  },
-  {
-    id: "app-2",
-    title: "Carpentry",
-    subtitle: "Recognition Of Prior Learning",
-    status: "Not Started",
-  },
-  {
-    id: "app-3",
     title: "Carpentry",
     subtitle: "Recognition Of Prior Learning",
     status: "Not Started",
@@ -52,7 +40,7 @@ const POPULATED_INTERVIEW: InterviewData = {
 
 const POPULATED_FACILITATOR: FacilitatorData = {
   name: "Ngozi Eze",
-  avatar: userAvatar,
+  avatar: ASSETS_URL.userAvatar,
   role: "Facilitator · Carpentry (Level 3)",
   tags: ["Carpentry", "RPL Coordinator"],
 };

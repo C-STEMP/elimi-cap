@@ -22,7 +22,7 @@ import fileIcon from "@/assets/icons/file.svg";
 import fileGreenIcon from "@/assets/icons/file-green.svg";
 import validationApprovalIcon from "@/assets/icons/validation-approval.svg";
 
-export {
+export const ASSETS_URL = {
   logoIcon,
   logoIcon2,
   eyeClosedIcon,
@@ -45,3 +45,4 @@ export {
   fileGreenIcon,
   validationApprovalIcon,
 };
+

@@ -396,14 +396,23 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
         </div>
 
         {/* Bottom Actions */}
-        <div className="flex items-center justify-end mt-6 pt-4 border-t border-gray-100">
+        <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-100">
+          <button
+            type="button"
+            onClick={onBack || (() => router.back())}
+            className="flex items-center gap-2 text-neutral-secondary hover:text-neutral-primary font-semibold text-sm transition-colors cursor-pointer select-none focus:outline-none"
+          >
+            <FiArrowLeft className="w-4 h-4" />
+            Back
+          </button>
+
           <Button
             type="submit"
             variant="amber"
-            size="lg"
+            size="md"
             loading={isSubmitting}
-            rightIcon={<FiArrowRight className="w-5 h-5" />}
-            className="w-full max-w-sm"
+            rightIcon={<FiArrowRight className="w-4.5 h-4.5" />}
+            className="px-8 h-11 text-white font-bold text-sm rounded-xl shadow-sm cursor-pointer whitespace-nowrap"
           >
             Continue
           </Button>

@@ -32,6 +32,15 @@ export const PassportUpload: React.FC<PassportUploadProps> = ({
         });
         return;
       }
+      const MAX_SIZE = 2 * 1024 * 1024; // 2MB
+      if (file.size > MAX_SIZE) {
+        toast({
+          type: "error",
+          title: "File Too Large",
+          description: "Image size must not exceed 2MB.",
+        });
+        return;
+      }
       const url = URL.createObjectURL(file);
       setPreview(url);
       onImageChange?.(file);
@@ -85,7 +94,7 @@ export const PassportUpload: React.FC<PassportUploadProps> = ({
             Upload Passport
           </span>
           <span className="text-[10px] text-[#8e7a7e] font-normal leading-tight mt-1">
-            <span className="text-primary">5mb</span> image max size
+            <span className="text-primary">2MB</span> image max size
           </span>
         </div>
       )}

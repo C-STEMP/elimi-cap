@@ -3,7 +3,7 @@
 import React from "react";
 import Image from "next/image";
 import { FiArrowRight } from "react-icons/fi";
-import { cardWhite, cardYellow, cardRed, cardBlack } from "@/assets";
+import { ASSETS_URL } from "@/assets";
 
 export type RoleHoverColor = "yellow" | "red" | "black";
 
@@ -18,9 +18,9 @@ export interface RoleCardProps {
 }
 
 const CARD_IMAGES: Record<RoleHoverColor, any> = {
-  yellow: cardYellow,
-  red: cardRed,
-  black: cardBlack,
+  yellow: ASSETS_URL.cardYellow,
+  red: ASSETS_URL.cardRed,
+  black: ASSETS_URL.cardBlack,
 };
 
 const COLOR_CYCLE: RoleHoverColor[] = ["yellow", "red", "black"];
@@ -45,7 +45,7 @@ export const RoleCard: React.FC<RoleCardProps> = ({
       className="group relative w-full max-w-109.75 aspect-439/199 rounded-[10px] flex items-end justify-between px-8 pb-6 sm:pb-7 text-left select-none cursor-pointer overflow-hidden focus:outline-none active:scale-[0.995] transition-all duration-300 ease-out hover:translate-x-2.5"
     >
       <Image
-        src={cardWhite}
+        src={ASSETS_URL.cardWhite}
         alt="Default Card Background"
         fill
         priority

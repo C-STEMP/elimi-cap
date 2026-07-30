@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { eyeClosedIcon } from "@/assets";
+import { ASSETS_URL } from "@/assets";
 import { FiEye } from "react-icons/fi";
 import Image from "next/image";
 import { FcGoogle } from "react-icons/fc";
@@ -18,13 +18,14 @@ import { validateEmail } from "@/lib/validation";
 
 export const SignIn: React.FC = () => {
   const dispatch = useAppDispatch();
-  const [viewMode, setViewMode] = useState<"signin" | "enter-email" | "verify-email">("signin");
+  const [viewMode, setViewMode] = useState<
+    "signin" | "enter-email" | "verify-email"
+  >("signin");
 
   useEffect(() => {
     dispatch(setSidebarVariant("default"));
   }, [dispatch]);
 
-  // Form states
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -36,9 +37,8 @@ export const SignIn: React.FC = () => {
     otpCode?: string;
   }>({});
 
-  // OTP flow states
   const [otpEmail, setOtpEmail] = useState("chidi.umeh@email.com");
-  const [otpCode, setOtpCode] = useState<string[]>(["4", "8", "2", "", "", ""]);
+  const [otpCode, setOtpCode] = useState<string[]>(["4", "8", "2", ""]);
   const [timeLeft, setTimeLeft] = useState(47);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
@@ -46,7 +46,6 @@ export const SignIn: React.FC = () => {
   const { toast } = useToast();
   const router = useRouter();
 
-  // Timer effect for OTP
   useEffect(() => {
     if (viewMode !== "verify-email" || timeLeft <= 0) return;
     const interval = setInterval(() => {
@@ -55,7 +54,6 @@ export const SignIn: React.FC = () => {
     return () => clearInterval(interval);
   }, [viewMode, timeLeft]);
 
-  // Auto focus first OTP input when viewMode becomes verify-email
   useEffect(() => {
     if (viewMode === "verify-email") {
       const firstEmptyIndex = otpCode.findIndex((val) => val === "");
@@ -147,14 +145,14 @@ export const SignIn: React.FC = () => {
     newCode[index] = val.slice(-1);
     setOtpCode(newCode);
 
-    if (val && index < 5) {
+    if (val && index < 3) {
       inputsRef.current[index + 1]?.focus();
     }
   };
 
   const handleOtpKeyDown = (
     index: number,
-    e: React.KeyboardEvent<HTMLInputElement>
+    e: React.KeyboardEvent<HTMLInputElement>,
   ) => {
     if (e.key === "Backspace") {
       if (!otpCode[index] && index > 0) {
@@ -175,14 +173,14 @@ export const SignIn: React.FC = () => {
     const pastedData = e.clipboardData
       .getData("text")
       .replace(/\D/g, "")
-      .slice(0, 6);
+      .slice(0, 4);
     if (pastedData) {
       const newCode = [...otpCode];
-      for (let i = 0; i < 6; i++) {
+      for (let i = 0; i < 4; i++) {
         newCode[i] = pastedData[i] || "";
       }
       setOtpCode(newCode);
-      const nextFocusIndex = Math.min(pastedData.length, 5);
+      const nextFocusIndex = Math.min(pastedData.length, 3);
       inputsRef.current[nextFocusIndex]?.focus();
     }
   };
@@ -198,7 +196,8 @@ export const SignIn: React.FC = () => {
     toast({
       type: "success",
       title: "Code Resent",
-      description: "A new verification code has been sent to your email address.",
+      description:
+        "A new verification code has been sent to your email address.",
     });
   };
 
@@ -206,11 +205,11 @@ export const SignIn: React.FC = () => {
     e.preventDefault();
     const fullCode = otpCode.join("");
 
-    if (fullCode.length < 6) {
+    if (fullCode.length < 4) {
       toast({
         type: "error",
         title: "Incomplete Code",
-        description: "Please enter the complete 6-digit verification code.",
+        description: "Please enter the complete 4-digit verification code.",
       });
       return;
     }
@@ -232,7 +231,10 @@ export const SignIn: React.FC = () => {
   }, [showSuccessModal, router]);
 
   return (
-    <div suppressHydrationWarning className="w-full max-w-110 mx-auto flex flex-col justify-center select-text">
+    <div
+      suppressHydrationWarning
+      className="w-full max-w-110 mx-auto flex flex-col justify-center select-text"
+    >
       <AnimatePresence mode="wait">
         {/* VIEW 1: Standard Sign In */}
         {viewMode === "signin" && (
@@ -245,16 +247,23 @@ export const SignIn: React.FC = () => {
             transition={{ duration: 0.25, ease: "easeOut" }}
             className="w-full"
           >
-            <div suppressHydrationWarning className="mb-8 text-center lg:text-left w-full flex flex-col items-center lg:items-start">
+            <div
+              suppressHydrationWarning
+              className="mb-8 text-center lg:text-left w-full flex flex-col items-center lg:items-start"
+            >
               <h1 className="text-2xl xl:text-3xl font-extrabold tracking-tight text-neutral-primary text-center lg:text-left">
                 Sign in to ELIMI
               </h1>
               <p className="text-neutral-secondary text-[14px] xl:text-[15px] leading-relaxed mt-2 max-w-sm font-normal text-center lg:text-left mx-auto lg:mx-0">
-                Access Elimi learning, your NSQ assessments, and WorkMaster profile.
+                Access Elimi learning, your NSQ assessments, and WorkMaster
+                profile.
               </p>
             </div>
 
-            <form onSubmit={handleSignInSubmit} className="w-full flex flex-col gap-6">
+            <form
+              onSubmit={handleSignInSubmit}
+              className="w-full flex flex-col gap-6"
+            >
               <Input
                 label="Email Address"
                 type="email"
@@ -264,7 +273,8 @@ export const SignIn: React.FC = () => {
                 error={errors.email}
                 onChange={(e) => {
                   setEmail(e.target.value);
-                  if (errors.email) setErrors((prev) => ({ ...prev, email: undefined }));
+                  if (errors.email)
+                    setErrors((prev) => ({ ...prev, email: undefined }));
                 }}
                 disabled={isSubmitting}
               />
@@ -278,20 +288,23 @@ export const SignIn: React.FC = () => {
                 error={errors.password}
                 onChange={(e) => {
                   setPassword(e.target.value);
-                  if (errors.password) setErrors((prev) => ({ ...prev, password: undefined }));
+                  if (errors.password)
+                    setErrors((prev) => ({ ...prev, password: undefined }));
                 }}
                 suffix={
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="focus:outline-none flex items-center justify-center p-1 cursor-pointer"
-                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    aria-label={
+                      showPassword ? "Hide password" : "Show password"
+                    }
                   >
                     {showPassword ? (
                       <FiEye className="w-5 h-5 text-text-dark/70" />
                     ) : (
                       <Image
-                        src={eyeClosedIcon}
+                        src={ASSETS_URL.eyeClosedIcon}
                         alt="Hide password"
                         width={20}
                         height={20}
@@ -303,7 +316,10 @@ export const SignIn: React.FC = () => {
                 disabled={isSubmitting}
               />
 
-              <div suppressHydrationWarning className="flex justify-between items-center w-full text-sm -mt-1 select-none">
+              <div
+                suppressHydrationWarning
+                className="flex justify-between items-center w-full text-sm -mt-1 select-none"
+              >
                 <Link
                   href="/enter-otp"
                   className="text-primary-solid font-bold text-xs xl:text-sm hover:text-primary-hover transition-colors"
@@ -330,12 +346,21 @@ export const SignIn: React.FC = () => {
                 </Button>
               </div>
 
-              <div suppressHydrationWarning className="w-full flex items-center gap-4 my-3 select-none">
-                <div suppressHydrationWarning className="flex-1 h-[1.5px] bg-border-gray" />
+              <div
+                suppressHydrationWarning
+                className="w-full flex items-center gap-4 my-3 select-none"
+              >
+                <div
+                  suppressHydrationWarning
+                  className="flex-1 h-[1.5px] bg-border-gray"
+                />
                 <span className="text-neutral-secondary text-xs xl:text-sm font-medium whitespace-nowrap">
                   or continue with
                 </span>
-                <div suppressHydrationWarning className="flex-1 h-[1.5px] bg-border-gray" />
+                <div
+                  suppressHydrationWarning
+                  className="flex-1 h-[1.5px] bg-border-gray"
+                />
               </div>
 
               <Button
@@ -356,7 +381,10 @@ export const SignIn: React.FC = () => {
                 Continue with Google
               </Button>
 
-              <div suppressHydrationWarning className="w-full text-center mt-3 text-sm select-none">
+              <div
+                suppressHydrationWarning
+                className="w-full text-center mt-3 text-sm select-none"
+              >
                 <span className="text-neutral-secondary font-normal">
                   Don&apos;t have an account?
                 </span>
@@ -382,7 +410,10 @@ export const SignIn: React.FC = () => {
             transition={{ duration: 0.25, ease: "easeOut" }}
             className="w-full"
           >
-            <div suppressHydrationWarning className="mb-8 text-center lg:text-left w-full flex flex-col items-center lg:items-start">
+            <div
+              suppressHydrationWarning
+              className="mb-8 text-center lg:text-left w-full flex flex-col items-center lg:items-start"
+            >
               <h1 className="text-2xl xl:text-3xl font-extrabold tracking-tight text-neutral-primary text-center lg:text-left">
                 Enter Your Email
               </h1>
@@ -391,7 +422,10 @@ export const SignIn: React.FC = () => {
               </p>
             </div>
 
-            <form onSubmit={handleSendCodeSubmit} className="w-full flex flex-col gap-6">
+            <form
+              onSubmit={handleSendCodeSubmit}
+              className="w-full flex flex-col gap-6"
+            >
               <Input
                 label="Email Address"
                 type="email"
@@ -401,7 +435,8 @@ export const SignIn: React.FC = () => {
                 error={errors.otpEmail}
                 onChange={(e) => {
                   setOtpEmail(e.target.value);
-                  if (errors.otpEmail) setErrors((prev) => ({ ...prev, otpEmail: undefined }));
+                  if (errors.otpEmail)
+                    setErrors((prev) => ({ ...prev, otpEmail: undefined }));
                 }}
                 disabled={isSubmitting}
               />
@@ -418,7 +453,10 @@ export const SignIn: React.FC = () => {
                 </Button>
               </div>
 
-              <div suppressHydrationWarning className="w-full text-center mt-3 text-sm select-none">
+              <div
+                suppressHydrationWarning
+                className="w-full text-center mt-3 text-sm select-none"
+              >
                 <span className="text-neutral-secondary font-normal">
                   Go to
                 </span>
@@ -445,24 +483,35 @@ export const SignIn: React.FC = () => {
             transition={{ duration: 0.25, ease: "easeOut" }}
             className="w-full"
           >
-            <div suppressHydrationWarning className="mb-6 text-center lg:text-left w-full flex flex-col items-center lg:items-start">
+            <div
+              suppressHydrationWarning
+              className="mb-6 text-center lg:text-left w-full flex flex-col items-center lg:items-start"
+            >
               <h1 className="text-2xl xl:text-3xl font-extrabold tracking-tight text-neutral-primary text-center lg:text-left">
                 Verify your Email
               </h1>
               <p className="text-neutral-secondary text-[14px] xl:text-[15px] leading-relaxed mt-1.5 max-w-sm font-normal text-center lg:text-left mx-auto lg:mx-0">
-                We sent a 6-digit code to{" "}
-                <span className="font-semibold text-neutral-primary">{maskEmail(otpEmail)}</span>. It
-                expires in 10 minutes.
+                We sent a 4-digit code to{" "}
+                <span className="font-semibold text-neutral-primary">
+                  {maskEmail(otpEmail)}
+                </span>
+                . It expires in 10 minutes.
               </p>
             </div>
 
-            <form onSubmit={handleVerifyEmailSubmit} className="w-full flex flex-col gap-6">
-              <div suppressHydrationWarning className="flex justify-between gap-2 w-full">
+            <form
+              onSubmit={handleVerifyEmailSubmit}
+              className="w-full flex flex-col gap-6"
+            >
+              <div
+                suppressHydrationWarning
+                className="flex justify-center gap-3 w-full"
+              >
                 {otpCode.map((val, index) => {
                   const firstEmptyIndex = otpCode.findIndex((v) => v === "");
                   const isFocused =
                     firstEmptyIndex === index ||
-                    (firstEmptyIndex === -1 && index === 5);
+                    (firstEmptyIndex === -1 && index === 3);
                   return (
                     <input
                       key={index}
@@ -500,11 +549,17 @@ export const SignIn: React.FC = () => {
                 </Button>
               </div>
 
-              <div suppressHydrationWarning className="text-center text-sm font-semibold text-neutral-secondary -mt-2 select-none">
+              <div
+                suppressHydrationWarning
+                className="text-center text-sm font-semibold text-neutral-secondary -mt-2 select-none"
+              >
                 {formatTime(timeLeft)}
               </div>
 
-              <div suppressHydrationWarning className="w-full text-center text-sm select-none -mt-2">
+              <div
+                suppressHydrationWarning
+                className="w-full text-center text-sm select-none -mt-2"
+              >
                 <span className="text-neutral-secondary font-normal">
                   Didn&apos;t get a code?
                 </span>
@@ -535,4 +590,3 @@ export const SignIn: React.FC = () => {
     </div>
   );
 };
-

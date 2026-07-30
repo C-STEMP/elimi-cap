@@ -10,20 +10,28 @@ interface ResidentialAddressSectionProps {
   onChange: (field: keyof ProfileFormData, value: any) => void;
 }
 
+const COUNTRY_OPTIONS = [
+  "Nigeria",
+  "Ghana",
+  "Kenya",
+  "South Africa",
+  "Other",
+];
+
 const STATE_OPTIONS = [
   "Lagos",
+  "Oyo",
   "Abuja (FCT)",
   "Enugu",
   "Rivers",
-  "Oyo",
   "Kano",
 ];
 const LGA_OPTIONS = [
   "Ikeja",
+  "Ibadan North",
   "Enugu North",
   "Port Harcourt",
   "Municipal",
-  "Ibadan North",
 ];
 
 export const ResidentialAddressSection: React.FC<
@@ -35,6 +43,13 @@ export const ResidentialAddressSection: React.FC<
         Residential Address
       </h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 xl:gap-5">
+        <Select
+          label="Country"
+          value={formData.country}
+          onChange={(e) => onChange("country", e.target.value)}
+          placeholder="Select"
+          options={COUNTRY_OPTIONS}
+        />
         <Select
           label="State of Residence"
           value={formData.stateOfResidence}
@@ -49,11 +64,8 @@ export const ResidentialAddressSection: React.FC<
           placeholder="Select"
           options={LGA_OPTIONS}
         />
-      </div>
-      <div className="w-full mt-1">
         <Input
-          label="Residential Address"
-          required
+          label="Street Address"
           value={formData.residentialAddress}
           onChange={(e) => onChange("residentialAddress", e.target.value)}
           placeholder="Street Address"

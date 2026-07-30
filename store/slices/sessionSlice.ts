@@ -7,7 +7,7 @@ export interface SessionState {
 }
 
 const initialState: SessionState = {
-  otpCode: ["4", "8", "2", "", "", ""],
+  otpCode: ["4", "8", "2", ""],
   flow: "signup",
   tempFormData: {},
 };

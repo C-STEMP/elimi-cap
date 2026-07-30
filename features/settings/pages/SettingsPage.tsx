@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { HeaderBanner } from "@/features/dashboard/components/HeaderBanner";
-import { userAvatar as defaultAvatar } from "@/assets";
+import { ASSETS_URL } from "@/assets";
 import { useAppSelector } from "@/store/hooks";
 import {
   SettingsTab,
@@ -26,11 +26,11 @@ export const SettingsPage: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<SettingsTab>("profile");
   const [verificationStatus, setVerificationStatus] =
-    useState<VerificationStatus>("not_verified");
+    useState<VerificationStatus>("verified");
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
 
-  const [avatarSrc, setAvatarSrc] = useState<any>(defaultAvatar);
+  const [avatarSrc, setAvatarSrc] = useState<any>(ASSETS_URL.userAvatar);
 
   const [profileForm, setProfileForm] = useState<ProfileFormData>({
     firstName: firstName,
@@ -41,6 +41,7 @@ export const SettingsPage: React.FC = () => {
     nationality: "",
     email: user?.email || "chidi.umeh@example.com",
     phone: user?.phoneNumber || "",
+    country: "Nigeria",
     stateOfResidence: "",
     lga: "",
     residentialAddress: "",
@@ -126,8 +127,8 @@ export const SettingsPage: React.FC = () => {
       <DeleteAccountModal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
-        onConfirmDelete={(surname) => {
-          console.log("Delete account confirmed for:", surname);
+        onConfirmDelete={(password) => {
+          console.log("Delete account confirmed with password:", password);
           setIsDeleteModalOpen(false);
         }}
       />

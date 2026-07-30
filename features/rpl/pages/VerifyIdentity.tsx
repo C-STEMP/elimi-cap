@@ -8,12 +8,7 @@ import { FiArrowLeft, FiArrowRight, FiCheckCircle } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import {
-  saveIcon,
-  loadingIcon,
-  successCheckmarkImg,
-  errorSymbolIcon,
-} from "@/assets";
+import { ASSETS_URL } from "@/assets";
 import { useAppDispatch } from "@/store/hooks";
 import { setSidebarVariant, setRplStep } from "@/store/slices/authSlice";
 import { validateNIN } from "@/lib/validation";
@@ -162,12 +157,13 @@ export const RPLVerifyIdentity: React.FC<RPLVerifyIdentityProps> = ({
               />
               <Button
                 type="submit"
-                variant="secondary"
-                size="lg"
-                leftIcon={<FiArrowRight className="w-5 h-5" />}
-                className="shrink-0 h-12"
+                variant="amber"
+                size="icon"
+                className="shrink-0 w-12 h-12 rounded-xl flex items-center justify-center"
                 title="Verify NIN"
-              />
+              >
+                <FiArrowRight className="w-5 h-5 text-white" />
+              </Button>
             </form>
           </div>
         )}
@@ -192,7 +188,7 @@ export const RPLVerifyIdentity: React.FC<RPLVerifyIdentityProps> = ({
           >
             <span>Save As Draft</span>
             <Image
-              src={saveIcon}
+              src={ASSETS_URL.saveIcon}
               alt="Save icon"
               width={20}
               height={20}
@@ -205,9 +201,9 @@ export const RPLVerifyIdentity: React.FC<RPLVerifyIdentityProps> = ({
             onClick={onContinue || (() => router.push("/rpl/review-submit"))}
             disabled={!isVerified}
             variant="amber"
-            size="lg"
-            rightIcon={<FiArrowRight className="w-5 h-5" />}
-            className="w-full max-w-sm"
+            size="md"
+            rightIcon={<FiArrowRight className="w-4.5 h-4.5" />}
+            className="px-8 h-11 text-white font-bold text-sm rounded-xl shadow-sm cursor-pointer whitespace-nowrap"
           >
             Continue
           </Button>
@@ -235,11 +231,12 @@ export const RPLVerifyIdentity: React.FC<RPLVerifyIdentityProps> = ({
               {modalState === "verifying" && (
                 <div className="flex flex-col items-center py-4">
                   <Image
-                    src={loadingIcon}
+                    src={ASSETS_URL.loadingIcon}
                     alt="Verifying..."
                     width={96}
                     height={96}
-                    className="w-24 h-24 mb-6 animate-spin"
+                    className="w-24 h-auto mb-6 animate-spin"
+                    style={{ width: "auto", height: "auto" }}
                   />
                   <h3 className="text-xl sm:text-2xl font-extrabold text-neutral-primary mb-3">
                     Verifying...
@@ -258,11 +255,13 @@ export const RPLVerifyIdentity: React.FC<RPLVerifyIdentityProps> = ({
               {modalState === "success" && (
                 <div className="flex flex-col items-center py-2 w-full">
                   <Image
-                    src={successCheckmarkImg}
+                    src={ASSETS_URL.successCheckmarkImg}
                     alt="Identity Confirmed"
                     width={144}
                     height={144}
-                    className="w-32 h-32 sm:w-36 sm:h-36 mb-6"
+                    className="w-32 h-auto sm:w-36 sm:h-auto mb-6 object-contain"
+                    style={{ width: "auto", height: "auto" }}
+                    priority
                   />
                   <h3 className="text-xl sm:text-2xl font-extrabold text-neutral-primary mb-3">
                     Identity Confirmed
@@ -296,11 +295,12 @@ export const RPLVerifyIdentity: React.FC<RPLVerifyIdentityProps> = ({
               {modalState === "error" && (
                 <div className="flex flex-col items-center py-2 w-full">
                   <Image
-                    src={errorSymbolIcon}
+                    src={ASSETS_URL.errorSymbolIcon}
                     alt="Verification Failed"
                     width={112}
                     height={112}
-                    className="w-28 h-28 mb-6"
+                    className="w-28 h-auto mb-6"
+                    style={{ width: "auto", height: "auto" }}
                   />
                   <h3 className="text-xl sm:text-2xl font-extrabold text-neutral-primary mb-2">
                     We couldn&apos;t verify your identity
