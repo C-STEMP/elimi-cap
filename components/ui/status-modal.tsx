@@ -68,10 +68,58 @@ export const StatusModal: React.FC<StatusModalProps> = ({
 
   const renderIcon = () => {
     if (customIcon) return customIcon;
-    if (variant === "payment-successful") return <PaymentSuccessIllustration />;
-    if (variant === "payment-cancelled") return <PaymentCancelledIllustration />;
-    if (variant === "payment-unsuccessful") return <PaymentUnsuccessfulIllustration />;
-    if (variant === "processing-payment") return <ProcessingPaymentIllustration />;
+    if (variant === "payment-successful") {
+      return (
+        <Image
+          src={ASSETS_URL.paymentSuccessfulIcon}
+          alt="Payment Successful"
+          width={180}
+          height={180}
+          className="w-auto h-auto object-contain"
+          style={{ width: "auto", height: "auto" }}
+          priority
+        />
+      );
+    }
+    if (variant === "payment-cancelled") {
+      return (
+        <Image
+          src={ASSETS_URL.paymentCancelledIcon}
+          alt="Payment Cancelled"
+          width={180}
+          height={180}
+          className="w-auto h-auto object-contain"
+          style={{ width: "auto", height: "auto" }}
+          priority
+        />
+      );
+    }
+    if (variant === "payment-unsuccessful") {
+      return (
+        <Image
+          src={ASSETS_URL.paymentUnsuccessfulIcon}
+          alt="Payment Unsuccessful"
+          width={180}
+          height={180}
+          className="w-auto h-auto object-contain"
+          style={{ width: "auto", height: "auto" }}
+          priority
+        />
+      );
+    }
+    if (variant === "processing-payment") {
+      return (
+        <Image
+          src={ASSETS_URL.loadingIcon}
+          alt="Processing Payment"
+          width={80}
+          height={80}
+          className="w-auto h-auto object-contain animate-spin my-4"
+          style={{ width: "auto", height: "auto" }}
+          priority
+        />
+      );
+    }
 
     if (variant === "draft-saved") {
       return (
@@ -80,8 +128,8 @@ export const StatusModal: React.FC<StatusModalProps> = ({
           alt="Progress Saved"
           width={180}
           height={180}
-          className="object-contain"
-          style={{ width: "180px", height: "auto" }}
+          className="w-auto h-auto object-contain"
+          style={{ width: "auto", height: "auto" }}
           priority
         />
       );
@@ -94,8 +142,8 @@ export const StatusModal: React.FC<StatusModalProps> = ({
           alt="Application Submitted"
           width={180}
           height={180}
-          className="object-contain"
-          style={{ width: "180px", height: "auto" }}
+          className="w-auto h-auto object-contain"
+          style={{ width: "auto", height: "auto" }}
           priority
         />
       );
@@ -108,8 +156,8 @@ export const StatusModal: React.FC<StatusModalProps> = ({
           alt={title || "Status"}
           width={180}
           height={180}
-          className="object-contain"
-          style={{ width: "180px", height: "auto" }}
+          className="w-auto h-auto object-contain"
+          style={{ width: "auto", height: "auto" }}
           priority
         />
       );
@@ -122,8 +170,8 @@ export const StatusModal: React.FC<StatusModalProps> = ({
           alt="Success Checkmark"
           width={180}
           height={180}
-          className="object-contain"
-          style={{ width: "180px", height: "auto" }}
+          className="w-auto h-auto object-contain"
+          style={{ width: "auto", height: "auto" }}
           priority
         />
       );
@@ -141,43 +189,43 @@ export const StatusModal: React.FC<StatusModalProps> = ({
     (variant === "draft-saved"
       ? "Progress Saved"
       : variant === "application-submitted"
-      ? "Application Submit"
-      : variant === "payment-successful"
-      ? "Payment Successful"
-      : variant === "payment-cancelled"
-      ? "Payment Cancelled"
-      : variant === "payment-unsuccessful"
-      ? "Payment Unsuccessful"
-      : variant === "processing-payment"
-      ? "Processing Payment"
-      : "Success");
+        ? "Application Submit"
+        : variant === "payment-successful"
+          ? "Payment Successful"
+          : variant === "payment-cancelled"
+            ? "Payment Cancelled"
+            : variant === "payment-unsuccessful"
+              ? "Payment Unsuccessful"
+              : variant === "processing-payment"
+                ? "Processing Payment"
+                : "Success");
 
   const modalDescription =
     description ||
     (variant === "draft-saved"
       ? "Great! Your progress has been securely saved as a draft. You can return at any time to continue your application from where you left off. No information you've entered will be lost."
       : variant === "application-submitted"
-      ? "Thank you for submitting your Recognition of Prior Learning (RPL) application. Your application has been successfully submitted and is now awaiting review by your selected Assessment Centre."
-      : variant === "payment-successful"
-      ? "Your payment was made successfully"
-      : variant === "payment-cancelled"
-      ? "Your payment was cancelled"
-      : variant === "payment-unsuccessful"
-      ? "Your payment was not successful"
-      : variant === "processing-payment"
-      ? "Please wait while we process your payment"
-      : "");
+        ? "Thank you for submitting your Recognition of Prior Learning (RPL) application. Your application has been successfully submitted and is now awaiting review by your selected Assessment Centre."
+        : variant === "payment-successful"
+          ? "Your payment was made successfully"
+          : variant === "payment-cancelled"
+            ? "Your payment was cancelled"
+            : variant === "payment-unsuccessful"
+              ? "Your payment was not successful"
+              : variant === "processing-payment"
+                ? "Please wait while we process your payment"
+                : "");
 
   const modalActionLabel =
     actionLabel !== undefined
       ? actionLabel
       : variant === "payment-successful"
-      ? "Start Folder Arrangement"
-      : variant === "payment-cancelled" || variant === "payment-unsuccessful"
-      ? "Try again"
-      : variant === "processing-payment"
-      ? undefined
-      : "Go To Dashboard";
+        ? "Start Folder Arrangement"
+        : variant === "payment-cancelled" || variant === "payment-unsuccessful"
+          ? "Try again"
+          : variant === "processing-payment"
+            ? undefined
+            : "Go To Dashboard";
 
   return (
     <div
@@ -213,9 +261,9 @@ export const StatusModal: React.FC<StatusModalProps> = ({
         {modalActionLabel && (onAction || onClose) && (
           <Button
             onClick={onAction || onClose}
-            variant="secondary"
+            variant="amber"
             size="lg"
-            className="w-full h-12.5 text-white font-bold text-base bg-secondary hover:bg-secondary-hover mt-8 transition-all shadow-sm cursor-pointer rounded-xl"
+            className="w-full h-12.5 text-white font-bold text-base bg-[#fbab2a] hover:bg-[#e89b1f] mt-8 transition-all shadow-sm cursor-pointer rounded-xl"
           >
             {modalActionLabel}
           </Button>
@@ -224,4 +272,3 @@ export const StatusModal: React.FC<StatusModalProps> = ({
     </div>
   );
 };
-

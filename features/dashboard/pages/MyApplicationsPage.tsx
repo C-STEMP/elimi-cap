@@ -11,6 +11,7 @@ import {
   FiPlus,
 } from "react-icons/fi";
 import { HeaderBanner } from "@/features/dashboard/components/HeaderBanner";
+import { Button } from "@/components/ui/button";
 
 export interface ApplicationRecord {
   id: string;
@@ -210,14 +211,14 @@ export const MyApplicationsPage: React.FC = () => {
               started with your Recognition of Prior Learning journey.
             </p>
 
-            <button
-              type="button"
+            <Button
+              variant="secondary"
               onClick={handleCreateApplication}
-              className="bg-[#fbab2a] hover:bg-[#e89b1f] active:scale-95 text-white font-semibold text-sm px-7 py-3 rounded-xl shadow-sm transition-all cursor-pointer flex items-center gap-2"
+              rightIcon={<FiPlus className="w-4 h-4 stroke-[2.5]" />}
+              className="px-7 py-3 rounded-xl shadow-sm transition-all cursor-pointer flex items-center gap-2"
             >
               Create Application
-              <FiPlus className="w-4 h-4 stroke-[2.5]" />
-            </button>
+            </Button>
           </div>
         ) : (
           <div className="flex-1 flex flex-col justify-between py-4">

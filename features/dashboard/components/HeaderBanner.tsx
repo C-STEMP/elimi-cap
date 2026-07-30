@@ -17,6 +17,7 @@ interface HeaderBannerProps {
   showCreateButton?: boolean;
   createButtonText?: string;
   createButtonHref?: string;
+  rightAction?: React.ReactNode;
 }
 
 const NAV_LINKS = [
@@ -34,20 +35,18 @@ export const HeaderBanner: React.FC<HeaderBannerProps> = ({
   showCreateButton = true,
   createButtonText = "Create Application",
   createButtonHref = "/onboarding/assessment-type?from=dashboard",
+  rightAction,
 }) => {
   const pathname = usePathname();
   const router = useRouter();
 
   return (
     <div className="bg-[#a31d38] rounded-[22px] px-6 lg:px-8 py-5 text-white shadow-md mb-6">
-      {/* Top Navigation Row */}
       <div className="flex items-center justify-between border-b border-white/10 pb-5">
-        {/* Brand Logo */}
         <Link href="/dashboard" className="flex items-center group">
           <Logo theme="light" width={80} />
         </Link>
 
-        {/* Navigation Pills */}
         <nav className="hidden md:flex items-center gap-3">
           {NAV_LINKS.map((link) => {
             const isActive =
@@ -146,18 +145,21 @@ export const HeaderBanner: React.FC<HeaderBannerProps> = ({
           </h1>
         )}
 
-        {showCreateButton && (
-          <button
-            type="button"
-            onClick={() => router.push(createButtonHref)}
-            className="bg-[#fbab2a] hover:bg-[#e89b1f] active:scale-95 text-white font-semibold text-xs sm:text-sm px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-sm transition-all cursor-pointer shrink-0"
-          >
-            {createButtonText}
-            <FiPlus className="w-4 h-4 stroke-[2.5]" />
-          </button>
+        {rightAction ? (
+          rightAction
+        ) : (
+          showCreateButton && (
+            <button
+              type="button"
+              onClick={() => router.push(createButtonHref)}
+              className="bg-[#fbab2a] hover:bg-[#e89b1f] active:scale-95 text-white font-semibold text-xs sm:text-sm px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-sm transition-all cursor-pointer shrink-0"
+            >
+              {createButtonText}
+              <FiPlus className="w-4 h-4 stroke-[2.5]" />
+            </button>
+          )
         )}
       </div>
     </div>
   );
 };
-

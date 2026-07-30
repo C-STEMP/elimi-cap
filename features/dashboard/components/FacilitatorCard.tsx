@@ -4,6 +4,7 @@ import React from "react";
 import Image from "next/image";
 import type { StaticImageData } from "next/image";
 import { FiUser } from "react-icons/fi";
+import { Button } from "@/components/ui/button";
 
 export interface FacilitatorData {
   name: string;
@@ -26,9 +27,8 @@ export const FacilitatorCard: React.FC<FacilitatorCardProps> = ({
   const isAssigned = !!facilitator;
 
   return (
-    <div className="bg-white rounded-[22px] p-6 shadow-sm border border-gray-100 flex flex-col items-center text-center justify-between h-full min-h-[260px]">
+    <div className="bg-white rounded-[22px] p-6 shadow-sm border border-gray-100 flex flex-col items-center text-center justify-between h-full min-h-65">
       {!isAssigned ? (
-        /* Empty State */
         <div className="flex flex-col items-center justify-between h-full w-full">
           <div className="flex flex-col items-center my-auto">
             <div className="w-16 h-16 rounded-full bg-[#fdf2f4] border border-[#fce3e7] flex items-center justify-center mb-4">
@@ -38,7 +38,7 @@ export const FacilitatorCard: React.FC<FacilitatorCardProps> = ({
             <h4 className="text-gray-900 font-bold text-base mb-2">
               No facilitator assigned yet
             </h4>
-            <p className="text-gray-400 text-xs leading-relaxed max-w-[240px] mb-4">
+            <p className="text-gray-400 text-xs leading-relaxed max-w-60 mb-4">
               A coordinator will be assigned to guide you once your first
               application is created.
             </p>
@@ -53,7 +53,6 @@ export const FacilitatorCard: React.FC<FacilitatorCardProps> = ({
           </button>
         </div>
       ) : (
-        /* Assigned State */
         <div className="flex flex-col items-center justify-between h-full w-full">
           <div className="flex flex-col items-center my-auto">
             <div className="relative w-16 h-16 rounded-full overflow-hidden mb-3 border-2 border-white shadow-sm shrink-0">
@@ -86,19 +85,17 @@ export const FacilitatorCard: React.FC<FacilitatorCardProps> = ({
           </div>
 
           {countdownTimer ? (
-            /* Countdown Timer Box (Matching Image 1) */
             <div className="w-full bg-[#fff8eb] border border-[#fde68a] text-[#fbab2a] font-bold text-base py-3 rounded-xl select-none mt-auto shadow-2xs">
               {countdownTimer}
             </div>
           ) : (
-            /* Request A Call Button (Matching Image 4 & 5) */
-            <button
-              type="button"
+            <Button
+              variant="secondary"
               onClick={onRequestCall}
-              className="w-full bg-[#fbab2a] hover:bg-[#e89b1f] active:scale-95 text-white font-semibold text-xs sm:text-sm py-3.5 rounded-xl transition-all shadow-sm cursor-pointer mt-auto"
+              className="w-full bg-[#fbab2a]! hover:bg-[#e89b1f] active:scale-95 text-white font-semibold text-xs sm:text-sm py-3.5 rounded-xl transition-all shadow-sm cursor-pointer mt-auto"
             >
               Request A Call
-            </button>
+            </Button>
           )}
         </div>
       )}
