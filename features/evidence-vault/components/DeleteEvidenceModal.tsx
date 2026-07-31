@@ -26,7 +26,6 @@ export const DeleteEvidenceModal: React.FC<DeleteEvidenceModalProps> = ({
           exit={{ opacity: 0, scale: 0.94 }}
           className="bg-white rounded-[28px] p-8 sm:p-10 max-w-sm w-full flex flex-col items-center text-center shadow-2xl relative"
         >
-          {/* Soft Pink Close Square Button */}
           <button
             type="button"
             onClick={onClose}
@@ -35,20 +34,17 @@ export const DeleteEvidenceModal: React.FC<DeleteEvidenceModalProps> = ({
             <FiX className="w-5 h-5 stroke-[2.5]" />
           </button>
 
-          {/* Large Red Trash Can Icon Illustration */}
           <div className="w-24 h-24 rounded-full bg-[#fee2e2] flex items-center justify-center mb-6 text-[#dc2626]">
             <FiTrash2 className="w-14 h-14" />
           </div>
 
-          {/* Title & Description */}
-          <h3 className="text-xl sm:text-2xl font-extrabold text-gray-900 tracking-tight mb-2">
+          <h3 className="text-xl sm:text-2xl font-extrabold text-black tracking-tight mb-2">
             Delete Evidence
           </h3>
           <p className="text-gray-500 text-xs sm:text-sm font-normal leading-relaxed mb-6 max-w-[260px]">
             Are you sure you want to delete this evidence? This action cannot be reversed.
           </p>
 
-          {/* Dark Red Delete Evidence Button */}
           <button
             type="button"
             onClick={onConfirmDelete}

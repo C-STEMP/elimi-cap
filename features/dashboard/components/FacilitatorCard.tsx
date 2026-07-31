@@ -35,7 +35,7 @@ export const FacilitatorCard: React.FC<FacilitatorCardProps> = ({
               <FiUser className="w-7 h-7 text-[#f2a8b5] stroke-[1.5]" />
             </div>
 
-            <h4 className="text-gray-900 font-bold text-base mb-2">
+            <h4 className="text-black font-bold text-base mb-2">
               No facilitator assigned yet
             </h4>
             <p className="text-gray-400 text-xs leading-relaxed max-w-60 mb-4">
@@ -65,7 +65,7 @@ export const FacilitatorCard: React.FC<FacilitatorCardProps> = ({
               />
             </div>
 
-            <h4 className="text-gray-900 font-bold text-base mb-0.5">
+            <h4 className="text-black font-bold text-base mb-0.5">
               {facilitator.name}
             </h4>
             <p className="text-gray-400 text-xs font-normal mb-3">

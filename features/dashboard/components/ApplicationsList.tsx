@@ -2,7 +2,8 @@
 
 import React from "react";
 import Link from "next/link";
-import { FiChevronRight, FiFolder } from "react-icons/fi";
+import { FiChevronRight, FiFolder, FiPlus } from "react-icons/fi";
+import { Button } from "@/components/ui/button";
 
 export interface ApplicationItem {
   id: string;
@@ -49,16 +50,17 @@ export const ApplicationsList: React.FC<ApplicationsListProps> = ({
             Click &quot;Create Application&quot; in the top header to get
             started with your Recognition of Prior Learning journey.
           </p>
-          <button
-            type="button"
+          <Button
+            variant="secondary"
+            rightIcon={<FiPlus className="w-4 h-4 stroke-[2.5]" />}
             onClick={() =>
               (window.location.href =
                 "/onboarding/assessment-type?from=dashboard")
             }
             className="bg-secondary hover:bg-[#e89b1f] active:scale-95 text-white font-semibold text-sm px-6 py-2.5 rounded-xl shadow-sm transition-all cursor-pointer flex items-center gap-1.5"
           >
-            Start Assessment +
-          </button>
+            Create Application
+          </Button>
         </div>
       ) : (
         <div className="flex flex-col gap-3.5 flex-1 justify-center">

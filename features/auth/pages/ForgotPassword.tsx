@@ -34,24 +34,14 @@ export const ForgotPassword: React.FC = () => {
     setIsSubmitting(true);
     setTimeout(() => {
       setIsSubmitting(false);
-
-      if (email.trim() === "chidi.umeh@email.com") {
-        toast({
-          type: "success",
-          title: "Verification Sent",
-          description: "A verification code has been sent to your email address.",
-        });
-        setTimeout(() => {
-          router.push("/verify");
-        }, 800);
-      } else {
-        setError("No account found with this email address");
-        toast({
-          type: "error",
-          title: "Account Not Found",
-          description: "No account found with this email address.",
-        });
-      }
+      toast({
+        type: "success",
+        title: "Verification Sent",
+        description: "A verification code has been sent to your email address.",
+      });
+      setTimeout(() => {
+        router.push("/verify");
+      }, 800);
     }, 1200);
   };
 

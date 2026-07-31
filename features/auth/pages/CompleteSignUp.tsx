@@ -34,7 +34,8 @@ export const CompleteSignUp: React.FC = () => {
   
   const { toast } = useToast();
   const router = useRouter();
-  const email = "chidi.umeh@email.com";
+  const searchParams = useSearchParams();
+  const email = searchParams.get("email") || "user@email.com";
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

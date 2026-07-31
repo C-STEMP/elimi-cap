@@ -63,7 +63,7 @@ export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
                   <button
                     type="button"
                     onClick={() => onPreview(item)}
-                    className="w-8 h-8 rounded bg-black/10 hover:bg-black/20 flex items-center justify-center text-black transition-colors cursor-pointer shrink-0"
+                    className="w-8 h-8 rounded bg-[#1E7F4C1A] hover:bg-black/20 flex items-center justify-center text-black transition-colors cursor-pointer shrink-0"
                     aria-label={`View ${item.name}`}
                   >
                     <FiEye className="w-4 sm:w-5 h-4 sm:h-5 stroke-2" />
@@ -100,7 +100,7 @@ export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
           <div className="w-16 h-16 rounded-full bg-[#fdf2f4] text-[#a31d38] flex items-center justify-center mb-4">
             <FiFolder className="w-8 h-8" />
           </div>
-          <h3 className="text-lg font-bold text-gray-900 mb-1">
+          <h3 className="text-lg font-bold text-black mb-1">
             No Evidence Uploaded Yet
           </h3>
           <p className="text-gray-400 text-xs sm:text-sm max-w-sm mb-6">

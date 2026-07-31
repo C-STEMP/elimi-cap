@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { FiFileText, FiDownload } from "react-icons/fi";
 import { useToast } from "@/components/ui/toast";
 import { RESOURCES_LIST, ResourceRecord } from "../utils/evidenceConstants";
 import Image from "next/image";
@@ -50,7 +49,7 @@ export const ResourcesSection: React.FC = () => {
                   description: `Downloading ${res.name}`,
                 })
               }
-              className="w-7 h-7 bg-black/10 hover:bg-black/20 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+              className="w-7 h-7 bg-[#1E7F4C1A] hover:bg-black/20 flex items-center justify-center transition-colors cursor-pointer shrink-0"
               aria-label={`Download ${res.name}`}
             >
               <Image

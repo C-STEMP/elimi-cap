@@ -8,6 +8,8 @@ import { FiArrowLeft, FiArrowRight } from "react-icons/fi";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { StatusModal } from "@/components/ui/status-modal";
+import { useAppDispatch } from "@/store/hooks";
+import { createApplication } from "@/store/slices/applicationSlice";
 
 import {
   startApplicationSchema,
@@ -65,6 +67,7 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
 
   const { toast } = useToast();
   const router = useRouter();
+  const dispatch = useAppDispatch();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,6 +88,12 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
 
     setErrors({});
     setIsSubmitting(true);
+
+    dispatch(createApplication({
+      title: trade,
+      subtitle: "Recognition Of Prior Learning",
+    }));
+
     setTimeout(() => {
       setIsSubmitting(false);
       if (onContinue) {

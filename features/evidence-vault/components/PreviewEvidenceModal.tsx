@@ -39,12 +39,12 @@ export const PreviewEvidenceModal: React.FC<PreviewEvidenceModalProps> = ({
               <FiFileText className="w-5 h-5" />
             </div>
             <div>
-              <h4 className="font-bold text-gray-900">{item.name}</h4>
+              <h4 className="font-bold text-black">{item.name}</h4>
               <span className="text-xs text-gray-400">{item.size}</span>
             </div>
           </div>
 
-          <div className="bg-[#F5F6FA] p-6 rounded-2xl flex flex-col items-center justify-center text-center border border-gray-100 mb-6">
+          <div className="bg-input-bg p-6 rounded-2xl flex flex-col items-center justify-center text-center border border-gray-100 mb-6">
             <FiFileText className="w-12 h-12 text-[#a31d38] mb-2" />
             <span className="text-xs text-gray-500">Document Preview</span>
           </div>

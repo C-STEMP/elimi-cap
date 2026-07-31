@@ -1,64 +1,36 @@
 "use client";
 
-import React, { useState } from "react";
-import { useSearchParams } from "next/navigation";
+import React from "react";
 import { motion } from "framer-motion";
 import { HeaderBanner } from "@/features/dashboard/components/HeaderBanner";
 import { LearningPromoCard } from "@/features/dashboard/components/LearningPromoCard";
 import { StatsCards } from "@/features/dashboard/components/StatsCards";
-import {
-  ApplicationsList,
-  ApplicationItem,
-} from "@/features/dashboard/components/ApplicationsList";
-import {
-  UpcomingCard,
-  InterviewData,
-} from "@/features/dashboard/components/UpcomingCard";
-import {
-  FacilitatorCard,
-  FacilitatorData,
-} from "@/features/dashboard/components/FacilitatorCard";
+import { ApplicationsList } from "@/features/dashboard/components/ApplicationsList";
+import { UpcomingCard } from "@/features/dashboard/components/UpcomingCard";
 import { CalendarWidget } from "@/features/dashboard/components/CalendarWidget";
 import { VerifiedBadge } from "@/features/dashboard/components/VerifiedBadge";
 import { useAppSelector } from "@/store/hooks";
-import { ASSETS_URL } from "@/assets";
-
-const POPULATED_APPLICATIONS: ApplicationItem[] = [
-  {
-    id: "app-1",
-    title: "Carpentry",
-    subtitle: "Recognition Of Prior Learning",
-    status: "Not Started",
-  },
-];
-
-const POPULATED_INTERVIEW: InterviewData = {
-  title: "Panel Interview",
-  date: "22-07-2026",
-  time: "12:00PM",
-};
-
-const POPULATED_FACILITATOR: FacilitatorData = {
-  name: "Ngozi Eze",
-  avatar: ASSETS_URL.userAvatar,
-  role: "Facilitator · Carpentry (Level 3)",
-  tags: ["Carpentry", "RPL Coordinator"],
-};
 
 export const Dashboard: React.FC = () => {
   const user = useAppSelector((state) => state.auth.user);
-  const firstName = user?.fullName?.split(" ")[0] || "Chidi";
-  const searchParams = useSearchParams();
-  const isSubmitted = searchParams?.get("status") === "submitted";
+  const applications = useAppSelector((state) => state.application.applications);
+  const firstName = user?.fullName?.split(" ")[0] || "User";
 
-  const [demoState, setDemoState] = useState<"empty" | "populated">("empty");
+  const activeCount = applications.filter(
+    (app) => app.status !== "interview_completed" && app.status !== "certification" && app.status !== "draft"
+  ).length;
+  const completedCount = applications.filter(
+    (app) => app.status === "interview_completed" || app.status === "certification"
+  ).length;
 
-  const isPopulated = demoState === "populated" || isSubmitted;
-
-  const applications = isPopulated ? POPULATED_APPLICATIONS : [];
-  const activeCount = isPopulated ? 3 : 0;
-  const completedCount = isPopulated ? 1 : 0;
-  const interview = isPopulated ? POPULATED_INTERVIEW : null;
+  const applicationItems = applications.map((app) => ({
+    id: app.id,
+    title: app.title,
+    subtitle: app.subtitle,
+    status: (app.status === "draft" ? "Not Started" : 
+            app.status === "interview_completed" || app.status === "certification" ? "Completed" : 
+            "In Progress") as "Not Started" | "In Progress" | "Completed",
+  }));
 
   return (
     <motion.div
@@ -70,9 +42,7 @@ export const Dashboard: React.FC = () => {
       <HeaderBanner userName={firstName} />
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Main Content Area (8 Columns) */}
         <div className="lg:col-span-9 flex flex-col gap-6">
-          {/* Top Row: Promo Card & Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch">
             <div className="md:col-span-8">
               <LearningPromoCard />
@@ -85,15 +55,17 @@ export const Dashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Applications List */}
-          <ApplicationsList applications={applications} />
+          <ApplicationsList applications={applicationItems} />
         </div>
 
-        {/* Right Sidebar Column (4 Columns) */}
         <div className="lg:col-span-3 flex flex-col gap-6">
           <CalendarWidget />
-          <UpcomingCard interview={interview} />
-          <VerifiedBadge isVerified={isPopulated} />
+          <UpcomingCard interview={{
+            title: "Panel Interview",
+            date: "22-07-2026",
+            time: "12:00PM",
+          }} />
+          <VerifiedBadge isVerified={false} />
         </div>
       </div>
     </motion.div>

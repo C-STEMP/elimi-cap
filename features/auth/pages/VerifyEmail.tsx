@@ -17,7 +17,7 @@ export const VerifyEmail: React.FC = () => {
   const router = useRouter();
   const { toast } = useToast();
 
-  const rawEmail = "chidi.umeh@email.com";
+  const rawEmail = searchParams.get("email") || "user@email.com";
 
   const maskEmail = (emailStr: string) => {
     if (!emailStr) return "chidi*****@email.com";

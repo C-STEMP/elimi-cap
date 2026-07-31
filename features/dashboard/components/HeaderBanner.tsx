@@ -7,6 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { FiPlus, FiBell, FiLogOut, FiChevronLeft } from "react-icons/fi";
 import { ASSETS_URL } from "@/assets";
 import { Logo } from "@/components/ui/logo";
+import { Button } from "@/components/ui/button";
 
 interface HeaderBannerProps {
   userName?: string;
@@ -145,20 +146,18 @@ export const HeaderBanner: React.FC<HeaderBannerProps> = ({
           </h1>
         )}
 
-        {rightAction ? (
-          rightAction
-        ) : (
-          showCreateButton && (
-            <button
-              type="button"
-              onClick={() => router.push(createButtonHref)}
-              className="bg-[#fbab2a] hover:bg-[#e89b1f] active:scale-95 text-white font-semibold text-xs sm:text-sm px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-sm transition-all cursor-pointer shrink-0"
-            >
-              {createButtonText}
-              <FiPlus className="w-4 h-4 stroke-[2.5]" />
-            </button>
-          )
-        )}
+        {rightAction
+          ? rightAction
+          : showCreateButton && (
+              <Button
+                variant="secondary"
+                onClick={() => router.push(createButtonHref)}
+                className="bg-[#fbab2a] hover:bg-[#e89b1f] active:scale-95 text-white font-semibold text-xs sm:text-sm px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-sm transition-all cursor-pointer shrink-0"
+              >
+                {createButtonText}
+                <FiPlus className="w-4 h-4 stroke-[2.5]" />
+              </Button>
+            )}
       </div>
     </div>
   );

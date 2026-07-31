@@ -19,7 +19,7 @@ import {
 } from "@/lib/validation";
 
 export const SignUpEmail: React.FC = () => {
-  const [email, setEmail] = useState("chidi.umeh@email.com");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);

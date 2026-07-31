@@ -12,7 +12,7 @@ export const passwordSchema = z
   .regex(/[A-Z]/, "Include at least one uppercase letter")
   .regex(/[a-z]/, "Include at least one lowercase letter")
   .regex(/[0-9]/, "Include at least one number")
-  .regex(/[@$!%*?&#_]/, "Include at least one special character (@, #, $, %, etc.)");
+  .regex(/[^A-Za-z0-9]/, "Include at least one special character");
 
 export const confirmPasswordSchema = (password: string) =>
   z
@@ -226,8 +226,8 @@ export function getPasswordCriteria(password: string): PasswordCriterion[] {
     },
     {
       id: "special",
-      label: "One special character (e.g. @, #, $, %)",
-      isValid: /[@$!%*?&#_]/.test(password),
+      label: "One special character (e.g. !, @, #, -, etc.)",
+      isValid: /[^A-Za-z0-9]/.test(password),
     },
   ];
 }

@@ -6,12 +6,20 @@ import {
 import { localStorage, sessionStorage } from "./storage";
 import { authReducer } from "./slices/authSlice";
 import { sessionReducer } from "./slices/sessionSlice";
+import { applicationReducer } from "./slices/applicationSlice";
 
 // LocalStorage configuration for Auth
 const authPersistConfig = {
   key: "auth",
   storage: localStorage,
   whitelist: ["user", "token", "isAuthenticated"],
+};
+
+// LocalStorage configuration for Applications
+const applicationPersistConfig = {
+  key: "applications",
+  storage: localStorage,
+  whitelist: ["applications", "currentApplicationId"],
 };
 
 // SessionStorage configuration for Session
@@ -24,6 +32,7 @@ const sessionPersistConfig = {
 const rootReducer = combineReducers({
   auth: persistReducer(authPersistConfig, authReducer),
   session: persistReducer(sessionPersistConfig, sessionReducer),
+  application: persistReducer(applicationPersistConfig, applicationReducer),
 });
 
 export const store = configureStore({

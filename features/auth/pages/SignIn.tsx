@@ -95,24 +95,12 @@ export const SignIn: React.FC = () => {
     setIsSubmitting(true);
     setTimeout(() => {
       setIsSubmitting(false);
-      if (email === "chidi.umeh@email.com" && password === "password123") {
-        toast({
-          type: "success",
-          title: "Welcome Back",
-          description: "You have successfully signed in",
-        });
-        router.push("/onboarding");
-      } else {
-        setErrors({
-          email: "Invalid email or password",
-          password: "Invalid email or password",
-        });
-        toast({
-          type: "error",
-          title: "Incorrect Details",
-          description: "Invalid email or password",
-        });
-      }
+      toast({
+        type: "success",
+        title: "Welcome Back",
+        description: "You have successfully signed in",
+      });
+      router.push("/onboarding");
     }, 1200);
   };
 
