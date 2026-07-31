@@ -1,8 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
-import { FiArrowRight } from "react-icons/fi";
+import { FiArrowLeft, FiArrowRight, FiCheck } from "react-icons/fi";
+import { motion } from "framer-motion";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { InfoIcon } from "@/components/ui/info-icon";
+import { StatusModal } from "@/components/ui/status-modal";
+import { ASSETS_URL } from "@/assets";
 import { MOCK_EVIDENCE_OPTIONS } from "../utils/constants";
 
 interface Step3Props {
@@ -11,6 +17,8 @@ interface Step3Props {
 }
 
 export const Step3Reflection: React.FC<Step3Props> = ({ onNext, onBack }) => {
+  const router = useRouter();
+  const [showDraftModal, setShowDraftModal] = useState(false);
   const [selectedEvidences, setSelectedEvidences] = useState<string[]>([]);
 
   const toggleEvidence = (option: string) => {
@@ -22,49 +30,57 @@ export const Step3Reflection: React.FC<Step3Props> = ({ onNext, onBack }) => {
   };
 
   return (
-    <div className="flex flex-col flex-1 p-6 sm:p-8 overflow-y-auto">
-      <div className="flex flex-col max-w-xl mb-6">
-        <h3 className="text-[#A31D38] font-bold text-xl sm:text-2xl mb-1.5">
+    <motion.div
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+      className="w-full flex flex-col gap-6 select-text max-w-2xl mx-auto pb-12"
+    >
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl xl:text-[26px] font-extrabold tracking-tight text-primary">
           Step 3 of 4: Reflect on Your Experience
-        </h3>
-        <p className="text-gray-400 text-xs sm:text-sm leading-relaxed">
+        </h1>
+        <p className="text-neutral-secondary text-xs sm:text-sm font-normal mt-1">
           Tell us more about your practical experience, the skills you're most
           confident in, and the evidence you can provide to support your
           competency claims.
         </p>
+
+        <h2 className="text-xl xl:text-2xl font-bold tracking-tight text-neutral-primary mt-4 flex items-center gap-1.5">
+          Reflection Question <InfoIcon sectionName="Reflection Question" />
+        </h2>
       </div>
 
-      <div className="space-y-6 mb-8">
-        <h4 className="font-bold text-black text-sm sm:text-base">
-          Reflection Question
-        </h4>
-
-        <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-1.5">
+          <label className="text-text-dark font-medium text-xs xl:text-sm leading-[1.4] select-none">
             Which tasks are you most confident performing?
           </label>
           <textarea
             rows={3}
             placeholder="Tell us about the work you perform confidently and the responsibilities you usually handle."
-            className="w-full bg-input-bg border border-transparent focus:border-[#A31D38] rounded-xl p-3.5 text-xs sm:text-sm text-black outline-none resize-none transition-colors"
+            className="w-full bg-input-bg border border-transparent focus:border-primary rounded-xl p-3.5 text-xs sm:text-sm text-neutral-primary outline-none resize-none transition-colors"
           />
         </div>
 
-        <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+        <div className="flex flex-col gap-1.5">
+          <label className="text-text-dark font-medium text-xs xl:text-sm leading-[1.4] select-none">
             Which skills would you like to improve?
           </label>
           <textarea
             rows={3}
             placeholder="Mention any areas where you would like additional experience, coaching, or training."
-            className="w-full bg-input-bg border border-transparent focus:border-[#A31D38] rounded-xl p-3.5 text-xs sm:text-sm text-black outline-none resize-none transition-colors"
+            className="w-full bg-input-bg border border-transparent focus:border-primary rounded-xl p-3.5 text-xs sm:text-sm text-neutral-primary outline-none resize-none transition-colors"
           />
         </div>
 
-        <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-2">
+        <div className="flex flex-col gap-4 mt-2">
+          <h2 className="text-xl xl:text-2xl font-bold tracking-tight text-neutral-primary flex items-center gap-1.5">
+            Evidence Summary <InfoIcon sectionName="Evidence Summary" />
+          </h2>
+          <p className="text-neutral-secondary text-xs sm:text-sm font-normal">
             Which evidence can you provide? (Multiple Selection)
-          </label>
+          </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {MOCK_EVIDENCE_OPTIONS.map((option) => {
@@ -73,53 +89,84 @@ export const Step3Reflection: React.FC<Step3Props> = ({ onNext, onBack }) => {
                 <div
                   key={option}
                   onClick={() => toggleEvidence(option)}
-                  className={`bg-input-bg rounded-xl p-3.5 flex items-center justify-between cursor-pointer border transition-colors ${
-                    isSelected ? "border-[#A31D38]" : "border-transparent"
-                  }`}
+                  className={`
+                    flex items-center justify-between p-3.5 h-20
+                    bg-input-bg rounded-xl border cursor-pointer select-none transition-all duration-200
+                    ${
+                      isSelected
+                        ? "border-secondary bg-white ring-1 ring-secondary/40 shadow-xs"
+                        : "border-[#D9D9D980] hover:border-gray-300"
+                    }
+                  `}
                 >
-                  <span className="text-xs font-medium text-gray-800 leading-snug">
+                  <span className="text-xs xl:text-sm font-medium text-text-dark leading-tight pr-2">
                     {option}
                   </span>
                   <div
-                    className={`w-4 h-4 rounded-md border flex items-center justify-center shrink-0 ${
-                      isSelected
-                        ? "bg-[#A31D38] border-[#A31D38] text-white"
-                        : "border-gray-300 bg-white"
-                    }`}
+                    className={`
+                      w-5 h-5 rounded border flex items-center justify-center transition-all shrink-0
+                      ${
+                        isSelected
+                          ? "bg-secondary border-secondary text-white"
+                          : "border-border-gray bg-inherit"
+                      }
+                    `}
                   >
-                    {isSelected && (
-                      <span className="text-[10px] font-bold">✓</span>
-                    )}
+                    {isSelected && <FiCheck className="w-3 h-3 stroke-3" />}
                   </div>
                 </div>
               );
             })}
           </div>
         </div>
+
+        <div className="flex items-center justify-between mt-8 pt-4 border-t border-gray-100 gap-4">
+          <button
+            type="button"
+            onClick={onBack}
+            className="flex items-center gap-2 text-neutral-secondary hover:text-neutral-primary font-semibold text-sm transition-colors cursor-pointer select-none focus:outline-none"
+          >
+            <FiArrowLeft className="w-4 h-4" />
+            Back
+          </button>
+
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setShowDraftModal(true)}
+              className="px-5 h-11 bg-white border border-secondary text-secondary hover:bg-secondary/10 font-semibold text-sm rounded-lg flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer whitespace-nowrap"
+            >
+              <span>Save As Draft</span>
+              <Image
+                src={ASSETS_URL.saveIcon}
+                alt="Save icon"
+                width={20}
+                height={20}
+                className="w-5 h-5 shrink-0"
+              />
+            </button>
+
+            <Button
+              type="button"
+              onClick={onNext}
+              variant="amber"
+              size="md"
+              rightIcon={<FiArrowRight className="w-4.5 h-4.5" />}
+              className="px-8 h-11 text-white font-bold text-sm rounded-xl shadow-sm cursor-pointer whitespace-nowrap"
+            >
+              Continue
+            </Button>
+          </div>
+        </div>
       </div>
 
-      <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-100">
-        <Button
-          type="button"
-          onClick={onBack}
-          variant="ghost"
-          size="sm"
-          className="text-gray-500 hover:text-gray-800 font-semibold"
-        >
-          &larr; Back
-        </Button>
-
-        <Button
-          type="button"
-          onClick={onNext}
-          variant="amber"
-          size="lg"
-          rounded="xl"
-          rightIcon={<FiArrowRight className="w-4 h-4 stroke-[2.5]" />}
-        >
-          Continue
-        </Button>
-      </div>
-    </div>
+      <StatusModal
+        isOpen={showDraftModal}
+        variant="draft-saved"
+        onClose={() => setShowDraftModal(false)}
+        onAction={() => router.push("/dashboard")}
+      />
+    </motion.div>
   );
 };
+

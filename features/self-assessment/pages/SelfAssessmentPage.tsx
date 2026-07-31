@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { Logo } from "@/components/ui/logo";
 import { SelfAssessmentSidebar } from "../components/SelfAssessmentSidebar";
 import { Step1PersonalInfo } from "../components/Step1PersonalInfo";
 import { Step2Competencies } from "../components/Step2Competencies";
@@ -52,48 +52,62 @@ export const SelfAssessmentPage: React.FC<SelfAssessmentPageProps> = ({
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      className="w-full min-h-screen flex flex-col lg:flex-row"
+    <div
+      suppressHydrationWarning
+      className="min-h-screen w-full flex flex-col lg:flex-row bg-primary-solid lg:bg-white font-sans antialiased overflow-y-auto lg:overflow-hidden"
     >
+      <div
+        suppressHydrationWarning
+        className="w-full bg-primary-solid pt-8 pb-10 flex items-center justify-center lg:hidden shrink-0"
+      >
+        <Logo theme="light" href="/" />
+      </div>
+
       <SelfAssessmentSidebar currentStep={currentStep} />
 
-      <div className="flex-1 flex flex-col min-w-0 bg-white relative overflow-hidden min-h-screen lg:min-h-screen lg:h-screen lg:overflow-y-auto">
-        {currentStep === 1 && (
-          <Step1PersonalInfo
-            onNext={() => setCurrentStep(2)}
-            onBack={() => router.push(`/dashboard/applications/${id}`)}
-          />
-        )}
+      <div
+        suppressHydrationWarning
+        className="flex-1 w-full bg-white rounded-t-4xl lg:rounded-none -mt-4 lg:mt-0 p-6 sm:p-8 md:p-10 xl:p-12 flex flex-col items-center justify-start relative min-h-[calc(100vh-100px)] lg:min-h-screen lg:h-screen lg:overflow-y-auto shadow-xl lg:shadow-none"
+      >
+        <div
+          suppressHydrationWarning
+          className="w-full flex flex-col items-center my-auto py-6 sm:py-8 shrink-0"
+        >
+          {currentStep === 1 && (
+            <Step1PersonalInfo
+              onNext={() => setCurrentStep(2)}
+              onBack={() => router.push(`/dashboard/applications/${id}`)}
+            />
+          )}
 
-        {currentStep === 2 && (
-          <Step2Competencies
-            onNext={() => setCurrentStep(3)}
-            onBack={() => setCurrentStep(1)}
-          />
-        )}
+          {currentStep === 2 && (
+            <Step2Competencies
+              onNext={() => setCurrentStep(3)}
+              onBack={() => setCurrentStep(1)}
+            />
+          )}
 
-        {currentStep === 3 && (
-          <Step3Reflection
-            onNext={() => setCurrentStep(4)}
-            onBack={() => setCurrentStep(2)}
-          />
-        )}
+          {currentStep === 3 && (
+            <Step3Reflection
+              onNext={() => setCurrentStep(4)}
+              onBack={() => setCurrentStep(2)}
+            />
+          )}
 
-        {currentStep === 4 && (
-          <Step4Declaration
-            onSubmit={() => setIsSubmitted(true)}
-            onBack={() => setCurrentStep(3)}
-          />
-        )}
+          {currentStep === 4 && (
+            <Step4Declaration
+              onSubmit={() => setIsSubmitted(true)}
+              onBack={() => setCurrentStep(3)}
+            />
+          )}
+        </div>
       </div>
 
       <SelfAssessmentSuccessModal
         isOpen={isSubmitted}
         onNavigateToVault={handleNavigateToVault}
       />
-    </motion.div>
+    </div>
   );
 };
+

@@ -1,8 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
-import { FiCheck, FiArrowRight } from "react-icons/fi";
+import { FiCheck, FiArrowLeft, FiArrowRight } from "react-icons/fi";
+import { motion } from "framer-motion";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { InfoIcon } from "@/components/ui/info-icon";
+import { StatusModal } from "@/components/ui/status-modal";
+import { ASSETS_URL } from "@/assets";
 
 interface Step4Props {
   onSubmit: () => void;
@@ -10,6 +16,9 @@ interface Step4Props {
 }
 
 export const Step4Declaration: React.FC<Step4Props> = ({ onSubmit, onBack }) => {
+  const router = useRouter();
+  const [showDraftModal, setShowDraftModal] = useState(false);
+
   const [checkedItems, setCheckedItems] = useState<Record<number, boolean>>({
     1: true,
     2: false,
@@ -22,127 +31,156 @@ export const Step4Declaration: React.FC<Step4Props> = ({ onSubmit, onBack }) => 
   };
 
   return (
-    <div className="flex flex-col flex-1 p-6 sm:p-8 overflow-y-auto">
-      <div className="flex flex-col max-w-xl mb-6">
-        <h3 className="text-[#A31D38] font-bold text-xl sm:text-2xl mb-1.5">
+    <motion.div
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+      className="w-full flex flex-col gap-6 select-text max-w-2xl mx-auto pb-12"
+    >
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl xl:text-[26px] font-extrabold tracking-tight text-primary">
           Step 4 of 4: Candidate Declaration
-        </h3>
-        <p className="text-gray-400 text-xs sm:text-sm leading-relaxed">
+        </h1>
+        <p className="text-neutral-secondary text-xs sm:text-sm font-normal mt-1">
           Please confirm the information below before submitting your self-assessment.
         </p>
+
+        <h2 className="text-xl xl:text-2xl font-bold tracking-tight text-neutral-primary mt-4 flex items-center gap-1.5">
+          Declaration <InfoIcon sectionName="Declaration" />
+        </h2>
       </div>
 
-      <div className="space-y-4 mb-8">
-        <h4 className="font-bold text-black text-sm sm:text-base">
-          Declaration
-        </h4>
-
-        <div
+      <div className="flex flex-col gap-4">
+        <label
           onClick={() => toggleCheck(1)}
-          className="flex items-start gap-3 cursor-pointer select-none"
+          className="flex items-start gap-3 cursor-pointer group select-none"
         >
           <div
-            className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 mt-0.5 transition-colors ${
+            className={`w-5 h-5 mt-0.5 rounded border flex items-center justify-center transition-all shrink-0 ${
               checkedItems[1]
-                ? "bg-[#A31D38] text-white"
-                : "border border-gray-300 bg-white"
+                ? "bg-primary border-primary text-white"
+                : "bg-white border-gray-300 group-hover:border-gray-400"
             }`}
           >
-            {checkedItems[1] && <FiCheck className="w-3.5 h-3.5 stroke-[3]" />}
+            {checkedItems[1] && <FiCheck className="w-3.5 h-3.5 stroke-3" />}
           </div>
-          <span className="text-xs sm:text-sm font-medium text-gray-700 leading-relaxed">
+          <span className="text-sm xl:text-base text-neutral-primary font-medium leading-6">
             I confirm that the information provided in this self-assessment is true and
             based on my own knowledge, skills, and work experience.
           </span>
-        </div>
+        </label>
 
-        <div
+        <label
           onClick={() => toggleCheck(2)}
-          className="flex items-start gap-3 cursor-pointer select-none"
+          className="flex items-start gap-3 cursor-pointer group select-none"
         >
           <div
-            className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 mt-0.5 transition-colors ${
+            className={`w-5 h-5 mt-0.5 rounded border flex items-center justify-center transition-all shrink-0 ${
               checkedItems[2]
-                ? "bg-[#A31D38] text-white"
-                : "border border-gray-300 bg-white"
+                ? "bg-primary border-primary text-white"
+                : "bg-white border-gray-300 group-hover:border-gray-400"
             }`}
           >
-            {checkedItems[2] && <FiCheck className="w-3.5 h-3.5 stroke-[3]" />}
+            {checkedItems[2] && <FiCheck className="w-3.5 h-3.5 stroke-3" />}
           </div>
-          <span className="text-xs sm:text-sm font-medium text-gray-700 leading-relaxed">
+          <span className="text-sm xl:text-base text-neutral-primary font-medium leading-6">
             I understand that this self-assessment will be reviewed as part of my RPL
             application.
           </span>
-        </div>
+        </label>
 
-        <div
+        <label
           onClick={() => toggleCheck(3)}
-          className="flex items-start gap-3 cursor-pointer select-none"
+          className="flex items-start gap-3 cursor-pointer group select-none"
         >
           <div
-            className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 mt-0.5 transition-colors ${
+            className={`w-5 h-5 mt-0.5 rounded border flex items-center justify-center transition-all shrink-0 ${
               checkedItems[3]
-                ? "bg-[#A31D38] text-white"
-                : "border border-gray-300 bg-white"
+                ? "bg-primary border-primary text-white"
+                : "bg-white border-gray-300 group-hover:border-gray-400"
             }`}
           >
-            {checkedItems[3] && <FiCheck className="w-3.5 h-3.5 stroke-[3]" />}
+            {checkedItems[3] && <FiCheck className="w-3.5 h-3.5 stroke-3" />}
           </div>
-          <span className="text-xs sm:text-sm font-medium text-gray-700 leading-relaxed">
+          <span className="text-sm xl:text-base text-neutral-primary font-medium leading-6">
             I understand that additional evidence may be requested during the
             assessment process.
           </span>
-        </div>
+        </label>
 
-        <div
+        <label
           onClick={() => toggleCheck(4)}
-          className="flex items-start gap-3 cursor-pointer select-none"
+          className="flex items-start gap-3 cursor-pointer group select-none"
         >
           <div
-            className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 mt-0.5 transition-colors ${
+            className={`w-5 h-5 mt-0.5 rounded border flex items-center justify-center transition-all shrink-0 ${
               checkedItems[4]
-                ? "bg-[#A31D38] text-white"
-                : "border border-gray-300 bg-white"
+                ? "bg-primary border-primary text-white"
+                : "bg-white border-gray-300 group-hover:border-gray-400"
             }`}
           >
-            {checkedItems[4] && <FiCheck className="w-3.5 h-3.5 stroke-[3]" />}
+            {checkedItems[4] && <FiCheck className="w-3.5 h-3.5 stroke-3" />}
           </div>
-          <span className="text-xs sm:text-sm font-medium text-gray-700 leading-relaxed">
+          <span className="text-sm xl:text-base text-neutral-primary font-medium leading-6">
             I agree to the ELIMI{" "}
-            <span className="text-[#A31D38] font-bold underline cursor-pointer">
+            <span className="text-primary font-bold underline cursor-pointer">
               Terms & Conditions
             </span>{" "}
             and{" "}
-            <span className="text-[#A31D38] font-bold underline cursor-pointer">
+            <span className="text-primary font-bold underline cursor-pointer">
               Privacy Policy
             </span>
             .
           </span>
+        </label>
+
+        <div className="flex items-center justify-between mt-8 pt-4 border-t border-gray-100 gap-4">
+          <button
+            type="button"
+            onClick={onBack}
+            className="flex items-center gap-2 text-neutral-secondary hover:text-neutral-primary font-semibold text-sm transition-colors cursor-pointer select-none focus:outline-none"
+          >
+            <FiArrowLeft className="w-4 h-4" />
+            Back
+          </button>
+
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setShowDraftModal(true)}
+              className="px-5 h-11 bg-white border border-secondary text-secondary hover:bg-secondary/10 font-semibold text-sm rounded-lg flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer whitespace-nowrap"
+            >
+              <span>Save As Draft</span>
+              <Image
+                src={ASSETS_URL.saveIcon}
+                alt="Save icon"
+                width={20}
+                height={20}
+                className="w-5 h-5 shrink-0"
+              />
+            </button>
+
+            <Button
+              type="button"
+              onClick={onSubmit}
+              variant="amber"
+              size="md"
+              rightIcon={<FiArrowRight className="w-4.5 h-4.5" />}
+              className="px-8 h-11 text-white font-bold text-sm rounded-xl shadow-sm cursor-pointer whitespace-nowrap"
+            >
+              Submit
+            </Button>
+          </div>
         </div>
       </div>
 
-      <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-100">
-        <Button
-          type="button"
-          onClick={onBack}
-          variant="ghost"
-          size="sm"
-          className="text-gray-500 hover:text-gray-800 font-semibold"
-        >
-          &larr; Back
-        </Button>
-
-        <Button
-          type="button"
-          onClick={onSubmit}
-          variant="amber"
-          size="lg"
-          rounded="xl"
-          rightIcon={<FiArrowRight className="w-4 h-4 stroke-[2.5]" />}
-        >
-          Submit
-        </Button>
-      </div>
-    </div>
+      <StatusModal
+        isOpen={showDraftModal}
+        variant="draft-saved"
+        onClose={() => setShowDraftModal(false)}
+        onAction={() => router.push("/dashboard")}
+      />
+    </motion.div>
   );
 };
+
