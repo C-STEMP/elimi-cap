@@ -64,10 +64,14 @@ export const ApplicationStageCard: React.FC<ApplicationStageCardProps> = ({
               leftIcon={stage.actionLeftIcon}
               rightIcon={stage.actionRightIcon}
               loading={stage.actionLoading}
-              className={`shrink-0 font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl transition-all cursor-pointer shadow-2xs ${
-                isOutline
-                  ? "bg-white! hover:bg-amber-50/40 text-secondary! border border-gray-100"
-                  : "bg-white! hover:bg-amber-50/40 text-secondary! border border-gray-100"
+              className={`shrink-0 font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl transition-all cursor-pointer shadow-2xs focus:outline-none focus:ring-0 focus:ring-transparent focus-visible:outline-none focus-visible:ring-0 active:outline-none outline-none ${
+                stage.actionText === "View"
+                  ? "bg-white! text-secondary! border border-gray-200! hover:bg-gray-50!"
+                  : stage.actionText === "Make Payment"
+                  ? "bg-white! text-[#FBAB2A]! border border-gray-200! hover:bg-gray-50!"
+                  : isOutline
+                  ? "bg-white! text-secondary! border border-gray-200! hover:bg-gray-50!"
+                  : "bg-[#FBAB2A]! text-white! hover:bg-[#E89B1F]!"
               }`}
             >
               {stage.actionText}

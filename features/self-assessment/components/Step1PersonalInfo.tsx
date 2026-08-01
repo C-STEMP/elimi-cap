@@ -8,11 +8,14 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { DatePicker } from "@/components/ui/date-picker";
 import { PassportUpload } from "@/components/ui/passport-upload";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { InfoIcon } from "@/components/ui/info-icon";
 import { StatusModal } from "@/components/ui/status-modal";
+import { useToast } from "@/components/ui/toast";
 import { ASSETS_URL } from "@/assets";
+import { selfAssessmentStep1Schema, extractZodErrors } from "@/lib/validation";
 
 interface Step1Props {
   onNext: () => void;
@@ -24,7 +27,10 @@ export const Step1PersonalInfo: React.FC<Step1Props> = ({
   onBack,
 }) => {
   const router = useRouter();
+  const { toast } = useToast();
   const [showDraftModal, setShowDraftModal] = useState(false);
+  const [passportFile, setPassportFile] = useState<File | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -39,11 +45,51 @@ export const Step1PersonalInfo: React.FC<Step1Props> = ({
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
   };
 
   const handleSelectChange = (e: { target: { name: string; value: string } }) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
+  };
+
+  const validateForm = () => {
+    let valid = true;
+    const newErrors: Record<string, string> = {};
+
+    if (!passportFile) {
+      newErrors.passport = "Passport photograph is required";
+      valid = false;
+    }
+
+    const result = selfAssessmentStep1Schema.safeParse(formData);
+    if (!result.success) {
+      Object.assign(newErrors, extractZodErrors(result));
+      valid = false;
+    }
+
+    setErrors(newErrors);
+    return valid;
+  };
+
+  const handleContinue = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!validateForm()) {
+      toast({
+        type: "error",
+        title: "Input Required",
+        description: "Please upload your passport photograph and fill in all required fields.",
+      });
+      return;
+    }
+    onNext();
   };
 
   return (
@@ -69,10 +115,19 @@ export const Step1PersonalInfo: React.FC<Step1Props> = ({
           </h2>
         </div>
 
-        <PassportUpload />
+        <PassportUpload
+          required
+          error={errors.passport}
+          onImageChange={(file) => {
+            setPassportFile(file);
+            if (errors.passport) {
+              setErrors((prev) => ({ ...prev, passport: "" }));
+            }
+          }}
+        />
       </div>
 
-      <div className="w-full flex flex-col gap-5">
+      <form onSubmit={handleContinue} className="w-full flex flex-col gap-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input
             label={
@@ -83,6 +138,7 @@ export const Step1PersonalInfo: React.FC<Step1Props> = ({
             name="firstName"
             placeholder="First name"
             value={formData.firstName}
+            error={errors.firstName}
             onChange={handleChange}
           />
 
@@ -95,6 +151,7 @@ export const Step1PersonalInfo: React.FC<Step1Props> = ({
             name="lastName"
             placeholder="Surname"
             value={formData.lastName}
+            error={errors.lastName}
             onChange={handleChange}
           />
         </div>
@@ -108,7 +165,7 @@ export const Step1PersonalInfo: React.FC<Step1Props> = ({
             onChange={handleChange}
           />
 
-          <Input
+          <DatePicker
             label={
               <span>
                 Date Of Birth<span className="text-primary-solid ml-0.5">*</span>
@@ -116,10 +173,15 @@ export const Step1PersonalInfo: React.FC<Step1Props> = ({
             }
             name="dob"
             placeholder="dd/mm/yyyy"
+            maxYear={new Date().getFullYear() - 18}
             value={formData.dob}
-            onChange={handleChange}
-            suffix={<FiCalendar className="w-4 h-4 text-gray-400" />}
+            error={errors.dob}
+            onChange={(val) => {
+              setFormData((prev) => ({ ...prev, dob: val }));
+              if (errors.dob) setErrors((prev) => ({ ...prev, dob: "" }));
+            }}
           />
+
         </div>
 
         <div className="flex flex-col gap-4 mt-2">
@@ -138,6 +200,7 @@ export const Step1PersonalInfo: React.FC<Step1Props> = ({
               name="email"
               placeholder="Select"
               value={formData.email}
+              error={errors.email}
               onChange={handleChange}
             />
 
@@ -149,9 +212,11 @@ export const Step1PersonalInfo: React.FC<Step1Props> = ({
               }
               name="phone"
               value={formData.phone}
-              onChange={(val) =>
-                setFormData((prev) => ({ ...prev, phone: val }))
-              }
+              error={errors.phone}
+              onChange={(val) => {
+                setFormData((prev) => ({ ...prev, phone: val }));
+                if (errors.phone) setErrors((prev) => ({ ...prev, phone: "" }));
+              }}
             />
           </div>
         </div>
@@ -170,6 +235,7 @@ export const Step1PersonalInfo: React.FC<Step1Props> = ({
               }
               name="state"
               value={formData.state}
+              error={errors.state}
               onChange={handleSelectChange}
               options={["Lagos", "Abuja", "Oyo"]}
               placeholder="Select"
@@ -183,6 +249,7 @@ export const Step1PersonalInfo: React.FC<Step1Props> = ({
               }
               name="lga"
               value={formData.lga}
+              error={errors.lga}
               onChange={handleSelectChange}
               options={["Ikeja", "Eti-Osa", "Surulere"]}
               placeholder="Select"
@@ -198,6 +265,7 @@ export const Step1PersonalInfo: React.FC<Step1Props> = ({
             name="address"
             placeholder="Street Address"
             value={formData.address}
+            error={errors.address}
             onChange={handleChange}
           />
         </div>
@@ -225,12 +293,12 @@ export const Step1PersonalInfo: React.FC<Step1Props> = ({
                 width={20}
                 height={20}
                 className="w-5 h-5 shrink-0"
+                style={{ width: "auto", height: "auto" }}
               />
             </button>
 
             <Button
-              type="button"
-              onClick={onNext}
+              type="submit"
               variant="amber"
               size="md"
               rightIcon={<FiArrowRight className="w-4.5 h-4.5" />}
@@ -240,7 +308,7 @@ export const Step1PersonalInfo: React.FC<Step1Props> = ({
             </Button>
           </div>
         </div>
-      </div>
+      </form>
 
       <StatusModal
         isOpen={showDraftModal}
@@ -251,4 +319,5 @@ export const Step1PersonalInfo: React.FC<Step1Props> = ({
     </motion.div>
   );
 };
+
 

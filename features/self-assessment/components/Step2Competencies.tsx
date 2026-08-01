@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { InfoIcon } from "@/components/ui/info-icon";
 import { StatusModal } from "@/components/ui/status-modal";
+import { useToast } from "@/components/ui/toast";
 import { ASSETS_URL } from "@/assets";
 import { MOCK_COMPETENCIES } from "../utils/constants";
 
@@ -30,7 +31,9 @@ const EVIDENCE_OPTIONS = [
 
 export const Step2Competencies: React.FC<Step2Props> = ({ onNext, onBack }) => {
   const router = useRouter();
+  const { toast } = useToast();
   const [showDraftModal, setShowDraftModal] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [competencyAnswers, setCompetencyAnswers] = useState<
     Record<number, { confidence: string; evidence: string; experience: string }>
@@ -39,15 +42,68 @@ export const Step2Competencies: React.FC<Step2Props> = ({ onNext, onBack }) => {
   const handleConfidenceChange = (idx: number, val: string) => {
     setCompetencyAnswers((prev) => ({
       ...prev,
-      [idx]: { ...prev[idx], confidence: val },
+      [idx]: { ...prev[idx], confidence: val, experience: prev[idx]?.experience || "" },
     }));
+    if (errors[`confidence_${idx}`]) {
+      setErrors((prev) => ({ ...prev, [`confidence_${idx}`]: "" }));
+    }
   };
 
   const handleEvidenceChange = (idx: number, val: string) => {
     setCompetencyAnswers((prev) => ({
       ...prev,
-      [idx]: { ...prev[idx], evidence: val },
+      [idx]: { ...prev[idx], evidence: val, experience: prev[idx]?.experience || "" },
     }));
+    if (errors[`evidence_${idx}`]) {
+      setErrors((prev) => ({ ...prev, [`evidence_${idx}`]: "" }));
+    }
+  };
+
+  const handleExperienceChange = (idx: number, val: string) => {
+    setCompetencyAnswers((prev) => ({
+      ...prev,
+      [idx]: { ...prev[idx], confidence: prev[idx]?.confidence || "", evidence: prev[idx]?.evidence || "", experience: val },
+    }));
+    if (errors[`experience_${idx}`]) {
+      setErrors((prev) => ({ ...prev, [`experience_${idx}`]: "" }));
+    }
+  };
+
+  const validateForm = () => {
+    let valid = true;
+    const newErrors: Record<string, string> = {};
+
+    MOCK_COMPETENCIES.forEach((_, idx) => {
+      const ans = competencyAnswers[idx];
+      if (!ans?.confidence) {
+        newErrors[`confidence_${idx}`] = "Please select your confidence level";
+        valid = false;
+      }
+      if (!ans?.evidence) {
+        newErrors[`evidence_${idx}`] = "Please select an evidence option";
+        valid = false;
+      }
+      if (!ans?.experience || !ans.experience.trim()) {
+        newErrors[`experience_${idx}`] = "Please describe your experience";
+        valid = false;
+      }
+    });
+
+    setErrors(newErrors);
+    return valid;
+  };
+
+  const handleContinue = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!validateForm()) {
+      toast({
+        type: "error",
+        title: "Input Required",
+        description: "Please complete all competency questions before continuing.",
+      });
+      return;
+    }
+    onNext();
   };
 
   return (
@@ -72,7 +128,7 @@ export const Step2Competencies: React.FC<Step2Props> = ({ onNext, onBack }) => {
         </h2>
       </div>
 
-      <div className="flex flex-col gap-6">
+      <form onSubmit={handleContinue} className="flex flex-col gap-6">
         {MOCK_COMPETENCIES.map((title, idx) => (
           <div key={idx} className="flex flex-col gap-4 pb-6 border-b border-gray-100/80">
             <h3 className="font-extrabold text-neutral-primary text-base xl:text-lg">
@@ -89,6 +145,7 @@ export const Step2Competencies: React.FC<Step2Props> = ({ onNext, onBack }) => {
               options={CONFIDENCE_OPTIONS}
               placeholder="Select"
               value={competencyAnswers[idx]?.confidence || ""}
+              error={errors[`confidence_${idx}`]}
               onChange={(e) => handleConfidenceChange(idx, e.target.value)}
             />
 
@@ -102,18 +159,30 @@ export const Step2Competencies: React.FC<Step2Props> = ({ onNext, onBack }) => {
               options={EVIDENCE_OPTIONS}
               placeholder="Select"
               value={competencyAnswers[idx]?.evidence || ""}
+              error={errors[`evidence_${idx}`]}
               onChange={(e) => handleEvidenceChange(idx, e.target.value)}
             />
 
             <div className="flex flex-col gap-1.5">
               <label className="text-text-dark font-medium text-xs xl:text-sm leading-[1.4] select-none">
-                Tell us about your experience
+                Tell us about your experience <span className="text-primary-solid ml-0.5">*</span>
               </label>
               <textarea
                 rows={2}
                 placeholder="Describe a real situation where you demonstrated this competency."
-                className="w-full bg-input-bg border border-transparent focus:border-primary rounded-xl p-3.5 text-xs sm:text-sm text-neutral-primary outline-none resize-none transition-colors"
+                value={competencyAnswers[idx]?.experience || ""}
+                onChange={(e) => handleExperienceChange(idx, e.target.value)}
+                className={`w-full bg-input-bg border ${
+                  errors[`experience_${idx}`]
+                    ? "border-red-500 focus:border-red-500"
+                    : "border-transparent focus:border-primary"
+                } rounded-xl p-3.5 text-xs sm:text-sm text-neutral-primary outline-none resize-none transition-colors`}
               />
+              {errors[`experience_${idx}`] && (
+                <span className="text-red-500 text-xs font-normal">
+                  {errors[`experience_${idx}`]}
+                </span>
+              )}
             </div>
           </div>
         ))}
@@ -141,12 +210,12 @@ export const Step2Competencies: React.FC<Step2Props> = ({ onNext, onBack }) => {
                 width={20}
                 height={20}
                 className="w-5 h-5 shrink-0"
+                style={{ width: "auto", height: "auto" }}
               />
             </button>
 
             <Button
-              type="button"
-              onClick={onNext}
+              type="submit"
               variant="amber"
               size="md"
               rightIcon={<FiArrowRight className="w-4.5 h-4.5" />}
@@ -156,7 +225,7 @@ export const Step2Competencies: React.FC<Step2Props> = ({ onNext, onBack }) => {
             </Button>
           </div>
         </div>
-      </div>
+      </form>
 
       <StatusModal
         isOpen={showDraftModal}
@@ -167,4 +236,5 @@ export const Step2Competencies: React.FC<Step2Props> = ({ onNext, onBack }) => {
     </motion.div>
   );
 };
+
 

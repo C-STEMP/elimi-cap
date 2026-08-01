@@ -24,6 +24,7 @@ import submitedIcon from "@/assets/icons/submited.svg";
 import fileIcon from "@/assets/icons/file.svg";
 import fileGreenIcon from "@/assets/icons/file-green.svg";
 import validationApprovalIcon from "@/assets/icons/validation-approval.svg";
+import validationWarningIcon from "@/assets/icons/validation-warning.svg";
 
 import paymentCancelledIcon from "@/assets/icons/payment-cancelled.svg";
 import paymentSuccessfulIcon from "@/assets/icons/payment-successful.svg";
@@ -57,4 +58,5 @@ export const ASSETS_URL = {
   paymentCancelledIcon,
   paymentSuccessfulIcon,
   paymentUnsuccessfulIcon,
+  validationWarningIcon,
 };

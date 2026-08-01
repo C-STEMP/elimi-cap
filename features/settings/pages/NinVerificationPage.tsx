@@ -59,7 +59,7 @@ export const NinVerificationPage: React.FC = () => {
   return (
     <div className="fixed inset-0 z-50 bg-white flex flex-col lg:flex-row h-screen w-screen overflow-hidden font-sans antialiased">
       {/* Left Sidebar - Full Height Auth Sidebar Structure */}
-      <div className="hidden lg:flex lg:w-[40%] h-screen sticky top-0 shrink-0 bg-primary-solid flex-col justify-between p-12 xl:p-16 overflow-hidden select-none relative">
+      <div className="hidden lg:flex lg:w-[40%] h-screen sticky top-0 shrink-0 bg-primary-solid flex-col justify-between p-12 xl:p-16 overflow-hidden select-none">
         <FloatingCircles />
 
         <div className="relative z-10 flex flex-col h-full justify-between">
@@ -228,8 +228,8 @@ export const NinVerificationPage: React.FC = () => {
                   style={{ width: "auto", height: "auto" }}
                 />
               ) : (
-                <div className="w-20 h-20 rounded-full bg-gradient-to-b from-[#66bb6a] to-[#2e7d32] flex items-center justify-center shadow-lg shadow-green-600/30">
-                  <FiCheck className="w-10 h-10 text-white stroke-[3]" />
+                <div className="w-20 h-20 rounded-full bg-linear-to-b from-[#66bb6a] to-[#2e7d32] flex items-center justify-center shadow-lg shadow-green-600/30">
+                  <FiCheck className="w-10 h-10 text-white stroke-3" />
                 </div>
               )}
             </div>
@@ -273,7 +273,7 @@ export const NinVerificationPage: React.FC = () => {
                 />
               ) : (
                 <div className="w-20 h-20 rounded-full bg-red-500 flex items-center justify-center shadow-lg shadow-red-500/30">
-                  <FiX className="w-10 h-10 text-white stroke-[3]" />
+                  <FiX className="w-10 h-10 text-white stroke-3" />
                 </div>
               )}
             </div>
@@ -289,7 +289,7 @@ export const NinVerificationPage: React.FC = () => {
               Please review your information and try again.
             </p>
 
-            <div className="bg-[#fffdf0] border border-[#fde68a] rounded-2xl p-4 text-left font-medium text-xs mb-5 w-full space-y-1">
+            <div className="bg-neutral-burgundy border border-[#fde68a] rounded-2xl p-4 text-left font-medium text-xs mb-5 w-full space-y-1">
               <span className="text-[#92400e] font-bold block mb-1.5">
                 Before trying again, check that:
               </span>

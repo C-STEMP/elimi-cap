@@ -24,7 +24,7 @@ export const VerifiedBadge: React.FC<VerifiedBadgeProps> = ({
         <div className="flex items-center gap-3.5">
           <div className="w-10 h-10 rounded-full bg-[#f8d7da] flex items-center justify-center shrink-0">
             <Image
-              src={ASSETS_URL.validationApprovalIcon}
+              src={ASSETS_URL.validationWarningIcon}
               alt="Not Verified"
               width={24}
               height={24}

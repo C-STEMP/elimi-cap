@@ -37,7 +37,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ref,
   ) => {
     const baseStyles =
-      "relative inline-flex items-center justify-center font-medium transition-all duration-200 ease-out focus:outline-none focus:ring-2 focus:ring-offset-2 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none cursor-pointer whitespace-nowrap select-none";
+      "relative inline-flex items-center justify-center font-medium transition-all duration-200 ease-out focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 active:outline-none outline-none active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none cursor-pointer whitespace-nowrap select-none";
 
     const sizeStyles = {
       xs: "text-xs px-3 py-1.5 gap-1.5",
@@ -59,20 +59,20 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     const variantStyles = {
       primary:
-        "bg-primary hover:bg-primary-hover text-white border-transparent focus:ring-primary/50 shadow-xs",
+        "bg-primary hover:bg-primary-hover text-white border-transparent shadow-xs",
       secondary:
-        "bg-secondary hover:bg-secondary-hover text-white border-transparent focus:ring-secondary/50 shadow-xs",
+        "bg-secondary hover:bg-secondary-hover text-white border-transparent shadow-xs",
       outline:
-        "bg-white hover:bg-gray-50/80 text-text-dark border border-border-gray/80 focus:ring-gray-100 shadow-xs",
+        "bg-white hover:bg-gray-50/80 text-text-dark border border-border-gray/80 shadow-xs",
       danger:
-        "bg-red-600 hover:bg-red-700 text-white border-transparent focus:ring-red-500/50 shadow-xs",
+        "bg-red-600 hover:bg-red-700 text-white border-transparent shadow-xs",
       ghost:
-        "bg-transparent hover:bg-gray-100 text-text-dark border-transparent focus:ring-gray-100 shadow-xs",
-      link: "bg-transparent hover:underline text-primary hover:text-primary-hover border-transparent focus:ring-primary/50 p-0 shadow-xs",
+        "bg-transparent hover:bg-gray-100 text-text-dark border-transparent shadow-xs",
+      link: "bg-transparent hover:underline text-primary hover:text-primary-hover border-transparent p-0 shadow-xs",
       amber:
-        "bg-[#fbab2a] hover:bg-[#e89b1f] text-white border-transparent focus:ring-amber-500/30 font-bold shadow-xs",
+        "bg-[#fbab2a] hover:bg-[#e89b1f] text-white border-transparent font-bold shadow-xs",
       success:
-        "bg-green-600 hover:bg-green-700 text-white border-transparent focus:ring-green-500/50 shadow-xs",
+        "bg-green-600 hover:bg-green-700 text-white border-transparent shadow-xs",
     };
 
     const widthStyle = fullWidth ? "w-full" : "";

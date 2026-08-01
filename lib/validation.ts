@@ -150,6 +150,19 @@ export const rplExperienceTradeSchema = z.object({
   yearsOfExperience: requiredSchema("Years of experience"),
 });
 
+export const selfAssessmentStep1Schema = z.object({
+  firstName: requiredSchema("First name"),
+  lastName: requiredSchema("Last name"),
+  middleName: z.string().optional(),
+  dob: dobSchema,
+  email: emailSchema,
+  phone: phoneSchema,
+  state: requiredSchema("State of residence"),
+  lga: requiredSchema("Local Government Area"),
+  address: requiredSchema("Residential address"),
+});
+
+
 // Helper function to extract field errors from a Zod safeParse result
 export function extractZodErrors(
   result: { success: boolean; error?: z.ZodError }

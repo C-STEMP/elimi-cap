@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { InfoIcon } from "@/components/ui/info-icon";
 import { StatusModal } from "@/components/ui/status-modal";
+import { useToast } from "@/components/ui/toast";
 import { ASSETS_URL } from "@/assets";
 import { MOCK_EVIDENCE_OPTIONS } from "../utils/constants";
 
@@ -18,7 +19,14 @@ interface Step3Props {
 
 export const Step3Reflection: React.FC<Step3Props> = ({ onNext, onBack }) => {
   const router = useRouter();
+  const { toast } = useToast();
   const [showDraftModal, setShowDraftModal] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const [formData, setFormData] = useState({
+    tasks: "",
+    skills: "",
+  });
   const [selectedEvidences, setSelectedEvidences] = useState<string[]>([]);
 
   const toggleEvidence = (option: string) => {
@@ -27,6 +35,51 @@ export const Step3Reflection: React.FC<Step3Props> = ({ onNext, onBack }) => {
     } else {
       setSelectedEvidences([...selectedEvidences, option]);
     }
+    if (errors.evidences) {
+      setErrors((prev) => ({ ...prev, evidences: "" }));
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
+  };
+
+  const validateForm = () => {
+    let valid = true;
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.tasks.trim()) {
+      newErrors.tasks = "Please describe the tasks you are most confident performing";
+      valid = false;
+    }
+    if (!formData.skills.trim()) {
+      newErrors.skills = "Please describe the skills you would like to improve";
+      valid = false;
+    }
+    if (selectedEvidences.length === 0) {
+      newErrors.evidences = "Please select at least one evidence option";
+      valid = false;
+    }
+
+    setErrors(newErrors);
+    return valid;
+  };
+
+  const handleContinue = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!validateForm()) {
+      toast({
+        type: "error",
+        title: "Input Required",
+        description: "Please complete all reflection questions and select at least one evidence option.",
+      });
+      return;
+    }
+    onNext();
   };
 
   return (
@@ -51,27 +104,51 @@ export const Step3Reflection: React.FC<Step3Props> = ({ onNext, onBack }) => {
         </h2>
       </div>
 
-      <div className="flex flex-col gap-6">
+      <form onSubmit={handleContinue} className="flex flex-col gap-6">
         <div className="flex flex-col gap-1.5">
           <label className="text-text-dark font-medium text-xs xl:text-sm leading-[1.4] select-none">
-            Which tasks are you most confident performing?
+            Which tasks are you most confident performing? <span className="text-primary-solid ml-0.5">*</span>
           </label>
           <textarea
+            name="tasks"
             rows={3}
+            value={formData.tasks}
+            onChange={handleChange}
             placeholder="Tell us about the work you perform confidently and the responsibilities you usually handle."
-            className="w-full bg-input-bg border border-transparent focus:border-primary rounded-xl p-3.5 text-xs sm:text-sm text-neutral-primary outline-none resize-none transition-colors"
+            className={`w-full bg-input-bg border ${
+              errors.tasks
+                ? "border-red-500 focus:border-red-500"
+                : "border-transparent focus:border-primary"
+            } rounded-xl p-3.5 text-xs sm:text-sm text-neutral-primary outline-none resize-none transition-colors`}
           />
+          {errors.tasks && (
+            <span className="text-red-500 text-xs font-normal">
+              {errors.tasks}
+            </span>
+          )}
         </div>
 
         <div className="flex flex-col gap-1.5">
           <label className="text-text-dark font-medium text-xs xl:text-sm leading-[1.4] select-none">
-            Which skills would you like to improve?
+            Which skills would you like to improve? <span className="text-primary-solid ml-0.5">*</span>
           </label>
           <textarea
+            name="skills"
             rows={3}
+            value={formData.skills}
+            onChange={handleChange}
             placeholder="Mention any areas where you would like additional experience, coaching, or training."
-            className="w-full bg-input-bg border border-transparent focus:border-primary rounded-xl p-3.5 text-xs sm:text-sm text-neutral-primary outline-none resize-none transition-colors"
+            className={`w-full bg-input-bg border ${
+              errors.skills
+                ? "border-red-500 focus:border-red-500"
+                : "border-transparent focus:border-primary"
+            } rounded-xl p-3.5 text-xs sm:text-sm text-neutral-primary outline-none resize-none transition-colors`}
           />
+          {errors.skills && (
+            <span className="text-red-500 text-xs font-normal">
+              {errors.skills}
+            </span>
+          )}
         </div>
 
         <div className="flex flex-col gap-4 mt-2">
@@ -79,7 +156,7 @@ export const Step3Reflection: React.FC<Step3Props> = ({ onNext, onBack }) => {
             Evidence Summary <InfoIcon sectionName="Evidence Summary" />
           </h2>
           <p className="text-neutral-secondary text-xs sm:text-sm font-normal">
-            Which evidence can you provide? (Multiple Selection)
+            Which evidence can you provide? (Multiple Selection) <span className="text-primary-solid ml-0.5">*</span>
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -95,6 +172,8 @@ export const Step3Reflection: React.FC<Step3Props> = ({ onNext, onBack }) => {
                     ${
                       isSelected
                         ? "border-secondary bg-white ring-1 ring-secondary/40 shadow-xs"
+                        : errors.evidences
+                        ? "border-red-500"
                         : "border-[#D9D9D980] hover:border-gray-300"
                     }
                   `}
@@ -118,6 +197,11 @@ export const Step3Reflection: React.FC<Step3Props> = ({ onNext, onBack }) => {
               );
             })}
           </div>
+          {errors.evidences && (
+            <span className="text-red-500 text-xs font-normal mt-1">
+              {errors.evidences}
+            </span>
+          )}
         </div>
 
         <div className="flex items-center justify-between mt-8 pt-4 border-t border-gray-100 gap-4">
@@ -143,12 +227,12 @@ export const Step3Reflection: React.FC<Step3Props> = ({ onNext, onBack }) => {
                 width={20}
                 height={20}
                 className="w-5 h-5 shrink-0"
+                style={{ width: "auto", height: "auto" }}
               />
             </button>
 
             <Button
-              type="button"
-              onClick={onNext}
+              type="submit"
               variant="amber"
               size="md"
               rightIcon={<FiArrowRight className="w-4.5 h-4.5" />}
@@ -158,7 +242,7 @@ export const Step3Reflection: React.FC<Step3Props> = ({ onNext, onBack }) => {
             </Button>
           </div>
         </div>
-      </div>
+      </form>
 
       <StatusModal
         isOpen={showDraftModal}
@@ -169,4 +253,5 @@ export const Step3Reflection: React.FC<Step3Props> = ({ onNext, onBack }) => {
     </motion.div>
   );
 };
+
 
