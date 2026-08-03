@@ -3,8 +3,9 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { PartyPopperIllustration } from "@/components/ui/svg-icons";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
+import { useAppSelector } from "@/store/hooks";
 
 export interface SuccessProps {
   onStartApplication?: () => void;
@@ -16,6 +17,16 @@ export const Success: React.FC<SuccessProps> = ({
   onGoToDashboard,
 }) => {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const userRole = useAppSelector((state) => state.auth.user?.role);
+  const paramRole = searchParams.get("role");
+
+  const effectiveRole = paramRole || userRole;
+
+  const isAssessmentCentre =
+    effectiveRole === "assessment-centre" ||
+    effectiveRole === "assessment_centre" ||
+    effectiveRole === "assessment-center";
 
   const handleStart = () => {
     if (onStartApplication) {
@@ -28,6 +39,8 @@ export const Success: React.FC<SuccessProps> = ({
   const handleDashboard = () => {
     if (onGoToDashboard) {
       onGoToDashboard();
+    } else if (isAssessmentCentre) {
+      router.push("/assessment-centre/dashboard");
     } else {
       router.push("/dashboard");
     }
@@ -61,24 +74,41 @@ export const Success: React.FC<SuccessProps> = ({
       </div>
 
       <div className="w-full flex flex-col gap-3">
-        <Button
-          type="button"
-          onClick={handleStart}
-          variant="secondary"
-          size="md"
-          className="w-full h-12.5 text-white font-bold text-base bg-secondary hover:bg-secondary-hover focus:ring-secondary/30 transition-all shadow-sm cursor-pointer"
-        >
-          Start Application
-        </Button>
+        {isAssessmentCentre ? (
+          <Button
+            type="button"
+            onClick={handleDashboard}
+            variant="amber"
+            size="md"
+            className="w-full h-12.5 text-white font-bold text-base bg-[#fbab2a] hover:bg-[#e89b1f] transition-all shadow-sm cursor-pointer rounded-xl"
+          >
+            Go To Dashboard
+          </Button>
+        ) : (
+          <>
+            <Button
+              type="button"
+              onClick={handleStart}
+              variant="secondary"
+              size="md"
+              className="w-full h-12.5 text-white font-bold text-base bg-secondary hover:bg-secondary-hover focus:ring-secondary/30 transition-all shadow-sm cursor-pointer"
+            >
+              Start Application
+            </Button>
 
-        <button
-          type="button"
-          onClick={handleDashboard}
-          className="w-full h-12.5 bg-white border border-secondary text-secondary hover:bg-secondary/10 font-bold text-base rounded-lg transition-all shadow-sm cursor-pointer"
-        >
-          Go to Dashboard
-        </button>
+            <Button
+              type="button"
+              onClick={handleDashboard}
+              variant="amber"
+              size="md"
+              className="w-full h-12.5 text-white font-bold text-base bg-[#fbab2a] hover:bg-[#e89b1f] transition-all shadow-sm cursor-pointer rounded-xl"
+            >
+              Go To Dashboard
+            </Button>
+          </>
+        )}
       </div>
     </motion.div>
   );
 };
+

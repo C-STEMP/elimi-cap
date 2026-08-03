@@ -51,7 +51,7 @@ export const RoleCard: React.FC<RoleCardProps> = ({
         priority
         loading="eager"
         sizes="(max-width: 439px) 100vw, 439px"
-        className={`object-contain rounded-[10px] transition-opacity duration-500 ease-in-out ${
+        className={`object-contain rounded-[10px] pointer-events-none transition-opacity duration-500 ease-in-out ${
           isSelected ? "opacity-0" : "opacity-100 group-hover:opacity-0"
         }`}
       />
@@ -63,7 +63,7 @@ export const RoleCard: React.FC<RoleCardProps> = ({
         priority
         loading="eager"
         sizes="(max-width: 439px) 100vw, 439px"
-        className={`object-contain rounded-[10px] transition-opacity duration-500 ease-in-out ${
+        className={`object-contain rounded-[10px] pointer-events-none transition-opacity duration-500 ease-in-out ${
           isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
         }`}
       />

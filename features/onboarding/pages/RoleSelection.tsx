@@ -18,12 +18,12 @@ export interface RoleOption {
 const ROLES: RoleOption[] = [
   {
     id: "candidate",
-    title: "Candidate",
+    title: "Candidate/Learner",
     description: "Lorem ipsum dolor",
   },
   {
-    id: "assessor",
-    title: "Assessor",
+    id: "quality-assurance",
+    title: "Quality Assurance",
     description: "Competency assessment Portal",
   },
   {
@@ -58,28 +58,27 @@ export const RoleSelection: React.FC<RoleSelectionProps> = ({
 
     if (onSelectRole) {
       onSelectRole(roleId);
+    }
 
-      if (roleId !== "candidate") {
-        toast({
-          type: "info",
-          title: "Candidate Flow Active",
-          description:
-            "Please select 'Candidate' to continue assessment type selection.",
-        });
-      }
+    if (roleId === "candidate") {
+      setTimeout(() => {
+        router.push("/onboarding/assessment-type?from=role");
+      }, 150);
+    } else if (
+      roleId === "assessment-centre" ||
+      roleId === "assessment_centre" ||
+      roleId === "assessment-center"
+    ) {
+      setTimeout(() => {
+        router.push("/onboarding/assessment-centre/center-info");
+      }, 150);
     } else {
-      if (roleId === "candidate") {
-        setTimeout(() => {
-          router.push("/onboarding/assessment-type?from=role");
-        }, 200);
-      } else {
-        toast({
-          type: "info",
-          title: "Candidate Flow Active",
-          description:
-            "Please select 'Candidate' to continue assessment type selection.",
-        });
-      }
+      toast({
+        type: "info",
+        title: "Role Selected",
+        description:
+          "Flow for this role is currently in development. Please select Candidate/Learner or Assessment Centre.",
+      });
     }
   };
 
