@@ -2,8 +2,9 @@
 
 import React from "react";
 import { RoleCard } from "@/components/ui/role-card";
-import { useAppDispatch } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setRole } from "@/store/slices/authSlice";
+import { setOnboardingRole } from "@/store/slices/onboardingSlice";
 import { useToast } from "@/components/ui/toast";
 import { useRouter } from "next/navigation";
 import { FiArrowLeft } from "react-icons/fi";
@@ -50,11 +51,24 @@ export const RoleSelection: React.FC<RoleSelectionProps> = ({
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { toast } = useToast();
-  const [selectedRole, setSelectedRole] = React.useState<string | null>(null);
+
+  const savedRole = useAppSelector(
+    (state) => state.onboarding.role || state.auth.user?.role || ""
+  );
+  const [selectedRole, setSelectedRole] = React.useState<string | null>(
+    savedRole || null
+  );
+
+  React.useEffect(() => {
+    if (savedRole) {
+      setSelectedRole(savedRole);
+    }
+  }, [savedRole]);
 
   const handleSelectRole = (roleId: string) => {
     setSelectedRole(roleId);
     dispatch(setRole(roleId));
+    dispatch(setOnboardingRole(roleId));
 
     if (onSelectRole) {
       onSelectRole(roleId);

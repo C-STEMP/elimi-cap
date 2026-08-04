@@ -4,6 +4,7 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 export interface UserProfile {
   // From API
   userId?: string;
+  id?: string;
   email: string;
   status?: "pending_verification" | "active" | "suspended";
   intents?: string[];
@@ -43,10 +44,10 @@ export const authSlice = createSlice({
   reducers: {
     setCredentials: (
       state,
-      action: PayloadAction<{ user: UserProfile; token?: string; refreshToken?: string }>
+      action: PayloadAction<{ user: UserProfile; accessToken?: string; refreshToken?: string }>
     ) => {
       state.user = action.payload.user;
-      state.token = action.payload.token ?? null;
+      state.token = action.payload.accessToken ?? null;
       state.refreshToken = action.payload.refreshToken ?? null;
       state.isAuthenticated = true;
     },

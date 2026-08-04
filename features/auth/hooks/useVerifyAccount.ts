@@ -38,7 +38,7 @@ export function useVerifyAccount() {
             createdAt: data.user.createdAt,
             isVerified: true,
           },
-          token: data.accessToken,
+          accessToken: data.accessToken,
           refreshToken: data.refreshToken,
         })
       );

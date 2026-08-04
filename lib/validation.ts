@@ -90,9 +90,11 @@ export const changePasswordSchema = z
   });
 
 export const startApplicationSchema = z.object({
-  assessmentCenter: requiredSchema("Assessment center"),
+  assessmentCenter: requiredSchema("Assessment centre"),
+  sector: requiredSchema("Sector"),
   trade: requiredSchema("Trade"),
 });
+
 
 export const dobSchema = z
   .string()

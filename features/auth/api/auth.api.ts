@@ -1,8 +1,11 @@
-import { orchestratorFetch } from "@/lib/api/client";
+import { orchestratorFetch } from "@/lib/api/orchestrator";
 
 export interface AuthUser {
-  userId: string;
+  userId?: string;
+  id?: string;
   email: string;
+  phone?: string | null;
+  authProvider?: string;
   status: "pending_verification" | "active" | "suspended";
   intents: string[];
   createdAt: string;
@@ -35,11 +38,11 @@ export async function registerApi(
 ): Promise<RegisterResponse> {
   return orchestratorFetch<RegisterResponse>("/auth/register", {
     method: "POST",
-    body: JSON.stringify({
+    data: {
       email: payload.email,
       password: payload.password,
       intents: ["cap"],
-    }),
+    },
   });
 }
 
@@ -53,11 +56,11 @@ export async function verifyAccountApi(
 ): Promise<AuthResult> {
   return orchestratorFetch<AuthResult>("/auth/verify-account", {
     method: "POST",
-    body: JSON.stringify({
+    data: {
       email: payload.email,
       otp: payload.otp,
       purpose: "account_verify" as OtpPurpose,
-    }),
+    },
   });
 }
 
@@ -71,7 +74,7 @@ export interface ResendOtpPayload {
 export async function resendOtpApi(payload: ResendOtpPayload): Promise<void> {
   await orchestratorFetch<void>("/auth/otp/resend", {
     method: "POST",
-    body: JSON.stringify(payload),
+    data: payload,
   });
 }
 
@@ -85,7 +88,7 @@ export interface LoginPayload {
 export async function loginApi(payload: LoginPayload): Promise<AuthResult> {
   return orchestratorFetch<AuthResult>("/auth/login", {
     method: "POST",
-    body: JSON.stringify(payload),
+    data: payload,
   });
 }
 
@@ -93,6 +96,7 @@ export async function loginApi(payload: LoginPayload): Promise<AuthResult> {
 
 export interface GoogleAuthPayload {
   idToken: string;
+  intents?: string[];
 }
 
 export interface GoogleAuthResult extends AuthResult {
@@ -104,11 +108,11 @@ export async function googleAuthApi(
 ): Promise<GoogleAuthResult> {
   return orchestratorFetch<GoogleAuthResult>("/auth/google", {
     method: "POST",
-    body: JSON.stringify({
+    data: {
       idToken: payload.idToken,
       provider: "google",
-      intents: ["cap"],
-    }),
+      intents: payload.intents ?? ["cap"],
+    },
   });
 }
 
@@ -124,7 +128,7 @@ export async function forgotPasswordApi(
 ): Promise<void> {
   await orchestratorFetch<void>("/auth/forgot-password", {
     method: "POST",
-    body: JSON.stringify(payload),
+    data: payload,
   });
 }
 
@@ -141,12 +145,12 @@ export async function resetPasswordApi(
 ): Promise<void> {
   await orchestratorFetch<void>("/auth/reset-password", {
     method: "POST",
-    body: JSON.stringify({
+    data: {
       email: payload.email,
       otp: payload.otp,
       purpose: "password_reset" as OtpPurpose,
       newPassword: payload.newPassword,
-    }),
+    },
   });
 }
 
@@ -162,7 +166,7 @@ export async function changePasswordApi(
 ): Promise<void> {
   await orchestratorFetch<void>("/auth/change-password", {
     method: "PATCH",
-    body: JSON.stringify(payload),
+    data: payload,
   });
 }
 
@@ -175,6 +179,6 @@ export interface LogoutPayload {
 export async function logoutApi(payload: LogoutPayload): Promise<void> {
   await orchestratorFetch<void>("/auth/logout", {
     method: "POST",
-    body: JSON.stringify(payload),
+    data: payload,
   });
 }

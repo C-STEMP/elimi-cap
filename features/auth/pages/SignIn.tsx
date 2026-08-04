@@ -13,7 +13,7 @@ import { StatusModal } from "@/components/ui/status-modal";
 import { useAppDispatch } from "@/store/hooks";
 import { setSidebarVariant } from "@/store/slices/authSlice";
 import { validateEmail } from "@/lib/validation";
-import { useLogin } from "@/features/auth/hooks";
+import { useLogin, useGoogleAuth } from "@/features/auth/hooks";
 
 export const SignIn: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -35,6 +35,7 @@ export const SignIn: React.FC = () => {
   }>({});
 
   const { mutate: loginUser, isPending: isLoggingIn } = useLogin();
+  const { loginWithGoogle, isPending: isGooglePending } = useGoogleAuth();
 
   const [otpEmail, setOtpEmail] = useState("chidi.umeh@email.com");
   const [otpCode, setOtpCode] = useState<string[]>(["4", "8", "2", ""]);
@@ -277,12 +278,12 @@ export const SignIn: React.FC = () => {
                 suppressHydrationWarning
                 className="flex justify-between items-center w-full text-sm -mt-1 select-none"
               >
-                <Link
+                {/* <Link
                   href="/enter-otp"
                   className="text-primary-solid font-bold text-xs xl:text-sm hover:text-primary-hover transition-colors"
                 >
                   Enter OTP
-                </Link>
+                </Link> */}
                 <Link
                   href="/forgot-password"
                   className="text-primary-solid font-bold text-xs xl:text-sm hover:text-primary-hover transition-colors"
@@ -324,18 +325,12 @@ export const SignIn: React.FC = () => {
                 type="button"
                 variant="outline"
                 size="lg"
-                onClick={() =>
-                  toast({
-                    type: "info",
-                    title: "Google Sign In",
-                    description: "Google SSO integration clicked.",
-                  })
-                }
-                disabled={isSubmitting}
+                onClick={() => loginWithGoogle()}
+                disabled={isSubmitting || isLoggingIn || isGooglePending}
                 leftIcon={<FcGoogle className="w-4 h-4 sm:w-5 sm:h-5" />}
                 className="w-full h-12.5 text-text-dark font-medium text-sm xl:text-base cursor-pointer"
               >
-                Continue with Google
+                {isGooglePending ? "Connecting to Google..." : "Continue with Google"}
               </Button>
 
               <div

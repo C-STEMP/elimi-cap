@@ -2,8 +2,9 @@
 
 import React from "react";
 import { RoleCard } from "@/components/ui/role-card";
-import { useAppDispatch } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setAssessmentType } from "@/store/slices/authSlice";
+import { setOnboardingAssessmentType } from "@/store/slices/onboardingSlice";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FiArrowLeft } from "react-icons/fi";
 import { motion } from "framer-motion";
@@ -41,11 +42,24 @@ export const AssessmentType: React.FC<AssessmentTypeProps> = ({
   const searchParams = useSearchParams();
   const fromSource = searchParams?.get("from");
 
-  const [selectedType, setSelectedType] = React.useState<string | null>(null);
+  const savedAssessmentType = useAppSelector(
+    (state) =>
+      state.onboarding.assessmentType || state.auth.user?.assessmentType || ""
+  );
+  const [selectedType, setSelectedType] = React.useState<string | null>(
+    savedAssessmentType || null
+  );
+
+  React.useEffect(() => {
+    if (savedAssessmentType) {
+      setSelectedType(savedAssessmentType);
+    }
+  }, [savedAssessmentType]);
 
   const handleSelectType = (id: string) => {
     setSelectedType(id);
     dispatch(setAssessmentType(id));
+    dispatch(setOnboardingAssessmentType(id));
 
     if (onSelectType) {
       onSelectType(id);
