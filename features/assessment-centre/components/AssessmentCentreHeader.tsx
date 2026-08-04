@@ -65,8 +65,8 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
       {/* Top Header Bar */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         {/* Left Logo */}
-        <div className="shrink-0 cursor-pointer" onClick={() => onSelectTab("overview")}>
-          <Logo theme="light" href="#" />
+        <div className="shrink-0 cursor-pointer">
+          <Logo theme="light" href="/" />
         </div>
 
         {/* Center Nav Pills */}

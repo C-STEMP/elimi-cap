@@ -6,8 +6,6 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
 import { ASSETS_URL } from "@/assets";
 import { PasswordRequirements } from "@/components/ui/password-requirements";
-import { FiEye } from "react-icons/fi";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { StatusModal } from "@/components/ui/status-modal";
@@ -22,8 +20,6 @@ export const CompleteSignUp: React.FC = () => {
   const [fullName, setFullName] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [errors, setErrors] = useState<{
@@ -100,7 +96,7 @@ export const CompleteSignUp: React.FC = () => {
         <div className="w-full flex flex-col">
           <Input
             label="Password"
-            type={showPassword ? "text" : "password"}
+            type="password"
             name="password"
             placeholder="••••••••••••"
             value={password}
@@ -117,26 +113,6 @@ export const CompleteSignUp: React.FC = () => {
                 }
               }
             }}
-            suffix={
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="focus:outline-none flex items-center justify-center p-1"
-                aria-label={showPassword ? "Hide password" : "Show password"}
-              >
-                {showPassword ? (
-                  <FiEye className="w-5 h-5" />
-                ) : (
-                  <Image
-                    src={ASSETS_URL.eyeClosedIcon}
-                    alt="Hide password"
-                    width={20}
-                    height={20}
-                    className="w-5 h-5"
-                  />
-                )}
-              </button>
-            }
             disabled={isSubmitting}
           />
           <PasswordRequirements password={password} />
@@ -144,7 +120,7 @@ export const CompleteSignUp: React.FC = () => {
 
         <Input
           label="Confirm Password"
-          type={showConfirmPassword ? "text" : "password"}
+          type="password"
           name="confirmPassword"
           placeholder="••••••••••••"
           value={confirmPassword}
@@ -158,26 +134,6 @@ export const CompleteSignUp: React.FC = () => {
               setErrors((prev) => ({ ...prev, confirmPassword: undefined }));
             }
           }}
-          suffix={
-            <button
-              type="button"
-              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              className="focus:outline-none flex items-center justify-center p-1"
-              aria-label={showConfirmPassword ? "Hide password" : "Show password"}
-            >
-              {showConfirmPassword ? (
-                <FiEye className="w-5 h-5" />
-              ) : (
-                <Image
-                  src={ASSETS_URL.eyeClosedIcon}
-                  alt="Hide password"
-                  width={20}
-                  height={20}
-                  className="w-5 h-5"
-                />
-              )}
-            </button>
-          }
           disabled={isSubmitting}
         />
 

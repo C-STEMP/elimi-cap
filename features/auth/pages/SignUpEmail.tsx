@@ -17,6 +17,7 @@ import {
   validatePassword,
   validateConfirmPassword,
 } from "@/lib/validation";
+import { useRegister } from "@/features/auth/hooks";
 
 export const SignUpEmail: React.FC = () => {
   const [email, setEmail] = useState("");
@@ -24,7 +25,6 @@ export const SignUpEmail: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<{
     email?: string;
     password?: string;
@@ -33,6 +33,7 @@ export const SignUpEmail: React.FC = () => {
 
   const { toast } = useToast();
   const router = useRouter();
+  const { mutate: registerUser, isPending } = useRegister();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,16 +57,7 @@ export const SignUpEmail: React.FC = () => {
     }
 
     setErrors({});
-    setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
-      toast({
-        type: "info",
-        title: "Check Your Email",
-        description: "We've sent a verification code to your email address. Please check your inbox.",
-      });
-      router.push("/verify");
-    }, 600);
+    registerUser({ email, password });
   };
 
   return (
@@ -100,7 +92,7 @@ export const SignUpEmail: React.FC = () => {
             setEmail(e.target.value);
             if (errors.email) setErrors((prev) => ({ ...prev, email: undefined }));
           }}
-          disabled={isSubmitting}
+          disabled={isPending}
         />
 
         <div className="w-full flex flex-col">
@@ -147,7 +139,7 @@ export const SignUpEmail: React.FC = () => {
                 )}
               </button>
             }
-            disabled={isSubmitting}
+            disabled={isPending}
           />
           <PasswordRequirements password={password} />
         </div>
@@ -196,7 +188,7 @@ export const SignUpEmail: React.FC = () => {
                 )}
               </button>
             }
-            disabled={isSubmitting}
+            disabled={isPending}
           />
         </div>
 
@@ -215,7 +207,7 @@ export const SignUpEmail: React.FC = () => {
             variant="secondary"
             size="lg"
             className="w-full h-12.5 text-white font-bold text-base bg-secondary hover:bg-secondary-hover focus:ring-secondary/30 transition-all shadow-sm cursor-pointer"
-            loading={isSubmitting}
+            loading={isPending}
           >
             Create Account
           </Button>
@@ -239,7 +231,7 @@ export const SignUpEmail: React.FC = () => {
                 description: "Connecting to Google Authentication...",
               })
             }
-            disabled={isSubmitting}
+            disabled={isPending}
             leftIcon={
               <Image
                 src={ASSETS_URL.googleIcon}
@@ -265,7 +257,7 @@ export const SignUpEmail: React.FC = () => {
                 description: "Connecting to Apple Authentication...",
               })
             }
-            disabled={isSubmitting}
+            disabled={isPending}
             leftIcon={<FaApple className="w-4 h-4 sm:w-5 sm:h-5 text-black" />}
             className="w-full h-12.5 text-text-dark font-medium text-sm xl:text-base cursor-pointer"
           >

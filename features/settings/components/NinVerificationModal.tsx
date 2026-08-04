@@ -71,9 +71,9 @@ export const NinVerificationModal: React.FC<NinVerificationModalProps> = ({
   };
 
   return (
-    <div className="flex items-center justify-center p-4 lg:p-6 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 lg:p-6 overflow-y-auto animate-in fade-in duration-200">
       <div
-        className="w-full  overflow-hidden relative flex flex-col md:flex-row"
+        className="w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-white rounded-3xl relative flex flex-col md:flex-row shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <button

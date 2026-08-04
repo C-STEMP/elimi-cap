@@ -4,56 +4,52 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
-import { ASSETS_URL } from "@/assets";
 import { PasswordRequirements } from "@/components/ui/password-requirements";
-import { FiEye } from "react-icons/fi";
-import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { StatusModal } from "@/components/ui/status-modal";
 import { motion } from "framer-motion";
 import { validatePassword, validateConfirmPassword } from "@/lib/validation";
+import { useResetPassword } from "@/features/auth/hooks";
 
 export const ChangePassword: React.FC = () => {
+  const [otp, setOtp] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [errors, setErrors] = useState<{
+    otp?: string;
     password?: string;
     confirmPassword?: string;
   }>({});
-  
+
   const { toast } = useToast();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const email = searchParams.get("email") ?? "";
+  const mode = searchParams.get("mode"); // "reset" = forgot-password flow
+
+  const { mutate: performReset, isPending } = useResetPassword();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    const otpErr = mode === "reset" && !otp.trim() ? "Verification code is required" : null;
     const passErr = validatePassword(password);
     const confirmErr = validateConfirmPassword(password, confirmPassword);
 
-    if (passErr || confirmErr) {
+    if (otpErr || passErr || confirmErr) {
       setErrors({
+        otp: otpErr || undefined,
         password: passErr || undefined,
         confirmPassword: confirmErr || undefined,
       });
-      toast({
-        type: "error",
-        title: "Validation Error",
-        description: "Please check the highlighted password fields.",
-      });
+      toast({ type: "error", title: "Validation Error", description: "Please check the highlighted fields." });
       return;
     }
 
     setErrors({});
-    setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setShowSuccessModal(true);
-    }, 1200);
+    performReset({ email, otp, newPassword: password });
   };
 
   return (
@@ -73,10 +69,27 @@ export const ChangePassword: React.FC = () => {
       </div>
 
       <form onSubmit={handleSubmit} className="w-full flex flex-col gap-6">
+        {mode === "reset" && (
+          <Input
+            label={<span>Verification Code<span className="text-primary-solid ml-0.5">*</span></span>}
+            type="text"
+            name="otp"
+            placeholder="4-digit code from email"
+            value={otp}
+            error={errors.otp}
+            maxLength={4}
+            onChange={(e) => {
+              const val = e.target.value.replace(/\D/g, "").slice(0, 4);
+              setOtp(val);
+              if (errors.otp) setErrors((prev) => ({ ...prev, otp: undefined }));
+            }}
+            disabled={isPending}
+          />
+        )}
         <div className="w-full flex flex-col">
           <Input
             label="Password"
-            type={showPassword ? "text" : "password"}
+            type="password"
             name="password"
             placeholder="••••••••••••"
             value={password}
@@ -93,34 +106,14 @@ export const ChangePassword: React.FC = () => {
                 }
               }
             }}
-            suffix={
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="focus:outline-none flex items-center justify-center p-1 cursor-pointer"
-                aria-label={showPassword ? "Hide password" : "Show password"}
-              >
-                {showPassword ? (
-                  <FiEye className="w-5 h-5 text-text-dark/70" />
-                ) : (
-                  <Image
-                    src={ASSETS_URL.eyeClosedIcon}
-                    alt="Hide password"
-                    width={20}
-                    height={20}
-                    className="w-5 h-5 opacity-70 hover:opacity-100 transition-opacity"
-                  />
-                )}
-              </button>
-            }
-            disabled={isSubmitting}
+            disabled={isPending}
           />
           <PasswordRequirements password={password} />
         </div>
 
         <Input
           label="Confirm Password"
-          type={showConfirmPassword ? "text" : "password"}
+          type="password"
           name="confirmPassword"
           placeholder="••••••••••••"
           value={confirmPassword}
@@ -134,27 +127,7 @@ export const ChangePassword: React.FC = () => {
               setErrors((prev) => ({ ...prev, confirmPassword: undefined }));
             }
           }}
-          suffix={
-            <button
-              type="button"
-              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              className="focus:outline-none flex items-center justify-center p-1 cursor-pointer"
-              aria-label={showConfirmPassword ? "Hide password" : "Show password"}
-            >
-              {showConfirmPassword ? (
-                <FiEye className="w-5 h-5 text-text-dark/70" />
-              ) : (
-                <Image
-                  src={ASSETS_URL.eyeClosedIcon}
-                  alt="Hide password"
-                  width={20}
-                  height={20}
-                  className="w-5 h-5 opacity-70 hover:opacity-100 transition-opacity"
-                />
-              )}
-            </button>
-          }
-          disabled={isSubmitting}
+          disabled={isPending}
         />
 
         <div className="w-full mt-2">
@@ -163,7 +136,7 @@ export const ChangePassword: React.FC = () => {
             variant="secondary"
             size="md"
             className="w-full h-12.5 text-white! font-bold text-base bg-secondary hover:bg-secondary-hover focus:ring-secondary/30 transition-all shadow-sm cursor-pointer"
-            loading={isSubmitting}
+            loading={isPending}
           >
             Change Password
           </Button>

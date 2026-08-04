@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Work_Sans } from "next/font/google";
+import { AntdRegistry } from "@ant-design/nextjs-registry";
+import { AntdProvider } from "@/components/ui/antd-provider";
 import { ToastProvider } from "@/components/ui/toast";
 import { ReduxProvider } from "@/store/provider";
 import "./globals.css";
@@ -41,7 +43,11 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <ReduxProvider>
-          <ToastProvider>{children}</ToastProvider>
+          <AntdRegistry>
+            <AntdProvider>
+              <ToastProvider>{children}</ToastProvider>
+            </AntdProvider>
+          </AntdRegistry>
         </ReduxProvider>
       </body>
     </html>

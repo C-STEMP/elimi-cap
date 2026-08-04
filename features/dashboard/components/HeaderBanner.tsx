@@ -44,7 +44,7 @@ export const HeaderBanner: React.FC<HeaderBannerProps> = ({
   return (
     <div className="bg-[#a31d38] rounded-[22px] px-6 lg:px-8 py-5 text-white shadow-md mb-6">
       <div className="flex items-center justify-between border-b border-white/10 pb-5">
-        <Link href="/dashboard" className="flex items-center group">
+        <Link href="/" className="flex items-center group">
           <Logo theme="light" width={80} />
         </Link>
 
@@ -105,6 +105,29 @@ export const HeaderBanner: React.FC<HeaderBannerProps> = ({
             <FiLogOut className="w-4 h-4" />
           </button>
         </div>
+      </div>
+
+      {/* Mobile Nav Links Row */}
+      <div className="flex md:hidden items-center gap-2 overflow-x-auto pb-1 pt-3 border-t border-white/10 no-scrollbar">
+        {NAV_LINKS.map((link) => {
+          const isActive =
+            link.href === "/dashboard"
+              ? pathname === "/dashboard"
+              : pathname?.startsWith(link.href);
+          return (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={`px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-200 shrink-0 ${
+                isActive
+                  ? "bg-[#b93852] text-white shadow-sm"
+                  : "text-white/80 hover:text-white bg-white/10"
+              }`}
+            >
+              {link.label}
+            </Link>
+          );
+        })}
       </div>
 
       {/* Bottom Header Row */}

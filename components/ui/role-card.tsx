@@ -42,7 +42,7 @@ export const RoleCard: React.FC<RoleCardProps> = ({
     <button
       type="button"
       onClick={() => onSelect?.(id)}
-      className="group relative w-full max-w-109.75 aspect-439/199 rounded-[10px] flex items-end justify-between px-8 pb-6 sm:pb-7 text-left select-none cursor-pointer overflow-hidden focus:outline-none active:scale-[0.995] transition-all duration-300 ease-out hover:translate-x-2.5"
+      className="group relative w-full max-w-109.75 aspect-439/199 rounded-[10px] flex items-end justify-between px-4 sm:px-8 pb-4 sm:pb-7 text-left select-none cursor-pointer overflow-hidden focus:outline-none active:scale-[0.995] transition-all duration-300 ease-out hover:translate-x-2.5"
     >
       <Image
         src={ASSETS_URL.cardWhite}
@@ -68,9 +68,9 @@ export const RoleCard: React.FC<RoleCardProps> = ({
         }`}
       />
 
-      <div className="relative z-10 flex flex-col gap-0.5 pr-4 pb-1">
+      <div className="relative z-10 flex flex-col gap-0.5 pr-2 sm:pr-4 pb-1">
         <h3
-          className={`text-xl xl:text-[22px] font-extrabold tracking-tight transition-colors duration-500 ease-in-out ${
+          className={`text-base sm:text-xl xl:text-[22px] font-extrabold tracking-tight transition-colors duration-500 ease-in-out ${
             isSelected
               ? "text-white"
               : "text-neutral-primary group-hover:text-white"
@@ -79,7 +79,7 @@ export const RoleCard: React.FC<RoleCardProps> = ({
           {title}
         </h3>
         <p
-          className={`text-xs xl:text-sm font-normal transition-colors duration-500 ease-in-out ${
+          className={`text-[11px] sm:text-xs xl:text-sm font-normal transition-colors duration-500 ease-in-out ${
             isSelected
               ? "text-white/90"
               : "text-neutral-secondary group-hover:text-white/90"

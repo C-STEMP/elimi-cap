@@ -8,13 +8,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { validateEmail } from "@/lib/validation";
+import { useForgotPassword } from "@/features/auth/hooks";
 
 export const ForgotPassword: React.FC = () => {
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | undefined>(undefined);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
+  const { mutate: sendResetCode, isPending } = useForgotPassword();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,18 +32,7 @@ export const ForgotPassword: React.FC = () => {
     }
 
     setError(undefined);
-    setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
-      toast({
-        type: "success",
-        title: "Verification Sent",
-        description: "A verification code has been sent to your email address.",
-      });
-      setTimeout(() => {
-        router.push("/verify");
-      }, 800);
-    }, 1200);
+    sendResetCode({ email });
   };
 
   return (
@@ -73,7 +63,7 @@ export const ForgotPassword: React.FC = () => {
             setEmail(e.target.value);
             if (error) setError(undefined);
           }}
-          disabled={isSubmitting}
+          disabled={isPending}
         />
 
         <div className="w-full mt-2">
@@ -82,7 +72,7 @@ export const ForgotPassword: React.FC = () => {
             variant="secondary"
             size="md"
             className="w-full h-12.5 text-white! font-bold text-base bg-secondary hover:bg-secondary-hover focus:ring-secondary/30 transition-all shadow-sm cursor-pointer"
-            loading={isSubmitting}
+            loading={isPending}
           >
             Send Verification Code
           </Button>

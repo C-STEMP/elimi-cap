@@ -22,7 +22,7 @@ export const SelfAssessmentSidebar: React.FC<SelfAssessmentSidebarProps> = ({
   return (
     <div
       suppressHydrationWarning
-      className="hidden lg:flex lg:w-[40%] h-screen sticky top-0 shrink-0 bg-primary-solid flex-col justify-between p-12 xl:p-16 overflow-hidden select-none"
+      className="hidden lg:flex lg:w-[40%] h-full min-h-screen lg:min-h-0 sticky top-0 shrink-0 bg-primary-solid flex-col justify-between p-8 xl:p-12 overflow-hidden select-none"
     >
       <FloatingCircles />
 

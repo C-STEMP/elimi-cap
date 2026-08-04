@@ -6,16 +6,19 @@ import { useToast } from "@/components/ui/toast";
 import { StatusModal } from "@/components/ui/status-modal";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { useVerifyAccount, useResendOtp } from "@/features/auth/hooks";
 
 export const VerifyEmail: React.FC = () => {
-  const [code, setCode] = useState<string[]>(["4", "8", "2", ""]);
+  const [code, setCode] = useState<string[]>(["" ,"", "", ""]);
   const [timeLeft, setTimeLeft] = useState(47);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const searchParams = useSearchParams();
   const router = useRouter();
   const { toast } = useToast();
+
+  const { mutate: verifyCode, isPending: isVerifying } = useVerifyAccount();
+  const { mutate: resendCode, isPending: isResending } = useResendOtp();
 
   const rawEmail = searchParams.get("email") || "user@email.com";
 
@@ -102,12 +105,15 @@ export const VerifyEmail: React.FC = () => {
   };
 
   const handleResend = () => {
-    setTimeLeft(60);
-    toast({
-      type: "success",
-      title: "Code Resent",
-      description: "A new verification code has been sent to your email address.",
-    });
+    if (isResending || timeLeft > 0) return;
+    resendCode(
+      { email: rawEmail, purpose: "account_verify" },
+      {
+        onSuccess: () => {
+          setTimeLeft(60);
+        },
+      }
+    );
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -115,41 +121,32 @@ export const VerifyEmail: React.FC = () => {
     const fullCode = code.join("");
 
     if (fullCode.length < 4) {
-      if (fullCode.length === 0) {
-        toast({
-          type: "error",
-          title: "Incomplete Code",
-          description: "Please enter the verification code.",
-        });
-        return;
-      }
+      toast({
+        type: "error",
+        title: "Incomplete Code",
+        description: "Please enter the complete 4-digit verification code.",
+      });
+      return;
     }
 
-    setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
-      
-      if (fullCode === "4820" || fullCode.length === 4) {
-        toast({
-          type: "success",
-          title: "OTP Verified",
-          description: "Your email has been verified successfully.",
-        });
-        setShowSuccessModal(true);
-      } else {
-        toast({
-          type: "error",
-          title: "Invalid Code",
-          description: "The verification code you entered is incorrect. Please try again.",
-        });
+    verifyCode(
+      { email: rawEmail, otp: fullCode },
+      {
+        onSuccess: () => {
+          setShowSuccessModal(true);
+        },
+        onError: () => {
+          setCode(["", "", "", ""]);
+          setTimeout(() => inputsRef.current[0]?.focus(), 50);
+        },
       }
-    }, 1000);
+    );
   };
 
   useEffect(() => {
     if (showSuccessModal) {
       const timer = setTimeout(() => {
-        router.push("/onboarding");
+        router.push("/onboarding/welcome");
       }, 1500);
       return () => clearTimeout(timer);
     }
@@ -157,7 +154,7 @@ export const VerifyEmail: React.FC = () => {
 
   const handleModalAction = () => {
     setShowSuccessModal(false);
-    router.push("/onboarding");
+    router.push("/onboarding/welcome");
   };
 
   return (
@@ -201,7 +198,7 @@ export const VerifyEmail: React.FC = () => {
                 onChange={(e) => handleChange(index, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(index, e)}
                 onPaste={index === 0 ? handlePaste : undefined}
-                disabled={isSubmitting}
+                disabled={isVerifying}
                 className={`w-12 h-14 md:w-13 md:h-15 rounded-radius-200 border text-center text-xl font-bold outline-none transition-all duration-200
                   ${val ? "bg-input-bg text-text-dark border-transparent" : "bg-white border-border-gray/60"}
                   ${isFocused ? "border-secondary! ring-2! ring-secondary/30! bg-white!" : ""}
@@ -218,7 +215,7 @@ export const VerifyEmail: React.FC = () => {
             variant="secondary"
             size="md"
             className="w-full h-12.5 text-white font-bold text-base bg-secondary hover:bg-secondary-hover focus:ring-secondary/30 transition-all shadow-sm cursor-pointer"
-            loading={isSubmitting}
+            loading={isVerifying}
           >
             Verify Email
           </Button>
@@ -235,9 +232,10 @@ export const VerifyEmail: React.FC = () => {
           <button
             type="button"
             onClick={handleResend}
-            className="text-primary-solid font-bold ml-1 hover:text-primary-hover transition-colors focus:outline-none cursor-pointer"
+            disabled={timeLeft > 0 || isResending}
+            className="text-primary-solid font-bold ml-1 hover:text-primary-hover transition-colors focus:outline-none cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            Resend
+            {isResending ? "Sending..." : "Resend"}
           </button>
         </div>
       </form>

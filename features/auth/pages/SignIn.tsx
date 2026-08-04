@@ -4,8 +4,6 @@ import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ASSETS_URL } from "@/assets";
-import { FiEye } from "react-icons/fi";
-import Image from "next/image";
 import { FcGoogle } from "react-icons/fc";
 import { useToast } from "@/components/ui/toast";
 import Link from "next/link";
@@ -15,6 +13,7 @@ import { StatusModal } from "@/components/ui/status-modal";
 import { useAppDispatch } from "@/store/hooks";
 import { setSidebarVariant } from "@/store/slices/authSlice";
 import { validateEmail } from "@/lib/validation";
+import { useLogin } from "@/features/auth/hooks";
 
 export const SignIn: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -28,8 +27,6 @@ export const SignIn: React.FC = () => {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<{
     email?: string;
     password?: string;
@@ -37,10 +34,13 @@ export const SignIn: React.FC = () => {
     otpCode?: string;
   }>({});
 
+  const { mutate: loginUser, isPending: isLoggingIn } = useLogin();
+
   const [otpEmail, setOtpEmail] = useState("chidi.umeh@email.com");
   const [otpCode, setOtpCode] = useState<string[]>(["4", "8", "2", ""]);
   const [timeLeft, setTimeLeft] = useState(47);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const inputsRef = useRef<(HTMLInputElement | null)[]>([]);
   const { toast } = useToast();
@@ -92,16 +92,7 @@ export const SignIn: React.FC = () => {
     }
 
     setErrors({});
-    setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
-      toast({
-        type: "success",
-        title: "Welcome Back",
-        description: "You have successfully signed in",
-      });
-      router.push("/onboarding");
-    }, 1200);
+    loginUser({ email, password });
   };
 
   const handleSendCodeSubmit = (e: React.FormEvent) => {
@@ -264,12 +255,12 @@ export const SignIn: React.FC = () => {
                   if (errors.email)
                     setErrors((prev) => ({ ...prev, email: undefined }));
                 }}
-                disabled={isSubmitting}
+                disabled={isLoggingIn}
               />
 
               <Input
                 label="Password"
-                type={showPassword ? "text" : "password"}
+                type="password"
                 name="password"
                 placeholder="••••••••••••"
                 value={password}
@@ -279,29 +270,7 @@ export const SignIn: React.FC = () => {
                   if (errors.password)
                     setErrors((prev) => ({ ...prev, password: undefined }));
                 }}
-                suffix={
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="focus:outline-none flex items-center justify-center p-1 cursor-pointer"
-                    aria-label={
-                      showPassword ? "Hide password" : "Show password"
-                    }
-                  >
-                    {showPassword ? (
-                      <FiEye className="w-5 h-5 text-text-dark/70" />
-                    ) : (
-                      <Image
-                        src={ASSETS_URL.eyeClosedIcon}
-                        alt="Hide password"
-                        width={20}
-                        height={20}
-                        className="w-5 h-5 opacity-70 hover:opacity-100 transition-opacity"
-                      />
-                    )}
-                  </button>
-                }
-                disabled={isSubmitting}
+                disabled={isLoggingIn}
               />
 
               <div
@@ -328,7 +297,7 @@ export const SignIn: React.FC = () => {
                   variant="secondary"
                   size="lg"
                   className="w-full h-12.5 text-white font-bold text-base bg-secondary hover:bg-secondary-hover focus:ring-secondary/30 transition-all shadow-sm cursor-pointer"
-                  loading={isSubmitting}
+                  loading={isLoggingIn}
                 >
                   Sign In
                 </Button>

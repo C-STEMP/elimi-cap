@@ -129,8 +129,8 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
       transition={{ duration: 0.4, ease: "easeOut" }}
       className="w-full flex flex-col gap-6 select-text max-w-2xl mx-auto pb-12"
     >
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex flex-col gap-1 pt-1">
+      <div className="flex flex-col sm:flex-row items-start justify-between gap-4 sm:gap-6">
+        <div className="flex flex-col gap-1 pt-1 w-full sm:w-auto">
           <h1 className="text-2xl xl:text-[26px] font-extrabold tracking-tight text-primary">
             Step 1 of 4: Personal Information
           </h1>

@@ -30,6 +30,55 @@ import paymentCancelledIcon from "@/assets/icons/payment-cancelled.svg";
 import paymentSuccessfulIcon from "@/assets/icons/payment-successful.svg";
 import paymentUnsuccessfulIcon from "@/assets/icons/payment-unsuccessful.svg";
 
+import bookOpenIcon from "@/assets/icons/book-open.svg";
+import quizIcon from "@/assets/icons/quiz.svg";
+import briefcaseIcon from "@/assets/icons/brief-case.svg";
+
+import heroImg1 from "@/public/hero-img-1.jpg";
+import heroImg2 from "@/public/hero-img-2.jpg";
+import heroImg3 from "@/public/hero-img-3.jpg";
+import heroImg4 from "@/public/hero-img-4.jpg";
+import landingImg1 from "@/public/landing-img-1.jpg";
+
+export {
+  logoIcon,
+  logoIcon2,
+  eyeClosedIcon,
+  faviconIcon,
+  googleIcon,
+  successCheckmarkImg,
+  successStickerImg,
+  cardWhite,
+  cardYellow,
+  cardRed,
+  cardBlack,
+  saveIcon,
+  loadingIcon,
+  errorSymbolIcon,
+  learningBooks,
+  userAvatar,
+  progressSavedIcon,
+  submitedIcon,
+  fileIcon,
+  fileGreenIcon,
+  validationApprovalIcon,
+  pdfImg,
+  downloadIcon,
+  downloadIcon2,
+  paymentCancelledIcon,
+  paymentSuccessfulIcon,
+  paymentUnsuccessfulIcon,
+  validationWarningIcon,
+  bookOpenIcon,
+  quizIcon,
+  briefcaseIcon,
+  heroImg1,
+  heroImg2,
+  heroImg3,
+  heroImg4,
+  landingImg1,
+};
+
 export const ASSETS_URL = {
   logoIcon,
   logoIcon2,
@@ -59,4 +108,12 @@ export const ASSETS_URL = {
   paymentSuccessfulIcon,
   paymentUnsuccessfulIcon,
   validationWarningIcon,
+  bookOpenIcon,
+  quizIcon,
+  briefcaseIcon,
+  heroImg1,
+  heroImg2,
+  heroImg3,
+  heroImg4,
+  landingImg1,
 };

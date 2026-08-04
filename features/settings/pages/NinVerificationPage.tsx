@@ -57,7 +57,7 @@ export const NinVerificationPage: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-white flex flex-col lg:flex-row h-screen w-screen overflow-hidden font-sans antialiased">
+    <div className="fixed inset-0 z-50 bg-white flex flex-col lg:flex-row min-h-screen w-full overflow-y-auto lg:overflow-hidden font-sans antialiased">
       {/* Left Sidebar - Full Height Auth Sidebar Structure */}
       <div className="hidden lg:flex lg:w-[40%] h-screen sticky top-0 shrink-0 bg-primary-solid flex-col justify-between p-12 xl:p-16 overflow-hidden select-none">
         <FloatingCircles />

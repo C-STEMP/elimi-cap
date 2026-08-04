@@ -1,7 +1,14 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
+/** Shape returned by the Orchestrator API on login/register */
 export interface UserProfile {
+  // From API
+  userId?: string;
   email: string;
+  status?: "pending_verification" | "active" | "suspended";
+  intents?: string[];
+  createdAt?: string;
+  // UI / onboarding fields
   fullName?: string;
   isVerified?: boolean;
   role?: string;
@@ -12,6 +19,7 @@ export interface UserProfile {
 export interface AuthState {
   user: UserProfile | null;
   token: string | null;
+  refreshToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   sidebarVariant: "default" | "rpl-form";
@@ -19,17 +27,15 @@ export interface AuthState {
 }
 
 const initialState: AuthState = {
-  user: {
-    email: "chidi.umeh@email.com",
-    fullName: "Chidi Umeh",
-    isVerified: true,
-  },
+  user: null,
   token: null,
+  refreshToken: null,
   isAuthenticated: false,
   isLoading: false,
   sidebarVariant: "default",
   rplStep: 1,
 };
+
 
 export const authSlice = createSlice({
   name: "auth",
@@ -37,10 +43,11 @@ export const authSlice = createSlice({
   reducers: {
     setCredentials: (
       state,
-      action: PayloadAction<{ user: UserProfile; token?: string }>
+      action: PayloadAction<{ user: UserProfile; token?: string; refreshToken?: string }>
     ) => {
       state.user = action.payload.user;
-      state.token = action.payload.token || null;
+      state.token = action.payload.token ?? null;
+      state.refreshToken = action.payload.refreshToken ?? null;
       state.isAuthenticated = true;
     },
     updateEmail: (state, action: PayloadAction<string>) => {
@@ -81,6 +88,7 @@ export const authSlice = createSlice({
     logout: (state) => {
       state.user = null;
       state.token = null;
+      state.refreshToken = null;
       state.isAuthenticated = false;
     },
   },

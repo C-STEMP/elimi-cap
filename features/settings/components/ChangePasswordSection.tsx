@@ -7,6 +7,8 @@ import { ASSETS_URL } from "@/assets";
 import { PasswordRequirements } from "@/components/ui/password-requirements";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import { SecurityFormData } from "../types/settings.types";
+import { useChangePassword } from "@/features/auth/hooks";
+import { useToast } from "@/components/ui/toast";
 
 interface ChangePasswordSectionProps {
   formData: SecurityFormData;
@@ -22,10 +24,29 @@ export const ChangePasswordSection: React.FC<ChangePasswordSectionProps> = ({
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [errors, setErrors] = useState<{ confirm?: string }>({});
+  const { toast } = useToast();
+  const { mutate: performChangePassword, isPending } = useChangePassword();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit();
+    if (formData.newPassword !== formData.confirmPassword) {
+      setErrors({ confirm: "Passwords do not match" });
+      return;
+    }
+    if (!formData.currentPassword || !formData.newPassword) {
+      toast({ type: "error", title: "Required Fields", description: "Please fill in all password fields." });
+      return;
+    }
+    setErrors({});
+    performChangePassword(
+      { currentPassword: formData.currentPassword, newPassword: formData.newPassword },
+      {
+        onSuccess: () => {
+          onSubmit();
+        },
+      }
+    );
   };
 
   return (
@@ -106,7 +127,7 @@ export const ChangePasswordSection: React.FC<ChangePasswordSectionProps> = ({
             formData.newPassword &&
             formData.confirmPassword !== formData.newPassword
               ? "Passwords do not match"
-              : undefined
+              : errors.confirm
           }
           onChange={(e) => onChange("confirmPassword", e.target.value)}
           placeholder="•••••••••"
@@ -137,9 +158,10 @@ export const ChangePasswordSection: React.FC<ChangePasswordSectionProps> = ({
       <div className="flex justify-end pt-3">
         <button
           type="submit"
-          className="bg-[#fbab2a] hover:bg-[#e89b1f] active:scale-95 text-white font-semibold px-6 py-3 rounded-xl flex items-center gap-2.5 shadow-sm transition-all cursor-pointer text-sm"
+          disabled={isPending}
+          className="bg-[#fbab2a] hover:bg-[#e89b1f] active:scale-95 text-white font-semibold px-6 py-3 rounded-xl flex items-center gap-2.5 shadow-sm transition-all cursor-pointer text-sm disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          <span>Change Passowrd</span>
+          <span>{isPending ? "Saving..." : "Change Password"}</span>
           <Image
             src={ASSETS_URL.saveIcon}
             alt="Save"

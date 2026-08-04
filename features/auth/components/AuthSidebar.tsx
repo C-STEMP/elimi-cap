@@ -132,7 +132,7 @@ export const AuthSidebar: React.FC = () => {
                 {!pathname?.includes("verify-identity") && (
                   <div suppressHydrationWarning className="pt-1">
                     <Link
-                      href="#"
+                      href="/#about"
                       className="inline-flex items-center gap-2 text-white text-sm font-semibold hover:opacity-80 transition-opacity"
                     >
                       <span className="underline underline-offset-4">

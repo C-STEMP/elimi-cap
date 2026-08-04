@@ -1,23 +1,29 @@
 "use client";
 
 import React from "react";
+import { Spin } from "antd";
 import { motion } from "framer-motion";
 import { Logo } from "@/components/ui/logo";
 
+/**
+ * Full-screen loading overlay shown during page transitions.
+ * Uses the existing framer-motion Logo pulse animation supplemented
+ * by antd's Spin for an inline spinner alternative.
+ */
 export const Loader: React.FC = () => {
   return (
     <div className="fixed inset-0 bg-white flex flex-col items-center justify-center z-50">
       <div className="relative flex flex-col items-center gap-6 select-none">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ 
+          animate={{
             opacity: [0.6, 1, 0.6],
-            scale: [0.98, 1.02, 0.98]
+            scale: [0.98, 1.02, 0.98],
           }}
-          transition={{ 
-            duration: 2, 
-            repeat: Infinity, 
-            ease: "easeInOut" 
+          transition={{
+            duration: 2,
+            repeat: Infinity,
+            ease: "easeInOut",
           }}
           className="relative"
         >
@@ -37,6 +43,24 @@ export const Loader: React.FC = () => {
           />
         </div>
       </div>
+    </div>
+  );
+};
+
+/**
+ * Inline spinner using antd's Spin component.
+ * Use this for content-area loading states (e.g. while fetching data).
+ */
+export const InlineSpinner: React.FC<{
+  size?: "small" | "default" | "large";
+  tip?: string;
+  className?: string;
+}> = ({ size = "default", tip, className = "" }) => {
+  return (
+    <div
+      className={`flex items-center justify-center ${className}`}
+    >
+      <Spin size={size} tip={tip} />
     </div>
   );
 };

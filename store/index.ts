@@ -12,7 +12,7 @@ import { applicationReducer } from "./slices/applicationSlice";
 const authPersistConfig = {
   key: "auth",
   storage: localStorage,
-  whitelist: ["user", "token", "isAuthenticated"],
+  whitelist: ["user", "token", "refreshToken", "isAuthenticated"],
 };
 
 // LocalStorage configuration for Applications

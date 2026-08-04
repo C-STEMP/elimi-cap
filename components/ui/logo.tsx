@@ -15,7 +15,7 @@ export const Logo: React.FC<LogoProps> = ({
   theme,
   width = 141,
   height,
-  href,
+  href = "/",
   ...props
 }) => {
   const computedHeight = height ?? Math.round(width / (141 / 80));

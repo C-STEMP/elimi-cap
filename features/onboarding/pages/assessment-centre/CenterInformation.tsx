@@ -127,9 +127,9 @@ export const CenterInformation: React.FC = () => {
       className="w-full flex flex-col gap-6 select-text max-w-2xl mx-auto"
     >
       <form onSubmit={handleSubmit} className="w-full flex flex-col gap-6">
-        <div className="w-full flex items-start justify-between gap-4">
-          <div className="flex flex-col">
-            <div className="w-full max-w-109.75 flex justify-start mb-6">
+        <div className="w-full flex flex-col sm:flex-row items-start justify-between gap-4 sm:gap-6">
+          <div className="flex flex-col w-full sm:w-auto">
+            <div className="w-full max-w-109.75 flex justify-start mb-4 sm:mb-6">
               <div className="w-46.5 h-2.5 bg-primary-solid/15 rounded-[10px] overflow-hidden">
                 <div className="w-1/3 h-full bg-primary-solid rounded-[10px] transition-all duration-300" />
               </div>

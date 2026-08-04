@@ -1,14 +1,11 @@
+"use client";
+
 import React from "react";
 import Image from "next/image";
-import { FiX } from "react-icons/fi";
+import { Modal } from "antd";
 import { Button } from "./button";
 import { ASSETS_URL } from "@/assets";
-import {
-  PaymentSuccessIllustration,
-  PaymentCancelledIllustration,
-  PaymentUnsuccessfulIllustration,
-  ErrorCircleIcon,
-} from "./svg-icons";
+import { ErrorCircleIcon } from "./svg-icons";
 
 export type StatusModalVariant =
   | "default"
@@ -64,8 +61,6 @@ export const StatusModal: React.FC<StatusModalProps> = ({
   iconSrc,
   customIcon,
 }) => {
-  if (!isOpen) return null;
-
   const renderIcon = () => {
     if (customIcon) return customIcon;
     if (variant === "payment-successful") {
@@ -120,7 +115,6 @@ export const StatusModal: React.FC<StatusModalProps> = ({
         />
       );
     }
-
     if (variant === "draft-saved") {
       return (
         <Image
@@ -134,7 +128,6 @@ export const StatusModal: React.FC<StatusModalProps> = ({
         />
       );
     }
-
     if (variant === "application-submitted") {
       return (
         <Image
@@ -148,7 +141,6 @@ export const StatusModal: React.FC<StatusModalProps> = ({
         />
       );
     }
-
     if (iconSrc) {
       return (
         <Image
@@ -162,7 +154,6 @@ export const StatusModal: React.FC<StatusModalProps> = ({
         />
       );
     }
-
     if (type === "success") {
       return (
         <Image
@@ -176,7 +167,6 @@ export const StatusModal: React.FC<StatusModalProps> = ({
         />
       );
     }
-
     return (
       <div className="w-35 h-35 flex items-center justify-center bg-red-50 rounded-full border-4 border-red-100 shadow-sm animate-pulse">
         <ErrorCircleIcon />
@@ -227,48 +217,54 @@ export const StatusModal: React.FC<StatusModalProps> = ({
             ? undefined
             : "Go To Dashboard";
 
+  const isClosable = !!onClose && variant !== "processing-payment";
+
   return (
-    <div
-      className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 transition-opacity duration-300 backdrop-blur-xs"
-      onClick={onClose}
+    <Modal
+      open={isOpen}
+      onCancel={isClosable ? onClose : undefined}
+      closable={isClosable}
+      maskClosable={isClosable}
+      footer={null}
+      centered
+      width={420}
+      styles={{
+        mask: {
+          backdropFilter: "blur(2px)",
+          backgroundColor: "rgba(0, 0, 0, 0.4)",
+        },
+        body: {
+          padding: "2rem 2.5rem 2.5rem",
+        },
+      }}
     >
-      <div
-        className="bg-white rounded-4xl p-8 sm:p-10 max-w-105 w-full flex flex-col items-center text-center shadow-2xl relative animate-in zoom-in-95 duration-200"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {onClose && variant !== "processing-payment" && (
-          <button
-            onClick={onClose}
-            className="absolute top-6 right-6 text-neutral-secondary hover:text-text-dark transition-colors focus:outline-none cursor-pointer p-1 rounded-full hover:bg-gray-100"
-            aria-label="Close modal"
-          >
-            <FiX className="w-5 h-5" />
-          </button>
-        )}
-
-        <div className="mt-4 relative flex items-center justify-center">
-          {renderIcon()}
-        </div>
-
-        <h2 className="text-xl sm:text-2xl font-extrabold text-neutral-primary mt-6 tracking-tight">
-          {modalTitle}
-        </h2>
-
-        <p className="text-neutral-secondary text-xs sm:text-[14px] leading-relaxed mt-2 font-normal max-w-75">
-          {modalDescription}
-        </p>
-
-        {modalActionLabel && (onAction || onClose) && (
-          <Button
-            onClick={onAction || onClose}
-            variant="amber"
-            size="lg"
-            className="w-full h-12.5 text-white font-bold text-base bg-[#fbab2a] hover:bg-[#e89b1f] mt-8 transition-all shadow-sm cursor-pointer rounded-xl"
-          >
-            {modalActionLabel}
-          </Button>
-        )}
+      {/* Icon */}
+      <div className="mt-2 flex items-center justify-center">
+        {renderIcon()}
       </div>
-    </div>
+
+      {/* Title */}
+      <h2 className="text-xl sm:text-2xl font-extrabold text-neutral-primary mt-6 tracking-tight text-center">
+        {modalTitle}
+      </h2>
+
+      {/* Description */}
+      <p className="text-neutral-secondary text-xs sm:text-[14px] leading-relaxed mt-2 font-normal text-center mx-auto max-w-75">
+        {modalDescription}
+      </p>
+
+      {/* Action button */}
+      {modalActionLabel && (onAction || onClose) && (
+        <Button
+          onClick={onAction || onClose}
+          variant="amber"
+          size="lg"
+          fullWidth
+          className="!h-12.5 !text-white !font-bold !text-base !bg-[#fbab2a] hover:!bg-[#e89b1f] mt-8 !transition-all !shadow-sm !cursor-pointer !rounded-xl"
+        >
+          {modalActionLabel}
+        </Button>
+      )}
+    </Modal>
   );
 };
