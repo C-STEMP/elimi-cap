@@ -40,7 +40,7 @@ export function useLogin() {
             createdAt: data.user.createdAt,
             isVerified: data.user.status === "active",
           },
-          token: data.accessToken,
+          accessToken: data.accessToken,
           refreshToken: data.refreshToken,
         })
       );

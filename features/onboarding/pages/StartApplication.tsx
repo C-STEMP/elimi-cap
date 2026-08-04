@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { Form } from "antd";
+import { createSchemaFieldRule } from "antd-zod";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
@@ -8,13 +10,13 @@ import { FiArrowLeft, FiArrowRight } from "react-icons/fi";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { StatusModal } from "@/components/ui/status-modal";
-import { useAppDispatch } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { createApplication } from "@/store/slices/applicationSlice";
+import { setStartApplication } from "@/store/slices/onboardingSlice";
+import { startApplicationSchema } from "@/lib/validation";
 
-import {
-  startApplicationSchema,
-  extractZodErrors,
-} from "@/lib/validation";
+// antd-zod rule for startApplicationSchema
+const rule = createSchemaFieldRule(startApplicationSchema);
 
 export interface StartApplicationProps {
   onBack?: () => void;
@@ -50,49 +52,68 @@ const TRADES = [
   "Air Conditioning & Refrigeration",
 ];
 
+// ─── Adapter wrapper ──────────────────────────────────────────────────────────
+// antd Form.Item injects `value` / `onChange` via cloneElement into the direct
+// child. Our <Select> uses `onChange: (e: ChangeEvent) => void`, so we adapt.
+interface ControlledSelectProps {
+  value?: string;
+  onChange?: (value: string) => void;
+  label: React.ReactNode;
+  placeholder?: string;
+  options: string[];
+}
+
+const FormSelect: React.FC<ControlledSelectProps> = ({
+  value = "",
+  onChange,
+  ...rest
+}) => (
+  <Select {...rest} value={value} onChange={(e) => onChange?.(e.target.value)} />
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export const StartApplication: React.FC<StartApplicationProps> = ({
   onBack,
   onContinue,
 }) => {
-  const [assessmentCenter, setAssessmentCenter] = useState("");
-  const [sector, setSector] = useState("");
-  const [trade, setTrade] = useState("");
+  const [form] = Form.useForm();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [errors, setErrors] = useState<{
-    assessmentCenter?: string;
-    sector?: string;
-    trade?: string;
-  }>({});
 
   const { toast } = useToast();
   const router = useRouter();
   const dispatch = useAppDispatch();
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  // Restore persisted values on mount
+  const savedStartApplication = useAppSelector(
+    (s) => s.onboarding.startApplication
+  );
 
-    if (!assessmentCenter || !sector || !trade) {
-      setErrors({
-        assessmentCenter: !assessmentCenter ? "Assessment centre is required" : undefined,
-        sector: !sector ? "Sector is required" : undefined,
-        trade: !trade ? "Trade is required" : undefined,
-      });
-      toast({
-        type: "error",
-        title: "Selection Required",
-        description: "Please fill in all required fields.",
-      });
-      return;
-    }
+  useEffect(() => {
+    form.setFieldsValue(savedStartApplication);
+  }, [form, savedStartApplication]);
 
-    setErrors({});
+  // Persist field changes to Redux as user selects
+  const handleValuesChange = (changedValues: Record<string, string>) => {
+    dispatch(setStartApplication(changedValues));
+  };
+
+  // ─── Submit ───────────────────────────────────────────────────────────────
+  const handleFinish = (values: {
+    assessmentCenter: string;
+    sector: string;
+    trade: string;
+  }) => {
     setIsSubmitting(true);
 
-    dispatch(createApplication({
-      title: trade,
-      subtitle: "Recognition Of Prior Learning",
-    }));
+    dispatch(setStartApplication(values));
+    dispatch(
+      createApplication({
+        title: values.trade,
+        subtitle: "Recognition Of Prior Learning",
+      })
+    );
 
     setTimeout(() => {
       setIsSubmitting(false);
@@ -102,6 +123,14 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
         router.push("/rpl/personal-info");
       }
     }, 400);
+  };
+
+  const handleFinishFailed = () => {
+    toast({
+      type: "error",
+      title: "Selection Required",
+      description: "Please fill in all required fields.",
+    });
   };
 
   return (
@@ -124,58 +153,50 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
         </h2>
       </div>
 
-      <form onSubmit={handleSubmit} className="w-full flex flex-col gap-5">
-        <Select
-          label={
-            <span>
-              Assessment Centre
-              <span className="text-primary-solid ml-0.5">*</span>
-            </span>
-          }
-          placeholder="Select"
-          options={ASSESSMENT_CENTERS}
-          value={assessmentCenter}
-          error={errors.assessmentCenter}
-          onChange={(e) => {
-            setAssessmentCenter(e.target.value);
-            if (errors.assessmentCenter)
-              setErrors((prev) => ({ ...prev, assessmentCenter: undefined }));
-          }}
-        />
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={handleFinish}
+        onFinishFailed={handleFinishFailed}
+        onValuesChange={handleValuesChange}
+        className="w-full flex flex-col gap-5"
+      >
+        <Form.Item name="assessmentCenter" rules={[rule]}>
+          <FormSelect
+            label={
+              <span>
+                Assessment Centre
+                <span className="text-primary-solid ml-0.5">*</span>
+              </span>
+            }
+            placeholder="Select"
+            options={ASSESSMENT_CENTERS}
+          />
+        </Form.Item>
 
-        <Select
-          label={
-            <span>
-              Sector<span className="text-primary-solid ml-0.5">*</span>
-            </span>
-          }
-          placeholder="Select"
-          options={SECTORS}
-          value={sector}
-          error={errors.sector}
-          onChange={(e) => {
-            setSector(e.target.value);
-            if (errors.sector)
-              setErrors((prev) => ({ ...prev, sector: undefined }));
-          }}
-        />
+        <Form.Item name="sector" rules={[rule]}>
+          <FormSelect
+            label={
+              <span>
+                Sector<span className="text-primary-solid ml-0.5">*</span>
+              </span>
+            }
+            placeholder="Select"
+            options={SECTORS}
+          />
+        </Form.Item>
 
-        <Select
-          label={
-            <span>
-              Trade<span className="text-primary-solid ml-0.5">*</span>
-            </span>
-          }
-          placeholder="Select"
-          options={TRADES}
-          value={trade}
-          error={errors.trade}
-          onChange={(e) => {
-            setTrade(e.target.value);
-            if (errors.trade)
-              setErrors((prev) => ({ ...prev, trade: undefined }));
-          }}
-        />
+        <Form.Item name="trade" rules={[rule]}>
+          <FormSelect
+            label={
+              <span>
+                Trade<span className="text-primary-solid ml-0.5">*</span>
+              </span>
+            }
+            placeholder="Select"
+            options={TRADES}
+          />
+        </Form.Item>
 
         <div className="flex items-center justify-between mt-6">
           <button
@@ -198,7 +219,7 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
             Continue
           </Button>
         </div>
-      </form>
+      </Form>
 
       <StatusModal
         isOpen={showSuccessModal}

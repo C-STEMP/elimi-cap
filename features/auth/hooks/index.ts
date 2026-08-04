@@ -6,3 +6,4 @@ export * from "./useForgotPassword";
 export * from "./useResetPassword";
 export * from "./useChangePassword";
 export * from "./useLogout";
+export * from "./useGoogleAuth";

@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { Form } from "antd";
+import { createSchemaFieldRule } from "antd-zod";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -13,41 +15,102 @@ import { FiArrowLeft, FiArrowRight } from "react-icons/fi";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { StatusModal } from "@/components/ui/status-modal";
-import { useAppDispatch } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setSidebarVariant } from "@/store/slices/authSlice";
-import {
-  personalInfoSchema,
-  extractZodErrors,
-} from "@/lib/validation";
+import { setPersonalInfo } from "@/store/slices/onboardingSlice";
+import { personalInfoSchema } from "@/lib/validation";
+
+// antd-zod rule — validates any field against its key in personalInfoSchema
+const rule = createSchemaFieldRule(personalInfoSchema);
 
 export interface PersonalInfoProps {
   onBack?: () => void;
   onSuccess?: () => void;
 }
 
-const initialForm = {
-  firstName: "",
-  lastName: "",
-  middleName: "",
-  dob: "",
-  gender: "",
-  nationality: "",
-  email: "",
-  phoneNumber: "",
-  country: "",
-  state: "",
-  lga: "",
-  streetAddress: "",
-  impairment: "",
-};
+// ─── Adapter wrappers ─────────────────────────────────────────────────────────
+// Ant Design Form.Item injects `value` and `onChange` via cloneElement into the
+// direct child. Our custom inputs use standard `onChange: (e: ChangeEvent) => void`
+// for text/select fields, and custom signatures for phone/date. These wrappers
+// translate between Form's expected `onChange(value)` → component's native API.
+
+interface ControlledInputProps {
+  value?: string;
+  onChange?: (value: string) => void;
+  onBlur?: () => void;
+  [key: string]: unknown;
+}
+
+/** Wraps our `<Input>` so Form gets a plain-string onChange */
+const FormInput: React.FC<
+  ControlledInputProps & {
+    label: React.ReactNode;
+    type?: string;
+    placeholder?: string;
+  }
+> = ({ value = "", onChange, onBlur, ...rest }) => (
+  <Input
+    {...rest}
+    value={value}
+    onChange={(e) => onChange?.(e.target.value)}
+    onBlur={onBlur}
+  />
+);
+
+/** Wraps our `<Select>` so Form gets a plain-string onChange */
+const FormSelect: React.FC<
+  ControlledInputProps & {
+    label: React.ReactNode;
+    placeholder?: string;
+    options: string[];
+  }
+> = ({ value = "", onChange, ...rest }) => (
+  <Select
+    {...rest}
+    value={value}
+    onChange={(e) => onChange?.(e.target.value)}
+  />
+);
+
+/** Wraps our `<DatePicker>` – already uses string onChange */
+const FormDatePicker: React.FC<
+  ControlledInputProps & {
+    label: React.ReactNode;
+    placeholder?: string;
+    maxYear?: number;
+  }
+> = ({ value = "", onChange, ...rest }) => (
+  <DatePicker
+    {...rest}
+    value={value}
+    onChange={(val) => onChange?.(val)}
+  />
+);
+
+/** Wraps our `<PhoneInput>` – already uses string onChange */
+const FormPhoneInput: React.FC<
+  ControlledInputProps & {
+    label: React.ReactNode;
+    country?: string;
+    preferredCountries?: string[];
+  }
+> = ({ value = "", onChange, ...rest }) => (
+  <PhoneInput
+    {...rest}
+    value={value}
+    onChange={(v) => onChange?.(v)}
+  />
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 export const PersonalInfo: React.FC<PersonalInfoProps> = ({
   onBack,
   onSuccess,
 }) => {
-  const [form, setForm] = useState(initialForm);
+  const [form] = Form.useForm();
   const [passportFile, setPassportFile] = useState<File | null>(null);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [passportError, setPassportError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
@@ -55,49 +118,46 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
   const { toast } = useToast();
   const router = useRouter();
 
+  // Restore persisted form values on mount
+  const savedPersonalInfo = useAppSelector((s) => s.onboarding.personalInfo);
+
   useEffect(() => {
     dispatch(setSidebarVariant("default"));
   }, [dispatch]);
 
-  const update = (field: keyof typeof initialForm, value: string) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: "" }));
-    }
+  useEffect(() => {
+    // Pre-fill from Redux (restores values when navigating back)
+    const { passportFileName: _ignored, ...fields } = savedPersonalInfo;
+    form.setFieldsValue(fields);
+  }, [form, savedPersonalInfo]);
+
+  // Persist values to Redux on every change
+  const handleValuesChange = (
+    changedValues: Partial<Record<string, string>>
+  ) => {
+    dispatch(setPersonalInfo(changedValues as Partial<typeof savedPersonalInfo>));
   };
 
-  const validateForm = () => {
-    let valid = true;
-    const newErrors: Record<string, string> = {};
-
+  // ─── Submit ───────────────────────────────────────────────────────────────
+  const handleFinish = (values: Record<string, string>) => {
     if (!passportFile) {
-      newErrors.passport = "Passport photograph is required";
-      valid = false;
-    }
-
-    const result = personalInfoSchema.safeParse(form);
-    if (!result.success) {
-      Object.assign(newErrors, extractZodErrors(result));
-      valid = false;
-    }
-
-    setErrors(newErrors);
-    return valid;
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!validateForm()) {
+      setPassportError("Passport photograph is required");
       toast({
         type: "error",
         title: "Input Required",
-        description: "Please upload your passport photograph and fill in all required fields.",
+        description: "Please upload your passport photograph.",
       });
       return;
     }
 
     setIsSubmitting(true);
+    dispatch(
+      setPersonalInfo({
+        ...values,
+        passportFileName: passportFile.name,
+      })
+    );
+
     setTimeout(() => {
       setIsSubmitting(false);
       if (onSuccess) {
@@ -108,6 +168,18 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
     }, 600);
   };
 
+  const handleFinishFailed = () => {
+    if (!passportFile) {
+      setPassportError("Passport photograph is required");
+    }
+    toast({
+      type: "error",
+      title: "Input Required",
+      description:
+        "Please upload your passport photograph and fill in all required fields.",
+    });
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 15 }}
@@ -115,7 +187,14 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
       transition={{ duration: 0.4, ease: "easeOut" }}
       className="w-full flex flex-col gap-6 select-text max-w-2xl mx-auto"
     >
-      <form onSubmit={handleSubmit} className="w-full flex flex-col gap-6">
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={handleFinish}
+        onFinishFailed={handleFinishFailed}
+        onValuesChange={handleValuesChange}
+        className="w-full flex flex-col gap-6"
+      >
         <div className="w-full flex justify-start mb-1">
           <button
             type="button"
@@ -127,8 +206,7 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
           </button>
         </div>
 
-        {/* Joined Continuous Status Bar - Step 3 of 3 (Complete Profile) */}
-
+        {/* Step progress bar */}
         <div className="flex flex-col sm:flex-row items-start justify-between gap-4 sm:gap-6">
           <div className="flex flex-col w-full sm:w-auto">
             <div className="w-full max-w-109.75 flex justify-start mb-4 sm:mb-6">
@@ -149,97 +227,85 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
 
           <PassportUpload
             required
-            error={errors.passport}
+            error={passportError}
             onImageChange={(file) => {
               setPassportFile(file);
-              if (errors.passport) {
-                setErrors((prev) => ({ ...prev, passport: "" }));
-              }
+              if (file) setPassportError("");
             }}
           />
         </div>
 
         {/* Personal Information Fields */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Input
-            label={
-              <span>
-                First Name<span className="text-primary-solid ml-0.5">*</span>
-              </span>
-            }
-            type="text"
-            placeholder="First name"
-            value={form.firstName}
-            error={errors.firstName}
-            onChange={(e) => update("firstName", e.target.value)}
-          />
+          <Form.Item name="firstName" rules={[rule]}>
+            <FormInput
+              label={
+                <span>
+                  First Name<span className="text-primary-solid ml-0.5">*</span>
+                </span>
+              }
+              type="text"
+              placeholder="First name"
+            />
+          </Form.Item>
 
-          <Input
-            label={
-              <span>
-                Last Name<span className="text-primary-solid ml-0.5">*</span>
-              </span>
-            }
-            type="text"
-            placeholder="Surname"
-            value={form.lastName}
-            error={errors.lastName}
-            onChange={(e) => update("lastName", e.target.value)}
-          />
+          <Form.Item name="lastName" rules={[rule]}>
+            <FormInput
+              label={
+                <span>
+                  Last Name<span className="text-primary-solid ml-0.5">*</span>
+                </span>
+              }
+              type="text"
+              placeholder="Surname"
+            />
+          </Form.Item>
 
-          <Input
-            label="Middle Name"
-            type="text"
-            placeholder="Other names"
-            value={form.middleName}
-            onChange={(e) => update("middleName", e.target.value)}
-          />
+          <Form.Item name="middleName">
+            <FormInput
+              label="Middle Name"
+              type="text"
+              placeholder="Other names"
+            />
+          </Form.Item>
 
-          <DatePicker
-            label={
-              <span>
-                Date Of Birth
-                <span className="text-primary-solid ml-0.5">*</span>
-              </span>
-            }
-            placeholder="dd/mm/yyyy"
-            maxYear={new Date().getFullYear() - 18}
-            value={form.dob}
-            error={errors.dob}
-            onChange={(val) => update("dob", val)}
-          />
+          <Form.Item name="dob" rules={[rule]}>
+            <FormDatePicker
+              label={
+                <span>
+                  Date Of Birth
+                  <span className="text-primary-solid ml-0.5">*</span>
+                </span>
+              }
+              placeholder="dd/mm/yyyy"
+              maxYear={new Date().getFullYear() - 18}
+            />
+          </Form.Item>
 
-          <Select
-            label={
-              <span>
-                Gender<span className="text-primary-solid ml-0.5">*</span>
-              </span>
-            }
-            placeholder="Select"
-            options={["Male", "Female", "Prefer not to say"]}
-            value={form.gender}
-            error={errors.gender}
-            onChange={(e) => update("gender", e.target.value)}
-          />
+          <Form.Item name="gender" rules={[rule]}>
+            <FormSelect
+              label={
+                <span>
+                  Gender<span className="text-primary-solid ml-0.5">*</span>
+                </span>
+              }
+              placeholder="Select"
+              options={["Male", "Female", "Prefer not to say"]}
+            />
+          </Form.Item>
 
-          <Select
-            label={
-              <span>
-                Nationality<span className="text-primary-solid ml-0.5">*</span>
-              </span>
-            }
-            placeholder="Select"
-            options={[
-              "Nigerian",
-              "Ghanaian",
-              "Kenyan",
-              "South African",
-              "Other",
-            ]}
-            value={form.nationality}
-            error={errors.nationality}
-            onChange={(e) => update("nationality", e.target.value)}
-          />
+          <Form.Item name="nationality" rules={[rule]}>
+            <FormSelect
+              label={
+                <span>
+                  Nationality
+                  <span className="text-primary-solid ml-0.5">*</span>
+                </span>
+              }
+              placeholder="Select"
+              options={["Nigerian", "Ghanaian", "Kenyan", "South African", "Other"]}
+            />
+          </Form.Item>
         </div>
 
         {/* Section 2: Contact Information */}
@@ -249,33 +315,31 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input
-              label={
-                <span>
-                  Email Address
-                  <span className="text-primary-solid ml-0.5">*</span>
-                </span>
-              }
-              type="email"
-              placeholder="yourname@email.com"
-              value={form.email}
-              error={errors.email}
-              onChange={(e) => update("email", e.target.value)}
-            />
+            <Form.Item name="email" rules={[rule]}>
+              <FormInput
+                label={
+                  <span>
+                    Email Address
+                    <span className="text-primary-solid ml-0.5">*</span>
+                  </span>
+                }
+                type="email"
+                placeholder="yourname@email.com"
+              />
+            </Form.Item>
 
-            <PhoneInput
-              label={
-                <span>
-                  Phone Number
-                  <span className="text-primary-solid ml-0.5">*</span>
-                </span>
-              }
-              value={form.phoneNumber}
-              onChange={(v) => update("phoneNumber", v)}
-              error={errors.phoneNumber}
-              country="ng"
-              preferredCountries={["ng", "gh", "ke", "za"]}
-            />
+            <Form.Item name="phoneNumber" rules={[rule]}>
+              <FormPhoneInput
+                label={
+                  <span>
+                    Phone Number
+                    <span className="text-primary-solid ml-0.5">*</span>
+                  </span>
+                }
+                country="ng"
+                preferredCountries={["ng", "gh", "ke", "za"]}
+              />
+            </Form.Item>
           </div>
         </div>
 
@@ -286,83 +350,73 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Select
-              label={
-                <span>
-                  Country
-                  <span className="text-primary-solid ml-0.5">*</span>
-                </span>
-              }
-              placeholder="Select"
-              options={[
-                "Nigeria",
-                "Ghana",
-                "Kenya",
-                "South Africa",
-                "Other",
-              ]}
-              value={form.country}
-              error={errors.country}
-              onChange={(e) => update("country", e.target.value)}
-            />
+            <Form.Item name="country" rules={[rule]}>
+              <FormSelect
+                label={
+                  <span>
+                    Country
+                    <span className="text-primary-solid ml-0.5">*</span>
+                  </span>
+                }
+                placeholder="Select"
+                options={["Nigeria", "Ghana", "Kenya", "South Africa", "Other"]}
+              />
+            </Form.Item>
 
-            <Select
-              label={
-                <span>
-                  State of Residence
-                  <span className="text-primary-solid ml-0.5">*</span>
-                </span>
-              }
-              placeholder="Select"
-              options={[
-                "Lagos",
-                "Oyo",
-                "FCT Abuja",
-                "Rivers",
-                "Ogun",
-                "Enugu",
-                "Kano",
-                "Delta",
-              ]}
-              value={form.state}
-              error={errors.state}
-              onChange={(e) => update("state", e.target.value)}
-            />
+            <Form.Item name="state" rules={[rule]}>
+              <FormSelect
+                label={
+                  <span>
+                    State of Residence
+                    <span className="text-primary-solid ml-0.5">*</span>
+                  </span>
+                }
+                placeholder="Select"
+                options={[
+                  "Lagos",
+                  "Oyo",
+                  "FCT Abuja",
+                  "Rivers",
+                  "Ogun",
+                  "Enugu",
+                  "Kano",
+                  "Delta",
+                ]}
+              />
+            </Form.Item>
 
-            <Select
-              label={
-                <span>
-                  Local Government Area (LGA)
-                  <span className="text-primary-solid ml-0.5">*</span>
-                </span>
-              }
-              placeholder="Select"
-              options={[
-                "Ibadan North",
-                "Ikeja",
-                "Abuja Municipal",
-                "Eti-Osa",
-                "Port Harcourt",
-                "Obafemi Owode",
-              ]}
-              value={form.lga}
-              error={errors.lga}
-              onChange={(e) => update("lga", e.target.value)}
-            />
+            <Form.Item name="lga" rules={[rule]}>
+              <FormSelect
+                label={
+                  <span>
+                    Local Government Area (LGA)
+                    <span className="text-primary-solid ml-0.5">*</span>
+                  </span>
+                }
+                placeholder="Select"
+                options={[
+                  "Ibadan North",
+                  "Ikeja",
+                  "Abuja Municipal",
+                  "Eti-Osa",
+                  "Port Harcourt",
+                  "Obafemi Owode",
+                ]}
+              />
+            </Form.Item>
 
-            <Input
-              label={
-                <span>
-                  Residential Address
-                  <span className="text-primary-solid ml-0.5">*</span>
-                </span>
-              }
-              type="text"
-              placeholder="Street Address"
-              value={form.streetAddress}
-              error={errors.streetAddress}
-              onChange={(e) => update("streetAddress", e.target.value)}
-            />
+            <Form.Item name="streetAddress" rules={[rule]}>
+              <FormInput
+                label={
+                  <span>
+                    Residential Address
+                    <span className="text-primary-solid ml-0.5">*</span>
+                  </span>
+                }
+                type="text"
+                placeholder="Street Address"
+              />
+            </Form.Item>
           </div>
         </div>
 
@@ -373,25 +427,24 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
           </h2>
 
           <div className="grid grid-cols-1 gap-4">
-            <Select
-              label={
-                <span>
-                  Do you have any impairment?
-                  <span className="text-primary-solid ml-0.5">*</span>
-                </span>
-              }
-              placeholder="Select"
-              options={[
-                "No",
-                "Visual impairment",
-                "Hearing impairment",
-                "Mobility impairment",
-                "Other",
-              ]}
-              value={form.impairment}
-              error={errors.impairment}
-              onChange={(e) => update("impairment", e.target.value)}
-            />
+            <Form.Item name="impairment" rules={[rule]}>
+              <FormSelect
+                label={
+                  <span>
+                    Do you have any impairment?
+                    <span className="text-primary-solid ml-0.5">*</span>
+                  </span>
+                }
+                placeholder="Select"
+                options={[
+                  "No",
+                  "Visual impairment",
+                  "Hearing impairment",
+                  "Mobility impairment",
+                  "Other",
+                ]}
+              />
+            </Form.Item>
           </div>
         </div>
 
@@ -417,7 +470,7 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
             Continue
           </Button>
         </div>
-      </form>
+      </Form>
 
       <StatusModal
         isOpen={showSuccessModal}

@@ -17,7 +17,7 @@ import {
   validatePassword,
   validateConfirmPassword,
 } from "@/lib/validation";
-import { useRegister } from "@/features/auth/hooks";
+import { useRegister, useGoogleAuth } from "@/features/auth/hooks";
 
 export const SignUpEmail: React.FC = () => {
   const [email, setEmail] = useState("");
@@ -34,6 +34,7 @@ export const SignUpEmail: React.FC = () => {
   const { toast } = useToast();
   const router = useRouter();
   const { mutate: registerUser, isPending } = useRegister();
+  const { loginWithGoogle, isPending: isGooglePending } = useGoogleAuth();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -193,12 +194,12 @@ export const SignUpEmail: React.FC = () => {
         </div>
 
         <div className="w-full flex justify-end -mt-1 select-none">
-          <Link
+          {/* <Link
             href={`/enter-otp?email=${encodeURIComponent(email)}`}
             className="text-primary-solid font-bold text-xs xl:text-sm hover:text-primary-hover transition-colors"
           >
             Re-enter OTP
-          </Link>
+          </Link> */}
         </div>
 
         <div className="w-full">
@@ -224,14 +225,8 @@ export const SignUpEmail: React.FC = () => {
             type="button"
             variant="outline"
             size="lg"
-            onClick={() =>
-              toast({
-                type: "info",
-                title: "Google Sign-In",
-                description: "Connecting to Google Authentication...",
-              })
-            }
-            disabled={isPending}
+            onClick={() => loginWithGoogle()}
+            disabled={isPending || isGooglePending}
             leftIcon={
               <Image
                 src={ASSETS_URL.googleIcon}
@@ -243,7 +238,7 @@ export const SignUpEmail: React.FC = () => {
             }
             className="w-full h-12.5 text-text-dark font-medium text-sm xl:text-base cursor-pointer"
           >
-            Continue with Google
+            {isGooglePending ? "Connecting to Google..." : "Continue with Google"}
           </Button>
 
           <Button
