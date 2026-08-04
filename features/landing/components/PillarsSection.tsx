@@ -49,7 +49,7 @@ const PILLARS = [
 export function PillarsSection() {
   return (
     <section className="bg-slate-50/70 py-16 lg:py-24" id="pillars">
-      <div className="mx-auto sm:px-6 lg:px-8 xl:px-16">
+      <div className="mx-auto px-4 sm:px-6 lg:px-8 xl:px-16">
         <div className="text-center" data-aos="fade-up">
           <h2 className="text-3xl sm:text-4xl lg:text-[44px] font-extrabold tracking-tight text-black">
             Built On <span className="text-primary">Nine Product</span> Pillars

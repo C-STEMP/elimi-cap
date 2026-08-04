@@ -11,10 +11,13 @@ const STATS = [
 export function InfrastructureSection() {
   return (
     <section className="bg-white py-16 lg:py-24" id="about">
-      <div className="mx-auto sm:px-6 lg:px-8 xl:px-16">
+      <div className="mx-auto px-4 sm:px-6 lg:px-8 xl:px-16">
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:items-center">
           {/* Left Column Image */}
-          <div data-aos="fade-right" className="relative h-95 sm:h-120 lg:col-span-5 lg:h-130 overflow-hidden rounded-2xl shadow-xl">
+          <div
+            data-aos="fade-right"
+            className="relative h-95 sm:h-120 lg:col-span-5 lg:h-130 overflow-hidden rounded-2xl shadow-xl"
+          >
             <Image
               src={landingImg1}
               alt="Craftsman artisan working"

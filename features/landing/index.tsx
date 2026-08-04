@@ -12,9 +12,9 @@ import { AosProvider } from "./components/AosProvider";
 export default function LandingPage() {
   return (
     <AosProvider>
-      <div className="min-h-screen flex flex-col bg-white overflow-x-hidden">
+      <div className="min-h-screen flex flex-col bg-white">
         <Navbar />
-        <main className="flex-1">
+        <main className="flex-1 overflow-x-hidden">
           <HeroSection />
           <PipelineSection />
           <InfrastructureSection />

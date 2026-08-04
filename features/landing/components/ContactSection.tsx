@@ -90,7 +90,7 @@ export function ContactSection() {
               rows={4}
               required
               placeholder="How can we help you?"
-              className="w-full rounded-lg border border-white/20 bg-white/10 px-4 py-3 text-sm text-white placeholder-white/40 focus:border-secondary focus:outline-none"
+              className="w-full rounded-lg border resize-none border-white/20 bg-white/10 px-4 py-3 text-sm text-white placeholder-white/40 focus:border-secondary focus:outline-none"
             />
           </div>
 

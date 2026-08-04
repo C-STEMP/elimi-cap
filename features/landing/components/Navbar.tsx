@@ -18,6 +18,7 @@ const NAV_LINKS = [
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeLink, setActiveLink] = useState("#");
+  const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -29,13 +30,26 @@ export function Navbar() {
         setActiveLink(window.location.hash || "#");
       };
 
+      const handleScroll = () => {
+        setScrolled(window.scrollY > 10);
+      };
+
       window.addEventListener("hashchange", handleHashChange);
-      return () => window.removeEventListener("hashchange", handleHashChange);
+      window.addEventListener("scroll", handleScroll);
+
+      return () => {
+        window.removeEventListener("hashchange", handleHashChange);
+        window.removeEventListener("scroll", handleScroll);
+      };
     }
   }, [pathname]);
 
   return (
-    <header className="sticky top-0 z-50 h-20 bg-[#661126] text-white flex items-center shrink-0">
+    <header
+      className={`sticky top-0 z-50 h-20 bg-[#661126] text-white flex items-center shrink-0 transition-all duration-300 ${
+        scrolled ? "shadow-lg bg-[#661126]/95 backdrop-blur-md" : ""
+      }`}
+    >
       <div className="mx-auto flex w-full items-center justify-between px-4 sm:px-6 lg:px-8 xl:px-16">
         <Link href="/" className="flex items-center gap-2">
           <Image
@@ -114,7 +128,7 @@ export function Navbar() {
       </div>
 
       {mobileMenuOpen && (
-        <div className="absolute top-16 left-0 right-0 border-t border-white/10 bg-[#540C1D] px-4 pt-3 pb-6 md:hidden shadow-2xl">
+        <div className="absolute top-20 left-0 right-0 border-t border-white/10 bg-[#540C1D] px-4 pt-3 pb-6 md:hidden shadow-2xl">
           <div className="flex flex-col gap-3">
             {NAV_LINKS.map((link) => {
               const isActive = activeLink === link.href;
