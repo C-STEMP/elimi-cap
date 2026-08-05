@@ -27,7 +27,7 @@ export const phoneSchema = z
   .min(1, "Phone number is required")
   .refine(
     (val) => {
-      const clean = val.replace(/[\s-]/g, "");
+      const clean = val.replace(/[\s\-\+]/g, "");
       return /^\d{7,15}$/.test(clean);
     },
     { message: "Please enter a valid phone number" }

@@ -98,10 +98,10 @@ export const Success: React.FC<SuccessProps> = ({
 
             <Button
               type="button"
+              variant="secondary"
               onClick={handleDashboard}
-              variant="amber"
               size="md"
-              className="w-full h-12.5 text-white font-bold text-base bg-[#fbab2a] hover:bg-[#e89b1f] transition-all shadow-lg cursor-pointer rounded-xl"
+              className="w-full h-12.5 text-secondary border-secondary font-bold text-base border-2 bg-white! hover:bg-[#e89b1f] transition-all shadow-lg cursor-pointer rounded-xl"
             >
               Go To Dashboard
             </Button>

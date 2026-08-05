@@ -40,6 +40,9 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
   const inputId = id || React.useId();
   const activeCountry = (defaultCountry || country || "ng").toLowerCase();
 
+  // Strip leading + for react-phone-input-2 component value prop
+  const formattedValue = value ? value.replace(/^\+/, "") : "";
+
   return (
     <div
       suppressHydrationWarning
@@ -73,10 +76,12 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
         <PhoneInputReact
           country={activeCountry}
           preferredCountries={preferredCountries}
-          value={value}
+          value={formattedValue}
           onChange={(val: string) => onChange?.(val ? `+${val}` : "")}
           disabled={disabled}
           placeholder={placeholder}
+          enableLongNumbers={true}
+          countryCodeEditable={false}
           inputProps={{
             id: inputId,
             name,
