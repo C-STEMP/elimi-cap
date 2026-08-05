@@ -91,7 +91,7 @@ export const Success: React.FC<SuccessProps> = ({
               onClick={handleStart}
               variant="secondary"
               size="md"
-              className="w-full h-12.5 text-white font-bold text-base bg-secondary hover:bg-secondary-hover focus:ring-secondary/30 transition-all shadow-lg cursor-pointer"
+              className="w-full h-12.5 text-white font-bold text-base bg-white hover:bg-secondary-hover focus:ring-secondary/30 transition-all shadow-lg cursor-pointer"
             >
               Start Application
             </Button>

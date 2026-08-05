@@ -149,31 +149,32 @@ export const NinVerificationPage: React.FC = () => {
             </li>
           </ul>
 
-          <form onSubmit={handleSubmitNin} className="flex flex-col gap-2">
-            <Input
-              label="National Identification Number"
-              type="text"
-              maxLength={11}
-              value={nin}
-              onChange={(e) => {
-                setNin(e.target.value);
-                if (ninError) setNinError(undefined);
-              }}
-              placeholder="00000000000"
-              error={ninError}
-              suffix={
-                <Button
-                  type="submit"
-                  variant="amber"
-                  size="icon"
-                  className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center"
-                >
-                  <FiArrowRight className="w-4 h-4 text-white stroke-[2.5]" />
-                </Button>
-              }
-              className="font-mono tracking-wider"
-            />
-          </form>
+          <div className="flex flex-col gap-1.5 w-full">
+            <form onSubmit={handleSubmitNin} className="flex items-start gap-2">
+              <Input
+                type="text"
+                placeholder="00000000000"
+                maxLength={11}
+                value={nin}
+                onChange={(e) => {
+                  setNin(e.target.value);
+                  if (ninError) setNinError(undefined);
+                }}
+                error={ninError}
+                className="flex-1 font-mono tracking-wider"
+                containerClassName="flex-1"
+              />
+              <Button
+                type="submit"
+                variant="amber"
+                size="icon"
+                className="shrink-0 w-12 h-12 rounded-xl flex items-center justify-center"
+                title="Verify NIN"
+              >
+                <FiArrowRight className="w-5 h-5 text-white" />
+              </Button>
+            </form>
+          </div>
         </div>
       </div>
 

@@ -18,7 +18,7 @@ export const VerifiedBadge: React.FC<VerifiedBadgeProps> = ({
   if (!isVerified) {
     return (
       <div
-        onClick={() => router.push("/onboarding/personal-info")}
+        onClick={() => router.push("/dashboard/settings/nin-verification")}
         className="bg-[#fce8e6] rounded-[22px] p-4 lg:p-5 flex items-center justify-between shadow-2xs border border-[#f5c6cb] cursor-pointer hover:bg-[#fadbd8] transition-all"
       >
         <div className="flex items-center gap-3.5">
@@ -33,10 +33,10 @@ export const VerifiedBadge: React.FC<VerifiedBadgeProps> = ({
             />
           </div>
           <div className="flex flex-col">
-            <span className="text-[#a94442] font-bold text-base tracking-tight">
+            <span className="text-primary font-bold text-base tracking-tight">
               Not Verified
             </span>
-            <span className="text-[#c9302c] text-xs font-medium opacity-90">
+            <span className="text-primary text-xs font-medium opacity-90">
               Identity not verified
             </span>
           </div>
