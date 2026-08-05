@@ -48,7 +48,7 @@ export async function registerApi(
 
 export interface VerifyAccountPayload {
   email: string;
-  otp: string; // 4 digits
+  otp: string;
 }
 
 export async function verifyAccountApi(
@@ -64,8 +64,6 @@ export async function verifyAccountApi(
   });
 }
 
-// ─── Resend OTP ───────────────────────────────────────────────────────────────
-
 export interface ResendOtpPayload {
   email: string;
   purpose: OtpPurpose;
@@ -78,8 +76,6 @@ export async function resendOtpApi(payload: ResendOtpPayload): Promise<void> {
   });
 }
 
-// ─── Login ────────────────────────────────────────────────────────────────────
-
 export interface LoginPayload {
   email: string;
   password: string;
@@ -91,8 +87,6 @@ export async function loginApi(payload: LoginPayload): Promise<AuthResult> {
     data: payload,
   });
 }
-
-// ─── Google Auth ──────────────────────────────────────────────────────────────
 
 export interface GoogleAuthPayload {
   idToken: string;
@@ -116,13 +110,10 @@ export async function googleAuthApi(
   });
 }
 
-// ─── Forgot Password ──────────────────────────────────────────────────────────
-
 export interface ForgotPasswordPayload {
   email: string;
 }
 
-/** Always returns void — response is the same whether email exists or not (anti-enumeration) */
 export async function forgotPasswordApi(
   payload: ForgotPasswordPayload,
 ): Promise<void> {
@@ -132,11 +123,9 @@ export async function forgotPasswordApi(
   });
 }
 
-// ─── Reset Password ───────────────────────────────────────────────────────────
-
 export interface ResetPasswordPayload {
   email: string;
-  otp: string; // 4 digits
+  otp: string;
   newPassword: string;
 }
 
@@ -154,8 +143,6 @@ export async function resetPasswordApi(
   });
 }
 
-// ─── Change Password (authenticated) ─────────────────────────────────────────
-
 export interface ChangePasswordPayload {
   currentPassword: string;
   newPassword: string;
@@ -169,8 +156,6 @@ export async function changePasswordApi(
     data: payload,
   });
 }
-
-// ─── Logout ───────────────────────────────────────────────────────────────────
 
 export interface LogoutPayload {
   refreshToken: string;

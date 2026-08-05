@@ -44,7 +44,7 @@ export function FaqSection() {
     <section className="bg-slate-50/60 py-16 lg:py-24" id="faqs">
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
         <div className="text-center" data-aos="fade-up">
-          <h2 className="text-3xl font-extrabold tracking-tight text-[#1e1e1e] sm:text-4xl">
+          <h2 className="text-3xl font-extrabold tracking-tight text-text-dark sm:text-4xl">
             Frequently Asked Questions
           </h2>
           <p className="mt-3 text-base text-gray-600">
@@ -64,7 +64,7 @@ export function FaqSection() {
               >
                 <button
                   onClick={() => toggleFaq(idx)}
-                  className="flex w-full items-center justify-between px-6 py-5 text-left text-base font-bold text-[#1e1e1e] hover:text-[#aa1d3f]"
+                  className="flex w-full items-center justify-between px-6 py-5 text-left text-base font-bold text-text-dark hover:text-primary"
                 >
                   <span>{faq.q}</span>
                   <span className="ml-4 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600">
