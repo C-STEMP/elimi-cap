@@ -118,7 +118,7 @@ export function PipelineSection() {
                 <div className="inline-flex rounded-tr-2xl rounded-bl-3xl bg-[#f0f1f5] p-3">
                   <Link
                     href={step.ctaLink}
-                    className={`rounded-xl px-7 lg:px-12 py-3 text-sm font-bold transition-all shadow-sm ${step.btnStyle}`}
+                    className={`rounded-xl px-7 lg:px-12 py-3 text-sm font-bold transition-all shadow-lg ${step.btnStyle}`}
                   >
                     {step.ctaText}
                   </Link>

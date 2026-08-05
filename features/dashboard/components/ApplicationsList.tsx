@@ -22,7 +22,7 @@ export const ApplicationsList: React.FC<ApplicationsListProps> = ({
   const hasApplications = applications.length > 0;
 
   return (
-    <div className="bg-white rounded-[22px] p-4 shadow-sm border border-gray-100 flex flex-col justify-between h-full min-h-75">
+    <div className="bg-white rounded-[22px] p-4 shadow-lg border border-gray-100 flex flex-col justify-between h-full min-h-75">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-black font-medium text-lg tracking-tight">
           My Applications
@@ -57,7 +57,7 @@ export const ApplicationsList: React.FC<ApplicationsListProps> = ({
               (window.location.href =
                 "/onboarding/assessment-type?from=dashboard")
             }
-            className="bg-secondary hover:bg-[#e89b1f] active:scale-95 text-white font-semibold text-sm px-6 py-2.5 rounded-xl shadow-sm transition-all cursor-pointer flex items-center gap-1.5"
+            className="bg-secondary hover:bg-[#e89b1f] active:scale-95 text-white font-semibold text-sm px-6 py-2.5 rounded-xl shadow-lg transition-all cursor-pointer flex items-center gap-1.5"
           >
             Create Application
           </Button>

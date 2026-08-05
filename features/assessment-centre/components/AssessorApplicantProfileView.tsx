@@ -208,7 +208,7 @@ export const AssessorApplicantProfileView: React.FC<
             onClick={handleOpenAcceptModal}
             variant="amber"
             size="md"
-            className="px-8 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-sm cursor-pointer whitespace-nowrap"
+            className="px-8 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
           >
             Accept
           </Button>
@@ -216,7 +216,7 @@ export const AssessorApplicantProfileView: React.FC<
           <button
             type="button"
             onClick={handleOpenDeclineModal}
-            className="px-8 h-11 text-white font-bold text-sm bg-[#C5221F] hover:bg-[#a81c19] rounded-xl shadow-sm cursor-pointer whitespace-nowrap transition-colors"
+            className="px-8 h-11 text-white font-bold text-sm bg-[#C5221F] hover:bg-[#a81c19] rounded-xl shadow-lg cursor-pointer whitespace-nowrap transition-colors"
           >
             Decline
           </button>
@@ -226,7 +226,7 @@ export const AssessorApplicantProfileView: React.FC<
             onClick={handleOpenShortlistModal}
             variant="amber"
             size="md"
-            className="px-6 h-11 text-white font-bold text-sm bg-[#fbab2a]/80 hover:bg-[#e89b1f] rounded-xl shadow-sm cursor-pointer whitespace-nowrap ml-auto"
+            className="px-6 h-11 text-white font-bold text-sm bg-[#fbab2a]/80 hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer whitespace-nowrap ml-auto"
           >
             Shortlist Candidate
           </Button>
@@ -234,7 +234,7 @@ export const AssessorApplicantProfileView: React.FC<
           <button
             type="button"
             onClick={handleOpenRejectModal}
-            className="px-6 h-11 text-white font-bold text-sm bg-[#C5221F]/80 hover:bg-[#a81c19] rounded-xl shadow-sm cursor-pointer whitespace-nowrap transition-colors"
+            className="px-6 h-11 text-white font-bold text-sm bg-[#C5221F]/80 hover:bg-[#a81c19] rounded-xl shadow-lg cursor-pointer whitespace-nowrap transition-colors"
           >
             Reject
           </button>

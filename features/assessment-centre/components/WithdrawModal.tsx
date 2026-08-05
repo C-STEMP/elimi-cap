@@ -75,7 +75,10 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
           )}
 
           {step === "form" ? (
-            <form onSubmit={handleSubmit} className="w-full flex flex-col items-center gap-5">
+            <form
+              onSubmit={handleSubmit}
+              className="w-full flex flex-col items-center gap-5"
+            >
               <div className="flex flex-col items-center text-center gap-1">
                 <h3 className="text-xl sm:text-2xl font-extrabold text-neutral-primary tracking-tight">
                   Withdraw Funds
@@ -87,7 +90,9 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
 
               {/* Balance Box */}
               <div className="bg-[#EAEAEA]/70 p-5 rounded-2xl w-full flex flex-col items-start text-left border border-gray-200/50">
-                <span className="text-xs font-semibold text-gray-500">Available</span>
+                <span className="text-xs font-semibold text-gray-500">
+                  Available
+                </span>
                 <span className="text-2xl sm:text-3xl font-extrabold text-neutral-primary mt-1 tracking-tight">
                   {availableBalance}
                 </span>
@@ -107,7 +112,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
                 type="submit"
                 variant="amber"
                 size="lg"
-                className="w-full h-12.5 text-white font-bold text-base bg-[#fbab2a] hover:bg-[#e89b1f] transition-all shadow-sm cursor-pointer rounded-xl mt-2"
+                className="w-full h-12.5 text-white font-bold text-base bg-[#fbab2a] hover:bg-[#e89b1f] transition-all shadow-lg cursor-pointer rounded-xl mt-2"
               >
                 Request Withdrawal
               </Button>
@@ -139,7 +144,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
                 onClick={handleReset}
                 variant="amber"
                 size="lg"
-                className="w-full h-12.5 text-white font-bold text-base bg-[#fbab2a] hover:bg-[#e89b1f] transition-all shadow-sm cursor-pointer rounded-xl"
+                className="w-full h-12.5 text-white font-bold text-base bg-[#fbab2a] hover:bg-[#e89b1f] transition-all shadow-lg cursor-pointer rounded-xl"
               >
                 Continue
               </Button>

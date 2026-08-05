@@ -22,10 +22,7 @@ interface Step1Props {
   onBack: () => void;
 }
 
-export const Step1PersonalInfo: React.FC<Step1Props> = ({
-  onNext,
-  onBack,
-}) => {
+export const Step1PersonalInfo: React.FC<Step1Props> = ({ onNext, onBack }) => {
   const router = useRouter();
   const { toast } = useToast();
   const [showDraftModal, setShowDraftModal] = useState(false);
@@ -52,7 +49,9 @@ export const Step1PersonalInfo: React.FC<Step1Props> = ({
     }
   };
 
-  const handleSelectChange = (e: { target: { name: string; value: string } }) => {
+  const handleSelectChange = (e: {
+    target: { name: string; value: string };
+  }) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) {
@@ -85,7 +84,8 @@ export const Step1PersonalInfo: React.FC<Step1Props> = ({
       toast({
         type: "error",
         title: "Input Required",
-        description: "Please upload your passport photograph and fill in all required fields.",
+        description:
+          "Please upload your passport photograph and fill in all required fields.",
       });
       return;
     }
@@ -105,9 +105,9 @@ export const Step1PersonalInfo: React.FC<Step1Props> = ({
             Step 1 of 4: Personal Information
           </h1>
           <p className="text-neutral-secondary text-xs sm:text-sm font-normal mt-1">
-            Let&apos;s begin with your personal information. These details will be used
-            throughout your RPL application and help us identify you during the
-            assessment process.
+            Let&apos;s begin with your personal information. These details will
+            be used throughout your RPL application and help us identify you
+            during the assessment process.
           </p>
 
           <h2 className="text-xl xl:text-2xl font-bold tracking-tight text-neutral-primary mt-4 flex items-center gap-1.5">
@@ -168,7 +168,8 @@ export const Step1PersonalInfo: React.FC<Step1Props> = ({
           <DatePicker
             label={
               <span>
-                Date Of Birth<span className="text-primary-solid ml-0.5">*</span>
+                Date Of Birth
+                <span className="text-primary-solid ml-0.5">*</span>
               </span>
             }
             name="dob"
@@ -181,7 +182,6 @@ export const Step1PersonalInfo: React.FC<Step1Props> = ({
               if (errors.dob) setErrors((prev) => ({ ...prev, dob: "" }));
             }}
           />
-
         </div>
 
         <div className="flex flex-col gap-4 mt-2">
@@ -193,7 +193,8 @@ export const Step1PersonalInfo: React.FC<Step1Props> = ({
             <Input
               label={
                 <span>
-                  Email Address<span className="text-primary-solid ml-0.5">*</span>
+                  Email Address
+                  <span className="text-primary-solid ml-0.5">*</span>
                 </span>
               }
               type="email"
@@ -207,7 +208,8 @@ export const Step1PersonalInfo: React.FC<Step1Props> = ({
             <PhoneInput
               label={
                 <span>
-                  Phone Number<span className="text-primary-solid ml-0.5">*</span>
+                  Phone Number
+                  <span className="text-primary-solid ml-0.5">*</span>
                 </span>
               }
               name="phone"
@@ -230,7 +232,8 @@ export const Step1PersonalInfo: React.FC<Step1Props> = ({
             <Select
               label={
                 <span>
-                  State of Residence<span className="text-primary-solid ml-0.5">*</span>
+                  State of Residence
+                  <span className="text-primary-solid ml-0.5">*</span>
                 </span>
               }
               name="state"
@@ -244,7 +247,8 @@ export const Step1PersonalInfo: React.FC<Step1Props> = ({
             <Select
               label={
                 <span>
-                  Local Government Area (LGA)<span className="text-primary-solid ml-0.5">*</span>
+                  Local Government Area (LGA)
+                  <span className="text-primary-solid ml-0.5">*</span>
                 </span>
               }
               name="lga"
@@ -259,7 +263,8 @@ export const Step1PersonalInfo: React.FC<Step1Props> = ({
           <Input
             label={
               <span>
-                Residential Address<span className="text-primary-solid ml-0.5">*</span>
+                Residential Address
+                <span className="text-primary-solid ml-0.5">*</span>
               </span>
             }
             name="address"
@@ -284,7 +289,7 @@ export const Step1PersonalInfo: React.FC<Step1Props> = ({
             <button
               type="button"
               onClick={() => setShowDraftModal(true)}
-              className="px-5 h-11 bg-white border border-secondary text-secondary hover:bg-secondary/10 font-semibold text-sm rounded-lg flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer whitespace-nowrap"
+              className="px-5 h-11 bg-white border border-secondary text-secondary hover:bg-secondary/10 font-semibold text-sm rounded-lg flex items-center justify-center gap-2 transition-all shadow-lg cursor-pointer whitespace-nowrap"
             >
               <span>Save As Draft</span>
               <Image
@@ -302,7 +307,7 @@ export const Step1PersonalInfo: React.FC<Step1Props> = ({
               variant="amber"
               size="md"
               rightIcon={<FiArrowRight className="w-4.5 h-4.5" />}
-              className="px-8 h-11 text-white font-bold text-sm rounded-xl shadow-sm cursor-pointer whitespace-nowrap"
+              className="px-8 h-11 text-white font-bold text-sm rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
             >
               Continue
             </Button>
@@ -319,5 +324,3 @@ export const Step1PersonalInfo: React.FC<Step1Props> = ({
     </motion.div>
   );
 };
-
-

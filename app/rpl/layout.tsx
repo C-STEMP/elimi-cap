@@ -19,7 +19,7 @@ export default function RplLayout({ children }: { children: React.ReactNode }) {
 
       <div
         suppressHydrationWarning
-        className="flex-1 w-full max-w-full bg-white rounded-t-4xl lg:rounded-none -mt-4 lg:mt-0 p-4 sm:p-8 md:p-10 xl:p-12 flex flex-col items-center justify-start relative min-h-[calc(100vh-100px)] lg:min-h-screen lg:h-screen lg:overflow-y-auto overflow-x-hidden shadow-xl lg:shadow-none"
+        className="flex-1 w-full max-w-full bg-white rounded-t-4xl lg:rounded-none -mt-4 lg:mt-0 p-4 sm:p-8 md:p-10 xl:p-12 flex flex-col items-center justify-start relative min-h-[calc(100vh-100px)] lg:min-h-screen lg:h-screen lg:overflow-y-auto overflow-x-hidden shadow-md lg:shadow-none"
       >
         <div
           suppressHydrationWarning

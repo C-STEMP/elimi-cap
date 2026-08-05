@@ -11,6 +11,7 @@ import {
   FiCheck,
 } from "react-icons/fi";
 import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
 import {
   MOCK_JOB_LISTINGS,
@@ -34,12 +35,14 @@ export const JobListingDetailView: React.FC<JobListingDetailViewProps> = ({
     MOCK_JOB_LISTINGS.find((j) => j.id === jobId) || MOCK_JOB_LISTINGS[0];
 
   const [applicants, setApplicants] = useState<AssessorApplicant[]>(
-    MOCK_ASSESSOR_APPLICANTS
+    MOCK_ASSESSOR_APPLICANTS,
   );
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [isFilled, setIsFilled] = useState(job.status === "Filled");
-  const [selectedApplicantIds, setSelectedApplicantIds] = useState<string[]>([]);
+  const [selectedApplicantIds, setSelectedApplicantIds] = useState<string[]>(
+    [],
+  );
 
   const handleToggleFilled = () => {
     setIsFilled((prev) => !prev);
@@ -52,7 +55,7 @@ export const JobListingDetailView: React.FC<JobListingDetailViewProps> = ({
 
   const toggleSelectApplicant = (id: string) => {
     setSelectedApplicantIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
     );
   };
 
@@ -60,8 +63,7 @@ export const JobListingDetailView: React.FC<JobListingDetailViewProps> = ({
     const matchesSearch =
       app.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       app.trade.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus =
-      statusFilter === "All" || app.status === statusFilter;
+    const matchesStatus = statusFilter === "All" || app.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
@@ -97,7 +99,7 @@ export const JobListingDetailView: React.FC<JobListingDetailViewProps> = ({
             variant="amber"
             size="md"
             rightIcon={<FiCheck className="w-4.5 h-4.5" />}
-            className="px-6 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-sm cursor-pointer whitespace-nowrap"
+            className="px-6 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
           >
             {isFilled ? "Mark As Open" : "Mark As Filled"}
           </Button>
@@ -107,12 +109,16 @@ export const JobListingDetailView: React.FC<JobListingDetailViewProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15">
             <div className="flex flex-col">
-              <span className="text-xs sm:text-sm font-medium text-white/80">Available Slots</span>
+              <span className="text-xs sm:text-sm font-medium text-white/80">
+                Available Slots
+              </span>
               <div className="flex items-baseline gap-1.5 mt-1">
                 <span className="text-xl sm:text-2xl font-extrabold text-white">
                   {job.slotsTotal - job.slotsFilled}/{job.slotsTotal}
                 </span>
-                <span className="text-xs font-normal text-white/70">available</span>
+                <span className="text-xs font-normal text-white/70">
+                  available
+                </span>
               </div>
             </div>
             <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
@@ -122,12 +128,16 @@ export const JobListingDetailView: React.FC<JobListingDetailViewProps> = ({
 
           <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15">
             <div className="flex flex-col">
-              <span className="text-xs sm:text-sm font-medium text-white/80">Total Applicants</span>
+              <span className="text-xs sm:text-sm font-medium text-white/80">
+                Total Applicants
+              </span>
               <div className="flex items-baseline gap-1.5 mt-1">
                 <span className="text-xl sm:text-2xl font-extrabold text-white">
                   {job.applicantsCount}
                 </span>
-                <span className="text-xs font-normal text-white/70">applicants</span>
+                <span className="text-xs font-normal text-white/70">
+                  applicants
+                </span>
               </div>
             </div>
             <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
@@ -137,10 +147,16 @@ export const JobListingDetailView: React.FC<JobListingDetailViewProps> = ({
 
           <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15">
             <div className="flex flex-col">
-              <span className="text-xs sm:text-sm font-medium text-white/80">Shortlisted Applicants</span>
+              <span className="text-xs sm:text-sm font-medium text-white/80">
+                Shortlisted Applicants
+              </span>
               <div className="flex items-baseline gap-1.5 mt-1">
-                <span className="text-xl sm:text-2xl font-extrabold text-white">1</span>
-                <span className="text-xs font-normal text-white/70">applicants</span>
+                <span className="text-xl sm:text-2xl font-extrabold text-white">
+                  1
+                </span>
+                <span className="text-xs font-normal text-white/70">
+                  applicants
+                </span>
               </div>
             </div>
             <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
@@ -200,16 +216,19 @@ export const JobListingDetailView: React.FC<JobListingDetailViewProps> = ({
           </div>
 
           <div className="flex items-center justify-between sm:justify-end gap-3 flex-wrap">
-            <select
+            <Select
+              size="sm"
+              showPlaceholderOption={false}
+              containerClassName="w-36"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="border border-gray-200 rounded-xl px-3.5 py-2 text-xs font-semibold text-neutral-primary bg-white outline-none cursor-pointer hover:border-gray-300 transition-colors"
-            >
-              <option value="All">Status</option>
-              <option value="Pending">Pending</option>
-              <option value="Shortlisted">Shortlisted</option>
-              <option value="Rejected">Rejected</option>
-            </select>
+              options={[
+                { label: "Status", value: "All" },
+                { label: "Pending", value: "Pending" },
+                { label: "Shortlisted", value: "Shortlisted" },
+                { label: "Rejected", value: "Rejected" },
+              ]}
+            />
 
             <div className="flex items-center gap-1 bg-[#F8F9FA] p-1 rounded-xl border border-gray-200/80">
               <button
@@ -251,7 +270,10 @@ export const JobListingDetailView: React.FC<JobListingDetailViewProps> = ({
             </thead>
             <tbody className="divide-y divide-gray-100 text-xs sm:text-sm font-medium text-neutral-primary">
               {filteredApplicants.map((app) => (
-                <tr key={app.id} className="hover:bg-gray-50/50 transition-colors">
+                <tr
+                  key={app.id}
+                  className="hover:bg-gray-50/50 transition-colors"
+                >
                   <td className="p-3.5">
                     <input
                       type="checkbox"
@@ -260,10 +282,16 @@ export const JobListingDetailView: React.FC<JobListingDetailViewProps> = ({
                       className="w-4 h-4 rounded border-gray-300 text-[#a31d38] focus:ring-0 cursor-pointer"
                     />
                   </td>
-                  <td className="p-3.5 font-bold text-neutral-primary">{app.name}</td>
+                  <td className="p-3.5 font-bold text-neutral-primary">
+                    {app.name}
+                  </td>
                   <td className="p-3.5 text-neutral-secondary">{app.trade}</td>
-                  <td className="p-3.5 text-neutral-secondary">{app.experienceYears} Years</td>
-                  <td className="p-3.5 text-neutral-secondary">{app.certificatesCount} Uploaded</td>
+                  <td className="p-3.5 text-neutral-secondary">
+                    {app.experienceYears} Years
+                  </td>
+                  <td className="p-3.5 text-neutral-secondary">
+                    {app.certificatesCount} Uploaded
+                  </td>
                   <td className="p-3.5">
                     {app.status === "Shortlisted" ? (
                       <span className="bg-[#D1FAE5] text-[#065F46] font-semibold px-3 py-1 rounded-full text-xs inline-block">

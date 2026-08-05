@@ -3,6 +3,7 @@
 import React from "react";
 import { Input } from "@/components/ui/input";
 import { PhoneInput } from "@/components/ui/phone-input";
+import { InfoIcon } from "@/components/ui/info-icon";
 import { ProfileFormData } from "../types/settings.types";
 
 interface ContactInfoSectionProps {
@@ -16,23 +17,30 @@ export const ContactInfoSection: React.FC<ContactInfoSectionProps> = ({
 }) => {
   return (
     <div className="flex flex-col gap-4">
-      <h2 className="text-lg lg:text-2xl font-extrabold text-neutral-primary">
-        Contact Information
+      <h2 className="text-lg lg:text-2xl font-extrabold text-neutral-primary flex items-center gap-1.5">
+        Contact Information <InfoIcon sectionName="Contact Information" />
       </h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 xl:gap-5">
         <Input
-          label="Email Address"
+          label={
+            <span>
+              Email Address<span className="text-primary-solid ml-0.5">*</span>
+            </span>
+          }
           type="email"
           value={formData.email}
           onChange={(e) => onChange("email", e.target.value)}
           placeholder="yourname@email.com"
         />
         <PhoneInput
-          label="Phone Number"
+          label={
+            <span>
+              Phone Number<span className="text-primary-solid ml-0.5">*</span>
+            </span>
+          }
           value={formData.phone}
           onChange={(val) => onChange("phone", val)}
-          country="ng"
-          preferredCountries={["ng", "gh", "ke", "za"]}
+          defaultCountry="NG"
         />
       </div>
     </div>

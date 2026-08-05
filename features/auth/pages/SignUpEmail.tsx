@@ -91,7 +91,8 @@ export const SignUpEmail: React.FC = () => {
           error={errors.email}
           onChange={(e) => {
             setEmail(e.target.value);
-            if (errors.email) setErrors((prev) => ({ ...prev, email: undefined }));
+            if (errors.email)
+              setErrors((prev) => ({ ...prev, email: undefined }));
           }}
           disabled={isPending}
         />
@@ -111,12 +112,19 @@ export const SignUpEmail: React.FC = () => {
             onChange={(e) => {
               const val = e.target.value;
               setPassword(val);
-              if (errors.password) setErrors((prev) => ({ ...prev, password: undefined }));
+              if (errors.password)
+                setErrors((prev) => ({ ...prev, password: undefined }));
               if (confirmPassword) {
                 if (val !== confirmPassword) {
-                  setErrors((prev) => ({ ...prev, confirmPassword: "Passwords do not match" }));
+                  setErrors((prev) => ({
+                    ...prev,
+                    confirmPassword: "Passwords do not match",
+                  }));
                 } else {
-                  setErrors((prev) => ({ ...prev, confirmPassword: undefined }));
+                  setErrors((prev) => ({
+                    ...prev,
+                    confirmPassword: undefined,
+                  }));
                 }
               }
             }}
@@ -162,7 +170,10 @@ export const SignUpEmail: React.FC = () => {
               const val = e.target.value;
               setConfirmPassword(val);
               if (val && password && val !== password) {
-                setErrors((prev) => ({ ...prev, confirmPassword: "Passwords do not match" }));
+                setErrors((prev) => ({
+                  ...prev,
+                  confirmPassword: "Passwords do not match",
+                }));
               } else {
                 setErrors((prev) => ({ ...prev, confirmPassword: undefined }));
               }
@@ -207,7 +218,7 @@ export const SignUpEmail: React.FC = () => {
             type="submit"
             variant="secondary"
             size="lg"
-            className="w-full h-12.5 text-white font-bold text-base bg-secondary hover:bg-secondary-hover focus:ring-secondary/30 transition-all shadow-sm cursor-pointer"
+            className="w-full h-12.5 text-white font-bold text-base bg-secondary hover:bg-secondary-hover focus:ring-secondary/30 transition-all shadow-lg cursor-pointer"
             loading={isPending}
           >
             Create Account
@@ -238,7 +249,9 @@ export const SignUpEmail: React.FC = () => {
             }
             className="w-full h-12.5 text-text-dark font-medium text-sm xl:text-base cursor-pointer"
           >
-            {isGooglePending ? "Connecting to Google..." : "Continue with Google"}
+            {isGooglePending
+              ? "Connecting to Google..."
+              : "Continue with Google"}
           </Button>
 
           <Button

@@ -60,14 +60,22 @@ export function FaqSection() {
                 key={idx}
                 data-aos="fade-up"
                 data-aos-delay={(idx % 5) * 80 + 50}
-                className="overflow-hidden rounded-xl border border-gray-200/80 bg-white transition-all shadow-sm"
+                className="overflow-hidden rounded-xl border border-gray-200/80 bg-white transition-all shadow-lg"
               >
                 <button
                   onClick={() => toggleFaq(idx)}
-                  className="flex w-full items-center justify-between px-6 py-5 text-left text-base font-bold text-text-dark hover:text-primary"
+                  className={`flex w-full items-center justify-between px-6 py-5 text-left text-base font-bold transition-colors ${
+                    isOpen ? "text-primary" : "text-text-dark hover:text-primary"
+                  }`}
                 >
                   <span>{faq.q}</span>
-                  <span className="ml-4 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600">
+                  <span
+                    className={`ml-4 flex h-6 w-6 shrink-0 items-center justify-center rounded-full transition-colors ${
+                      isOpen
+                        ? "bg-primary text-white"
+                        : "bg-gray-100 text-gray-600"
+                    }`}
+                  >
                     {isOpen ? "−" : "+"}
                   </span>
                 </button>

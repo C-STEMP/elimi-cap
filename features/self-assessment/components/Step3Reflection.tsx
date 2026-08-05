@@ -53,7 +53,8 @@ export const Step3Reflection: React.FC<Step3Props> = ({ onNext, onBack }) => {
     const newErrors: Record<string, string> = {};
 
     if (!formData.tasks.trim()) {
-      newErrors.tasks = "Please describe the tasks you are most confident performing";
+      newErrors.tasks =
+        "Please describe the tasks you are most confident performing";
       valid = false;
     }
     if (!formData.skills.trim()) {
@@ -75,7 +76,8 @@ export const Step3Reflection: React.FC<Step3Props> = ({ onNext, onBack }) => {
       toast({
         type: "error",
         title: "Input Required",
-        description: "Please complete all reflection questions and select at least one evidence option.",
+        description:
+          "Please complete all reflection questions and select at least one evidence option.",
       });
       return;
     }
@@ -107,7 +109,8 @@ export const Step3Reflection: React.FC<Step3Props> = ({ onNext, onBack }) => {
       <form onSubmit={handleContinue} className="flex flex-col gap-6">
         <div className="flex flex-col gap-1.5">
           <label className="text-text-dark font-medium text-xs xl:text-sm leading-[1.4] select-none">
-            Which tasks are you most confident performing? <span className="text-primary-solid ml-0.5">*</span>
+            Which tasks are you most confident performing?{" "}
+            <span className="text-primary-solid ml-0.5">*</span>
           </label>
           <textarea
             name="tasks"
@@ -130,7 +133,8 @@ export const Step3Reflection: React.FC<Step3Props> = ({ onNext, onBack }) => {
 
         <div className="flex flex-col gap-1.5">
           <label className="text-text-dark font-medium text-xs xl:text-sm leading-[1.4] select-none">
-            Which skills would you like to improve? <span className="text-primary-solid ml-0.5">*</span>
+            Which skills would you like to improve?{" "}
+            <span className="text-primary-solid ml-0.5">*</span>
           </label>
           <textarea
             name="skills"
@@ -156,7 +160,8 @@ export const Step3Reflection: React.FC<Step3Props> = ({ onNext, onBack }) => {
             Evidence Summary <InfoIcon sectionName="Evidence Summary" />
           </h2>
           <p className="text-neutral-secondary text-xs sm:text-sm font-normal">
-            Which evidence can you provide? (Multiple Selection) <span className="text-primary-solid ml-0.5">*</span>
+            Which evidence can you provide? (Multiple Selection){" "}
+            <span className="text-primary-solid ml-0.5">*</span>
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -173,8 +178,8 @@ export const Step3Reflection: React.FC<Step3Props> = ({ onNext, onBack }) => {
                       isSelected
                         ? "border-secondary bg-white ring-1 ring-secondary/40 shadow-xs"
                         : errors.evidences
-                        ? "border-red-500"
-                        : "border-[#D9D9D980] hover:border-gray-300"
+                          ? "border-red-500"
+                          : "border-[#D9D9D980] hover:border-gray-300"
                     }
                   `}
                 >
@@ -218,7 +223,7 @@ export const Step3Reflection: React.FC<Step3Props> = ({ onNext, onBack }) => {
             <button
               type="button"
               onClick={() => setShowDraftModal(true)}
-              className="px-5 h-11 bg-white border border-secondary text-secondary hover:bg-secondary/10 font-semibold text-sm rounded-lg flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer whitespace-nowrap"
+              className="px-5 h-11 bg-white border border-secondary text-secondary hover:bg-secondary/10 font-semibold text-sm rounded-lg flex items-center justify-center gap-2 transition-all shadow-lg cursor-pointer whitespace-nowrap"
             >
               <span>Save As Draft</span>
               <Image
@@ -236,7 +241,7 @@ export const Step3Reflection: React.FC<Step3Props> = ({ onNext, onBack }) => {
               variant="amber"
               size="md"
               rightIcon={<FiArrowRight className="w-4.5 h-4.5" />}
-              className="px-8 h-11 text-white font-bold text-sm rounded-xl shadow-sm cursor-pointer whitespace-nowrap"
+              className="px-8 h-11 text-white font-bold text-sm rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
             >
               Continue
             </Button>
@@ -253,5 +258,3 @@ export const Step3Reflection: React.FC<Step3Props> = ({ onNext, onBack }) => {
     </motion.div>
   );
 };
-
-

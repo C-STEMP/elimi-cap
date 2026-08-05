@@ -18,6 +18,7 @@ import { StatusModal } from "@/components/ui/status-modal";
 import { useAppDispatch } from "@/store/hooks";
 import { setSidebarVariant, setRplStep } from "@/store/slices/authSlice";
 import { personalInfoSchema, extractZodErrors } from "@/lib/validation";
+import { useCountryStateCity } from "@/lib/hooks/useCountryStateCity";
 
 export interface RPLPersonalInfoProps {
   onBack?: () => void;
@@ -62,8 +63,24 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
     dispatch(setRplStep(1));
   }, [dispatch]);
 
+  // ── Country / State / City cascading selects ────────────────────────────
+  const { countries, states, cities } = useCountryStateCity(
+    form.country,
+    form.state,
+  );
+
   const update = (field: keyof typeof initialForm, value: string) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
+    setForm((prev) => {
+      const next = { ...prev, [field]: value };
+      if (field === "country") {
+        next.state = "";
+        next.lga = "";
+      }
+      if (field === "state") {
+        next.lga = "";
+      }
+      return next;
+    });
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
@@ -268,8 +285,7 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
               value={form.phoneNumber}
               onChange={(v) => update("phoneNumber", v)}
               error={errors.phoneNumber}
-              country="ng"
-              preferredCountries={["ng", "gh", "ke", "za"]}
+              defaultCountry="NG"
             />
           </div>
         </div>
@@ -288,8 +304,8 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
                   <span className="text-primary-solid ml-0.5">*</span>
                 </span>
               }
-              placeholder="Select"
-              options={["Nigeria", "Ghana", "Kenya", "South Africa", "Other"]}
+              placeholder="Select country"
+              options={countries}
               value={form.country}
               error={errors.country}
               onChange={(e) => update("country", e.target.value)}
@@ -302,40 +318,26 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
                   <span className="text-primary-solid ml-0.5">*</span>
                 </span>
               }
-              placeholder="Select"
-              options={[
-                "Lagos",
-                "Oyo",
-                "FCT Abuja",
-                "Rivers",
-                "Ogun",
-                "Enugu",
-                "Kano",
-                "Delta",
-              ]}
+              placeholder={form.country ? "Select state" : "Select country first"}
+              options={states}
               value={form.state}
               error={errors.state}
+              disabled={!form.country}
               onChange={(e) => update("state", e.target.value)}
             />
 
             <Select
               label={
                 <span>
-                  Local Government Area (LGA)
+                  City / LGA
                   <span className="text-primary-solid ml-0.5">*</span>
                 </span>
               }
-              placeholder="Select"
-              options={[
-                "Ibadan North",
-                "Ikeja",
-                "Abuja Municipal",
-                "Eti-Osa",
-                "Port Harcourt",
-                "Obafemi Owode",
-              ]}
+              placeholder={form.state ? "Select city" : "Select state first"}
+              options={cities}
               value={form.lga}
               error={errors.lga}
+              disabled={!form.state}
               onChange={(e) => update("lga", e.target.value)}
             />
 
@@ -466,7 +468,7 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
             <button
               type="button"
               onClick={handleSaveDraft}
-              className="px-5 h-11 bg-white border border-secondary text-secondary hover:bg-secondary/10 font-semibold text-sm rounded-lg flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer whitespace-nowrap"
+              className="px-5 h-11 bg-white border border-secondary text-secondary hover:bg-secondary/10 font-semibold text-sm rounded-lg flex items-center justify-center gap-2 transition-all shadow-lg cursor-pointer whitespace-nowrap"
             >
               <span>Save As Draft</span>
               <Image
@@ -484,7 +486,7 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
               size="md"
               loading={isSubmitting}
               rightIcon={<FiArrowRight className="w-4.5 h-4.5" />}
-              className="px-8 h-11 text-white font-bold text-sm rounded-xl shadow-sm cursor-pointer whitespace-nowrap"
+              className="px-8 h-11 text-white font-bold text-sm rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
             >
               Continue
             </Button>

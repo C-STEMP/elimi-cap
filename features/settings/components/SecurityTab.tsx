@@ -21,7 +21,7 @@ export const SecurityTab: React.FC<SecurityTabProps> = ({
   onPasswordChangeSuccess,
 }) => {
   return (
-    <div className="bg-white rounded-[20px] p-6 lg:p-8 shadow-sm border border-gray-100/80 flex flex-col gap-8 w-full">
+    <div className="bg-white rounded-[20px] p-6 lg:p-8 shadow-lg border border-gray-100/80 flex flex-col gap-8 w-full">
       <VerificationStatusCard status={status} onVerifyNow={onVerifyNow} />
       <hr className="border-gray-100" />
       <ChangePasswordSection

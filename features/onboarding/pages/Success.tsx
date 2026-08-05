@@ -80,7 +80,7 @@ export const Success: React.FC<SuccessProps> = ({
             onClick={handleDashboard}
             variant="amber"
             size="md"
-            className="w-full h-12.5 text-white font-bold text-base bg-[#fbab2a] hover:bg-[#e89b1f] transition-all shadow-sm cursor-pointer rounded-xl"
+            className="w-full h-12.5 text-white font-bold text-base bg-[#fbab2a] hover:bg-[#e89b1f] transition-all shadow-lg cursor-pointer rounded-xl"
           >
             Go To Dashboard
           </Button>
@@ -91,7 +91,7 @@ export const Success: React.FC<SuccessProps> = ({
               onClick={handleStart}
               variant="secondary"
               size="md"
-              className="w-full h-12.5 text-white font-bold text-base bg-secondary hover:bg-secondary-hover focus:ring-secondary/30 transition-all shadow-sm cursor-pointer"
+              className="w-full h-12.5 text-white font-bold text-base bg-secondary hover:bg-secondary-hover focus:ring-secondary/30 transition-all shadow-lg cursor-pointer"
             >
               Start Application
             </Button>
@@ -101,7 +101,7 @@ export const Success: React.FC<SuccessProps> = ({
               onClick={handleDashboard}
               variant="amber"
               size="md"
-              className="w-full h-12.5 text-white font-bold text-base bg-[#fbab2a] hover:bg-[#e89b1f] transition-all shadow-sm cursor-pointer rounded-xl"
+              className="w-full h-12.5 text-white font-bold text-base bg-[#fbab2a] hover:bg-[#e89b1f] transition-all shadow-lg cursor-pointer rounded-xl"
             >
               Go To Dashboard
             </Button>
@@ -111,4 +111,3 @@ export const Success: React.FC<SuccessProps> = ({
     </motion.div>
   );
 };
-

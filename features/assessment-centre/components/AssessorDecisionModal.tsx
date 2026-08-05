@@ -76,7 +76,7 @@ export const AssessorDecisionModal: React.FC<AssessorDecisionModalProps> = ({
                 onClick={onConfirmShortlist}
                 variant="amber"
                 size="lg"
-                className="w-full h-12.5 text-white font-bold text-base bg-[#fbab2a] hover:bg-[#e89b1f] transition-all shadow-sm cursor-pointer rounded-xl"
+                className="w-full h-12.5 text-white font-bold text-base bg-[#fbab2a] hover:bg-[#e89b1f] transition-all shadow-lg cursor-pointer rounded-xl"
               >
                 Yes, Shortlist
               </Button>
@@ -111,7 +111,7 @@ export const AssessorDecisionModal: React.FC<AssessorDecisionModalProps> = ({
                 onClick={onClose}
                 variant="amber"
                 size="lg"
-                className="w-full h-12.5 text-white font-bold text-base bg-[#fbab2a] hover:bg-[#e89b1f] transition-all shadow-sm cursor-pointer rounded-xl"
+                className="w-full h-12.5 text-white font-bold text-base bg-[#fbab2a] hover:bg-[#e89b1f] transition-all shadow-lg cursor-pointer rounded-xl"
               >
                 Continue
               </Button>
@@ -136,7 +136,7 @@ export const AssessorDecisionModal: React.FC<AssessorDecisionModalProps> = ({
               <button
                 type="button"
                 onClick={onConfirmReject}
-                className="w-full h-12.5 text-white font-bold text-base bg-[#C5221F] hover:bg-[#a81c19] transition-all shadow-sm cursor-pointer rounded-xl"
+                className="w-full h-12.5 text-white font-bold text-base bg-[#C5221F] hover:bg-[#a81c19] transition-all shadow-lg cursor-pointer rounded-xl"
               >
                 Yes, Reject
               </button>
@@ -171,7 +171,7 @@ export const AssessorDecisionModal: React.FC<AssessorDecisionModalProps> = ({
                 onClick={onClose}
                 variant="amber"
                 size="lg"
-                className="w-full h-12.5 text-white font-bold text-base bg-[#fbab2a] hover:bg-[#e89b1f] transition-all shadow-sm cursor-pointer rounded-xl"
+                className="w-full h-12.5 text-white font-bold text-base bg-[#fbab2a] hover:bg-[#e89b1f] transition-all shadow-lg cursor-pointer rounded-xl"
               >
                 Continue
               </Button>

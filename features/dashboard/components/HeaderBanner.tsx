@@ -60,7 +60,7 @@ export const HeaderBanner: React.FC<HeaderBannerProps> = ({
                 href={link.href}
                 className={`px-5 py-2.5 rounded-full text-xs lg:text-sm font-semibold transition-all duration-200 ${
                   isActive
-                    ? "bg-[#b93852] text-white shadow-sm"
+                    ? "bg-[#b93852] text-white shadow-lg"
                     : "text-white/80 hover:text-white hover:bg-white/10"
                 }`}
               >
@@ -120,7 +120,7 @@ export const HeaderBanner: React.FC<HeaderBannerProps> = ({
               href={link.href}
               className={`px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-200 shrink-0 ${
                 isActive
-                  ? "bg-[#b93852] text-white shadow-sm"
+                  ? "bg-[#b93852] text-white shadow-lg"
                   : "text-white/80 hover:text-white bg-white/10"
               }`}
             >
@@ -175,7 +175,7 @@ export const HeaderBanner: React.FC<HeaderBannerProps> = ({
               <Button
                 variant="secondary"
                 onClick={() => router.push(createButtonHref)}
-                className="bg-[#fbab2a] hover:bg-[#e89b1f] active:scale-95 text-white font-semibold text-xs sm:text-sm px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-sm transition-all cursor-pointer shrink-0"
+                className="bg-[#fbab2a] hover:bg-[#e89b1f] active:scale-95 text-white font-semibold text-xs sm:text-sm px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-lg transition-all cursor-pointer shrink-0"
               >
                 {createButtonText}
                 <FiPlus className="w-4 h-4 stroke-[2.5]" />

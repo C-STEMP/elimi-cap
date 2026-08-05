@@ -51,7 +51,7 @@ export const SelfAssessmentSuccessModal: React.FC<SuccessModalProps> = ({
             onClick={onNavigateToVault}
             variant="amber"
             size="lg"
-            className="w-full h-12.5 text-white font-bold text-base bg-[#fbab2a] hover:bg-[#e89b1f] transition-all shadow-sm cursor-pointer rounded-xl"
+            className="w-full h-12.5 text-white font-bold text-base bg-[#fbab2a] hover:bg-[#e89b1f] transition-all shadow-lg cursor-pointer rounded-xl"
           >
             Go To Evidence Vault
           </Button>
@@ -60,4 +60,3 @@ export const SelfAssessmentSuccessModal: React.FC<SuccessModalProps> = ({
     </AnimatePresence>
   );
 };
-

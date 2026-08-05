@@ -70,6 +70,7 @@ export const PassportUpload: React.FC<PassportUploadProps> = ({
         ref={fileInputRef}
         onChange={handleFileChange}
         accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+        style={{ display: "none" }}
         className="hidden"
       />
       {preview ? (

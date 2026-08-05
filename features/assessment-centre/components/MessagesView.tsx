@@ -12,10 +12,7 @@ import {
 } from "react-icons/fi";
 import { Button } from "@/components/ui/button";
 import { BroadcastModal } from "./BroadcastModal";
-import {
-  MOCK_CONTACTS,
-  MOCK_CHAT_MESSAGES,
-} from "../utils/constants";
+import { MOCK_CONTACTS, MOCK_CHAT_MESSAGES } from "../utils/constants";
 import { ChatMessage } from "../types";
 
 export const MessagesView: React.FC = () => {
@@ -55,8 +52,8 @@ export const MessagesView: React.FC = () => {
       prev.map((c) =>
         c.id === selectedContactId
           ? { ...c, lastMessage: inputMessage.trim() }
-          : c
-      )
+          : c,
+      ),
     );
 
     setInputMessage("");
@@ -83,7 +80,7 @@ export const MessagesView: React.FC = () => {
   };
 
   const filteredContacts = contacts.filter((c) =>
-    c.name.toLowerCase().includes(searchQuery.toLowerCase())
+    c.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   return (
@@ -100,7 +97,7 @@ export const MessagesView: React.FC = () => {
           variant="amber"
           size="md"
           rightIcon={<FiPlus className="w-4.5 h-4.5" />}
-          className="px-6 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-sm cursor-pointer whitespace-nowrap"
+          className="px-6 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
         >
           Send Broadcast Message
         </Button>

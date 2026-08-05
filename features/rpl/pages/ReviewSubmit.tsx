@@ -277,7 +277,7 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
           <button
             type="button"
             onClick={handleSaveDraft}
-            className="px-5 h-11 bg-white border border-secondary text-secondary hover:bg-secondary/10 font-semibold text-sm rounded-lg flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer whitespace-nowrap"
+            className="px-5 h-11 bg-white border border-secondary text-secondary hover:bg-secondary/10 font-semibold text-sm rounded-lg flex items-center justify-center gap-2 transition-all shadow-lg cursor-pointer whitespace-nowrap"
           >
             <span>Save As Draft</span>
             <Image
@@ -296,7 +296,7 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
             onClick={handleSubmit}
             disabled={!allChecked}
             rightIcon={<FiArrowRight className="w-4.5 h-4.5" />}
-            className="px-8 h-11 text-white font-bold text-sm rounded-xl shadow-sm cursor-pointer whitespace-nowrap"
+            className="px-8 h-11 text-white font-bold text-sm rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
           >
             Submit
           </Button>

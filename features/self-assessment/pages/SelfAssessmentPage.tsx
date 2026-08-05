@@ -67,7 +67,7 @@ export const SelfAssessmentPage: React.FC<SelfAssessmentPageProps> = ({
 
       <div
         suppressHydrationWarning
-        className="flex-1 w-full bg-white rounded-t-4xl lg:rounded-none -mt-4 lg:mt-0 p-6 sm:p-8 md:p-10 xl:p-12 flex flex-col items-center justify-start relative min-h-[calc(100vh-100px)] lg:min-h-screen lg:h-screen lg:overflow-y-auto shadow-xl lg:shadow-none"
+        className="flex-1 w-full bg-white rounded-t-4xl lg:rounded-none -mt-4 lg:mt-0 p-6 sm:p-8 md:p-10 xl:p-12 flex flex-col items-center justify-start relative min-h-[calc(100vh-100px)] lg:min-h-screen lg:h-screen lg:overflow-y-auto shadow-md lg:shadow-none"
       >
         <div
           suppressHydrationWarning
@@ -110,4 +110,3 @@ export const SelfAssessmentPage: React.FC<SelfAssessmentPageProps> = ({
     </div>
   );
 };
-

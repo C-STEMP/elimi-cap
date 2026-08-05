@@ -5,11 +5,11 @@ import { heroImg1, heroImg2, heroImg3, heroImg4 } from "@/assets";
 export function HeroSection() {
   return (
     <section className="relative flex flex-col justify-between overflow-hidden bg-[#661126] text-white pt-4 lg:pt-10 pb-10">
-      <div className="mx-auto flex flex-col justify-between h-full w-full  px-4 text-center sm:px-6 lg:px-8 xl:px-16">
+      <div className="mx-auto flex flex-col justify-between h-full w-full px-4 text-center sm:px-6 lg:px-8 xl:px-16">
         <div className="flex flex-col items-center justify-center my-auto py-2 mb-4">
           <div
             data-aos="fade-down"
-            className="inline-flex items-center rounded-full bg-secondary/10 px-3.5 lg:px-5 py-1 text-[11px] lg:text-base font-semibold tracking-wider text-secondary uppercase"
+            className="inline-flex items-center rounded-full bg-secondary/10 px-3.5 lg:px-5 py-1 text-[8px] lg:text-base font-semibold tracking-wider text-secondary uppercase"
           >
             NIGERIA&apos;S FIRST NATIONWIDE TVET SYSTEM PLATFORM
           </div>
@@ -59,7 +59,11 @@ export function HeroSection() {
 
         <div className="mt-6 lg:mt-8 grid grid-cols-2 sm:grid-cols-4 gap-3 lg:gap-4 h-80 lg:h-84 w-full shrink-0">
           {/* Column 1: Graffiti Artist Top + 99% Certification Rate Bottom */}
-          <div data-aos="fade-up" data-aos-delay="200" className="flex flex-col gap-3 lg:gap-4 h-full">
+          <div
+            data-aos="fade-up"
+            data-aos-delay="200"
+            className="flex flex-col gap-3 lg:gap-4 h-full"
+          >
             <div className="relative flex-2 overflow-hidden rounded-xl lg:rounded-2xl group">
               <Image
                 src={heroImg4}
@@ -70,7 +74,7 @@ export function HeroSection() {
                 priority
               />
             </div>
-            <div className="flex flex-1 flex-col items-center justify-center rounded-xl lg:rounded-2xl bg-[#FBB040] text-center text-black shadow-sm">
+            <div className="flex flex-1 flex-col items-center justify-center rounded-xl lg:rounded-2xl bg-[#FBB040] text-center text-black shadow-lg">
               <span className="text-2xl sm:text-3xl lg:text-4xl font-extrabold leading-none tracking-tight">
                 99%
               </span>
@@ -81,7 +85,11 @@ export function HeroSection() {
           </div>
 
           {/* Column 2: Full height Builder with Timber */}
-          <div data-aos="fade-up" data-aos-delay="300" className="relative h-full overflow-hidden rounded-xl lg:rounded-2xl group">
+          <div
+            data-aos="fade-up"
+            data-aos-delay="300"
+            className="relative h-full overflow-hidden rounded-xl lg:rounded-2xl group"
+          >
             <Image
               src={heroImg2}
               alt="Technical builder constructing timber structure"
@@ -92,8 +100,12 @@ export function HeroSection() {
           </div>
 
           {/* Column 3: 80% Course Completion Rate Top + Electronics Tech Bottom */}
-          <div data-aos="fade-up" data-aos-delay="400" className="flex flex-col gap-3 lg:gap-4 h-full">
-            <div className="flex flex-1 flex-col items-center justify-center rounded-xl lg:rounded-2xl bg-[#FDF0D5] text-center text-black shadow-sm">
+          <div
+            data-aos="fade-up"
+            data-aos-delay="400"
+            className="flex flex-col gap-3 lg:gap-4 h-full"
+          >
+            <div className="flex flex-1 flex-col items-center justify-center rounded-xl lg:rounded-2xl bg-[#FDF0D5] text-center text-black shadow-lg">
               <span className="text-2xl sm:text-3xl lg:text-4xl font-extrabold leading-none tracking-tight">
                 80%
               </span>
@@ -113,7 +125,11 @@ export function HeroSection() {
           </div>
 
           {/* Column 4: Full height Tradesman with Equipment */}
-          <div data-aos="fade-up" data-aos-delay="500" className="relative h-full overflow-hidden rounded-xl lg:rounded-2xl group">
+          <div
+            data-aos="fade-up"
+            data-aos-delay="500"
+            className="relative h-full overflow-hidden rounded-xl lg:rounded-2xl group"
+          >
             <Image
               src={heroImg3}
               alt="Verified tradesman with equipment"

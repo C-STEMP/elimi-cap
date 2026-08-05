@@ -42,7 +42,11 @@ export const Step2Competencies: React.FC<Step2Props> = ({ onNext, onBack }) => {
   const handleConfidenceChange = (idx: number, val: string) => {
     setCompetencyAnswers((prev) => ({
       ...prev,
-      [idx]: { ...prev[idx], confidence: val, experience: prev[idx]?.experience || "" },
+      [idx]: {
+        ...prev[idx],
+        confidence: val,
+        experience: prev[idx]?.experience || "",
+      },
     }));
     if (errors[`confidence_${idx}`]) {
       setErrors((prev) => ({ ...prev, [`confidence_${idx}`]: "" }));
@@ -52,7 +56,11 @@ export const Step2Competencies: React.FC<Step2Props> = ({ onNext, onBack }) => {
   const handleEvidenceChange = (idx: number, val: string) => {
     setCompetencyAnswers((prev) => ({
       ...prev,
-      [idx]: { ...prev[idx], evidence: val, experience: prev[idx]?.experience || "" },
+      [idx]: {
+        ...prev[idx],
+        evidence: val,
+        experience: prev[idx]?.experience || "",
+      },
     }));
     if (errors[`evidence_${idx}`]) {
       setErrors((prev) => ({ ...prev, [`evidence_${idx}`]: "" }));
@@ -62,7 +70,12 @@ export const Step2Competencies: React.FC<Step2Props> = ({ onNext, onBack }) => {
   const handleExperienceChange = (idx: number, val: string) => {
     setCompetencyAnswers((prev) => ({
       ...prev,
-      [idx]: { ...prev[idx], confidence: prev[idx]?.confidence || "", evidence: prev[idx]?.evidence || "", experience: val },
+      [idx]: {
+        ...prev[idx],
+        confidence: prev[idx]?.confidence || "",
+        evidence: prev[idx]?.evidence || "",
+        experience: val,
+      },
     }));
     if (errors[`experience_${idx}`]) {
       setErrors((prev) => ({ ...prev, [`experience_${idx}`]: "" }));
@@ -99,7 +112,8 @@ export const Step2Competencies: React.FC<Step2Props> = ({ onNext, onBack }) => {
       toast({
         type: "error",
         title: "Input Required",
-        description: "Please complete all competency questions before continuing.",
+        description:
+          "Please complete all competency questions before continuing.",
       });
       return;
     }
@@ -130,7 +144,10 @@ export const Step2Competencies: React.FC<Step2Props> = ({ onNext, onBack }) => {
 
       <form onSubmit={handleContinue} className="flex flex-col gap-6">
         {MOCK_COMPETENCIES.map((title, idx) => (
-          <div key={idx} className="flex flex-col gap-4 pb-6 border-b border-gray-100/80">
+          <div
+            key={idx}
+            className="flex flex-col gap-4 pb-6 border-b border-gray-100/80"
+          >
             <h3 className="font-extrabold text-neutral-primary text-base xl:text-lg">
               {title}
             </h3>
@@ -165,7 +182,8 @@ export const Step2Competencies: React.FC<Step2Props> = ({ onNext, onBack }) => {
 
             <div className="flex flex-col gap-1.5">
               <label className="text-text-dark font-medium text-xs xl:text-sm leading-[1.4] select-none">
-                Tell us about your experience <span className="text-primary-solid ml-0.5">*</span>
+                Tell us about your experience{" "}
+                <span className="text-primary-solid ml-0.5">*</span>
               </label>
               <textarea
                 rows={2}
@@ -201,7 +219,7 @@ export const Step2Competencies: React.FC<Step2Props> = ({ onNext, onBack }) => {
             <button
               type="button"
               onClick={() => setShowDraftModal(true)}
-              className="px-5 h-11 bg-white border border-secondary text-secondary hover:bg-secondary/10 font-semibold text-sm rounded-lg flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer whitespace-nowrap"
+              className="px-5 h-11 bg-white border border-secondary text-secondary hover:bg-secondary/10 font-semibold text-sm rounded-lg flex items-center justify-center gap-2 transition-all shadow-lg cursor-pointer whitespace-nowrap"
             >
               <span>Save As Draft</span>
               <Image
@@ -219,7 +237,7 @@ export const Step2Competencies: React.FC<Step2Props> = ({ onNext, onBack }) => {
               variant="amber"
               size="md"
               rightIcon={<FiArrowRight className="w-4.5 h-4.5" />}
-              className="px-8 h-11 text-white font-bold text-sm rounded-xl shadow-sm cursor-pointer whitespace-nowrap"
+              className="px-8 h-11 text-white font-bold text-sm rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
             >
               Continue
             </Button>
@@ -236,5 +254,3 @@ export const Step2Competencies: React.FC<Step2Props> = ({ onNext, onBack }) => {
     </motion.div>
   );
 };
-
-

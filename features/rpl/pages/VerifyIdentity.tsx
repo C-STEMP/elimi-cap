@@ -184,7 +184,7 @@ export const RPLVerifyIdentity: React.FC<RPLVerifyIdentityProps> = ({
           <button
             type="button"
             onClick={handleSaveDraft}
-            className="px-5 h-11 bg-white border border-secondary text-secondary hover:bg-secondary/10 font-semibold text-sm rounded-lg flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer whitespace-nowrap"
+            className="px-5 h-11 bg-white border border-secondary text-secondary hover:bg-secondary/10 font-semibold text-sm rounded-lg flex items-center justify-center gap-2 transition-all shadow-lg cursor-pointer whitespace-nowrap"
           >
             <span>Save As Draft</span>
             <Image
@@ -203,7 +203,7 @@ export const RPLVerifyIdentity: React.FC<RPLVerifyIdentityProps> = ({
             variant="amber"
             size="md"
             rightIcon={<FiArrowRight className="w-4.5 h-4.5" />}
-            className="px-8 h-11 text-white font-bold text-sm rounded-xl shadow-sm cursor-pointer whitespace-nowrap"
+            className="px-8 h-11 text-white font-bold text-sm rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
           >
             Continue
           </Button>
@@ -226,7 +226,7 @@ export const RPLVerifyIdentity: React.FC<RPLVerifyIdentityProps> = ({
               exit={{ scale: 0.95, opacity: 0, y: 10 }}
               transition={{ duration: 0.25, ease: "easeOut" }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-2xl p-8 max-w-lg w-full flex flex-col items-center text-center shadow-xl relative overflow-hidden"
+              className="bg-white rounded-2xl p-8 max-w-lg w-full flex flex-col items-center text-center shadow-md relative overflow-hidden"
             >
               {modalState === "verifying" && (
                 <div className="flex flex-col items-center py-4">
@@ -341,14 +341,14 @@ export const RPLVerifyIdentity: React.FC<RPLVerifyIdentityProps> = ({
                           router.push("/rpl/personal-info");
                         }
                       }}
-                      className="w-full h-11 bg-secondary hover:bg-secondary-hover text-white font-semibold text-sm rounded-lg shadow-sm cursor-pointer"
+                      className="w-full h-11 bg-secondary hover:bg-secondary-hover text-white font-semibold text-sm rounded-lg shadow-lg cursor-pointer"
                     >
                       Review Personal Information
                     </Button>
                     <button
                       type="button"
                       onClick={() => setModalState("none")}
-                      className="w-full h-11 bg-white border border-secondary text-secondary hover:bg-secondary/10 font-semibold text-sm rounded-lg transition-all shadow-sm cursor-pointer"
+                      className="w-full h-11 bg-white border border-secondary text-secondary hover:bg-secondary/10 font-semibold text-sm rounded-lg transition-all shadow-lg cursor-pointer"
                     >
                       Try Again
                     </button>

@@ -62,7 +62,7 @@ export const AssessorRequestModal: React.FC<AssessorRequestModalProps> = ({
                   onClick={onConfirmAccept}
                   variant="amber"
                   size="lg"
-                  className="w-full h-12.5 text-white font-bold text-base bg-[#fbab2a] hover:bg-[#e89b1f] transition-all shadow-sm cursor-pointer rounded-xl"
+                  className="w-full h-12.5 text-white font-bold text-base bg-[#fbab2a] hover:bg-[#e89b1f] transition-all shadow-lg cursor-pointer rounded-xl"
                 >
                   Yes, Accept Request
                 </Button>
@@ -70,7 +70,7 @@ export const AssessorRequestModal: React.FC<AssessorRequestModalProps> = ({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="w-full h-12.5 bg-white border border-[#fbab2a] text-[#fbab2a] hover:bg-amber-50 font-bold text-base rounded-xl transition-all shadow-sm cursor-pointer"
+                  className="w-full h-12.5 bg-white border border-[#fbab2a] text-[#fbab2a] hover:bg-amber-50 font-bold text-base rounded-xl transition-all shadow-lg cursor-pointer"
                 >
                   No
                 </button>
@@ -106,7 +106,7 @@ export const AssessorRequestModal: React.FC<AssessorRequestModalProps> = ({
                 onClick={onClose}
                 variant="amber"
                 size="lg"
-                className="w-full h-12.5 text-white font-bold text-base bg-[#fbab2a] hover:bg-[#e89b1f] transition-all shadow-sm cursor-pointer rounded-xl"
+                className="w-full h-12.5 text-white font-bold text-base bg-[#fbab2a] hover:bg-[#e89b1f] transition-all shadow-lg cursor-pointer rounded-xl"
               >
                 Continue
               </Button>
@@ -141,7 +141,7 @@ export const AssessorRequestModal: React.FC<AssessorRequestModalProps> = ({
                 onClick={onClose}
                 variant="amber"
                 size="lg"
-                className="w-full h-12.5 text-white font-bold text-base bg-[#fbab2a] hover:bg-[#e89b1f] transition-all shadow-sm cursor-pointer rounded-xl"
+                className="w-full h-12.5 text-white font-bold text-base bg-[#fbab2a] hover:bg-[#e89b1f] transition-all shadow-lg cursor-pointer rounded-xl"
               >
                 Continue
               </Button>

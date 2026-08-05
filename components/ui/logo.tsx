@@ -28,6 +28,7 @@ export const Logo: React.FC<LogoProps> = ({
         width={width}
         height={computedHeight}
         priority
+        loading="eager"
         className="object-contain w-auto h-auto"
         style={{ width: "auto", height: "auto" }}
       />

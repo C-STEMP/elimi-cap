@@ -62,28 +62,36 @@ export const TransactionReceiptModal: React.FC<
             {/* Transaction Metadata Box */}
             <div className="bg-[#F8F9FA] p-4 rounded-2xl w-full grid grid-cols-2 gap-3 text-xs text-left border border-gray-100">
               <div className="flex flex-col">
-                <span className="text-[11px] text-gray-400 font-medium">Date</span>
+                <span className="text-[11px] text-gray-400 font-medium">
+                  Date
+                </span>
                 <span className="font-bold text-neutral-primary mt-0.5">
                   {transaction.date}
                 </span>
               </div>
 
               <div className="flex flex-col">
-                <span className="text-[11px] text-gray-400 font-medium">Transaction ID</span>
+                <span className="text-[11px] text-gray-400 font-medium">
+                  Transaction ID
+                </span>
                 <span className="font-bold text-neutral-primary mt-0.5 truncate">
                   {transaction.transactionId}
                 </span>
               </div>
 
               <div className="flex flex-col">
-                <span className="text-[11px] text-gray-400 font-medium">Payment Method</span>
+                <span className="text-[11px] text-gray-400 font-medium">
+                  Payment Method
+                </span>
                 <span className="font-bold text-neutral-primary mt-0.5">
                   {transaction.paymentMethod}
                 </span>
               </div>
 
               <div className="flex flex-col">
-                <span className="text-[11px] text-gray-400 font-medium">Status</span>
+                <span className="text-[11px] text-gray-400 font-medium">
+                  Status
+                </span>
                 <span className="font-bold text-neutral-primary mt-0.5">
                   {transaction.status === "Paid" ? "Completed" : "Pending"}
                 </span>
@@ -134,7 +142,7 @@ export const TransactionReceiptModal: React.FC<
               onClick={onClose}
               variant="amber"
               size="lg"
-              className="w-full h-12.5 text-white font-bold text-base bg-[#fbab2a] hover:bg-[#e89b1f] transition-all shadow-sm cursor-pointer rounded-xl mt-2"
+              className="w-full h-12.5 text-white font-bold text-base bg-[#fbab2a] hover:bg-[#e89b1f] transition-all shadow-lg cursor-pointer rounded-xl mt-2"
             >
               Download
             </Button>

@@ -121,7 +121,10 @@ export const PostJobModal: React.FC<PostJobModalProps> = ({
           )}
 
           {step === "form" ? (
-            <form onSubmit={handleSubmit} className="w-full flex flex-col items-center gap-4">
+            <form
+              onSubmit={handleSubmit}
+              className="w-full flex flex-col items-center gap-4"
+            >
               <div className="flex flex-col items-center text-center gap-1">
                 <h3 className="text-xl sm:text-2xl font-extrabold text-neutral-primary tracking-tight">
                   Post A Job
@@ -167,15 +170,14 @@ export const PostJobModal: React.FC<PostJobModalProps> = ({
                         onChange={(e) => setDurationValue(e.target.value)}
                         className="w-16 bg-input-bg border border-transparent focus:border-primary rounded-xl px-2.5 py-2.5 text-xs text-neutral-primary outline-none font-semibold text-center"
                       />
-                      <select
+                      <Select
+                        containerClassName="flex-1"
+                        size="sm"
+                        showPlaceholderOption={false}
                         value={durationUnit}
                         onChange={(e) => setDurationUnit(e.target.value)}
-                        className="flex-1 bg-input-bg border border-transparent focus:border-primary rounded-xl px-2.5 py-2.5 text-xs text-neutral-primary outline-none font-medium cursor-pointer"
-                      >
-                        <option value="Days">Days</option>
-                        <option value="Weeks">Weeks</option>
-                        <option value="Months">Months</option>
-                      </select>
+                        options={["Days", "Weeks", "Months"]}
+                      />
                     </div>
                   </div>
                 </div>
@@ -261,7 +263,7 @@ export const PostJobModal: React.FC<PostJobModalProps> = ({
                 type="submit"
                 variant="amber"
                 size="lg"
-                className="w-full h-12.5 text-white font-bold text-base bg-[#fbab2a] hover:bg-[#e89b1f] mt-3 transition-all shadow-sm cursor-pointer rounded-xl"
+                className="w-full h-12.5 text-white font-bold text-base bg-[#fbab2a] hover:bg-[#e89b1f] mt-3 transition-all shadow-lg cursor-pointer rounded-xl"
               >
                 Post Request
               </Button>
@@ -293,7 +295,7 @@ export const PostJobModal: React.FC<PostJobModalProps> = ({
                 onClick={handleReset}
                 variant="amber"
                 size="lg"
-                className="w-full h-12.5 text-white font-bold text-base bg-[#fbab2a] hover:bg-[#e89b1f] transition-all shadow-sm cursor-pointer rounded-xl"
+                className="w-full h-12.5 text-white font-bold text-base bg-[#fbab2a] hover:bg-[#e89b1f] transition-all shadow-lg cursor-pointer rounded-xl"
               >
                 Continue
               </Button>

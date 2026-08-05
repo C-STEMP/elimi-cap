@@ -68,7 +68,11 @@ const FormSelect: React.FC<ControlledSelectProps> = ({
   onChange,
   ...rest
 }) => (
-  <Select {...rest} value={value} onChange={(e) => onChange?.(e.target.value)} />
+  <Select
+    {...rest}
+    value={value}
+    onChange={(e) => onChange?.(e.target.value)}
+  />
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -87,7 +91,7 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
 
   // Restore persisted values on mount
   const savedStartApplication = useAppSelector(
-    (s) => s.onboarding.startApplication
+    (s) => s.onboarding.startApplication,
   );
 
   useEffect(() => {
@@ -112,7 +116,7 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
       createApplication({
         title: values.trade,
         subtitle: "Recognition Of Prior Learning",
-      })
+      }),
     );
 
     setTimeout(() => {
@@ -214,7 +218,7 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
             size="md"
             loading={isSubmitting}
             rightIcon={<FiArrowRight className="w-4.5 h-4.5" />}
-            className="px-8 h-11 font-bold text-sm rounded-xl shadow-sm cursor-pointer whitespace-nowrap"
+            className="px-8 h-11 font-bold text-sm rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
           >
             Continue
           </Button>

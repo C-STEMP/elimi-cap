@@ -16,7 +16,7 @@ export function InfrastructureSection() {
           {/* Left Column Image */}
           <div
             data-aos="fade-right"
-            className="relative h-95 sm:h-120 lg:col-span-5 lg:h-130 overflow-hidden rounded-2xl shadow-xl"
+            className="relative h-95 sm:h-120 lg:col-span-5 lg:h-130 overflow-hidden rounded-2xl shadow-md"
           >
             <Image
               src={landingImg1}

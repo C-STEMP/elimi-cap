@@ -32,12 +32,13 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-[20px] p-5 shadow-sm border border-gray-100/80 flex flex-col gap-6 w-full lg:w-72 shrink-0">
+    <div className="bg-white rounded-[20px] p-5 shadow-lg border border-gray-100/80 flex flex-col gap-6 w-full lg:w-72 shrink-0">
       {/* Hidden File Input for Changing Picture */}
       <input
         ref={fileInputRef}
         type="file"
         accept="image/png, image/jpeg, image/jpg"
+        style={{ display: "none" }}
         className="hidden"
         onChange={handleFileChange}
       />

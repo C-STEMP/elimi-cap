@@ -6,7 +6,7 @@ import { ASSETS_URL } from "@/assets";
 
 export const LearningPromoCard: React.FC = () => {
   return (
-    <div className="bg-[#FEEED3] rounded-[22px] p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm border border-[#fae7c9] h-full">
+    <div className="bg-[#FEEED3] rounded-[22px] p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg border border-[#fae7c9] h-full">
       <div className="flex-1 flex flex-col justify-between h-full items-start">
         <div>
           <h2 className="text-xl lg:text-[28px] font-bold text-black mb-2 tracking-tight leading-snug">
@@ -19,7 +19,7 @@ export const LearningPromoCard: React.FC = () => {
         </div>
         <button
           type="button"
-          className="bg-[#fbab2a] hover:bg-[#e89b1f] text-white font-semibold text-sm px-6 py-2.5 rounded-xl transition-all shadow-sm cursor-pointer active:scale-95"
+          className="bg-[#fbab2a] hover:bg-[#e89b1f] text-white font-semibold text-sm px-6 py-2.5 rounded-xl transition-all shadow-lg cursor-pointer active:scale-95"
         >
           Start Learning
         </button>

@@ -34,7 +34,8 @@ export const ChangePassword: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const otpErr = mode === "reset" && !otp.trim() ? "Verification code is required" : null;
+    const otpErr =
+      mode === "reset" && !otp.trim() ? "Verification code is required" : null;
     const passErr = validatePassword(password);
     const confirmErr = validateConfirmPassword(password, confirmPassword);
 
@@ -44,7 +45,11 @@ export const ChangePassword: React.FC = () => {
         password: passErr || undefined,
         confirmPassword: confirmErr || undefined,
       });
-      toast({ type: "error", title: "Validation Error", description: "Please check the highlighted fields." });
+      toast({
+        type: "error",
+        title: "Validation Error",
+        description: "Please check the highlighted fields.",
+      });
       return;
     }
 
@@ -71,7 +76,12 @@ export const ChangePassword: React.FC = () => {
       <form onSubmit={handleSubmit} className="w-full flex flex-col gap-6">
         {mode === "reset" && (
           <Input
-            label={<span>Verification Code<span className="text-primary-solid ml-0.5">*</span></span>}
+            label={
+              <span>
+                Verification Code
+                <span className="text-primary-solid ml-0.5">*</span>
+              </span>
+            }
             type="text"
             name="otp"
             placeholder="4-digit code from email"
@@ -81,7 +91,8 @@ export const ChangePassword: React.FC = () => {
             onChange={(e) => {
               const val = e.target.value.replace(/\D/g, "").slice(0, 4);
               setOtp(val);
-              if (errors.otp) setErrors((prev) => ({ ...prev, otp: undefined }));
+              if (errors.otp)
+                setErrors((prev) => ({ ...prev, otp: undefined }));
             }}
             disabled={isPending}
           />
@@ -97,12 +108,19 @@ export const ChangePassword: React.FC = () => {
             onChange={(e) => {
               const val = e.target.value;
               setPassword(val);
-              if (errors.password) setErrors((prev) => ({ ...prev, password: undefined }));
+              if (errors.password)
+                setErrors((prev) => ({ ...prev, password: undefined }));
               if (confirmPassword) {
                 if (val !== confirmPassword) {
-                  setErrors((prev) => ({ ...prev, confirmPassword: "Passwords do not match" }));
+                  setErrors((prev) => ({
+                    ...prev,
+                    confirmPassword: "Passwords do not match",
+                  }));
                 } else {
-                  setErrors((prev) => ({ ...prev, confirmPassword: undefined }));
+                  setErrors((prev) => ({
+                    ...prev,
+                    confirmPassword: undefined,
+                  }));
                 }
               }
             }}
@@ -122,7 +140,10 @@ export const ChangePassword: React.FC = () => {
             const val = e.target.value;
             setConfirmPassword(val);
             if (val && password && val !== password) {
-              setErrors((prev) => ({ ...prev, confirmPassword: "Passwords do not match" }));
+              setErrors((prev) => ({
+                ...prev,
+                confirmPassword: "Passwords do not match",
+              }));
             } else {
               setErrors((prev) => ({ ...prev, confirmPassword: undefined }));
             }
@@ -135,7 +156,7 @@ export const ChangePassword: React.FC = () => {
             type="submit"
             variant="secondary"
             size="md"
-            className="w-full h-12.5 text-white! font-bold text-base bg-secondary hover:bg-secondary-hover focus:ring-secondary/30 transition-all shadow-sm cursor-pointer"
+            className="w-full h-12.5 text-white! font-bold text-base bg-secondary hover:bg-secondary-hover focus:ring-secondary/30 transition-all shadow-lg cursor-pointer"
             loading={isPending}
           >
             Change Password
@@ -143,9 +164,7 @@ export const ChangePassword: React.FC = () => {
         </div>
 
         <div className="w-full text-center mt-3 text-sm select-none">
-          <span className="text-neutral-secondary font-normal">
-            Go to
-          </span>
+          <span className="text-neutral-secondary font-normal">Go to</span>
           <Link
             href="/signin"
             className="text-primary-solid font-bold ml-1 hover:text-primary-hover transition-colors"

@@ -1,6 +1,12 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+} from "react";
 import { ToastSuccessIcon, ToastErrorIcon, ToastInfoIcon } from "./svg-icons";
 
 export interface Toast {
@@ -27,13 +33,21 @@ export const useToast = () => {
   return context;
 };
 
-export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const toast = useCallback(({ type, title, description, duration = 4000 }: Omit<Toast, "id">) => {
-    const id = Math.random().toString(36).substring(2, 9);
-    setToasts((prev) => [...prev, { id, type, title, description, duration }]);
-  }, []);
+  const toast = useCallback(
+    ({ type, title, description, duration = 4000 }: Omit<Toast, "id">) => {
+      const id = Math.random().toString(36).substring(2, 9);
+      setToasts((prev) => [
+        ...prev,
+        { id, type, title, description, duration },
+      ]);
+    },
+    [],
+  );
 
   const dismiss = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
@@ -54,7 +68,10 @@ interface ToastContainerProps {
 
 const ToastContainer: React.FC<ToastContainerProps> = ({ toasts, dismiss }) => {
   return (
-    <div suppressHydrationWarning className="fixed top-6 right-6 z-50 flex flex-col gap-4 w-full max-w-90 pointer-events-none select-none">
+    <div
+      suppressHydrationWarning
+      className="fixed top-6 right-6 z-50 flex flex-col gap-4 w-full max-w-90 pointer-events-none select-none"
+    >
       {toasts.map((t) => (
         <ToastItem key={t.id} toast={t} onDismiss={() => dismiss(t.id)} />
       ))}
@@ -62,7 +79,10 @@ const ToastContainer: React.FC<ToastContainerProps> = ({ toasts, dismiss }) => {
   );
 };
 
-const ToastItem: React.FC<{ toast: Toast; onDismiss: () => void }> = ({ toast, onDismiss }) => {
+const ToastItem: React.FC<{ toast: Toast; onDismiss: () => void }> = ({
+  toast,
+  onDismiss,
+}) => {
   const { type, title, description, duration = 4000 } = toast;
   const [width, setWidth] = useState("100%");
 
@@ -86,8 +106,8 @@ const ToastItem: React.FC<{ toast: Toast; onDismiss: () => void }> = ({ toast, o
     type === "success"
       ? "bg-[#1E7F4C]"
       : type === "error"
-      ? "bg-[#B3261E]"
-      : "bg-[#0284C7]";
+        ? "bg-[#B3261E]"
+        : "bg-secondary";
 
   const renderToastIcon = () => {
     if (type === "success") return <ToastSuccessIcon />;

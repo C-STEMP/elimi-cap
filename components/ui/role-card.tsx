@@ -42,7 +42,7 @@ export const RoleCard: React.FC<RoleCardProps> = ({
     <button
       type="button"
       onClick={() => onSelect?.(id)}
-      className="group relative w-full max-w-109.75 aspect-439/199 rounded-[10px] flex items-end justify-between px-4 sm:px-8 pb-4 sm:pb-7 text-left select-none cursor-pointer overflow-hidden focus:outline-none active:scale-[0.995] transition-all duration-300 ease-out hover:translate-x-2.5"
+      className="group relative w-full max-w-109.75 aspect-439/199 rounded-[10px] flex items-end justify-between px-4 sm:px-8 pb-4 sm:pb-7 text-left select-none cursor-pointer overflow-hidden focus:outline-none active:scale-[0.995] transition-all duration-300 ease-out hover:translate-x-1.5"
     >
       <Image
         src={ASSETS_URL.cardWhite}
@@ -93,8 +93,8 @@ export const RoleCard: React.FC<RoleCardProps> = ({
         <div
           className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
             isSelected
-              ? "bg-white text-neutral-primary shadow-sm"
-              : "bg-transparent text-neutral-primary group-hover:bg-white group-hover:text-neutral-primary group-hover:shadow-sm"
+              ? "bg-white text-neutral-primary shadow-lg"
+              : "bg-transparent text-neutral-primary group-hover:bg-white group-hover:text-neutral-primary group-hover:shadow-lg"
           }`}
         >
           <FiArrowRight className="w-5 h-5" />

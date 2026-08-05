@@ -30,7 +30,7 @@ export const ProfileInfoTab: React.FC<ProfileInfoTabProps> = ({
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-white rounded-[20px] p-6 lg:p-8 shadow-sm border border-gray-100/80 flex flex-col gap-8 w-full"
+      className="bg-white rounded-[20px] p-6 lg:p-8 shadow-lg border border-gray-100/80 flex flex-col gap-8 w-full"
     >
       <PersonalDetailsSection formData={formData} onChange={onChange} />
       <hr className="border-gray-100 my-1" />
@@ -47,7 +47,7 @@ export const ProfileInfoTab: React.FC<ProfileInfoTabProps> = ({
         <Button
           type="submit"
           size="sm"
-          className="bg-[#fbab2a]! hover:bg-[#e89b1f]! active:scale-95 text-white font-semibold px-8 py-3 rounded-xl flex items-center gap-2.5 shadow-sm transition-all cursor-pointer text-sm"
+          className="bg-[#fbab2a]! hover:bg-[#e89b1f]! active:scale-95 text-white font-semibold px-8 py-3 rounded-xl flex items-center gap-2.5 shadow-lg transition-all cursor-pointer text-sm"
         >
           <span>Save</span>
           <Image

@@ -1,65 +1,80 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 
-export const CalendarWidget: React.FC = () => {
-  const daysOfWeek = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+const DAYS_OF_WEEK = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 
-  // July 2026 dates layout (July 1st 2026 is Wednesday, so 3 empty slots)
-  const calendarDays = [
-    null,
-    null,
-    null,
-    1,
-    2,
-    3,
-    4,
-    5,
-    6,
-    7,
-    8,
-    9,
-    10,
-    11,
-    12,
-    13,
-    14,
-    15,
-    16,
-    17,
-    18,
-    19,
-    20,
-    21,
-    22,
-    23,
-    24,
-    25,
-    26,
-    27,
-    28,
-    29,
-    30,
-    31,
-  ];
+const MONTH_NAMES = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+export const CalendarWidget: React.FC = () => {
+  const today = new Date();
+  const [currentDate, setCurrentDate] = useState(() => new Date());
+  const [selectedDate, setSelectedDate] = useState<number | null>(today.getDate());
+
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+
+  // First day of month (0 = Sun, 1 = Mon, ...)
+  const firstDayIndex = new Date(year, month, 1).getDay();
+  // Total days in month
+  const totalDays = new Date(year, month + 1, 0).getDate();
+
+  const handlePrevMonth = () => {
+    setCurrentDate(new Date(year, month - 1, 1));
+    setSelectedDate(null);
+  };
+
+  const handleNextMonth = () => {
+    setCurrentDate(new Date(year, month + 1, 1));
+    setSelectedDate(null);
+  };
+
+  const isCurrentMonthToday =
+    today.getFullYear() === year && today.getMonth() === month;
+
+  // Build grid items (padding nulls + 1..totalDays)
+  const calendarCells: (number | null)[] = [];
+  for (let i = 0; i < firstDayIndex; i++) {
+    calendarCells.push(null);
+  }
+  for (let d = 1; d <= totalDays; d++) {
+    calendarCells.push(d);
+  }
 
   return (
-    <div className="bg-[#1b1e26] rounded-[22px] p-5 text-white shadow-sm flex flex-col justify-between select-none h-75">
+    <div className="bg-[#1b1e26] rounded-[22px] p-5 text-white shadow-lg flex flex-col justify-between select-none min-h-75">
       {/* Month Header */}
       <div className="flex items-center justify-between mb-4 px-1">
         <button
           type="button"
+          onClick={handlePrevMonth}
           aria-label="Previous Month"
-          className="text-gray-400 hover:text-white transition-colors cursor-pointer p-1"
+          className="text-gray-400 hover:text-white transition-colors cursor-pointer p-1 rounded-md hover:bg-white/10"
         >
           <FiChevronLeft className="w-4 h-4" />
         </button>
-        <span className="font-bold text-sm text-white">July</span>
+        <span className="font-bold text-sm text-white">
+          {MONTH_NAMES[month]} {year}
+        </span>
         <button
           type="button"
+          onClick={handleNextMonth}
           aria-label="Next Month"
-          className="text-gray-400 hover:text-white transition-colors cursor-pointer p-1"
+          className="text-gray-400 hover:text-white transition-colors cursor-pointer p-1 rounded-md hover:bg-white/10"
         >
           <FiChevronRight className="w-4 h-4" />
         </button>
@@ -67,7 +82,7 @@ export const CalendarWidget: React.FC = () => {
 
       {/* Weekday Labels */}
       <div className="grid grid-cols-7 gap-1 text-center mb-2">
-        {daysOfWeek.map((day) => (
+        {DAYS_OF_WEEK.map((day) => (
           <span
             key={day}
             className="text-[9px] xl:text-[10px] font-semibold text-gray-400 tracking-wider"
@@ -79,31 +94,43 @@ export const CalendarWidget: React.FC = () => {
 
       {/* Days Grid */}
       <div className="grid grid-cols-7 gap-1 text-center items-center">
-        {calendarDays.map((dateNum, idx) => {
+        {calendarCells.map((dateNum, idx) => {
           if (dateNum === null) {
             return <div key={`empty-${idx}`} className="h-7 w-7" />;
           }
 
-          const isAmberHighlight = dateNum === 10;
-          const isRedHighlight = dateNum === 13;
+          const isToday = isCurrentMonthToday && dateNum === today.getDate();
+          const isSelected = selectedDate === dateNum && !isToday;
 
           return (
             <div
               key={dateNum}
               className="flex items-center justify-center h-7 w-7 mx-auto"
             >
-              {isAmberHighlight ? (
-                <div className="w-6 h-6 rounded-full bg-[#fbab2a] text-white font-bold text-xs flex items-center justify-center shadow-xs">
+              {isToday ? (
+                <button
+                  type="button"
+                  onClick={() => setSelectedDate(dateNum)}
+                  className="w-6 h-6 rounded-full bg-[#fbab2a] text-white font-bold text-xs flex items-center justify-center shadow-xs cursor-pointer hover:scale-105 transition-transform"
+                >
                   {dateNum}
-                </div>
-              ) : isRedHighlight ? (
-                <div className="w-6 h-6 rounded-full bg-[#e11d48] text-white font-bold text-xs flex items-center justify-center shadow-xs">
+                </button>
+              ) : isSelected ? (
+                <button
+                  type="button"
+                  onClick={() => setSelectedDate(dateNum)}
+                  className="w-6 h-6 rounded-full bg-[#e11d48] text-white font-bold text-xs flex items-center justify-center shadow-xs cursor-pointer hover:scale-105 transition-transform"
+                >
                   {dateNum}
-                </div>
+                </button>
               ) : (
-                <span className="text-xs font-medium text-gray-300 hover:text-white transition-colors cursor-pointer">
+                <button
+                  type="button"
+                  onClick={() => setSelectedDate(dateNum)}
+                  className="text-xs font-medium text-gray-300 hover:text-white hover:bg-white/10 w-6 h-6 rounded-full flex items-center justify-center transition-colors cursor-pointer"
+                >
                   {dateNum}
-                </span>
+                </button>
               )}
             </div>
           );

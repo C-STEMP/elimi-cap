@@ -251,7 +251,7 @@ export const NinVerificationModal: React.FC<NinVerificationModalProps> = ({
               <button
                 type="button"
                 onClick={handleSuccessDone}
-                className="bg-[#fbab2a] hover:bg-[#e89b1f] active:scale-98 text-white font-semibold w-full py-3.5 rounded-xl shadow-sm transition-all text-sm cursor-pointer"
+                className="bg-[#fbab2a] hover:bg-[#e89b1f] active:scale-98 text-white font-semibold w-full py-3.5 rounded-xl shadow-lg transition-all text-sm cursor-pointer"
               >
                 Go To Dashboard
               </button>
@@ -322,7 +322,7 @@ export const NinVerificationModal: React.FC<NinVerificationModalProps> = ({
                   setStep("input");
                   onReviewInfo();
                 }}
-                className="bg-[#fbab2a] hover:bg-[#e89b1f] active:scale-98 text-white font-semibold w-full py-3.5 rounded-xl shadow-sm transition-all text-sm mb-3 cursor-pointer"
+                className="bg-[#fbab2a] hover:bg-[#e89b1f] active:scale-98 text-white font-semibold w-full py-3.5 rounded-xl shadow-lg transition-all text-sm mb-3 cursor-pointer"
               >
                 Review Personal Information
               </button>

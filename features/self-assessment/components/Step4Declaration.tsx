@@ -16,7 +16,10 @@ interface Step4Props {
   onBack: () => void;
 }
 
-export const Step4Declaration: React.FC<Step4Props> = ({ onSubmit, onBack }) => {
+export const Step4Declaration: React.FC<Step4Props> = ({
+  onSubmit,
+  onBack,
+}) => {
   const router = useRouter();
   const { toast } = useToast();
   const [showDraftModal, setShowDraftModal] = useState(false);
@@ -46,7 +49,8 @@ export const Step4Declaration: React.FC<Step4Props> = ({ onSubmit, onBack }) => 
       toast({
         type: "error",
         title: "Declaration Required",
-        description: "Please confirm all declarations before submitting your self-assessment.",
+        description:
+          "Please confirm all declarations before submitting your self-assessment.",
       });
       return;
     }
@@ -65,7 +69,8 @@ export const Step4Declaration: React.FC<Step4Props> = ({ onSubmit, onBack }) => 
           Step 4 of 4: Candidate Declaration
         </h1>
         <p className="text-neutral-secondary text-xs sm:text-sm font-normal mt-1">
-          Please confirm the information below before submitting your self-assessment.
+          Please confirm the information below before submitting your
+          self-assessment.
         </p>
 
         <h2 className="text-xl xl:text-2xl font-bold tracking-tight text-neutral-primary mt-4 flex items-center gap-1.5">
@@ -83,15 +88,16 @@ export const Step4Declaration: React.FC<Step4Props> = ({ onSubmit, onBack }) => 
               checkedItems[1]
                 ? "bg-primary border-primary text-white"
                 : showErrorAlert
-                ? "bg-white border-red-500"
-                : "bg-white border-gray-300 group-hover:border-gray-400"
+                  ? "bg-white border-red-500"
+                  : "bg-white border-gray-300 group-hover:border-gray-400"
             }`}
           >
             {checkedItems[1] && <FiCheck className="w-3.5 h-3.5 stroke-3" />}
           </div>
           <span className="text-sm xl:text-base text-neutral-primary font-medium leading-6">
-            I confirm that the information provided in this self-assessment is true and
-            based on my own knowledge, skills, and work experience. <span className="text-primary-solid ml-0.5">*</span>
+            I confirm that the information provided in this self-assessment is
+            true and based on my own knowledge, skills, and work experience.{" "}
+            <span className="text-primary-solid ml-0.5">*</span>
           </span>
         </label>
 
@@ -104,15 +110,16 @@ export const Step4Declaration: React.FC<Step4Props> = ({ onSubmit, onBack }) => 
               checkedItems[2]
                 ? "bg-primary border-primary text-white"
                 : showErrorAlert
-                ? "bg-white border-red-500"
-                : "bg-white border-gray-300 group-hover:border-gray-400"
+                  ? "bg-white border-red-500"
+                  : "bg-white border-gray-300 group-hover:border-gray-400"
             }`}
           >
             {checkedItems[2] && <FiCheck className="w-3.5 h-3.5 stroke-3" />}
           </div>
           <span className="text-sm xl:text-base text-neutral-primary font-medium leading-6">
-            I understand that this self-assessment will be reviewed as part of my RPL
-            application. <span className="text-primary-solid ml-0.5">*</span>
+            I understand that this self-assessment will be reviewed as part of
+            my RPL application.{" "}
+            <span className="text-primary-solid ml-0.5">*</span>
           </span>
         </label>
 
@@ -125,15 +132,16 @@ export const Step4Declaration: React.FC<Step4Props> = ({ onSubmit, onBack }) => 
               checkedItems[3]
                 ? "bg-primary border-primary text-white"
                 : showErrorAlert
-                ? "bg-white border-red-500"
-                : "bg-white border-gray-300 group-hover:border-gray-400"
+                  ? "bg-white border-red-500"
+                  : "bg-white border-gray-300 group-hover:border-gray-400"
             }`}
           >
             {checkedItems[3] && <FiCheck className="w-3.5 h-3.5 stroke-3" />}
           </div>
           <span className="text-sm xl:text-base text-neutral-primary font-medium leading-6">
             I understand that additional evidence may be requested during the
-            assessment process. <span className="text-primary-solid ml-0.5">*</span>
+            assessment process.{" "}
+            <span className="text-primary-solid ml-0.5">*</span>
           </span>
         </label>
 
@@ -146,8 +154,8 @@ export const Step4Declaration: React.FC<Step4Props> = ({ onSubmit, onBack }) => 
               checkedItems[4]
                 ? "bg-primary border-primary text-white"
                 : showErrorAlert
-                ? "bg-white border-red-500"
-                : "bg-white border-gray-300 group-hover:border-gray-400"
+                  ? "bg-white border-red-500"
+                  : "bg-white border-gray-300 group-hover:border-gray-400"
             }`}
           >
             {checkedItems[4] && <FiCheck className="w-3.5 h-3.5 stroke-3" />}
@@ -185,7 +193,7 @@ export const Step4Declaration: React.FC<Step4Props> = ({ onSubmit, onBack }) => 
             <button
               type="button"
               onClick={() => setShowDraftModal(true)}
-              className="px-5 h-11 bg-white border border-secondary text-secondary hover:bg-secondary/10 font-semibold text-sm rounded-lg flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer whitespace-nowrap"
+              className="px-5 h-11 bg-white border border-secondary text-secondary hover:bg-secondary/10 font-semibold text-sm rounded-lg flex items-center justify-center gap-2 transition-all shadow-lg cursor-pointer whitespace-nowrap"
             >
               <span>Save As Draft</span>
               <Image
@@ -203,7 +211,7 @@ export const Step4Declaration: React.FC<Step4Props> = ({ onSubmit, onBack }) => 
               variant="amber"
               size="md"
               rightIcon={<FiArrowRight className="w-4.5 h-4.5" />}
-              className="px-8 h-11 text-white font-bold text-sm rounded-xl shadow-sm cursor-pointer whitespace-nowrap"
+              className="px-8 h-11 text-white font-bold text-sm rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
             >
               Submit
             </Button>
@@ -220,5 +228,3 @@ export const Step4Declaration: React.FC<Step4Props> = ({ onSubmit, onBack }) => 
     </motion.div>
   );
 };
-
-

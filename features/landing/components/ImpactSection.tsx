@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const TESTIMONIALS = [
   {
@@ -24,18 +24,64 @@ const TESTIMONIALS = [
     name: "Tunde Bello",
     role: "Operations Manager, BuildCorp",
   },
+  {
+    rating: 5,
+    quote:
+      "As a working mother, the flexible learning schedule allowed me to upskill without compromising my family responsibilities. Now I earn twice my previous salary.",
+    name: "Amina Yusuf",
+    role: "Certified Tailor & Entrepreneur",
+  },
+  {
+    rating: 5,
+    quote:
+      "The mobile-first approach means my students in rural areas can access quality training materials even with limited internet connectivity.",
+    name: "Dr. Chidi Okafor",
+    role: "Regional Training Coordinator",
+  },
+  {
+    rating: 5,
+    quote:
+      "We've reduced credential verification time from weeks to seconds. Elimi's instant verification portal is a game-changer for our hiring process.",
+    name: "Funke Adeyemi",
+    role: "HR Director, Industrial Solutions Ltd",
+  },
 ];
 
 export function ImpactSection() {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [cardsPerView, setCardsPerView] = useState(3);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setCardsPerView(1);
+      } else if (window.innerWidth < 1024) {
+        setCardsPerView(2);
+      } else {
+        setCardsPerView(3);
+      }
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const maxIndex = TESTIMONIALS.length - cardsPerView;
 
   const handlePrev = () => {
-    setActiveIndex((prev) => (prev === 0 ? TESTIMONIALS.length - 1 : prev - 1));
+    setActiveIndex((prev) => (prev === 0 ? maxIndex : prev - 1));
   };
 
   const handleNext = () => {
-    setActiveIndex((prev) => (prev === TESTIMONIALS.length - 1 ? 0 : prev + 1));
+    setActiveIndex((prev) => (prev >= maxIndex ? 0 : prev + 1));
   };
+
+  useEffect(() => {
+    if (activeIndex > maxIndex) {
+      setActiveIndex(maxIndex);
+    }
+  }, [cardsPerView, maxIndex, activeIndex]);
 
   return (
     <section className="bg-white py-16 lg:py-24" id="impact">
@@ -50,60 +96,92 @@ export function ImpactSection() {
           </p>
         </div>
 
-        {/* Testimonials Grid */}
-        <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-3">
-          {TESTIMONIALS.map((item, idx) => (
+        <div className="mt-12">
+          <div className="overflow-hidden">
             <div
-              key={idx}
-              data-aos="fade-up"
-              data-aos-delay={(idx + 1) * 150}
-              className="flex flex-col justify-between rounded-2xl border border-gray-100 bg-slate-50/60 p-8 shadow-sm transition-all hover:bg-slate-50"
+              className="flex transition-transform duration-500 ease-out"
+              style={{
+                transform: `translateX(-${activeIndex * (100 / cardsPerView)}%)`,
+              }}
             >
-              <div>
-                {/* Rating Stars */}
-                <div className="flex items-center gap-1 text-secondary">
-                  {[...Array(item.rating)].map((_, i) => (
-                    <svg
-                      key={i}
-                      className="h-5 w-5 fill-current"
-                      viewBox="0 0 20 20"
-                    >
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                  ))}
+              {TESTIMONIALS.map((item, idx) => (
+                <div
+                  key={idx}
+                  className="shrink-0 px-3"
+                  style={{ width: `${100 / cardsPerView}%` }}
+                >
+                  <div className="flex h-full flex-col justify-between rounded-2xl bg-slate-50/60 p-6 sm:p-8 transition-all hover:bg-slate-50">
+                    <div>
+                      <div className="flex items-center gap-1 text-secondary">
+                        {[...Array(item.rating)].map((_, i) => (
+                          <svg
+                            key={i}
+                            className="h-4 w-4 sm:h-5 sm:w-5 fill-current"
+                            viewBox="0 0 20 20"
+                          >
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                          </svg>
+                        ))}
+                      </div>
+
+                      <p className="mt-4 text-sm leading-relaxed text-gray-700 italic line-clamp-4 sm:line-clamp-none">
+                        &ldquo;{item.quote}&rdquo;
+                      </p>
+                    </div>
+
+                    <div className="mt-6 pt-4">
+                      <h4 className="text-base font-bold text-text-dark">
+                        {item.name}
+                      </h4>
+                      <p className="text-xs text-gray-500">{item.role}</p>
+                    </div>
+                  </div>
                 </div>
-
-                <p className="mt-4 text-sm leading-relaxed text-gray-700 italic">
-                  &ldquo;{item.quote}&rdquo;
-                </p>
-              </div>
-
-              <div className="mt-6 border-t border-gray-200/60 pt-4">
-                <h4 className="text-base font-bold text-text-dark">
-                  {item.name}
-                </h4>
-                <p className="text-xs text-gray-500">{item.role}</p>
-              </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </div>
 
-        {/* Navigation Dots & Arrows */}
-        <div className="mt-10 flex items-center justify-center gap-4">
-          <button
-            onClick={handlePrev}
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 shadow-sm transition-all hover:bg-gray-100"
-            aria-label="Previous testimonial"
-          >
-            &#8592;
-          </button>
-          <button
-            onClick={handleNext}
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 shadow-sm transition-all hover:bg-gray-100"
-            aria-label="Next testimonial"
-          >
-            &#8594;
-          </button>
+          <div className="mt-8 flex items-center justify-center gap-6">
+            <button
+              onClick={handlePrev}
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 shadow-md transition-all hover:bg-secondary hover:text-white hover:border-secondary"
+              aria-label="Previous testimonial"
+            >
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
+              </svg>
+            </button>
+
+            <button
+              onClick={handleNext}
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 shadow-md transition-all hover:bg-secondary hover:text-white hover:border-secondary"
+              aria-label="Next testimonial"
+            >
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     </section>

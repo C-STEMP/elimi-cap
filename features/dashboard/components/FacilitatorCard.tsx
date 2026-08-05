@@ -27,7 +27,7 @@ export const FacilitatorCard: React.FC<FacilitatorCardProps> = ({
   const isAssigned = !!facilitator;
 
   return (
-    <div className="bg-white rounded-[22px] p-6 shadow-sm border border-gray-100 flex flex-col items-center text-center justify-between h-full min-h-65">
+    <div className="bg-white rounded-[22px] p-6 shadow-lg border border-gray-100 flex flex-col items-center text-center justify-between h-full min-h-65">
       {!isAssigned ? (
         <div className="flex flex-col items-center justify-between h-full w-full">
           <div className="flex flex-col items-center my-auto">
@@ -55,7 +55,7 @@ export const FacilitatorCard: React.FC<FacilitatorCardProps> = ({
       ) : (
         <div className="flex flex-col items-center justify-between h-full w-full">
           <div className="flex flex-col items-center my-auto">
-            <div className="relative w-16 h-16 rounded-full overflow-hidden mb-3 border-2 border-white shadow-sm shrink-0">
+            <div className="relative w-16 h-16 rounded-full overflow-hidden mb-3 border-2 border-white shadow-lg shrink-0">
               <Image
                 src={facilitator.avatar}
                 alt={facilitator.name}
@@ -92,7 +92,7 @@ export const FacilitatorCard: React.FC<FacilitatorCardProps> = ({
             <Button
               variant="secondary"
               onClick={onRequestCall}
-              className="w-full bg-[#fbab2a]! hover:bg-[#e89b1f] active:scale-95 text-white font-semibold text-xs sm:text-sm py-3.5 rounded-xl transition-all shadow-sm cursor-pointer mt-auto"
+              className="w-full bg-[#fbab2a]! hover:bg-[#e89b1f] active:scale-95 text-white font-semibold text-xs sm:text-sm py-3.5 rounded-xl transition-all shadow-lg cursor-pointer mt-auto"
             >
               Request A Call
             </Button>

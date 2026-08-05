@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useId, useState, useEffect } from "react";
-import { Select as AntSelect } from "antd";
-import { FiCheck } from "react-icons/fi";
+import React, { useId } from "react";
+import { FiChevronDown } from "react-icons/fi";
 
 export interface SelectOption {
   label: string;
@@ -15,6 +14,7 @@ export interface SelectProps {
   onChange?: (e: any) => void;
   options?: (string | SelectOption)[];
   placeholder?: string;
+  showPlaceholderOption?: boolean;
   error?: string;
   helperText?: React.ReactNode;
   required?: boolean;
@@ -24,6 +24,8 @@ export interface SelectProps {
   className?: string;
   id?: string;
   name?: string;
+  loading?: boolean;
+  size?: "sm" | "md" | "lg";
 }
 
 export const Select: React.FC<SelectProps> = ({
@@ -34,51 +36,33 @@ export const Select: React.FC<SelectProps> = ({
   helperText,
   options = [],
   placeholder = "Select",
+  showPlaceholderOption = true,
   id,
   name,
-  value,
+  value = "",
   onChange,
   disabled = false,
-  multiple = false,
   required = false,
+  loading = false,
+  size = "md",
 }) => {
   const reactId = useId();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const selectId = id || (mounted ? reactId : undefined);
+  const selectId = id || reactId;
 
   const normalizedOptions: SelectOption[] = options.map((opt) =>
     typeof opt === "string" ? { label: opt, value: opt } : opt,
   );
 
-  /** Convert internal antd value change → the existing synthetic-event shape */
-  const handleChange = (newVal: string | string[]) => {
-    if (!onChange) return;
-    const event = {
-      target: { name: name || "", value: newVal },
-    };
-    onChange(event);
-  };
-
-  // Derive antd-compatible value
-  const antValue: string | string[] | undefined =
-    multiple
-      ? Array.isArray(value)
-        ? value
-        : typeof value === "string" && value
-        ? value.split(", ").filter(Boolean)
-        : []
-      : typeof value === "string" && value
-      ? value
-      : undefined;
-
   const errorClass = error
     ? "!border-primary-solid !ring-2 !ring-border-secondary"
     : "";
+
+  const sizeClass =
+    size === "sm"
+      ? "h-9.5 pl-3 pr-8 text-xs rounded-xl"
+      : "h-11 xl:h-12 pl-4 pr-10 text-xs xl:text-sm rounded-radius-200";
+
+  const iconPositionClass = size === "sm" ? "right-2.5" : "right-4";
 
   return (
     <div
@@ -94,64 +78,56 @@ export const Select: React.FC<SelectProps> = ({
         </label>
       )}
 
-      <AntSelect
-        id={selectId}
-        mode={multiple ? "multiple" : undefined}
-        value={antValue}
-        placeholder={placeholder}
-        disabled={disabled}
-        onChange={handleChange}
-        options={normalizedOptions}
-        className={`w-full ${className}`}
-        popupClassName="rounded-2xl shadow-2xl border border-gray-100"
-        status={error ? "error" : undefined}
-        optionRender={(option) => {
-          const isSelected = multiple
-            ? Array.isArray(antValue) && antValue.includes(String(option.value))
-            : antValue === option.value;
+      <div className="relative w-full">
+        <select
+          id={selectId}
+          name={name}
+          value={value as string}
+          onChange={onChange}
+          disabled={disabled || loading}
+          required={required}
+          className={`
+            w-full
+            bg-input-bg
+            text-text-dark font-normal
+            border border-transparent
+            appearance-none
+            outline-none
+            cursor-pointer
+            transition-all duration-200 ease-in-out
+            focus:border-primary-solid/40
+            focus:ring-2
+            focus:ring-primary-solid/10
+            disabled:opacity-50
+            disabled:cursor-not-allowed
+            ${!value && showPlaceholderOption ? "text-gray-400" : "text-text-dark"}
+            ${errorClass}
+            ${sizeClass}
+            ${className}
+          `}
+        >
+          {/* Placeholder option */}
+          {placeholder && showPlaceholderOption && (
+            <option value="" disabled hidden>
+              {loading ? "Loading..." : placeholder}
+            </option>
+          )}
+          {normalizedOptions.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
 
-          return (
-            <div className="flex items-center justify-between w-full py-0.5">
-              <span className="text-xs xl:text-sm font-medium text-text-dark">
-                {option.label}
-              </span>
-              {multiple ? (
-                <div
-                  className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all shrink-0 ${
-                    isSelected
-                      ? "bg-neutral-900 border-neutral-900 text-white"
-                      : "bg-white border-neutral-400"
-                  }`}
-                >
-                  {isSelected && (
-                    <FiCheck className="w-3.5 h-3.5 stroke-3 text-white" />
-                  )}
-                </div>
-              ) : (
-                <div
-                  className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all shrink-0 ${
-                    isSelected
-                      ? "border-neutral-900 bg-neutral-900"
-                      : "border-neutral-400 bg-white"
-                  }`}
-                >
-                  {isSelected && (
-                    <div className="w-2 h-2 rounded-full bg-white" />
-                  )}
-                </div>
-              )}
-            </div>
-          );
-        }}
-        styles={{
-          popup: {
-            root: { padding: "8px", borderRadius: "16px" },
-          },
-        }}
-        style={{ width: "100%" }}
-        // Tailwind-driven trigger button styling via className overrides
-        rootClassName={`elimi-select ${errorClass}`}
-      />
+        {/* Dropdown icon — styled chevron */}
+        <span
+          className={`pointer-events-none absolute ${iconPositionClass} top-1/2 -translate-y-1/2 flex items-center justify-center text-text-dark/60`}
+        >
+          <FiChevronDown
+            className={`${size === "sm" ? "w-3.5 h-3.5" : "w-4 h-4"} shrink-0`}
+          />
+        </span>
+      </div>
 
       {error && (
         <span className="text-primary-solid text-xs font-semibold leading-[1.4]">

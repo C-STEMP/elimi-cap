@@ -139,8 +139,9 @@ export const personalInfoSchema = z.object({
   nationality: requiredSchema("Nationality"),
   email: emailSchema,
   phoneNumber: phoneSchema,
+  country: requiredSchema("Country"),
   state: requiredSchema("State of residence"),
-  lga: requiredSchema("Local Government Area"),
+  lga: requiredSchema("City / LGA"),
   streetAddress: requiredSchema("Residential address"),
   impairment: requiredSchema("Accessibility selection"),
 });

@@ -82,10 +82,11 @@ export const CenterVerifyIdentity: React.FC = () => {
           Verify Identity
         </h1>
         <p className="text-neutral-secondary text-xs xl:text-sm font-normal leading-relaxed max-w-xl">
-          To maintain the integrity of the National Skills Qualification process,
-          every candidate must complete a one-time identity verification using their
-          National Identification Number (NIN). Your verified identity will be used
-          across all ELIMI services and future applications.
+          To maintain the integrity of the National Skills Qualification
+          process, every candidate must complete a one-time identity
+          verification using their National Identification Number (NIN). Your
+          verified identity will be used across all ELIMI services and future
+          applications.
         </p>
       </div>
 
@@ -95,8 +96,8 @@ export const CenterVerifyIdentity: React.FC = () => {
           Before You Begin
         </h2>
         <p className="text-text-dark text-xs xl:text-base font-normal">
-          We&apos;ll compare the information you&apos;ve entered with your official
-          NIN records.
+          We&apos;ll compare the information you&apos;ve entered with your
+          official NIN records.
         </p>
 
         <div className="flex flex-col gap-1.5 text-xs xl:text-base text-text-dark font-normal">
@@ -162,7 +163,9 @@ export const CenterVerifyIdentity: React.FC = () => {
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between mt-8 pt-4 border-t border-gray-100 gap-4">
         <button
           type="button"
-          onClick={() => router.push("/onboarding/assessment-centre/personal-info")}
+          onClick={() =>
+            router.push("/onboarding/assessment-centre/personal-info")
+          }
           className="flex items-center justify-center gap-2 text-sm font-semibold text-neutral-secondary hover:text-neutral-primary transition-colors cursor-pointer select-none focus:outline-none"
         >
           <FiArrowLeft className="w-4 h-4" />
@@ -173,7 +176,7 @@ export const CenterVerifyIdentity: React.FC = () => {
           <button
             type="button"
             onClick={() => setShowDraftModal(true)}
-            className="px-5 h-11 bg-white border border-secondary text-secondary hover:bg-secondary/10 font-semibold text-sm rounded-lg flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer whitespace-nowrap"
+            className="px-5 h-11 bg-white border border-secondary text-secondary hover:bg-secondary/10 font-semibold text-sm rounded-lg flex items-center justify-center gap-2 transition-all shadow-lg cursor-pointer whitespace-nowrap"
           >
             <span>Save As Draft</span>
             <Image
@@ -193,7 +196,7 @@ export const CenterVerifyIdentity: React.FC = () => {
             variant="amber"
             size="md"
             rightIcon={<FiArrowRight className="w-4.5 h-4.5" />}
-            className="px-8 h-11 text-white font-bold text-sm rounded-xl shadow-sm cursor-pointer whitespace-nowrap"
+            className="px-8 h-11 text-white font-bold text-sm rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
           >
             Continue
           </Button>
@@ -216,7 +219,7 @@ export const CenterVerifyIdentity: React.FC = () => {
               exit={{ scale: 0.95, opacity: 0, y: 10 }}
               transition={{ duration: 0.25, ease: "easeOut" }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-2xl p-8 max-w-lg w-full flex flex-col items-center text-center shadow-xl relative overflow-hidden"
+              className="bg-white rounded-2xl p-8 max-w-lg w-full flex flex-col items-center text-center shadow-md relative overflow-hidden"
             >
               {modalState === "verifying" && (
                 <div className="flex flex-col items-center py-4">
@@ -304,16 +307,18 @@ export const CenterVerifyIdentity: React.FC = () => {
                       type="button"
                       onClick={() => {
                         setModalState("none");
-                        router.push("/onboarding/assessment-centre/personal-info");
+                        router.push(
+                          "/onboarding/assessment-centre/personal-info",
+                        );
                       }}
-                      className="w-full h-11 bg-secondary hover:bg-secondary-hover text-white font-semibold text-sm rounded-lg shadow-sm cursor-pointer"
+                      className="w-full h-11 bg-secondary hover:bg-secondary-hover text-white font-semibold text-sm rounded-lg shadow-lg cursor-pointer"
                     >
                       Review Personal Information
                     </Button>
                     <button
                       type="button"
                       onClick={() => setModalState("none")}
-                      className="w-full h-11 bg-white border border-secondary text-secondary hover:bg-secondary/10 font-semibold text-sm rounded-lg transition-all shadow-sm cursor-pointer"
+                      className="w-full h-11 bg-white border border-secondary text-secondary hover:bg-secondary/10 font-semibold text-sm rounded-lg transition-all shadow-lg cursor-pointer"
                     >
                       Try Again
                     </button>

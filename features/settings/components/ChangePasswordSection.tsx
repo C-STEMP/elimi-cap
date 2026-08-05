@@ -35,17 +35,24 @@ export const ChangePasswordSection: React.FC<ChangePasswordSectionProps> = ({
       return;
     }
     if (!formData.currentPassword || !formData.newPassword) {
-      toast({ type: "error", title: "Required Fields", description: "Please fill in all password fields." });
+      toast({
+        type: "error",
+        title: "Required Fields",
+        description: "Please fill in all password fields.",
+      });
       return;
     }
     setErrors({});
     performChangePassword(
-      { currentPassword: formData.currentPassword, newPassword: formData.newPassword },
+      {
+        currentPassword: formData.currentPassword,
+        newPassword: formData.newPassword,
+      },
       {
         onSuccess: () => {
           onSubmit();
         },
-      }
+      },
     );
   };
 
@@ -159,7 +166,7 @@ export const ChangePasswordSection: React.FC<ChangePasswordSectionProps> = ({
         <button
           type="submit"
           disabled={isPending}
-          className="bg-[#fbab2a] hover:bg-[#e89b1f] active:scale-95 text-white font-semibold px-6 py-3 rounded-xl flex items-center gap-2.5 shadow-sm transition-all cursor-pointer text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+          className="bg-[#fbab2a] hover:bg-[#e89b1f] active:scale-95 text-white font-semibold px-6 py-3 rounded-xl flex items-center gap-2.5 shadow-lg transition-all cursor-pointer text-sm disabled:opacity-60 disabled:cursor-not-allowed"
         >
           <span>{isPending ? "Saving..." : "Change Password"}</span>
           <Image

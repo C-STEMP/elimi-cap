@@ -16,7 +16,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
   return (
     <div className="flex flex-col gap-4 h-full justify-between">
       {/* Active Applications Card */}
-      <div className="bg-white rounded-[22px] p-5 lg:p-6 flex items-start justify-between shadow-sm border border-gray-100/80 flex-1">
+      <div className="bg-white rounded-[22px] p-5 lg:p-6 flex items-start justify-between shadow-lg border border-gray-100/80 flex-1">
         <div className="flex flex-col gap-1 justify-center">
           <h3 className="text-black font-semibold text-base lg:text-xl tracking-tight">
             Active Applications
@@ -41,7 +41,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
       </div>
 
       {/* Completed Applications Card */}
-      <div className="bg-white rounded-[22px] p-5 lg:p-6 flex items-start justify-between shadow-sm border border-gray-100/80 flex-1">
+      <div className="bg-white rounded-[22px] p-5 lg:p-6 flex items-start justify-between shadow-lg border border-gray-100/80 flex-1">
         <div className="flex flex-col gap-1 justify-center">
           <h3 className="text-black font-semibold text-base lg:text-xl tracking-tight">
             Completed

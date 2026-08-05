@@ -76,8 +76,8 @@ export const NinVerificationPage: React.FC = () => {
                 To maintain the integrity of the National Skills Qualification
                 process, every candidate must complete a one-time identity
                 verification using their National Identification Number (NIN).
-                Your verified identity will be used across all ELIMI services and
-                future applications.
+                Your verified identity will be used across all ELIMI services
+                and future applications.
               </p>
             </div>
           </div>
@@ -250,7 +250,7 @@ export const NinVerificationPage: React.FC = () => {
             <button
               type="button"
               onClick={handleSuccessDone}
-              className="bg-secondary hover:bg-secondary-hover active:scale-98 text-white font-semibold w-full py-3.5 rounded-xl shadow-sm transition-all text-sm cursor-pointer"
+              className="bg-secondary hover:bg-secondary-hover active:scale-98 text-white font-semibold w-full py-3.5 rounded-xl shadow-lg transition-all text-sm cursor-pointer"
             >
               Go To Dashboard
             </button>
@@ -319,7 +319,7 @@ export const NinVerificationPage: React.FC = () => {
             <button
               type="button"
               onClick={handleReviewInfo}
-              className="bg-secondary hover:bg-secondary-hover active:scale-98 text-white font-semibold w-full py-3.5 rounded-xl shadow-sm transition-all text-sm mb-3 cursor-pointer"
+              className="bg-secondary hover:bg-secondary-hover active:scale-98 text-white font-semibold w-full py-3.5 rounded-xl shadow-lg transition-all text-sm mb-3 cursor-pointer"
             >
               Review Personal Information
             </button>

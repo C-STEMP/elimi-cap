@@ -17,6 +17,7 @@ export interface PhoneInputProps {
   id?: string;
   name?: string;
   country?: string;
+  defaultCountry?: string;
   preferredCountries?: string[];
 }
 
@@ -33,9 +34,11 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
   id,
   name,
   country = "ng",
+  defaultCountry,
   preferredCountries = [],
 }) => {
   const inputId = id || React.useId();
+  const activeCountry = (defaultCountry || country || "ng").toLowerCase();
 
   return (
     <div
@@ -51,26 +54,40 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
           {label}
         </label>
       )}
-      <div suppressHydrationWarning className="relative w-full phone-input-wrapper">
+
+      <div
+        suppressHydrationWarning
+        className={`
+          relative w-full flex items-center h-11 xl:h-12
+          bg-input-bg border rounded-radius-200
+          transition-all duration-200 ease-in-out
+          ${
+            error
+              ? "border-primary-solid ring-2 ring-border-secondary"
+              : "border-transparent focus-within:border-primary-solid/40 focus-within:ring-2 focus-within:ring-primary-solid/10"
+          }
+          ${disabled ? "opacity-50 cursor-not-allowed" : ""}
+          phone-input-wrapper
+        `}
+      >
         <PhoneInputReact
-          country={country}
+          country={activeCountry}
+          preferredCountries={preferredCountries}
           value={value}
-          onChange={(phone) => onChange?.(phone)}
-          placeholder={placeholder}
+          onChange={(val: string) => onChange?.(val ? `+${val}` : "")}
           disabled={disabled}
+          placeholder={placeholder}
           inputProps={{
             id: inputId,
             name,
           }}
-          preferredCountries={preferredCountries}
-          inputClass={`!w-full !h-11 xl:!h-12 !pl-12 !pr-4 !py-2.5 !bg-input-bg !text-text-dark !font-normal !text-sm !border !border-transparent !rounded-radius-200 !outline-none placeholder:!text-gray-400 transition-all duration-200 ease-in-out focus:!border-primary-solid/40 focus:!ring-2 focus:!ring-primary-solid/10 ${
-            error ? "!border-primary-solid !ring-2 !ring-border-secondary" : ""
-          } ${disabled ? "!opacity-50 !cursor-not-allowed" : ""} ${className}`}
-          buttonClass="!absolute !left-0 !top-1/2 !-translate-y-1/2 !h-11 xl:!h-12 !flex !items-center !pl-3 !pr-2 !border-none !bg-transparent !outline-none"
-          dropdownClass="!bg-white !rounded-2xl !shadow-2xl !border !border-gray-100 !p-2 !top-full !bottom-auto !mt-1"
-          searchClass="!h-10 !px-3 !mb-2 !bg-input-bg !border !border-transparent !rounded-radius-200 !outline-none focus:!border-primary-solid/40 focus:!ring-2 focus:!ring-primary-solid/10"
+          containerClass="!w-full !h-full !bg-transparent"
+          inputClass="!w-full !h-full !bg-transparent !border-0 !text-text-dark !text-xs xl:!text-sm !font-normal focus:!outline-none"
+          buttonClass="!bg-transparent !border-0 !rounded-l-radius-200 !px-2 hover:!bg-black/5"
+          dropdownClass="!bg-white !text-text-dark !rounded-xl !shadow-xl !border-gray-100"
         />
       </div>
+
       {error && (
         <span
           suppressHydrationWarning

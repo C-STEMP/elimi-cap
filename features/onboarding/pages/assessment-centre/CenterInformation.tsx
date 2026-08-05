@@ -4,13 +4,14 @@ import React, { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { FiArrowLeft, FiArrowRight, FiUpload, FiCheck } from "react-icons/fi";
+import { FiArrowLeft, FiArrowRight, FiUpload } from "react-icons/fi";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { InfoIcon } from "@/components/ui/info-icon";
+import { useCountryStateCity } from "@/lib/hooks/useCountryStateCity";
 
 export const CenterInformation: React.FC = () => {
   const router = useRouter();
@@ -47,11 +48,28 @@ export const CenterInformation: React.FC = () => {
   };
 
   const update = (field: keyof typeof form, value: string) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
+    setForm((prev) => {
+      const next = { ...prev, [field]: value };
+      // Reset dependent location fields
+      if (field === "country") {
+        next.state = "";
+        next.lga = "";
+      }
+      if (field === "state") {
+        next.lga = "";
+      }
+      return next;
+    });
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
   };
+
+  // ── Country / State / City cascading selects ────────────────────────────
+  const { countries, states, cities } = useCountryStateCity(
+    form.country,
+    form.state,
+  );
 
   const validate = () => {
     let valid = true;
@@ -96,6 +114,9 @@ export const CenterInformation: React.FC = () => {
     if (!form.accountNumber.trim()) {
       newErrors.accountNumber = "Account Number is required";
       valid = false;
+    } else if (!/^\d{10}$/.test(form.accountNumber)) {
+      newErrors.accountNumber = "Account Number must be exactly 10 digits";
+      valid = false;
     }
     if (!form.nameOnAccount.trim()) {
       newErrors.nameOnAccount = "Name On Account is required";
@@ -112,7 +133,8 @@ export const CenterInformation: React.FC = () => {
       toast({
         type: "error",
         title: "Input Required",
-        description: "Please complete all required fields for Center Information.",
+        description:
+          "Please complete all required fields for Center Information.",
       });
       return;
     }
@@ -150,6 +172,7 @@ export const CenterInformation: React.FC = () => {
             <input
               type="file"
               accept="image/*"
+              style={{ display: "none" }}
               className="hidden"
               onChange={handleLogoChange}
             />
@@ -181,7 +204,8 @@ export const CenterInformation: React.FC = () => {
           <Input
             label={
               <span>
-                Name Of Assessment Center<span className="text-primary-solid ml-0.5">*</span>
+                Name Of Assessment Center
+                <span className="text-primary-solid ml-0.5">*</span>
               </span>
             }
             type="text"
@@ -194,7 +218,8 @@ export const CenterInformation: React.FC = () => {
           <Input
             label={
               <span>
-                Registration No<span className="text-primary-solid ml-0.5">*</span>
+                Registration No
+                <span className="text-primary-solid ml-0.5">*</span>
               </span>
             }
             type="text"
@@ -210,8 +235,8 @@ export const CenterInformation: React.FC = () => {
                 Country<span className="text-primary-solid ml-0.5">*</span>
               </span>
             }
-            placeholder="Select"
-            options={["Nigeria", "Ghana", "Kenya", "South Africa", "Other"]}
+            placeholder="Select country"
+            options={countries}
             value={form.country}
             error={errors.country}
             onChange={(e) => update("country", e.target.value)}
@@ -220,49 +245,38 @@ export const CenterInformation: React.FC = () => {
           <Select
             label={
               <span>
-                State of Residence<span className="text-primary-solid ml-0.5">*</span>
+                State of Residence
+                <span className="text-primary-solid ml-0.5">*</span>
               </span>
             }
-            placeholder="Select"
-            options={[
-              "Lagos",
-              "Oyo",
-              "FCT Abuja",
-              "Rivers",
-              "Ogun",
-              "Enugu",
-              "Kano",
-              "Delta",
-            ]}
+            placeholder={form.country ? "Select state" : "Select country first"}
+            options={states}
             value={form.state}
             error={errors.state}
+            disabled={!form.country}
             onChange={(e) => update("state", e.target.value)}
           />
 
           <Select
             label={
               <span>
-                Local Government Area (LGA)<span className="text-primary-solid ml-0.5">*</span>
+                City / LGA
+                <span className="text-primary-solid ml-0.5">*</span>
               </span>
             }
-            placeholder="Select"
-            options={[
-              "Ibadan North",
-              "Ikeja",
-              "Abuja Municipal",
-              "Eti-Osa",
-              "Port Harcourt",
-              "Obafemi Owode",
-            ]}
+            placeholder={form.state ? "Select city" : "Select state first"}
+            options={cities}
             value={form.lga}
             error={errors.lga}
+            disabled={!form.state}
             onChange={(e) => update("lga", e.target.value)}
           />
 
           <Input
             label={
               <span>
-                Street Address<span className="text-primary-solid ml-0.5">*</span>
+                Street Address
+                <span className="text-primary-solid ml-0.5">*</span>
               </span>
             }
             type="text"
@@ -276,14 +290,16 @@ export const CenterInformation: React.FC = () => {
         {/* Section 2: Center Support Information */}
         <div className="flex flex-col gap-4 mt-2">
           <h2 className="text-base sm:text-lg font-bold text-neutral-primary flex items-center gap-1.5">
-            Center Support Information <InfoIcon sectionName="Center Support Information" />
+            Center Support Information{" "}
+            <InfoIcon sectionName="Center Support Information" />
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               label={
                 <span>
-                  Support Email Address<span className="text-primary-solid ml-0.5">*</span>
+                  Support Email Address
+                  <span className="text-primary-solid ml-0.5">*</span>
                 </span>
               }
               type="email"
@@ -296,14 +312,14 @@ export const CenterInformation: React.FC = () => {
             <PhoneInput
               label={
                 <span>
-                  Phone Number<span className="text-primary-solid ml-0.5">*</span>
+                  Phone Number
+                  <span className="text-primary-solid ml-0.5">*</span>
                 </span>
               }
               value={form.phoneNumber}
               onChange={(v) => update("phoneNumber", v)}
               error={errors.phoneNumber}
-              country="ng"
-              preferredCountries={["ng", "gh", "ke", "za"]}
+              defaultCountry="NG"
             />
           </div>
         </div>
@@ -341,15 +357,20 @@ export const CenterInformation: React.FC = () => {
             <Input
               label={
                 <span>
-                  Account Number<span className="text-primary-solid ml-0.5">*</span>
+                  Account Number
+                  <span className="text-primary-solid ml-0.5">*</span>
                 </span>
               }
               type="text"
+              inputMode="numeric"
               placeholder="0000000000"
               maxLength={10}
               value={form.accountNumber}
               error={errors.accountNumber}
-              onChange={(e) => update("accountNumber", e.target.value)}
+              onChange={(e) => {
+                const digits = e.target.value.replace(/[^0-9]/g, "");
+                update("accountNumber", digits);
+              }}
             />
           </div>
 
@@ -357,7 +378,8 @@ export const CenterInformation: React.FC = () => {
             <Input
               label={
                 <span>
-                  Name On Account<span className="text-primary-solid ml-0.5">*</span>
+                  Name On Account
+                  <span className="text-primary-solid ml-0.5">*</span>
                 </span>
               }
               type="text"
@@ -385,7 +407,7 @@ export const CenterInformation: React.FC = () => {
             variant="amber"
             size="md"
             rightIcon={<FiArrowRight className="w-4.5 h-4.5" />}
-            className="px-8 h-11 text-white font-bold text-sm rounded-xl shadow-sm cursor-pointer whitespace-nowrap"
+            className="px-8 h-11 text-white font-bold text-sm rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
           >
             Continue
           </Button>

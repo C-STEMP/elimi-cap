@@ -71,7 +71,7 @@ export const ForgotPassword: React.FC = () => {
             type="submit"
             variant="secondary"
             size="md"
-            className="w-full h-12.5 text-white! font-bold text-base bg-secondary hover:bg-secondary-hover focus:ring-secondary/30 transition-all shadow-sm cursor-pointer"
+            className="w-full h-12.5 text-white! font-bold text-base bg-secondary hover:bg-secondary-hover focus:ring-secondary/30 transition-all shadow-lg cursor-pointer"
             loading={isPending}
           >
             Send Verification Code
@@ -79,9 +79,7 @@ export const ForgotPassword: React.FC = () => {
         </div>
 
         <div className="w-full text-center mt-3 text-sm select-none">
-          <span className="text-neutral-secondary font-normal">
-            Go to
-          </span>
+          <span className="text-neutral-secondary font-normal">Go to</span>
           <Link
             href="/signin"
             className="text-primary-solid font-bold ml-1 hover:text-primary-hover transition-colors"

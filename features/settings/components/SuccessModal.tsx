@@ -62,7 +62,7 @@ export const SuccessModal: React.FC<SuccessModalProps> = ({
         <button
           type="button"
           onClick={handleGoToDashboard}
-          className="bg-[#fbab2a] hover:bg-[#e89b1f] active:scale-98 text-white font-semibold w-full py-3.5 rounded-xl shadow-sm transition-all text-sm cursor-pointer"
+          className="bg-[#fbab2a] hover:bg-[#e89b1f] active:scale-98 text-white font-semibold w-full py-3.5 rounded-xl shadow-lg transition-all text-sm cursor-pointer"
         >
           Go To Dashboard
         </button>

@@ -14,15 +14,10 @@ import {
   FiGrid,
 } from "react-icons/fi";
 import { Button } from "@/components/ui/button";
-import {
-  MOCK_ASSESSORS,
-  MOCK_ASSIGNED_CANDIDATES,
-} from "../utils/constants";
+import { Select } from "@/components/ui/select";
+import { MOCK_ASSESSORS, MOCK_ASSIGNED_CANDIDATES } from "../utils/constants";
 import { AssignedCandidate } from "../types";
-import {
-  StaffStatusModal,
-  StaffStatusModalMode,
-} from "./StaffStatusModal";
+import { StaffStatusModal, StaffStatusModalMode } from "./StaffStatusModal";
 import { ASSETS_URL } from "@/assets";
 
 interface AssessorProfileDetailViewProps {
@@ -37,14 +32,14 @@ export const AssessorProfileDetailView: React.FC<
     MOCK_ASSESSORS.find((a) => a.id === assessorId) || MOCK_ASSESSORS[0];
 
   const [candidates, setCandidates] = useState<AssignedCandidate[]>(
-    MOCK_ASSIGNED_CANDIDATES
+    MOCK_ASSIGNED_CANDIDATES,
   );
   const [searchQuery, setSearchQuery] = useState("");
   const [tradeFilter, setTradeFilter] = useState("All");
   const [assessmentFilter, setAssessmentFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
   const [isDeactivated, setIsDeactivated] = useState(
-    assessor.status === "Inactive"
+    assessor.status === "Inactive",
   );
 
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
@@ -121,7 +116,7 @@ export const AssessorProfileDetailView: React.FC<
               variant="amber"
               size="md"
               rightIcon={<FiUnlock className="w-4 h-4" />}
-              className="px-6 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-sm cursor-pointer whitespace-nowrap"
+              className="px-6 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
             >
               Activate
             </Button>
@@ -132,7 +127,7 @@ export const AssessorProfileDetailView: React.FC<
               variant="amber"
               size="md"
               rightIcon={<FiSlash className="w-4 h-4" />}
-              className="px-6 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-sm cursor-pointer whitespace-nowrap"
+              className="px-6 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
             >
               Deactivate
             </Button>
@@ -143,12 +138,16 @@ export const AssessorProfileDetailView: React.FC<
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15">
             <div className="flex flex-col">
-              <span className="text-xs sm:text-sm font-medium text-white/80">Assigned Candidates</span>
+              <span className="text-xs sm:text-sm font-medium text-white/80">
+                Assigned Candidates
+              </span>
               <div className="flex items-baseline gap-1.5 mt-1">
                 <span className="text-xl sm:text-2xl font-extrabold text-white">
                   {assessor.assignedCandidatesCount || 10}
                 </span>
-                <span className="text-xs font-normal text-white/70">applications</span>
+                <span className="text-xs font-normal text-white/70">
+                  applications
+                </span>
               </div>
             </div>
             <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
@@ -158,12 +157,16 @@ export const AssessorProfileDetailView: React.FC<
 
           <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15">
             <div className="flex flex-col">
-              <span className="text-xs sm:text-sm font-medium text-white/80">Ongoing</span>
+              <span className="text-xs sm:text-sm font-medium text-white/80">
+                Ongoing
+              </span>
               <div className="flex items-baseline gap-1.5 mt-1">
                 <span className="text-xl sm:text-2xl font-extrabold text-white">
                   {assessor.ongoingCount || 6}
                 </span>
-                <span className="text-xs font-normal text-white/70">applications</span>
+                <span className="text-xs font-normal text-white/70">
+                  applications
+                </span>
               </div>
             </div>
             <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
@@ -173,12 +176,16 @@ export const AssessorProfileDetailView: React.FC<
 
           <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15">
             <div className="flex flex-col">
-              <span className="text-xs sm:text-sm font-medium text-white/80">Completed</span>
+              <span className="text-xs sm:text-sm font-medium text-white/80">
+                Completed
+              </span>
               <div className="flex items-baseline gap-1.5 mt-1">
                 <span className="text-xl sm:text-2xl font-extrabold text-white">
                   {assessor.completedCount || 4}
                 </span>
-                <span className="text-xs font-normal text-white/70">applications</span>
+                <span className="text-xs font-normal text-white/70">
+                  applications
+                </span>
               </div>
             </div>
             <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
@@ -207,7 +214,8 @@ export const AssessorProfileDetailView: React.FC<
             </h2>
 
             <span className="text-xs text-gray-400 font-medium">
-              {assessor.email} · {assessor.experienceYears || 8} years experience
+              {assessor.email} · {assessor.experienceYears || 8} years
+              experience
             </span>
 
             <div className="flex items-center gap-2 mt-1.5 flex-wrap">
@@ -311,37 +319,46 @@ export const AssessorProfileDetailView: React.FC<
           </div>
 
           <div className="flex items-center justify-between sm:justify-end gap-3 flex-wrap">
-            <select
+            <Select
+              size="sm"
+              showPlaceholderOption={false}
+              containerClassName="w-32"
               value={tradeFilter}
               onChange={(e) => setTradeFilter(e.target.value)}
-              className="border border-gray-200 rounded-xl px-3.5 py-2 text-xs font-semibold text-neutral-primary bg-white outline-none cursor-pointer hover:border-gray-300 transition-colors"
-            >
-              <option value="All">Trade</option>
-              <option value="Masonry">Masonry</option>
-              <option value="Carpentry">Carpentry</option>
-              <option value="Plumbing">Plumbing</option>
-              <option value="Painting">Painting</option>
-            </select>
+              options={[
+                { label: "Trade", value: "All" },
+                { label: "Masonry", value: "Masonry" },
+                { label: "Carpentry", value: "Carpentry" },
+                { label: "Plumbing", value: "Plumbing" },
+                { label: "Painting", value: "Painting" },
+              ]}
+            />
 
-            <select
+            <Select
+              size="sm"
+              showPlaceholderOption={false}
+              containerClassName="w-40"
               value={assessmentFilter}
               onChange={(e) => setAssessmentFilter(e.target.value)}
-              className="border border-gray-200 rounded-xl px-3.5 py-2 text-xs font-semibold text-neutral-primary bg-white outline-none cursor-pointer hover:border-gray-300 transition-colors"
-            >
-              <option value="All">Assessment Type</option>
-              <option value="RPL">RPL</option>
-              <option value="NSQ">NSQ</option>
-            </select>
+              options={[
+                { label: "Assessment Type", value: "All" },
+                { label: "RPL", value: "RPL" },
+                { label: "NSQ", value: "NSQ" },
+              ]}
+            />
 
-            <select
+            <Select
+              size="sm"
+              showPlaceholderOption={false}
+              containerClassName="w-32"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="border border-gray-200 rounded-xl px-3.5 py-2 text-xs font-semibold text-neutral-primary bg-white outline-none cursor-pointer hover:border-gray-300 transition-colors"
-            >
-              <option value="All">Status</option>
-              <option value="Ongoing">Ongoing</option>
-              <option value="Completed">Completed</option>
-            </select>
+              options={[
+                { label: "Status", value: "All" },
+                { label: "Ongoing", value: "Ongoing" },
+                { label: "Completed", value: "Completed" },
+              ]}
+            />
 
             <div className="flex items-center gap-1 bg-[#F8F9FA] p-1 rounded-xl border border-gray-200/80">
               <button
@@ -378,13 +395,18 @@ export const AssessorProfileDetailView: React.FC<
             </thead>
             <tbody className="divide-y divide-gray-100 text-xs sm:text-sm font-medium text-neutral-primary">
               {filteredCandidates.map((cand) => (
-                <tr key={cand.id} className="hover:bg-gray-50/50 transition-colors">
+                <tr
+                  key={cand.id}
+                  className="hover:bg-gray-50/50 transition-colors"
+                >
                   <td className="p-3.5 text-neutral-secondary">{cand.role}</td>
                   <td className="p-3.5 font-bold text-neutral-primary">
                     {cand.candidateName}
                   </td>
                   <td className="p-3.5 text-neutral-secondary">{cand.trade}</td>
-                  <td className="p-3.5 text-neutral-secondary">{cand.assessmentType}</td>
+                  <td className="p-3.5 text-neutral-secondary">
+                    {cand.assessmentType}
+                  </td>
                   <td className="p-3.5">
                     {cand.status === "Completed" ? (
                       <span className="bg-[#D1FAE5] text-[#065F46] font-semibold px-3 py-1 rounded-full text-xs inline-block">
@@ -396,7 +418,9 @@ export const AssessorProfileDetailView: React.FC<
                       </span>
                     )}
                   </td>
-                  <td className="p-3.5 text-neutral-secondary">{cand.assignedAt}</td>
+                  <td className="p-3.5 text-neutral-secondary">
+                    {cand.assignedAt}
+                  </td>
                   <td className="p-3.5 text-right">
                     <button
                       type="button"

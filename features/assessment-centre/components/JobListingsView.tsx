@@ -21,7 +21,7 @@ export const JobListingsView: React.FC<JobListingsViewProps> = ({
 
   const toggleSelectJob = (id: string) => {
     setSelectedJobIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
     );
   };
 
@@ -36,7 +36,7 @@ export const JobListingsView: React.FC<JobListingsViewProps> = ({
   const filteredJobs = jobs.filter(
     (job) =>
       job.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.trade.toLowerCase().includes(searchQuery.toLowerCase())
+      job.trade.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   return (
@@ -53,7 +53,7 @@ export const JobListingsView: React.FC<JobListingsViewProps> = ({
           variant="amber"
           size="md"
           rightIcon={<FiPlus className="w-4.5 h-4.5" />}
-          className="px-6 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-sm cursor-pointer whitespace-nowrap"
+          className="px-6 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
         >
           Post A Request
         </Button>
@@ -138,7 +138,10 @@ export const JobListingsView: React.FC<JobListingsViewProps> = ({
               {filteredJobs.map((job) => {
                 const isSelected = selectedJobIds.includes(job.id);
                 return (
-                  <tr key={job.id} className="hover:bg-gray-50/50 transition-colors">
+                  <tr
+                    key={job.id}
+                    className="hover:bg-gray-50/50 transition-colors"
+                  >
                     <td className="p-3.5">
                       <input
                         type="checkbox"
@@ -147,13 +150,21 @@ export const JobListingsView: React.FC<JobListingsViewProps> = ({
                         className="w-4 h-4 rounded border-gray-300 text-[#a31d38] focus:ring-0 cursor-pointer"
                       />
                     </td>
-                    <td className="p-3.5 font-bold text-neutral-primary">{job.role}</td>
-                    <td className="p-3.5 text-neutral-secondary">{job.trade}</td>
+                    <td className="p-3.5 font-bold text-neutral-primary">
+                      {job.role}
+                    </td>
+                    <td className="p-3.5 text-neutral-secondary">
+                      {job.trade}
+                    </td>
                     <td className="p-3.5 text-neutral-secondary">
                       {job.slotsFilled}/{job.slotsTotal} filled
                     </td>
-                    <td className="p-3.5 text-neutral-secondary">{job.applicantsCount}</td>
-                    <td className="p-3.5 text-neutral-secondary">{job.deadline}</td>
+                    <td className="p-3.5 text-neutral-secondary">
+                      {job.applicantsCount}
+                    </td>
+                    <td className="p-3.5 text-neutral-secondary">
+                      {job.deadline}
+                    </td>
                     <td className="p-3.5">
                       {job.status === "Open" ? (
                         <span className="bg-[#D1FAE5] text-[#065F46] font-semibold px-3 py-1 rounded-full text-xs inline-block">

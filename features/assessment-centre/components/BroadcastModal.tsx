@@ -33,7 +33,8 @@ export const BroadcastModal: React.FC<BroadcastModalProps> = ({
       toast({
         type: "error",
         title: "Selection Required",
-        description: "Please select a recipient group for the broadcast message.",
+        description:
+          "Please select a recipient group for the broadcast message.",
       });
       return;
     }
@@ -84,7 +85,10 @@ export const BroadcastModal: React.FC<BroadcastModalProps> = ({
           )}
 
           {step === "form" ? (
-            <form onSubmit={handleSend} className="w-full flex flex-col items-center gap-5">
+            <form
+              onSubmit={handleSend}
+              className="w-full flex flex-col items-center gap-5"
+            >
               <div className="flex flex-col items-center text-center gap-1">
                 <h3 className="text-xl sm:text-2xl font-extrabold text-neutral-primary tracking-tight">
                   Send Broadcast Message
@@ -126,7 +130,7 @@ export const BroadcastModal: React.FC<BroadcastModalProps> = ({
                 type="submit"
                 variant="amber"
                 size="lg"
-                className="w-full h-12.5 text-white font-bold text-base bg-[#fbab2a] hover:bg-[#e89b1f] mt-4 transition-all shadow-sm cursor-pointer rounded-xl"
+                className="w-full h-12.5 text-white font-bold text-base bg-[#fbab2a] hover:bg-[#e89b1f] mt-4 transition-all shadow-lg cursor-pointer rounded-xl"
               >
                 Send Message
               </Button>
@@ -158,7 +162,7 @@ export const BroadcastModal: React.FC<BroadcastModalProps> = ({
                 onClick={handleReset}
                 variant="amber"
                 size="lg"
-                className="w-full h-12.5 text-white font-bold text-base bg-[#fbab2a] hover:bg-[#e89b1f] transition-all shadow-sm cursor-pointer rounded-xl"
+                className="w-full h-12.5 text-white font-bold text-base bg-[#fbab2a] hover:bg-[#e89b1f] transition-all shadow-lg cursor-pointer rounded-xl"
               >
                 Continue
               </Button>

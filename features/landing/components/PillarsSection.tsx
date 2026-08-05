@@ -66,7 +66,7 @@ export function PillarsSection() {
               key={pillar.num}
               data-aos="fade-up"
               data-aos-delay={(idx % 3) * 100 + 100}
-              className="group rounded-xl border border-gray-200/80 bg-white p-6 shadow-sm transition-all hover:border-primary/40 hover:shadow-md"
+              className="group rounded-xl border border-transparent bg-white p-6 shadow-xs transition-all hover:border-primary/40 hover:shadow-md"
             >
               <div className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-gray-100 text-xs font-extrabold text-primary group-hover:bg-primary group-hover:text-white transition-colors">
                 {pillar.num}

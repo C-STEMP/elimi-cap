@@ -3,11 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import {
-  FiChevronRight,
-  FiFolder,
-  FiPlus,
-} from "react-icons/fi";
+import { FiChevronRight, FiFolder, FiPlus } from "react-icons/fi";
 import { HeaderBanner } from "@/features/dashboard/components/HeaderBanner";
 import { CalendarWidget } from "@/features/dashboard/components/CalendarWidget";
 import { UpcomingCard } from "@/features/dashboard/components/UpcomingCard";
@@ -19,30 +15,88 @@ import { ApplicationStatus } from "@/store/slices/applicationSlice";
 type FilterTab = "All" | "Ongoing" | "Completed" | "Draft";
 
 const getStatusDisplay = (status: ApplicationStatus) => {
-  const statusMap: Record<ApplicationStatus, { label: string; bg: string; text: string; border: string }> = {
-    draft: { label: "Draft", bg: "bg-[#F9A8251A]", text: "text-[#F9A825]", border: "#F9A825" },
-    submitted: { label: "Submitted", bg: "bg-[#AA1D3F1A]", text: "text-primary", border: "#AA1D3F" },
-    payment_pending: { label: "Payment Pending", bg: "bg-[#F9A8251A]", text: "text-[#F9A825]", border: "#F9A825" },
-    payment_completed: { label: "Payment Completed", bg: "bg-[#1E7F4C1A]", text: "text-[#1E7F4C]", border: "#1E7F4C" },
-    folder_arrangement: { label: "Folder Arrangement", bg: "bg-[#AA1D3F1A]", text: "text-primary", border: "#AA1D3F" },
-    self_assessment: { label: "Self Assessment", bg: "bg-[#F9A8251A]", text: "text-[#F9A825]", border: "#F9A825" },
-    evidence_upload: { label: "Evidence Upload", bg: "bg-[#AA1D3F1A]", text: "text-primary", border: "#AA1D3F" },
-    interview_scheduled: { label: "Interview Scheduled", bg: "bg-[#1E7F4C1A]", text: "text-[#1E7F4C]", border: "#1E7F4C" },
-    interview_completed: { label: "Interview Completed", bg: "bg-[#1E7F4C1A]", text: "text-[#1E7F4C]", border: "#1E7F4C" },
-    certification: { label: "Certification", bg: "bg-[#1E7F4C1A]", text: "text-[#1E7F4C]", border: "#1E7F4C" },
+  const statusMap: Record<
+    ApplicationStatus,
+    { label: string; bg: string; text: string; border: string }
+  > = {
+    draft: {
+      label: "Draft",
+      bg: "bg-[#F9A8251A]",
+      text: "text-[#F9A825]",
+      border: "#F9A825",
+    },
+    submitted: {
+      label: "Submitted",
+      bg: "bg-[#AA1D3F1A]",
+      text: "text-primary",
+      border: "#AA1D3F",
+    },
+    payment_pending: {
+      label: "Payment Pending",
+      bg: "bg-[#F9A8251A]",
+      text: "text-[#F9A825]",
+      border: "#F9A825",
+    },
+    payment_completed: {
+      label: "Payment Completed",
+      bg: "bg-[#1E7F4C1A]",
+      text: "text-[#1E7F4C]",
+      border: "#1E7F4C",
+    },
+    folder_arrangement: {
+      label: "Folder Arrangement",
+      bg: "bg-[#AA1D3F1A]",
+      text: "text-primary",
+      border: "#AA1D3F",
+    },
+    self_assessment: {
+      label: "Self Assessment",
+      bg: "bg-[#F9A8251A]",
+      text: "text-[#F9A825]",
+      border: "#F9A825",
+    },
+    evidence_upload: {
+      label: "Evidence Upload",
+      bg: "bg-[#AA1D3F1A]",
+      text: "text-primary",
+      border: "#AA1D3F",
+    },
+    interview_scheduled: {
+      label: "Interview Scheduled",
+      bg: "bg-[#1E7F4C1A]",
+      text: "text-[#1E7F4C]",
+      border: "#1E7F4C",
+    },
+    interview_completed: {
+      label: "Interview Completed",
+      bg: "bg-[#1E7F4C1A]",
+      text: "text-[#1E7F4C]",
+      border: "#1E7F4C",
+    },
+    certification: {
+      label: "Certification",
+      bg: "bg-[#1E7F4C1A]",
+      text: "text-[#1E7F4C]",
+      border: "#1E7F4C",
+    },
   };
   return statusMap[status] || statusMap.draft;
 };
 
-const getCategory = (status: ApplicationStatus): "Ongoing" | "Completed" | "Draft" => {
+const getCategory = (
+  status: ApplicationStatus,
+): "Ongoing" | "Completed" | "Draft" => {
   if (status === "draft") return "Draft";
-  if (status === "interview_completed" || status === "certification") return "Completed";
+  if (status === "interview_completed" || status === "certification")
+    return "Completed";
   return "Ongoing";
 };
 
 export const MyApplicationsPage: React.FC = () => {
   const router = useRouter();
-  const applications = useAppSelector((state) => state.application.applications);
+  const applications = useAppSelector(
+    (state) => state.application.applications,
+  );
 
   const [activeTab, setActiveTab] = useState<FilterTab>("All");
 
@@ -74,27 +128,29 @@ export const MyApplicationsPage: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         <div className="lg:col-span-9 flex flex-col gap-6">
-          <div className="bg-white rounded-[22px] p-4 shadow-sm border border-[#F7F4EF] min-h-75 flex flex-col">
+          <div className="bg-white rounded-[22px] p-4 shadow-lg border border-[#F7F4EF] min-h-75 flex flex-col">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 gap-4 border-b border-gray-100/60">
               <h2 className="text-black font-medium text-lg tracking-tight">
                 My Applications
               </h2>
 
               <div className="flex items-center gap-1 sm:gap-2 text-xs font-medium bg-input-bg p-1 rounded-full overflow-x-auto shrink-0">
-                {(["All", "Ongoing", "Completed", "Draft"] as FilterTab[]).map((tab) => (
-                  <button
-                    key={tab}
-                    type="button"
-                    onClick={() => setActiveTab(tab)}
-                    className={`px-3.5 py-1.5 rounded-full transition-all duration-200 cursor-pointer ${
-                      activeTab === tab
-                        ? "bg-white text-[#191913] font-medium shadow-xs"
-                        : "text-[#191913] hover:bg-white/50"
-                    }`}
-                  >
-                    {tab}
-                  </button>
-                ))}
+                {(["All", "Ongoing", "Completed", "Draft"] as FilterTab[]).map(
+                  (tab) => (
+                    <button
+                      key={tab}
+                      type="button"
+                      onClick={() => setActiveTab(tab)}
+                      className={`px-3.5 py-1.5 rounded-full transition-all duration-200 cursor-pointer ${
+                        activeTab === tab
+                          ? "bg-white text-[#191913] font-medium shadow-xs"
+                          : "text-[#191913] hover:bg-white/50"
+                      }`}
+                    >
+                      {tab}
+                    </button>
+                  ),
+                )}
               </div>
             </div>
 
@@ -116,7 +172,7 @@ export const MyApplicationsPage: React.FC = () => {
                   variant="secondary"
                   onClick={handleCreateApplication}
                   rightIcon={<FiPlus className="w-4 h-4 stroke-[2.5]" />}
-                  className="bg-secondary hover:bg-[#e89b1f] active:scale-95 text-white font-semibold text-sm px-6 py-2.5 rounded-xl shadow-sm transition-all cursor-pointer flex items-center gap-1.5"
+                  className="bg-secondary hover:bg-[#e89b1f] active:scale-95 text-white font-semibold text-sm px-6 py-2.5 rounded-xl shadow-lg transition-all cursor-pointer flex items-center gap-1.5"
                 >
                   Create Application
                 </Button>
@@ -161,11 +217,13 @@ export const MyApplicationsPage: React.FC = () => {
 
         <div className="lg:col-span-3 flex flex-col gap-6">
           <CalendarWidget />
-          <UpcomingCard interview={{
-            title: "Panel Interview",
-            date: "22-07-2026",
-            time: "12:00PM",
-          }} />
+          <UpcomingCard
+            interview={{
+              title: "Panel Interview",
+              date: "22-07-2026",
+              time: "12:00PM",
+            }}
+          />
           <VerifiedBadge isVerified={false} />
         </div>
       </div>

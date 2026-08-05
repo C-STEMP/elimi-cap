@@ -11,15 +11,13 @@ import {
   FiGrid,
 } from "react-icons/fi";
 import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/select";
 import {
   MOCK_STAFF_MEMBERS,
   MOCK_STAFF_APPLICATIONS,
 } from "../utils/constants";
 import { PendingApplication } from "../types";
-import {
-  StaffStatusModal,
-  StaffStatusModalMode,
-} from "./StaffStatusModal";
+import { StaffStatusModal, StaffStatusModalMode } from "./StaffStatusModal";
 
 interface StaffDetailViewProps {
   staffId: string;
@@ -34,7 +32,7 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
     MOCK_STAFF_MEMBERS.find((s) => s.id === staffId) || MOCK_STAFF_MEMBERS[1];
 
   const [applications, setApplications] = useState<PendingApplication[]>(
-    MOCK_STAFF_APPLICATIONS
+    MOCK_STAFF_APPLICATIONS,
   );
   const [searchQuery, setSearchQuery] = useState("");
   const [tradeFilter, setTradeFilter] = useState("All");
@@ -73,8 +71,7 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
     const matchesTrade = tradeFilter === "All" || app.trade === tradeFilter;
     const matchesAssessment =
       assessmentFilter === "All" || app.assessmentType === assessmentFilter;
-    const matchesStatus =
-      statusFilter === "All" || app.status === statusFilter;
+    const matchesStatus = statusFilter === "All" || app.status === statusFilter;
     return matchesSearch && matchesTrade && matchesAssessment && matchesStatus;
   });
 
@@ -146,7 +143,7 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
               variant="amber"
               size="md"
               rightIcon={<FiUnlock className="w-4 h-4" />}
-              className="px-6 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-sm cursor-pointer whitespace-nowrap"
+              className="px-6 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
             >
               Activate
             </Button>
@@ -157,7 +154,7 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
               variant="amber"
               size="md"
               rightIcon={<FiSlash className="w-4 h-4" />}
-              className="px-6 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-sm cursor-pointer whitespace-nowrap"
+              className="px-6 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
             >
               Deactivate
             </Button>
@@ -245,38 +242,47 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
           </div>
 
           <div className="flex items-center justify-between sm:justify-end gap-3 flex-wrap">
-            <select
+            <Select
+              size="sm"
+              showPlaceholderOption={false}
+              containerClassName="w-32"
               value={tradeFilter}
               onChange={(e) => setTradeFilter(e.target.value)}
-              className="border border-gray-200 rounded-xl px-3.5 py-2 text-xs font-semibold text-neutral-primary bg-white outline-none cursor-pointer hover:border-gray-300 transition-colors"
-            >
-              <option value="All">Trade</option>
-              <option value="Masonry">Masonry</option>
-              <option value="Carpentry">Carpentry</option>
-              <option value="Plumbing">Plumbing</option>
-              <option value="Painting">Painting</option>
-            </select>
+              options={[
+                { label: "Trade", value: "All" },
+                { label: "Masonry", value: "Masonry" },
+                { label: "Carpentry", value: "Carpentry" },
+                { label: "Plumbing", value: "Plumbing" },
+                { label: "Painting", value: "Painting" },
+              ]}
+            />
 
-            <select
+            <Select
+              size="sm"
+              showPlaceholderOption={false}
+              containerClassName="w-40"
               value={assessmentFilter}
               onChange={(e) => setAssessmentFilter(e.target.value)}
-              className="border border-gray-200 rounded-xl px-3.5 py-2 text-xs font-semibold text-neutral-primary bg-white outline-none cursor-pointer hover:border-gray-300 transition-colors"
-            >
-              <option value="All">Assessment Type</option>
-              <option value="RPL">RPL</option>
-              <option value="NSQ">NSQ</option>
-            </select>
+              options={[
+                { label: "Assessment Type", value: "All" },
+                { label: "RPL", value: "RPL" },
+                { label: "NSQ", value: "NSQ" },
+              ]}
+            />
 
-            <select
+            <Select
+              size="sm"
+              showPlaceholderOption={false}
+              containerClassName="w-36"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="border border-gray-200 rounded-xl px-3.5 py-2 text-xs font-semibold text-neutral-primary bg-white outline-none cursor-pointer hover:border-gray-300 transition-colors"
-            >
-              <option value="All">Status</option>
-              <option value="Ongoing">Ongoing</option>
-              <option value="Folder Complete">Folder Complete</option>
-              <option value="Certified">Certified</option>
-            </select>
+              options={[
+                { label: "Status", value: "All" },
+                { label: "Ongoing", value: "Ongoing" },
+                { label: "Folder Complete", value: "Folder Complete" },
+                { label: "Certified", value: "Certified" },
+              ]}
+            />
 
             <div className="flex items-center gap-1 bg-[#F8F9FA] p-1 rounded-xl border border-gray-200/80">
               <button
@@ -299,7 +305,7 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
 
         {/* Staff Applications Table */}
         <div className="w-full overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[700px]">
+          <table className="w-full text-left border-collapse min-w-175">
             <thead>
               <tr className="bg-[#F8F9FA] text-gray-500 text-xs font-semibold uppercase tracking-wider rounded-xl">
                 <th className="p-3.5 rounded-l-xl">Candidate Name</th>
@@ -312,14 +318,21 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
             </thead>
             <tbody className="divide-y divide-gray-100 text-xs sm:text-sm font-medium text-neutral-primary">
               {filteredApplications.map((app) => (
-                <tr key={app.id} className="hover:bg-gray-50/50 transition-colors">
+                <tr
+                  key={app.id}
+                  className="hover:bg-gray-50/50 transition-colors"
+                >
                   <td className="p-3.5 font-bold text-neutral-primary">
                     {app.candidateName}
                   </td>
                   <td className="p-3.5 text-neutral-secondary">{app.trade}</td>
-                  <td className="p-3.5 text-neutral-secondary">{app.assessmentType}</td>
+                  <td className="p-3.5 text-neutral-secondary">
+                    {app.assessmentType}
+                  </td>
                   <td className="p-3.5">{renderStatusBadge(app.status)}</td>
-                  <td className="p-3.5 text-neutral-secondary">{app.submittedAt}</td>
+                  <td className="p-3.5 text-neutral-secondary">
+                    {app.submittedAt}
+                  </td>
                   <td className="p-3.5 text-right">
                     <button
                       type="button"

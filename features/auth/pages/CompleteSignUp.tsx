@@ -27,7 +27,7 @@ export const CompleteSignUp: React.FC = () => {
     password?: string;
     confirmPassword?: string;
   }>({});
-  
+
   const { toast } = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -74,7 +74,8 @@ export const CompleteSignUp: React.FC = () => {
           Create Account
         </h1>
         <p className="text-neutral-secondary text-[14px] xl:text-[15px] leading-relaxed mt-2 max-w-sm font-normal text-center lg:text-left mx-auto lg:mx-0">
-          Complete your profile registration for <span className="font-semibold">{email}</span>.
+          Complete your profile registration for{" "}
+          <span className="font-semibold">{email}</span>.
         </p>
       </div>
 
@@ -88,7 +89,8 @@ export const CompleteSignUp: React.FC = () => {
           error={errors.fullName}
           onChange={(e) => {
             setFullName(e.target.value);
-            if (errors.fullName) setErrors((prev) => ({ ...prev, fullName: undefined }));
+            if (errors.fullName)
+              setErrors((prev) => ({ ...prev, fullName: undefined }));
           }}
           disabled={isSubmitting}
         />
@@ -104,12 +106,19 @@ export const CompleteSignUp: React.FC = () => {
             onChange={(e) => {
               const val = e.target.value;
               setPassword(val);
-              if (errors.password) setErrors((prev) => ({ ...prev, password: undefined }));
+              if (errors.password)
+                setErrors((prev) => ({ ...prev, password: undefined }));
               if (confirmPassword) {
                 if (val !== confirmPassword) {
-                  setErrors((prev) => ({ ...prev, confirmPassword: "Passwords do not match" }));
+                  setErrors((prev) => ({
+                    ...prev,
+                    confirmPassword: "Passwords do not match",
+                  }));
                 } else {
-                  setErrors((prev) => ({ ...prev, confirmPassword: undefined }));
+                  setErrors((prev) => ({
+                    ...prev,
+                    confirmPassword: undefined,
+                  }));
                 }
               }
             }}
@@ -129,7 +138,10 @@ export const CompleteSignUp: React.FC = () => {
             const val = e.target.value;
             setConfirmPassword(val);
             if (val && password && val !== password) {
-              setErrors((prev) => ({ ...prev, confirmPassword: "Passwords do not match" }));
+              setErrors((prev) => ({
+                ...prev,
+                confirmPassword: "Passwords do not match",
+              }));
             } else {
               setErrors((prev) => ({ ...prev, confirmPassword: undefined }));
             }
@@ -142,7 +154,7 @@ export const CompleteSignUp: React.FC = () => {
             type="submit"
             variant="secondary"
             size="md"
-            className="w-full max-w-110 h-12.5 text-white! font-bold text-base bg-secondary hover:bg-secondary-hover focus:ring-secondary/30 transition-all shadow-sm"
+            className="w-full max-w-110 h-12.5 text-white! font-bold text-base bg-secondary hover:bg-secondary-hover focus:ring-secondary/30 transition-all shadow-lg"
             loading={isSubmitting}
           >
             Create Account

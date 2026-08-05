@@ -117,7 +117,7 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
 
           <button
             type="submit"
-            className="bg-border-secondary hover:bg-[#A81C19] active:scale-98 text-white font-bold w-full py-3.5 rounded-xl shadow-sm transition-all cursor-pointer text-sm sm:text-base mt-1"
+            className="bg-border-secondary hover:bg-[#A81C19] active:scale-98 text-white font-bold w-full py-3.5 rounded-xl shadow-lg transition-all cursor-pointer text-sm sm:text-base mt-1"
           >
             Delete Account
           </button>

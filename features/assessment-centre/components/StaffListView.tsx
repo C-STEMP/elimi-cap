@@ -1,13 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import {
-  FiSearch,
-  FiList,
-  FiGrid,
-  FiPlus,
-  FiUser,
-} from "react-icons/fi";
+import { FiSearch, FiList, FiGrid, FiUserPlus, FiFlag, FiPlus, FiUser } from "react-icons/fi";
+import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { MOCK_STAFF_MEMBERS } from "../utils/constants";
 import { StaffMember } from "../types";
@@ -21,7 +16,8 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
   onSelectStaff,
   onAddStaff,
 }) => {
-  const [staffMembers, setStaffMembers] = useState<StaffMember[]>(MOCK_STAFF_MEMBERS);
+  const [staffMembers, setStaffMembers] =
+    useState<StaffMember[]>(MOCK_STAFF_MEMBERS);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -29,7 +25,7 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
 
   const toggleSelectStaff = (id: string) => {
     setSelectedStaffIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
     );
   };
 
@@ -89,7 +85,7 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
             variant="amber"
             size="md"
             rightIcon={<FiPlus className="w-4.5 h-4.5" />}
-            className="px-6 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-sm cursor-pointer whitespace-nowrap"
+            className="px-6 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
           >
             Add Staff
           </Button>
@@ -99,10 +95,16 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15">
             <div className="flex flex-col">
-              <span className="text-xs sm:text-sm font-medium text-white/80">Total Staffs</span>
+              <span className="text-xs sm:text-sm font-medium text-white/80">
+                Total Staffs
+              </span>
               <div className="flex items-baseline gap-1.5 mt-1">
-                <span className="text-xl sm:text-2xl font-extrabold text-white">15</span>
-                <span className="text-xs font-normal text-white/70">staffs</span>
+                <span className="text-xl sm:text-2xl font-extrabold text-white">
+                  15
+                </span>
+                <span className="text-xs font-normal text-white/70">
+                  staffs
+                </span>
               </div>
             </div>
             <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
@@ -112,10 +114,16 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
 
           <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15">
             <div className="flex flex-col">
-              <span className="text-xs sm:text-sm font-medium text-white/80">Active Staff</span>
+              <span className="text-xs sm:text-sm font-medium text-white/80">
+                Active Staff
+              </span>
               <div className="flex items-baseline gap-1.5 mt-1">
-                <span className="text-xl sm:text-2xl font-extrabold text-white">10</span>
-                <span className="text-xs font-normal text-white/70">staffs</span>
+                <span className="text-xl sm:text-2xl font-extrabold text-white">
+                  10
+                </span>
+                <span className="text-xs font-normal text-white/70">
+                  staffs
+                </span>
               </div>
             </div>
             <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
@@ -125,10 +133,16 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
 
           <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15">
             <div className="flex flex-col">
-              <span className="text-xs sm:text-sm font-medium text-white/80">Pending Staff</span>
+              <span className="text-xs sm:text-sm font-medium text-white/80">
+                Pending Staff
+              </span>
               <div className="flex items-baseline gap-1.5 mt-1">
-                <span className="text-xl sm:text-2xl font-extrabold text-white">3</span>
-                <span className="text-xs font-normal text-white/70">staffs</span>
+                <span className="text-xl sm:text-2xl font-extrabold text-white">
+                  3
+                </span>
+                <span className="text-xs font-normal text-white/70">
+                  staffs
+                </span>
               </div>
             </div>
             <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
@@ -138,10 +152,16 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
 
           <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15">
             <div className="flex flex-col">
-              <span className="text-xs sm:text-sm font-medium text-white/80">Inactive</span>
+              <span className="text-xs sm:text-sm font-medium text-white/80">
+                Inactive
+              </span>
               <div className="flex items-baseline gap-1.5 mt-1">
-                <span className="text-xl sm:text-2xl font-extrabold text-white">2</span>
-                <span className="text-xs font-normal text-white/70">staffs</span>
+                <span className="text-xl sm:text-2xl font-extrabold text-white">
+                  2
+                </span>
+                <span className="text-xs font-normal text-white/70">
+                  staffs
+                </span>
               </div>
             </div>
             <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
@@ -169,16 +189,19 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
 
           {/* Right Filters & View Toggle */}
           <div className="flex items-center justify-between sm:justify-end gap-3 flex-wrap">
-            <select
+            <Select
+              size="sm"
+              showPlaceholderOption={false}
+              containerClassName="w-32"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="border border-gray-200 rounded-xl px-3.5 py-2 text-xs font-semibold text-neutral-primary bg-white outline-none cursor-pointer hover:border-gray-300 transition-colors"
-            >
-              <option value="All">Status</option>
-              <option value="Active">Active</option>
-              <option value="Pending">Pending</option>
-              <option value="Inactive">Inactive</option>
-            </select>
+              options={[
+                { label: "Status", value: "All" },
+                { label: "Active", value: "Active" },
+                { label: "Pending", value: "Pending" },
+                { label: "Inactive", value: "Inactive" },
+              ]}
+            />
 
             <div className="flex items-center gap-1 bg-[#F8F9FA] p-1 rounded-xl border border-gray-200/80">
               <button
@@ -292,7 +315,10 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
                 {filteredStaff.map((staff) => {
                   const isSelected = selectedStaffIds.includes(staff.id);
                   return (
-                    <tr key={staff.id} className="hover:bg-gray-50/50 transition-colors">
+                    <tr
+                      key={staff.id}
+                      className="hover:bg-gray-50/50 transition-colors"
+                    >
                       <td className="p-3.5">
                         <input
                           type="checkbox"
@@ -304,10 +330,18 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
                       <td className="p-3.5 font-bold text-neutral-primary">
                         {staff.name}
                       </td>
-                      <td className="p-3.5 text-neutral-secondary">{staff.email}</td>
-                      <td className="p-3.5 text-neutral-secondary">{staff.role}</td>
-                      <td className="p-3.5">{renderStatusBadge(staff.status)}</td>
-                      <td className="p-3.5 text-neutral-secondary">{staff.dateAdded}</td>
+                      <td className="p-3.5 text-neutral-secondary">
+                        {staff.email}
+                      </td>
+                      <td className="p-3.5 text-neutral-secondary">
+                        {staff.role}
+                      </td>
+                      <td className="p-3.5">
+                        {renderStatusBadge(staff.status)}
+                      </td>
+                      <td className="p-3.5 text-neutral-secondary">
+                        {staff.dateAdded}
+                      </td>
                       <td className="p-3.5 text-right">
                         <button
                           type="button"

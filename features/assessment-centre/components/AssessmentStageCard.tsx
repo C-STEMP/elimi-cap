@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { Select } from "@/components/ui/select";
 import { MOCK_STAGES_DATA } from "../utils/constants";
 
 export const AssessmentStageCard: React.FC = () => {
@@ -14,14 +15,14 @@ export const AssessmentStageCard: React.FC = () => {
           Candidate By Assessment Stage
         </h3>
 
-        <select
+        <Select
+          size="sm"
+          showPlaceholderOption={false}
+          containerClassName="w-24"
           value={assessmentType}
           onChange={(e) => setAssessmentType(e.target.value)}
-          className="border border-gray-200 rounded-xl px-3 py-1.5 text-xs font-semibold text-neutral-primary bg-white outline-none cursor-pointer hover:border-gray-300 transition-colors"
-        >
-          <option value="RPL">RPL</option>
-          <option value="NSQ">NSQ</option>
-        </select>
+          options={["RPL", "NSQ"]}
+        />
       </div>
 
       {/* Stage Progress Rows */}

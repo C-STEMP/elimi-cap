@@ -69,6 +69,23 @@ const formatDateString = (date: Date, isShortYear: boolean): string => {
   return `${d}/${m}/${y}`;
 };
 
+/**
+ * Coerces raw typed input into a guided dd/mm/yyyy mask.
+ * Inserts slashes automatically so users don't need to type them.
+ */
+function maskDateInput(raw: string, prev: string): string {
+  // Strip everything that isn't a digit or slash
+  const digits = raw.replace(/[^\d]/g, "");
+
+  // Auto-insert slashes at positions 2 and 4
+  let masked = "";
+  for (let i = 0; i < digits.length && i < 8; i++) {
+    if (i === 2 || i === 4) masked += "/";
+    masked += digits[i];
+  }
+  return masked;
+}
+
 export const DatePicker: React.FC<DatePickerProps> = ({
   label,
   value = "",
@@ -94,7 +111,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   const selectedDate = parseDateString(value);
   const defaultViewYear = maxYear || new Date().getFullYear() - 18;
   const [viewDate, setViewDate] = useState<Date>(
-    () => selectedDate || new Date(defaultViewYear, 0, 1)
+    () => selectedDate || new Date(defaultViewYear, 0, 1),
   );
 
   useEffect(() => {
@@ -105,6 +122,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
     if (selectedDate) {
       setViewDate(selectedDate);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
   const inputId = id || (mounted ? reactId : undefined);
@@ -146,6 +164,17 @@ export const DatePicker: React.FC<DatePickerProps> = ({
       onChange(formatted);
     }
     setIsOpen(false);
+  };
+
+  // ── Typed-input handler ──────────────────────────────────────────────────────
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const prev = value;
+    const masked = maskDateInput(e.target.value, prev);
+    onChange?.(masked);
+
+    // Sync calendar view when a valid date is typed
+    const parsed = parseDateString(masked);
+    if (parsed) setViewDate(parsed);
   };
 
   // Generate calendar grid
@@ -201,16 +230,19 @@ export const DatePicker: React.FC<DatePickerProps> = ({
       )}
 
       <div className="relative w-full flex items-center">
+        {/* Typeable text input */}
         <input
           id={inputId}
           name={name}
           type="text"
-          readOnly
+          inputMode="numeric"
           placeholder={placeholder}
           value={value}
           required={required}
           disabled={disabled}
-          onClick={() => !disabled && setIsOpen(!isOpen)}
+          maxLength={10} /* dd/mm/yyyy = 10 chars */
+          onChange={handleInputChange}
+          onFocus={() => !disabled && setIsOpen(true)}
           className={`
             w-full h-11 xl:h-12
             pl-4 pr-10
@@ -221,7 +253,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
             transition-all duration-200 ease-in-out
             outline-none
             placeholder:text-gray-400
-            cursor-pointer
+            cursor-text
             focus:border-primary-solid/40
             focus:ring-2
             focus:ring-primary-solid/10
@@ -232,6 +264,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
           `}
         />
 
+        {/* Calendar toggle button — same look as before */}
         <button
           type="button"
           tabIndex={-1}
@@ -270,7 +303,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                   value={currentMonth}
                   onChange={(e) =>
                     setViewDate(
-                      new Date(currentYear, parseInt(e.target.value, 10), 1)
+                      new Date(currentYear, parseInt(e.target.value, 10), 1),
                     )
                   }
                   className="text-xs xl:text-sm font-bold text-neutral-primary bg-transparent outline-none cursor-pointer hover:text-secondary py-1 rounded"
@@ -286,7 +319,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                   value={currentYear}
                   onChange={(e) =>
                     setViewDate(
-                      new Date(parseInt(e.target.value, 10), currentMonth, 1)
+                      new Date(parseInt(e.target.value, 10), currentMonth, 1),
                     )
                   }
                   className="text-xs xl:text-sm font-bold text-neutral-primary bg-transparent outline-none cursor-pointer hover:text-secondary py-1 rounded"

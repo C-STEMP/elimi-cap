@@ -168,7 +168,7 @@ export const StatusModal: React.FC<StatusModalProps> = ({
       );
     }
     return (
-      <div className="w-35 h-35 flex items-center justify-center bg-red-50 rounded-full border-4 border-red-100 shadow-sm animate-pulse">
+      <div className="w-35 h-35 flex items-center justify-center bg-red-50 rounded-full border-4 border-red-100 shadow-lg animate-pulse">
         <ErrorCircleIcon />
       </div>
     );
@@ -260,7 +260,7 @@ export const StatusModal: React.FC<StatusModalProps> = ({
           variant="amber"
           size="lg"
           fullWidth
-          className="!h-12.5 !text-white !font-bold !text-base !bg-[#fbab2a] hover:!bg-[#e89b1f] mt-8 !transition-all !shadow-sm !cursor-pointer !rounded-xl"
+          className="h-12.5! text-white! font-bold! text-base! bg-[#fbab2a]! hover:bg-[#e89b1f]! mt-8 transition-all! shadow-lg! cursor-pointer! rounded-xl!"
         >
           {modalActionLabel}
         </Button>

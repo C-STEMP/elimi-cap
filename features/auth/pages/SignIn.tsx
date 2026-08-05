@@ -297,7 +297,7 @@ export const SignIn: React.FC = () => {
                   type="submit"
                   variant="secondary"
                   size="lg"
-                  className="w-full h-12.5 text-white font-bold text-base bg-secondary hover:bg-secondary-hover focus:ring-secondary/30 transition-all shadow-sm cursor-pointer"
+                  className="w-full h-12.5 text-white font-bold text-base bg-secondary hover:bg-secondary-hover focus:ring-secondary/30 transition-all shadow-lg cursor-pointer"
                   loading={isLoggingIn}
                 >
                   Sign In
@@ -330,7 +330,9 @@ export const SignIn: React.FC = () => {
                 leftIcon={<FcGoogle className="w-4 h-4 sm:w-5 sm:h-5" />}
                 className="w-full h-12.5 text-text-dark font-medium text-sm xl:text-base cursor-pointer"
               >
-                {isGooglePending ? "Connecting to Google..." : "Continue with Google"}
+                {isGooglePending
+                  ? "Connecting to Google..."
+                  : "Continue with Google"}
               </Button>
 
               <div
@@ -398,7 +400,7 @@ export const SignIn: React.FC = () => {
                   type="submit"
                   variant="secondary"
                   size="lg"
-                  className="w-full h-12.5 text-white font-bold text-base bg-secondary hover:bg-secondary-hover focus:ring-secondary/30 transition-all shadow-sm cursor-pointer"
+                  className="w-full h-12.5 text-white font-bold text-base bg-secondary hover:bg-secondary-hover focus:ring-secondary/30 transition-all shadow-lg cursor-pointer"
                   loading={isSubmitting}
                 >
                   Send Verification Code
@@ -494,7 +496,7 @@ export const SignIn: React.FC = () => {
                   type="submit"
                   variant="secondary"
                   size="lg"
-                  className="w-full h-12.5 text-white font-bold text-base bg-secondary hover:bg-secondary-hover focus:ring-secondary/30 transition-all shadow-sm cursor-pointer"
+                  className="w-full h-12.5 text-white font-bold text-base bg-secondary hover:bg-secondary-hover focus:ring-secondary/30 transition-all shadow-lg cursor-pointer"
                   loading={isSubmitting}
                 >
                   Verify Email

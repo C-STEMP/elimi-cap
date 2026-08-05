@@ -99,7 +99,8 @@ export const CenterPersonalInfo: React.FC = () => {
       toast({
         type: "error",
         title: "Input Required",
-        description: "Please fill in all required fields for Personal Information.",
+        description:
+          "Please fill in all required fields for Personal Information.",
       });
       return;
     }
@@ -170,7 +171,8 @@ export const CenterPersonalInfo: React.FC = () => {
           <DatePicker
             label={
               <span>
-                Date Of Birth<span className="text-primary-solid ml-0.5">*</span>
+                Date Of Birth
+                <span className="text-primary-solid ml-0.5">*</span>
               </span>
             }
             placeholder="dd/mm/yyyy"
@@ -200,7 +202,13 @@ export const CenterPersonalInfo: React.FC = () => {
               </span>
             }
             placeholder="Select"
-            options={["Nigerian", "Ghanaian", "Kenyan", "South African", "Other"]}
+            options={[
+              "Nigerian",
+              "Ghanaian",
+              "Kenyan",
+              "South African",
+              "Other",
+            ]}
             value={form.nationality}
             error={errors.nationality}
             onChange={(e) => update("nationality", e.target.value)}
@@ -217,7 +225,8 @@ export const CenterPersonalInfo: React.FC = () => {
             <Input
               label={
                 <span>
-                  Email Address<span className="text-primary-solid ml-0.5">*</span>
+                  Email Address
+                  <span className="text-primary-solid ml-0.5">*</span>
                 </span>
               }
               type="email"
@@ -230,7 +239,8 @@ export const CenterPersonalInfo: React.FC = () => {
             <PhoneInput
               label={
                 <span>
-                  Phone Number<span className="text-primary-solid ml-0.5">*</span>
+                  Phone Number
+                  <span className="text-primary-solid ml-0.5">*</span>
                 </span>
               }
               value={form.phoneNumber}
@@ -265,7 +275,8 @@ export const CenterPersonalInfo: React.FC = () => {
             <Select
               label={
                 <span>
-                  State of Residence<span className="text-primary-solid ml-0.5">*</span>
+                  State of Residence
+                  <span className="text-primary-solid ml-0.5">*</span>
                 </span>
               }
               placeholder="Select"
@@ -287,7 +298,8 @@ export const CenterPersonalInfo: React.FC = () => {
             <Select
               label={
                 <span>
-                  Local Government Area (LGA)<span className="text-primary-solid ml-0.5">*</span>
+                  Local Government Area (LGA)
+                  <span className="text-primary-solid ml-0.5">*</span>
                 </span>
               }
               placeholder="Select"
@@ -307,7 +319,8 @@ export const CenterPersonalInfo: React.FC = () => {
             <Input
               label={
                 <span>
-                  Street Address<span className="text-primary-solid ml-0.5">*</span>
+                  Street Address
+                  <span className="text-primary-solid ml-0.5">*</span>
                 </span>
               }
               type="text"
@@ -323,7 +336,9 @@ export const CenterPersonalInfo: React.FC = () => {
         <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-100">
           <button
             type="button"
-            onClick={() => router.push("/onboarding/assessment-centre/center-info")}
+            onClick={() =>
+              router.push("/onboarding/assessment-centre/center-info")
+            }
             className="flex items-center gap-2 text-neutral-secondary hover:text-neutral-primary font-semibold text-sm transition-colors cursor-pointer select-none focus:outline-none"
           >
             <FiArrowLeft className="w-4 h-4" />
@@ -335,7 +350,7 @@ export const CenterPersonalInfo: React.FC = () => {
             variant="amber"
             size="md"
             rightIcon={<FiArrowRight className="w-4.5 h-4.5" />}
-            className="px-8 h-11 text-white font-bold text-sm rounded-xl shadow-sm cursor-pointer whitespace-nowrap"
+            className="px-8 h-11 text-white font-bold text-sm rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
           >
             Verify Identity
           </Button>

@@ -65,7 +65,13 @@ export function ContactSection() {
               </label>
               <input
                 type="tel"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 placeholder="Enter your phone number"
+                onInput={(e) => {
+                  const target = e.target as HTMLInputElement;
+                  target.value = target.value.replace(/[^0-9]/g, "");
+                }}
                 className="w-full rounded-lg border border-white/20 bg-white/10 px-4 py-3 text-sm text-white placeholder-white/40 focus:border-border-secondary focus:outline-none"
               />
             </div>
@@ -97,7 +103,7 @@ export function ContactSection() {
           <div className="text-center pt-2">
             <button
               type="submit"
-              className="w-full sm:w-auto rounded-md bg-secondary px-10 py-3.5 text-sm font-bold text-text-dark transition-all hover:bg-secondary-hover"
+              className="cursor-pointer w-full sm:w-auto rounded-md bg-secondary px-10 py-3.5 text-sm font-bold text-text-dark transition-all hover:bg-secondary-hover"
             >
               {submitted ? "Message Sent!" : "Send Enquiry"}
             </button>

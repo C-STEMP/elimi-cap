@@ -21,7 +21,7 @@ export const UpcomingCard: React.FC<UpcomingCardProps> = ({ interview }) => {
   const showEvents = interview !== null;
 
   return (
-    <div className="bg-white rounded-[22px] p-5 sm:p-6 shadow-sm border border-gray-100/80 flex flex-col justify-between h-full">
+    <div className="bg-white rounded-[22px] p-5 sm:p-6 shadow-lg border border-gray-100/80 flex flex-col justify-between h-full">
       <h3 className="text-[#1A1A1A] font-bold text-lg tracking-tight mb-4">
         Upcoming Events
       </h3>

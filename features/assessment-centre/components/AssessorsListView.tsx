@@ -2,6 +2,8 @@
 
 import React, { useState } from "react";
 import { FiSearch, FiList, FiGrid, FiFlag } from "react-icons/fi";
+import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/select";
 import { MOCK_ASSESSORS } from "../utils/constants";
 import { AssessorItem } from "../types";
 
@@ -27,7 +29,7 @@ export const AssessorsListView: React.FC<AssessorsListViewProps> = ({
 
   const toggleSelectOne = (id: string) => {
     setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
     );
   };
 
@@ -78,10 +80,16 @@ export const AssessorsListView: React.FC<AssessorsListViewProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15">
             <div className="flex flex-col">
-              <span className="text-xs sm:text-sm font-medium text-white/80">Total Assessors</span>
+              <span className="text-xs sm:text-sm font-medium text-white/80">
+                Total Assessors
+              </span>
               <div className="flex items-baseline gap-1.5 mt-1">
-                <span className="text-xl sm:text-2xl font-extrabold text-white">43</span>
-                <span className="text-xs font-normal text-white/70">assessors</span>
+                <span className="text-xl sm:text-2xl font-extrabold text-white">
+                  43
+                </span>
+                <span className="text-xs font-normal text-white/70">
+                  assessors
+                </span>
               </div>
             </div>
             <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
@@ -91,10 +99,16 @@ export const AssessorsListView: React.FC<AssessorsListViewProps> = ({
 
           <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15">
             <div className="flex flex-col">
-              <span className="text-xs sm:text-sm font-medium text-white/80">Active Assessors</span>
+              <span className="text-xs sm:text-sm font-medium text-white/80">
+                Active Assessors
+              </span>
               <div className="flex items-baseline gap-1.5 mt-1">
-                <span className="text-xl sm:text-2xl font-extrabold text-white">30</span>
-                <span className="text-xs font-normal text-white/70">assessors</span>
+                <span className="text-xl sm:text-2xl font-extrabold text-white">
+                  30
+                </span>
+                <span className="text-xs font-normal text-white/70">
+                  assessors
+                </span>
               </div>
             </div>
             <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
@@ -104,10 +118,16 @@ export const AssessorsListView: React.FC<AssessorsListViewProps> = ({
 
           <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15">
             <div className="flex flex-col">
-              <span className="text-xs sm:text-sm font-medium text-white/80">Pending Assessors</span>
+              <span className="text-xs sm:text-sm font-medium text-white/80">
+                Pending Assessors
+              </span>
               <div className="flex items-baseline gap-1.5 mt-1">
-                <span className="text-xl sm:text-2xl font-extrabold text-white">3</span>
-                <span className="text-xs font-normal text-white/70">assessors</span>
+                <span className="text-xl sm:text-2xl font-extrabold text-white">
+                  3
+                </span>
+                <span className="text-xs font-normal text-white/70">
+                  assessors
+                </span>
               </div>
             </div>
             <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
@@ -117,10 +137,16 @@ export const AssessorsListView: React.FC<AssessorsListViewProps> = ({
 
           <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15">
             <div className="flex flex-col">
-              <span className="text-xs sm:text-sm font-medium text-white/80">Inactive Assessors</span>
+              <span className="text-xs sm:text-sm font-medium text-white/80">
+                Inactive Assessors
+              </span>
               <div className="flex items-baseline gap-1.5 mt-1">
-                <span className="text-xl sm:text-2xl font-extrabold text-white">10</span>
-                <span className="text-xs font-normal text-white/70">assessors</span>
+                <span className="text-xl sm:text-2xl font-extrabold text-white">
+                  10
+                </span>
+                <span className="text-xs font-normal text-white/70">
+                  assessors
+                </span>
               </div>
             </div>
             <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
@@ -146,16 +172,19 @@ export const AssessorsListView: React.FC<AssessorsListViewProps> = ({
           </div>
 
           <div className="flex items-center justify-between sm:justify-end gap-3 flex-wrap">
-            <select
+            <Select
+              size="sm"
+              showPlaceholderOption={false}
+              containerClassName="w-32"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="border border-gray-200 rounded-xl px-3.5 py-2 text-xs font-semibold text-neutral-primary bg-white outline-none cursor-pointer hover:border-gray-300 transition-colors"
-            >
-              <option value="All">Status</option>
-              <option value="Active">Active</option>
-              <option value="Pending">Pending</option>
-              <option value="Inactive">Inactive</option>
-            </select>
+              options={[
+                { label: "Status", value: "All" },
+                { label: "Active", value: "Active" },
+                { label: "Pending", value: "Pending" },
+                { label: "Inactive", value: "Inactive" },
+              ]}
+            />
 
             <div className="flex items-center gap-1 bg-[#F8F9FA] p-1 rounded-xl border border-gray-200/80">
               <button
@@ -185,7 +214,7 @@ export const AssessorsListView: React.FC<AssessorsListViewProps> = ({
 
         {/* Assessors Table */}
         <div className="w-full overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[700px]">
+          <table className="w-full text-left border-collapse min-w-175">
             <thead>
               <tr className="bg-[#F8F9FA] text-gray-500 text-xs font-semibold uppercase tracking-wider rounded-xl">
                 <th className="p-3.5 rounded-l-xl w-10">
@@ -210,7 +239,10 @@ export const AssessorsListView: React.FC<AssessorsListViewProps> = ({
             </thead>
             <tbody className="divide-y divide-gray-100 text-xs sm:text-sm font-medium text-neutral-primary">
               {filteredAssessors.map((assessor) => (
-                <tr key={assessor.id} className="hover:bg-gray-50/50 transition-colors">
+                <tr
+                  key={assessor.id}
+                  className="hover:bg-gray-50/50 transition-colors"
+                >
                   <td className="p-3.5">
                     <input
                       type="checkbox"
@@ -222,11 +254,21 @@ export const AssessorsListView: React.FC<AssessorsListViewProps> = ({
                   <td className="p-3.5 font-bold text-neutral-primary">
                     {assessor.name}
                   </td>
-                  <td className="p-3.5 text-neutral-secondary">{assessor.email}</td>
-                  <td className="p-3.5 text-neutral-secondary">{assessor.trade}</td>
-                  <td className="p-3.5 text-neutral-secondary">{assessor.role}</td>
-                  <td className="p-3.5">{renderStatusBadge(assessor.status)}</td>
-                  <td className="p-3.5 text-neutral-secondary">{assessor.assignedCount}</td>
+                  <td className="p-3.5 text-neutral-secondary">
+                    {assessor.email}
+                  </td>
+                  <td className="p-3.5 text-neutral-secondary">
+                    {assessor.trade}
+                  </td>
+                  <td className="p-3.5 text-neutral-secondary">
+                    {assessor.role}
+                  </td>
+                  <td className="p-3.5">
+                    {renderStatusBadge(assessor.status)}
+                  </td>
+                  <td className="p-3.5 text-neutral-secondary">
+                    {assessor.assignedCount}
+                  </td>
                   <td className="p-3.5 text-right">
                     <button
                       type="button"

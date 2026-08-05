@@ -6,7 +6,8 @@ import { FloatingCircles } from "./FloatingCircles";
 import { usePathname } from "next/navigation";
 import { useAppSelector } from "@/store/hooks";
 import { FiCheck } from "react-icons/fi";
-import { HiOutlineArrowRight } from "react-icons/hi";
+import { HiOutlineArrowNarrowRight } from "react-icons/hi";
+
 import Link from "next/link";
 
 const RPL_STEPS = [
@@ -138,7 +139,7 @@ export const AuthSidebar: React.FC = () => {
                       <span className="underline underline-offset-4">
                         Learn More
                       </span>
-                      <HiOutlineArrowRight className="w-6 h-6" />
+                      <HiOutlineArrowNarrowRight className="w-6 h-6" />
                     </Link>
                   </div>
                 )}

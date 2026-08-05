@@ -1,12 +1,16 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import { Input as AntInput } from "antd";
-import type { InputRef } from "antd";
-import type { InputProps as AntInputProps } from "antd";
+import type { InputRef, InputProps as AntInputProps } from "antd";
+import { FiEye } from "react-icons/fi";
+import { ASSETS_URL } from "@/assets";
 
-export interface InputProps
-  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "prefix" | "size"> {
+export interface InputProps extends Omit<
+  React.InputHTMLAttributes<HTMLInputElement>,
+  "prefix" | "size"
+> {
   label?: React.ReactNode;
   error?: string;
   helperText?: React.ReactNode;
@@ -62,9 +66,11 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     ref,
   ) => {
     const inputId = id || React.useId();
-    // antd uses InputRef internally; we bridge it to HTMLInputElement via useImperativeHandle
     const antRef = React.useRef<InputRef>(null);
-    React.useImperativeHandle(ref, () => antRef.current?.input as HTMLInputElement);
+    React.useImperativeHandle(
+      ref,
+      () => antRef.current?.input as HTMLInputElement,
+    );
 
     const errorClass = error
       ? "!border-primary-solid !ring-2 !ring-border-secondary"
@@ -72,7 +78,6 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
 
     const combinedInputClass = `${inputBaseClass} ${errorClass} ${className}`;
 
-    // Shared props for both Input and Input.Password
     const sharedProps: Partial<AntInputProps> = {
       id: inputId,
       name,
@@ -121,13 +126,22 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             ref={antRef}
             {...sharedProps}
             suffix={undefined}
+            iconRender={(visible) =>
+              visible ? (
+                <FiEye className="w-5 h-5 text-text-dark/70" />
+              ) : (
+                <Image
+                  src={ASSETS_URL.eyeClosedIcon}
+                  alt="Hide password"
+                  width={20}
+                  height={20}
+                  className="w-5 h-5 opacity-70 hover:opacity-100 transition-opacity"
+                />
+              )
+            }
           />
         ) : (
-          <AntInput
-            ref={antRef}
-            type={type}
-            {...sharedProps}
-          />
+          <AntInput ref={antRef} type={type} {...sharedProps} />
         )}
 
         {error && (

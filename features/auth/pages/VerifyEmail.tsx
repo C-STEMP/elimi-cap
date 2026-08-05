@@ -9,8 +9,7 @@ import { motion } from "framer-motion";
 import { useVerifyAccount, useResendOtp } from "@/features/auth/hooks";
 
 export const VerifyEmail: React.FC = () => {
-  const [code, setCode] = useState<string[]>(["" ,"", "", ""]);
-  const [timeLeft, setTimeLeft] = useState(47);
+  const [code, setCode] = useState<string[]>(["", "", "", ""]);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const searchParams = useSearchParams();
@@ -33,22 +32,10 @@ export const VerifyEmail: React.FC = () => {
 
   const formattedEmail = maskEmail(rawEmail);
   const inputsRef = useRef<(HTMLInputElement | null)[]>([]);
-  const mountedRef = useRef(false);
 
   useEffect(() => {
-    mountedRef.current = true;
-    const firstEmptyIndex = code.findIndex((val) => val === "");
-    const focusIndex = firstEmptyIndex !== -1 ? firstEmptyIndex : 0;
-    inputsRef.current[focusIndex]?.focus();
+    inputsRef.current[0]?.focus();
   }, []);
-
-  useEffect(() => {
-    if (!mountedRef.current || timeLeft <= 0) return;
-    const interval = setInterval(() => {
-      setTimeLeft((prev) => prev - 1);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [timeLeft]);
 
   const handleChange = (index: number, val: string) => {
     if (!/^\d*$/.test(val)) return;
@@ -98,21 +85,19 @@ export const VerifyEmail: React.FC = () => {
     }
   };
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-  };
-
   const handleResend = () => {
-    if (isResending || timeLeft > 0) return;
+    if (isResending) return;
     resendCode(
       { email: rawEmail, purpose: "account_verify" },
       {
         onSuccess: () => {
-          setTimeLeft(60);
+          toast({
+            type: "success",
+            title: "Code Resent",
+            description: "A new verification code has been sent to your email.",
+          });
         },
-      }
+      },
     );
   };
 
@@ -139,7 +124,7 @@ export const VerifyEmail: React.FC = () => {
           setCode(["", "", "", ""]);
           setTimeout(() => inputsRef.current[0]?.focus(), 50);
         },
-      }
+      },
     );
   };
 
@@ -168,7 +153,7 @@ export const VerifyEmail: React.FC = () => {
         <h1 className="text-2xl xl:text-3xl font-extrabold tracking-tight text-neutral-primary text-center lg:text-left">
           Verify your Email
         </h1>
-        <p className="text-neutral-secondary text-[14px] xl:text-[15px] leading-relaxed mt-1.5 max-w-sm font-normal text-center lg:text-left mx-auto lg:mx-0">
+        <p className="text-neutral-secondary text-[14px] xl:text-[15px] leading-relaxed mt-1.5 max-w-md font-normal text-center lg:text-left mx-auto lg:mx-0">
           We sent a 4-digit code to{" "}
           <span className="font-semibold text-neutral-primary">
             {formattedEmail}
@@ -214,25 +199,21 @@ export const VerifyEmail: React.FC = () => {
             type="submit"
             variant="secondary"
             size="md"
-            className="w-full h-12.5 text-white font-bold text-base bg-secondary hover:bg-secondary-hover focus:ring-secondary/30 transition-all shadow-sm cursor-pointer"
+            className="w-full h-12.5 text-white font-bold text-base bg-secondary hover:bg-secondary-hover focus:ring-secondary/30 transition-all shadow-lg cursor-pointer"
             loading={isVerifying}
           >
             Verify Email
           </Button>
         </div>
 
-        <div className="text-center text-sm font-semibold text-neutral-secondary -mt-2 select-none">
-          {formatTime(timeLeft)}
-        </div>
-
-        <div className="w-full text-center text-sm select-none -mt-2">
+        <div className="w-full text-center text-sm select-none">
           <span className="text-neutral-secondary font-normal">
             Didn't get a code?
           </span>
           <button
             type="button"
             onClick={handleResend}
-            disabled={timeLeft > 0 || isResending}
+            disabled={isResending}
             className="text-primary-solid font-bold ml-1 hover:text-primary-hover transition-colors focus:outline-none cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {isResending ? "Sending..." : "Resend"}
@@ -246,6 +227,7 @@ export const VerifyEmail: React.FC = () => {
         type="success"
         title="Congratulations"
         description="Your Account was created successfully"
+        actionLabel=""
       />
     </motion.div>
   );

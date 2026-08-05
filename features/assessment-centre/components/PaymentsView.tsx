@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { FiSearch, FiList, FiGrid, FiDollarSign } from "react-icons/fi";
+import { FiSearch, FiList, FiGrid, FiDownload, FiDollarSign } from "react-icons/fi";
+import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { MOCK_PAYMENT_TRANSACTIONS } from "../utils/constants";
 import { PaymentTransaction } from "../types";
@@ -16,7 +17,7 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
   onSelectReceipt,
 }) => {
   const [transactions, setTransactions] = useState<PaymentTransaction[]>(
-    MOCK_PAYMENT_TRANSACTIONS
+    MOCK_PAYMENT_TRANSACTIONS,
   );
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -25,8 +26,7 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
     const matchesSearch =
       tx.candidateName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       tx.assessmentType.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus =
-      statusFilter === "All" || tx.status === statusFilter;
+    const matchesStatus = statusFilter === "All" || tx.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
@@ -45,7 +45,7 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
             variant="amber"
             size="md"
             rightIcon={<FiDollarSign className="w-4.5 h-4.5" />}
-            className="px-6 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-sm cursor-pointer whitespace-nowrap"
+            className="px-6 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
           >
             Withdraw Funds
           </Button>
@@ -55,7 +55,9 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15">
             <div className="flex flex-col">
-              <span className="text-xs sm:text-sm font-medium text-white/80">Total Revenue</span>
+              <span className="text-xs sm:text-sm font-medium text-white/80">
+                Total Revenue
+              </span>
               <div className="flex items-baseline gap-1.5 mt-1">
                 <span className="text-xl sm:text-2xl font-extrabold text-white">
                   ₦3,125,000
@@ -69,10 +71,16 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
 
           <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15">
             <div className="flex flex-col">
-              <span className="text-xs sm:text-sm font-medium text-white/80">Completed Transactions</span>
+              <span className="text-xs sm:text-sm font-medium text-white/80">
+                Completed Transactions
+              </span>
               <div className="flex items-baseline gap-1.5 mt-1">
-                <span className="text-xl sm:text-2xl font-extrabold text-white">50</span>
-                <span className="text-xs font-normal text-white/70">transactions</span>
+                <span className="text-xl sm:text-2xl font-extrabold text-white">
+                  50
+                </span>
+                <span className="text-xs font-normal text-white/70">
+                  transactions
+                </span>
               </div>
             </div>
             <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
@@ -82,10 +90,16 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
 
           <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15">
             <div className="flex flex-col">
-              <span className="text-xs sm:text-sm font-medium text-white/80">Pending Transactions</span>
+              <span className="text-xs sm:text-sm font-medium text-white/80">
+                Pending Transactions
+              </span>
               <div className="flex items-baseline gap-1.5 mt-1">
-                <span className="text-xl sm:text-2xl font-extrabold text-white">6</span>
-                <span className="text-xs font-normal text-white/70">transactions</span>
+                <span className="text-xl sm:text-2xl font-extrabold text-white">
+                  6
+                </span>
+                <span className="text-xs font-normal text-white/70">
+                  transactions
+                </span>
               </div>
             </div>
             <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
@@ -115,15 +129,18 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
           </div>
 
           <div className="flex items-center justify-between sm:justify-end gap-3 flex-wrap">
-            <select
+            <Select
+              size="sm"
+              showPlaceholderOption={false}
+              containerClassName="w-32"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="border border-gray-200 rounded-xl px-3.5 py-2 text-xs font-semibold text-neutral-primary bg-white outline-none cursor-pointer hover:border-gray-300 transition-colors"
-            >
-              <option value="All">Status</option>
-              <option value="Paid">Paid</option>
-              <option value="Pending">Pending</option>
-            </select>
+              options={[
+                { label: "Status", value: "All" },
+                { label: "Paid", value: "Paid" },
+                { label: "Pending", value: "Pending" },
+              ]}
+            />
 
             <div className="flex items-center gap-1 bg-[#F8F9FA] p-1 rounded-xl border border-gray-200/80">
               <button
@@ -158,12 +175,19 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
             </thead>
             <tbody className="divide-y divide-gray-100 text-xs sm:text-sm font-medium text-neutral-primary">
               {filteredTransactions.map((tx) => (
-                <tr key={tx.id} className="hover:bg-gray-50/50 transition-colors">
+                <tr
+                  key={tx.id}
+                  className="hover:bg-gray-50/50 transition-colors"
+                >
                   <td className="p-3.5 font-bold text-neutral-primary">
                     {tx.candidateName}
                   </td>
-                  <td className="p-3.5 text-neutral-secondary">{tx.assessmentType}</td>
-                  <td className="p-3.5 font-bold text-neutral-primary">{tx.amountPaid}</td>
+                  <td className="p-3.5 text-neutral-secondary">
+                    {tx.assessmentType}
+                  </td>
+                  <td className="p-3.5 font-bold text-neutral-primary">
+                    {tx.amountPaid}
+                  </td>
                   <td className="p-3.5">
                     {tx.status === "Paid" ? (
                       <span className="bg-[#D1FAE5] text-[#065F46] font-semibold px-3.5 py-1 rounded-full text-xs inline-block">

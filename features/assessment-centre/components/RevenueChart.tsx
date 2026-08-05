@@ -11,6 +11,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { MOCK_REVENUE_DATA } from "../utils/constants";
+import { Select } from "@/components/ui/select";
 
 export const RevenueChart: React.FC = () => {
   const [selectedYear, setSelectedYear] = useState("2026");
@@ -23,15 +24,14 @@ export const RevenueChart: React.FC = () => {
           Total Revenue
         </h3>
 
-        <select
+        <Select
+          size="sm"
+          showPlaceholderOption={false}
+          containerClassName="w-24"
           value={selectedYear}
           onChange={(e) => setSelectedYear(e.target.value)}
-          className="border border-gray-200 rounded-xl px-3 py-1.5 text-xs font-semibold text-neutral-primary bg-white outline-none cursor-pointer hover:border-gray-300 transition-colors"
-        >
-          <option value="2026">2026</option>
-          <option value="2025">2025</option>
-          <option value="2024">2024</option>
-        </select>
+          options={["2026", "2025", "2024"]}
+        />
       </div>
 
       {/* Chart Canvas */}

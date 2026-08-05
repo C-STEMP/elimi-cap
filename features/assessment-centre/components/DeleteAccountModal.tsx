@@ -66,7 +66,10 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
             <FiX className="w-5 h-5" />
           </button>
 
-          <form onSubmit={handleDelete} className="w-full flex flex-col items-center gap-4">
+          <form
+            onSubmit={handleDelete}
+            className="w-full flex flex-col items-center gap-4"
+          >
             {/* Top Elimi Logo */}
             <div className="relative w-28 h-8 mb-1">
               <Image
@@ -82,8 +85,8 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
             </h3>
 
             <p className="text-xs sm:text-sm text-neutral-secondary font-normal mb-2 leading-relaxed">
-              Permanently remove your account and all associated data. This action
-              cannot be undone, so please ensure you want to proceed
+              Permanently remove your account and all associated data. This
+              action cannot be undone, so please ensure you want to proceed
             </p>
 
             <div className="flex flex-col gap-1.5 w-full text-left my-2">
@@ -101,7 +104,7 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
 
             <button
               type="submit"
-              className="w-full h-12.5 text-white font-bold text-base bg-[#C5221F] hover:bg-[#a81c19] transition-all shadow-sm cursor-pointer rounded-xl"
+              className="w-full h-12.5 text-white font-bold text-base bg-[#C5221F] hover:bg-[#a81c19] transition-all shadow-lg cursor-pointer rounded-xl"
             >
               Delete Account
             </button>

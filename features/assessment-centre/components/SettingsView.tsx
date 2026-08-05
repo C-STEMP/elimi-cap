@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { DeleteAccountModal } from "./DeleteAccountModal";
 import { ASSETS_URL } from "@/assets";
+import { useCountryStateCity } from "@/lib/hooks/useCountryStateCity";
 
 export type SettingsSubTab =
   | "profile"
@@ -80,6 +81,20 @@ export const SettingsView: React.FC = () => {
       description: "Your settings have been updated successfully.",
     });
   };
+
+  // ── Cascading selects ─────────────────────────────────────────────────────
+  // Profile
+  const {
+    countries,
+    states: profileStates,
+    cities: profileCities,
+  } = useCountryStateCity(profileCountry, profileState);
+
+  // Centre
+  const {
+    states: centreStates,
+    cities: centreCities,
+  } = useCountryStateCity(centreCountry, centreState);
 
   return (
     <div className="w-full flex flex-col gap-6 select-text">
@@ -259,7 +274,7 @@ export const SettingsView: React.FC = () => {
                     label="Phone Number"
                     placeholder="Select"
                     value={profilePhone}
-                    onChange={(e) => setProfilePhone(e.target.value)}
+                    onChange={(e) => setProfilePhone(e.target.value.replace(/[^0-9]/g, ""))}
                   />
                 </div>
               </div>
@@ -273,26 +288,35 @@ export const SettingsView: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Select
                     label="Country*"
-                    placeholder="Select"
-                    options={["Nigeria"]}
+                    placeholder="Select country"
+                    options={countries}
                     value={profileCountry}
-                    onChange={(e) => setProfileCountry(e.target.value)}
+                    onChange={(e) => {
+                      setProfileCountry(e.target.value);
+                      setProfileState("");
+                      setProfileLga("");
+                    }}
                   />
                   <Select
                     label="State of Residence*"
-                    placeholder="Select"
-                    options={["Lagos", "Abuja", "Rivers"]}
+                    placeholder={profileCountry ? "Select state" : "Select country first"}
+                    options={profileStates}
                     value={profileState}
-                    onChange={(e) => setProfileState(e.target.value)}
+                    disabled={!profileCountry}
+                    onChange={(e) => {
+                      setProfileState(e.target.value);
+                      setProfileLga("");
+                    }}
                   />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Select
-                    label="Local Government Area (LGA)*"
-                    placeholder="Select"
-                    options={["Ikeja", "Surulere", "Eti-Osa"]}
+                    label="City / LGA*"
+                    placeholder={profileState ? "Select city" : "Select state first"}
+                    options={profileCities}
                     value={profileLga}
+                    disabled={!profileState}
                     onChange={(e) => setProfileLga(e.target.value)}
                   />
                   <Input
@@ -371,7 +395,7 @@ export const SettingsView: React.FC = () => {
                   variant="amber"
                   size="md"
                   rightIcon={<FiSave className="w-4 h-4" />}
-                  className="px-8 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-sm cursor-pointer whitespace-nowrap"
+                  className="px-8 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
                 >
                   Save
                 </Button>
@@ -406,26 +430,35 @@ export const SettingsView: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Select
                     label="Country*"
-                    placeholder="Select"
-                    options={["Nigeria"]}
+                    placeholder="Select country"
+                    options={countries}
                     value={centreCountry}
-                    onChange={(e) => setCentreCountry(e.target.value)}
+                    onChange={(e) => {
+                      setCentreCountry(e.target.value);
+                      setCentreState("");
+                      setCentreLga("");
+                    }}
                   />
                   <Select
                     label="State of Residence*"
-                    placeholder="Select"
-                    options={["Lagos", "Abuja", "Rivers"]}
+                    placeholder={centreCountry ? "Select state" : "Select country first"}
+                    options={centreStates}
                     value={centreState}
-                    onChange={(e) => setCentreState(e.target.value)}
+                    disabled={!centreCountry}
+                    onChange={(e) => {
+                      setCentreState(e.target.value);
+                      setCentreLga("");
+                    }}
                   />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Select
-                    label="Local Government Area (LGA)*"
-                    placeholder="Select"
-                    options={["Ikeja", "Surulere", "Eti-Osa"]}
+                    label="City / LGA*"
+                    placeholder={centreState ? "Select city" : "Select state first"}
+                    options={centreCities}
                     value={centreLga}
+                    disabled={!centreState}
                     onChange={(e) => setCentreLga(e.target.value)}
                   />
                   <Input
@@ -456,15 +489,20 @@ export const SettingsView: React.FC = () => {
                       Phone Number*
                     </label>
                     <div className="flex items-center gap-2">
-                      <select className="w-20 bg-input-bg border border-transparent rounded-xl px-2.5 py-2.5 text-xs font-bold text-neutral-primary outline-none cursor-pointer">
-                        <option value="NGN">NGN</option>
-                        <option value="USD">USD</option>
-                      </select>
+                      <Select
+                        containerClassName="w-20"
+                        size="sm"
+                        showPlaceholderOption={false}
+                        value="NGN"
+                        options={["NGN", "USD"]}
+                      />
                       <input
-                        type="text"
+                        type="tel"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
                         placeholder="000000000"
                         value={supportPhone}
-                        onChange={(e) => setSupportPhone(e.target.value)}
+                        onChange={(e) => setSupportPhone(e.target.value.replace(/[^0-9]/g, ""))}
                         className="flex-1 bg-input-bg border border-transparent focus:border-primary rounded-xl px-3.5 py-2.5 text-xs text-neutral-primary outline-none font-medium"
                       />
                     </div>
@@ -493,9 +531,13 @@ export const SettingsView: React.FC = () => {
                   />
                   <Input
                     label="Account Number*"
-                    placeholder="000000000"
+                    placeholder="0000000000"
+                    inputMode="numeric"
+                    maxLength={10}
                     value={accountNumber}
-                    onChange={(e) => setAccountNumber(e.target.value)}
+                    onChange={(e) =>
+                      setAccountNumber(e.target.value.replace(/[^0-9]/g, ""))
+                    }
                   />
                 </div>
 
@@ -514,7 +556,7 @@ export const SettingsView: React.FC = () => {
                   variant="amber"
                   size="md"
                   rightIcon={<FiSave className="w-4 h-4" />}
-                  className="px-8 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-sm cursor-pointer whitespace-nowrap"
+                  className="px-8 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
                 >
                   Save
                 </Button>
@@ -590,7 +632,7 @@ export const SettingsView: React.FC = () => {
                   variant="amber"
                   size="md"
                   rightIcon={<FiSave className="w-4 h-4" />}
-                  className="px-8 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-sm cursor-pointer whitespace-nowrap"
+                  className="px-8 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
                 >
                   Save
                 </Button>
@@ -648,9 +690,15 @@ export const SettingsView: React.FC = () => {
                         className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-neutral-primary cursor-pointer"
                       >
                         {showCurrentPassword ? (
-                          <FiEyeOff className="w-4 h-4" />
+                          <FiEye className="w-4 h-4 text-text-dark/70" />
                         ) : (
-                          <FiEye className="w-4 h-4" />
+                          <Image
+                            src={ASSETS_URL.eyeClosedIcon}
+                            alt="Hide password"
+                            width={16}
+                            height={16}
+                            className="w-4 h-4 opacity-70 hover:opacity-100 transition-opacity"
+                          />
                         )}
                       </button>
                     </div>
@@ -673,9 +721,15 @@ export const SettingsView: React.FC = () => {
                         className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-neutral-primary cursor-pointer"
                       >
                         {showNewPassword ? (
-                          <FiEyeOff className="w-4 h-4" />
+                          <FiEye className="w-4 h-4 text-text-dark/70" />
                         ) : (
-                          <FiEye className="w-4 h-4" />
+                          <Image
+                            src={ASSETS_URL.eyeClosedIcon}
+                            alt="Hide password"
+                            width={16}
+                            height={16}
+                            className="w-4 h-4 opacity-70 hover:opacity-100 transition-opacity"
+                          />
                         )}
                       </button>
                     </div>
@@ -698,9 +752,15 @@ export const SettingsView: React.FC = () => {
                         className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-neutral-primary cursor-pointer"
                       >
                         {showConfirmPassword ? (
-                          <FiEyeOff className="w-4 h-4" />
+                          <FiEye className="w-4 h-4 text-text-dark/70" />
                         ) : (
-                          <FiEye className="w-4 h-4" />
+                          <Image
+                            src={ASSETS_URL.eyeClosedIcon}
+                            alt="Hide password"
+                            width={16}
+                            height={16}
+                            className="w-4 h-4 opacity-70 hover:opacity-100 transition-opacity"
+                          />
                         )}
                       </button>
                     </div>
@@ -715,13 +775,14 @@ export const SettingsView: React.FC = () => {
                     toast({
                       type: "success",
                       title: "Password Updated",
-                      description: "Your password has been changed successfully.",
+                      description:
+                        "Your password has been changed successfully.",
                     });
                   }}
                   variant="amber"
                   size="md"
                   rightIcon={<FiSave className="w-4 h-4" />}
-                  className="px-8 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-sm cursor-pointer whitespace-nowrap"
+                  className="px-8 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
                 >
                   Change Password
                 </Button>

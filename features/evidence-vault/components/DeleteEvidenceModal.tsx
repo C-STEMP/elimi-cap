@@ -42,13 +42,14 @@ export const DeleteEvidenceModal: React.FC<DeleteEvidenceModalProps> = ({
             Delete Evidence
           </h3>
           <p className="text-gray-500 text-xs sm:text-sm font-normal leading-relaxed mb-6 max-w-[260px]">
-            Are you sure you want to delete this evidence? This action cannot be reversed.
+            Are you sure you want to delete this evidence? This action cannot be
+            reversed.
           </p>
 
           <button
             type="button"
             onClick={onConfirmDelete}
-            className="w-full bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold text-sm sm:text-base py-3.5 rounded-xl shadow-sm transition-all cursor-pointer"
+            className="w-full bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold text-sm sm:text-base py-3.5 rounded-xl shadow-lg transition-all cursor-pointer"
           >
             Delete Evidence
           </button>
