@@ -17,17 +17,17 @@ export const RevenueChart: React.FC = () => {
   const [selectedYear, setSelectedYear] = useState("2026");
 
   return (
-    <div className="bg-white rounded-3xl p-6 shadow-2xs border border-gray-100/80 flex flex-col justify-between h-full min-h-[380px] select-none">
+    <div className="bg-white rounded-3xl p-6 shadow-2xs border border-gray-100/80 flex flex-col justify-between h-full min-h-95 select-none">
       {/* Chart Header */}
       <div className="flex items-center justify-between gap-2 mb-4">
-        <h3 className="text-lg font-bold text-neutral-primary tracking-tight">
+        <h3 className="text-lg font-medium text-black tracking-tight">
           Total Revenue
         </h3>
 
         <Select
           size="sm"
           showPlaceholderOption={false}
-          containerClassName="w-24"
+          containerClassName="w-24!"
           value={selectedYear}
           onChange={(e) => setSelectedYear(e.target.value)}
           options={["2026", "2025", "2024"]}
@@ -41,7 +41,11 @@ export const RevenueChart: React.FC = () => {
             data={MOCK_REVENUE_DATA}
             margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
           >
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
+            <CartesianGrid
+              strokeDasharray="3 3"
+              vertical={false}
+              stroke="#F3F4F6"
+            />
             <XAxis
               dataKey="month"
               tickLine={false}
@@ -65,7 +69,10 @@ export const RevenueChart: React.FC = () => {
                 fontSize: "12px",
                 fontWeight: "bold",
               }}
-              formatter={(value: any) => [`₦${Number(value).toLocaleString()}`, "Revenue"]}
+              formatter={(value: any) => [
+                `₦${Number(value).toLocaleString()}`,
+                "Revenue",
+              ]}
             />
             <Bar
               dataKey="revenue"

@@ -87,7 +87,7 @@ export const AddStaffModal: React.FC<AddStaffModalProps> = ({
             <button
               type="button"
               onClick={handleReset}
-              className="absolute top-6 right-6 w-8 h-8 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 flex items-center justify-center transition-colors cursor-pointer focus:outline-none"
+              className="absolute top-6 right-6 w-11 h-11 rounded bg-red-50 text-primary hover:bg-primary/10 flex items-center justify-center transition-colors cursor-pointer focus:outline-none"
               aria-label="Close modal"
             >
               <FiX className="w-5 h-5" />
@@ -99,11 +99,11 @@ export const AddStaffModal: React.FC<AddStaffModalProps> = ({
               onSubmit={handleSubmit}
               className="w-full flex flex-col items-center gap-5"
             >
-              <div className="flex flex-col items-center text-center gap-1">
-                <h3 className="text-xl sm:text-2xl font-extrabold text-neutral-primary tracking-tight">
+              <div className="flex flex-col items-center text-center gap-1 lg:mt-8">
+                <h3 className="text-xl lg:text-2xl font-extrabold text-neutral-primary tracking-tight">
                   Add Staff
                 </h3>
-                <p className="text-xs sm:text-sm text-gray-400 font-normal">
+                <p className="text-xs lg:text-base text-neutral-secondary font-normal">
                   Create a new staff account
                 </p>
               </div>
@@ -157,7 +157,7 @@ export const AddStaffModal: React.FC<AddStaffModalProps> = ({
                 />
               </div>
 
-              <h3 className="text-neutral-primary font-extrabold text-xl sm:text-2xl mb-2 tracking-tight">
+              <h3 className="text-black font-extrabold text-xl sm:text-2xl mb-2 tracking-tight">
                 Staff Added Successfully
               </h3>
 

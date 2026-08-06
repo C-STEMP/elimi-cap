@@ -29,87 +29,8 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
     const matchesStatus = statusFilter === "All" || tx.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
-
   return (
     <div className="w-full flex flex-col gap-6 select-text">
-      {/* Header Banner */}
-      <div className="w-full bg-[#a31d38] text-white rounded-3xl p-6 sm:p-8 xl:p-10 flex flex-col gap-6 shadow-md">
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
-            Payments
-          </h1>
-
-          <Button
-            type="button"
-            onClick={onWithdrawFunds}
-            variant="amber"
-            size="md"
-            rightIcon={<FiDollarSign className="w-4.5 h-4.5" />}
-            className="px-6 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
-          >
-            Withdraw Funds
-          </Button>
-        </div>
-
-        {/* 3 Revenue Stat Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15">
-            <div className="flex flex-col">
-              <span className="text-xs sm:text-sm font-medium text-white/80">
-                Total Revenue
-              </span>
-              <div className="flex items-baseline gap-1.5 mt-1">
-                <span className="text-xl sm:text-2xl font-extrabold text-white">
-                  ₦3,125,000
-                </span>
-              </div>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
-              <FiDollarSign className="w-5 h-5 text-white/90" />
-            </div>
-          </div>
-
-          <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15">
-            <div className="flex flex-col">
-              <span className="text-xs sm:text-sm font-medium text-white/80">
-                Completed Transactions
-              </span>
-              <div className="flex items-baseline gap-1.5 mt-1">
-                <span className="text-xl sm:text-2xl font-extrabold text-white">
-                  50
-                </span>
-                <span className="text-xs font-normal text-white/70">
-                  transactions
-                </span>
-              </div>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
-              <FiDollarSign className="w-5 h-5 text-white/90" />
-            </div>
-          </div>
-
-          <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15">
-            <div className="flex flex-col">
-              <span className="text-xs sm:text-sm font-medium text-white/80">
-                Pending Transactions
-              </span>
-              <div className="flex items-baseline gap-1.5 mt-1">
-                <span className="text-xl sm:text-2xl font-extrabold text-white">
-                  6
-                </span>
-                <span className="text-xs font-normal text-white/70">
-                  transactions
-                </span>
-              </div>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
-              <FiDollarSign className="w-5 h-5 text-white/90" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Transaction History Table Container */}
       <div className="bg-white rounded-3xl p-6 shadow-2xs border border-gray-100/80 flex flex-col gap-6">
         <h2 className="text-xl font-extrabold text-neutral-primary tracking-tight">
           Transaction History

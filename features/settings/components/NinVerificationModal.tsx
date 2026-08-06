@@ -170,14 +170,14 @@ export const NinVerificationModal: React.FC<NinVerificationModalProps> = ({
                   if (ninError) setNinError(undefined);
                 }}
                 error={ninError}
-                className="flex-1 font-mono tracking-wider !h-11 xl:!h-12 !text-sm xl:!text-base"
+                className="flex-1 font-mono tracking-wider h-11! xl:h-12! text-sm! xl:text-base!"
                 containerClassName="flex-1 [&>div]:!h-11 xl:[&>div]:!h-12"
               />
               <Button
                 type="submit"
                 variant="amber"
                 size="icon"
-                className="!h-11 xl:!h-12 !w-11 xl:!w-12 shrink-0 rounded-2xl flex items-center justify-center cursor-pointer"
+                className="h-11! xl:h-12! w-11! xl:w-12! shrink-0 rounded-2xl flex items-center justify-center cursor-pointer"
                 title="Verify NIN"
               >
                 <FiArrowRight className="w-5 h-5 text-white stroke-[2.5]" />

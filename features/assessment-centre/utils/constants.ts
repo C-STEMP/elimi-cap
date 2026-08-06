@@ -602,3 +602,55 @@ export const MOCK_PAYMENT_TRANSACTIONS: PaymentTransaction[] = [
     description: "Recognition of prior learning",
   },
 ];
+
+export const MOCK_APPLICATIONS_LIST = [
+  {
+    id: "app-1",
+    candidateName: "Oguntade James",
+    trade: "Masonry",
+    assessmentType: "RPL",
+    status: "Pending",
+    submittedAt: "07/22/2026",
+  },
+  {
+    id: "app-2",
+    candidateName: "Favour Smith",
+    trade: "Carpentry",
+    assessmentType: "RPL",
+    status: "Ongoing",
+    submittedAt: "07/22/2026",
+  },
+  {
+    id: "app-3",
+    candidateName: "Samson David",
+    trade: "Plumbing",
+    assessmentType: "NSQ",
+    status: "Completed",
+    submittedAt: "07/22/2026",
+  },
+  {
+    id: "app-4",
+    candidateName: "Oriade Sophie",
+    trade: "Painting",
+    assessmentType: "NSQ",
+    status: "Archived",
+    submittedAt: "07/22/2026",
+  },
+];
+
+export const MOCK_COMPETENCY_TASKS = [
+  "Follow workplace health and safety procedures:",
+  "Plan and prioritize work tasks",
+  "Communicate effectively with team members and clients",
+  "Use workplace equipment and technology safely",
+  "Solve problems and make decisions",
+  "Follow standard operating procedures",
+  "Maintain accurate workplace records",
+  "Contribute to team outcomes",
+];
+
+export const MOCK_AWARDING_BODY_INFO = {
+  title: "National Board for Technical Education (NBTE)",
+  description:
+    "The National Board for Technical Education (NBTE) is responsible for regulating Technical and Vocational Education and Training (TVET) programmes in Nigeria. It oversees the implementation of the National Skills Qualification Framework (NSQF), accredits Assessment Centres, approves Awarding Bodies, and ensures that assessments and certifications meet national quality standards.",
+};

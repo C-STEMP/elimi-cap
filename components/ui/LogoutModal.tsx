@@ -56,7 +56,7 @@ export const LogoutModal: React.FC<LogoutModalProps> = ({
             </button>
 
             {/* Centralized Text Content */}
-            <h3 className="text-xl sm:text-2xl font-extrabold text-[#1e1e1e] tracking-tight text-center">
+            <h3 className="text-xl sm:text-2xl font-extrabold text-text-dark tracking-tight text-center">
               Confirm Sign Out
             </h3>
             <p className="mt-2 text-xs sm:text-sm text-gray-600 leading-relaxed font-normal text-center mx-auto max-w-xs">

@@ -8,17 +8,17 @@ export const AssessmentStageCard: React.FC = () => {
   const [assessmentType, setAssessmentType] = useState("RPL");
 
   return (
-    <div className="bg-white rounded-3xl p-6 shadow-2xs border border-gray-100/80 flex flex-col justify-between h-full select-none">
+    <div className="bg-white rounded-3xl p-6 shadow-2xs flex flex-col gap-4 h-full select-none">
       {/* Header */}
       <div className="flex items-center justify-between gap-2 mb-6">
-        <h3 className="text-lg font-bold text-neutral-primary tracking-tight">
+        <h3 className="text-lg font-medium text-black tracking-tight">
           Candidate By Assessment Stage
         </h3>
 
         <Select
           size="sm"
           showPlaceholderOption={false}
-          containerClassName="w-24"
+          containerClassName="w-24!"
           value={assessmentType}
           onChange={(e) => setAssessmentType(e.target.value)}
           options={["RPL", "NSQ"]}
@@ -26,9 +26,12 @@ export const AssessmentStageCard: React.FC = () => {
       </div>
 
       {/* Stage Progress Rows */}
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 lg:gap-8">
         {MOCK_STAGES_DATA.map((item) => (
-          <div key={item.stage} className="flex items-center justify-between gap-4">
+          <div
+            key={item.stage}
+            className="flex items-center justify-between gap-4"
+          >
             <span className="w-36 text-xs sm:text-sm font-semibold text-neutral-primary shrink-0 truncate">
               {item.stage}
             </span>

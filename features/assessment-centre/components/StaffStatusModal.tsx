@@ -51,7 +51,7 @@ export const StaffStatusModal: React.FC<StaffStatusModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="absolute top-6 right-6 w-8 h-8 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 flex items-center justify-center transition-colors cursor-pointer focus:outline-none"
+              className="absolute top-6 right-6 w-11 h-11 rounded bg-primary/10 text-primary hover:bg-red-100 flex items-center justify-center transition-colors cursor-pointer focus:outline-none"
               aria-label="Close modal"
             >
               <FiX className="w-5 h-5" />
@@ -61,8 +61,16 @@ export const StaffStatusModal: React.FC<StaffStatusModalProps> = ({
           {/* Mode 1: Confirm Deactivate (Image 3) */}
           {mode === "confirm-deactivate" && (
             <div className="w-full flex flex-col items-center">
-              <div className="w-28 h-28 rounded-full bg-red-50 flex items-center justify-center mb-4 text-[#DC2626]">
-                <FiSlash className="w-20 h-20 stroke-[1.5]" />
+              <div className="mt-2 mb-4 relative flex items-center justify-center">
+                <Image
+                  src={ASSETS_URL.deactivateStaffImg}
+                  alt="Staff Deactivated Successfully"
+                  width={160}
+                  height={160}
+                  className="w-36 h-36 object-contain"
+                  style={{ width: "auto", height: "auto" }}
+                  priority
+                />
               </div>
 
               <h3 className="text-xl sm:text-2xl font-extrabold text-neutral-primary mb-2 tracking-tight">
@@ -88,7 +96,7 @@ export const StaffStatusModal: React.FC<StaffStatusModalProps> = ({
             <div className="w-full flex flex-col items-center">
               <div className="mt-2 mb-4 relative flex items-center justify-center">
                 <Image
-                  src={ASSETS_URL.successCheckmarkImg}
+                  src={ASSETS_URL.deactivateStaffImg}
                   alt="Staff Deactivated Successfully"
                   width={160}
                   height={160}
@@ -122,10 +130,16 @@ export const StaffStatusModal: React.FC<StaffStatusModalProps> = ({
           {mode === "confirm-activate" && (
             <div className="w-full flex flex-col items-center">
               {/* Padlock Illustration */}
-              <div className="w-28 h-28 mb-4 relative flex items-center justify-center">
-                <div className="w-24 h-24 bg-amber-50 rounded-3xl flex items-center justify-center border-4 border-amber-100 shadow-2xs">
-                  <FiUnlock className="w-12 h-12 text-[#fbab2a]" />
-                </div>
+              <div className="mt-2 mb-4 relative flex items-center justify-center">
+                <Image
+                  src={ASSETS_URL.activateStaffImg}
+                  alt="Staff Activated Successfully"
+                  width={160}
+                  height={160}
+                  className="w-36 h-36 object-contain"
+                  style={{ width: "auto", height: "auto" }}
+                  priority
+                />
               </div>
 
               <h3 className="text-xl sm:text-2xl font-extrabold text-neutral-primary mb-2 tracking-tight">
@@ -153,7 +167,7 @@ export const StaffStatusModal: React.FC<StaffStatusModalProps> = ({
             <div className="w-full flex flex-col items-center">
               <div className="mt-2 mb-4 relative flex items-center justify-center">
                 <Image
-                  src={ASSETS_URL.successCheckmarkImg}
+                  src={ASSETS_URL.activateStaffImg}
                   alt="Staff Activated Successfully"
                   width={160}
                   height={160}
@@ -174,9 +188,8 @@ export const StaffStatusModal: React.FC<StaffStatusModalProps> = ({
               <Button
                 type="button"
                 onClick={onClose}
-                variant="amber"
+                variant="secondary"
                 size="lg"
-                className="w-full h-12.5 text-white font-bold text-base bg-[#fbab2a] hover:bg-[#e89b1f] transition-all shadow-lg cursor-pointer rounded-xl"
               >
                 Continue
               </Button>

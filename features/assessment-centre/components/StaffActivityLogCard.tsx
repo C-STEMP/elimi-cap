@@ -5,9 +5,9 @@ import { MOCK_STAFF_LOGS } from "../utils/constants";
 
 export const StaffActivityLogCard: React.FC = () => {
   return (
-    <div className="bg-white rounded-3xl p-6 shadow-2xs border border-gray-100/80 flex flex-col justify-between h-full select-none">
+    <div className="bg-white rounded-3xl p-6 shadow-2xs border border-gray-100/80 flex flex-col gap-4 select-none">
       {/* Header */}
-      <h3 className="text-lg font-bold text-neutral-primary tracking-tight mb-4">
+      <h3 className="text-lg font-medium text-black tracking-tight mb-4">
         Staff Activity Log
       </h3>
 
@@ -19,7 +19,7 @@ export const StaffActivityLogCard: React.FC = () => {
             className="bg-[#F8F9FA] hover:bg-[#F3F4F6] rounded-2xl p-3.5 sm:p-4 flex items-center justify-between gap-3 transition-colors border border-gray-100/70"
           >
             {/* Staff Info */}
-            <div className="flex flex-col shrink-0 min-w-[100px]">
+            <div className="flex flex-col shrink-0 min-w-25">
               <span className="text-xs sm:text-sm font-extrabold text-neutral-primary truncate">
                 {log.name}
               </span>

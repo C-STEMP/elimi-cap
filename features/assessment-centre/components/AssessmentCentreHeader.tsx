@@ -2,9 +2,7 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import {
-  FiMessageSquare,
   FiBell,
   FiLogOut,
   FiClipboard,
@@ -12,6 +10,7 @@ import {
   FiUser,
   FiDollarSign,
 } from "react-icons/fi";
+import { BiSolidMessageRoundedDetail } from "react-icons/bi";
 import { Logo } from "@/components/ui/logo";
 import { ASSETS_URL } from "@/assets";
 import { LogoutModal } from "@/components/ui/LogoutModal";
@@ -25,6 +24,7 @@ interface HeaderProps {
   onOpenNotifications?: () => void;
   title?: string;
   showStats?: boolean;
+  children?: React.ReactNode;
 }
 
 export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
@@ -33,9 +33,8 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
   onOpenNotifications,
   title = "Welcome Back, Chidi",
   showStats = true,
+  children,
 }) => {
-  const router = useRouter();
-
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
 
@@ -66,16 +65,13 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
   };
 
   return (
-    <div className="w-full bg-[#a31d38] text-white rounded-3xl p-6 sm:p-8 xl:p-10 flex flex-col gap-6 shadow-md select-none transition-all relative">
-      {/* Top Header Bar */}
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        {/* Left Logo */}
+    <div className="w-full bg-[#a31d38] text-white rounded-3xl p-6 sm:p-8 flex flex-col gap-6 shadow-md select-none transition-all relative">
+      <div className="flex items-center justify-between gap-4">
         <div className="shrink-0 cursor-pointer">
           <Logo theme="light" href="/" />
         </div>
 
-        {/* Center Nav Pills */}
-        <div className="hidden xl:flex items-center gap-1 bg-white/10 p-1.5 rounded-full backdrop-blur-xs">
+        <div className="hidden xl:flex items-center gap-1">
           {navItems.map((item) => {
             const isActive = activeTab === item.id;
             return (
@@ -83,10 +79,10 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
                 key={item.id}
                 type="button"
                 onClick={() => onSelectTab(item.id)}
-                className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                className={`px-3 py-1.5 rounded-full text-xs lg:text-base font-semibold transition-all cursor-pointer whitespace-nowrap ${
                   isActive
-                    ? "bg-white/20 text-white shadow-xs"
-                    : "text-white/80 hover:text-white hover:bg-white/10"
+                    ? "bg-white/15 text-white shadow-xs"
+                    : "text-white hover:bg-white/10"
                 }`}
               >
                 {item.label}
@@ -95,7 +91,6 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
           })}
         </div>
 
-        {/* Right Actions & Profile */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           <button
             type="button"
@@ -108,7 +103,7 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
             aria-label="Messages"
             title="Messages"
           >
-            <FiMessageSquare className="w-5 h-5" />
+            <BiSolidMessageRoundedDetail className="w-6 h-6" />
             <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[#fbab2a]" />
           </button>
 
@@ -131,7 +126,6 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
             />
           </div>
 
-          {/* Profile Badge Avatar */}
           <div className="w-10 h-10 rounded-full overflow-hidden border border-white/30 bg-white flex items-center justify-center shrink-0 cursor-pointer">
             <Image
               src={ASSETS_URL.faviconIcon}
@@ -139,11 +133,9 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
               width={32}
               height={32}
               className="w-8 h-8 object-contain"
-              style={{ width: "auto", height: "auto" }}
             />
           </div>
 
-          {/* Logout button */}
           <button
             type="button"
             onClick={() => setIsLogoutOpen(true)}
@@ -156,8 +148,7 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* Mobile Nav Tabs Overflow */}
-      <div className="flex xl:hidden items-center gap-2 overflow-x-auto pb-2 scrollbar-none border-t border-white/10 pt-4">
+      <div className="flex xl:hidden items-center gap-2 overflow-x-auto pb-2 scrollbar-none pt-2">
         {navItems.map((item) => {
           const isActive = activeTab === item.id;
           return (
@@ -177,9 +168,10 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
         })}
       </div>
 
-      {/* Header Welcome & Stat Cards Section */}
-      {showStats && (
-        <div className="flex flex-col gap-5 pt-2 border-t border-white/10">
+      {children ? (
+        children
+      ) : showStats ? (
+        <div className="flex flex-col gap-5 pt-2">
           <h1 className="text-2xl sm:text-3xl xl:text-[32px] font-extrabold tracking-tight text-white">
             {title}
           </h1>
@@ -191,7 +183,7 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
                 className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs"
               >
                 <div className="flex flex-col">
-                  <span className="text-xs sm:text-sm font-medium text-white/80">
+                  <span className="text-xs sm:text-sm lg:text-lg font-medium text-white/80">
                     {stat.label}
                   </span>
                   <div className="flex items-baseline gap-1.5 mt-1">
@@ -199,21 +191,21 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
                       {stat.count}
                     </span>
                     {stat.unit && (
-                      <span className="text-xs font-normal text-white/70">
+                      <span className="text-xs lg:text-white font-normal text-white">
                         {stat.unit}
                       </span>
                     )}
                   </div>
                 </div>
 
-                <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center shrink-0 border border-white/20">
+                <div className="w-9 h-9 flex items-center justify-center shrink-0">
                   {renderStatIcon(stat.icon)}
                 </div>
               </div>
             ))}
           </div>
         </div>
-      )}
+      ) : null}
 
       <LogoutModal
         isOpen={isLogoutOpen}

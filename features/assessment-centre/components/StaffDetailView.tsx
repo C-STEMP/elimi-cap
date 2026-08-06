@@ -1,23 +1,17 @@
 "use client";
 
 import React, { useState } from "react";
-import {
-  FiChevronLeft,
-  FiSearch,
-  FiClipboard,
-  FiSlash,
-  FiUnlock,
-  FiList,
-  FiGrid,
-} from "react-icons/fi";
-import { Button } from "@/components/ui/button";
+import Image from "next/image";
+import { FiSearch, FiList, FiGrid, FiChevronLeft, FiSlash, FiUnlock } from "react-icons/fi";
 import { Select } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import {
   MOCK_STAFF_MEMBERS,
   MOCK_STAFF_APPLICATIONS,
 } from "../utils/constants";
 import { PendingApplication } from "../types";
 import { StaffStatusModal, StaffStatusModalMode } from "./StaffStatusModal";
+import { ASSETS_URL } from "@/assets";
 
 interface StaffDetailViewProps {
   staffId: string;
@@ -85,19 +79,19 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
         );
       case "Folder Complete":
         return (
-          <span className="bg-[#FEE2E2] text-[#991B1B] font-semibold px-3 py-1 rounded-full text-xs inline-block">
+          <span className="bg-primary/10 text-primary font-medium px-4 py-1 rounded-full text-xs inline-block">
             Folder Complete
           </span>
         );
       case "Certified":
         return (
-          <span className="bg-[#D1FAE5] text-[#065F46] font-semibold px-3 py-1 rounded-full text-xs inline-block">
+          <span className="bg-[#1E7F4C]/20 text-[#1E7F4C] font-medium px-4 py-1 rounded-full text-xs inline-block">
             Certified
           </span>
         );
       default:
         return (
-          <span className="bg-[#FEF3C7] text-[#D97706] font-semibold px-3 py-1 rounded-full text-xs inline-block">
+          <span className="bg-[#FEF3C7] text-[#D97706] font-medium px-4 py-1 rounded-full text-xs inline-block">
             {status}
           </span>
         );
@@ -106,9 +100,8 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
 
   return (
     <div className="w-full flex flex-col gap-6 select-text">
-      {/* Header Banner for Selected Staff Member */}
+      {/* Header Banner */}
       <div className="w-full bg-[#a31d38] text-white rounded-3xl p-6 sm:p-8 xl:p-10 flex flex-col gap-6 shadow-md">
-        {/* Breadcrumb & Action Row */}
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex flex-col gap-1">
             <button
@@ -160,75 +153,49 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
             </Button>
           )}
         </div>
+      </div>
 
-        {/* Staff Performance Stat Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15">
-            <div className="flex flex-col">
-              <span className="text-xs sm:text-sm font-medium text-white/80">
-                Reviewed Applications
-              </span>
-              <div className="flex items-baseline gap-1.5 mt-1">
-                <span className="text-xl sm:text-2xl font-extrabold text-white">
-                  {staff.reviewedApplicationsCount || 220}
-                </span>
-                <span className="text-xs font-normal text-white/70">
-                  applications
-                </span>
-              </div>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
-              <FiClipboard className="w-5 h-5 text-white/90" />
-            </div>
+      {/* Staff Profile Card */}
+      <div className="bg-white rounded-3xl p-6 shadow-2xs border border-gray-100/80 flex items-start justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-4">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden shrink-0 border border-gray-100 bg-gray-50 flex items-center justify-center">
+            <Image
+              src={ASSETS_URL.userAvatar}
+              alt={staff.name}
+              width={80}
+              height={80}
+              className="w-full h-full object-cover"
+            />
           </div>
 
-          <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15">
-            <div className="flex flex-col">
-              <span className="text-xs sm:text-sm font-medium text-white/80">
-                Pending Applications
-              </span>
-              <div className="flex items-baseline gap-1.5 mt-1">
-                <span className="text-xl sm:text-2xl font-extrabold text-white">
-                  {staff.pendingApplicationsCount || 20}
-                </span>
-                <span className="text-xs font-normal text-white/70">
-                  applications
-                </span>
-              </div>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
-              <FiClipboard className="w-5 h-5 text-white/90" />
-            </div>
+          <div className="flex flex-col gap-1">
+            <h2 className="text-lg sm:text-xl font-extrabold text-neutral-primary">
+              {staff.name}
+            </h2>
+            <span className="text-xs text-gray-400 font-medium">
+              {staff.email}
+            </span>
           </div>
+        </div>
 
-          <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15">
-            <div className="flex flex-col">
-              <span className="text-xs sm:text-sm font-medium text-white/80">
-                Requires Attention
-              </span>
-              <div className="flex items-baseline gap-1.5 mt-1">
-                <span className="text-xl sm:text-2xl font-extrabold text-white">
-                  {staff.requiresAttentionCount || 10}
-                </span>
-                <span className="text-xs font-normal text-white/70">
-                  applications
-                </span>
-              </div>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
-              <FiClipboard className="w-5 h-5 text-white/90" />
-            </div>
-          </div>
+        <div className="shrink-0">
+          {isDeactivated ? (
+            <span className="bg-[#E5E7EB] text-[#4B5563] font-semibold px-4 py-1.5 rounded-full text-xs inline-block">
+              Inactive
+            </span>
+          ) : (
+            <span className="bg-[#D1FAE5] text-[#065F46] font-semibold px-4 py-1.5 rounded-full text-xs inline-block">
+              Active
+            </span>
+          )}
         </div>
       </div>
 
-      {/* Main Staff Assigned Applications Table Container */}
       <div className="bg-white rounded-3xl p-6 shadow-2xs border border-gray-100/80 flex flex-col gap-6">
-        <h2 className="text-xl font-extrabold text-neutral-primary tracking-tight">
+        <h2 className="text-xl font-medium text-black tracking-tight">
           Applications
         </h2>
 
-        {/* Filter Controls Bar */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
           <div className="relative flex-1 max-w-sm">
             <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -241,7 +208,7 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
             />
           </div>
 
-          <div className="flex items-center justify-between sm:justify-end gap-3 flex-wrap">
+          <div className="flex items-center justify-end gap-3">
             <Select
               size="sm"
               showPlaceholderOption={false}
@@ -307,7 +274,7 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
         <div className="w-full overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-175">
             <thead>
-              <tr className="bg-[#F8F9FA] text-gray-500 text-xs font-semibold uppercase tracking-wider rounded-xl">
+              <tr className="bg-input-bg text-black text-xs lg:text-base tracking-wider rounded-xl">
                 <th className="p-3.5 rounded-l-xl">Candidate Name</th>
                 <th className="p-3.5">Trade</th>
                 <th className="p-3.5">Assessment Type</th>
@@ -316,27 +283,21 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
                 <th className="p-3.5 text-right rounded-r-xl">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 text-xs sm:text-sm font-medium text-neutral-primary">
+            <tbody className="divide-y-4 divide-input-bg text-xs sm:text-sm text-black">
               {filteredApplications.map((app) => (
                 <tr
                   key={app.id}
-                  className="hover:bg-gray-50/50 transition-colors"
+                  className="hover:bg-input-bg transition-colors"
                 >
-                  <td className="p-3.5 font-bold text-neutral-primary">
-                    {app.candidateName}
-                  </td>
-                  <td className="p-3.5 text-neutral-secondary">{app.trade}</td>
-                  <td className="p-3.5 text-neutral-secondary">
-                    {app.assessmentType}
-                  </td>
+                  <td className="p-3.5 text-black">{app.candidateName}</td>
+                  <td className="p-3.5 text-black">{app.trade}</td>
+                  <td className="p-3.5 text-black">{app.assessmentType}</td>
                   <td className="p-3.5">{renderStatusBadge(app.status)}</td>
-                  <td className="p-3.5 text-neutral-secondary">
-                    {app.submittedAt}
-                  </td>
+                  <td className="p-3.5 text-black">{app.submittedAt}</td>
                   <td className="p-3.5 text-right">
                     <button
                       type="button"
-                      className="text-neutral-primary font-bold text-xs underline hover:text-[#a31d38] transition-colors cursor-pointer"
+                      className="text-black text-xs lg:text-base underline hover:text-[#a31d38] transition-colors cursor-pointer"
                     >
                       View
                     </button>

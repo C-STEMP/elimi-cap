@@ -14,13 +14,11 @@ export const GenderChart: React.FC = () => {
   ];
 
   return (
-    <div className="bg-white rounded-3xl p-6 shadow-2xs border border-gray-100/80 flex flex-col justify-between h-full min-h-[380px] select-none">
-      {/* Header */}
-      <h3 className="text-lg font-bold text-neutral-primary tracking-tight mb-2">
+    <div className="bg-white rounded-3xl p-6 shadow-2xs border border-gray-100/80 flex flex-col justify-between h-full min-h-95 select-none">
+      <h3 className="text-lg font-medium text-black tracking-tight mb-2">
         Gender Distribution
       </h3>
 
-      {/* Donut Canvas */}
       <div className="relative w-full h-56 flex items-center justify-center">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>

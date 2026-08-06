@@ -19,17 +19,17 @@ export const TradeChart: React.FC = () => {
   const [selectedYear, setSelectedYear] = useState("2026");
 
   return (
-    <div className="bg-white rounded-3xl p-6 shadow-2xs border border-gray-100/80 flex flex-col justify-between h-full min-h-[380px] select-none">
+    <div className="bg-white rounded-3xl p-6 shadow-2xs border border-gray-100/80 flex flex-col justify-between h-full min-h-95 select-none">
       {/* Chart Header */}
       <div className="flex items-center justify-between gap-2 mb-3">
-        <h3 className="text-lg font-bold text-neutral-primary tracking-tight">
+        <h3 className="text-lg font-medium text-black tracking-tight">
           Application By Trades
         </h3>
 
         <Select
           size="sm"
           showPlaceholderOption={false}
-          containerClassName="w-24"
+          containerClassName="w-24!"
           value={selectedYear}
           onChange={(e) => setSelectedYear(e.target.value)}
           options={["2026", "2025", "2024"]}
@@ -44,7 +44,11 @@ export const TradeChart: React.FC = () => {
             data={MOCK_TRADE_DATA}
             margin={{ top: 5, right: 30, left: 15, bottom: 5 }}
           >
-            <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#F3F4F6" />
+            <CartesianGrid
+              strokeDasharray="3 3"
+              horizontal={false}
+              stroke="#F3F4F6"
+            />
             <XAxis
               type="number"
               domain={[0, 100]}
