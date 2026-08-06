@@ -16,15 +16,28 @@ export const ApplicationStageCard: React.FC<ApplicationStageCardProps> = ({
   const isOutline = stage.actionVariant === "outline";
   const [isCollapsed, setIsCollapsed] = useState(stage.isCollapsed ?? true);
 
+  React.useEffect(() => {
+    if (stage.isCollapsed !== undefined) {
+      setIsCollapsed(stage.isCollapsed);
+    }
+  }, [stage.isCollapsed]);
+
   const handleToggle = () => {
     setIsCollapsed((prev: boolean) => !prev);
     stage.onToggleCollapse?.();
   };
 
+  const isCollapsible = stage.isCollapsible ?? true;
+
   return (
     <div className="bg-[#F8F9FA] rounded-[20px] p-5 sm:p-6 shadow-2xs border border-gray-100/70 flex flex-col justify-between transition-all">
       <div className="flex items-center justify-between gap-4">
-        <div className="flex flex-col">
+        <div
+          onClick={isCollapsible ? handleToggle : undefined}
+          className={`flex flex-col flex-1 ${
+            isCollapsible ? "cursor-pointer select-none" : ""
+          }`}
+        >
           <div className="flex items-center gap-3 flex-wrap">
             <h3 className="text-black font-bold text-lg sm:text-xl lg:text-2xl tracking-tight">
               {stage.title}
@@ -41,7 +54,7 @@ export const ApplicationStageCard: React.FC<ApplicationStageCardProps> = ({
         </div>
 
         <div className="flex items-center gap-3">
-          {stage.isCollapsible && (
+          {isCollapsible && (
             <button
               type="button"
               onClick={handleToggle}
@@ -64,14 +77,14 @@ export const ApplicationStageCard: React.FC<ApplicationStageCardProps> = ({
               leftIcon={stage.actionLeftIcon}
               rightIcon={stage.actionRightIcon}
               loading={stage.actionLoading}
-              className={`shrink-0 font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl transition-all cursor-pointer shadow-2xs focus:outline-none focus:ring-0 focus:ring-transparent focus-visible:outline-none focus-visible:ring-0 active:outline-none outline-none ${
+              className={`shrink-0 font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl transition-all cursor-pointer shadow-none! focus:outline-none focus:ring-0 focus:ring-transparent focus-visible:outline-none focus-visible:ring-0 active:outline-none outline-none ${
                 stage.actionText === "View"
-                  ? "bg-white! text-secondary! border border-gray-200! hover:bg-gray-50!"
+                  ? "bg-white! text-secondary! border border-gray-200! hover:bg-gray-50! shadow-none!"
                   : stage.actionText === "Make Payment"
-                  ? "bg-white! text-[#FBAB2A]! border border-gray-200! hover:bg-gray-50!"
+                  ? "bg-white! text-[#FBAB2A]! border border-gray-200! hover:bg-gray-50! shadow-none!"
                   : isOutline
-                  ? "bg-white! text-secondary! border border-gray-200! hover:bg-gray-50!"
-                  : "bg-[#FBAB2A]! text-white! hover:bg-[#E89B1F]!"
+                  ? "bg-white! text-secondary! border border-gray-200! hover:bg-gray-50! shadow-none!"
+                  : "bg-[#FBAB2A]! text-white! hover:bg-[#E89B1F]! shadow-none!"
               }`}
             >
               {stage.actionText}

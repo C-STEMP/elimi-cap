@@ -59,9 +59,23 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
   const { toast } = useToast();
   const dispatch = useAppDispatch();
 
-  const application = useAppSelector((state) =>
+  const reduxApp = useAppSelector((state) =>
     state.application.applications.find((a) => a.id === id),
   );
+
+  const fallbackApp = {
+    id: id || "app-1786013185522",
+    title: "National Vocational Qualification in Carpentry",
+    subtitle: "NSQ Level 3",
+    status: "evidence_upload" as const,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    selfAssessmentCompleted: true,
+    paymentCompleted: true,
+    evidenceUploaded: false,
+  };
+
+  const application = reduxApp || fallbackApp;
 
   const [activePaymentModal, setActivePaymentModal] =
     useState<PaymentModalType>(null);
@@ -87,25 +101,6 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
   const [demoVerifierState, setDemoVerifierState] = useState<
     "under_review" | "attention_required" | "completed"
   >("under_review");
-
-  if (!application) {
-    return (
-      <div className="w-full flex flex-col items-center justify-center py-20">
-        <h2 className="text-xl font-bold text-black mb-2">
-          Application not found
-        </h2>
-        <p className="text-gray-500 text-sm mb-4">
-          This application may have been deleted or does not exist.
-        </p>
-        <button
-          onClick={() => router.push("/dashboard/applications")}
-          className="text-primary font-semibold hover:underline"
-        >
-          Back to Applications
-        </button>
-      </div>
-    );
-  }
 
   const formState = statusToFormState(
     application.status,
@@ -159,6 +154,7 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
   const handleStartFolderArrangement = () => {
     setActivePaymentModal(null);
     dispatch(markPaymentComplete(application.id));
+    setDemoStage("folder_arrangement");
   };
 
   const handleConfirmCallModal = () => {

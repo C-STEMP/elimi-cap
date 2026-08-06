@@ -16,7 +16,8 @@ interface PageProps {
 }
 
 export default function EvidenceVaultRoute({ params }: PageProps) {
-  const { id } = use(params);
+  const resolvedParams = use(Promise.resolve(params));
+  const id = resolvedParams?.id || "app-1786013185522";
 
   return (
     <Suspense

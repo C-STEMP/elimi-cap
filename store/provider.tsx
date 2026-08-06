@@ -21,7 +21,7 @@ export const ReduxProvider: React.FC<{ children: React.ReactNode }> = ({
     <Provider store={store}>
       <QueryClientProvider client={client}>
         <GoogleOAuthProvider clientId={googleClientId}>
-          <PersistGate loading={children} persistor={persistor}>
+          <PersistGate loading={null} persistor={persistor}>
             {children}
           </PersistGate>
         </GoogleOAuthProvider>

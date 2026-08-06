@@ -61,8 +61,10 @@ export function clearTokens(): void {
   localStorage.removeItem(REFRESH_TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
   localStorage.removeItem("elimi_onboarded");
-  document.cookie = `${ACCESS_TOKEN_KEY}=; path=/; max-age=0`;
-  document.cookie = `elimi_onboarded=; path=/; max-age=0`;
+  sessionStorage.clear();
+  document.cookie = `${ACCESS_TOKEN_KEY}=; path=/; max-age=0; SameSite=Lax`;
+  document.cookie = `${REFRESH_TOKEN_KEY}=; path=/; max-age=0; SameSite=Lax`;
+  document.cookie = `elimi_onboarded=; path=/; max-age=0; SameSite=Lax`;
 }
 
 export function isAuthenticated(): boolean {

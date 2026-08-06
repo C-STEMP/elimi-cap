@@ -68,9 +68,13 @@ export const DashboardNav: React.FC = () => {
           />
         </div>
 
-        <div className="w-9 h-9 rounded-full bg-white/20 overflow-hidden flex items-center justify-center">
+        <a
+          href="/dashboard/settings"
+          aria-label="Profile Settings"
+          className="w-9 h-9 rounded-full bg-white/20 overflow-hidden flex items-center justify-center cursor-pointer hover:opacity-85 transition-opacity"
+        >
           <span className="text-white text-sm font-semibold">C</span>
-        </div>
+        </a>
 
         <button
           type="button"

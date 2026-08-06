@@ -44,18 +44,18 @@ export function InfrastructureSection() {
             </p>
 
             {/* 2x2 Metric Cards Grid */}
-            <div className="mt-4 grid grid-cols-2 gap-4">
+            <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4">
               {STATS.map((stat, idx) => (
                 <div
                   key={idx}
                   data-aos="zoom-in"
                   data-aos-delay={(idx + 1) * 100}
-                  className="rounded-[10px] bg-input-bg p-5 text-center transition-all hover:bg-slate-100/80"
+                  className="rounded-[10px] bg-input-bg p-3.5 sm:p-4 md:p-4 lg:p-5 text-center transition-all hover:bg-slate-100/80"
                 >
-                  <span className="block text-2xl font-semibold text-black sm:text-3xl lg:text-[44px]">
+                  <span className="block text-xl sm:text-2xl md:text-2xl lg:text-[44px] font-bold text-black leading-tight">
                     {stat.value}
                   </span>
-                  <span className="mt-1 block text-xs lg:text-base font-semibold text-black tracking-wider">
+                  <span className="mt-1 block text-[11px] sm:text-xs md:text-xs lg:text-base font-semibold text-black tracking-wider">
                     {stat.label}
                   </span>
                 </div>

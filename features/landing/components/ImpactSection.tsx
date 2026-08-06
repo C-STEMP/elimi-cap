@@ -79,7 +79,7 @@ export function ImpactSection() {
 
   useEffect(() => {
     if (activeIndex > maxIndex) {
-      setActiveIndex(maxIndex);
+      setActiveIndex(Math.max(0, maxIndex));
     }
   }, [cardsPerView, maxIndex, activeIndex]);
 
@@ -96,6 +96,7 @@ export function ImpactSection() {
           </p>
         </div>
 
+        {/* Testimonials Carousel */}
         <div className="mt-12">
           <div className="overflow-hidden">
             <div
@@ -107,11 +108,12 @@ export function ImpactSection() {
               {TESTIMONIALS.map((item, idx) => (
                 <div
                   key={idx}
-                  className="shrink-0 px-3"
+                  className="shrink-0 px-2 sm:px-3 md:px-2 lg:px-3"
                   style={{ width: `${100 / cardsPerView}%` }}
                 >
-                  <div className="flex h-full flex-col justify-between rounded-2xl bg-slate-50/60 p-6 sm:p-8 transition-all hover:bg-slate-50">
+                  <div className="flex h-full flex-col justify-between rounded-2xl border border-gray-100 bg-slate-50/60 p-4 sm:p-5 md:p-4 lg:p-7 shadow-sm transition-all hover:bg-slate-50">
                     <div>
+                      {/* Rating Stars */}
                       <div className="flex items-center gap-1 text-secondary">
                         {[...Array(item.rating)].map((_, i) => (
                           <svg
@@ -124,13 +126,13 @@ export function ImpactSection() {
                         ))}
                       </div>
 
-                      <p className="mt-4 text-sm leading-relaxed text-gray-700 italic line-clamp-4 sm:line-clamp-none">
+                      <p className="mt-4 text-xs sm:text-sm md:text-xs lg:text-sm leading-relaxed text-gray-700 italic">
                         &ldquo;{item.quote}&rdquo;
                       </p>
                     </div>
 
-                    <div className="mt-6 pt-4">
-                      <h4 className="text-base font-bold text-text-dark">
+                    <div className="mt-6 border-t border-gray-200/60 pt-4">
+                      <h4 className="text-sm sm:text-base font-bold text-text-dark">
                         {item.name}
                       </h4>
                       <p className="text-xs text-gray-500">{item.role}</p>
@@ -144,7 +146,7 @@ export function ImpactSection() {
           <div className="mt-8 flex items-center justify-center gap-6">
             <button
               onClick={handlePrev}
-              className="flex h-11 w-11 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 shadow-md transition-all hover:bg-secondary hover:text-white hover:border-secondary"
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 shadow-md transition-all hover:bg-secondary hover:text-white hover:border-secondary cursor-pointer"
               aria-label="Previous testimonial"
             >
               <svg
@@ -164,7 +166,7 @@ export function ImpactSection() {
 
             <button
               onClick={handleNext}
-              className="flex h-11 w-11 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 shadow-md transition-all hover:bg-secondary hover:text-white hover:border-secondary"
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 shadow-md transition-all hover:bg-secondary hover:text-white hover:border-secondary cursor-pointer"
               aria-label="Next testimonial"
             >
               <svg

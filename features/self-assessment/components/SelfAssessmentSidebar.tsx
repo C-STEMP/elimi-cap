@@ -22,7 +22,7 @@ export const SelfAssessmentSidebar: React.FC<SelfAssessmentSidebarProps> = ({
   return (
     <div
       suppressHydrationWarning
-      className="hidden lg:flex lg:w-[40%] h-full min-h-screen lg:min-h-0 sticky top-0 shrink-0 bg-primary-solid flex-col justify-between p-8 xl:p-12 overflow-hidden select-none"
+      className="hidden lg:flex lg:w-[40%] h-screen sticky top-0 shrink-0 bg-primary-solid flex-col justify-between p-12 xl:p-16 overflow-hidden select-none"
     >
       <FloatingCircles />
 
@@ -35,10 +35,19 @@ export const SelfAssessmentSidebar: React.FC<SelfAssessmentSidebarProps> = ({
             <Logo theme="light" />
           </div>
 
-          <div suppressHydrationWarning className="flex flex-col gap-6 mt-4">
+          <div suppressHydrationWarning className="flex flex-col gap-4 mt-4">
             <h2 className="text-neutral-burgundy text-2xl xl:text-[34px] font-extrabold tracking-tight">
               Self-Assessment of Competency
             </h2>
+
+            <p className="text-neutral-burgundy/90 text-sm xl:text-base leading-relaxed font-normal font-work">
+              Please answer honestly. Your responses help us identify your
+              strengths, determine any learning gaps, and guide your assessment
+              journey.
+            </p>
+            <p className="text-neutral-burgundy/80 text-xs xl:text-sm font-medium font-work -mt-2">
+              Estimated time: 5–10 minutes
+            </p>
 
             <div
               suppressHydrationWarning

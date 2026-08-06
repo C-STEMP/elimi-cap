@@ -29,9 +29,21 @@ export interface ApplicationState {
   currentApplicationId: string | null;
 }
 
+const DEFAULT_MOCK_APPLICATION: Application = {
+  id: "app-1786013185522",
+  title: "National Vocational Qualification in Carpentry",
+  subtitle: "NSQ Level 3",
+  status: "evidence_upload",
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+  selfAssessmentCompleted: true,
+  paymentCompleted: true,
+  evidenceUploaded: false,
+};
+
 const initialState: ApplicationState = {
-  applications: [],
-  currentApplicationId: null,
+  applications: [DEFAULT_MOCK_APPLICATION],
+  currentApplicationId: "app-1786013185522",
 };
 
 export const applicationSlice = createSlice({

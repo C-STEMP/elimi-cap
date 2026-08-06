@@ -57,7 +57,7 @@ export const NinVerificationPage: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-white flex flex-col lg:flex-row min-h-screen w-full overflow-y-auto lg:overflow-hidden font-sans antialiased">
+    <div className="fixed inset-0 z-50 bg-white flex flex-col lg:flex-row h-screen w-full overflow-hidden font-sans antialiased">
       {/* Left Sidebar - Full Height Auth Sidebar Structure */}
       <div className="hidden lg:flex lg:w-[40%] h-screen sticky top-0 shrink-0 bg-primary-solid flex-col justify-between p-12 xl:p-16 overflow-hidden select-none">
         <FloatingCircles />
@@ -104,7 +104,7 @@ export const NinVerificationPage: React.FC = () => {
       </div>
 
       {/* Right Main Panel */}
-      <div className="flex-1 h-screen overflow-y-auto flex flex-col items-center p-6 md:p-10 xl:p-12 bg-white relative">
+      <div className="flex-1 h-full overflow-y-auto flex flex-col items-center p-6 md:p-10 xl:p-12 bg-white relative">
         <div className="w-full max-w-xl my-auto py-6 flex flex-col text-left">
           <h2 className="text-2xl xl:text-3xl font-bold text-primary-hover mb-3">
             Verify Your Identity
@@ -150,7 +150,10 @@ export const NinVerificationPage: React.FC = () => {
           </ul>
 
           <div className="flex flex-col gap-1.5 w-full">
-            <form onSubmit={handleSubmitNin} className="flex items-center gap-2 w-full">
+            <form
+              onSubmit={handleSubmitNin}
+              className="flex items-center gap-2.5 w-full"
+            >
               <Input
                 type="text"
                 placeholder="00000000000"
@@ -162,17 +165,17 @@ export const NinVerificationPage: React.FC = () => {
                   if (ninError) setNinError(undefined);
                 }}
                 error={ninError}
-                className="flex-1 font-mono tracking-wider"
-                containerClassName="flex-1"
+                className="flex-1 font-mono tracking-wider !h-11 xl:!h-12 !text-sm xl:!text-base"
+                containerClassName="flex-1 [&>div]:!h-11 xl:[&>div]:!h-12"
               />
               <Button
                 type="submit"
                 variant="amber"
                 size="icon"
-                className="!h-11 xl:!h-12 !w-11 xl:!w-12 shrink-0 rounded-xl flex items-center justify-center cursor-pointer"
+                className="!h-11 xl:!h-12 !w-11 xl:!w-12 shrink-0 rounded-2xl flex items-center justify-center cursor-pointer"
                 title="Verify NIN"
               >
-                <FiArrowRight className="w-5 h-5 text-white" />
+                <FiArrowRight className="w-5 h-5 text-white stroke-[2.5]" />
               </Button>
             </form>
           </div>

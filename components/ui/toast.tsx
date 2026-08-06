@@ -70,7 +70,7 @@ const ToastContainer: React.FC<ToastContainerProps> = ({ toasts, dismiss }) => {
   return (
     <div
       suppressHydrationWarning
-      className="fixed top-6 right-6 z-50 flex flex-col gap-4 w-full max-w-90 pointer-events-none select-none"
+      className="fixed top-4 left-4 right-4 sm:top-6 sm:right-6 sm:left-auto z-50 flex flex-col gap-4 w-[calc(100%-2rem)] sm:w-full sm:max-w-90 pointer-events-none select-none"
     >
       {toasts.map((t) => (
         <ToastItem key={t.id} toast={t} onDismiss={() => dismiss(t.id)} />

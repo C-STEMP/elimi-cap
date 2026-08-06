@@ -16,6 +16,7 @@ import {
 import { SettingsSidebar } from "../components/SettingsSidebar";
 import { ProfileInfoTab } from "../components/ProfileInfoTab";
 import { SecurityTab } from "../components/SecurityTab";
+import { StatusModal } from "@/components/ui/status-modal";
 import { DeleteAccountModal } from "../components/DeleteAccountModal";
 import { SuccessModal } from "../components/SuccessModal";
 
@@ -30,6 +31,7 @@ export const SettingsPage: React.FC = () => {
   const [verificationStatus, setVerificationStatus] =
     useState<VerificationStatus>("verified");
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isConfirmDeleteModalOpen, setIsConfirmDeleteOpen] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -140,8 +142,26 @@ export const SettingsPage: React.FC = () => {
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirmDelete={(password) => {
-          console.log("Delete account confirmed with password:", password);
           setIsDeleteModalOpen(false);
+          setIsConfirmDeleteOpen(true);
+        }}
+      />
+
+      <StatusModal
+        isOpen={isConfirmDeleteModalOpen}
+        onClose={() => setIsConfirmDeleteOpen(false)}
+        type="error"
+        title="Confirm Account Deletion"
+        description="Are you sure you want to permanently delete your account? All your applications, certificates, and data will be permanently removed. This action cannot be undone."
+        actionLabel="Yes, Delete My Account"
+        onAction={() => {
+          setIsConfirmDeleteOpen(false);
+          toast({
+            type: "error",
+            title: "Account Deleted",
+            description: "Your account has been permanently deleted.",
+          });
+          router.push("/signin");
         }}
       />
 

@@ -57,12 +57,12 @@ export function HeroSection() {
           </div>
         </div>
 
-        <div className="mt-6 lg:mt-8 grid grid-cols-2 sm:grid-cols-4 gap-3 lg:gap-4 h-80 lg:h-84 w-full shrink-0">
-          {/* Column 1: Graffiti Artist Top + 99% Certification Rate Bottom */}
+        <div className="mt-6 lg:mt-8 grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 lg:gap-4 h-72 sm:h-80 md:h-84 lg:h-96 w-full shrink-0">
+          {/* Column 1: Craftsman Top + 99% Certification Rate Bottom */}
           <div
             data-aos="fade-up"
             data-aos-delay="200"
-            className="flex flex-col gap-3 lg:gap-4 h-full"
+            className="flex flex-col gap-2.5 sm:gap-3 lg:gap-4 h-full"
           >
             <div className="relative flex-2 overflow-hidden rounded-xl lg:rounded-2xl group">
               <Image
@@ -75,11 +75,11 @@ export function HeroSection() {
                 loading="eager"
               />
             </div>
-            <div className="flex flex-1 flex-col items-center justify-center rounded-xl lg:rounded-2xl bg-[#FBB040] text-center text-black shadow-lg">
-              <span className="text-2xl sm:text-3xl lg:text-4xl font-extrabold leading-none tracking-tight">
+            <div className="flex flex-1 flex-col items-center justify-center rounded-xl lg:rounded-2xl bg-[#FBB040] px-2 py-1.5 md:px-3 md:py-2 text-center text-black shadow-lg select-none">
+              <span className="text-xl sm:text-2xl md:text-2xl lg:text-4xl font-extrabold leading-none tracking-tight">
                 99%
               </span>
-              <span className="mt-1.5 text-xs sm:text-sm font-bold leading-tight">
+              <span className="mt-1 text-[10px] sm:text-xs md:text-xs lg:text-sm font-bold leading-tight">
                 Certification Rate
               </span>
             </div>
@@ -106,13 +106,13 @@ export function HeroSection() {
           <div
             data-aos="fade-up"
             data-aos-delay="400"
-            className="flex flex-col gap-3 lg:gap-4 h-full"
+            className="flex flex-col gap-2.5 sm:gap-3 lg:gap-4 h-full"
           >
-            <div className="flex flex-1 flex-col items-center justify-center rounded-xl lg:rounded-2xl bg-[#FDF0D5] text-center text-black shadow-lg">
-              <span className="text-2xl sm:text-3xl lg:text-4xl font-extrabold leading-none tracking-tight">
+            <div className="flex flex-1 flex-col items-center justify-center rounded-xl lg:rounded-2xl bg-[#FDF0D5] px-2 py-1.5 md:px-3 md:py-2 text-center text-black shadow-lg select-none">
+              <span className="text-xl sm:text-2xl md:text-2xl lg:text-4xl font-extrabold leading-none tracking-tight">
                 80%
               </span>
-              <span className="mt-1.5 text-xs sm:text-sm font-bold leading-tight">
+              <span className="mt-1 text-[10px] sm:text-xs md:text-xs lg:text-sm font-bold leading-tight">
                 Course Completion Rate
               </span>
             </div>

@@ -95,7 +95,11 @@ export const HeaderBanner: React.FC<HeaderBannerProps> = ({
           </div>
 
           {/* User Avatar */}
-          <div className="relative w-9 h-9 rounded-full overflow-hidden border-2 border-white/30 shrink-0">
+          <Link
+            href="/dashboard/settings"
+            aria-label="Profile Settings"
+            className="relative w-9 h-9 rounded-full overflow-hidden border-2 border-white/30 shrink-0 cursor-pointer hover:opacity-85 transition-opacity"
+          >
             <Image
               src={ASSETS_URL.userAvatar}
               alt={userName}
@@ -105,7 +109,7 @@ export const HeaderBanner: React.FC<HeaderBannerProps> = ({
               priority
               loading="eager"
             />
-          </div>
+          </Link>
 
           {/* Logout Button */}
           <button

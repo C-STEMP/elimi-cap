@@ -10,12 +10,14 @@ const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
   display: "swap",
+  fallback: ["system-ui", "sans-serif"],
 });
 
 const workSans = Work_Sans({
   variable: "--font-work-sans",
   subsets: ["latin"],
   display: "swap",
+  fallback: ["system-ui", "sans-serif"],
 });
 
 export const metadata: Metadata = {
@@ -35,12 +37,12 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${workSans.variable} h-full antialiased`}
+      className={`${inter.variable} ${workSans.variable} antialiased`}
       data-scroll-behavior="smooth"
       suppressHydrationWarning
     >
       <body
-        className="min-h-full flex flex-col bg-white font-sans text-dark"
+        className="min-h-screen flex flex-col bg-white font-sans text-dark"
         suppressHydrationWarning
       >
         <ReduxProvider>

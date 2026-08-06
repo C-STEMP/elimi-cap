@@ -21,9 +21,23 @@ export const SelfAssessmentPage: React.FC<SelfAssessmentPageProps> = ({
 }) => {
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const application = useAppSelector((state) =>
+  const reduxApp = useAppSelector((state) =>
     state.application.applications.find((a) => a.id === id),
   );
+
+  const fallbackApp = {
+    id: id || "app-1786013185522",
+    title: "National Vocational Qualification in Carpentry",
+    subtitle: "NSQ Level 3",
+    status: "self_assessment" as const,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    selfAssessmentCompleted: false,
+    paymentCompleted: false,
+    evidenceUploaded: false,
+  };
+
+  const application = reduxApp || fallbackApp;
 
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -35,26 +49,10 @@ export const SelfAssessmentPage: React.FC<SelfAssessmentPageProps> = ({
     router.push(`/dashboard/applications/${id}/evidence-vault`);
   };
 
-  if (!application) {
-    return (
-      <div className="w-full flex flex-col items-center justify-center py-20">
-        <h2 className="text-xl font-bold text-black mb-2">
-          Application not found
-        </h2>
-        <button
-          onClick={() => router.push("/dashboard/applications")}
-          className="text-primary font-semibold hover:underline"
-        >
-          Back to Applications
-        </button>
-      </div>
-    );
-  }
-
   return (
     <div
       suppressHydrationWarning
-      className="min-h-screen w-full flex flex-col lg:flex-row bg-primary-solid lg:bg-white font-sans antialiased overflow-y-auto lg:overflow-hidden"
+      className="h-screen w-full flex flex-col lg:flex-row bg-primary-solid lg:bg-white font-sans antialiased overflow-hidden"
     >
       <div
         suppressHydrationWarning
@@ -67,7 +65,7 @@ export const SelfAssessmentPage: React.FC<SelfAssessmentPageProps> = ({
 
       <div
         suppressHydrationWarning
-        className="flex-1 w-full bg-white rounded-t-4xl lg:rounded-none -mt-4 lg:mt-0 p-6 sm:p-8 md:p-10 xl:p-12 flex flex-col items-center justify-start relative min-h-[calc(100vh-100px)] lg:min-h-screen lg:h-screen lg:overflow-y-auto shadow-md lg:shadow-none"
+        className="flex-1 w-full h-screen overflow-y-auto bg-white rounded-t-4xl lg:rounded-none -mt-4 lg:mt-0 p-6 sm:p-8 md:p-10 xl:p-12 flex flex-col items-center justify-start relative shadow-md lg:shadow-none"
       >
         <div
           suppressHydrationWarning

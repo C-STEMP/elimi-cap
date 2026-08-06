@@ -3,11 +3,7 @@
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiLogOut, FiX } from "react-icons/fi";
-import { useRouter } from "next/navigation";
-import { useAppDispatch } from "@/store/hooks";
-import { logout } from "@/store/slices/authSlice";
-import { persistor } from "@/store";
-import { clearTokens } from "@/lib/auth-storage";
+import { handleLogout } from "@/store/actions/authActions";
 
 interface LogoutModalProps {
   isOpen: boolean;
@@ -20,32 +16,12 @@ export const LogoutModal: React.FC<LogoutModalProps> = ({
   onClose,
   onConfirm,
 }) => {
-  const router = useRouter();
-  const dispatch = useAppDispatch();
-
-  const handleLogout = () => {
+  const handleConfirmLogout = () => {
     if (onConfirm) {
       onConfirm();
-    } else {
-      try {
-        clearTokens();
-        dispatch(logout());
-        if (typeof window !== "undefined") {
-          window.localStorage.clear();
-          window.sessionStorage.clear();
-          document.cookie = "elimi_access_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT;";
-          document.cookie = "elimi_refresh_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT;";
-          document.cookie = "elimi_onboarded=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT;";
-        }
-        if (persistor && typeof persistor.purge === "function") {
-          persistor.purge();
-        }
-      } catch (err) {
-        // Fallback
-      }
-      onClose();
-      router.push("/signin");
     }
+    onClose();
+    handleLogout();
   };
 
   return (
@@ -67,44 +43,40 @@ export const LogoutModal: React.FC<LogoutModalProps> = ({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
-            className="relative w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-gray-100 z-10 select-none overflow-hidden"
+            className="relative w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-gray-100 z-10 select-none overflow-hidden text-center flex flex-col items-center"
           >
-            {/* Close Button */}
+            {/* Top Centralized Cancel/Close Icon */}
             <button
               type="button"
               onClick={onClose}
-              className="absolute top-5 right-5 w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-800 transition-colors cursor-pointer"
               aria-label="Close modal"
+              className="mb-4 w-12 h-12 rounded-xl bg-primary/10 text-primary hover:bg-[#FBE8ED] flex items-center justify-center transition-colors cursor-pointer mx-auto"
             >
-              <FiX className="w-4 h-4" />
+              <FiX className="w-6 h-6 stroke-[2.5]" />
             </button>
 
-            {/* Icon Banner */}
-            <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-[#a31d38]/10 text-[#a31d38] mb-5">
-              <FiLogOut className="w-7 h-7" />
-            </div>
-
-            {/* Text Content */}
-            <h3 className="text-xl sm:text-2xl font-extrabold text-[#1e1e1e] tracking-tight">
+            {/* Centralized Text Content */}
+            <h3 className="text-xl sm:text-2xl font-extrabold text-[#1e1e1e] tracking-tight text-center">
               Confirm Sign Out
             </h3>
-            <p className="mt-2 text-sm text-gray-600 leading-relaxed font-normal">
-              Are you sure you want to log out of your Elimi CAP account? You will need to sign in again to access your dashboard.
+            <p className="mt-2 text-xs sm:text-sm text-gray-600 leading-relaxed font-normal text-center mx-auto max-w-xs">
+              Are you sure you want to log out of your Elimi CAP account? You
+              will need to sign in again to access your dashboard.
             </p>
 
-            {/* Actions */}
-            <div className="mt-8 flex items-center justify-end gap-3">
+            {/* Full Width Divided Action Buttons */}
+            <div className="mt-6 w-full grid grid-cols-2 gap-3">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-5 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-semibold text-sm hover:bg-gray-50 transition-colors cursor-pointer"
+                className="w-full py-3 rounded-xl border border-gray-300 text-gray-700 font-bold text-sm sm:text-base hover:bg-gray-50 transition-colors cursor-pointer text-center"
               >
                 Cancel
               </button>
               <button
                 type="button"
-                onClick={handleLogout}
-                className="px-6 py-2.5 rounded-xl bg-[#a31d38] hover:bg-[#8d1830] text-white font-semibold text-sm shadow-md transition-all cursor-pointer flex items-center gap-2"
+                onClick={handleConfirmLogout}
+                className="w-full py-3 rounded-xl bg-[#a31d38] hover:bg-[#8d1830] active:scale-98 text-white font-bold text-sm sm:text-base shadow-lg transition-all cursor-pointer text-center flex items-center justify-center gap-2"
               >
                 <FiLogOut className="w-4 h-4" />
                 Yes, Sign Out

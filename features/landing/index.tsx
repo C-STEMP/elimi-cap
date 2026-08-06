@@ -14,7 +14,7 @@ export default function LandingPage() {
     <AosProvider>
       <div className="min-h-screen flex flex-col bg-white">
         <Navbar />
-        <main className="flex-1 overflow-x-hidden">
+        <main className="flex-1">
           <HeroSection />
           <PipelineSection />
           <InfrastructureSection />

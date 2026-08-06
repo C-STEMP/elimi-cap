@@ -63,10 +63,12 @@
 /* Base resets & typography */
 @layer base {
   html {
+    overflow-x: clip;
     scroll-behavior: smooth;
   }
 
   body {
+    overflow-x: clip;
     color: var(--color-text-dark);
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }

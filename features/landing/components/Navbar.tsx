@@ -51,7 +51,10 @@ export function Navbar() {
       }`}
     >
       <div className="mx-auto flex w-full items-center justify-between px-4 sm:px-6 lg:px-8 xl:px-16">
-        <Link href="/" className="flex items-center gap-2">
+        <Link
+          href="/"
+          className="flex items-center gap-2 rounded-lg outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
+        >
           <Image
             src={logoIcon}
             alt="Elimi Logo"
@@ -63,7 +66,7 @@ export function Navbar() {
           />
         </Link>
 
-        <nav className="hidden items-center gap-6 lg:gap-8 md:flex">
+        <nav className="hidden items-center gap-2 md:gap-3 lg:gap-6 xl:gap-8 md:flex">
           {NAV_LINKS.map((link) => {
             const isActive = activeLink === link.href;
             return (
@@ -71,7 +74,7 @@ export function Navbar() {
                 key={link.label}
                 href={link.href}
                 onClick={() => setActiveLink(link.href)}
-                className={`text-sm lg:text-base transition-colors ${
+                className={`whitespace-nowrap text-xs lg:text-sm xl:text-base transition-colors ${
                   isActive
                     ? "text-secondary font-bold"
                     : "text-white/90 font-medium hover:text-secondary"
@@ -83,16 +86,16 @@ export function Navbar() {
           })}
         </nav>
 
-        <div className="hidden items-center gap-4 lg:gap-10 md:flex">
+        <div className="hidden items-center gap-2 md:gap-3 lg:gap-6 xl:gap-10 md:flex">
           <Link
             href="/signin"
-            className="text-sm lg:text-base font-bold text-white transition-colors hover:text-secondary"
+            className="whitespace-nowrap text-xs lg:text-sm xl:text-base font-bold text-white transition-colors hover:text-secondary"
           >
             Login
           </Link>
           <Link
             href="/signup"
-            className="rounded-[10px] bg-secondary px-5 lg:px-10 py-2.5 text-sm font-semibold text-white transition-all hover:bg-secondary-hover"
+            className="whitespace-nowrap rounded-[10px] bg-secondary px-3 md:px-4 lg:px-6 xl:px-10 py-2 lg:py-2.5 text-xs lg:text-sm font-semibold text-white transition-all hover:bg-secondary-hover"
           >
             Register
           </Link>
@@ -129,7 +132,7 @@ export function Navbar() {
       </div>
 
       {mobileMenuOpen && (
-        <div className="absolute top-20 left-0 right-0 border-t border-white/10 bg-[#540C1D] px-4 pt-3 pb-6 md:hidden shadow-2xl">
+        <div className="absolute top-20 left-0 right-0 border-t border-white/10 bg-[#540C1D] px-6 pt-4 pb-8 md:hidden shadow-2xl">
           <div className="flex flex-col gap-3">
             {NAV_LINKS.map((link) => {
               const isActive = activeLink === link.href;

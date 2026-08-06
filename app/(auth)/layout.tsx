@@ -10,7 +10,7 @@ export default function AuthLayout({
   return (
     <div
       suppressHydrationWarning
-      className="min-h-screen w-full flex flex-col lg:flex-row bg-primary-solid lg:bg-white font-sans antialiased overflow-y-auto overflow-x-hidden lg:overflow-hidden"
+      className="h-screen w-full flex flex-col lg:flex-row bg-primary-solid lg:bg-white font-sans antialiased overflow-hidden"
     >
       {/* Mobile Top Header */}
       <div
@@ -24,7 +24,7 @@ export default function AuthLayout({
 
       <div
         suppressHydrationWarning
-        className="flex-1 w-full max-w-full bg-white rounded-t-4xl lg:rounded-none -mt-4 lg:mt-0 p-4 sm:p-8 md:p-10 xl:p-12 flex flex-col items-center justify-start relative min-h-[calc(100vh-100px)] lg:min-h-screen lg:h-screen lg:overflow-y-auto overflow-x-hidden shadow-md lg:shadow-none"
+        className="flex-1 w-full max-w-full h-screen overflow-y-auto bg-white rounded-t-4xl lg:rounded-none -mt-4 lg:mt-0 p-4 sm:p-8 md:p-10 xl:p-12 flex flex-col items-center justify-start relative shadow-md lg:shadow-none"
       >
         <div
           suppressHydrationWarning
