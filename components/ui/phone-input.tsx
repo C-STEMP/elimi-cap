@@ -8,10 +8,12 @@ export interface PhoneInputProps {
   label?: React.ReactNode;
   value?: string;
   onChange?: (value: string) => void;
+  onCountryChange?: (countryName: string, countryData?: any) => void;
   error?: string;
   helperText?: React.ReactNode;
   placeholder?: string;
   disabled?: boolean;
+  maxLength?: number;
   containerClassName?: string;
   className?: string;
   id?: string;
@@ -25,10 +27,12 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
   label,
   value = "",
   onChange,
+  onCountryChange,
   error,
   helperText,
   placeholder = "000000000",
   disabled = false,
+  maxLength = 20,
   containerClassName = "",
   className = "",
   id,
@@ -77,14 +81,25 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
           country={activeCountry}
           preferredCountries={preferredCountries}
           value={formattedValue}
-          onChange={(val: string) => onChange?.(val ? `+${val}` : "")}
+          onChange={(val: string, countryData: any) => {
+            const cleanVal = val ? val.replace(/[^\d]/g, "") : "";
+            onChange?.(cleanVal ? `+${cleanVal}` : "");
+            if (countryData && countryData.name) {
+              const rawName = countryData.name || "";
+              const cleanName = rawName.split(" (")[0].trim();
+              onCountryChange?.(cleanName, countryData);
+            }
+          }}
           disabled={disabled}
           placeholder={placeholder}
           enableLongNumbers={true}
           countryCodeEditable={false}
           inputProps={{
             id: inputId,
-            name,
+            name: name || "phone",
+            autoComplete: "tel",
+            type: "tel",
+            maxLength,
           }}
           containerClass="!w-full !h-full !bg-transparent"
           inputClass="!w-full !h-full !bg-transparent !border-0 !text-text-dark !text-xs xl:!text-sm !font-normal focus:!outline-none"

@@ -130,7 +130,7 @@ export const CenterVerifyIdentity: React.FC = () => {
           <div className="flex flex-col gap-1.5 w-full">
             <form
               onSubmit={handleStartVerification}
-              className="flex items-start gap-2"
+              className="flex items-center gap-2 w-full"
             >
               <Input
                 type="text"
@@ -138,7 +138,8 @@ export const CenterVerifyIdentity: React.FC = () => {
                 maxLength={11}
                 value={nin}
                 onChange={(e) => {
-                  setNin(e.target.value);
+                  const cleaned = e.target.value.replace(/[^0-9]/g, "");
+                  setNin(cleaned);
                   if (ninError) setNinError(undefined);
                 }}
                 error={ninError}
@@ -149,7 +150,7 @@ export const CenterVerifyIdentity: React.FC = () => {
                 type="submit"
                 variant="amber"
                 size="icon"
-                className="shrink-0 w-12 h-12 rounded-xl flex items-center justify-center cursor-pointer"
+                className="!h-11 xl:!h-12 !w-11 xl:!w-12 shrink-0 rounded-xl flex items-center justify-center cursor-pointer"
                 title="Verify NIN"
               >
                 <FiArrowRight className="w-5 h-5 text-white" />

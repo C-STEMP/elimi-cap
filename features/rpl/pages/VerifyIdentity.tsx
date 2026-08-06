@@ -30,7 +30,6 @@ export const RPLVerifyIdentity: React.FC<RPLVerifyIdentityProps> = ({
   const [nin, setNin] = useState("");
   const [ninError, setNinError] = useState<string | undefined>(undefined);
   const [isVerified, setIsVerified] = useState(false);
-  const [showDraftModal, setShowDraftModal] = useState(false);
   const [modalState, setModalState] = useState<
     "none" | "verifying" | "success" | "error"
   >("none");
@@ -70,7 +69,15 @@ export const RPLVerifyIdentity: React.FC<RPLVerifyIdentityProps> = ({
     }, 2200);
   };
 
+  const [showConfirmDraftModal, setShowConfirmDraftModal] = useState(false);
+  const [showDraftModal, setShowDraftModal] = useState(false);
+
   const handleSaveDraft = () => {
+    setShowConfirmDraftModal(true);
+  };
+
+  const handleConfirmSaveDraft = () => {
+    setShowConfirmDraftModal(false);
     setShowDraftModal(true);
   };
 
@@ -140,7 +147,7 @@ export const RPLVerifyIdentity: React.FC<RPLVerifyIdentityProps> = ({
           <div className="flex flex-col gap-1.5 w-full">
             <form
               onSubmit={handleStartVerification}
-              className="flex items-start gap-2"
+              className="flex items-center gap-2 w-full"
             >
               <Input
                 type="text"
@@ -148,7 +155,8 @@ export const RPLVerifyIdentity: React.FC<RPLVerifyIdentityProps> = ({
                 maxLength={11}
                 value={nin}
                 onChange={(e) => {
-                  setNin(e.target.value);
+                  const cleaned = e.target.value.replace(/[^0-9]/g, "");
+                  setNin(cleaned);
                   if (ninError) setNinError(undefined);
                 }}
                 error={ninError}
@@ -159,7 +167,7 @@ export const RPLVerifyIdentity: React.FC<RPLVerifyIdentityProps> = ({
                 type="submit"
                 variant="amber"
                 size="icon"
-                className="shrink-0 w-12 h-12 rounded-xl flex items-center justify-center"
+                className="!h-11 xl:!h-12 !w-11 xl:!w-12 shrink-0 rounded-xl flex items-center justify-center cursor-pointer"
                 title="Verify NIN"
               >
                 <FiArrowRight className="w-5 h-5 text-white" />
@@ -359,6 +367,12 @@ export const RPLVerifyIdentity: React.FC<RPLVerifyIdentityProps> = ({
           </motion.div>
         )}
       </AnimatePresence>
+      <StatusModal
+        isOpen={showConfirmDraftModal}
+        variant="save-draft-confirm"
+        onClose={() => setShowConfirmDraftModal(false)}
+        onAction={handleConfirmSaveDraft}
+      />
       <StatusModal
         isOpen={showDraftModal}
         variant="draft-saved"

@@ -5,6 +5,7 @@ import { FiArrowLeft, FiArrowRight, FiCheck } from "react-icons/fi";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { InfoIcon } from "@/components/ui/info-icon";
 import { StatusModal } from "@/components/ui/status-modal";
@@ -20,12 +21,14 @@ interface Step3Props {
 export const Step3Reflection: React.FC<Step3Props> = ({ onNext, onBack }) => {
   const router = useRouter();
   const { toast } = useToast();
+  const [showConfirmDraftModal, setShowConfirmDraftModal] = useState(false);
   const [showDraftModal, setShowDraftModal] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [formData, setFormData] = useState({
     tasks: "",
     skills: "",
+    otherEvidenceText: "",
   });
   const [selectedEvidences, setSelectedEvidences] = useState<string[]>([]);
 
@@ -202,6 +205,22 @@ export const Step3Reflection: React.FC<Step3Props> = ({ onNext, onBack }) => {
               );
             })}
           </div>
+          {selectedEvidences.includes("Other") && (
+            <div className="mt-3 w-full animate-fadeIn">
+              <Input
+                label="Specify Other Evidence"
+                type="text"
+                placeholder="Type details of your other evidence..."
+                value={formData.otherEvidenceText}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    otherEvidenceText: e.target.value,
+                  }))
+                }
+              />
+            </div>
+          )}
           {errors.evidences && (
             <span className="text-red-500 text-xs font-normal mt-1">
               {errors.evidences}
@@ -222,7 +241,7 @@ export const Step3Reflection: React.FC<Step3Props> = ({ onNext, onBack }) => {
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => setShowDraftModal(true)}
+              onClick={() => setShowConfirmDraftModal(true)}
               className="px-5 h-11 bg-white border border-secondary text-secondary hover:bg-secondary/10 font-semibold text-sm rounded-lg flex items-center justify-center gap-2 transition-all shadow-lg cursor-pointer whitespace-nowrap"
             >
               <span>Save As Draft</span>
@@ -248,6 +267,16 @@ export const Step3Reflection: React.FC<Step3Props> = ({ onNext, onBack }) => {
           </div>
         </div>
       </form>
+
+      <StatusModal
+        isOpen={showConfirmDraftModal}
+        variant="save-draft-confirm"
+        onClose={() => setShowConfirmDraftModal(false)}
+        onAction={() => {
+          setShowConfirmDraftModal(false);
+          setShowDraftModal(true);
+        }}
+      />
 
       <StatusModal
         isOpen={showDraftModal}

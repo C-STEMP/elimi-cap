@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect, useId } from "react";
 import { FiCalendar, FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import { Select } from "@/components/ui/select";
 
 export interface DatePickerProps {
   label?: React.ReactNode;
@@ -299,37 +300,39 @@ export const DatePicker: React.FC<DatePickerProps> = ({
             {/* Header: Month/Year Dropdowns & Prev/Next Buttons */}
             <div className="flex items-center justify-between pb-3 mb-2 border-b border-gray-100 gap-1">
               <div className="flex items-center gap-1">
-                <select
-                  value={currentMonth}
+                <Select
+                  size="sm"
+                  showPlaceholderOption={false}
+                  containerClassName="w-28"
+                  className="!h-8 !py-0 !px-2 font-bold text-xs"
+                  value={String(currentMonth)}
                   onChange={(e) =>
                     setViewDate(
                       new Date(currentYear, parseInt(e.target.value, 10), 1),
                     )
                   }
-                  className="text-xs xl:text-sm font-bold text-neutral-primary bg-transparent outline-none cursor-pointer hover:text-secondary py-1 rounded"
-                >
-                  {MONTHS.map((m, idx) => (
-                    <option key={m} value={idx}>
-                      {m}
-                    </option>
-                  ))}
-                </select>
+                  options={MONTHS.map((m, idx) => ({
+                    label: m,
+                    value: String(idx),
+                  }))}
+                />
 
-                <select
-                  value={currentYear}
+                <Select
+                  size="sm"
+                  showPlaceholderOption={false}
+                  containerClassName="w-20"
+                  className="!h-8 !py-0 !px-2 font-bold text-xs"
+                  value={String(currentYear)}
                   onChange={(e) =>
                     setViewDate(
                       new Date(parseInt(e.target.value, 10), currentMonth, 1),
                     )
                   }
-                  className="text-xs xl:text-sm font-bold text-neutral-primary bg-transparent outline-none cursor-pointer hover:text-secondary py-1 rounded"
-                >
-                  {years.map((y) => (
-                    <option key={y} value={y}>
-                      {y}
-                    </option>
-                  ))}
-                </select>
+                  options={years.map((y) => ({
+                    label: String(y),
+                    value: String(y),
+                  }))}
+                />
               </div>
 
               <div className="flex items-center gap-1 shrink-0">

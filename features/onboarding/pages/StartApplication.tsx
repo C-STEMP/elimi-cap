@@ -144,7 +144,7 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
       transition={{ duration: 0.4, ease: "easeOut" }}
       className="w-full max-w-110 mx-auto flex flex-col justify-center select-text"
     >
-      <div className="mb-6 text-left w-full">
+      <div className="mb-4 text-left w-full">
         <h1 className="text-2xl xl:text-[28px] font-extrabold tracking-tight text-primary">
           Start Application
         </h1>
@@ -152,7 +152,7 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
           Your journey is about to start
         </p>
 
-        <h2 className="text-xl xl:text-2xl font-extrabold tracking-tight text-neutral-primary mt-6">
+        <h2 className="text-xl xl:text-2xl font-extrabold tracking-tight text-neutral-primary mt-4">
           Centre Information
         </h2>
       </div>
@@ -163,9 +163,9 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
         onFinish={handleFinish}
         onFinishFailed={handleFinishFailed}
         onValuesChange={handleValuesChange}
-        className="w-full flex flex-col gap-5"
+        className="w-full flex flex-col gap-3.5"
       >
-        <Form.Item name="assessmentCenter" rules={[rule]}>
+        <Form.Item name="assessmentCenter" rules={[rule]} className="mb-0!">
           <FormSelect
             label={
               <span>
@@ -178,7 +178,7 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
           />
         </Form.Item>
 
-        <Form.Item name="sector" rules={[rule]}>
+        <Form.Item name="sector" rules={[rule]} className="mb-0!">
           <FormSelect
             label={
               <span>
@@ -190,7 +190,7 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
           />
         </Form.Item>
 
-        <Form.Item name="trade" rules={[rule]}>
+        <Form.Item name="trade" rules={[rule]} className="mb-0!">
           <FormSelect
             label={
               <span>

@@ -15,12 +15,14 @@ interface ProfileInfoTabProps {
   formData: ProfileFormData;
   onChange: (field: keyof ProfileFormData, value: any) => void;
   onSave: () => void;
+  isSaving?: boolean;
 }
 
 export const ProfileInfoTab: React.FC<ProfileInfoTabProps> = ({
   formData,
   onChange,
   onSave,
+  isSaving = false,
 }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,9 +49,10 @@ export const ProfileInfoTab: React.FC<ProfileInfoTabProps> = ({
         <Button
           type="submit"
           size="sm"
+          loading={isSaving}
           className="bg-[#fbab2a]! hover:bg-[#e89b1f]! active:scale-95 text-white font-semibold px-8 py-3 rounded-xl flex items-center gap-2.5 shadow-lg transition-all cursor-pointer text-sm"
         >
-          <span>Save</span>
+          <span>{isSaving ? "Saving..." : "Save"}</span>
           <Image
             src={ASSETS_URL.saveIcon}
             alt="Save"

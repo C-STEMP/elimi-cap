@@ -36,6 +36,12 @@ export const CenterInformation: React.FC = () => {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  React.useEffect(() => {
+    if (!form.country) {
+      setForm((prev) => ({ ...prev, country: "Nigeria" }));
+    }
+  }, []);
+
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
@@ -318,6 +324,7 @@ export const CenterInformation: React.FC = () => {
               }
               value={form.phoneNumber}
               onChange={(v) => update("phoneNumber", v)}
+              onCountryChange={(cName) => update("country", cName)}
               error={errors.phoneNumber}
               defaultCountry="NG"
             />

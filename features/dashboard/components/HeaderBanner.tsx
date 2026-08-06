@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -8,6 +8,8 @@ import { FiPlus, FiBell, FiLogOut, FiChevronLeft } from "react-icons/fi";
 import { ASSETS_URL } from "@/assets";
 import { Logo } from "@/components/ui/logo";
 import { Button } from "@/components/ui/button";
+import { LogoutModal } from "@/components/ui/LogoutModal";
+import { NotificationDropdown } from "./NotificationDropdown";
 
 interface HeaderBannerProps {
   userName?: string;
@@ -41,12 +43,13 @@ export const HeaderBanner: React.FC<HeaderBannerProps> = ({
   const pathname = usePathname();
   const router = useRouter();
 
+  const [isLogoutOpen, setIsLogoutOpen] = useState(false);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+
   return (
-    <div className="bg-[#a31d38] rounded-[22px] px-6 lg:px-8 py-5 text-white shadow-md mb-6">
+    <div className="bg-[#a31d38] rounded-[22px] px-6 lg:px-8 py-5 text-white shadow-md mb-6 relative">
       <div className="flex items-center justify-between border-b border-white/10 pb-5">
-        <Link href="/" className="flex items-center group">
-          <Logo theme="light" width={80} />
-        </Link>
+        <Logo theme="light" width={80} href="/" />
 
         <nav className="hidden md:flex items-center gap-3">
           {NAV_LINKS.map((link) => {
@@ -73,14 +76,23 @@ export const HeaderBanner: React.FC<HeaderBannerProps> = ({
         {/* Right User & Utility Controls */}
         <div className="flex items-center gap-3">
           {/* Notification Button */}
-          <button
-            type="button"
-            aria-label="Notifications"
-            className="relative w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors cursor-pointer"
-          >
-            <FiBell className="w-4 h-4" />
-            <span className="absolute top-2 right-2 w-2 h-2 bg-[#fbab2a] rounded-full ring-2 ring-[#a31d38]" />
-          </button>
+          <div className="relative">
+            <button
+              type="button"
+              aria-label="Notifications"
+              onClick={() => setIsNotifOpen(!isNotifOpen)}
+              className="relative w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors cursor-pointer"
+            >
+              <FiBell className="w-4 h-4" />
+              <span className="absolute top-2 right-2 w-2 h-2 bg-[#fbab2a] rounded-full ring-2 ring-[#a31d38]" />
+            </button>
+
+            <NotificationDropdown
+              isOpen={isNotifOpen}
+              onClose={() => setIsNotifOpen(false)}
+              maxItems={3}
+            />
+          </div>
 
           {/* User Avatar */}
           <div className="relative w-9 h-9 rounded-full overflow-hidden border-2 border-white/30 shrink-0">
@@ -99,7 +111,7 @@ export const HeaderBanner: React.FC<HeaderBannerProps> = ({
           <button
             type="button"
             aria-label="Log out"
-            onClick={() => router.push("/")}
+            onClick={() => setIsLogoutOpen(true)}
             className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors cursor-pointer"
           >
             <FiLogOut className="w-4 h-4" />
@@ -182,6 +194,11 @@ export const HeaderBanner: React.FC<HeaderBannerProps> = ({
               </Button>
             )}
       </div>
+
+      <LogoutModal
+        isOpen={isLogoutOpen}
+        onClose={() => setIsLogoutOpen(false)}
+      />
     </div>
   );
 };

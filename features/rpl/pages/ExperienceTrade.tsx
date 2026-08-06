@@ -13,7 +13,7 @@ import Image from "next/image";
 import { ASSETS_URL } from "@/assets";
 import { StatusModal } from "@/components/ui/status-modal";
 import { InfoIcon } from "@/components/ui/info-icon";
-import { useAppDispatch } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setSidebarVariant, setRplStep } from "@/store/slices/authSlice";
 
 import { rplExperienceTradeSchema, extractZodErrors } from "@/lib/validation";
@@ -54,12 +54,18 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
   onBack,
   onContinue,
 }) => {
+  const savedTrade = useAppSelector(
+    (s) => s.onboarding.startApplication.trade,
+  );
+
   const [form, setForm] = useState({
     // Qualification Applying For
-    qualificationTitle: "",
+    qualificationTitle: savedTrade || "",
     qualificationCode: "NOS-ELI-L3",
+    completedBefore: "No",
+    previousAssessmentDetails: "",
     assessmentType: "",
-    individualUnit: "",
+    individualUnit: [] as string[],
 
     // Current Occupation
     occupation: "",
@@ -83,6 +89,7 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
 
     // Evidence Summary
     selectedEvidence: [] as string[],
+    otherEvidenceText: "",
 
     isSubmitting: false,
     showSuccessModal: false,
@@ -188,9 +195,15 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
     }
   };
 
+  const [showConfirmDraftModal, setShowConfirmDraftModal] = useState(false);
   const [showDraftModal, setShowDraftModal] = useState(false);
 
   const handleSaveDraft = () => {
+    setShowConfirmDraftModal(true);
+  };
+
+  const handleConfirmSaveDraft = () => {
+    setShowConfirmDraftModal(false);
     setShowDraftModal(true);
   };
 
@@ -304,6 +317,38 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
             <Select
               label={
                 <span>
+                  Have you completed an assessment before?
+                  <span className="text-primary-solid ml-0.5">*</span>
+                </span>
+              }
+              placeholder="Select"
+              options={["Yes", "No"]}
+              value={form.completedBefore}
+              onChange={(e) => {
+                const val = e.target.value;
+                update("completedBefore", val);
+                if (val === "No") {
+                  update("previousAssessmentDetails", "");
+                }
+              }}
+            />
+
+            <Input
+              label="Previous Assessment / Certification Details"
+              type="text"
+              placeholder={
+                form.completedBefore === "No"
+                  ? "Disabled (Selected 'No' above)"
+                  : "Enter details of your previous assessment"
+              }
+              value={form.previousAssessmentDetails}
+              disabled={form.completedBefore === "No"}
+              onChange={(e) => update("previousAssessmentDetails", e.target.value)}
+            />
+
+            <Select
+              label={
+                <span>
                   Assessment Type
                   <span className="text-primary-solid ml-0.5">*</span>
                 </span>
@@ -316,7 +361,7 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
                 const val = e.target.value;
                 update("assessmentType", val);
                 if (val === "Full Qualification Assessment") {
-                  update("individualUnit", "");
+                  update("individualUnit", []);
                 }
               }}
             />
@@ -326,11 +371,12 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
                 <span>
                   Individual Unit{" "}
                   <span className="text-gray-400 font-normal text-xs">
-                    (If Applicable)
+                    (Multiple Selection)
                   </span>
                 </span>
               }
-              placeholder="Select"
+              placeholder="Select units"
+              multiple={true}
               disabled={form.assessmentType === "Full Qualification Assessment"}
               options={[
                 "Unit 1: Health & Safety Practices",
@@ -570,6 +616,18 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
               );
             })}
           </div>
+
+          {form.selectedEvidence.includes("Other") && (
+            <div className="mt-3 w-full animate-fadeIn">
+              <Input
+                label="Specify Other Evidence"
+                type="text"
+                placeholder="Type details of your other evidence..."
+                value={form.otherEvidenceText}
+                onChange={(e) => update("otherEvidenceText", e.target.value)}
+              />
+            </div>
+          )}
         </div>
 
         {/* Bottom Actions */}
@@ -612,6 +670,13 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
           </div>
         </div>
       </form>
+
+      <StatusModal
+        isOpen={showConfirmDraftModal}
+        variant="save-draft-confirm"
+        onClose={() => setShowConfirmDraftModal(false)}
+        onAction={handleConfirmSaveDraft}
+      />
 
       <StatusModal
         isOpen={showDraftModal}

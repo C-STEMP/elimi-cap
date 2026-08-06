@@ -11,6 +11,7 @@ import { PhoneInput } from "@/components/ui/phone-input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { InfoIcon } from "@/components/ui/info-icon";
+import { useCountryStateCity } from "@/lib/hooks/useCountryStateCity";
 
 export const CenterPersonalInfo: React.FC = () => {
   const router = useRouter();
@@ -25,11 +26,16 @@ export const CenterPersonalInfo: React.FC = () => {
     nationality: "",
     email: "",
     phoneNumber: "",
-    country: "",
+    country: "Nigeria",
     state: "",
     lga: "",
     streetAddress: "",
   });
+
+  const { countries, states, cities } = useCountryStateCity(
+    form.country,
+    form.state,
+  );
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -245,8 +251,12 @@ export const CenterPersonalInfo: React.FC = () => {
               }
               value={form.phoneNumber}
               onChange={(v) => update("phoneNumber", v)}
+              onCountryChange={(cName) => {
+                update("country", cName);
+                if (!form.nationality) update("nationality", cName);
+              }}
               error={errors.phoneNumber}
-              country="ng"
+              defaultCountry="NG"
               preferredCountries={["ng", "gh", "ke", "za"]}
             />
           </div>
@@ -265,8 +275,8 @@ export const CenterPersonalInfo: React.FC = () => {
                   Country<span className="text-primary-solid ml-0.5">*</span>
                 </span>
               }
-              placeholder="Select"
-              options={["Nigeria", "Ghana", "Kenya", "South Africa", "Other"]}
+              placeholder="Select country"
+              options={countries}
               value={form.country}
               error={errors.country}
               onChange={(e) => update("country", e.target.value)}
@@ -279,19 +289,11 @@ export const CenterPersonalInfo: React.FC = () => {
                   <span className="text-primary-solid ml-0.5">*</span>
                 </span>
               }
-              placeholder="Select"
-              options={[
-                "Lagos",
-                "Oyo",
-                "FCT Abuja",
-                "Rivers",
-                "Ogun",
-                "Enugu",
-                "Kano",
-                "Delta",
-              ]}
+              placeholder={form.country ? "Select state" : "Select country first"}
+              options={states}
               value={form.state}
               error={errors.state}
+              disabled={!form.country}
               onChange={(e) => update("state", e.target.value)}
             />
 
@@ -302,17 +304,11 @@ export const CenterPersonalInfo: React.FC = () => {
                   <span className="text-primary-solid ml-0.5">*</span>
                 </span>
               }
-              placeholder="Select"
-              options={[
-                "Ibadan North",
-                "Ikeja",
-                "Abuja Municipal",
-                "Eti-Osa",
-                "Port Harcourt",
-                "Obafemi Owode",
-              ]}
+              placeholder={form.state ? "Select city" : "Select state first"}
+              options={cities}
               value={form.lga}
               error={errors.lga}
+              disabled={!form.state}
               onChange={(e) => update("lga", e.target.value)}
             />
 

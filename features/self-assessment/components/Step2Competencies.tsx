@@ -32,6 +32,7 @@ const EVIDENCE_OPTIONS = [
 export const Step2Competencies: React.FC<Step2Props> = ({ onNext, onBack }) => {
   const router = useRouter();
   const { toast } = useToast();
+  const [showConfirmDraftModal, setShowConfirmDraftModal] = useState(false);
   const [showDraftModal, setShowDraftModal] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -218,7 +219,7 @@ export const Step2Competencies: React.FC<Step2Props> = ({ onNext, onBack }) => {
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => setShowDraftModal(true)}
+              onClick={() => setShowConfirmDraftModal(true)}
               className="px-5 h-11 bg-white border border-secondary text-secondary hover:bg-secondary/10 font-semibold text-sm rounded-lg flex items-center justify-center gap-2 transition-all shadow-lg cursor-pointer whitespace-nowrap"
             >
               <span>Save As Draft</span>
@@ -244,6 +245,16 @@ export const Step2Competencies: React.FC<Step2Props> = ({ onNext, onBack }) => {
           </div>
         </div>
       </form>
+
+      <StatusModal
+        isOpen={showConfirmDraftModal}
+        variant="save-draft-confirm"
+        onClose={() => setShowConfirmDraftModal(false)}
+        onAction={() => {
+          setShowConfirmDraftModal(false);
+          setShowDraftModal(true);
+        }}
+      />
 
       <StatusModal
         isOpen={showDraftModal}

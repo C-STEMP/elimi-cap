@@ -51,12 +51,12 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [otherImpairment, setOtherImpairment] = useState("");
   const [passportFile, setPassportFile] = useState<File | null>(null);
   const [passportError, setPassportError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
-  // ── Country / State / City cascading selects ──────────────────────────────
   const { countries, states, cities } = useCountryStateCity(
     form.country,
     form.state,
@@ -64,12 +64,14 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
 
   useEffect(() => {
     dispatch(setSidebarVariant("default"));
+    if (!form.country) {
+      setForm((prev) => ({ ...prev, country: "Nigeria" }));
+    }
   }, [dispatch]);
 
   const update = (field: keyof typeof form, value: string) => {
     setForm((prev) => {
       const next = { ...prev, [field]: value };
-      // Reset dependent fields when a parent changes
       if (field === "country") {
         next.state = "";
         next.lga = "";
@@ -145,7 +147,7 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
       transition={{ duration: 0.4, ease: "easeOut" }}
       className="w-full flex flex-col gap-6 select-text max-w-2xl mx-auto"
     >
-      <form onSubmit={handleSubmit} className="w-full flex flex-col gap-6">
+      <form onSubmit={handleSubmit} className="w-full flex flex-col gap-4">
         {/* Back button */}
         <div className="w-full flex justify-start mb-1">
           <button
@@ -189,7 +191,7 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
         </div>
 
         {/* Section 1: Personal Information Fields */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
           <Input
             label={
               <span>
@@ -296,6 +298,12 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
               }
               value={form.phoneNumber}
               onChange={(v) => update("phoneNumber", v)}
+              onCountryChange={(cName) => {
+                update("country", cName);
+                if (!form.nationality) {
+                  update("nationality", cName);
+                }
+              }}
               error={errors.phoneNumber}
               defaultCountry="NG"
             />
@@ -305,8 +313,7 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
         {/* Section 3: Residential Address */}
         <div className="flex flex-col gap-4 mt-2">
           <h2 className="text-base sm:text-lg font-bold text-text-dark flex items-center gap-1.5">
-            Residential Address{" "}
-            <InfoIcon sectionName="Residential Address" />
+            Residential Address <InfoIcon sectionName="Residential Address" />
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -331,7 +338,9 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
                   <span className="text-primary-solid ml-0.5">*</span>
                 </span>
               }
-              placeholder={form.country ? "Select state" : "Select country first"}
+              placeholder={
+                form.country ? "Select state" : "Select country first"
+              }
               options={states}
               value={form.state}
               error={errors.state}
@@ -370,13 +379,12 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
           </div>
         </div>
 
-        {/* Section 4: Accessibility */}
         <div className="flex flex-col gap-4 mt-2">
           <h2 className="text-base sm:text-lg font-bold text-text-dark flex items-center gap-1.5">
             Accessibility <InfoIcon sectionName="Accessibility" />
           </h2>
 
-          <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Select
               label={
                 <span>
@@ -394,12 +402,38 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
               ]}
               value={form.impairment}
               error={errors.impairment}
-              onChange={(e) => update("impairment", e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value;
+                update("impairment", val);
+                if (val !== "Other") {
+                  setOtherImpairment("");
+                }
+              }}
             />
+
+            {form.impairment === "Other" && (
+              <Input
+                label={
+                  <span>
+                    Specify Impairment
+                    <span className="text-primary-solid ml-0.5">*</span>
+                  </span>
+                }
+                type="text"
+                placeholder="Please specify your impairment"
+                value={otherImpairment}
+                error={errors.otherImpairment}
+                onChange={(e) => {
+                  setOtherImpairment(e.target.value);
+                  if (errors.otherImpairment) {
+                    setErrors((prev) => ({ ...prev, otherImpairment: "" }));
+                  }
+                }}
+              />
+            )}
           </div>
         </div>
 
-        {/* Bottom Actions */}
         <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-100">
           <button
             type="button"

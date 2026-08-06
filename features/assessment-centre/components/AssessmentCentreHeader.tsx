@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
@@ -14,6 +14,8 @@ import {
 } from "react-icons/fi";
 import { Logo } from "@/components/ui/logo";
 import { ASSETS_URL } from "@/assets";
+import { LogoutModal } from "@/components/ui/LogoutModal";
+import { NotificationDropdown } from "@/features/dashboard/components/NotificationDropdown";
 import { AssessmentCentreTab } from "../types";
 import { MOCK_STATS } from "../utils/constants";
 
@@ -33,6 +35,9 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
   showStats = true,
 }) => {
   const router = useRouter();
+
+  const [isLogoutOpen, setIsLogoutOpen] = useState(false);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
 
   const navItems: { id: AssessmentCentreTab; label: string }[] = [
     { id: "overview", label: "Overview" },
@@ -61,7 +66,7 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
   };
 
   return (
-    <div className="w-full bg-[#a31d38] text-white rounded-3xl p-6 sm:p-8 xl:p-10 flex flex-col gap-6 shadow-md select-none transition-all">
+    <div className="w-full bg-[#a31d38] text-white rounded-3xl p-6 sm:p-8 xl:p-10 flex flex-col gap-6 shadow-md select-none transition-all relative">
       {/* Top Header Bar */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         {/* Left Logo */}
@@ -107,16 +112,24 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
             <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[#fbab2a]" />
           </button>
 
-          <button
-            type="button"
-            onClick={onOpenNotifications}
-            className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/90 transition-all cursor-pointer relative"
-            aria-label="Notifications"
-            title="Notifications"
-          >
-            <FiBell className="w-5 h-5" />
-            <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[#fbab2a]" />
-          </button>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setIsNotifOpen(!isNotifOpen)}
+              className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/90 transition-all cursor-pointer relative"
+              aria-label="Notifications"
+              title="Notifications"
+            >
+              <FiBell className="w-5 h-5" />
+              <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[#fbab2a]" />
+            </button>
+
+            <NotificationDropdown
+              isOpen={isNotifOpen}
+              onClose={() => setIsNotifOpen(false)}
+              maxItems={3}
+            />
+          </div>
 
           {/* Profile Badge Avatar */}
           <div className="w-10 h-10 rounded-full overflow-hidden border border-white/30 bg-white flex items-center justify-center shrink-0 cursor-pointer">
@@ -133,7 +146,7 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
           {/* Logout button */}
           <button
             type="button"
-            onClick={() => router.push("/signin")}
+            onClick={() => setIsLogoutOpen(true)}
             className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/90 transition-all cursor-pointer ml-1"
             aria-label="Logout"
             title="Logout"
@@ -201,6 +214,11 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
           </div>
         </div>
       )}
+
+      <LogoutModal
+        isOpen={isLogoutOpen}
+        onClose={() => setIsLogoutOpen(false)}
+      />
     </div>
   );
 };

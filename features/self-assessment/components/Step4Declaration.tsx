@@ -22,6 +22,7 @@ export const Step4Declaration: React.FC<Step4Props> = ({
 }) => {
   const router = useRouter();
   const { toast } = useToast();
+  const [showConfirmDraftModal, setShowConfirmDraftModal] = useState(false);
   const [showDraftModal, setShowDraftModal] = useState(false);
   const [showErrorAlert, setShowErrorAlert] = useState(false);
 
@@ -192,7 +193,7 @@ export const Step4Declaration: React.FC<Step4Props> = ({
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => setShowDraftModal(true)}
+              onClick={() => setShowConfirmDraftModal(true)}
               className="px-5 h-11 bg-white border border-secondary text-secondary hover:bg-secondary/10 font-semibold text-sm rounded-lg flex items-center justify-center gap-2 transition-all shadow-lg cursor-pointer whitespace-nowrap"
             >
               <span>Save As Draft</span>
@@ -218,6 +219,16 @@ export const Step4Declaration: React.FC<Step4Props> = ({
           </div>
         </div>
       </form>
+
+      <StatusModal
+        isOpen={showConfirmDraftModal}
+        variant="save-draft-confirm"
+        onClose={() => setShowConfirmDraftModal(false)}
+        onAction={() => {
+          setShowConfirmDraftModal(false);
+          setShowDraftModal(true);
+        }}
+      />
 
       <StatusModal
         isOpen={showDraftModal}

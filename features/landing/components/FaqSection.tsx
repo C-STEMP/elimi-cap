@@ -64,7 +64,7 @@ export function FaqSection() {
               >
                 <button
                   onClick={() => toggleFaq(idx)}
-                  className={`flex w-full items-center justify-between px-6 py-5 text-left text-base font-bold transition-colors ${
+                  className={`flex w-full items-center justify-between px-6 py-5 text-left text-base font-bold transition-colors cursor-pointer select-none ${
                     isOpen ? "text-primary" : "text-text-dark hover:text-primary"
                   }`}
                 >

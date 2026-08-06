@@ -28,7 +28,6 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
   const router = useRouter();
   const { toast } = useToast();
 
-  const [showDraftModal, setShowDraftModal] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
 
   const [declarations, setDeclarations] = useState({
@@ -53,7 +52,15 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
     setDeclarations((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
+  const [showConfirmDraftModal, setShowConfirmDraftModal] = useState(false);
+  const [showDraftModal, setShowDraftModal] = useState(false);
+
   const handleSaveDraft = () => {
+    setShowConfirmDraftModal(true);
+  };
+
+  const handleConfirmSaveDraft = () => {
+    setShowConfirmDraftModal(false);
     setShowDraftModal(true);
   };
 
@@ -302,6 +309,13 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
           </Button>
         </div>
       </div>
+
+      <StatusModal
+        isOpen={showConfirmDraftModal}
+        variant="save-draft-confirm"
+        onClose={() => setShowConfirmDraftModal(false)}
+        onAction={handleConfirmSaveDraft}
+      />
 
       <StatusModal
         isOpen={showDraftModal}

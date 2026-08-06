@@ -40,6 +40,7 @@ export const ContactInfoSection: React.FC<ContactInfoSectionProps> = ({
           }
           value={formData.phone}
           onChange={(val) => onChange("phone", val)}
+          onCountryChange={(cName) => onChange("country", cName)}
           defaultCountry="NG"
         />
       </div>

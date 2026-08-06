@@ -20,13 +20,57 @@ const MONTH_NAMES = [
   "December",
 ];
 
-export const CalendarWidget: React.FC = () => {
+export interface CalendarWidgetProps {
+  panelInterviewDate?: string | Date;
+}
+
+function parseInterviewDate(dateInput?: string | Date): Date {
+  if (!dateInput) return new Date(2026, 6, 22); // July 22, 2026
+  if (dateInput instanceof Date) return dateInput;
+
+  if (typeof dateInput === "string" && dateInput.includes("-")) {
+    const parts = dateInput.split("-");
+    if (parts.length === 3) {
+      if (parts[0].length === 4) {
+        // YYYY-MM-DD
+        return new Date(
+          parseInt(parts[0], 10),
+          parseInt(parts[1], 10) - 1,
+          parseInt(parts[2], 10),
+        );
+      } else {
+        // DD-MM-YYYY
+        return new Date(
+          parseInt(parts[2], 10),
+          parseInt(parts[1], 10) - 1,
+          parseInt(parts[0], 10),
+        );
+      }
+    }
+  }
+
+  const parsed = new Date(dateInput);
+  return isNaN(parsed.getTime()) ? new Date(2026, 6, 22) : parsed;
+}
+
+export const CalendarWidget: React.FC<CalendarWidgetProps> = ({
+  panelInterviewDate = "22-07-2026",
+}) => {
+  const parsedInterviewDate = parseInterviewDate(panelInterviewDate);
   const today = new Date();
-  const [currentDate, setCurrentDate] = useState(() => new Date());
-  const [selectedDate, setSelectedDate] = useState<number | null>(today.getDate());
+
+  const [currentDate, setCurrentDate] = useState(() => parsedInterviewDate);
+  const [selectedDate, setSelectedDate] = useState<number | null>(
+    parsedInterviewDate.getDate(),
+  );
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
+
+  const isInterviewMonth =
+    parsedInterviewDate.getFullYear() === year &&
+    parsedInterviewDate.getMonth() === month;
+  const interviewDayNum = parsedInterviewDate.getDate();
 
   // First day of month (0 = Sun, 1 = Mon, ...)
   const firstDayIndex = new Date(year, month, 1).getDay();
@@ -99,19 +143,31 @@ export const CalendarWidget: React.FC = () => {
             return <div key={`empty-${idx}`} className="h-7 w-7" />;
           }
 
+          const isInterviewDate =
+            isInterviewMonth && dateNum === interviewDayNum;
           const isToday = isCurrentMonthToday && dateNum === today.getDate();
-          const isSelected = selectedDate === dateNum && !isToday;
+          const isSelected =
+            selectedDate === dateNum && !isInterviewDate && !isToday;
 
           return (
             <div
               key={dateNum}
               className="flex items-center justify-center h-7 w-7 mx-auto"
             >
-              {isToday ? (
+              {isInterviewDate ? (
                 <button
                   type="button"
                   onClick={() => setSelectedDate(dateNum)}
-                  className="w-6 h-6 rounded-full bg-[#fbab2a] text-white font-bold text-xs flex items-center justify-center shadow-xs cursor-pointer hover:scale-105 transition-transform"
+                  title="Panel Interview Date"
+                  className="w-6 h-6 rounded-full bg-[#fbab2a] text-white font-bold text-xs flex items-center justify-center shadow-md cursor-pointer hover:scale-110 transition-transform ring-2 ring-[#fbab2a]/40"
+                >
+                  {dateNum}
+                </button>
+              ) : isToday ? (
+                <button
+                  type="button"
+                  onClick={() => setSelectedDate(dateNum)}
+                  className="w-6 h-6 rounded-full bg-white/20 text-white font-bold text-xs flex items-center justify-center shadow-xs cursor-pointer hover:scale-105 transition-transform"
                 >
                   {dateNum}
                 </button>

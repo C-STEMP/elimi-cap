@@ -1,8 +1,46 @@
-import * as React from "react";
+"use client";
+
+import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAppSelector } from "@/store/hooks";
+import { useToast } from "@/components/ui/toast";
 import { AuthSidebar } from "@/features/auth/components/AuthSidebar";
 import { Logo } from "@/components/ui/logo";
 
 export default function RplLayout({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const { toast } = useToast();
+  const { isAuthenticated, user, token } = useAppSelector((state) => state.auth);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+  useEffect(() => {
+    const isAuth = isAuthenticated || !!user || !!token;
+
+    if (!isAuth) {
+      toast({
+        type: "error",
+        title: "Authentication Required",
+        description: "You must be signed in to access the RPL application flow.",
+      });
+      router.replace("/signin");
+    } else {
+      setIsCheckingAuth(false);
+    }
+  }, [isAuthenticated, user, token, router, toast]);
+
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-white">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-primary-solid border-t-transparent rounded-full animate-spin" />
+          <p className="text-xs font-semibold text-neutral-secondary">
+            Verifying authentication...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       suppressHydrationWarning

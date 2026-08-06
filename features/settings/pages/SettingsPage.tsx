@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { HeaderBanner } from "@/features/dashboard/components/HeaderBanner";
 import { ASSETS_URL } from "@/assets";
 import { useAppSelector } from "@/store/hooks";
+import { useToast } from "@/components/ui/toast";
 import {
   SettingsTab,
   VerificationStatus,
@@ -20,6 +21,7 @@ import { SuccessModal } from "../components/SuccessModal";
 
 export const SettingsPage: React.FC = () => {
   const router = useRouter();
+  const { toast } = useToast();
   const user = useAppSelector((state) => state.auth.user);
   const firstName = user?.fullName?.split(" ")[0] || "Chidi";
   const lastName = user?.fullName?.split(" ")[1] || "Umeh";
@@ -29,6 +31,7 @@ export const SettingsPage: React.FC = () => {
     useState<VerificationStatus>("verified");
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const [avatarSrc, setAvatarSrc] = useState<any>(ASSETS_URL.userAvatar);
 
@@ -78,7 +81,15 @@ export const SettingsPage: React.FC = () => {
   };
 
   const handleSaveProfile = () => {
-    console.log("Saving profile data:", profileForm);
+    setIsSaving(true);
+    setTimeout(() => {
+      setIsSaving(false);
+      toast({
+        type: "success",
+        title: "Settings Saved",
+        description: "Your profile information has been saved successfully!",
+      });
+    }, 600);
   };
 
   return (
@@ -108,6 +119,7 @@ export const SettingsPage: React.FC = () => {
               formData={profileForm}
               onChange={handleProfileChange}
               onSave={handleSaveProfile}
+              isSaving={isSaving}
             />
           ) : (
             <SecurityTab

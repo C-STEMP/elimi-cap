@@ -20,6 +20,14 @@ export function saveTokens(accessToken: string, refreshToken: string): void {
   if (typeof window === "undefined") return;
   localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
   localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+  // Set cookie for Next.js server-side middleware
+  document.cookie = `${ACCESS_TOKEN_KEY}=${encodeURIComponent(accessToken)}; path=/; max-age=604800; SameSite=Lax`;
+}
+
+export function saveOnboardedStatus(isOnboarded: boolean): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem("elimi_onboarded", String(isOnboarded));
+  document.cookie = `elimi_onboarded=${isOnboarded}; path=/; max-age=604800; SameSite=Lax`;
 }
 
 export function getAccessToken(): string | null {
@@ -52,6 +60,9 @@ export function clearTokens(): void {
   localStorage.removeItem(ACCESS_TOKEN_KEY);
   localStorage.removeItem(REFRESH_TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
+  localStorage.removeItem("elimi_onboarded");
+  document.cookie = `${ACCESS_TOKEN_KEY}=; path=/; max-age=0`;
+  document.cookie = `elimi_onboarded=; path=/; max-age=0`;
 }
 
 export function isAuthenticated(): boolean {

@@ -7,6 +7,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { useAppSelector } from "@/store/hooks";
 
+import { saveOnboardedStatus } from "@/lib/auth-storage";
+
 export interface SuccessProps {
   onStartApplication?: () => void;
   onGoToDashboard?: () => void;
@@ -29,6 +31,7 @@ export const Success: React.FC<SuccessProps> = ({
     effectiveRole === "assessment-center";
 
   const handleStart = () => {
+    saveOnboardedStatus(true);
     if (onStartApplication) {
       onStartApplication();
     } else {
@@ -37,6 +40,7 @@ export const Success: React.FC<SuccessProps> = ({
   };
 
   const handleDashboard = () => {
+    saveOnboardedStatus(true);
     if (onGoToDashboard) {
       onGoToDashboard();
     } else if (isAssessmentCentre) {
@@ -73,37 +77,37 @@ export const Success: React.FC<SuccessProps> = ({
         <p>Your dashboard has been configured based on your selected role.</p>
       </div>
 
-      <div className="w-full flex flex-col gap-3">
+      <div className="w-full flex flex-col gap-3.5">
         {isAssessmentCentre ? (
           <Button
             type="button"
             onClick={handleDashboard}
             variant="amber"
             size="md"
-            className="w-full h-12.5 text-white font-bold text-base bg-[#fbab2a] hover:bg-[#e89b1f] transition-all shadow-lg cursor-pointer rounded-xl"
+            className="w-full h-12.5 text-white font-bold text-base bg-[#f9a825]! hover:bg-[#e0931b]! transition-all shadow-md cursor-pointer rounded-xl"
           >
-            Go To Dashboard
+            Go to Dashboard
           </Button>
         ) : (
           <>
             <Button
               type="button"
               onClick={handleStart}
-              variant="secondary"
+              variant="amber"
               size="md"
-              className="w-full h-12.5 text-white font-bold text-base bg-white hover:bg-secondary-hover focus:ring-secondary/30 transition-all shadow-lg cursor-pointer"
+              className="w-full h-12.5 text-white! font-bold text-base bg-[#f9a825]! hover:bg-[#e0931b]! transition-all shadow-md cursor-pointer rounded-xl"
             >
               Start Application
             </Button>
 
             <Button
               type="button"
-              variant="secondary"
               onClick={handleDashboard}
+              variant="outline"
               size="md"
-              className="w-full h-12.5 text-secondary border-secondary font-bold text-base border-2 bg-white! hover:bg-[#e89b1f] transition-all shadow-lg cursor-pointer rounded-xl"
+              className="w-full h-12.5 text-[#f9a825]! border border-[#f9a825]! bg-white! hover:bg-amber-50/70! font-bold text-base transition-all shadow-xs cursor-pointer rounded-xl"
             >
-              Go To Dashboard
+              Go to Dashboard
             </Button>
           </>
         )}

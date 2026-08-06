@@ -48,11 +48,22 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
   onSuccess,
 }) => {
   const [form, setForm] = useState(initialForm);
+  const [otherImpairment, setOtherImpairment] = useState("");
   const [passportFile, setPassportFile] = useState<File | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showConfirmDraftModal, setShowConfirmDraftModal] = useState(false);
   const [showDraftModal, setShowDraftModal] = useState(false);
+
+  const handleSaveDraft = () => {
+    setShowConfirmDraftModal(true);
+  };
+
+  const handleConfirmSaveDraft = () => {
+    setShowConfirmDraftModal(false);
+    setShowDraftModal(true);
+  };
 
   const dispatch = useAppDispatch();
   const { toast } = useToast();
@@ -61,6 +72,9 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
   useEffect(() => {
     dispatch(setSidebarVariant("rpl-form"));
     dispatch(setRplStep(1));
+    if (!form.country) {
+      setForm((prev) => ({ ...prev, country: "Nigeria" }));
+    }
   }, [dispatch]);
 
   // ── Country / State / City cascading selects ────────────────────────────
@@ -98,7 +112,12 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
     const result = personalInfoSchema.safeParse(form);
     if (!result.success) {
       Object.assign(newErrors, extractZodErrors(result));
-      valid = false;
+      if (form.completedBefore !== "yes") {
+        delete newErrors.learnerId;
+      }
+      if (Object.keys(newErrors).length > 0) {
+        valid = false;
+      }
     }
 
     setErrors(newErrors);
@@ -133,10 +152,6 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
         router.push("/rpl/experience-trade");
       }
     }, 600);
-  };
-
-  const handleSaveDraft = () => {
-    setShowDraftModal(true);
   };
 
   return (
@@ -242,13 +257,7 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
               </span>
             }
             placeholder="Select"
-            options={[
-              "Nigerian",
-              "Ghanaian",
-              "Kenyan",
-              "South African",
-              "Other",
-            ]}
+            options={countries}
             value={form.nationality}
             error={errors.nationality}
             onChange={(e) => update("nationality", e.target.value)}
@@ -284,6 +293,7 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
               }
               value={form.phoneNumber}
               onChange={(v) => update("phoneNumber", v)}
+              onCountryChange={(cName) => update("country", cName)}
               error={errors.phoneNumber}
               defaultCountry="NG"
             />
@@ -392,7 +402,10 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
 
                 <button
                   type="button"
-                  onClick={() => update("completedBefore", "no")}
+                  onClick={() => {
+                    update("completedBefore", "no");
+                    update("learnerId", "");
+                  }}
                   className={`flex items-center justify-between px-4 h-full rounded-radius-200 border transition-all text-xs xl:text-sm font-medium cursor-pointer ${
                     form.completedBefore === "no"
                       ? "bg-input-bg border-primary-solid text-text-dark"
@@ -411,17 +424,20 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
               </div>
             </div>
 
-            <Input
-              label={
-                <span>
-                  If Yes, Enter Unique Learner ID
-                  <span className="text-primary-solid ml-0.5">*</span>
-                </span>
-              }
-              placeholder="000000000"
-              value={form.learnerId}
-              onChange={(e) => update("learnerId", e.target.value)}
-            />
+            {form.completedBefore === "yes" && (
+              <Input
+                label={
+                  <span>
+                    If Yes, Enter Unique Learner ID
+                    <span className="text-primary-solid ml-0.5">*</span>
+                  </span>
+                }
+                placeholder="000000000"
+                value={form.learnerId}
+                error={errors.learnerId}
+                onChange={(e) => update("learnerId", e.target.value)}
+              />
+            )}
           </div>
         </div>
 
@@ -431,7 +447,7 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
             Accessibility <InfoIcon sectionName="Accessibility" />
           </h2>
 
-          <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Select
               label={
                 <span>
@@ -449,8 +465,35 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
               ]}
               value={form.impairment}
               error={errors.impairment}
-              onChange={(e) => update("impairment", e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value;
+                update("impairment", val);
+                if (val !== "Other") {
+                  setOtherImpairment("");
+                }
+              }}
             />
+
+            {form.impairment === "Other" && (
+              <Input
+                label={
+                  <span>
+                    Specify Impairment
+                    <span className="text-primary-solid ml-0.5">*</span>
+                  </span>
+                }
+                type="text"
+                placeholder="Please specify your impairment"
+                value={otherImpairment}
+                error={errors.otherImpairment}
+                onChange={(e) => {
+                  setOtherImpairment(e.target.value);
+                  if (errors.otherImpairment) {
+                    setErrors((prev) => ({ ...prev, otherImpairment: "" }));
+                  }
+                }}
+              />
+            )}
           </div>
         </div>
 
@@ -493,6 +536,13 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
           </div>
         </div>
       </form>
+
+      <StatusModal
+        isOpen={showConfirmDraftModal}
+        variant="save-draft-confirm"
+        onClose={() => setShowConfirmDraftModal(false)}
+        onAction={handleConfirmSaveDraft}
+      />
 
       <StatusModal
         isOpen={showDraftModal}

@@ -1,14 +1,47 @@
 "use client";
 
 import { useState, FormEvent } from "react";
+import { useToast } from "@/components/ui/toast";
 
 export function ContactSection() {
+  const { toast } = useToast();
+  const [formData, setFormData] = useState({
+    fullName: "",
+    email: "",
+    phone: "",
+    organization: "",
+    message: "",
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 4000);
+    setIsSubmitting(true);
+
+    setTimeout(() => {
+      setIsSubmitting(false);
+      setSubmitted(true);
+      setFormData({
+        fullName: "",
+        email: "",
+        phone: "",
+        organization: "",
+        message: "",
+      });
+
+      toast({
+        type: "success",
+        title: "Enquiry Sent!",
+        description: "Thank you for reaching out. Our team will get back to you shortly.",
+      });
+
+      setTimeout(() => setSubmitted(false), 4000);
+    }, 600);
+  };
+
+  const update = (field: keyof typeof formData, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   return (
@@ -40,8 +73,10 @@ export function ContactSection() {
               <input
                 type="text"
                 required
+                value={formData.fullName}
+                onChange={(e) => update("fullName", e.target.value)}
                 placeholder="Enter your full name"
-                className="w-full rounded-lg border border-white/20 bg-white/10 px-4 py-3 text-sm text-white placeholder-white/40 focus:border-border-secondary  focus:outline-none"
+                className="w-full rounded-lg border border-white/20 bg-white/10 px-4 py-3 text-sm text-white placeholder-white/40 focus:border-border-secondary focus:outline-none"
               />
             </div>
 
@@ -52,6 +87,8 @@ export function ContactSection() {
               <input
                 type="email"
                 required
+                value={formData.email}
+                onChange={(e) => update("email", e.target.value)}
                 placeholder="Enter your email address"
                 className="w-full rounded-lg border border-white/20 bg-white/10 px-4 py-3 text-sm text-white placeholder-white/40 focus:border-border-secondary focus:outline-none"
               />
@@ -67,11 +104,9 @@ export function ContactSection() {
                 type="tel"
                 inputMode="numeric"
                 pattern="[0-9]*"
+                value={formData.phone}
+                onChange={(e) => update("phone", e.target.value.replace(/[^0-9]/g, ""))}
                 placeholder="Enter your phone number"
-                onInput={(e) => {
-                  const target = e.target as HTMLInputElement;
-                  target.value = target.value.replace(/[^0-9]/g, "");
-                }}
                 className="w-full rounded-lg border border-white/20 bg-white/10 px-4 py-3 text-sm text-white placeholder-white/40 focus:border-border-secondary focus:outline-none"
               />
             </div>
@@ -82,6 +117,8 @@ export function ContactSection() {
               </label>
               <input
                 type="text"
+                value={formData.organization}
+                onChange={(e) => update("organization", e.target.value)}
                 placeholder="Enter organization name"
                 className="w-full rounded-lg border border-white/20 bg-white/10 px-4 py-3 text-sm text-white placeholder-white/40 focus:border-border-secondary focus:outline-none"
               />
@@ -95,6 +132,8 @@ export function ContactSection() {
             <textarea
               rows={4}
               required
+              value={formData.message}
+              onChange={(e) => update("message", e.target.value)}
               placeholder="How can we help you?"
               className="w-full rounded-lg border resize-none border-white/20 bg-white/10 px-4 py-3 text-sm text-white placeholder-white/40 focus:border-secondary focus:outline-none"
             />
@@ -103,9 +142,14 @@ export function ContactSection() {
           <div className="text-center pt-2">
             <button
               type="submit"
-              className="cursor-pointer w-full sm:w-auto rounded-md bg-secondary px-10 py-3.5 text-sm font-bold text-text-dark transition-all hover:bg-secondary-hover"
+              disabled={isSubmitting}
+              className="cursor-pointer w-full sm:w-auto rounded-md bg-secondary px-10 py-3.5 text-sm font-bold text-text-dark transition-all hover:bg-secondary-hover disabled:opacity-50 select-none"
             >
-              {submitted ? "Message Sent!" : "Send Enquiry"}
+              {isSubmitting
+                ? "Sending..."
+                : submitted
+                ? "Message Sent!"
+                : "Send Enquiry"}
             </button>
           </div>
         </form>

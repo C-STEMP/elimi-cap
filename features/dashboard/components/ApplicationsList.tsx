@@ -75,7 +75,13 @@ export const ApplicationsList: React.FC<ApplicationsListProps> = ({
                   <span className="text-[#191918] font-bold text-base lg:text-xl">
                     {app.title}
                   </span>
-                  <span className="bg-amber-100 text-amber-700 text-xs font-semibold px-2.5 py-1 rounded-full">
+                  <span
+                    className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+                      app.status === "Completed"
+                        ? "bg-green-100 text-green-800"
+                        : "bg-amber-100 text-amber-700"
+                    }`}
+                  >
                     {app.status}
                   </span>
                 </div>
