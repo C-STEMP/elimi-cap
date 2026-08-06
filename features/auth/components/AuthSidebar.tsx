@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Logo } from "@/components/ui/logo";
 import { FloatingCircles } from "./FloatingCircles";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAppSelector } from "@/store/hooks";
 import { FiCheck } from "react-icons/fi";
 import { HiOutlineArrowNarrowRight } from "react-icons/hi";
@@ -11,14 +11,15 @@ import { HiOutlineArrowNarrowRight } from "react-icons/hi";
 import Link from "next/link";
 
 const RPL_STEPS = [
-  { id: 1, label: "Personal Information" },
-  { id: 2, label: "Experience & Trade" },
-  { id: 3, label: "Verify Identity" },
-  { id: 4, label: "Review And Submit" },
+  { id: 1, label: "Personal Information", route: "/rpl/personal-info" },
+  { id: 2, label: "Experience & Trade", route: "/rpl/experience-trade" },
+  { id: 3, label: "Verify Identity", route: "/rpl/verify-identity" },
+  { id: 4, label: "Review And Submit", route: "/rpl/review-submit" },
 ];
 
 export const AuthSidebar: React.FC = () => {
   const pathname = usePathname();
+  const router = useRouter();
   const sidebarVariant = useAppSelector((state) => state.auth.sidebarVariant);
   const rplStep = useAppSelector((state) => state.auth.rplStep);
 
@@ -68,11 +69,25 @@ export const AuthSidebar: React.FC = () => {
                 {RPL_STEPS.map((step, idx) => {
                   const isActive = rplStep === step.id;
                   const isPast = rplStep > step.id;
+                  const isClickable = isPast || step.id < rplStep;
                   const isLast = idx === RPL_STEPS.length - 1;
+
+                  const handleStepClick = () => {
+                    if (isClickable && step.route) {
+                      router.push(step.route);
+                    }
+                  };
 
                   return (
                     <div key={step.id} className="flex flex-col gap-5">
-                      <div className="flex items-center gap-3 lg:gap-4">
+                      <div
+                        onClick={handleStepClick}
+                        className={`flex items-center gap-3 lg:gap-4 ${
+                          isClickable
+                            ? "cursor-pointer hover:opacity-85 transition-opacity"
+                            : "cursor-default"
+                        }`}
+                      >
                         <div
                           className={`w-8 h-8 rounded-full border flex items-center justify-center font-semibold text-xs transition-all ${
                             isPast

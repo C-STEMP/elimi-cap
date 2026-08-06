@@ -10,6 +10,7 @@ import { ErrorCircleIcon } from "./svg-icons";
 export type StatusModalVariant =
   | "default"
   | "save-draft-confirm"
+  | "submit-application-confirm"
   | "draft-saved"
   | "application-submitted"
   | "payment-successful"
@@ -179,50 +180,56 @@ export const StatusModal: React.FC<StatusModalProps> = ({
     title ||
     (variant === "save-draft-confirm"
       ? "Save As Draft?"
-      : variant === "draft-saved"
-        ? "Progress Saved"
-        : variant === "application-submitted"
-          ? "Application Submit"
-          : variant === "payment-successful"
-            ? "Payment Successful"
-            : variant === "payment-cancelled"
-              ? "Payment Cancelled"
-              : variant === "payment-unsuccessful"
-                ? "Payment Unsuccessful"
-                : variant === "processing-payment"
-                  ? "Processing Payment"
-                  : "Success");
+      : variant === "submit-application-confirm"
+        ? "Submit Application?"
+        : variant === "draft-saved"
+          ? "Progress Saved"
+          : variant === "application-submitted"
+            ? "Application Submit"
+            : variant === "payment-successful"
+              ? "Payment Successful"
+              : variant === "payment-cancelled"
+                ? "Payment Cancelled"
+                : variant === "payment-unsuccessful"
+                  ? "Payment Unsuccessful"
+                  : variant === "processing-payment"
+                    ? "Processing Payment"
+                    : "Success");
 
   const modalDescription =
     description ||
     (variant === "save-draft-confirm"
       ? "Are you sure you want to save your progress as a draft? You can safely return at any time to continue where you left off."
-      : variant === "draft-saved"
-        ? "Great! Your progress has been securely saved as a draft. You can return at any time to continue your application from where you left off. No information you've entered will be lost."
-        : variant === "application-submitted"
-          ? "Thank you for submitting your Recognition of Prior Learning (RPL) application. Your application has been successfully submitted and is now awaiting review by your selected Assessment Centre."
-          : variant === "payment-successful"
-            ? "Your payment was made successfully"
-            : variant === "payment-cancelled"
-              ? "Your payment was cancelled"
-              : variant === "payment-unsuccessful"
-                ? "Your payment was not successful"
-                : variant === "processing-payment"
-                  ? "Please wait while we process your payment"
-                  : "");
+      : variant === "submit-application-confirm"
+        ? "Are you sure you want to submit your Recognition of Prior Learning (RPL) application? Once submitted, your application will be locked for review by your selected Assessment Centre."
+        : variant === "draft-saved"
+          ? "Great! Your progress has been securely saved as a draft. You can return at any time to continue your application from where you left off. No information you've entered will be lost."
+          : variant === "application-submitted"
+            ? "Thank you for submitting your Recognition of Prior Learning (RPL) application. Your application has been successfully submitted and is now awaiting review by your selected Assessment Centre."
+            : variant === "payment-successful"
+              ? "Your payment was made successfully"
+              : variant === "payment-cancelled"
+                ? "Your payment was cancelled"
+                : variant === "payment-unsuccessful"
+                  ? "Your payment was not successful"
+                  : variant === "processing-payment"
+                    ? "Please wait while we process your payment"
+                    : "");
 
   const modalActionLabel =
     actionLabel !== undefined
       ? actionLabel
       : variant === "save-draft-confirm"
         ? "Yes, Save Draft"
-        : variant === "payment-successful"
-          ? "Start Folder Arrangement"
-          : variant === "payment-cancelled" || variant === "payment-unsuccessful"
-            ? "Try again"
-            : variant === "processing-payment"
-              ? undefined
-              : "Go To Dashboard";
+        : variant === "submit-application-confirm"
+          ? "Yes, Submit Application"
+          : variant === "payment-successful"
+            ? "Start Folder Arrangement"
+            : variant === "payment-cancelled" || variant === "payment-unsuccessful"
+              ? "Try again"
+              : variant === "processing-payment"
+                ? undefined
+                : "Go To Dashboard";
 
   const isClosable = !!onClose && variant !== "processing-payment";
 
@@ -261,7 +268,7 @@ export const StatusModal: React.FC<StatusModalProps> = ({
       </p>
 
       {/* Action buttons */}
-      {variant === "save-draft-confirm" ? (
+      {variant === "save-draft-confirm" || variant === "submit-application-confirm" ? (
         <div className="flex flex-col gap-2.5 mt-8">
           <Button
             onClick={onAction}

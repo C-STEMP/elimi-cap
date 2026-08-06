@@ -28,6 +28,7 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
   const router = useRouter();
   const { toast } = useToast();
 
+  const [showConfirmSubmitModal, setShowConfirmSubmitModal] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
 
   const [declarations, setDeclarations] = useState({
@@ -67,6 +68,11 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!allChecked) return;
+    setShowConfirmSubmitModal(true);
+  };
+
+  const handleConfirmSubmit = () => {
+    setShowConfirmSubmitModal(false);
     setShowSubmitModal(true);
   };
 
@@ -100,7 +106,7 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
               Personal Information
             </span>
             <div className="flex items-center gap-3">
-              <span className="px-3 py-1 bg-[#FDF2F2] text-[#EF4444] text-xs font-semibold rounded-full">
+              <span className="px-3 py-1 bg-[#E8F5E9] text-[#2E7D32] text-xs font-semibold rounded-full">
                 100% Completed
               </span>
               <button
@@ -309,6 +315,13 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
           </Button>
         </div>
       </div>
+
+      <StatusModal
+        isOpen={showConfirmSubmitModal}
+        variant="submit-application-confirm"
+        onClose={() => setShowConfirmSubmitModal(false)}
+        onAction={handleConfirmSubmit}
+      />
 
       <StatusModal
         isOpen={showConfirmDraftModal}
