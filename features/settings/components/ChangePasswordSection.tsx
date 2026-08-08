@@ -2,13 +2,13 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
-import { Input } from "@/components/ui/input";
+import { Input } from "@/src/components/ui/input";
 import { ASSETS_URL } from "@/assets";
-import { PasswordRequirements } from "@/components/ui/password-requirements";
+import { PasswordRequirements } from "@/src/components/ui/password-requirements";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import { SecurityFormData } from "../types/settings.types";
-import { useChangePassword } from "@/features/auth/hooks";
-import { useToast } from "@/components/ui/toast";
+import { useChangePassword } from "@/src/features/shared/authentication/hooks";
+import { useToast } from "@/src/components/ui/toast";
 
 interface ChangePasswordSectionProps {
   formData: SecurityFormData;

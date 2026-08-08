@@ -3,8 +3,8 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import { FiChevronLeft, FiFileText, FiEye } from "react-icons/fi";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/toast";
+import { Button } from "@/src/components/ui/button";
+import { useToast } from "@/src/components/ui/toast";
 import { MOCK_ASSESSOR_APPLICANTS } from "../utils/constants";
 import { ASSETS_URL } from "@/assets";
 import {
@@ -19,17 +19,21 @@ import {
 interface AssessorApplicantProfileViewProps {
   applicantId: string;
   onBack: () => void;
+  isAssessorRequest?: boolean;
 }
 
 export const AssessorApplicantProfileView: React.FC<
   AssessorApplicantProfileViewProps
-> = ({ applicantId, onBack }) => {
+> = ({ applicantId, onBack, isAssessorRequest = true }) => {
   const { toast } = useToast();
   const applicant =
     MOCK_ASSESSOR_APPLICANTS.find((a) => a.id === applicantId) ||
     MOCK_ASSESSOR_APPLICANTS[0];
 
   const [status, setStatus] = useState(applicant.status);
+  const [previewCertificateUrl, setPreviewCertificateUrl] = useState<
+    string | null
+  >(null);
 
   const [isDecisionModalOpen, setIsDecisionModalOpen] = useState(false);
   const [decisionModalMode, setDecisionModalMode] =
@@ -45,9 +49,13 @@ export const AssessorApplicantProfileView: React.FC<
   };
 
   const handleOpenDeclineModal = () => {
+    setRequestModalMode("confirm-decline");
+    setIsRequestModalOpen(true);
+  };
+
+  const handleConfirmDecline = () => {
     setStatus("Rejected");
     setRequestModalMode("declined-success");
-    setIsRequestModalOpen(true);
   };
 
   const handleConfirmAccept = () => {
@@ -77,32 +85,6 @@ export const AssessorApplicantProfileView: React.FC<
 
   return (
     <div className="w-full flex flex-col gap-6 select-text">
-      {/* Header Banner */}
-      <div className="w-full bg-[#a31d38] text-white rounded-3xl p-6 sm:p-8 xl:p-10 flex flex-col gap-4 shadow-md">
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-1 text-white/80 text-xs font-semibold select-none">
-            <span>Requests</span>
-            <span className="mx-1">&gt;</span>
-            <span>Assessor</span>
-            <span className="mx-1">&gt;</span>
-            <span className="text-white">{applicant.name}</span>
-          </div>
-
-          <div className="flex items-center gap-2 mt-1">
-            <button
-              type="button"
-              onClick={onBack}
-              className="text-white/80 hover:text-white transition-colors cursor-pointer"
-            >
-              <FiChevronLeft className="w-6 h-6" />
-            </button>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
-              {applicant.name}
-            </h1>
-          </div>
-        </div>
-      </div>
-
       {/* Assessor Profile Card */}
       <div className="bg-white rounded-3xl p-6 shadow-2xs border border-gray-100/80 flex items-start justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-4">
@@ -186,6 +168,7 @@ export const AssessorApplicantProfileView: React.FC<
 
               <button
                 type="button"
+                onClick={() => setPreviewCertificateUrl(cert.title)}
                 className="w-9 h-9 rounded-xl bg-white border border-gray-200 text-gray-400 hover:text-neutral-primary flex items-center justify-center transition-colors cursor-pointer shrink-0 shadow-2xs"
                 title="Preview Certificate"
               >
@@ -196,48 +179,54 @@ export const AssessorApplicantProfileView: React.FC<
         </div>
       </div>
 
-      {/* Decision Section */}
+      {/* Decision Section (Image 1 & 4 match) */}
       <div className="bg-white rounded-3xl p-6 shadow-2xs border border-gray-100/80 flex flex-col gap-4">
         <h3 className="text-lg font-extrabold text-neutral-primary tracking-tight">
           Decision
         </h3>
 
         <div className="flex items-center gap-3 flex-wrap">
-          <Button
-            type="button"
-            onClick={handleOpenAcceptModal}
-            variant="amber"
-            size="md"
-            className="px-8 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
-          >
-            Accept
-          </Button>
+          {isAssessorRequest ? (
+            <>
+              <Button
+                type="button"
+                onClick={handleOpenAcceptModal}
+                variant="amber"
+                size="md"
+                className="px-8 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
+              >
+                Accept
+              </Button>
 
-          <button
-            type="button"
-            onClick={handleOpenDeclineModal}
-            className="px-8 h-11 text-white font-bold text-sm bg-[#C5221F] hover:bg-[#a81c19] rounded-xl shadow-lg cursor-pointer whitespace-nowrap transition-colors"
-          >
-            Decline
-          </button>
+              <button
+                type="button"
+                onClick={handleOpenDeclineModal}
+                className="px-8 h-11 text-white font-bold text-sm bg-[#C5221F] hover:bg-[#a81c19] rounded-xl shadow-lg cursor-pointer whitespace-nowrap transition-colors"
+              >
+                Decline
+              </button>
+            </>
+          ) : (
+            <>
+              <Button
+                type="button"
+                onClick={handleOpenShortlistModal}
+                variant="amber"
+                size="md"
+                className="px-8 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
+              >
+                Shortlist Candidate
+              </Button>
 
-          <Button
-            type="button"
-            onClick={handleOpenShortlistModal}
-            variant="amber"
-            size="md"
-            className="px-6 h-11 text-white font-bold text-sm bg-[#fbab2a]/80 hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer whitespace-nowrap ml-auto"
-          >
-            Shortlist Candidate
-          </Button>
-
-          <button
-            type="button"
-            onClick={handleOpenRejectModal}
-            className="px-6 h-11 text-white font-bold text-sm bg-[#C5221F]/80 hover:bg-[#a81c19] rounded-xl shadow-lg cursor-pointer whitespace-nowrap transition-colors"
-          >
-            Reject
-          </button>
+              <button
+                type="button"
+                onClick={handleOpenRejectModal}
+                className="px-8 h-11 text-white font-bold text-sm bg-[#C5221F] hover:bg-[#a81c19] rounded-xl shadow-lg cursor-pointer whitespace-nowrap transition-colors"
+              >
+                Reject
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -256,7 +245,45 @@ export const AssessorApplicantProfileView: React.FC<
         mode={requestModalMode}
         onClose={() => setIsRequestModalOpen(false)}
         onConfirmAccept={handleConfirmAccept}
+        onConfirmDecline={handleConfirmDecline}
       />
+
+      {previewCertificateUrl && (
+        <div
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 transition-opacity duration-300 select-none"
+          onClick={() => setPreviewCertificateUrl(null)}
+        >
+          <div
+            className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl relative flex flex-col items-center text-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setPreviewCertificateUrl(null)}
+              className="absolute top-4 right-4 w-8 h-8 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 flex items-center justify-center transition-colors cursor-pointer"
+            >
+              <FiEye className="w-5 h-5" />
+            </button>
+            <FiFileText className="w-16 h-16 text-red-400 mb-4" />
+            <h3 className="text-lg font-extrabold text-neutral-primary mb-1">
+              {previewCertificateUrl}
+            </h3>
+            <p className="text-xs text-gray-400 mb-6">Certificate Preview</p>
+            <div className="w-full bg-[#F8F9FA] rounded-2xl p-8 border border-gray-100 flex items-center justify-center min-h-48">
+              <span className="text-sm text-gray-400 font-medium">
+                Certificate document preview
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setPreviewCertificateUrl(null)}
+              className="mt-6 w-full h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

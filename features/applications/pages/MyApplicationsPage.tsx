@@ -8,7 +8,7 @@ import { HeaderBanner } from "@/features/dashboard/components/HeaderBanner";
 import { CalendarWidget } from "@/features/dashboard/components/CalendarWidget";
 import { UpcomingCard } from "@/features/dashboard/components/UpcomingCard";
 import { VerifiedBadge } from "@/features/dashboard/components/VerifiedBadge";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/src/components/ui/button";
 import { useAppSelector } from "@/store/hooks";
 import { ApplicationStatus } from "@/store/slices/applicationSlice";
 

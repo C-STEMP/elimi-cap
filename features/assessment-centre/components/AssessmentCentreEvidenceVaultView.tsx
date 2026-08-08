@@ -10,8 +10,8 @@ import {
   FiFileText,
 } from "react-icons/fi";
 import { ASSETS_URL } from "@/assets";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/toast";
+import { Button } from "@/src/components/ui/button";
+import { useToast } from "@/src/components/ui/toast";
 
 interface EvidenceVaultViewProps {
   candidateName?: string;
@@ -21,16 +21,42 @@ interface EvidenceVaultViewProps {
 
 export const AssessmentCentreEvidenceVaultView: React.FC<
   EvidenceVaultViewProps
-> = ({ candidateName = "Oguntade James", onBack, onOpenSelfAssessmentForm }) => {
+> = ({
+  candidateName = "Oguntade James",
+  onBack,
+  onOpenSelfAssessmentForm,
+}) => {
   const { toast } = useToast();
-  const [currentMonth] = useState("July");
+  const [currentMonth, setCurrentMonth] = useState("July");
+  const months = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
   const daysOfWeek = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
   const daysInMonth = Array.from({ length: 31 }, (_, i) => i + 1);
 
+  const handlePrevMonth = () => {
+    const idx = months.indexOf(currentMonth);
+    setCurrentMonth(months[(idx - 1 + 12) % 12]);
+  };
+
+  const handleNextMonth = () => {
+    const idx = months.indexOf(currentMonth);
+    setCurrentMonth(months[(idx + 1) % 12]);
+  };
+
   return (
     <div className="w-full flex flex-col gap-6 select-text">
-
-
       {/* Main Grid Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Column (col-span-8) */}
@@ -243,6 +269,7 @@ export const AssessmentCentreEvidenceVaultView: React.FC<
             <div className="flex items-center justify-between text-white px-1">
               <button
                 type="button"
+                onClick={handlePrevMonth}
                 className="p-1 hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
                 aria-label="Previous Month"
               >
@@ -253,6 +280,7 @@ export const AssessmentCentreEvidenceVaultView: React.FC<
               </span>
               <button
                 type="button"
+                onClick={handleNextMonth}
                 className="p-1 hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
                 aria-label="Next Month"
               >

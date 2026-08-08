@@ -1,7 +1,10 @@
 "use client";
 
 import React from "react";
-import { StatusModal, StatusModalVariant } from "@/components/ui/status-modal";
+import {
+  StatusModal,
+  StatusModalVariant,
+} from "@/src/components/ui/status-modal";
 
 export type PaymentModalType =
   | "success"

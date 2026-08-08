@@ -1,4 +1,4 @@
-import { ButtonProps } from "@/components/ui/button";
+import { ButtonProps } from "@/src/components/ui/button";
 
 export type ApplicationFormState =
   | "figma_screen_1"

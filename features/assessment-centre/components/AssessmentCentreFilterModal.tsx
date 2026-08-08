@@ -2,8 +2,8 @@
 
 import React, { useState } from "react";
 import { FiX } from "react-icons/fi";
-import { Select } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
+import { Select } from "@/src/components/ui/select";
+import { Button } from "@/src/components/ui/button";
 
 interface FilterModalProps {
   isOpen: boolean;

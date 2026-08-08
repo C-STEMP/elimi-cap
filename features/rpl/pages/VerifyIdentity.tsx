@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useToast } from "@/components/ui/toast";
+import { Button } from "@/src/components/ui/button";
+import { Input } from "@/src/components/ui/input";
+import { useToast } from "@/src/components/ui/toast";
 import { FiArrowLeft, FiArrowRight, FiCheckCircle } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
@@ -11,9 +11,9 @@ import Image from "next/image";
 import { ASSETS_URL } from "@/assets";
 import { useAppDispatch } from "@/store/hooks";
 import { setSidebarVariant, setRplStep } from "@/store/slices/authSlice";
-import { validateNIN } from "@/lib/validation";
+import { validateNIN } from "@/src/lib/validation";
 
-import { StatusModal } from "@/components/ui/status-modal";
+import { StatusModal } from "@/src/components/ui/status-modal";
 
 export interface RPLVerifyIdentityProps {
   onBack?: () => void;

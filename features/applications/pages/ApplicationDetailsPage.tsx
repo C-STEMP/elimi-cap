@@ -10,12 +10,9 @@ import {
   PaymentModal,
   PaymentModalType,
 } from "@/features/applications/components/PaymentModals";
-import { StatusModal } from "@/components/ui/status-modal";
-import { useToast } from "@/components/ui/toast";
-import {
-  ApplicationDetailsPageProps,
-  ApplicationFormState,
-} from "../types";
+import { StatusModal } from "@/src/components/ui/status-modal";
+import { useToast } from "@/src/components/ui/toast";
+import { ApplicationDetailsPageProps, ApplicationFormState } from "../types";
 import {
   getFolderArrangementStatus,
   getFormStatus,
@@ -83,7 +80,7 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
   const [isCallRequestModalOpen, setIsCallRequestModalOpen] = useState(false);
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
   const [isInterviewCollapsed, setIsInterviewCollapsed] = useState(false);
-  
+
   // Comprehensive demo state switcher for all application stages
   const [demoStage, setDemoStage] = useState<
     | "draft"
@@ -107,7 +104,7 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
     application.selfAssessmentCompleted,
     application.paymentCompleted,
   );
-  
+
   // Override formState for demo purposes - comprehensive stage switcher
   const getEffectiveFormState = (): ApplicationFormState => {
     switch (demoStage) {
@@ -133,15 +130,20 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
         return formState;
     }
   };
-  
+
   const effectiveFormState = getEffectiveFormState();
-    
-  const paymentStatus = application.paymentCompleted ? "completed" : "not_started";
+
+  const paymentStatus = application.paymentCompleted
+    ? "completed"
+    : "not_started";
   const isVaultActive =
     effectiveFormState.startsWith("vault_") ||
     effectiveFormState.startsWith("figma_") ||
     application.paymentCompleted;
-  const folderStatus = getFolderArrangementStatus(isVaultActive, effectiveFormState);
+  const folderStatus = getFolderArrangementStatus(
+    isVaultActive,
+    effectiveFormState,
+  );
   const formStatus = getFormStatus(effectiveFormState);
 
   const handleMakePayment = () => {
@@ -222,8 +224,8 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
     demoStage,
   });
 
-  const showUpcomingEvents = 
-    demoStage === "interview_completed" || 
+  const showUpcomingEvents =
+    demoStage === "interview_completed" ||
     demoStage === "internal_verifier_completed" ||
     demoStage === "external_verifier_completed" ||
     demoStage === "certification_competent";
@@ -257,9 +259,7 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
       {/* Comprehensive Demo Stage Switcher */}
       <div className="flex items-center gap-2 px-2 mb-2">
         <div className="flex items-center gap-2 bg-gray-200/60 p-1.5 rounded-xl text-xs flex-wrap">
-          <span className="text-gray-500 font-semibold px-2">
-            Demo Stage:
-          </span>
+          <span className="text-gray-500 font-semibold px-2">Demo Stage:</span>
           <button
             type="button"
             onClick={() => setDemoStage("draft")}
@@ -363,7 +363,7 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
       </div>
 
       {/* Internal Verifier Sub-states (only show when in interview_completed+ stages) */}
-      {(demoStage === "interview_completed" || 
+      {(demoStage === "interview_completed" ||
         demoStage === "internal_verifier_completed" ||
         demoStage === "external_verifier_completed" ||
         demoStage === "certification_competent") && (

@@ -5,12 +5,12 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiArrowLeft, FiArrowRight, FiCheckCircle } from "react-icons/fi";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/toast";
-import { StatusModal } from "@/components/ui/status-modal";
+import { Input } from "@/src/components/ui/input";
+import { Button } from "@/src/components/ui/button";
+import { useToast } from "@/src/components/ui/toast";
+import { StatusModal } from "@/src/components/ui/status-modal";
 import { ASSETS_URL } from "@/assets";
-import { validateNIN } from "@/lib/validation";
+import { validateNIN } from "@/src/lib/validation";
 
 export const CenterVerifyIdentity: React.FC = () => {
   const router = useRouter();

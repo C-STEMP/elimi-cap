@@ -2,9 +2,22 @@
 
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { FiPlus, FiUser, FiCheck, FiSlash, FiClipboard } from "react-icons/fi";
-import { Button } from "@/components/ui/button";
-import { MOCK_STAFF_MEMBERS } from "../utils/constants";
+import {
+  FiPlus,
+  FiUser,
+  FiCheck,
+  FiSlash,
+  FiClipboard,
+  FiDollarSign,
+  FiFlag,
+} from "react-icons/fi";
+import { Button } from "@/src/components/ui/button";
+import {
+  MOCK_STAFF_MEMBERS,
+  MOCK_JOB_LISTINGS,
+  MOCK_ASSESSORS,
+  MOCK_ASSESSOR_APPLICANTS,
+} from "../utils/constants";
 import { AssessmentCentreHeader } from "../components/AssessmentCentreHeader";
 import { AssessmentCentreEmptyView } from "../components/AssessmentCentreEmptyView";
 import { RevenueChart } from "../components/RevenueChart";
@@ -22,6 +35,8 @@ import { JobListingDetailView } from "../components/JobListingDetailView";
 import { PostJobModal } from "../components/PostJobModal";
 import { AssessorsListView } from "../components/AssessorsListView";
 import { AssessorProfileDetailView } from "../components/AssessorProfileDetailView";
+import { AssessorRequestListView } from "../components/AssessorRequestListView";
+import { AssessorApplicantProfileView } from "../components/AssessorApplicantProfileView";
 import { PaymentsView } from "../components/PaymentsView";
 import { WithdrawModal } from "../components/WithdrawModal";
 import { TransactionReceiptModal } from "../components/TransactionReceiptModal";
@@ -32,12 +47,18 @@ import { AssessmentCentreApplicationDetailView } from "../components/AssessmentC
 import { AssessmentCentreCandidateFormView } from "../components/AssessmentCentreCandidateFormView";
 import { AssessmentCentreEvidenceVaultView } from "../components/AssessmentCentreEvidenceVaultView";
 import { AssessmentCentreSelfAssessmentFormView } from "../components/AssessmentCentreSelfAssessmentFormView";
+import { BroadcastModal } from "../components/BroadcastModal";
 import { AssessmentCentreTab, PaymentTransaction } from "../types";
+import {
+  StaffStatusModal,
+  StaffStatusModalMode,
+} from "../components/StaffStatusModal";
 
 export const AssessmentCentreDashboardPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AssessmentCentreTab>("overview");
   const [hasActivity, setHasActivity] = useState(true);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState(false);
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
   const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useState(false);
 
@@ -57,10 +78,23 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
   const [selectedAssessorId, setSelectedAssessorId] = useState<string | null>(
     null,
   );
+  const [selectedAssessorRequestId, setSelectedAssessorRequestId] = useState<
+    string | null
+  >(null);
 
   const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
   const [selectedReceiptTx, setSelectedReceiptTx] =
     useState<PaymentTransaction | null>(null);
+
+  const [isStaffDeactivateModalOpen, setIsStaffDeactivateModalOpen] =
+    useState(false);
+  const [staffDeactivateModalMode, setStaffDeactivateModalMode] =
+    useState<StaffStatusModalMode>("confirm-deactivate");
+
+  const [isAssessorDeactivateModalOpen, setIsAssessorDeactivateModalOpen] =
+    useState(false);
+  const [assessorDeactivateModalMode, setAssessorDeactivateModalMode] =
+    useState<StaffStatusModalMode>("confirm-deactivate");
 
   const renderHeaderContent = () => {
     if (activeTab === "overview") return null;
@@ -82,7 +116,7 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
                   <span className="text-xl font-bold">&lt;</span>
                   <span>{staff.name}</span>
                 </button>
-                <div className="flex items-center gap-2 text-xs lg:text-base text-white/80 font-normal">
+                <div className="flex items-center gap-2 text-xs lg:text-sm text-white/90 font-normal">
                   <span
                     onClick={() => setSelectedStaffId(null)}
                     className="hover:underline cursor-pointer"
@@ -94,24 +128,44 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
                 </div>
               </div>
 
-              <Button
-                type="button"
-                variant="secondary"
-                size="lg"
-                rightIcon={<FiSlash className="w-4 h-4" />}
-              >
-                Deactivate
-              </Button>
+              {staff.status === "Inactive" ? (
+                <Button
+                  type="button"
+                  onClick={() => {
+                    setStaffDeactivateModalMode("confirm-activate");
+                    setIsStaffDeactivateModalOpen(true);
+                  }}
+                  variant="amber"
+                  size="md"
+                  className="px-6 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
+                >
+                  Activate
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  onClick={() => {
+                    setStaffDeactivateModalMode("confirm-deactivate");
+                    setIsStaffDeactivateModalOpen(true);
+                  }}
+                  variant="amber"
+                  size="md"
+                  rightIcon={<FiSlash className="w-4 h-4" />}
+                  className="px-6 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
+                >
+                  Deactivate
+                </Button>
+              )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15">
+              <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
                 <div className="flex flex-col">
-                  <span className="text-xs sm:text-sm font-medium text-white/80">
+                  <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80">
                     Reviewed Applications
                   </span>
                   <div className="flex items-baseline gap-1.5 mt-1">
-                    <span className="text-xl sm:text-2xl font-extrabold text-white">
+                    <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
                       {staff.reviewedApplicationsCount || 220}
                     </span>
                     <span className="text-xs font-normal text-white/70">
@@ -119,18 +173,18 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
                     </span>
                   </div>
                 </div>
-                <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
+                <div className="w-9 h-9 flex items-center justify-center shrink-0">
                   <FiClipboard className="w-5 h-5 text-white/90" />
                 </div>
               </div>
 
-              <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15">
+              <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
                 <div className="flex flex-col">
-                  <span className="text-xs sm:text-sm font-medium text-white/80">
+                  <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80">
                     Pending Applications
                   </span>
                   <div className="flex items-baseline gap-1.5 mt-1">
-                    <span className="text-xl sm:text-2xl font-extrabold text-white">
+                    <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
                       {staff.pendingApplicationsCount || 20}
                     </span>
                     <span className="text-xs font-normal text-white/70">
@@ -138,18 +192,18 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
                     </span>
                   </div>
                 </div>
-                <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
+                <div className="w-9 h-9 flex items-center justify-center shrink-0">
                   <FiClipboard className="w-5 h-5 text-white/90" />
                 </div>
               </div>
 
-              <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15">
+              <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
                 <div className="flex flex-col">
-                  <span className="text-xs sm:text-sm font-medium text-white/80">
+                  <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80">
                     Requires Attention
                   </span>
                   <div className="flex items-baseline gap-1.5 mt-1">
-                    <span className="text-xl sm:text-2xl font-extrabold text-white">
+                    <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
                       {staff.requiresAttentionCount || 10}
                     </span>
                     <span className="text-xs font-normal text-white/70">
@@ -157,7 +211,7 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
                     </span>
                   </div>
                 </div>
-                <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
+                <div className="w-9 h-9 flex items-center justify-center shrink-0">
                   <FiClipboard className="w-5 h-5 text-white/90" />
                 </div>
               </div>
@@ -185,13 +239,13 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15">
+            <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
               <div className="flex flex-col">
-                <span className="text-xs sm:text-sm font-medium text-white/80">
+                <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80">
                   Total Staffs
                 </span>
                 <div className="flex items-baseline gap-1.5 mt-1">
-                  <span className="text-xl sm:text-2xl font-extrabold text-white">
+                  <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
                     15
                   </span>
                   <span className="text-xs font-normal text-white/70">
@@ -199,18 +253,18 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
                   </span>
                 </div>
               </div>
-              <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
+              <div className="w-9 h-9 flex items-center justify-center shrink-0">
                 <FiUser className="w-5 h-5 text-white/90" />
               </div>
             </div>
 
-            <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15">
+            <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
               <div className="flex flex-col">
-                <span className="text-xs sm:text-sm font-medium text-white/80">
+                <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80">
                   Active Staff
                 </span>
                 <div className="flex items-baseline gap-1.5 mt-1">
-                  <span className="text-xl sm:text-2xl font-extrabold text-white">
+                  <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
                     10
                   </span>
                   <span className="text-xs font-normal text-white/70">
@@ -218,18 +272,18 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
                   </span>
                 </div>
               </div>
-              <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
+              <div className="w-9 h-9 flex items-center justify-center shrink-0">
                 <FiUser className="w-5 h-5 text-white/90" />
               </div>
             </div>
 
-            <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15">
+            <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
               <div className="flex flex-col">
-                <span className="text-xs sm:text-sm font-medium text-white/80">
+                <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80">
                   Pending Staff
                 </span>
                 <div className="flex items-baseline gap-1.5 mt-1">
-                  <span className="text-xl sm:text-2xl font-extrabold text-white">
+                  <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
                     3
                   </span>
                   <span className="text-xs font-normal text-white/70">
@@ -237,18 +291,18 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
                   </span>
                 </div>
               </div>
-              <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
+              <div className="w-9 h-9 flex items-center justify-center shrink-0">
                 <FiUser className="w-5 h-5 text-white/90" />
               </div>
             </div>
 
-            <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15">
+            <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
               <div className="flex flex-col">
-                <span className="text-xs sm:text-sm font-medium text-white/80">
+                <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80">
                   Inactive
                 </span>
                 <div className="flex items-baseline gap-1.5 mt-1">
-                  <span className="text-xl sm:text-2xl font-extrabold text-white">
+                  <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
                     2
                   </span>
                   <span className="text-xs font-normal text-white/70">
@@ -256,7 +310,7 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
                   </span>
                 </div>
               </div>
-              <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
+              <div className="w-9 h-9 flex items-center justify-center shrink-0">
                 <FiUser className="w-5 h-5 text-white/90" />
               </div>
             </div>
@@ -412,12 +466,12 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
           </h1>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5">
-            <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-4 flex flex-col gap-1 border border-white/15">
+            <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 flex flex-col gap-1 border border-white/15 transition-all shadow-xs">
               <span className="text-xs font-semibold text-white/90">
                 Total Applications
               </span>
               <div className="flex items-baseline gap-1 mt-0.5">
-                <span className="text-xl sm:text-2xl font-extrabold text-white">
+                <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
                   21,220
                 </span>
                 <span className="text-xs text-white/80 font-normal">
@@ -426,12 +480,12 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-4 flex flex-col gap-1 border border-white/15">
+            <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 flex flex-col gap-1 border border-white/15 transition-all shadow-xs">
               <span className="text-xs font-semibold text-white/90">
                 Pending
               </span>
               <div className="flex items-baseline gap-1 mt-0.5">
-                <span className="text-xl sm:text-2xl font-extrabold text-white">
+                <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
                   2,000
                 </span>
                 <span className="text-xs text-white/80 font-normal">
@@ -440,12 +494,12 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-4 flex flex-col gap-1 border border-white/15">
+            <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 flex flex-col gap-1 border border-white/15 transition-all shadow-xs">
               <span className="text-xs font-semibold text-white/90">
                 Ongoing
               </span>
               <div className="flex items-baseline gap-1 mt-0.5">
-                <span className="text-xl sm:text-2xl font-extrabold text-white">
+                <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
                   1,220
                 </span>
                 <span className="text-xs text-white/80 font-normal">
@@ -454,12 +508,12 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-4 flex flex-col gap-1 border border-white/15">
+            <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 flex flex-col gap-1 border border-white/15 transition-all shadow-xs">
               <span className="text-xs font-semibold text-white/90">
                 Completed
               </span>
               <div className="flex items-baseline gap-1 mt-0.5">
-                <span className="text-xl sm:text-2xl font-extrabold text-white">
+                <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
                   17,500
                 </span>
                 <span className="text-xs text-white/80 font-normal">
@@ -468,12 +522,12 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-4 flex flex-col gap-1 border border-white/15">
+            <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 flex flex-col gap-1 border border-white/15 transition-all shadow-xs">
               <span className="text-xs font-semibold text-white/90">
                 Archived
               </span>
               <div className="flex items-baseline gap-1 mt-0.5">
-                <span className="text-xl sm:text-2xl font-extrabold text-white">
+                <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
                   500
                 </span>
                 <span className="text-xs text-white/80 font-normal">
@@ -482,6 +536,609 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
               </div>
             </div>
           </div>
+        </div>
+      );
+    }
+
+    if (activeTab === "job-listing") {
+      if (selectedApplicantId) {
+        const applicant =
+          MOCK_ASSESSOR_APPLICANTS.find((a) => a.id === selectedApplicantId) ||
+          MOCK_ASSESSOR_APPLICANTS[0];
+        return (
+          <div className="flex flex-col gap-1 pt-2">
+            <button
+              type="button"
+              onClick={() => setSelectedApplicantId(null)}
+              className="flex items-center gap-2 text-white font-bold text-2xl lg:text-3xl tracking-tight hover:opacity-90 text-left cursor-pointer"
+            >
+              <span className="text-xl font-bold">&lt;</span>
+              <span>{applicant.name}</span>
+            </button>
+            <div className="flex items-center gap-2 text-xs lg:text-sm text-white/90 font-normal">
+              <span
+                onClick={() => {
+                  setSelectedApplicantId(null);
+                  setSelectedJobId(null);
+                }}
+                className="hover:underline cursor-pointer"
+              >
+                Requests
+              </span>
+              <span>&gt;</span>
+              <span
+                onClick={() => setSelectedApplicantId(null)}
+                className="hover:underline cursor-pointer"
+              >
+                Assessor
+              </span>
+              <span>&gt;</span>
+              <span className="font-semibold text-white">{applicant.name}</span>
+            </div>
+          </div>
+        );
+      }
+
+      if (selectedJobId) {
+        const job =
+          MOCK_JOB_LISTINGS.find((j) => j.id === selectedJobId) ||
+          MOCK_JOB_LISTINGS[0];
+        return (
+          <div className="flex flex-col gap-6 pt-2">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div className="flex flex-col gap-1">
+                <button
+                  type="button"
+                  onClick={() => setSelectedJobId(null)}
+                  className="flex items-center gap-2 text-white font-bold text-2xl lg:text-3xl tracking-tight hover:opacity-90 text-left cursor-pointer"
+                >
+                  <span className="text-xl font-bold">&lt;</span>
+                  <span>Assessor Request</span>
+                </button>
+                <div className="flex items-center gap-2 text-xs lg:text-sm text-white/90 font-normal">
+                  <span
+                    onClick={() => setSelectedJobId(null)}
+                    className="hover:underline cursor-pointer"
+                  >
+                    Requests
+                  </span>
+                  <span>&gt;</span>
+                  <span className="font-semibold text-white">Assessor</span>
+                </div>
+              </div>
+
+              <Button
+                type="button"
+                onClick={() => setSelectedJobId(null)}
+                variant="amber"
+                size="md"
+                rightIcon={<FiCheck className="w-4.5 h-4.5" />}
+                className="px-6 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
+              >
+                Mark As Filled
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
+                <div className="flex flex-col">
+                  <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80">
+                    Available Slots
+                  </span>
+                  <div className="flex items-baseline gap-1.5 mt-1">
+                    <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
+                      {job.slotsTotal - job.slotsFilled}/{job.slotsTotal}
+                    </span>
+                    <span className="text-xs font-normal text-white/70">
+                      available
+                    </span>
+                  </div>
+                </div>
+                <div className="w-9 h-9 flex items-center justify-center shrink-0">
+                  <FiClipboard className="w-5 h-5 text-white/90" />
+                </div>
+              </div>
+
+              <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
+                <div className="flex flex-col">
+                  <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80">
+                    Total Applicants
+                  </span>
+                  <div className="flex items-baseline gap-1.5 mt-1">
+                    <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
+                      {job.applicantsCount}
+                    </span>
+                    <span className="text-xs font-normal text-white/70">
+                      applicants
+                    </span>
+                  </div>
+                </div>
+                <div className="w-9 h-9 flex items-center justify-center shrink-0">
+                  <FiClipboard className="w-5 h-5 text-white/90" />
+                </div>
+              </div>
+
+              <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
+                <div className="flex flex-col">
+                  <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80">
+                    Shortlisted Applicants
+                  </span>
+                  <div className="flex items-baseline gap-1.5 mt-1">
+                    <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
+                      1
+                    </span>
+                    <span className="text-xs font-normal text-white/70">
+                      applicants
+                    </span>
+                  </div>
+                </div>
+                <div className="w-9 h-9 flex items-center justify-center shrink-0">
+                  <FiClipboard className="w-5 h-5 text-white/90" />
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="flex flex-col gap-6 pt-2">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+              Job Listing
+            </h1>
+            <Button
+              type="button"
+              onClick={() => setIsPostJobModalOpen(true)}
+              variant="amber"
+              size="md"
+              rightIcon={<FiPlus className="w-4.5 h-4.5" />}
+              className="px-6 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
+            >
+              Post A Request
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
+              <div className="flex flex-col">
+                <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80">
+                  Total Job Listing
+                </span>
+                <div className="flex items-baseline gap-1.5 mt-1">
+                  <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
+                    12
+                  </span>
+                  <span className="text-xs font-normal text-white/70">
+                    listings
+                  </span>
+                </div>
+              </div>
+              <div className="w-9 h-9 flex items-center justify-center shrink-0">
+                <FiClipboard className="w-5 h-5 text-white/90" />
+              </div>
+            </div>
+
+            <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
+              <div className="flex flex-col">
+                <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80">
+                  Open Listing
+                </span>
+                <div className="flex items-baseline gap-1.5 mt-1">
+                  <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
+                    8
+                  </span>
+                  <span className="text-xs font-normal text-white/70">
+                    listings
+                  </span>
+                </div>
+              </div>
+              <div className="w-9 h-9 flex items-center justify-center shrink-0">
+                <FiClipboard className="w-5 h-5 text-white/90" />
+              </div>
+            </div>
+
+            <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
+              <div className="flex flex-col">
+                <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80">
+                  Filled Listing
+                </span>
+                <div className="flex items-baseline gap-1.5 mt-1">
+                  <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
+                    4
+                  </span>
+                  <span className="text-xs font-normal text-white/70">
+                    listings
+                  </span>
+                </div>
+              </div>
+              <div className="w-9 h-9 flex items-center justify-center shrink-0">
+                <FiClipboard className="w-5 h-5 text-white/90" />
+              </div>
+            </div>
+
+            <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
+              <div className="flex flex-col">
+                <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80">
+                  Total Applicants
+                </span>
+                <div className="flex items-baseline gap-1.5 mt-1">
+                  <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
+                    95
+                  </span>
+                  <span className="text-xs font-normal text-white/70">
+                    applicants
+                  </span>
+                </div>
+              </div>
+              <div className="w-9 h-9 flex items-center justify-center shrink-0">
+                <FiUser className="w-5 h-5 text-white/90" />
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (activeTab === "assessor-request") {
+      if (selectedAssessorRequestId) {
+        const applicant =
+          MOCK_ASSESSOR_APPLICANTS.find(
+            (a) => a.id === selectedAssessorRequestId,
+          ) || MOCK_ASSESSOR_APPLICANTS[0];
+        return (
+          <div className="flex flex-col gap-1 pt-2">
+            <button
+              type="button"
+              onClick={() => setSelectedAssessorRequestId(null)}
+              className="flex items-center gap-2 text-white font-bold text-2xl lg:text-3xl tracking-tight hover:opacity-90 text-left cursor-pointer"
+            >
+              <span className="text-xl font-bold">&lt;</span>
+              <span>{applicant.name}</span>
+            </button>
+            <div className="flex items-center gap-2 text-xs lg:text-sm text-white/90 font-normal">
+              <span
+                onClick={() => setSelectedAssessorRequestId(null)}
+                className="hover:underline cursor-pointer"
+              >
+                Requests
+              </span>
+              <span>&gt;</span>
+              <span>Assessor</span>
+              <span>&gt;</span>
+              <span className="font-semibold text-white">{applicant.name}</span>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="flex flex-col gap-6 pt-2">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+              Assessor Request
+            </h1>
+          </div>
+        </div>
+      );
+    }
+
+    if (activeTab === "assessors") {
+      if (selectedAssessorId) {
+        const assessor =
+          MOCK_ASSESSORS.find((a) => a.id === selectedAssessorId) ||
+          MOCK_ASSESSORS[0];
+        return (
+          <div className="flex flex-col gap-6 pt-2">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div className="flex flex-col gap-1">
+                <button
+                  type="button"
+                  onClick={() => setSelectedAssessorId(null)}
+                  className="flex items-center gap-2 text-white font-bold text-2xl lg:text-3xl tracking-tight hover:opacity-90 text-left cursor-pointer"
+                >
+                  <span className="text-xl font-bold">&lt;</span>
+                  <span>{assessor.name}</span>
+                </button>
+                <div className="flex items-center gap-2 text-xs lg:text-sm text-white/90 font-normal">
+                  <span
+                    onClick={() => setSelectedAssessorId(null)}
+                    className="hover:underline cursor-pointer"
+                  >
+                    Assessor
+                  </span>
+                  <span>&gt;</span>
+                  <span className="font-semibold text-white">
+                    {assessor.name}
+                  </span>
+                </div>
+              </div>
+
+              {assessor.status === "Inactive" ? (
+                <Button
+                  type="button"
+                  onClick={() => {
+                    setAssessorDeactivateModalMode("confirm-activate");
+                    setIsAssessorDeactivateModalOpen(true);
+                  }}
+                  variant="amber"
+                  size="md"
+                  className="px-6 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
+                >
+                  Activate
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  onClick={() => {
+                    setAssessorDeactivateModalMode("confirm-deactivate");
+                    setIsAssessorDeactivateModalOpen(true);
+                  }}
+                  variant="amber"
+                  size="md"
+                  rightIcon={<FiSlash className="w-4 h-4" />}
+                  className="px-6 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
+                >
+                  Deactivate
+                </Button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
+                <div className="flex flex-col">
+                  <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80">
+                    Assigned Candidates
+                  </span>
+                  <div className="flex items-baseline gap-1.5 mt-1">
+                    <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
+                      {assessor.assignedCandidatesCount || 10}
+                    </span>
+                    <span className="text-xs font-normal text-white/70">
+                      applications
+                    </span>
+                  </div>
+                </div>
+                <div className="w-9 h-9 flex items-center justify-center shrink-0">
+                  <FiClipboard className="w-5 h-5 text-white/90" />
+                </div>
+              </div>
+
+              <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
+                <div className="flex flex-col">
+                  <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80">
+                    Ongoing
+                  </span>
+                  <div className="flex items-baseline gap-1.5 mt-1">
+                    <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
+                      {assessor.ongoingCount || 6}
+                    </span>
+                    <span className="text-xs font-normal text-white/70">
+                      applications
+                    </span>
+                  </div>
+                </div>
+                <div className="w-9 h-9 flex items-center justify-center shrink-0">
+                  <FiClipboard className="w-5 h-5 text-white/90" />
+                </div>
+              </div>
+
+              <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
+                <div className="flex flex-col">
+                  <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80">
+                    Completed
+                  </span>
+                  <div className="flex items-baseline gap-1.5 mt-1">
+                    <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
+                      {assessor.completedCount || 4}
+                    </span>
+                    <span className="text-xs font-normal text-white/70">
+                      applications
+                    </span>
+                  </div>
+                </div>
+                <div className="w-9 h-9 flex items-center justify-center shrink-0">
+                  <FiClipboard className="w-5 h-5 text-white/90" />
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="flex flex-col gap-6 pt-2">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+            Assessors
+          </h1>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
+              <div className="flex flex-col">
+                <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80">
+                  Total Assessors
+                </span>
+                <div className="flex items-baseline gap-1.5 mt-1">
+                  <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
+                    43
+                  </span>
+                  <span className="text-xs font-normal text-white/70">
+                    assessors
+                  </span>
+                </div>
+              </div>
+              <div className="w-9 h-9 flex items-center justify-center shrink-0">
+                <FiFlag className="w-5 h-5 text-white/90" />
+              </div>
+            </div>
+
+            <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
+              <div className="flex flex-col">
+                <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80">
+                  Active Assessors
+                </span>
+                <div className="flex items-baseline gap-1.5 mt-1">
+                  <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
+                    30
+                  </span>
+                  <span className="text-xs font-normal text-white/70">
+                    assessors
+                  </span>
+                </div>
+              </div>
+              <div className="w-9 h-9 flex items-center justify-center shrink-0">
+                <FiFlag className="w-5 h-5 text-white/90" />
+              </div>
+            </div>
+
+            <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
+              <div className="flex flex-col">
+                <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80">
+                  Pending Assessors
+                </span>
+                <div className="flex items-baseline gap-1.5 mt-1">
+                  <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
+                    3
+                  </span>
+                  <span className="text-xs font-normal text-white/70">
+                    assessors
+                  </span>
+                </div>
+              </div>
+              <div className="w-9 h-9 flex items-center justify-center shrink-0">
+                <FiFlag className="w-5 h-5 text-white/90" />
+              </div>
+            </div>
+
+            <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
+              <div className="flex flex-col">
+                <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80">
+                  Inactive Assessors
+                </span>
+                <div className="flex items-baseline gap-1.5 mt-1">
+                  <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
+                    10
+                  </span>
+                  <span className="text-xs font-normal text-white/70">
+                    assessors
+                  </span>
+                </div>
+              </div>
+              <div className="w-9 h-9 flex items-center justify-center shrink-0">
+                <FiFlag className="w-5 h-5 text-white/90" />
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (activeTab === "payments") {
+      return (
+        <div className="flex flex-col gap-6 pt-2">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+              Payments
+            </h1>
+
+            <Button
+              type="button"
+              onClick={() => setIsWithdrawModalOpen(true)}
+              variant="amber"
+              size="md"
+              rightIcon={<FiDollarSign className="w-4.5 h-4.5" />}
+              className="px-6 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
+            >
+              Withdraw Funds
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
+              <div className="flex flex-col">
+                <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80">
+                  Total Revenue
+                </span>
+                <div className="flex items-baseline gap-1.5 mt-1">
+                  <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
+                    ₦3,125,000
+                  </span>
+                </div>
+              </div>
+              <div className="w-9 h-9 flex items-center justify-center shrink-0">
+                <FiDollarSign className="w-5 h-5 text-white/90" />
+              </div>
+            </div>
+
+            <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
+              <div className="flex flex-col">
+                <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80">
+                  Completed Transactions
+                </span>
+                <div className="flex items-baseline gap-1.5 mt-1">
+                  <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
+                    50
+                  </span>
+                  <span className="text-xs font-normal text-white/70">
+                    transactions
+                  </span>
+                </div>
+              </div>
+              <div className="w-9 h-9 flex items-center justify-center shrink-0">
+                <FiDollarSign className="w-5 h-5 text-white/90" />
+              </div>
+            </div>
+
+            <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
+              <div className="flex flex-col">
+                <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80">
+                  Pending Transactions
+                </span>
+                <div className="flex items-baseline gap-1.5 mt-1">
+                  <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
+                    6
+                  </span>
+                  <span className="text-xs font-normal text-white/70">
+                    transactions
+                  </span>
+                </div>
+              </div>
+              <div className="w-9 h-9 flex items-center justify-center shrink-0">
+                <FiDollarSign className="w-5 h-5 text-white/90" />
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (activeTab === "settings") {
+      return (
+        <div className="flex flex-col gap-1 pt-2">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+            Settings
+          </h1>
+        </div>
+      );
+    }
+
+    if (activeTab === "messages") {
+      return (
+        <div className="flex items-center justify-between gap-4 flex-wrap pt-2">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+            Messages
+          </h1>
+
+          <Button
+            type="button"
+            onClick={() => setIsBroadcastModalOpen(true)}
+            variant="amber"
+            size="md"
+            rightIcon={<FiPlus className="w-4.5 h-4.5" />}
+            className="px-6 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
+          >
+            Send Broadcast Message
+          </Button>
         </div>
       );
     }
@@ -549,6 +1206,10 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
 
                 <PendingApplicationsTable
                   onViewAll={() => setActiveTab("applications")}
+                  onViewApplication={() => {
+                    setActiveTab("applications");
+                    setSelectedCandidateName("Oguntade James");
+                  }}
                 />
               </>
             ) : (
@@ -631,9 +1292,10 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
             transition={{ duration: 0.4, ease: "easeOut" }}
           >
             {selectedApplicantId ? (
-              <StaffDetailView
-                staffId={selectedApplicantId}
+              <AssessorApplicantProfileView
+                applicantId={selectedApplicantId}
                 onBack={() => setSelectedApplicantId(null)}
+                isAssessorRequest={false}
               />
             ) : selectedJobId ? (
               <JobListingDetailView
@@ -645,6 +1307,27 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
               <JobListingsView
                 onSelectJob={(id) => setSelectedJobId(id)}
                 onPostRequest={() => setIsPostJobModalOpen(true)}
+              />
+            )}
+          </motion.div>
+        )}
+
+        {activeTab === "assessor-request" && (
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+          >
+            {selectedAssessorRequestId ? (
+              <AssessorApplicantProfileView
+                applicantId={selectedAssessorRequestId}
+                onBack={() => setSelectedAssessorRequestId(null)}
+              />
+            ) : (
+              <AssessorRequestListView
+                onSelectAssessorRequest={(id) =>
+                  setSelectedAssessorRequestId(id)
+                }
               />
             )}
           </motion.div>
@@ -717,6 +1400,45 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
       <NotificationDrawer
         isOpen={isNotificationsOpen}
         onClose={() => setIsNotificationsOpen(false)}
+      />
+
+      <BroadcastModal
+        isOpen={isBroadcastModalOpen}
+        onClose={() => setIsBroadcastModalOpen(false)}
+      />
+
+      <StaffStatusModal
+        isOpen={isStaffDeactivateModalOpen}
+        mode={staffDeactivateModalMode}
+        staffName={
+          selectedStaffId
+            ? MOCK_STAFF_MEMBERS.find((s) => s.id === selectedStaffId)?.name
+            : undefined
+        }
+        onClose={() => setIsStaffDeactivateModalOpen(false)}
+        onConfirmDeactivate={() => {
+          setStaffDeactivateModalMode("deactivated-success");
+        }}
+        onConfirmActivate={() => {
+          setStaffDeactivateModalMode("activated-success");
+        }}
+      />
+
+      <StaffStatusModal
+        isOpen={isAssessorDeactivateModalOpen}
+        mode={assessorDeactivateModalMode}
+        staffName={
+          selectedAssessorId
+            ? MOCK_ASSESSORS.find((a) => a.id === selectedAssessorId)?.name
+            : undefined
+        }
+        onClose={() => setIsAssessorDeactivateModalOpen(false)}
+        onConfirmDeactivate={() => {
+          setAssessorDeactivateModalMode("deactivated-success");
+        }}
+        onConfirmActivate={() => {
+          setAssessorDeactivateModalMode("activated-success");
+        }}
       />
     </div>
   );

@@ -4,8 +4,8 @@ import React, { useState } from "react";
 import Image from "next/image";
 import { FiX } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/toast";
+import { Button } from "@/src/components/ui/button";
+import { useToast } from "@/src/components/ui/toast";
 import { ASSETS_URL } from "@/assets";
 
 interface DeleteAccountModalProps {

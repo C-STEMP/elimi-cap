@@ -11,9 +11,9 @@ import {
   FiDollarSign,
 } from "react-icons/fi";
 import { BiSolidMessageRoundedDetail } from "react-icons/bi";
-import { Logo } from "@/components/ui/logo";
+import { Logo } from "@/src/components/ui/logo";
 import { ASSETS_URL } from "@/assets";
-import { LogoutModal } from "@/components/ui/LogoutModal";
+import { LogoutModal } from "@/src/components/ui/LogoutModal";
 import { NotificationDropdown } from "@/features/dashboard/components/NotificationDropdown";
 import { AssessmentCentreTab } from "../types";
 import { MOCK_STATS } from "../utils/constants";

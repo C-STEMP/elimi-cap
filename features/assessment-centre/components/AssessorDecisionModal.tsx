@@ -2,9 +2,9 @@
 
 import React from "react";
 import Image from "next/image";
-import { FiX, FiCheckSquare, FiUserX } from "react-icons/fi";
+import { FiX } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/src/components/ui/button";
 import { ASSETS_URL } from "@/assets";
 
 export type AssessorDecisionModalMode =
@@ -44,12 +44,12 @@ export const AssessorDecisionModal: React.FC<AssessorDecisionModalProps> = ({
           onClick={(e) => e.stopPropagation()}
           className="bg-white rounded-3xl p-8 sm:p-10 max-w-md w-full shadow-2xl relative flex flex-col items-center text-center"
         >
-          {/* Close Button X */}
+          {/* Close Button X in soft pink pill (Image match) */}
           {(mode === "confirm-shortlist" || mode === "confirm-reject") && (
             <button
               type="button"
               onClick={onClose}
-              className="absolute top-6 right-6 w-8 h-8 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 flex items-center justify-center transition-colors cursor-pointer focus:outline-none"
+              className="absolute top-6 right-6 w-9 h-9 rounded-xl bg-[#FCE8EC] text-[#a31d38] hover:opacity-80 flex items-center justify-center transition-all cursor-pointer focus:outline-none"
               aria-label="Close modal"
             >
               <FiX className="w-5 h-5" />
@@ -59,8 +59,16 @@ export const AssessorDecisionModal: React.FC<AssessorDecisionModalProps> = ({
           {/* Mode 1: Confirm Shortlist (Image 1) */}
           {mode === "confirm-shortlist" && (
             <div className="w-full flex flex-col items-center">
-              <div className="w-28 h-28 rounded-3xl bg-amber-50 border-4 border-amber-100 flex items-center justify-center mb-4 text-[#fbab2a] shadow-2xs">
-                <FiCheckSquare className="w-16 h-16 stroke-[1.8]" />
+              <div className="mt-2 mb-4 relative flex items-center justify-center">
+                <Image
+                  src={ASSETS_URL.shortlistApplicantImg}
+                  alt="Shortlist Applicant"
+                  width={160}
+                  height={160}
+                  className="w-36 h-36 object-contain"
+                  style={{ width: "auto", height: "auto" }}
+                  priority
+                />
               </div>
 
               <h3 className="text-xl sm:text-2xl font-extrabold text-neutral-primary mb-2 tracking-tight">
@@ -121,8 +129,16 @@ export const AssessorDecisionModal: React.FC<AssessorDecisionModalProps> = ({
           {/* Mode 3: Confirm Reject (Image 3) */}
           {mode === "confirm-reject" && (
             <div className="w-full flex flex-col items-center">
-              <div className="w-28 h-28 rounded-3xl bg-red-50 border-4 border-red-100 flex items-center justify-center mb-4 text-[#C5221F] shadow-2xs">
-                <FiUserX className="w-16 h-16 stroke-[1.8]" />
+              <div className="mt-2 mb-4 relative flex items-center justify-center">
+                <Image
+                  src={ASSETS_URL.rejectApplicantImg}
+                  alt="Reject Applicant"
+                  width={160}
+                  height={160}
+                  className="w-36 h-36 object-contain"
+                  style={{ width: "auto", height: "auto" }}
+                  priority
+                />
               </div>
 
               <h3 className="text-xl sm:text-2xl font-extrabold text-neutral-primary mb-2 tracking-tight">
@@ -143,7 +159,7 @@ export const AssessorDecisionModal: React.FC<AssessorDecisionModalProps> = ({
             </div>
           )}
 
-          {/* Mode 4: Rejected Success (Image 4) */}
+          {/* Mode 4: Rejected Success */}
           {mode === "rejected-success" && (
             <div className="w-full flex flex-col items-center">
               <div className="mt-2 mb-4 relative flex items-center justify-center">

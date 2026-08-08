@@ -13,7 +13,7 @@ import {
 } from "recharts";
 import { MOCK_TRADE_DATA } from "../utils/constants";
 
-import { Select } from "@/components/ui/select";
+import { Select } from "@/src/components/ui/select";
 
 export const TradeChart: React.FC = () => {
   const [selectedYear, setSelectedYear] = useState("2026");

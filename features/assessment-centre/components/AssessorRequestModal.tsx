@@ -2,14 +2,14 @@
 
 import React from "react";
 import Image from "next/image";
-import { FiX, FiAlertTriangle } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/src/components/ui/button";
 import { ASSETS_URL } from "@/assets";
 
 export type AssessorRequestModalMode =
   | "confirm-accept"
   | "accepted-success"
+  | "confirm-decline"
   | "declined-success";
 
 interface AssessorRequestModalProps {
@@ -17,6 +17,7 @@ interface AssessorRequestModalProps {
   mode: AssessorRequestModalMode;
   onClose: () => void;
   onConfirmAccept?: () => void;
+  onConfirmDecline?: () => void;
 }
 
 export const AssessorRequestModal: React.FC<AssessorRequestModalProps> = ({
@@ -24,6 +25,7 @@ export const AssessorRequestModal: React.FC<AssessorRequestModalProps> = ({
   mode,
   onClose,
   onConfirmAccept,
+  onConfirmDecline,
 }) => {
   if (!isOpen) return null;
 
@@ -41,11 +43,19 @@ export const AssessorRequestModal: React.FC<AssessorRequestModalProps> = ({
           onClick={(e) => e.stopPropagation()}
           className="bg-white rounded-3xl p-8 sm:p-10 max-w-md w-full shadow-2xl relative flex flex-col items-center text-center"
         >
-          {/* Mode 1: Confirm Accept Request (Image 1) */}
+          {/* Mode 1: Confirm Accept Request (Image 2 match) */}
           {mode === "confirm-accept" && (
             <div className="w-full flex flex-col items-center">
-              <div className="w-28 h-28 rounded-3xl bg-amber-50 border-4 border-amber-100 flex items-center justify-center mb-4 text-[#fbab2a] shadow-2xs">
-                <FiAlertTriangle className="w-16 h-16 stroke-[1.8]" />
+              <div className="mt-2 mb-4 relative flex items-center justify-center">
+                <Image
+                  src={ASSETS_URL.warningIcon}
+                  alt="Warning"
+                  width={160}
+                  height={160}
+                  className="w-36 h-36 object-contain"
+                  style={{ width: "auto", height: "auto" }}
+                  priority
+                />
               </div>
 
               <h3 className="text-xl sm:text-2xl font-extrabold text-neutral-primary mb-2 tracking-tight">
@@ -78,7 +88,52 @@ export const AssessorRequestModal: React.FC<AssessorRequestModalProps> = ({
             </div>
           )}
 
-          {/* Mode 2: Accepted Success (Image 5) */}
+          {/* Mode 1.5: Confirm Decline Request (Image 2 match) */}
+          {mode === "confirm-decline" && (
+            <div className="w-full flex flex-col items-center">
+              <div className="mt-2 mb-4 relative flex items-center justify-center">
+                <Image
+                  src={ASSETS_URL.warningIcon}
+                  alt="Warning"
+                  width={160}
+                  height={160}
+                  className="w-36 h-36 object-contain"
+                  style={{ width: "auto", height: "auto" }}
+                  priority
+                />
+              </div>
+
+              <h3 className="text-xl sm:text-2xl font-extrabold text-neutral-primary mb-2 tracking-tight">
+                Are You sure?
+              </h3>
+
+              <p className="text-xs sm:text-sm text-neutral-secondary font-normal mb-8 leading-relaxed">
+                Confirm you want to decline this assessor request?
+              </p>
+
+              <div className="flex flex-col gap-3 w-full">
+                <Button
+                  type="button"
+                  onClick={onConfirmDecline}
+                  variant="amber"
+                  size="lg"
+                  className="w-full h-12.5 text-white font-bold text-base bg-[#fbab2a] hover:bg-[#e89b1f] transition-all shadow-lg cursor-pointer rounded-xl"
+                >
+                  Yes, Decline Request
+                </Button>
+
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="w-full h-12.5 bg-white border border-[#fbab2a] text-[#fbab2a] hover:bg-amber-50 font-bold text-base rounded-xl transition-all shadow-lg cursor-pointer"
+                >
+                  No
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Mode 2: Accepted Success */}
           {mode === "accepted-success" && (
             <div className="w-full flex flex-col items-center">
               <div className="mt-2 mb-4 relative flex items-center justify-center">
@@ -113,7 +168,7 @@ export const AssessorRequestModal: React.FC<AssessorRequestModalProps> = ({
             </div>
           )}
 
-          {/* Mode 3: Declined Success (Image 4) */}
+          {/* Mode 3: Declined Success */}
           {mode === "declined-success" && (
             <div className="w-full flex flex-col items-center">
               <div className="mt-2 mb-4 relative flex items-center justify-center">

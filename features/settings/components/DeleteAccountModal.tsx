@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Image from "next/image";
 import { FiX, FiEye } from "react-icons/fi";
 import { ASSETS_URL } from "@/assets";
-import { Input } from "@/components/ui/input";
+import { Input } from "@/src/components/ui/input";
 
 interface DeleteAccountModalProps {
   isOpen: boolean;

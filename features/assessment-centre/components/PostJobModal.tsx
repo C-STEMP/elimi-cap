@@ -4,11 +4,11 @@ import React, { useState } from "react";
 import Image from "next/image";
 import { FiX, FiPlus, FiCalendar } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
-import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
-import { DatePicker } from "@/components/ui/date-picker";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/toast";
+import { Input } from "@/src/components/ui/input";
+import { Select } from "@/src/components/ui/select";
+import { DatePicker } from "@/src/components/ui/date-picker";
+import { Button } from "@/src/components/ui/button";
+import { useToast } from "@/src/components/ui/toast";
 import { ASSETS_URL } from "@/assets";
 
 interface PostJobModalProps {
@@ -97,7 +97,7 @@ export const PostJobModal: React.FC<PostJobModalProps> = ({
   return (
     <AnimatePresence>
       <div
-        className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 transition-opacity duration-300 select-none overflow-y-auto"
+        className="fixed overflow-hidden inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 transition-opacity duration-300 select-none overflow-y-auto"
         onClick={handleReset}
       >
         <motion.div
@@ -163,12 +163,13 @@ export const PostJobModal: React.FC<PostJobModalProps> = ({
                       Duration
                     </label>
                     <div className="flex items-center gap-1.5">
-                      <input
+                      <Input
                         type="number"
                         min="1"
                         value={durationValue}
                         onChange={(e) => setDurationValue(e.target.value)}
-                        className="w-16 bg-input-bg border border-transparent focus:border-primary rounded-xl px-2.5 py-2.5 text-xs text-neutral-primary outline-none font-semibold text-center"
+                        containerClassName="w-16"
+                        className="!h-11 !text-center !font-semibold"
                       />
                       <Select
                         containerClassName="flex-1"
@@ -183,39 +184,31 @@ export const PostJobModal: React.FC<PostJobModalProps> = ({
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-text-dark font-medium text-xs leading-[1.4] select-none">
-                      Slot
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      value={slots}
-                      onChange={(e) => setSlots(e.target.value)}
-                      className="w-full bg-input-bg border border-transparent focus:border-primary rounded-xl px-3.5 py-2.5 text-xs text-neutral-primary outline-none font-semibold"
-                    />
-                  </div>
+                  <Input
+                    label="Slot"
+                    type="number"
+                    min="1"
+                    value={slots}
+                    onChange={(e) => setSlots(e.target.value)}
+                  />
 
                   <DatePicker
                     label="Deadline"
                     placeholder="MM/DD/YYYY"
                     value={deadline}
                     onChange={(val) => setDeadline(val)}
+                    align="right"
                   />
                 </div>
 
-                <div className="flex flex-col gap-1.5 w-full">
-                  <label className="text-text-dark font-medium text-xs leading-[1.4] select-none">
-                    Description
-                  </label>
-                  <textarea
-                    rows={3}
-                    placeholder="Type Here"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    className="w-full bg-input-bg border border-transparent focus:border-primary rounded-xl p-3 text-xs text-neutral-primary outline-none resize-none transition-colors"
-                  />
-                </div>
+                <Input
+                  label="Description"
+                  textarea
+                  rows={3}
+                  placeholder="Type Here"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                />
 
                 <div className="flex flex-col gap-2 w-full">
                   <label className="text-text-dark font-medium text-xs leading-[1.4] select-none">

@@ -1,24 +1,24 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
-import { DatePicker } from "@/components/ui/date-picker";
-import { PhoneInput } from "@/components/ui/phone-input";
-import { PassportUpload } from "@/components/ui/passport-upload";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/toast";
-import { InfoIcon } from "@/components/ui/info-icon";
+import { Input } from "@/src/components/ui/input";
+import { Select } from "@/src/components/ui/select";
+import { DatePicker } from "@/src/components/ui/date-picker";
+import { PhoneInput } from "@/src/components/ui/phone-input";
+import { PassportUpload } from "@/src/components/ui/passport-upload";
+import { Button } from "@/src/components/ui/button";
+import { useToast } from "@/src/components/ui/toast";
+import { InfoIcon } from "@/src/components/ui/info-icon";
 import { FiArrowLeft, FiArrowRight } from "react-icons/fi";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { ASSETS_URL } from "@/assets";
-import { StatusModal } from "@/components/ui/status-modal";
+import { StatusModal } from "@/src/components/ui/status-modal";
 import { useAppDispatch } from "@/store/hooks";
 import { setSidebarVariant, setRplStep } from "@/store/slices/authSlice";
-import { personalInfoSchema, extractZodErrors } from "@/lib/validation";
-import { useCountryStateCity } from "@/lib/hooks/useCountryStateCity";
+import { personalInfoSchema, extractZodErrors } from "@/src/lib/validation";
+import { useCountryStateCity } from "@/src/lib/hooks/useCountryStateCity";
 
 export interface RPLPersonalInfoProps {
   onBack?: () => void;
@@ -328,7 +328,9 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
                   <span className="text-primary-solid ml-0.5">*</span>
                 </span>
               }
-              placeholder={form.country ? "Select state" : "Select country first"}
+              placeholder={
+                form.country ? "Select state" : "Select country first"
+              }
               options={states}
               value={form.state}
               error={errors.state}

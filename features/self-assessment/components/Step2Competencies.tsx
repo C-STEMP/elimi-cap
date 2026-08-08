@@ -5,11 +5,11 @@ import { FiArrowLeft, FiArrowRight } from "react-icons/fi";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Select } from "@/components/ui/select";
-import { InfoIcon } from "@/components/ui/info-icon";
-import { StatusModal } from "@/components/ui/status-modal";
-import { useToast } from "@/components/ui/toast";
+import { Button } from "@/src/components/ui/button";
+import { Select } from "@/src/components/ui/select";
+import { InfoIcon } from "@/src/components/ui/info-icon";
+import { StatusModal } from "@/src/components/ui/status-modal";
+import { useToast } from "@/src/components/ui/toast";
 import { ASSETS_URL } from "@/assets";
 import { MOCK_COMPETENCIES } from "../utils/constants";
 

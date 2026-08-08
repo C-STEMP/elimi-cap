@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiX } from "react-icons/fi";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/src/components/ui/button";
 import { SelfAssessmentSidebar } from "@/features/self-assessment/components/SelfAssessmentSidebar";
 import { Step1PersonalInfo } from "@/features/self-assessment/components/Step1PersonalInfo";
 import { Step2Competencies } from "@/features/self-assessment/components/Step2Competencies";

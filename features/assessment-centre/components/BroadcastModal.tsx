@@ -4,9 +4,9 @@ import React, { useState } from "react";
 import Image from "next/image";
 import { FiX } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
-import { Select } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/toast";
+import { Select } from "@/src/components/ui/select";
+import { Button } from "@/src/components/ui/button";
+import { useToast } from "@/src/components/ui/toast";
 import { ASSETS_URL } from "@/assets";
 
 interface BroadcastModalProps {
@@ -72,12 +72,12 @@ export const BroadcastModal: React.FC<BroadcastModalProps> = ({
           onClick={(e) => e.stopPropagation()}
           className="bg-white rounded-3xl p-8 sm:p-10 max-w-md w-full shadow-2xl relative flex flex-col items-center"
         >
-          {/* Close X Button */}
+          {/* Close X Button in soft pink pill */}
           {step === "form" && (
             <button
               type="button"
               onClick={handleReset}
-              className="absolute top-6 right-6 w-8 h-8 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 flex items-center justify-center transition-colors cursor-pointer focus:outline-none"
+              className="absolute top-6 right-6 w-9 h-9 rounded-xl bg-[#FCE8EC] text-[#a31d38] hover:opacity-80 flex items-center justify-center transition-all cursor-pointer focus:outline-none z-10"
               aria-label="Close modal"
             >
               <FiX className="w-5 h-5" />
@@ -93,12 +93,13 @@ export const BroadcastModal: React.FC<BroadcastModalProps> = ({
                 <h3 className="text-xl sm:text-2xl font-extrabold text-neutral-primary tracking-tight">
                   Send Broadcast Message
                 </h3>
-                <p className="text-xs sm:text-sm text-gray-400 font-normal">
+                <p className="text-xs sm:text-sm text-gray-500 font-normal">
                   Send a broadcast message
                 </p>
               </div>
 
               <div className="w-full flex flex-col gap-4 mt-2">
+                {/* Send To Field using codebase Select component */}
                 <Select
                   label="Send To"
                   placeholder="Select"
@@ -112,8 +113,9 @@ export const BroadcastModal: React.FC<BroadcastModalProps> = ({
                   onChange={(e) => setRecipient(e.target.value)}
                 />
 
+                {/* Your Message Field */}
                 <div className="flex flex-col gap-1.5 w-full">
-                  <label className="text-text-dark font-medium text-xs xl:text-sm leading-[1.4] select-none">
+                  <label className="text-xs sm:text-sm font-semibold text-neutral-primary select-none">
                     Your Message
                   </label>
                   <textarea
@@ -121,7 +123,7 @@ export const BroadcastModal: React.FC<BroadcastModalProps> = ({
                     placeholder="Type Here"
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    className="w-full bg-input-bg border border-transparent focus:border-primary rounded-xl p-3.5 text-xs sm:text-sm text-neutral-primary outline-none resize-none transition-colors"
+                    className="w-full bg-[#F8F9FA] border border-gray-200/80 focus:border-gray-400 rounded-2xl p-4 text-xs sm:text-sm text-neutral-primary outline-none resize-none transition-all placeholder:text-gray-400"
                   />
                 </div>
               </div>

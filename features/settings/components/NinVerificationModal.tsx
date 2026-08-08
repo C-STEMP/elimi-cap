@@ -2,14 +2,14 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
-import { Logo } from "@/components/ui/logo";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Logo } from "@/src/components/ui/logo";
+import { Input } from "@/src/components/ui/input";
+import { Button } from "@/src/components/ui/button";
 import { FiX, FiArrowRight, FiCheck } from "react-icons/fi";
 import { ASSETS_URL } from "@/assets";
 
-import { validateNIN } from "@/lib/validation";
-import { useToast } from "@/components/ui/toast";
+import { validateNIN } from "@/src/lib/validation";
+import { useToast } from "@/src/components/ui/toast";
 
 interface NinVerificationModalProps {
   isOpen: boolean;

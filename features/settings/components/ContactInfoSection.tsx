@@ -1,9 +1,9 @@
 "use client";
 
 import React from "react";
-import { Input } from "@/components/ui/input";
-import { PhoneInput } from "@/components/ui/phone-input";
-import { InfoIcon } from "@/components/ui/info-icon";
+import { Input } from "@/src/components/ui/input";
+import { PhoneInput } from "@/src/components/ui/phone-input";
+import { InfoIcon } from "@/src/components/ui/info-icon";
 import { ProfileFormData } from "../types/settings.types";
 
 interface ContactInfoSectionProps {

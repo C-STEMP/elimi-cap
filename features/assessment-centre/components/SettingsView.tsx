@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import Image from "next/image";
 import {
   FiCheckCircle,
@@ -10,14 +10,14 @@ import {
   FiCalendar,
   FiShield,
 } from "react-icons/fi";
-import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
-import { DatePicker } from "@/components/ui/date-picker";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/toast";
+import { Input } from "@/src/components/ui/input";
+import { Select } from "@/src/components/ui/select";
+import { DatePicker } from "@/src/components/ui/date-picker";
+import { Button } from "@/src/components/ui/button";
+import { useToast } from "@/src/components/ui/toast";
 import { DeleteAccountModal } from "./DeleteAccountModal";
 import { ASSETS_URL } from "@/assets";
-import { useCountryStateCity } from "@/lib/hooks/useCountryStateCity";
+import { useCountryStateCity } from "@/src/lib/hooks/useCountryStateCity";
 
 export type SettingsSubTab =
   | "profile"
@@ -31,7 +31,6 @@ export const SettingsView: React.FC = () => {
   const [activeSubTab, setActiveSubTab] = useState<SettingsSubTab>("centre");
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
-  // Profile Form States
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [middleName, setMiddleName] = useState("");
@@ -47,7 +46,6 @@ export const SettingsView: React.FC = () => {
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [sessionReminders, setSessionReminders] = useState(false);
 
-  // Centre Form States
   const [centreName, setCentreName] = useState("");
   const [regNo, setRegNo] = useState("");
   const [centreCountry, setCentreCountry] = useState("");
@@ -60,13 +58,11 @@ export const SettingsView: React.FC = () => {
   const [accountNumber, setAccountNumber] = useState("");
   const [accountName, setAccountName] = useState("");
 
-  // Pricing Form States
   const [rplCurrency, setRplCurrency] = useState("");
   const [rplAmount, setRplAmount] = useState("45000");
   const [standardCurrency, setStandardCurrency] = useState("");
   const [standardAmount, setStandardAmount] = useState("65000");
 
-  // Security Form States
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -82,86 +78,77 @@ export const SettingsView: React.FC = () => {
     });
   };
 
-  // ── Cascading selects ─────────────────────────────────────────────────────
-  // Profile
   const {
     countries,
     states: profileStates,
     cities: profileCities,
   } = useCountryStateCity(profileCountry, profileState);
 
-  // Centre
-  const {
-    states: centreStates,
-    cities: centreCities,
-  } = useCountryStateCity(centreCountry, centreState);
+  const { states: centreStates, cities: centreCities } = useCountryStateCity(
+    centreCountry,
+    centreState,
+  );
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   return (
     <div className="w-full flex flex-col gap-6 select-text">
-      {/* Header Banner */}
-      <div className="w-full bg-[#a31d38] text-white rounded-3xl p-6 sm:p-8 xl:p-10 flex items-center justify-between gap-4 shadow-md">
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
-          Settings
-        </h1>
-      </div>
-
-      {/* Main Settings Grid Layout */}
       <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Sidebar Navigation Card */}
         <div className="lg:col-span-4 xl:col-span-3 bg-white rounded-3xl p-6 shadow-2xs border border-gray-100/80 flex flex-col gap-6 w-full">
-          {/* Logo Container Box */}
-          <div className="flex items-center gap-3 bg-[#F8F9FA] p-3.5 rounded-2xl border border-gray-100">
-            <div className="w-16 h-16 rounded-xl bg-[#80152B] p-2 flex items-center justify-center shrink-0 border border-white/20">
-              <span className="text-white font-extrabold text-[10px] text-center leading-tight tracking-tighter uppercase">
-                C-STEMP
-                <br />
-                <span className="text-[7px] font-medium opacity-80">
-                  BUILDING PEOPLE
-                </span>
-              </span>
+          <div className="flex items-center gap-3.5">
+            <div className="relative w-29 h-29 flex items-center justify-center rounded-xl overflow-hidden shrink-0 bg-primary/10 shadow-xs">
+              <Image
+                src={ASSETS_URL.cstempLogo}
+                alt="User Avatar"
+                sizes="100px"
+                className="object-cover"
+                priority
+                loading="eager"
+              />
             </div>
 
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col items-start justify-center">
               <button
                 type="button"
-                className="bg-[#a31d38] hover:bg-[#85162d] text-white text-[11px] font-bold px-3 py-1 rounded-lg transition-colors cursor-pointer w-fit"
+                onClick={() => fileInputRef.current?.click()}
+                className="bg-primary font-sans hover:bg-[#721328] text-white text-[11px] font-semibold px-4 py-1.5 rounded-xl transition-colors cursor-pointer"
               >
-                Change logo
+                Change Picture
               </button>
-              <span className="text-[10px] text-gray-400 font-medium">
+              <span className="text-[10px] font-sans text-[#191913] mt-1 font-medium">
                 JPG or PNG 10mb
               </span>
-              <div className="flex items-center gap-1 text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full text-[10px] font-bold w-fit mt-0.5">
-                <FiCheckCircle className="w-3 h-3" />
+
+              <div className="flex items-center gap-1 text-[11px] lg:mt-3 font-medium text-[#1E7F4C]">
+                <FiCheckCircle className="w-3.5 h-3.5 stroke-[2.5]" />
                 <span>Verified</span>
               </div>
             </div>
           </div>
 
-          {/* Sidebar Navigation Items */}
           <div className="flex flex-col gap-1 text-xs font-semibold">
-            <button
-              type="button"
-              onClick={() => setActiveSubTab("profile")}
-              className={`w-full text-left p-3.5 rounded-2xl transition-all cursor-pointer ${
-                activeSubTab === "profile"
-                  ? "bg-[#FDF2F4] text-neutral-primary font-extrabold shadow-2xs"
-                  : "text-neutral-secondary hover:text-neutral-primary hover:bg-gray-50"
-              }`}
-            >
-              Profile Information
-            </button>
-
             <button
               type="button"
               onClick={() => setActiveSubTab("centre")}
               className={`w-full text-left p-3.5 rounded-2xl transition-all cursor-pointer ${
                 activeSubTab === "centre"
-                  ? "bg-[#FDF2F4] text-neutral-primary font-extrabold shadow-2xs"
-                  : "text-neutral-secondary hover:text-neutral-primary hover:bg-gray-50"
+                  ? "bg-primary/10 text-black font-semibold shadow-2xs"
+                  : "text-black font-medium hover:bg-gray-50"
               }`}
             >
               Centre Information
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveSubTab("profile")}
+              className={`w-full text-left p-3.5 rounded-2xl transition-all cursor-pointer ${
+                activeSubTab === "profile"
+                  ? "bg-primary/10 text-black font-semibold shadow-2xs"
+                  : "text-black font-medium hover:bg-gray-50"
+              }`}
+            >
+              Profile Information
             </button>
 
             <button
@@ -204,8 +191,8 @@ export const SettingsView: React.FC = () => {
           {activeSubTab === "profile" && (
             <div className="w-full flex flex-col gap-8">
               {/* Personal Details */}
-              <div className="flex flex-col gap-4">
-                <h3 className="text-xl font-extrabold text-neutral-primary tracking-tight">
+              <div className="flex flex-col gap-4 lg:gap-6">
+                <h3 className="text-xl lg:text-2xl font-extrabold text-neutral-primary tracking-tight">
                   Personal Details
                 </h3>
 
@@ -258,8 +245,8 @@ export const SettingsView: React.FC = () => {
               </div>
 
               {/* Contact Information */}
-              <div className="flex flex-col gap-4">
-                <h3 className="text-xl font-extrabold text-neutral-primary tracking-tight">
+              <div className="flex flex-col gap-4 lg:gap-6">
+                <h3 className="text-xl lg:text-2xl font-extrabold text-neutral-primary tracking-tight">
                   Contact Information
                 </h3>
 
@@ -274,14 +261,16 @@ export const SettingsView: React.FC = () => {
                     label="Phone Number"
                     placeholder="Select"
                     value={profilePhone}
-                    onChange={(e) => setProfilePhone(e.target.value.replace(/[^0-9]/g, ""))}
+                    onChange={(e) =>
+                      setProfilePhone(e.target.value.replace(/[^0-9]/g, ""))
+                    }
                   />
                 </div>
               </div>
 
               {/* Residential Address */}
-              <div className="flex flex-col gap-4">
-                <h3 className="text-xl font-extrabold text-neutral-primary tracking-tight">
+              <div className="flex flex-col gap-4 lg:gap-6">
+                <h3 className="text-xl lg:text-2xl font-extrabold text-neutral-primary tracking-tight">
                   Residential Address
                 </h3>
 
@@ -299,7 +288,9 @@ export const SettingsView: React.FC = () => {
                   />
                   <Select
                     label="State of Residence*"
-                    placeholder={profileCountry ? "Select state" : "Select country first"}
+                    placeholder={
+                      profileCountry ? "Select state" : "Select country first"
+                    }
                     options={profileStates}
                     value={profileState}
                     disabled={!profileCountry}
@@ -313,7 +304,9 @@ export const SettingsView: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Select
                     label="City / LGA*"
-                    placeholder={profileState ? "Select city" : "Select state first"}
+                    placeholder={
+                      profileState ? "Select city" : "Select state first"
+                    }
                     options={profileCities}
                     value={profileLga}
                     disabled={!profileState}
@@ -329,8 +322,8 @@ export const SettingsView: React.FC = () => {
               </div>
 
               {/* Notification Preference */}
-              <div className="flex flex-col gap-4">
-                <h3 className="text-xl font-extrabold text-neutral-primary tracking-tight">
+              <div className="flex flex-col gap-4 lg:gap-6">
+                <h3 className="text-xl lg:text-2xl font-extrabold text-neutral-primary tracking-tight">
                   Notification Preference
                 </h3>
 
@@ -407,8 +400,8 @@ export const SettingsView: React.FC = () => {
           {activeSubTab === "centre" && (
             <div className="w-full flex flex-col gap-8">
               {/* Centre Information */}
-              <div className="flex flex-col gap-4">
-                <h3 className="text-xl font-extrabold text-neutral-primary tracking-tight">
+              <div className="flex flex-col gap-4 lg:gap-6">
+                <h3 className="text-xl lg:text-2xl font-extrabold text-neutral-primary tracking-tight">
                   Centre Information
                 </h3>
 
@@ -441,7 +434,9 @@ export const SettingsView: React.FC = () => {
                   />
                   <Select
                     label="State of Residence*"
-                    placeholder={centreCountry ? "Select state" : "Select country first"}
+                    placeholder={
+                      centreCountry ? "Select state" : "Select country first"
+                    }
                     options={centreStates}
                     value={centreState}
                     disabled={!centreCountry}
@@ -455,7 +450,9 @@ export const SettingsView: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Select
                     label="City / LGA*"
-                    placeholder={centreState ? "Select city" : "Select state first"}
+                    placeholder={
+                      centreState ? "Select city" : "Select state first"
+                    }
                     options={centreCities}
                     value={centreLga}
                     disabled={!centreState}
@@ -471,8 +468,8 @@ export const SettingsView: React.FC = () => {
               </div>
 
               {/* Center Support Information */}
-              <div className="flex flex-col gap-4">
-                <h3 className="text-xl font-extrabold text-neutral-primary tracking-tight">
+              <div className="flex flex-col gap-4 lg:gap-6">
+                <h3 className="text-xl lg:text-2xl font-extrabold text-neutral-primary tracking-tight">
                   Center Support Information
                 </h3>
 
@@ -502,7 +499,9 @@ export const SettingsView: React.FC = () => {
                         pattern="[0-9]*"
                         placeholder="000000000"
                         value={supportPhone}
-                        onChange={(e) => setSupportPhone(e.target.value.replace(/[^0-9]/g, ""))}
+                        onChange={(e) =>
+                          setSupportPhone(e.target.value.replace(/[^0-9]/g, ""))
+                        }
                         className="flex-1 bg-input-bg border border-transparent focus:border-primary rounded-xl px-3.5 py-2.5 text-xs text-neutral-primary outline-none font-medium"
                       />
                     </div>
@@ -511,8 +510,8 @@ export const SettingsView: React.FC = () => {
               </div>
 
               {/* Account Details */}
-              <div className="flex flex-col gap-4">
-                <h3 className="text-xl font-extrabold text-neutral-primary tracking-tight">
+              <div className="flex flex-col gap-4 lg:gap-6">
+                <h3 className="text-xl lg:text-2xl font-extrabold text-neutral-primary tracking-tight">
                   Account Details
                 </h3>
 
@@ -533,7 +532,7 @@ export const SettingsView: React.FC = () => {
                     label="Account Number*"
                     placeholder="0000000000"
                     inputMode="numeric"
-                    maxLength={10}
+                    // maxLength={10}
                     value={accountNumber}
                     onChange={(e) =>
                       setAccountNumber(e.target.value.replace(/[^0-9]/g, ""))
@@ -568,8 +567,8 @@ export const SettingsView: React.FC = () => {
           {activeSubTab === "pricing" && (
             <div className="w-full flex flex-col gap-8">
               {/* Recognition of Prior Learning(RPL) */}
-              <div className="flex flex-col gap-4">
-                <h3 className="text-xl font-extrabold text-neutral-primary tracking-tight">
+              <div className="flex flex-col gap-4 lg:gap-6">
+                <h3 className="text-xl lg:text-2xl font-extrabold text-neutral-primary tracking-tight">
                   Recognition of Prior Learning(RPL)
                 </h3>
 
@@ -597,7 +596,7 @@ export const SettingsView: React.FC = () => {
               </div>
 
               {/* Standard Skill Assessment */}
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-4 lg:gap-6">
                 <h3 className="text-xl font-extrabold text-neutral-primary tracking-tight">
                   Standard Skill Assessment
                 </h3>
@@ -644,7 +643,7 @@ export const SettingsView: React.FC = () => {
           {activeSubTab === "security" && (
             <div className="w-full flex flex-col gap-8">
               {/* Verification Status */}
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-4 lg:gap-6">
                 <h3 className="text-xl font-extrabold text-neutral-primary tracking-tight">
                   Verification Status
                 </h3>
@@ -667,7 +666,7 @@ export const SettingsView: React.FC = () => {
               </div>
 
               {/* Change Password */}
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-4 lg:gap-6">
                 <h3 className="text-xl font-extrabold text-neutral-primary tracking-tight">
                   Change Password
                 </h3>

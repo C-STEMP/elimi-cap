@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Select } from "@/components/ui/select";
+import { Select } from "@/src/components/ui/select";
 import { MOCK_STAGES_DATA } from "../utils/constants";
 
 export const AssessmentStageCard: React.FC = () => {

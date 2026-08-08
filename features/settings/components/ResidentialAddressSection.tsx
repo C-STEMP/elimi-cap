@@ -1,11 +1,11 @@
 "use client";
 
 import React from "react";
-import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
-import { InfoIcon } from "@/components/ui/info-icon";
+import { Input } from "@/src/components/ui/input";
+import { Select } from "@/src/components/ui/select";
+import { InfoIcon } from "@/src/components/ui/info-icon";
 import { ProfileFormData } from "../types/settings.types";
-import { useCountryStateCity } from "@/lib/hooks/useCountryStateCity";
+import { useCountryStateCity } from "@/src/lib/hooks/useCountryStateCity";
 
 interface ResidentialAddressSectionProps {
   formData: ProfileFormData;

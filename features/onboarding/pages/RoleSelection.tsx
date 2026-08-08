@@ -1,11 +1,11 @@
 "use client";
 
 import React from "react";
-import { RoleCard } from "@/components/ui/role-card";
+import { RoleCard } from "@/src/components/ui/role-card";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setRole } from "@/store/slices/authSlice";
 import { setOnboardingRole } from "@/store/slices/onboardingSlice";
-import { useToast } from "@/components/ui/toast";
+import { useToast } from "@/src/components/ui/toast";
 import { useRouter } from "next/navigation";
 import { FiArrowLeft } from "react-icons/fi";
 import { motion } from "framer-motion";
@@ -53,10 +53,10 @@ export const RoleSelection: React.FC<RoleSelectionProps> = ({
   const { toast } = useToast();
 
   const savedRole = useAppSelector(
-    (state) => state.onboarding.role || state.auth.user?.role || ""
+    (state) => state.onboarding.role || state.auth.user?.role || "",
   );
   const [selectedRole, setSelectedRole] = React.useState<string | null>(
-    savedRole || null
+    savedRole || null,
   );
 
   React.useEffect(() => {

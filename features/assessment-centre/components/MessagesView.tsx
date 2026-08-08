@@ -10,7 +10,7 @@ import {
   FiSend,
   FiPlus,
 } from "react-icons/fi";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/src/components/ui/button";
 import { BroadcastModal } from "./BroadcastModal";
 import { MOCK_CONTACTS, MOCK_CHAT_MESSAGES } from "../utils/constants";
 import { ChatMessage } from "../types";
@@ -85,24 +85,6 @@ export const MessagesView: React.FC = () => {
 
   return (
     <div className="w-full flex flex-col gap-6 select-text">
-      {/* Header Banner for Messages Tab */}
-      <div className="w-full bg-[#a31d38] text-white rounded-3xl p-6 sm:p-8 flex items-center justify-between gap-4 flex-wrap shadow-md">
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
-          Messages
-        </h1>
-
-        <Button
-          type="button"
-          onClick={() => setIsBroadcastModalOpen(true)}
-          variant="amber"
-          size="md"
-          rightIcon={<FiPlus className="w-4.5 h-4.5" />}
-          className="px-6 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
-        >
-          Send Broadcast Message
-        </Button>
-      </div>
-
       {/* Main Chat Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start min-h-[600px]">
         {/* Left Contact List Sidebar */}
@@ -232,6 +214,7 @@ export const MessagesView: React.FC = () => {
             <div className="flex items-center gap-2 text-gray-400 pl-2 shrink-0">
               <button
                 type="button"
+                onClick={() => setInputMessage((prev) => prev + "📷 ")}
                 className="p-1.5 hover:text-neutral-primary transition-colors cursor-pointer"
                 title="Attach Camera Photo"
               >
@@ -239,6 +222,7 @@ export const MessagesView: React.FC = () => {
               </button>
               <button
                 type="button"
+                onClick={() => setInputMessage((prev) => prev + "📎 ")}
                 className="p-1.5 hover:text-neutral-primary transition-colors cursor-pointer"
                 title="Attach File"
               >
@@ -246,6 +230,7 @@ export const MessagesView: React.FC = () => {
               </button>
               <button
                 type="button"
+                onClick={() => setInputMessage((prev) => prev + "😊 ")}
                 className="p-1.5 hover:text-neutral-primary transition-colors cursor-pointer"
                 title="Insert Emoji"
               >
@@ -255,7 +240,7 @@ export const MessagesView: React.FC = () => {
 
             <input
               type="text"
-              placeholder="Tye here"
+              placeholder="Type here"
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               className="flex-1 bg-transparent text-xs sm:text-sm text-neutral-primary outline-none px-2"

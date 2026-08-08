@@ -10,9 +10,9 @@ import {
   FiGrid,
   FiCheck,
 } from "react-icons/fi";
-import { Button } from "@/components/ui/button";
-import { Select } from "@/components/ui/select";
-import { useToast } from "@/components/ui/toast";
+import { Button } from "@/src/components/ui/button";
+import { Select } from "@/src/components/ui/select";
+import { useToast } from "@/src/components/ui/toast";
 import {
   MOCK_JOB_LISTINGS,
   MOCK_ASSESSOR_APPLICANTS,
@@ -43,6 +43,9 @@ export const JobListingDetailView: React.FC<JobListingDetailViewProps> = ({
   const [selectedApplicantIds, setSelectedApplicantIds] = useState<string[]>(
     [],
   );
+  const [applicantsViewMode, setApplicantsViewMode] = useState<"list" | "grid">(
+    "list",
+  );
 
   const handleToggleFilled = () => {
     setIsFilled((prev) => !prev);
@@ -69,103 +72,6 @@ export const JobListingDetailView: React.FC<JobListingDetailViewProps> = ({
 
   return (
     <div className="w-full flex flex-col gap-6 select-text">
-      {/* Header Banner */}
-      <div className="w-full bg-[#a31d38] text-white rounded-3xl p-6 sm:p-8 xl:p-10 flex flex-col gap-6 shadow-md">
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-1 text-white/80 text-xs font-semibold select-none">
-              <span>Requests</span>
-              <span className="mx-1">&gt;</span>
-              <span className="text-white">Assessor</span>
-            </div>
-
-            <div className="flex items-center gap-2 mt-1">
-              <button
-                type="button"
-                onClick={onBack}
-                className="text-white/80 hover:text-white transition-colors cursor-pointer"
-              >
-                <FiChevronLeft className="w-6 h-6" />
-              </button>
-              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
-                Assessor Request
-              </h1>
-            </div>
-          </div>
-
-          <Button
-            type="button"
-            onClick={handleToggleFilled}
-            variant="amber"
-            size="md"
-            rightIcon={<FiCheck className="w-4.5 h-4.5" />}
-            className="px-6 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
-          >
-            {isFilled ? "Mark As Open" : "Mark As Filled"}
-          </Button>
-        </div>
-
-        {/* Stat Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15">
-            <div className="flex flex-col">
-              <span className="text-xs sm:text-sm font-medium text-white/80">
-                Available Slots
-              </span>
-              <div className="flex items-baseline gap-1.5 mt-1">
-                <span className="text-xl sm:text-2xl font-extrabold text-white">
-                  {job.slotsTotal - job.slotsFilled}/{job.slotsTotal}
-                </span>
-                <span className="text-xs font-normal text-white/70">
-                  available
-                </span>
-              </div>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
-              <FiClipboard className="w-5 h-5 text-white/90" />
-            </div>
-          </div>
-
-          <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15">
-            <div className="flex flex-col">
-              <span className="text-xs sm:text-sm font-medium text-white/80">
-                Total Applicants
-              </span>
-              <div className="flex items-baseline gap-1.5 mt-1">
-                <span className="text-xl sm:text-2xl font-extrabold text-white">
-                  {job.applicantsCount}
-                </span>
-                <span className="text-xs font-normal text-white/70">
-                  applicants
-                </span>
-              </div>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
-              <FiClipboard className="w-5 h-5 text-white/90" />
-            </div>
-          </div>
-
-          <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15">
-            <div className="flex flex-col">
-              <span className="text-xs sm:text-sm font-medium text-white/80">
-                Shortlisted Applicants
-              </span>
-              <div className="flex items-baseline gap-1.5 mt-1">
-                <span className="text-xl sm:text-2xl font-extrabold text-white">
-                  1
-                </span>
-                <span className="text-xs font-normal text-white/70">
-                  applicants
-                </span>
-              </div>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
-              <FiClipboard className="w-5 h-5 text-white/90" />
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Description Section */}
       <div className="bg-white rounded-3xl p-6 shadow-2xs border border-gray-100/80 flex flex-col gap-2">
         <h3 className="text-lg font-extrabold text-neutral-primary tracking-tight">
@@ -215,7 +121,7 @@ export const JobListingDetailView: React.FC<JobListingDetailViewProps> = ({
             />
           </div>
 
-          <div className="flex items-center justify-between sm:justify-end gap-3 flex-wrap">
+          <div className="flex items-center justify-end gap-3">
             <Select
               size="sm"
               showPlaceholderOption={false}
@@ -233,14 +139,24 @@ export const JobListingDetailView: React.FC<JobListingDetailViewProps> = ({
             <div className="flex items-center gap-1 bg-[#F8F9FA] p-1 rounded-xl border border-gray-200/80">
               <button
                 type="button"
-                className="p-1.5 rounded-lg bg-white text-neutral-primary shadow-xs font-bold"
+                onClick={() => setApplicantsViewMode("list")}
+                className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                  applicantsViewMode === "list"
+                    ? "bg-white text-neutral-primary shadow-xs font-bold"
+                    : "text-gray-400 hover:text-neutral-primary"
+                }`}
                 title="List View"
               >
                 <FiList className="w-4 h-4" />
               </button>
               <button
                 type="button"
-                className="p-1.5 rounded-lg text-gray-400 hover:text-neutral-primary"
+                onClick={() => setApplicantsViewMode("grid")}
+                className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                  applicantsViewMode === "grid"
+                    ? "bg-white text-neutral-primary shadow-xs font-bold"
+                    : "text-gray-400 hover:text-neutral-primary"
+                }`}
                 title="Grid View"
               >
                 <FiGrid className="w-4 h-4" />

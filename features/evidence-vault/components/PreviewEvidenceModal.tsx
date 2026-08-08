@@ -3,7 +3,7 @@
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiX, FiFileText } from "react-icons/fi";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/src/components/ui/button";
 import { EvidenceRecord } from "../utils/evidenceConstants";
 
 interface PreviewEvidenceModalProps {

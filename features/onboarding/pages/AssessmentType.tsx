@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { RoleCard } from "@/components/ui/role-card";
+import { RoleCard } from "@/src/components/ui/role-card";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setAssessmentType } from "@/store/slices/authSlice";
 import { setOnboardingAssessmentType } from "@/store/slices/onboardingSlice";
@@ -44,10 +44,10 @@ export const AssessmentType: React.FC<AssessmentTypeProps> = ({
 
   const savedAssessmentType = useAppSelector(
     (state) =>
-      state.onboarding.assessmentType || state.auth.user?.assessmentType || ""
+      state.onboarding.assessmentType || state.auth.user?.assessmentType || "",
   );
   const [selectedType, setSelectedType] = React.useState<string | null>(
-    savedAssessmentType || null
+    savedAssessmentType || null,
   );
 
   React.useEffect(() => {

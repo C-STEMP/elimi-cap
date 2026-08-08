@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { useToast } from "@/components/ui/toast";
+import { useToast } from "@/src/components/ui/toast";
 import { RESOURCES_LIST, ResourceRecord } from "../utils/evidenceConstants";
 import Image from "next/image";
 import { ASSETS_URL } from "@/assets";

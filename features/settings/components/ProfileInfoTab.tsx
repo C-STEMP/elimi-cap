@@ -9,7 +9,7 @@ import { ContactInfoSection } from "./ContactInfoSection";
 import { ResidentialAddressSection } from "./ResidentialAddressSection";
 import { AccessibilitySection } from "./AccessibilitySection";
 import { NotificationPrefSection } from "./NotificationPrefSection";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/src/components/ui/button";
 
 interface ProfileInfoTabProps {
   formData: ProfileFormData;

@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { Select } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { InfoIcon } from "@/components/ui/info-icon";
+import { Select } from "@/src/components/ui/select";
+import { Input } from "@/src/components/ui/input";
+import { InfoIcon } from "@/src/components/ui/info-icon";
 import { ProfileFormData } from "../types/settings.types";
 
 interface AccessibilitySectionProps {
@@ -26,14 +26,14 @@ export const AccessibilitySection: React.FC<AccessibilitySectionProps> = ({
   const [otherImpairment, setOtherImpairment] = useState(
     formData.impairment && !IMPAIRMENT_OPTIONS.includes(formData.impairment)
       ? formData.impairment
-      : ""
+      : "",
   );
 
   const selectedValue = IMPAIRMENT_OPTIONS.includes(formData.impairment)
     ? formData.impairment
     : formData.impairment
-    ? "Other"
-    : "";
+      ? "Other"
+      : "";
 
   return (
     <div className="flex flex-col gap-4">

@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Logo } from "@/components/ui/logo";
+import { Logo } from "@/src/components/ui/logo";
 import { SelfAssessmentSidebar } from "../components/SelfAssessmentSidebar";
 import { Step1PersonalInfo } from "../components/Step1PersonalInfo";
 import { Step2Competencies } from "../components/Step2Competencies";

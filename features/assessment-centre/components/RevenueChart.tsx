@@ -11,7 +11,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { MOCK_REVENUE_DATA } from "../utils/constants";
-import { Select } from "@/components/ui/select";
+import { Select } from "@/src/components/ui/select";
 
 export const RevenueChart: React.FC = () => {
   const [selectedYear, setSelectedYear] = useState("2026");

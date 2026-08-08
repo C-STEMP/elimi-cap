@@ -1,22 +1,25 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
-import { DatePicker } from "@/components/ui/date-picker";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/toast";
+import { Input } from "@/src/components/ui/input";
+import { Select } from "@/src/components/ui/select";
+import { DatePicker } from "@/src/components/ui/date-picker";
+import { Button } from "@/src/components/ui/button";
+import { useToast } from "@/src/components/ui/toast";
 import { FiArrowLeft, FiArrowRight, FiCheck } from "react-icons/fi";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { ASSETS_URL } from "@/assets";
-import { StatusModal } from "@/components/ui/status-modal";
-import { InfoIcon } from "@/components/ui/info-icon";
+import { StatusModal } from "@/src/components/ui/status-modal";
+import { InfoIcon } from "@/src/components/ui/info-icon";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setSidebarVariant, setRplStep } from "@/store/slices/authSlice";
 
-import { rplExperienceTradeSchema, extractZodErrors } from "@/lib/validation";
+import {
+  rplExperienceTradeSchema,
+  extractZodErrors,
+} from "@/src/lib/validation";
 
 export interface RPLExperienceTradeProps {
   onBack?: () => void;
@@ -54,9 +57,7 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
   onBack,
   onContinue,
 }) => {
-  const savedTrade = useAppSelector(
-    (s) => s.onboarding.startApplication.trade,
-  );
+  const savedTrade = useAppSelector((s) => s.onboarding.startApplication.trade);
 
   const [form, setForm] = useState({
     // Qualification Applying For
@@ -343,7 +344,9 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
               }
               value={form.previousAssessmentDetails}
               disabled={form.completedBefore === "No"}
-              onChange={(e) => update("previousAssessmentDetails", e.target.value)}
+              onChange={(e) =>
+                update("previousAssessmentDetails", e.target.value)
+              }
             />
 
             <Select

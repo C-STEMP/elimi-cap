@@ -4,14 +4,14 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { FiArrowLeft, FiArrowRight } from "react-icons/fi";
-import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
-import { DatePicker } from "@/components/ui/date-picker";
-import { PhoneInput } from "@/components/ui/phone-input";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/toast";
-import { InfoIcon } from "@/components/ui/info-icon";
-import { useCountryStateCity } from "@/lib/hooks/useCountryStateCity";
+import { Input } from "@/src/components/ui/input";
+import { Select } from "@/src/components/ui/select";
+import { DatePicker } from "@/src/components/ui/date-picker";
+import { PhoneInput } from "@/src/components/ui/phone-input";
+import { Button } from "@/src/components/ui/button";
+import { useToast } from "@/src/components/ui/toast";
+import { InfoIcon } from "@/src/components/ui/info-icon";
+import { useCountryStateCity } from "@/src/lib/hooks/useCountryStateCity";
 
 export const CenterPersonalInfo: React.FC = () => {
   const router = useRouter();
@@ -289,7 +289,9 @@ export const CenterPersonalInfo: React.FC = () => {
                   <span className="text-primary-solid ml-0.5">*</span>
                 </span>
               }
-              placeholder={form.country ? "Select state" : "Select country first"}
+              placeholder={
+                form.country ? "Select state" : "Select country first"
+              }
               options={states}
               value={form.state}
               error={errors.state}

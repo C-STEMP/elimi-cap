@@ -9,7 +9,7 @@ import {
   FiFileText,
 } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/src/components/ui/button";
 
 interface UploadSignatureModalProps {
   isOpen: boolean;
@@ -50,7 +50,8 @@ export const UploadSignatureModal: React.FC<UploadSignatureModalProps> = ({
             Upload Signature
           </h3>
           <p className="text-gray-500 text-xs sm:text-sm text-center leading-relaxed mb-6 max-w-xs mx-auto font-normal">
-            Please upload your signature to complete this step. Ensure the signature is clear and legible.
+            Please upload your signature to complete this step. Ensure the
+            signature is clear and legible.
           </p>
 
           <div className="text-left w-full">

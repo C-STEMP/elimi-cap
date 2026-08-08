@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import { FiChevronDown, FiChevronUp } from "react-icons/fi";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/src/components/ui/button";
 import { StageConfig } from "../types";
 
 interface ApplicationStageCardProps {
@@ -81,10 +81,10 @@ export const ApplicationStageCard: React.FC<ApplicationStageCardProps> = ({
                 stage.actionText === "View"
                   ? "bg-white! text-secondary! border border-gray-200! hover:bg-gray-50! shadow-none!"
                   : stage.actionText === "Make Payment"
-                  ? "bg-white! text-[#FBAB2A]! border border-gray-200! hover:bg-gray-50! shadow-none!"
-                  : isOutline
-                  ? "bg-white! text-secondary! border border-gray-200! hover:bg-gray-50! shadow-none!"
-                  : "bg-[#FBAB2A]! text-white! hover:bg-[#E89B1F]! shadow-none!"
+                    ? "bg-white! text-[#FBAB2A]! border border-gray-200! hover:bg-gray-50! shadow-none!"
+                    : isOutline
+                      ? "bg-white! text-secondary! border border-gray-200! hover:bg-gray-50! shadow-none!"
+                      : "bg-[#FBAB2A]! text-white! hover:bg-[#E89B1F]! shadow-none!"
               }`}
             >
               {stage.actionText}
@@ -180,104 +180,102 @@ export const ApplicationStageCard: React.FC<ApplicationStageCardProps> = ({
         </div>
       )}
 
-      {!isCollapsed &&
-        stage.formsToSign &&
-        stage.formsToSign.length > 0 && (
-          <div className="mt-4 flex flex-col gap-3">
-            {stage.formsToSign.map((form) => (
-              <div
-                key={form.id}
-                className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-100/90 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs"
-              >
-                <div className="flex flex-col">
-                  <h4 className="font-extrabold text-black text-sm sm:text-base underline underline-offset-3 cursor-pointer hover:text-[#A31D38] transition-colors">
-                    {form.title}
-                  </h4>
-                  {form.description && (
-                    <p className="text-gray-400 text-xs font-normal mt-1">
-                      {form.description}
-                    </p>
-                  )}
-                </div>
+      {!isCollapsed && stage.formsToSign && stage.formsToSign.length > 0 && (
+        <div className="mt-4 flex flex-col gap-3">
+          {stage.formsToSign.map((form) => (
+            <div
+              key={form.id}
+              className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-100/90 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs"
+            >
+              <div className="flex flex-col">
+                <h4 className="font-extrabold text-black text-sm sm:text-base underline underline-offset-3 cursor-pointer hover:text-[#A31D38] transition-colors">
+                  {form.title}
+                </h4>
+                {form.description && (
+                  <p className="text-gray-400 text-xs font-normal mt-1">
+                    {form.description}
+                  </p>
+                )}
+              </div>
 
-                {form.signed ? (
-                  <div className="flex items-center gap-2.5 shrink-0">
-                    <div className="bg-[#E6F4EA] border border-[#1E7F4C]/30 text-[#1E7F4C] font-bold text-xs sm:text-sm px-4 py-2 rounded-xl flex items-center gap-2 select-none shadow-2xs">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="w-4 h-4 text-[#1E7F4C]"
-                      >
-                        <path d="M12 20h9" />
-                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-                      </svg>
-                      Signed
-                    </div>
-                    <Button
-                      type="button"
-                      onClick={() => stage.onOpenSignatureModal?.(form.id)}
-                      variant="ghost"
-                      size="icon"
-                      rounded="lg"
-                      aria-label="Edit signature"
-                      className="text-gray-500 hover:text-black hover:bg-gray-100"
-                      leftIcon={
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="18"
-                          height="18"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
-                        </svg>
-                      }
-                    />
+              {form.signed ? (
+                <div className="flex items-center gap-2.5 shrink-0">
+                  <div className="bg-[#E6F4EA] border border-[#1E7F4C]/30 text-[#1E7F4C] font-bold text-xs sm:text-sm px-4 py-2 rounded-xl flex items-center gap-2 select-none shadow-2xs">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="w-4 h-4 text-[#1E7F4C]"
+                    >
+                      <path d="M12 20h9" />
+                      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                    </svg>
+                    Signed
                   </div>
-                ) : (
                   <Button
                     type="button"
                     onClick={() => stage.onOpenSignatureModal?.(form.id)}
-                    variant="outline"
-                    size="sm"
-                    rounded="xl"
-                    className="shrink-0 border-[#FBAB2A] text-[#FBAB2A] hover:bg-amber-50/50 font-bold"
+                    variant="ghost"
+                    size="icon"
+                    rounded="lg"
+                    aria-label="Edit signature"
+                    className="text-gray-500 hover:text-black hover:bg-gray-100"
                     leftIcon={
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
+                        width="18"
+                        height="18"
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
                         strokeWidth="2"
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        className="w-4 h-4 text-[#FBAB2A]"
                       >
-                        <path d="M12 20h9" />
-                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
                       </svg>
                     }
-                  >
-                    Append Signature
-                  </Button>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+                  />
+                </div>
+              ) : (
+                <Button
+                  type="button"
+                  onClick={() => stage.onOpenSignatureModal?.(form.id)}
+                  variant="outline"
+                  size="sm"
+                  rounded="xl"
+                  className="shrink-0 border-[#FBAB2A] text-[#FBAB2A] hover:bg-amber-50/50 font-bold"
+                  leftIcon={
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="w-4 h-4 text-[#FBAB2A]"
+                    >
+                      <path d="M12 20h9" />
+                      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                    </svg>
+                  }
+                >
+                  Append Signature
+                </Button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       {!isCollapsed && stage.competentBanner && (
         <div className="mt-4 bg-secondary rounded-lg p-6 sm:p-8 text-center text-white flex flex-col items-center justify-center shadow-xs">

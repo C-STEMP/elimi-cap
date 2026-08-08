@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { HeaderBanner } from "@/features/dashboard/components/HeaderBanner";
 import { ASSETS_URL } from "@/assets";
 import { useAppSelector } from "@/store/hooks";
-import { useToast } from "@/components/ui/toast";
+import { useToast } from "@/src/components/ui/toast";
 import {
   SettingsTab,
   VerificationStatus,
@@ -16,7 +16,7 @@ import {
 import { SettingsSidebar } from "../components/SettingsSidebar";
 import { ProfileInfoTab } from "../components/ProfileInfoTab";
 import { SecurityTab } from "../components/SecurityTab";
-import { StatusModal } from "@/components/ui/status-modal";
+import { StatusModal } from "@/src/components/ui/status-modal";
 import { DeleteAccountModal } from "../components/DeleteAccountModal";
 import { SuccessModal } from "../components/SuccessModal";
 

@@ -12,10 +12,10 @@ import {
   FiChevronDown,
 } from "react-icons/fi";
 import { ASSETS_URL } from "@/assets";
-import { Button } from "@/components/ui/button";
-import { Select } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { useToast } from "@/components/ui/toast";
+import { Button } from "@/src/components/ui/button";
+import { Select } from "@/src/components/ui/select";
+import { Input } from "@/src/components/ui/input";
+import { useToast } from "@/src/components/ui/toast";
 import { MOCK_AWARDING_BODY_INFO } from "../utils/constants";
 
 interface ApplicationDetailViewProps {
@@ -34,9 +34,42 @@ export const AssessmentCentreApplicationDetailView: React.FC<
   onOpenEvidenceVault,
 }) => {
   const { toast } = useToast();
-  const [currentMonth] = useState("July");
+  const [currentMonth, setCurrentMonth] = useState("July");
+  const months = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
   const daysOfWeek = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
   const daysInMonth = Array.from({ length: 31 }, (_, i) => i + 1);
+
+  const [expandedCards, setExpandedCards] = useState<Record<string, boolean>>({
+    interview: false,
+    verifier: false,
+  });
+
+  const toggleCard = (key: string) => {
+    setExpandedCards((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const handlePrevMonth = () => {
+    const idx = months.indexOf(currentMonth);
+    setCurrentMonth(months[(idx - 1 + 12) % 12]);
+  };
+
+  const handleNextMonth = () => {
+    const idx = months.indexOf(currentMonth);
+    setCurrentMonth(months[(idx + 1) % 12]);
+  };
 
   const [paymentStatus] = useState<"paid" | "unpaid">("paid");
   const [hasFacilitator] = useState(true);
@@ -96,8 +129,6 @@ export const AssessmentCentreApplicationDetailView: React.FC<
 
   return (
     <div className="w-full flex flex-col gap-6 select-text">
-
-
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         <div className="lg:col-span-8 xl:col-span-9 flex flex-col gap-4">
           <div className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-100 shadow-2xs flex items-center justify-between gap-4">
@@ -200,11 +231,22 @@ export const AssessmentCentreApplicationDetailView: React.FC<
 
             <button
               type="button"
+              onClick={() => toggleCard("interview")}
               className="p-2 text-gray-400 hover:text-black cursor-pointer"
             >
-              <FiChevronDown className="w-5 h-5" />
+              <FiChevronDown
+                className={`w-5 h-5 transition-transform ${
+                  expandedCards.interview ? "rotate-180" : ""
+                }`}
+              />
             </button>
           </div>
+
+          {expandedCards.interview && (
+            <div className="mt-3 pt-3 border-t border-gray-100 text-xs text-gray-500">
+              Interview stage details and notes will appear here.
+            </div>
+          )}
 
           <div className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-100 shadow-2xs flex items-center justify-between gap-4">
             <div className="flex flex-col gap-1.5 min-w-0">
@@ -223,11 +265,22 @@ export const AssessmentCentreApplicationDetailView: React.FC<
 
             <button
               type="button"
+              onClick={() => toggleCard("verifier")}
               className="p-2 text-gray-400 hover:text-black cursor-pointer"
             >
-              <FiChevronDown className="w-5 h-5" />
+              <FiChevronDown
+                className={`w-5 h-5 transition-transform ${
+                  expandedCards.verifier ? "rotate-180" : ""
+                }`}
+              />
             </button>
           </div>
+
+          {expandedCards.verifier && (
+            <div className="mt-3 pt-3 border-t border-gray-100 text-xs text-gray-500">
+              Internal verifier details and notes will appear here.
+            </div>
+          )}
 
           <div className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-100 shadow-2xs flex items-center justify-between gap-4">
             <div className="flex flex-col gap-1.5 min-w-0">
@@ -271,7 +324,9 @@ export const AssessmentCentreApplicationDetailView: React.FC<
                   Competent
                 </span>
               </div>
-              <p className="text-gray-400 text-xs sm:text-sm font-normal">---</p>
+              <p className="text-gray-400 text-xs sm:text-sm font-normal">
+                ---
+              </p>
             </div>
           </div>
         </div>
@@ -281,6 +336,7 @@ export const AssessmentCentreApplicationDetailView: React.FC<
             <div className="flex items-center justify-between text-white px-1">
               <button
                 type="button"
+                onClick={handlePrevMonth}
                 className="p-1 hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
               >
                 <FiChevronLeft className="w-5 h-5" />
@@ -290,6 +346,7 @@ export const AssessmentCentreApplicationDetailView: React.FC<
               </span>
               <button
                 type="button"
+                onClick={handleNextMonth}
                 className="p-1 hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
               >
                 <FiChevronRight className="w-5 h-5" />

@@ -5,13 +5,13 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { FiArrowLeft, FiArrowRight, FiUpload } from "react-icons/fi";
-import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
-import { PhoneInput } from "@/components/ui/phone-input";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/toast";
-import { InfoIcon } from "@/components/ui/info-icon";
-import { useCountryStateCity } from "@/lib/hooks/useCountryStateCity";
+import { Input } from "@/src/components/ui/input";
+import { Select } from "@/src/components/ui/select";
+import { PhoneInput } from "@/src/components/ui/phone-input";
+import { Button } from "@/src/components/ui/button";
+import { useToast } from "@/src/components/ui/toast";
+import { InfoIcon } from "@/src/components/ui/info-icon";
+import { useCountryStateCity } from "@/src/lib/hooks/useCountryStateCity";
 
 export const CenterInformation: React.FC = () => {
   const router = useRouter();

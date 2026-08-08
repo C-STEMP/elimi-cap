@@ -1,13 +1,13 @@
 "use client";
 
 import React from "react";
-import { Button } from "@/components/ui/button";
-import { PartyPopperIllustration } from "@/components/ui/svg-icons";
+import { Button } from "@/src/components/ui/button";
+import { PartyPopperIllustration } from "@/src/components/ui/svg-icons";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { useAppSelector } from "@/store/hooks";
 
-import { saveOnboardedStatus } from "@/lib/auth-storage";
+import { saveOnboardedStatus } from "@/src/lib/auth-storage";
 
 export interface SuccessProps {
   onStartApplication?: () => void;

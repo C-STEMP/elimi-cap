@@ -2,7 +2,7 @@
 
 import React from "react";
 import { FiFolder, FiEye, FiTrash2 } from "react-icons/fi";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/src/components/ui/button";
 import { EvidenceRecord } from "../utils/evidenceConstants";
 import Image from "next/image";
 import { ASSETS_URL } from "@/assets";

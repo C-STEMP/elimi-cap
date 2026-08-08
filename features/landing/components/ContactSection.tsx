@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, FormEvent } from "react";
-import { useToast } from "@/components/ui/toast";
+import { useToast } from "@/src/components/ui/toast";
 
 export function ContactSection() {
   const { toast } = useToast();
@@ -33,7 +33,8 @@ export function ContactSection() {
       toast({
         type: "success",
         title: "Enquiry Sent!",
-        description: "Thank you for reaching out. Our team will get back to you shortly.",
+        description:
+          "Thank you for reaching out. Our team will get back to you shortly.",
       });
 
       setTimeout(() => setSubmitted(false), 4000);
@@ -105,7 +106,9 @@ export function ContactSection() {
                 inputMode="numeric"
                 pattern="[0-9]*"
                 value={formData.phone}
-                onChange={(e) => update("phone", e.target.value.replace(/[^0-9]/g, ""))}
+                onChange={(e) =>
+                  update("phone", e.target.value.replace(/[^0-9]/g, ""))
+                }
                 placeholder="Enter your phone number"
                 className="w-full rounded-lg border border-white/20 bg-white/10 px-4 py-3 text-sm text-white placeholder-white/40 focus:border-border-secondary focus:outline-none"
               />
@@ -148,8 +151,8 @@ export function ContactSection() {
               {isSubmitting
                 ? "Sending..."
                 : submitted
-                ? "Message Sent!"
-                : "Send Enquiry"}
+                  ? "Message Sent!"
+                  : "Send Enquiry"}
             </button>
           </div>
         </form>

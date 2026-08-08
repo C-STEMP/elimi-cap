@@ -33,7 +33,6 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
 
   return (
     <div className="bg-white rounded-[20px] p-5 shadow-lg border border-gray-100/80 flex flex-col gap-6 w-full lg:w-72 shrink-0">
-      {/* Hidden File Input for Changing Picture */}
       <input
         ref={fileInputRef}
         type="file"
@@ -43,9 +42,7 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
         onChange={handleFileChange}
       />
 
-      {/* Top Profile Card Header */}
       <div className="flex items-center gap-3.5">
-        {/* User Photo */}
         <div className="relative w-20 h-20 rounded-xl overflow-hidden shrink-0 border border-gray-100 shadow-xs">
           <Image
             src={userAvatarSrc}
@@ -58,7 +55,6 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
           />
         </div>
 
-        {/* Action & Verification Status */}
         <div className="flex flex-col items-start justify-center">
           <button
             type="button"
@@ -71,7 +67,6 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
             JPG or PNG 10mb
           </span>
 
-          {/* Verification Badge */}
           <div className="mt-4">
             {isVerified ? (
               <div className="flex items-center gap-1 text-[11px] font-medium text-[#1E7F4C]">
@@ -88,7 +83,6 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
         </div>
       </div>
 
-      {/* Navigation Options */}
       <nav className="flex flex-col gap-1.5 lg:gap-6 pt-2">
         <button
           type="button"

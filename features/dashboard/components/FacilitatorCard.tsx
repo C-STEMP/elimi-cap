@@ -4,7 +4,7 @@ import React from "react";
 import Image from "next/image";
 import type { StaticImageData } from "next/image";
 import { FiUser } from "react-icons/fi";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/src/components/ui/button";
 
 export interface FacilitatorData {
   name: string;

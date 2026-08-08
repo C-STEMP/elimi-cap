@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/toast";
+import { Button } from "@/src/components/ui/button";
+import { useToast } from "@/src/components/ui/toast";
 import { FiArrowLeft, FiArrowRight, FiCheck, FiEdit2 } from "react-icons/fi";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
@@ -11,7 +11,7 @@ import { ASSETS_URL } from "@/assets";
 import { useAppDispatch } from "@/store/hooks";
 import { setSidebarVariant, setRplStep } from "@/store/slices/authSlice";
 
-import { StatusModal } from "@/components/ui/status-modal";
+import { StatusModal } from "@/src/components/ui/status-modal";
 
 export interface RPLReviewSubmitProps {
   onBack?: () => void;

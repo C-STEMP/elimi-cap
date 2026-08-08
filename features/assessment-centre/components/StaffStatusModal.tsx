@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Image from "next/image";
 import { FiX, FiSlash, FiLock, FiUnlock } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/src/components/ui/button";
 import { ASSETS_URL } from "@/assets";
 
 export type StaffStatusModalMode =
@@ -46,7 +46,6 @@ export const StaffStatusModal: React.FC<StaffStatusModalProps> = ({
           onClick={(e) => e.stopPropagation()}
           className="bg-white rounded-3xl p-8 sm:p-10 max-w-md w-full shadow-2xl relative flex flex-col items-center text-center"
         >
-          {/* Close Button X */}
           {(mode === "confirm-deactivate" || mode === "confirm-activate") && (
             <button
               type="button"
@@ -58,7 +57,6 @@ export const StaffStatusModal: React.FC<StaffStatusModalProps> = ({
             </button>
           )}
 
-          {/* Mode 1: Confirm Deactivate (Image 3) */}
           {mode === "confirm-deactivate" && (
             <div className="w-full flex flex-col items-center">
               <div className="mt-2 mb-4 relative flex items-center justify-center">
@@ -91,12 +89,11 @@ export const StaffStatusModal: React.FC<StaffStatusModalProps> = ({
             </div>
           )}
 
-          {/* Mode 2: Deactivated Success (Image 5) */}
           {mode === "deactivated-success" && (
             <div className="w-full flex flex-col items-center">
               <div className="mt-2 mb-4 relative flex items-center justify-center">
                 <Image
-                  src={ASSETS_URL.deactivateStaffImg}
+                  src={ASSETS_URL.successCheckmarkImg}
                   alt="Staff Deactivated Successfully"
                   width={160}
                   height={160}
@@ -167,7 +164,7 @@ export const StaffStatusModal: React.FC<StaffStatusModalProps> = ({
             <div className="w-full flex flex-col items-center">
               <div className="mt-2 mb-4 relative flex items-center justify-center">
                 <Image
-                  src={ASSETS_URL.activateStaffImg}
+                  src={ASSETS_URL.successCheckmarkImg}
                   alt="Staff Activated Successfully"
                   width={160}
                   height={160}
@@ -188,8 +185,9 @@ export const StaffStatusModal: React.FC<StaffStatusModalProps> = ({
               <Button
                 type="button"
                 onClick={onClose}
-                variant="secondary"
+                variant="amber"
                 size="lg"
+                className="w-full h-12.5 text-white font-bold text-base bg-[#fbab2a] hover:bg-[#e89b1f] transition-all shadow-lg cursor-pointer rounded-xl"
               >
                 Continue
               </Button>

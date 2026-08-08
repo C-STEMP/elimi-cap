@@ -5,17 +5,20 @@ import { FiCalendar, FiArrowLeft, FiArrowRight } from "react-icons/fi";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
-import { DatePicker } from "@/components/ui/date-picker";
-import { PassportUpload } from "@/components/ui/passport-upload";
-import { PhoneInput } from "@/components/ui/phone-input";
-import { InfoIcon } from "@/components/ui/info-icon";
-import { StatusModal } from "@/components/ui/status-modal";
-import { useToast } from "@/components/ui/toast";
+import { Button } from "@/src/components/ui/button";
+import { Input } from "@/src/components/ui/input";
+import { Select } from "@/src/components/ui/select";
+import { DatePicker } from "@/src/components/ui/date-picker";
+import { PassportUpload } from "@/src/components/ui/passport-upload";
+import { PhoneInput } from "@/src/components/ui/phone-input";
+import { InfoIcon } from "@/src/components/ui/info-icon";
+import { StatusModal } from "@/src/components/ui/status-modal";
+import { useToast } from "@/src/components/ui/toast";
 import { ASSETS_URL } from "@/assets";
-import { selfAssessmentStep1Schema, extractZodErrors } from "@/lib/validation";
+import {
+  selfAssessmentStep1Schema,
+  extractZodErrors,
+} from "@/src/lib/validation";
 
 interface Step1Props {
   onNext: () => void;

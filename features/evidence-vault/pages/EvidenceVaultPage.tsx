@@ -7,13 +7,11 @@ import { useRouter } from "next/navigation";
 import { HeaderBanner } from "@/features/dashboard/components/HeaderBanner";
 import { CalendarWidget } from "@/features/dashboard/components/CalendarWidget";
 import { UpcomingCard } from "@/features/dashboard/components/UpcomingCard";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/toast";
+import { Button } from "@/src/components/ui/button";
+import { useToast } from "@/src/components/ui/toast";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { markEvidenceUploaded } from "@/store/slices/applicationSlice";
-import {
-  EvidenceRecord,
-} from "../utils/evidenceConstants";
+import { EvidenceRecord } from "../utils/evidenceConstants";
 import {
   UploadEvidenceModal,
   SelectedFileType,
@@ -120,7 +118,10 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
         backTitle="Evidence Vault"
         breadcrumbs={[
           { label: "My Applications", href: "/dashboard/applications" },
-          { label: application.title, href: `/dashboard/applications/${application.id}` },
+          {
+            label: application.title,
+            href: `/dashboard/applications/${application.id}`,
+          },
           { label: "Evidence Vault" },
         ]}
         showCreateButton={false}
@@ -163,11 +164,13 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
 
         <div className="lg:col-span-4 xl:col-span-3 flex flex-col gap-6">
           <CalendarWidget />
-          <UpcomingCard interview={{
-            title: "Panel Interview",
-            date: "22-07-2026",
-            time: "12:00PM",
-          }} />
+          <UpcomingCard
+            interview={{
+              title: "Panel Interview",
+              date: "22-07-2026",
+              time: "12:00PM",
+            }}
+          />
         </div>
       </div>
 

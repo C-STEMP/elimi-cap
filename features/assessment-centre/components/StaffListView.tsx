@@ -10,10 +10,11 @@ import {
   FiPlus,
   FiUser,
 } from "react-icons/fi";
-import { Select } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
+import { Select } from "@/src/components/ui/select";
+import { Button } from "@/src/components/ui/button";
 import { MOCK_STAFF_MEMBERS } from "../utils/constants";
 import { StaffMember } from "../types";
+import { StaffStatusModal, StaffStatusModalMode } from "./StaffStatusModal";
 
 interface StaffListViewProps {
   onSelectStaff: (staffId: string) => void;
@@ -30,6 +31,31 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
   const [statusFilter, setStatusFilter] = useState("All");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
+  const [isDeactivateModalOpen, setIsDeactivateModalOpen] = useState(false);
+  const [deactivateModalMode, setDeactivateModalMode] =
+    useState<StaffStatusModalMode>("confirm-deactivate");
+
+  const handleOpenDeactivateModal = () => {
+    if (selectedStaffIds.length === 0) return;
+    setDeactivateModalMode("confirm-deactivate");
+    setIsDeactivateModalOpen(true);
+  };
+
+  const handleConfirmDeactivate = () => {
+    setStaffMembers((prev) =>
+      prev.map((staff) =>
+        selectedStaffIds.includes(staff.id)
+          ? { ...staff, status: "Inactive" as const }
+          : staff,
+      ),
+    );
+    setDeactivateModalMode("deactivated-success");
+  };
+
+  const handleCloseDeactivateModal = () => {
+    setIsDeactivateModalOpen(false);
+    setSelectedStaffIds([]);
+  };
 
   const toggleSelectStaff = (id: string) => {
     setSelectedStaffIds((prev) =>
@@ -59,19 +85,19 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
     switch (status) {
       case "Active":
         return (
-          <span className="bg-[#1E7F4C]/20 text-[#1E7F4C] font-medium px-4 py-1 rounded-full text-xs inline-block">
+          <span className="bg-[#1E7F4C]/20 text-[#1E7F4C]  px-4 py-1 rounded-full text-xs inline-block">
             Active
           </span>
         );
       case "Pending":
         return (
-          <span className="bg-secondary/20 text-secondary font-medium px-3 py-1 rounded-full text-xs inline-block">
+          <span className="bg-secondary/20 text-secondary  px-3 py-1 rounded-full text-xs inline-block">
             Pending
           </span>
         );
       case "Inactive":
         return (
-          <span className="bg-black/20 text-black font-medium px-3 py-1 rounded-full text-xs inline-block">
+          <span className="bg-black/20 text-black  px-3 py-1 rounded-full text-xs inline-block">
             Inactive
           </span>
         );
@@ -80,10 +106,8 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
 
   return (
     <div className="w-full flex flex-col gap-6 select-text">
-      {/* Main Staff Content Container */}
       <div className="bg-white rounded-3xl p-6 shadow-2xs border border-gray-100/80 flex flex-col gap-6">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-          {/* Search Bar */}
           <div className="relative flex-1 max-w-sm">
             <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-black" />
             <input
@@ -110,42 +134,49 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
               ]}
             />
 
-            <button
-              type="button"
-              onClick={() => setViewMode("list")}
-              className={`p-1.5 rounded-full transition-all cursor-pointer ${
-                viewMode === "list"
-                  ? "bg-primary/10 p-1 text-primary shadow-xs font-bold"
-                  : "bg-black/10 text-black hover:text-neutral-primary"
-              }`}
-              title="List View"
-            >
-              <FiList className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode("grid")}
-              className={`p-1.5 rounded-lg transition-all cursor-pointer ${
-                viewMode === "grid"
-                  ? "bg-primary/10 p-1 text-primary shadow-xs font-bold"
-                  : "bg-black/10 text-black hover:text-neutral-primary"
-              }`}
-              title="Grid View"
-            >
-              <FiGrid className="w-4 h-4" />
-            </button>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setViewMode("list")}
+                className={`w-9 h-9 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+                  viewMode === "list"
+                    ? "bg-[#FCE8EC] text-[#a31d38] shadow-2xs"
+                    : "bg-[#EAEBED] text-gray-700 hover:text-neutral-primary"
+                }`}
+                title="List View"
+              >
+                <FiList className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("grid")}
+                className={`w-9 h-9 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+                  viewMode === "grid"
+                    ? "bg-[#FCE8EC] text-[#a31d38] shadow-2xs"
+                    : "bg-[#EAEBED] text-gray-700 hover:text-neutral-primary"
+                }`}
+                title="Grid View"
+              >
+                <FiGrid className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
         <div className="flex items-center justify-end">
           <button
             type="button"
-            className="text-xs font-semibold text-gray-400 hover:text-red-600 underline transition-colors cursor-pointer ml-1"
+            onClick={handleOpenDeactivateModal}
+            disabled={selectedStaffIds.length === 0}
+            className={`text-xs font-semibold underline transition-colors ml-1 ${
+              selectedStaffIds.length === 0
+                ? "text-gray-300 cursor-not-allowed"
+                : "text-gray-400 hover:text-red-600 cursor-pointer"
+            }`}
           >
             Deactivate
           </button>
         </div>
 
-        {/* View Mode 1: Grid Card View */}
         {viewMode === "grid" ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredStaff.map((staff) => {
@@ -164,9 +195,7 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
                     />
 
                     <div className="flex flex-col gap-2 lg:gap-4">
-                      <span className="font-medium text-sm text-black">
-                        {staff.name}
-                      </span>
+                      <span className=" text-sm text-black">{staff.name}</span>
                       <span className="text-xs text-[#19191880] font-normal">
                         {staff.email}
                       </span>
@@ -192,7 +221,6 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
             })}
           </div>
         ) : (
-          /* View Mode 2: Table List View */
           <div className="w-full overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-175">
               <thead>
@@ -205,7 +233,7 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
                         filteredStaff.length > 0
                       }
                       onChange={toggleSelectAll}
-                      className="w-4 h-4 rounded border-gray-300 text-[#a31d38] focus:ring-0 cursor-pointer"
+                      className="w-4 h-4 rounded text-primary focus:ring-0 cursor-pointer"
                     />
                   </th>
                   <th className="p-3.5 whitespace-nowrap">Staff Name</th>
@@ -218,7 +246,7 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100 text-xs sm:text-sm font-medium text-neutral-primary">
+              <tbody className="divide-y divide-gray-100 text-xs sm:text-sm  text-black">
                 {filteredStaff.map((staff) => {
                   const isSelected = selectedStaffIds.includes(staff.id);
                   return (
@@ -245,7 +273,7 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
                         <button
                           type="button"
                           onClick={() => onSelectStaff(staff.id)}
-                          className="text-neutral-primary font-bold text-xs underline hover:text-[#a31d38] transition-colors cursor-pointer"
+                          className="text-black font-bold text-xs underline hover:text-[#a31d38] transition-colors cursor-pointer"
                         >
                           View
                         </button>
@@ -258,6 +286,18 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
           </div>
         )}
       </div>
+
+      <StaffStatusModal
+        isOpen={isDeactivateModalOpen}
+        mode={deactivateModalMode}
+        staffName={
+          selectedStaffIds.length === 1
+            ? staffMembers.find((s) => s.id === selectedStaffIds[0])?.name
+            : undefined
+        }
+        onClose={handleCloseDeactivateModal}
+        onConfirmDeactivate={handleConfirmDeactivate}
+      />
     </div>
   );
 };

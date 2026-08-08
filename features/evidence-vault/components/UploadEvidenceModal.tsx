@@ -3,9 +3,9 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiX, FiUpload, FiFileText, FiCheck, FiTrash2 } from "react-icons/fi";
-import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
+import { Input } from "@/src/components/ui/input";
+import { Select } from "@/src/components/ui/select";
+import { Button } from "@/src/components/ui/button";
 
 export interface SelectedFileType {
   name: string;
@@ -164,7 +164,9 @@ export const UploadEvidenceModal: React.FC<UploadEvidenceModalProps> = ({
               <div
                 onClick={handleSelectFileClick}
                 className={`border-2 border-dashed ${
-                  errors.file ? "border-red-400 bg-red-50" : "border-[#F4B4C0] bg-[#FFF5F7]"
+                  errors.file
+                    ? "border-red-400 bg-red-50"
+                    : "border-[#F4B4C0] bg-[#FFF5F7]"
                 } hover:bg-[#FFEBF0] rounded-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-colors`}
               >
                 <div className="w-8 h-8 rounded-full flex items-center justify-center text-[#BE185D] mb-2">

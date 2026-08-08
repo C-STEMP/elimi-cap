@@ -3,18 +3,14 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import {
-  FiChevronLeft,
   FiSearch,
-  FiClipboard,
   FiFileText,
   FiEye,
-  FiSlash,
-  FiUnlock,
   FiList,
   FiGrid,
+  FiX,
 } from "react-icons/fi";
-import { Button } from "@/components/ui/button";
-import { Select } from "@/components/ui/select";
+import { Select } from "@/src/components/ui/select";
 import { MOCK_ASSESSORS, MOCK_ASSIGNED_CANDIDATES } from "../utils/constants";
 import { AssignedCandidate } from "../types";
 import { StaffStatusModal, StaffStatusModalMode } from "./StaffStatusModal";
@@ -23,11 +19,12 @@ import { ASSETS_URL } from "@/assets";
 interface AssessorProfileDetailViewProps {
   assessorId: string;
   onBack: () => void;
+  onViewCandidate?: (candidateId: string) => void;
 }
 
 export const AssessorProfileDetailView: React.FC<
   AssessorProfileDetailViewProps
-> = ({ assessorId, onBack }) => {
+> = ({ assessorId, onBack, onViewCandidate }) => {
   const assessor =
     MOCK_ASSESSORS.find((a) => a.id === assessorId) || MOCK_ASSESSORS[0];
 
@@ -41,6 +38,10 @@ export const AssessorProfileDetailView: React.FC<
   const [isDeactivated, setIsDeactivated] = useState(
     assessor.status === "Inactive",
   );
+  const [detailViewMode, setDetailViewMode] = useState<"list" | "grid">("list");
+  const [previewCertificateUrl, setPreviewCertificateUrl] = useState<
+    string | null
+  >(null);
 
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [statusModalMode, setStatusModalMode] =
@@ -80,121 +81,6 @@ export const AssessorProfileDetailView: React.FC<
 
   return (
     <div className="w-full flex flex-col gap-6 select-text">
-      {/* Header Banner */}
-      <div className="w-full bg-[#a31d38] text-white rounded-3xl p-6 sm:p-8 xl:p-10 flex flex-col gap-6 shadow-md">
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex flex-col gap-1">
-            <button
-              type="button"
-              onClick={onBack}
-              className="flex items-center gap-1 text-white/80 hover:text-white text-xs font-semibold transition-colors cursor-pointer w-fit select-none"
-            >
-              <FiChevronLeft className="w-4 h-4" />
-              <span>Assessor</span>
-              <span className="mx-1">&gt;</span>
-              <span className="text-white">{assessor.name}</span>
-            </button>
-
-            <div className="flex items-center gap-2 mt-1">
-              <button
-                type="button"
-                onClick={onBack}
-                className="text-white/80 hover:text-white transition-colors cursor-pointer"
-              >
-                <FiChevronLeft className="w-6 h-6" />
-              </button>
-              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
-                {assessor.name}
-              </h1>
-            </div>
-          </div>
-
-          {isDeactivated ? (
-            <Button
-              type="button"
-              onClick={handleOpenActivateModal}
-              variant="amber"
-              size="md"
-              rightIcon={<FiUnlock className="w-4 h-4" />}
-              className="px-6 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
-            >
-              Activate
-            </Button>
-          ) : (
-            <Button
-              type="button"
-              onClick={handleOpenDeactivateModal}
-              variant="amber"
-              size="md"
-              rightIcon={<FiSlash className="w-4 h-4" />}
-              className="px-6 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
-            >
-              Deactivate
-            </Button>
-          )}
-        </div>
-
-        {/* 3 Stat Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15">
-            <div className="flex flex-col">
-              <span className="text-xs sm:text-sm font-medium text-white/80">
-                Assigned Candidates
-              </span>
-              <div className="flex items-baseline gap-1.5 mt-1">
-                <span className="text-xl sm:text-2xl font-extrabold text-white">
-                  {assessor.assignedCandidatesCount || 10}
-                </span>
-                <span className="text-xs font-normal text-white/70">
-                  applications
-                </span>
-              </div>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
-              <FiClipboard className="w-5 h-5 text-white/90" />
-            </div>
-          </div>
-
-          <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15">
-            <div className="flex flex-col">
-              <span className="text-xs sm:text-sm font-medium text-white/80">
-                Ongoing
-              </span>
-              <div className="flex items-baseline gap-1.5 mt-1">
-                <span className="text-xl sm:text-2xl font-extrabold text-white">
-                  {assessor.ongoingCount || 6}
-                </span>
-                <span className="text-xs font-normal text-white/70">
-                  applications
-                </span>
-              </div>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
-              <FiClipboard className="w-5 h-5 text-white/90" />
-            </div>
-          </div>
-
-          <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15">
-            <div className="flex flex-col">
-              <span className="text-xs sm:text-sm font-medium text-white/80">
-                Completed
-              </span>
-              <div className="flex items-baseline gap-1.5 mt-1">
-                <span className="text-xl sm:text-2xl font-extrabold text-white">
-                  {assessor.completedCount || 4}
-                </span>
-                <span className="text-xs font-normal text-white/70">
-                  applications
-                </span>
-              </div>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
-              <FiClipboard className="w-5 h-5 text-white/90" />
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Assessor Profile Header Card */}
       <div className="bg-white rounded-3xl p-6 shadow-2xs border border-gray-100/80 flex items-start justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-4">
@@ -213,7 +99,7 @@ export const AssessorProfileDetailView: React.FC<
               {assessor.name}
             </h2>
 
-            <span className="text-xs text-gray-400 font-medium">
+            <span className="text-xs text-[#19191880] font-medium">
               {assessor.email} · {assessor.experienceYears || 8} years
               experience
             </span>
@@ -222,7 +108,7 @@ export const AssessorProfileDetailView: React.FC<
               {assessor.tags?.map((tag, idx) => (
                 <span
                   key={idx}
-                  className="bg-[#FCE7F3] text-[#9D174D] text-[11px] font-semibold px-2.5 py-0.5 rounded-full"
+                  className="bg-primary/10 text-primary text-xs font-semibold px-2.5 py-0.5 rounded-full"
                 >
                   {tag}
                 </span>
@@ -233,11 +119,11 @@ export const AssessorProfileDetailView: React.FC<
 
         <div className="shrink-0">
           {isDeactivated ? (
-            <span className="bg-[#E5E7EB] text-[#4B5563] font-semibold px-4 py-1.5 rounded-full text-xs inline-block">
+            <span className="bg-black/20 text-black font-semibold px-4 py-1.5 rounded-full text-xs inline-block">
               Inactive
             </span>
           ) : (
-            <span className="bg-[#D1FAE5] text-[#065F46] font-semibold px-4 py-1.5 rounded-full text-xs inline-block">
+            <span className="bg-[#1E7F4C]/20 text-[#1E7F4C] font-semibold px-4 py-1.5 rounded-full text-xs inline-block">
               Active
             </span>
           )}
@@ -257,17 +143,18 @@ export const AssessorProfileDetailView: React.FC<
                 <FiFileText className="w-5 h-5" />
               </div>
               <div className="flex flex-col">
-                <span className="font-extrabold text-sm sm:text-base text-neutral-primary">
+                <span className="font-extrabold text-sm sm:text-base text-[#191918]">
                   NSQ Level 4 Carpentry
                 </span>
-                <span className="text-xs text-gray-400 font-medium mt-0.5">
+                <span className="text-xs text-[#19191880] font-medium mt-0.5">
                   National Board for Technical Education · 2020
                 </span>
               </div>
             </div>
             <button
               type="button"
-              className="w-9 h-9 rounded-xl bg-white border border-gray-200 text-gray-400 hover:text-neutral-primary flex items-center justify-center transition-colors cursor-pointer shrink-0 shadow-2xs"
+              onClick={() => setPreviewCertificateUrl("NSQ Level 4 Carpentry")}
+              className="w-9 h-9 rounded-xl bg-white border border-gray-200 text-[#19191880] hover:text-neutral-primary flex items-center justify-center transition-colors cursor-pointer shrink-0 shadow-2xs"
               title="Preview Certificate"
             >
               <FiEye className="w-4.5 h-4.5" />
@@ -276,21 +163,24 @@ export const AssessorProfileDetailView: React.FC<
 
           <div className="bg-[#F8F9FA] hover:bg-[#F3F4F6] p-4 rounded-2xl border border-gray-100 flex items-center justify-between gap-4 transition-colors">
             <div className="flex items-center gap-3.5">
-              <div className="w-10 h-10 rounded-xl bg-red-100/80 text-red-500 flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
                 <FiFileText className="w-5 h-5" />
               </div>
               <div className="flex flex-col">
                 <span className="font-extrabold text-sm sm:text-base text-neutral-primary">
                   Certified Trade Assessor
                 </span>
-                <span className="text-xs text-gray-400 font-medium mt-0.5">
+                <span className="text-xs text-[#19191880] font-medium mt-0.5">
                   Nigeria Skills Qualification Awarding Body · 2021
                 </span>
               </div>
             </div>
             <button
               type="button"
-              className="w-9 h-9 rounded-xl bg-white border border-gray-200 text-gray-400 hover:text-neutral-primary flex items-center justify-center transition-colors cursor-pointer shrink-0 shadow-2xs"
+              onClick={() =>
+                setPreviewCertificateUrl("Certified Trade Assessor")
+              }
+              className="w-9 h-9 rounded-xl bg-white border border-gray-200 text-[#19191880] hover:text-neutral-primary flex items-center justify-center transition-colors cursor-pointer shrink-0 shadow-2xs"
               title="Preview Certificate"
             >
               <FiEye className="w-4.5 h-4.5" />
@@ -299,7 +189,6 @@ export const AssessorProfileDetailView: React.FC<
         </div>
       </div>
 
-      {/* Assigned Candidates Section */}
       <div className="bg-white rounded-3xl p-6 shadow-2xs border border-gray-100/80 flex flex-col gap-6">
         <h3 className="text-xl font-extrabold text-neutral-primary tracking-tight">
           Assigned Candidates
@@ -308,17 +197,17 @@ export const AssessorProfileDetailView: React.FC<
         {/* Filter Controls Bar */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
           <div className="relative flex-1 max-w-sm">
-            <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#19191880]" />
             <input
               type="text"
               placeholder="Search candidates..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[#F8F9FA] border border-gray-200/80 focus:border-gray-400 rounded-xl pl-10 pr-3.5 py-2.5 text-xs sm:text-sm text-neutral-primary outline-none transition-all"
+              className="w-full bg-[#F8F9FA] border border-gray-200/80 focus:border-[#19191880] rounded-xl pl-10 pr-3.5 py-2.5 text-xs sm:text-sm text-neutral-primary outline-none transition-all"
             />
           </div>
 
-          <div className="flex items-center justify-between sm:justify-end gap-3 flex-wrap">
+          <div className="flex items-center flex-wrap sm:justify-end gap-3">
             <Select
               size="sm"
               showPlaceholderOption={false}
@@ -360,17 +249,28 @@ export const AssessorProfileDetailView: React.FC<
               ]}
             />
 
-            <div className="flex items-center gap-1 bg-[#F8F9FA] p-1 rounded-xl border border-gray-200/80">
+            {/* List / Grid Toggle Buttons */}
+            <div className="flex items-center gap-1.5">
               <button
                 type="button"
-                className="p-1.5 rounded-lg bg-white text-neutral-primary shadow-xs font-bold"
+                onClick={() => setDetailViewMode("list")}
+                className={`w-9 h-9 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+                  detailViewMode === "list"
+                    ? "bg-[#FCE8EC] text-[#a31d38] shadow-2xs"
+                    : "bg-[#EAEBED] text-gray-700 hover:text-neutral-primary"
+                }`}
                 title="List View"
               >
                 <FiList className="w-4 h-4" />
               </button>
               <button
                 type="button"
-                className="p-1.5 rounded-lg text-gray-400 hover:text-neutral-primary"
+                onClick={() => setDetailViewMode("grid")}
+                className={`w-9 h-9 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+                  detailViewMode === "grid"
+                    ? "bg-[#FCE8EC] text-[#a31d38] shadow-2xs"
+                    : "bg-[#EAEBED] text-gray-700 hover:text-neutral-primary"
+                }`}
                 title="Grid View"
               >
                 <FiGrid className="w-4 h-4" />
@@ -379,62 +279,151 @@ export const AssessorProfileDetailView: React.FC<
           </div>
         </div>
 
-        {/* Assigned Candidates Table */}
-        <div className="w-full overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[700px]">
-            <thead>
-              <tr className="bg-[#F8F9FA] text-gray-500 text-xs font-semibold uppercase tracking-wider rounded-xl">
-                <th className="p-3.5 rounded-l-xl">Role</th>
-                <th className="p-3.5">Candidate Name</th>
-                <th className="p-3.5">Trade</th>
-                <th className="p-3.5">Assessment Type</th>
-                <th className="p-3.5">Status</th>
-                <th className="p-3.5">Assigned at</th>
-                <th className="p-3.5 text-right rounded-r-xl">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 text-xs sm:text-sm font-medium text-neutral-primary">
-              {filteredCandidates.map((cand) => (
-                <tr
-                  key={cand.id}
-                  className="hover:bg-gray-50/50 transition-colors"
-                >
-                  <td className="p-3.5 text-neutral-secondary">{cand.role}</td>
-                  <td className="p-3.5 font-bold text-neutral-primary">
+        {/* View Mode 1: Grid Card View */}
+        {detailViewMode === "grid" ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredCandidates.map((cand) => (
+              <div
+                key={cand.id}
+                className="bg-white rounded-2xl p-5 border border-black/20 shadow-2xs hover:shadow-xs transition-all flex items-start justify-between relative group"
+              >
+                <div className="flex flex-col gap-2">
+                  <span className="font-bold text-sm text-neutral-primary">
                     {cand.candidateName}
-                  </td>
-                  <td className="p-3.5 text-neutral-secondary">{cand.trade}</td>
-                  <td className="p-3.5 text-neutral-secondary">
-                    {cand.assessmentType}
-                  </td>
-                  <td className="p-3.5">
-                    {cand.status === "Completed" ? (
-                      <span className="bg-[#D1FAE5] text-[#065F46] font-semibold px-3 py-1 rounded-full text-xs inline-block">
-                        Completed
-                      </span>
-                    ) : (
-                      <span className="bg-[#FEF3C7] text-[#D97706] font-semibold px-3 py-1 rounded-full text-xs inline-block">
-                        Ongoing
-                      </span>
-                    )}
-                  </td>
-                  <td className="p-3.5 text-neutral-secondary">
-                    {cand.assignedAt}
-                  </td>
-                  <td className="p-3.5 text-right">
-                    <button
-                      type="button"
-                      className="text-neutral-primary font-bold text-xs underline hover:text-[#a31d38] transition-colors cursor-pointer"
-                    >
-                      View
-                    </button>
-                  </td>
+                  </span>
+                  <span className="text-xs text-gray-500 font-normal">
+                    Role: {cand.role}
+                  </span>
+                  <span className="text-xs text-gray-500 font-normal">
+                    Trade: {cand.trade} • {cand.assessmentType}
+                  </span>
+                  <span className="text-xs text-gray-400">
+                    Assigned: {cand.assignedAt}
+                  </span>
+                </div>
+
+                <div className="flex flex-col items-end justify-between h-full gap-4">
+                  {cand.status === "Completed" ? (
+                    <span className="bg-[#D1FAE5] text-[#065F46] font-semibold px-3 py-1 rounded-full text-xs inline-block">
+                      Completed
+                    </span>
+                  ) : (
+                    <span className="bg-[#FEF3C7] text-[#D97706] font-semibold px-3 py-1 rounded-full text-xs inline-block">
+                      Ongoing
+                    </span>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => onViewCandidate?.(cand.id)}
+                    className="text-xs lg:text-sm text-neutral-primary font-bold underline hover:text-[#a31d38] transition-colors cursor-pointer mt-2"
+                  >
+                    View
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          /* View Mode 2: Table List View */
+          <div className="w-full overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-[700px]">
+              <thead>
+                <tr className="bg-[#F8F9FA] text-gray-500 text-xs font-semibold uppercase tracking-wider rounded-xl">
+                  <th className="p-3.5 rounded-l-xl">Role</th>
+                  <th className="p-3.5">Candidate Name</th>
+                  <th className="p-3.5">Trade</th>
+                  <th className="p-3.5">Assessment Type</th>
+                  <th className="p-3.5">Status</th>
+                  <th className="p-3.5">Assigned at</th>
+                  <th className="p-3.5 text-right rounded-r-xl">Action</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-gray-100 text-xs sm:text-sm font-medium text-neutral-primary">
+                {filteredCandidates.map((cand) => (
+                  <tr
+                    key={cand.id}
+                    className="hover:bg-gray-50/50 transition-colors"
+                  >
+                    <td className="p-3.5 text-neutral-secondary">
+                      {cand.role}
+                    </td>
+                    <td className="p-3.5 font-bold text-neutral-primary">
+                      {cand.candidateName}
+                    </td>
+                    <td className="p-3.5 text-neutral-secondary">
+                      {cand.trade}
+                    </td>
+                    <td className="p-3.5 text-neutral-secondary">
+                      {cand.assessmentType}
+                    </td>
+                    <td className="p-3.5">
+                      {cand.status === "Completed" ? (
+                        <span className="bg-[#D1FAE5] text-[#065F46] font-semibold px-3 py-1 rounded-full text-xs inline-block">
+                          Completed
+                        </span>
+                      ) : (
+                        <span className="bg-[#FEF3C7] text-[#D97706] font-semibold px-3 py-1 rounded-full text-xs inline-block">
+                          Ongoing
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-3.5 text-neutral-secondary">
+                      {cand.assignedAt}
+                    </td>
+                    <td className="p-3.5 text-right">
+                      <button
+                        type="button"
+                        onClick={() => onViewCandidate?.(cand.id)}
+                        className="text-neutral-primary font-bold text-xs underline hover:text-[#a31d38] transition-colors cursor-pointer"
+                      >
+                        View
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
+
+      {previewCertificateUrl && (
+        <div
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 transition-opacity duration-300 select-none"
+          onClick={() => setPreviewCertificateUrl(null)}
+        >
+          <div
+            className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl relative flex flex-col items-center text-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setPreviewCertificateUrl(null)}
+              className="absolute top-4 right-4 w-8 h-8 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 flex items-center justify-center transition-colors cursor-pointer"
+            >
+              <FiX className="w-5 h-5" />
+            </button>
+            <FiFileText className="w-16 h-16 text-red-400 mb-4" />
+            <h3 className="text-lg font-extrabold text-neutral-primary mb-1">
+              {previewCertificateUrl}
+            </h3>
+            <p className="text-xs text-[#19191880] mb-6">Certificate Preview</p>
+            <div className="w-full bg-[#F8F9FA] rounded-2xl p-8 border border-gray-100 flex items-center justify-center min-h-48">
+              <span className="text-sm text-[#19191880] font-medium">
+                Certificate document preview
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setPreviewCertificateUrl(null)}
+              className="mt-6 w-full h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Staff / Assessor Status Modal */}
       <StaffStatusModal

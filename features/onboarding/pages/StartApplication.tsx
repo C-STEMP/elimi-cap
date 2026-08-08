@@ -3,17 +3,17 @@
 import React, { useEffect, useState } from "react";
 import { Form } from "antd";
 import { createSchemaFieldRule } from "antd-zod";
-import { Select } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/toast";
+import { Select } from "@/src/components/ui/select";
+import { Button } from "@/src/components/ui/button";
+import { useToast } from "@/src/components/ui/toast";
 import { FiArrowLeft, FiArrowRight } from "react-icons/fi";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { StatusModal } from "@/components/ui/status-modal";
+import { StatusModal } from "@/src/components/ui/status-modal";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { createApplication } from "@/store/slices/applicationSlice";
 import { setStartApplication } from "@/store/slices/onboardingSlice";
-import { startApplicationSchema } from "@/lib/validation";
+import { startApplicationSchema } from "@/src/lib/validation";
 
 // antd-zod rule for startApplicationSchema
 const rule = createSchemaFieldRule(startApplicationSchema);

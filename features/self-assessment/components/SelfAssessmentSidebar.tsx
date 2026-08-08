@@ -2,8 +2,8 @@
 
 import React from "react";
 import { FiCheck } from "react-icons/fi";
-import { Logo } from "@/components/ui/logo";
-import { FloatingCircles } from "@/features/auth/components/FloatingCircles";
+import { Logo } from "@/src/components/ui/logo";
+import { FloatingCircles } from "@/src/features/shared/authentication/components/FloatingCircles";
 
 interface SelfAssessmentSidebarProps {
   currentStep: number;
@@ -49,10 +49,7 @@ export const SelfAssessmentSidebar: React.FC<SelfAssessmentSidebarProps> = ({
               Estimated time: 5–10 minutes
             </p>
 
-            <div
-              suppressHydrationWarning
-              className="flex flex-col gap-0 mt-4"
-            >
+            <div suppressHydrationWarning className="flex flex-col gap-0 mt-4">
               {STEPS.map((step, idx) => {
                 const isActive = currentStep === step.id;
                 const isPast = currentStep > step.id;
@@ -105,4 +102,3 @@ export const SelfAssessmentSidebar: React.FC<SelfAssessmentSidebarProps> = ({
     </div>
   );
 };
-
