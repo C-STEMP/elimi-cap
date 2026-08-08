@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 
 const AssessmentType = dynamic(
   () =>
-    import("@/features/onboarding/pages/AssessmentType").then(
+    import("@/src/features/candidate/features/Onboarding/pages/AssessmentType").then(
       (mod) => mod.AssessmentType
     ),
   { ssr: false }

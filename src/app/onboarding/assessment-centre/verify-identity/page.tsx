@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 const CenterVerifyIdentity = dynamic(
   () =>
     import(
-      "@/features/onboarding/pages/assessment-centre/CenterVerifyIdentity"
+      "@/src/features/assessment-centre/features/Onboarding/pages/CenterVerifyIdentity"
     ).then((mod) => mod.CenterVerifyIdentity),
   { ssr: false }
 );

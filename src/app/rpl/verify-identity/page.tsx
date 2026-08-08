@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 
 const RPLVerifyIdentity = dynamic(
   () =>
-    import("@/features/rpl/pages/VerifyIdentity").then(
+    import("@/features/candidate/features/rpl/pages/VerifyIdentity").then(
       (mod) => mod.RPLVerifyIdentity
     ),
   { ssr: false }

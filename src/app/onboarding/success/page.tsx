@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 
 const Success = dynamic(
   () =>
-    import("@/features/onboarding/pages/Success").then(
+    import("@/src/features/candidate/features/Onboarding/pages/Success").then(
       (mod) => mod.Success
     ),
   { ssr: false }

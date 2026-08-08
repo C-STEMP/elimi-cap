@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 
 const RPLExperienceTrade = dynamic(
   () =>
-    import("@/features/rpl/pages/ExperienceTrade").then(
+    import("@/features/candidate/features/rpl/pages/ExperienceTrade").then(
       (mod) => mod.RPLExperienceTrade
     ),
   { ssr: false }

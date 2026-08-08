@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 
 const StartApplication = dynamic(
   () =>
-    import("@/features/onboarding/pages/StartApplication").then(
+    import("@/src/features/candidate/features/Onboarding/pages/StartApplication").then(
       (mod) => mod.StartApplication
     ),
   { ssr: false }

@@ -5,7 +5,7 @@ import React, { Suspense } from "react";
 
 const MyApplicationsPage = dynamic(
   () =>
-    import("@/features/applications/pages/MyApplicationsPage").then(
+    import("@/features/candidate/features/Application/pages/MyApplicationsPage").then(
       (mod) => mod.MyApplicationsPage
     ),
   { ssr: false }

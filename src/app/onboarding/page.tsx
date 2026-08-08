@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 
 const OnboardingWizard = dynamic(
   () =>
-    import("@/features/onboarding/components/OnboardingWizard").then(
+    import("@/features/shared/onboarding/components/OnboardingWizard").then(
       (mod) => mod.OnboardingWizard
     ),
   { ssr: false }

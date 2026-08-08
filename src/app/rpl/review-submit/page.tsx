@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 
 const RPLReviewSubmit = dynamic(
   () =>
-    import("@/features/rpl/pages/ReviewSubmit").then(
+    import("@/features/candidate/features/rpl/pages/ReviewSubmit").then(
       (mod) => mod.RPLReviewSubmit
     ),
   { ssr: false }

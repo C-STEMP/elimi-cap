@@ -5,7 +5,7 @@ import React, { Suspense, use } from "react";
 
 const EvidenceVaultPage = dynamic(
   () =>
-    import("@/features/evidence-vault/pages/EvidenceVaultPage").then(
+    import("@/features/shared/evidence-vault/pages/EvidenceVaultPage").then(
       (mod) => mod.EvidenceVaultPage
     ),
   { ssr: false }

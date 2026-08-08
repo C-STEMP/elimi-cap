@@ -13,11 +13,11 @@ import {
   FiTrash2,
   FiExternalLink,
 } from "react-icons/fi";
-import { HeaderBanner } from "@/features/dashboard/components/HeaderBanner";
+import { HeaderBanner } from "@/features/candidate/features/Dashboard/components/HeaderBanner";
 import {
   INITIAL_NOTIFICATIONS,
   NotificationItem,
-} from "@/features/dashboard/data/notificationsData";
+} from "@/features/candidate/features/Dashboard/data/notificationsData";
 
 type CategoryFilter = "all" | "unread" | "application" | "assessment" | "system" | "security";
 

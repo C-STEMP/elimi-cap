@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 
 const PersonalInfo = dynamic(
   () =>
-    import("@/features/onboarding/pages/PersonalInfo").then(
+    import("@/src/features/candidate/features/Onboarding/pages/PersonalInfo").then(
       (mod) => mod.PersonalInfo
     ),
   { ssr: false }

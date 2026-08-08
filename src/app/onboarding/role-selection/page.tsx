@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 
 const RoleSelection = dynamic(
   () =>
-    import("@/features/onboarding/pages/RoleSelection").then(
+    import("@/features/shared/onboarding/pages/RoleSelection").then(
       (mod) => mod.RoleSelection
     ),
   { ssr: false }

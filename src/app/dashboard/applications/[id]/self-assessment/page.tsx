@@ -5,7 +5,7 @@ import { Suspense, use } from "react";
 
 const SelfAssessmentPage = dynamic(
   () =>
-    import("@/features/self-assessment/pages/SelfAssessmentPage").then(
+    import("@/features/candidate/features/self-assessment/pages/SelfAssessmentPage").then(
       (mod) => mod.SelfAssessmentPage
     ),
   { ssr: false }

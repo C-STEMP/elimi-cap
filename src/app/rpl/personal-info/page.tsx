@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 
 const RPLPersonalInfo = dynamic(
   () =>
-    import("@/features/rpl/pages/PersonalInfo").then(
+    import("@/features/candidate/features/rpl/pages/PersonalInfo").then(
       (mod) => mod.RPLPersonalInfo
     ),
   { ssr: false }

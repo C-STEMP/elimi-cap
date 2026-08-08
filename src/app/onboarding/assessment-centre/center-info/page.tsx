@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 
 const CenterInformation = dynamic(
   () =>
-    import("@/features/onboarding/pages/assessment-centre/CenterInformation").then(
+    import("@/src/features/assessment-centre/features/Onboarding/pages/CenterInformation").then(
       (mod) => mod.CenterInformation
     ),
   { ssr: false }

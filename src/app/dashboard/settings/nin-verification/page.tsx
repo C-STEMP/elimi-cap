@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 
 const NinVerificationPage = dynamic(
   () =>
-    import("@/features/settings/pages/NinVerificationPage").then(
+    import("@/features/shared/settings/pages/NinVerificationPage").then(
       (mod) => mod.NinVerificationPage
     ),
   { ssr: false }

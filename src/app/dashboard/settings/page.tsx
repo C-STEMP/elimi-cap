@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 
 const SettingsPage = dynamic(
   () =>
-    import("@/features/settings/pages/SettingsPage").then(
+    import("@/features/shared/settings/pages/SettingsPage").then(
       (mod) => mod.SettingsPage
     ),
   { ssr: false }

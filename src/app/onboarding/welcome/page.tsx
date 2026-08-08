@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 
 const Welcome = dynamic(
   () =>
-    import("@/features/onboarding/pages/Welcome").then(
+    import("@/features/shared/onboarding/pages/Welcome").then(
       (mod) => mod.Welcome
     ),
   { ssr: false }
