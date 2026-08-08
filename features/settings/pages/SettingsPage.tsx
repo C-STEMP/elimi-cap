@@ -16,7 +16,7 @@ import {
 import { SettingsSidebar } from "../components/SettingsSidebar";
 import { ProfileInfoTab } from "../components/ProfileInfoTab";
 import { SecurityTab } from "../components/SecurityTab";
-import { StatusModal } from "@/src/components/ui/status-modal";
+import { StatusModal } from "@/components/status-modal";
 import { DeleteAccountModal } from "../components/DeleteAccountModal";
 import { SuccessModal } from "../components/SuccessModal";
 

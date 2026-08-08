@@ -11,7 +11,7 @@ import { ASSETS_URL } from "@/assets";
 import { useAppDispatch } from "@/store/hooks";
 import { setSidebarVariant, setRplStep } from "@/store/slices/authSlice";
 
-import { StatusModal } from "@/src/components/ui/status-modal";
+import { StatusModal } from "@/components/status-modal";
 
 export interface RPLReviewSubmitProps {
   onBack?: () => void;

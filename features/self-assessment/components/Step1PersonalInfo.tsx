@@ -12,7 +12,7 @@ import { DatePicker } from "@/src/components/ui/date-picker";
 import { PassportUpload } from "@/src/components/ui/passport-upload";
 import { PhoneInput } from "@/src/components/ui/phone-input";
 import { InfoIcon } from "@/src/components/ui/info-icon";
-import { StatusModal } from "@/src/components/ui/status-modal";
+import { StatusModal } from "@/components/status-modal";
 import { useToast } from "@/src/components/ui/toast";
 import { ASSETS_URL } from "@/assets";
 import {

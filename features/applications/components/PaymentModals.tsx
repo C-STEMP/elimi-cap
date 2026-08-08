@@ -4,7 +4,7 @@ import React from "react";
 import {
   StatusModal,
   StatusModalVariant,
-} from "@/src/components/ui/status-modal";
+} from "@/components/status-modal";
 
 export type PaymentModalType =
   | "success"

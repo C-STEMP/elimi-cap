@@ -14,7 +14,7 @@ import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { ASSETS_URL } from "@/assets";
-import { StatusModal } from "@/src/components/ui/status-modal";
+import { StatusModal } from "@/components/status-modal";
 import { useAppDispatch } from "@/store/hooks";
 import { setSidebarVariant, setRplStep } from "@/store/slices/authSlice";
 import { personalInfoSchema, extractZodErrors } from "@/src/lib/validation";

@@ -10,7 +10,7 @@ import {
   PaymentModal,
   PaymentModalType,
 } from "@/features/applications/components/PaymentModals";
-import { StatusModal } from "@/src/components/ui/status-modal";
+import { StatusModal } from "@/components/status-modal";
 import { useToast } from "@/src/components/ui/toast";
 import { ApplicationDetailsPageProps, ApplicationFormState } from "../types";
 import {

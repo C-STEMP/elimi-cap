@@ -9,7 +9,7 @@ import { useToast } from "@/src/components/ui/toast";
 import { FiArrowLeft, FiArrowRight } from "react-icons/fi";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { StatusModal } from "@/src/components/ui/status-modal";
+import { StatusModal } from "@/components/status-modal";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { createApplication } from "@/store/slices/applicationSlice";
 import { setStartApplication } from "@/store/slices/onboardingSlice";

@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/src/components/ui/button";
 import { Select } from "@/src/components/ui/select";
 import { InfoIcon } from "@/src/components/ui/info-icon";
-import { StatusModal } from "@/src/components/ui/status-modal";
+import { StatusModal } from "@/components/status-modal";
 import { useToast } from "@/src/components/ui/toast";
 import { ASSETS_URL } from "@/assets";
 import { MOCK_COMPETENCIES } from "../utils/constants";

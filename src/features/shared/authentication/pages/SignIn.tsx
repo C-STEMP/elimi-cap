@@ -9,7 +9,7 @@ import { useToast } from "@/src/components/ui/toast";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { StatusModal } from "@/src/components/ui/status-modal";
+import { StatusModal } from "@/components/status-modal";
 import { useAppDispatch } from "@/store/hooks";
 import { setSidebarVariant } from "@/store/slices/authSlice";
 import { validateEmail } from "@/src/lib/validation";

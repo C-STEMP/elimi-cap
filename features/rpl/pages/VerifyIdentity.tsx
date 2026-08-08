@@ -13,7 +13,7 @@ import { useAppDispatch } from "@/store/hooks";
 import { setSidebarVariant, setRplStep } from "@/store/slices/authSlice";
 import { validateNIN } from "@/src/lib/validation";
 
-import { StatusModal } from "@/src/components/ui/status-modal";
+import { StatusModal } from "@/components/status-modal";
 
 export interface RPLVerifyIdentityProps {
   onBack?: () => void;

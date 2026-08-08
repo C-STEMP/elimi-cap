@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { usePathname } from "next/navigation";
 import { FiBell, FiLogOut } from "react-icons/fi";
-import { LogoutModal } from "@/src/components/ui/LogoutModal";
+import { LogoutModal } from "@/components/LogoutModal";
 import { NotificationDropdown } from "./NotificationDropdown";
 
 const NAV_LINKS = [

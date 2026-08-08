@@ -3,9 +3,9 @@
 import React from "react";
 import Image from "next/image";
 import { Modal } from "antd";
-import { Button } from "./button";
+import { Button } from "./ui/button";
 import { ASSETS_URL } from "@/assets";
-import { ErrorCircleIcon } from "./svg-icons";
+import { ErrorCircleIcon } from "./ui/svg-icons";
 
 export type StatusModalVariant =
   | "default"

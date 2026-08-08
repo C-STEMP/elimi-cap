@@ -8,7 +8,7 @@ import { FiPlus, FiBell, FiLogOut, FiChevronLeft } from "react-icons/fi";
 import { ASSETS_URL } from "@/assets";
 import { Logo } from "@/src/components/ui/logo";
 import { Button } from "@/src/components/ui/button";
-import { LogoutModal } from "@/src/components/ui/LogoutModal";
+import { LogoutModal } from "@/components/LogoutModal";
 import { NotificationDropdown } from "./NotificationDropdown";
 
 interface HeaderBannerProps {

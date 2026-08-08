@@ -7,7 +7,7 @@ import { useToast } from "@/src/components/ui/toast";
 import { PasswordRequirements } from "@/src/components/ui/password-requirements";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { StatusModal } from "@/src/components/ui/status-modal";
+import { StatusModal } from "@/components/status-modal";
 import { motion } from "framer-motion";
 import {
   validatePassword,
