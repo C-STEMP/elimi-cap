@@ -1,15 +1,7 @@
 "use client";
 
-import dynamic from "next/dynamic";
-import  { Suspense, use } from "react";
-
-const ApplicationDetailsPage = dynamic(
-  () =>
-    import("@/features/candidate/features/Application/pages/ApplicationDetailsPage").then(
-      (mod) => mod.ApplicationDetailsPage
-    ),
-  { ssr: false }
-);
+import { Suspense, use } from "react";
+import { ApplicationDetailsPage } from "@/features/candidate/features/Application/pages/ApplicationDetailsPage";
 
 interface PageProps {
   params: Promise<{ id: string }>;

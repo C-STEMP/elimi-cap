@@ -1,14 +1,6 @@
 "use client";
 
-import dynamic from "next/dynamic";
-
-const Welcome = dynamic(
-  () =>
-    import("@/features/shared/onboarding/pages/Welcome").then(
-      (mod) => mod.Welcome
-    ),
-  { ssr: false }
-);
+import { Welcome } from "@/src/features/shared/onboarding/pages/Welcome";
 
 export default function WelcomePage() {
   return <Welcome />;

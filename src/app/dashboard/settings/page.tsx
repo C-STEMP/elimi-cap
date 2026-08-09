@@ -1,14 +1,6 @@
 "use client";
 
-import dynamic from "next/dynamic";
-
-const SettingsPage = dynamic(
-  () =>
-    import("@/features/shared/settings/pages/SettingsPage").then(
-      (mod) => mod.SettingsPage
-    ),
-  { ssr: false }
-);
+import { SettingsPage } from "@/features/shared/settings/pages/SettingsPage";
 
 export default function Settings() {
   return <SettingsPage />;

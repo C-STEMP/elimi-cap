@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   FiX,
   FiUploadCloud,
@@ -10,6 +10,9 @@ import {
 } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/src/components/ui/button";
+import { useUploadFile } from "@/src/features/shared/storage/hooks";
+import { useSetCandidateProfileSignature } from "@/src/features/shared/onboarding/hooks";
+import type { StorageAsset } from "@/src/features/shared/storage/api";
 
 interface UploadSignatureModalProps {
   isOpen: boolean;
@@ -22,9 +25,51 @@ export const UploadSignatureModal: React.FC<UploadSignatureModalProps> = ({
   onClose,
   onUploadSuccess,
 }) => {
-  const [fileUploaded, setFileUploaded] = useState(true);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadedAsset, setUploadedAsset] = useState<StorageAsset | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const uploadMutation = useUploadFile();
+  const setSignatureMutation = useSetCandidateProfileSignature();
 
   if (!isOpen) return null;
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setSelectedFile(file);
+    try {
+      const asset = await uploadMutation.mutateAsync({
+        file,
+        purpose: "signature",
+      });
+      setUploadedAsset(asset);
+    } catch {
+      // Handled by toast
+    }
+  };
+
+  const handleRemove = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedFile(null);
+    setUploadedAsset(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (uploadedAsset?.assetId) {
+      try {
+        await setSignatureMutation.mutateAsync(uploadedAsset.assetId);
+      } catch {
+        // Handled by toast
+      }
+    }
+    onUploadSuccess();
+    onClose();
+  };
 
   return (
     <AnimatePresence>
@@ -59,37 +104,46 @@ export const UploadSignatureModal: React.FC<UploadSignatureModalProps> = ({
               Upload Evidence
             </span>
 
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              accept="image/*,.pdf"
+              style={{ display: "none" }}
+              className="hidden"
+            />
+
             <div
-              onClick={() => setFileUploaded(true)}
+              onClick={() => fileInputRef.current?.click()}
               className="bg-[#FDF2F4] border-2 border-dashed border-[#F87171]/40 hover:border-[#A31D38]/60 rounded-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-all mb-4"
             >
               <div className="w-10 h-10 rounded-full bg-[#FDF2F4] text-[#A31D38] flex items-center justify-center mb-2">
                 <FiUploadCloud className="w-6 h-6 stroke-2" />
               </div>
               <span className="font-bold text-[#A31D38] text-sm sm:text-base">
-                Upload Evidence
+                {uploadMutation.isPending ? "Uploading Signature..." : "Upload Evidence"}
               </span>
               <span className="text-gray-400 text-xs mt-1">
-                JPG, PNG, PDF, Docs, Mp4, or WebP
+                JPG, PNG, PDF, Docs, or WebP
               </span>
             </div>
 
-            {fileUploaded && (
+            {selectedFile && (
               <div className="bg-white border border-gray-200/80 rounded-xl p-3.5 flex items-center justify-between shadow-2xs mb-6">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-[#FDF2F4] text-[#A31D38] flex items-center justify-center shrink-0">
                     <FiFileText className="w-5 h-5 stroke-[2]" />
                   </div>
-                  <div className="flex flex-col">
-                    <span className="font-bold text-black text-xs sm:text-sm leading-snug">
-                      File Name
+                  <div className="flex flex-col overflow-hidden">
+                    <span className="font-bold text-black text-xs sm:text-sm leading-snug truncate max-w-45">
+                      {selectedFile.name}
                     </span>
                     <div className="flex items-center gap-1.5 text-gray-400 text-[11px] font-medium mt-0.5">
-                      <span>5 mb</span>
+                      <span>{(selectedFile.size / (1024 * 1024)).toFixed(1)} MB</span>
                       <span>•</span>
                       <span className="text-[#1E7F4C] font-semibold flex items-center gap-1">
                         <FiCheckCircle className="w-3 h-3" />
-                        Completed
+                        {uploadMutation.isPending ? "Uploading..." : "Uploaded"}
                       </span>
                     </div>
                   </div>
@@ -97,10 +151,7 @@ export const UploadSignatureModal: React.FC<UploadSignatureModalProps> = ({
 
                 <Button
                   type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setFileUploaded(false);
-                  }}
+                  onClick={handleRemove}
                   variant="ghost"
                   size="icon"
                   rounded="lg"
@@ -114,10 +165,9 @@ export const UploadSignatureModal: React.FC<UploadSignatureModalProps> = ({
 
           <Button
             type="button"
-            onClick={() => {
-              onUploadSuccess();
-              onClose();
-            }}
+            onClick={handleSubmit}
+            disabled={uploadMutation.isPending || setSignatureMutation.isPending}
+            loading={uploadMutation.isPending || setSignatureMutation.isPending}
             variant="amber"
             size="lg"
             fullWidth

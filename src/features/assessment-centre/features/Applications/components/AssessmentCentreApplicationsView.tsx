@@ -6,6 +6,8 @@ import { AssessmentCentreFilterModal } from "./AssessmentCentreFilterModal";
 import { useToast } from "@/src/components/ui/toast";
 import { MOCK_APPLICATIONS_LIST } from "@/features/assessment-centre/utils/constants";
 
+import { useApplication, useGetApplications } from "@/features/assessment-centre/features/Applications/hooks";
+
 interface ApplicationsViewProps {
   onSelectCandidate: (candidateName: string) => void;
 }
@@ -14,6 +16,9 @@ export const AssessmentCentreApplicationsView: React.FC<
   ApplicationsViewProps
 > = ({ onSelectCandidate }) => {
   const { toast } = useToast();
+  const { forwardToAwardingBody } = useApplication();
+  const { data: remoteApps } = useGetApplications();
+
   const [activeFilterTab, setActiveFilterTab] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
@@ -55,10 +60,9 @@ export const AssessmentCentreApplicationsView: React.FC<
       });
       return;
     }
-    toast({
-      type: "success",
-      title: "Notification Sent",
-      description: `Notified Awarding Body for ${selectedIds.length} candidate(s).`,
+
+    selectedIds.forEach((id) => {
+      forwardToAwardingBody.mutate(id);
     });
   };
 

@@ -28,6 +28,7 @@ import {
   markExternalVerifierCompleted,
 } from "@/store/slices/applicationSlice";
 import { PaymentModal, PaymentModalType } from "@/features/candidate/features/Application/components/PaymentModals";
+import { useApplication } from "@/src/features/candidate/features/Application/hooks";
 
 const statusToFormState = (
   status: string,
@@ -53,6 +54,7 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
   const router = useRouter();
   const { toast } = useToast();
   const dispatch = useAppDispatch();
+  const { initiatePayment } = useApplication();
 
   const reduxApp = useAppSelector((state) =>
     state.application.applications.find((a) => a.id === id),
@@ -146,9 +148,13 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
 
   const handleMakePayment = () => {
     setActivePaymentModal("processing");
-    setTimeout(() => {
-      setActivePaymentModal("success");
-    }, 1500);
+    initiatePayment.mutate(application.id, {
+      onSuccess: () => {
+        setTimeout(() => {
+          setActivePaymentModal("success");
+        }, 800);
+      },
+    });
   };
 
   const handleStartFolderArrangement = () => {

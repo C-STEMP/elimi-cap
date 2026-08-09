@@ -1,15 +1,7 @@
 "use client";
 
-import dynamic from "next/dynamic";
+import { OnboardingWizard } from "@/src/features/shared/onboarding/components/OnboardingWizard";
 
-const OnboardingWizard = dynamic(
-  () =>
-    import("@/features/shared/onboarding/components/OnboardingWizard").then(
-      (mod) => mod.OnboardingWizard
-    ),
-  { ssr: false }
-);
-
-export default function OnboardingPage() {
+export default function Page() {
   return <OnboardingWizard />;
 }

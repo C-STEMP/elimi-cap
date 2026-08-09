@@ -16,8 +16,13 @@ import { StatusModal } from "@/components/status-modal";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setSidebarVariant } from "@/store/slices/authSlice";
 import { setPersonalInfo } from "@/store/slices/onboardingSlice";
-import { personalInfoSchema, extractZodErrors } from "@/src/lib/validation";
+import {
+  personalInfoSchema,
+  extractZodErrors,
+  formatToIsoDate,
+} from "@/src/lib/validation";
 import { useCountryStateCity } from "@/src/lib/hooks/useCountryStateCity";
+import { useOnboarding } from "@/src/features/candidate/features/Onboarding/hooks";
 
 export interface PersonalInfoProps {
   onBack?: () => void;
@@ -31,6 +36,7 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
   const dispatch = useAppDispatch();
   const { toast } = useToast();
   const router = useRouter();
+  const { saveOnboarding } = useOnboarding();
 
   const savedPersonalInfo = useAppSelector((s) => s.onboarding.personalInfo);
 
@@ -130,14 +136,46 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
       }),
     );
 
-    setTimeout(() => {
-      setIsSubmitting(false);
-      if (onSuccess) {
-        onSuccess();
-      } else {
-        router.push("/onboarding/success");
-      }
-    }, 600);
+    saveOnboarding.mutate(
+      {
+        personalDetails: {
+          firstName: form.firstName,
+          lastName: form.lastName,
+          middleName: form.middleName,
+          dob: formatToIsoDate(form.dob),
+          gender: form.gender,
+          nationality: form.nationality,
+        },
+        contactInformation: {
+          emailAddress: form.email,
+          phoneNumber: {
+            countryCode: "+234",
+            number: form.phoneNumber,
+          },
+        },
+        residentialAddress: {
+          country: form.country,
+          state: form.state,
+          lga: form.lga,
+          address: form.streetAddress,
+        },
+        accessibility: {
+          hasImpairment: Boolean(form.impairment),
+          impairment:
+            form.impairment === "other" ? otherImpairment : form.impairment,
+        },
+      },
+      {
+        onSettled: () => {
+          setIsSubmitting(false);
+          if (onSuccess) {
+            onSuccess();
+          } else {
+            router.push("/onboarding/success");
+          }
+        },
+      },
+    );
   };
 
   return (

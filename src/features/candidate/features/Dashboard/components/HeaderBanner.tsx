@@ -11,6 +11,8 @@ import { Button } from "@/src/components/ui/button";
 import { LogoutModal } from "@/components/LogoutModal";
 import { NotificationDropdown } from "./NotificationDropdown";
 
+import { useCandidateProfile } from "@/src/features/shared/onboarding/hooks";
+
 interface HeaderBannerProps {
   userName?: string;
   title?: string;
@@ -42,6 +44,8 @@ export const HeaderBanner: React.FC<HeaderBannerProps> = ({
 }) => {
   const pathname = usePathname();
   const router = useRouter();
+  const { data: profile } = useCandidateProfile();
+  const displayName = profile?.name || userName;
 
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
@@ -181,7 +185,7 @@ export const HeaderBanner: React.FC<HeaderBannerProps> = ({
           </div>
         ) : (
           <h1 className="text-2xl lg:text-3xl font-bold tracking-tight text-white">
-            {title || `Welcome Back, ${userName}`}
+            {title || `Welcome Back, ${displayName}`}
           </h1>
         )}
 

@@ -11,9 +11,15 @@ import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { StatusModal } from "@/components/status-modal";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { createApplication } from "@/store/slices/applicationSlice";
+import { createApplication as createApplicationSlice } from "@/store/slices/applicationSlice";
 import { setStartApplication } from "@/store/slices/onboardingSlice";
 import { startApplicationSchema } from "@/src/lib/validation";
+
+import { useApplication } from "@/src/features/candidate/features/Application/hooks";
+import {
+  useGetSectors,
+  useGetCentres,
+} from "@/src/features/shared/reference/hooks";
 
 // antd-zod rule for startApplicationSchema
 const rule = createSchemaFieldRule(startApplicationSchema);
@@ -52,9 +58,6 @@ const TRADES = [
   "Air Conditioning & Refrigeration",
 ];
 
-// ─── Adapter wrapper ──────────────────────────────────────────────────────────
-// antd Form.Item injects `value` / `onChange` via cloneElement into the direct
-// child. Our <Select> uses `onChange: (e: ChangeEvent) => void`, so we adapt.
 interface ControlledSelectProps {
   value?: string;
   onChange?: (value: string) => void;
@@ -75,8 +78,6 @@ const FormSelect: React.FC<ControlledSelectProps> = ({
   />
 );
 
-// ─────────────────────────────────────────────────────────────────────────────
-
 export const StartApplication: React.FC<StartApplicationProps> = ({
   onBack,
   onContinue,
@@ -88,8 +89,19 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
   const { toast } = useToast();
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const { createApplication } = useApplication();
 
-  // Restore persisted values on mount
+  const { data: remoteSectors } = useGetSectors();
+  const { data: remoteCentres } = useGetCentres();
+
+  const centreOptions = remoteCentres?.length
+    ? remoteCentres.map((c) => c.name)
+    : ASSESSMENT_CENTERS;
+
+  const sectorOptions = remoteSectors?.length
+    ? remoteSectors.map((s) => s.name)
+    : SECTORS;
+
   const savedStartApplication = useAppSelector(
     (s) => s.onboarding.startApplication,
   );
@@ -98,12 +110,10 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
     form.setFieldsValue(savedStartApplication);
   }, [form, savedStartApplication]);
 
-  // Persist field changes to Redux as user selects
   const handleValuesChange = (changedValues: Record<string, string>) => {
     dispatch(setStartApplication(changedValues));
   };
 
-  // ─── Submit ───────────────────────────────────────────────────────────────
   const handleFinish = (values: {
     assessmentCenter: string;
     sector: string;
@@ -113,20 +123,31 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
 
     dispatch(setStartApplication(values));
     dispatch(
-      createApplication({
+      createApplicationSlice({
         title: values.trade,
         subtitle: "Recognition Of Prior Learning",
       }),
     );
 
-    setTimeout(() => {
-      setIsSubmitting(false);
-      if (onContinue) {
-        onContinue();
-      } else {
-        router.push("/rpl/personal-info");
-      }
-    }, 400);
+    createApplication.mutate(
+      {
+        type: "RPL",
+        sectorId: values.sector,
+        tradeId: values.trade,
+        unitIds: [],
+        centreId: values.assessmentCenter,
+      },
+      {
+        onSettled: () => {
+          setIsSubmitting(false);
+          if (onContinue) {
+            onContinue();
+          } else {
+            router.push("/rpl/personal-info");
+          }
+        },
+      },
+    );
   };
 
   const handleFinishFailed = () => {
@@ -174,7 +195,7 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
               </span>
             }
             placeholder="Select"
-            options={ASSESSMENT_CENTERS}
+            options={centreOptions}
           />
         </Form.Item>
 
@@ -186,7 +207,7 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
               </span>
             }
             placeholder="Select"
-            options={SECTORS}
+            options={sectorOptions}
           />
         </Form.Item>
 

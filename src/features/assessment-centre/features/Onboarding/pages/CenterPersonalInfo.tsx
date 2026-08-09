@@ -14,9 +14,13 @@ import { InfoIcon } from "@/src/components/ui/info-icon";
 import { useCountryStateCity } from "@/src/lib/hooks/useCountryStateCity";
 import { ASSESSMENT_CENTRE_ROUTES } from "@/features/assessment-centre/utils/centreRoutes";
 
+import { formatToIsoDate } from "@/src/lib/validation";
+import { useOnboarding } from "@/features/assessment-centre/features/Onboarding/hooks";
+
 export const CenterPersonalInfo: React.FC = () => {
   const router = useRouter();
   const { toast } = useToast();
+  const { saveOnboarding } = useOnboarding();
 
   const [form, setForm] = useState({
     firstName: "",
@@ -84,7 +88,7 @@ export const CenterPersonalInfo: React.FC = () => {
       valid = false;
     }
     if (!form.state) {
-      newErrors.state = "State of Residence is required";
+      newErrors.state = "State is required";
       valid = false;
     }
     if (!form.lga) {
@@ -111,7 +115,39 @@ export const CenterPersonalInfo: React.FC = () => {
       });
       return;
     }
-    router.push(ASSESSMENT_CENTRE_ROUTES.onboarding.verifyIdentity);
+
+    saveOnboarding.mutate(
+      {
+        owner: {
+          personalDetails: {
+            firstName: form.firstName,
+            lastName: form.lastName,
+            middleName: form.middleName,
+            dob: formatToIsoDate(form.dob),
+            gender: form.gender,
+            nationality: form.nationality,
+          },
+          contactInformation: {
+            emailAddress: form.email,
+            phoneNumber: {
+              countryCode: "+234",
+              number: form.phoneNumber,
+            },
+          },
+          residentialAddress: {
+            country: form.country,
+            state: form.state,
+            lga: form.lga,
+            address: form.streetAddress,
+          },
+        },
+      },
+      {
+        onSettled: () => {
+          router.push(ASSESSMENT_CENTRE_ROUTES.onboarding.verifyIdentity);
+        },
+      },
+    );
   };
 
   return (

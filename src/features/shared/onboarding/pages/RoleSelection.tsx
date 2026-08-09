@@ -10,6 +10,9 @@ import { useRouter } from "next/navigation";
 import { FiArrowLeft } from "react-icons/fi";
 import { motion } from "framer-motion";
 
+import { useOnboarding } from "@/src/features/shared/onboarding/hooks";
+import { type PersonaType } from "@/src/features/shared/onboarding/api";
+
 export interface RoleOption {
   id: string;
   title: string;
@@ -51,6 +54,7 @@ export const RoleSelection: React.FC<RoleSelectionProps> = ({
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { toast } = useToast();
+  const { startOnboarding } = useOnboarding();
 
   const savedRole = useAppSelector(
     (state) => state.onboarding.role || state.auth.user?.role || "",
@@ -69,6 +73,20 @@ export const RoleSelection: React.FC<RoleSelectionProps> = ({
     setSelectedRole(roleId);
     dispatch(setRole(roleId));
     dispatch(setOnboardingRole(roleId));
+
+    const personaMap: Record<string, PersonaType> = {
+      candidate: "candidate",
+      "assessment-centre": "centre",
+      "assessment_centre": "centre",
+      "assessment-center": "centre",
+      "awarding-body": "awarding_body",
+      "quality-assurance": "assessor",
+    };
+
+    const persona = personaMap[roleId];
+    if (persona) {
+      startOnboarding.mutate(persona);
+    }
 
     if (onSelectRole) {
       onSelectRole(roleId);

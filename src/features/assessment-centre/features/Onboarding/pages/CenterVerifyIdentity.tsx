@@ -13,9 +13,12 @@ import { ASSETS_URL } from "@/assets";
 import { validateNIN } from "@/src/lib/validation";
 import { ASSESSMENT_CENTRE_ROUTES } from "@/features/assessment-centre/utils/centreRoutes";
 
+import { useOnboarding } from "@/features/assessment-centre/features/Onboarding/hooks";
+
 export const CenterVerifyIdentity: React.FC = () => {
   const router = useRouter();
   const { toast } = useToast();
+  const { verifyIdentity, submitOnboarding } = useOnboarding();
 
   const [nin, setNin] = useState("");
   const [ninError, setNinError] = useState<string | undefined>(undefined);
@@ -42,14 +45,21 @@ export const CenterVerifyIdentity: React.FC = () => {
     setNinError(undefined);
     setModalState("verifying");
 
-    setTimeout(() => {
-      if (nin.trim() === "00000000000" || nin.trim().endsWith("000")) {
-        setModalState("error");
-      } else {
-        setModalState("success");
-        setIsVerified(true);
-      }
-    }, 2000);
+    verifyIdentity.mutate(
+      {
+        type: "nin",
+        identificationNumber: nin,
+      },
+      {
+        onSuccess: () => {
+          setModalState("success");
+          setIsVerified(true);
+        },
+        onError: () => {
+          setModalState("error");
+        },
+      },
+    );
   };
 
   const handleContinue = () => {
@@ -61,7 +71,12 @@ export const CenterVerifyIdentity: React.FC = () => {
       });
       return;
     }
-    router.push(ASSESSMENT_CENTRE_ROUTES.onboarding.success);
+
+    submitOnboarding.mutate(undefined, {
+      onSettled: () => {
+        router.push(ASSESSMENT_CENTRE_ROUTES.onboarding.success);
+      },
+    });
   };
 
   return (

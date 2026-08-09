@@ -1,8 +1,8 @@
-"use client";
-
 import React from "react";
 import { AuthSidebar } from "@/src/features/shared/authentication/components/AuthSidebar";
 import { Logo } from "@/src/components/ui/logo";
+
+export const dynamic = "force-dynamic";
 
 export default function OnboardingLayout({
   children,
@@ -14,7 +14,6 @@ export default function OnboardingLayout({
       suppressHydrationWarning
       className="h-screen w-full flex flex-col lg:flex-row bg-primary-solid lg:bg-white font-sans antialiased overflow-hidden"
     >
-      {/* Mobile Top Header */}
       <div
         suppressHydrationWarning
         className="w-full bg-primary-solid pt-8 pb-10 flex items-center justify-center lg:hidden shrink-0"

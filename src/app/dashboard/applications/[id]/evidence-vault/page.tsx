@@ -1,15 +1,7 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import React, { Suspense, use } from "react";
-
-const EvidenceVaultPage = dynamic(
-  () =>
-    import("@/features/shared/evidence-vault/pages/EvidenceVaultPage").then(
-      (mod) => mod.EvidenceVaultPage
-    ),
-  { ssr: false }
-);
+import { EvidenceVaultPage } from "@/features/shared/evidence-vault/pages/EvidenceVaultPage";
 
 interface PageProps {
   params: Promise<{ id: string }>;

@@ -23,13 +23,16 @@ export const VerifyEmail: React.FC = () => {
   const { mutate: resendCode, isPending: isResending } = useResendOtp();
 
   const rawEmail = searchParams.get("email") || "user@email.com";
+  const purposeParam = searchParams.get("purpose") || searchParams.get("mode");
+  const isPasswordReset =
+    purposeParam === "password_reset" || purposeParam === "reset";
 
   const maskEmail = (emailStr: string) => {
     if (!emailStr) return "chidi*****@email.com";
     const parts = emailStr.split("@");
     if (parts.length !== 2) return emailStr;
     const [name, domain] = parts;
-    const prefix = name.slice(0, 5);
+    const prefix = name.slice(0, Math.min(5, name.length));
     return `${prefix}*****@${domain}`;
   };
 
@@ -90,8 +93,9 @@ export const VerifyEmail: React.FC = () => {
 
   const handleResend = () => {
     if (isResending) return;
+    const purpose = isPasswordReset ? "password_reset" : "account_verify";
     resendCode(
-      { email: rawEmail, purpose: "account_verify" },
+      { email: rawEmail, purpose },
       {
         onSuccess: () => {
           toast({
@@ -114,6 +118,13 @@ export const VerifyEmail: React.FC = () => {
         title: "Incomplete Code",
         description: "Please enter the complete 4-digit verification code.",
       });
+      return;
+    }
+
+    if (isPasswordReset) {
+      router.push(
+        `/change-password?email=${encodeURIComponent(rawEmail)}&otp=${encodeURIComponent(fullCode)}&mode=reset`,
+      );
       return;
     }
 
@@ -205,7 +216,7 @@ export const VerifyEmail: React.FC = () => {
             className="w-full h-12.5 text-white font-bold text-base bg-secondary hover:bg-secondary-hover focus:ring-secondary/30 transition-all shadow-lg cursor-pointer"
             loading={isVerifying}
           >
-            Verify Email
+            {isPasswordReset ? "Verify Code" : "Verify Email"}
           </Button>
         </div>
 

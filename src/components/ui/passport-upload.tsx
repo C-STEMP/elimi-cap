@@ -1,49 +1,74 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { FiUpload } from "react-icons/fi";
 import { useToast } from "@/src/components/ui/toast";
+import { useUploadFile } from "@/src/features/shared/storage/hooks";
+import type { StorageAsset } from "@/src/features/shared/storage/api";
 
 export interface PassportUploadProps {
-  onImageChange?: (file: File | null) => void;
+  onImageChange?: (file: File | null, asset?: StorageAsset | null) => void;
+  defaultImage?: string;
   required?: boolean;
   error?: string;
+  purpose?: string;
 }
 
 export const PassportUpload: React.FC<PassportUploadProps> = ({
   onImageChange,
+  defaultImage,
   required = true,
   error,
+  purpose = "passport",
 }) => {
-  const [preview, setPreview] = useState<string | null>(null);
+  const [preview, setPreview] = useState<string | null>(defaultImage || null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const uploadFileMutation = useUploadFile();
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  useEffect(() => {
+    if (defaultImage) {
+      setPreview(defaultImage);
+    }
+  }, [defaultImage]);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const ext = file.name.split(".").pop()?.toLowerCase();
-      const validExts = ["jpg", "jpeg", "png"];
-      if (!ext || !validExts.includes(ext)) {
-        toast({
-          type: "error",
-          title: "Invalid File Type",
-          description: "Only .jpg, .jpeg, and .png image files are accepted.",
-        });
-        return;
+    if (!file) return;
+
+    const ext = file.name.split(".").pop()?.toLowerCase();
+    const validExts = ["jpg", "jpeg", "png"];
+    if (!ext || !validExts.includes(ext)) {
+      toast({
+        type: "error",
+        title: "Invalid File Type",
+        description: "Only .jpg, .jpeg, and .png image files are accepted.",
+      });
+      return;
+    }
+
+    const MAX_SIZE = 2 * 1024 * 1024; // 2MB
+    if (file.size > MAX_SIZE) {
+      toast({
+        type: "error",
+        title: "File Too Large",
+        description: "Image size must not exceed 2MB.",
+      });
+      return;
+    }
+
+    const localPreview = URL.createObjectURL(file);
+    setPreview(localPreview);
+
+    try {
+      const asset = await uploadFileMutation.mutateAsync({ file, purpose });
+      if (asset?.url) {
+        setPreview(asset.url);
       }
-      const MAX_SIZE = 2 * 1024 * 1024; // 2MB
-      if (file.size > MAX_SIZE) {
-        toast({
-          type: "error",
-          title: "File Too Large",
-          description: "Image size must not exceed 2MB.",
-        });
-        return;
-      }
-      const url = URL.createObjectURL(file);
-      setPreview(url);
-      onImageChange?.(file);
+      onImageChange?.(file, asset);
+    } catch {
+      // Fallback to local preview if network error occurs
+      onImageChange?.(file, null);
     }
   };
 
@@ -53,7 +78,7 @@ export const PassportUpload: React.FC<PassportUploadProps> = ({
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
-    onImageChange?.(null);
+    onImageChange?.(null, null);
   };
 
   return (
@@ -70,10 +95,16 @@ export const PassportUpload: React.FC<PassportUploadProps> = ({
         ref={fileInputRef}
         onChange={handleFileChange}
         accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+        disabled={uploadFileMutation.isPending}
         style={{ display: "none" }}
         className="hidden"
       />
-      {preview ? (
+      {uploadFileMutation.isPending ? (
+        <div className="p-3 flex flex-col items-center justify-center">
+          <div className="animate-spin rounded-full h-7 w-7 border-b-2 border-primary mb-2" />
+          <span className="text-primary text-xs font-semibold">Uploading...</span>
+        </div>
+      ) : preview ? (
         <div className="absolute inset-0 w-full h-full rounded-2xl overflow-hidden group z-10">
           <img
             src={preview}

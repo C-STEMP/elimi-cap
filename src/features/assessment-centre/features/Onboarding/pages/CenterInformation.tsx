@@ -15,12 +15,18 @@ import { useCountryStateCity } from "@/src/lib/hooks/useCountryStateCity";
 
 import { ASSESSMENT_CENTRE_ROUTES } from "@/features/assessment-centre/utils/centreRoutes";
 
+import { useOnboarding } from "@/src/features/assessment-centre/features/Onboarding/hooks";
+import { useUploadFile } from "@/src/features/shared/storage/hooks";
+
 export const CenterInformation: React.FC = () => {
   const router = useRouter();
   const { toast } = useToast();
+  const { saveOnboarding } = useOnboarding();
+  const uploadFileMutation = useUploadFile();
 
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [logoAssetId, setLogoAssetId] = useState<string | undefined>(undefined);
 
   const [form, setForm] = useState({
     centerName: "",
@@ -44,13 +50,28 @@ export const CenterInformation: React.FC = () => {
     }
   }, []);
 
-  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setLogoFile(file);
       setLogoPreview(URL.createObjectURL(file));
       if (errors.logo) {
         setErrors((prev) => ({ ...prev, logo: "" }));
+      }
+
+      try {
+        const asset = await uploadFileMutation.mutateAsync({
+          file,
+          purpose: "logo",
+        });
+        if (asset?.assetId) {
+          setLogoAssetId(asset.assetId);
+        }
+        if (asset?.url) {
+          setLogoPreview(asset.url);
+        }
+      } catch {
+        // Fallback to local preview
       }
     }
   };
@@ -146,7 +167,41 @@ export const CenterInformation: React.FC = () => {
       });
       return;
     }
-    router.push(ASSESSMENT_CENTRE_ROUTES.onboarding.personalInfo);
+
+    saveOnboarding.mutate(
+      {
+        centre: {
+          centreInformation: {
+            name: form.centerName,
+            registrationNo: form.regNo,
+            logoAssetId,
+          },
+          centreResidentialAddress: {
+            country: form.country,
+            state: form.state,
+            lga: form.lga,
+            address: form.streetAddress,
+          },
+          centreSupportInformation: {
+            emailAddress: form.supportEmail,
+            phoneNumber: {
+              countryCode: "+234",
+              number: form.phoneNumber,
+            },
+          },
+          centreAccountDetails: {
+            bank: form.bank,
+            accountNo: form.accountNumber,
+            nameOfAccount: form.nameOnAccount,
+          },
+        },
+      },
+      {
+        onSettled: () => {
+          router.push(ASSESSMENT_CENTRE_ROUTES.onboarding.personalInfo);
+        },
+      },
+    );
   };
 
   return (

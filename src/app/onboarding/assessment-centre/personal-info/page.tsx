@@ -1,14 +1,6 @@
 "use client";
 
-import dynamic from "next/dynamic";
-
-const CenterPersonalInfo = dynamic(
-  () =>
-    import("@/src/features/assessment-centre/features/Onboarding/pages/CenterPersonalInfo").then(
-      (mod) => mod.CenterPersonalInfo
-    ),
-  { ssr: false }
-);
+import { CenterPersonalInfo } from "@/src/features/assessment-centre/features/Onboarding/pages/CenterPersonalInfo";
 
 export default function CenterPersonalInfoPage() {
   return <CenterPersonalInfo />;

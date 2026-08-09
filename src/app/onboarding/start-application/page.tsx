@@ -1,14 +1,6 @@
 "use client";
 
-import dynamic from "next/dynamic";
-
-const StartApplication = dynamic(
-  () =>
-    import("@/src/features/candidate/features/Onboarding/pages/StartApplication").then(
-      (mod) => mod.StartApplication
-    ),
-  { ssr: false }
-);
+import { StartApplication } from "@/src/features/candidate/features/Onboarding/pages/StartApplication";
 
 export default function StartApplicationPage() {
   return <StartApplication />;

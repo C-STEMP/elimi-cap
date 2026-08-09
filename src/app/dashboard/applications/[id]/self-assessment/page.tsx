@@ -1,15 +1,7 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { Suspense, use } from "react";
-
-const SelfAssessmentPage = dynamic(
-  () =>
-    import("@/features/candidate/features/self-assessment/pages/SelfAssessmentPage").then(
-      (mod) => mod.SelfAssessmentPage
-    ),
-  { ssr: false }
-);
+import { SelfAssessmentPage } from "@/features/candidate/features/self-assessment/pages/SelfAssessmentPage";
 
 interface PageProps {
   params: Promise<{
@@ -33,4 +25,3 @@ export default function Page({ params }: PageProps) {
     </Suspense>
   );
 }
-

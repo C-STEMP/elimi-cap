@@ -4,6 +4,8 @@ import React from "react";
 import { FiChevronRight } from "react-icons/fi";
 import { MOCK_PENDING_APPLICATIONS } from "@/features/assessment-centre/utils/constants";
 
+import { useGetApplications } from "@/features/assessment-centre/features/Applications/hooks";
+
 interface TableProps {
   onViewAll?: () => void;
   onViewApplication?: (id: string) => void;
@@ -13,6 +15,7 @@ export const PendingApplicationsTable: React.FC<TableProps> = ({
   onViewAll,
   onViewApplication,
 }) => {
+  const { data: remotePending } = useGetApplications("draft");
   return (
     <div className="bg-white rounded-3xl p-6 shadow-2xs border border-gray-100/80 flex flex-col justify-between select-none">
       {/* Header */}

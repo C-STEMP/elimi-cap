@@ -13,6 +13,7 @@ import { StatusModal } from "@/components/status-modal";
 import { useAppDispatch } from "@/store/hooks";
 import { setSidebarVariant } from "@/store/slices/authSlice";
 import { validateEmail } from "@/src/lib/validation";
+import { ApiError } from "@/src/lib/api/client";
 import {
   useLogin,
   useGoogleAuth,
@@ -96,7 +97,31 @@ export const SignIn: React.FC = () => {
     }
 
     setErrors({});
-    loginUser({ email, password });
+    loginUser(
+      { email, password },
+      {
+        onError: (error: Error) => {
+          if (error instanceof ApiError) {
+            const code = (error.code || "").toUpperCase();
+            const msg = (error.message || "").toLowerCase();
+            const isUnregistered =
+              code.includes("NOT_FOUND") ||
+              code.includes("NOT_REGISTERED") ||
+              code.includes("NO_USER") ||
+              msg.includes("not found") ||
+              msg.includes("not registered") ||
+              msg.includes("no account") ||
+              msg.includes("does not exist") ||
+              msg.includes("doesn't exist");
+            if (isUnregistered) {
+              setErrors({
+                email: "This email is not registered. Please sign up.",
+              });
+            }
+          }
+        },
+      },
+    );
   };
 
   const handleSendCodeSubmit = (e: React.FormEvent) => {

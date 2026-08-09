@@ -1,15 +1,7 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import React, { Suspense } from "react";
-
-const MyApplicationsPage = dynamic(
-  () =>
-    import("@/features/candidate/features/Application/pages/MyApplicationsPage").then(
-      (mod) => mod.MyApplicationsPage
-    ),
-  { ssr: false }
-);
+import { MyApplicationsPage } from "@/features/candidate/features/Application/pages/MyApplicationsPage";
 
 export default function ApplicationsPage() {
   return (

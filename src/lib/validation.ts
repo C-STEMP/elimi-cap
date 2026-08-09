@@ -47,6 +47,29 @@ export function requiredSchema(fieldName: string = "This field") {
     });
 }
 
+export function formatToIsoDate(dateStr: string): string {
+  if (!dateStr) return "";
+  const trimmed = dateStr.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    return trimmed;
+  }
+  const parts = trimmed.split(/[/.-]/);
+  if (parts.length === 3) {
+    if (parts[0].length === 4) {
+      const [year, month, day] = parts;
+      return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+    } else if (parts[2].length === 4) {
+      const [day, month, year] = parts;
+      return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+    }
+  }
+  const d = new Date(trimmed);
+  if (!isNaN(d.getTime())) {
+    return d.toISOString().slice(0, 10);
+  }
+  return trimmed;
+}
+
 // Zod Schemas for Full Forms
 export const signInSchema = z.object({
   email: emailSchema,

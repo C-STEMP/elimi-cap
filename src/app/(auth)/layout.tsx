@@ -2,6 +2,8 @@ import * as React from "react";
 import { AuthSidebar } from "@/src/features/shared/authentication/components/AuthSidebar";
 import { Logo } from "@/src/components/ui/logo";
 
+export const dynamic = "force-dynamic";
+
 export default function AuthLayout({
   children,
 }: {

@@ -10,6 +10,8 @@ import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
 import { ASSETS_URL } from "@/assets";
 
+import { useAddStaff } from "@/features/assessment-centre/features/Staff/hooks";
+
 interface AddStaffModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -22,6 +24,7 @@ export const AddStaffModal: React.FC<AddStaffModalProps> = ({
   onStaffAdded,
 }) => {
   const { toast } = useToast();
+  const addStaffMutation = useAddStaff();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("");
@@ -55,6 +58,18 @@ export const AddStaffModal: React.FC<AddStaffModalProps> = ({
       });
       return;
     }
+
+    const mappedRole =
+      role === "super-admin"
+        ? "super_admin"
+        : role === "admin"
+        ? "regular_admin"
+        : "staff";
+
+    addStaffMutation.mutate({
+      email,
+      role: mappedRole,
+    });
 
     setStep("success");
     onStaffAdded?.({ name, email, role });

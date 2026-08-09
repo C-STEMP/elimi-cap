@@ -1,14 +1,6 @@
 "use client";
 
-import dynamic from "next/dynamic";
-
-const PersonalInfo = dynamic(
-  () =>
-    import("@/src/features/candidate/features/Onboarding/pages/PersonalInfo").then(
-      (mod) => mod.PersonalInfo
-    ),
-  { ssr: false }
-);
+import { PersonalInfo } from "@/src/features/candidate/features/Onboarding/pages/PersonalInfo";
 
 export default function PersonalInfoPage() {
   return <PersonalInfo />;

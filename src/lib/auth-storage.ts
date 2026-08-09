@@ -1,9 +1,3 @@
-/**
- * lib/auth-storage.ts
- * Token storage utilities — reads/writes to localStorage.
- * Server-side safe (guards all access with typeof window checks).
- */
-
 const ACCESS_TOKEN_KEY = "elimi_access_token";
 const REFRESH_TOKEN_KEY = "elimi_refresh_token";
 const USER_KEY = "elimi_user";
@@ -20,7 +14,6 @@ export function saveTokens(accessToken: string, refreshToken: string): void {
   if (typeof window === "undefined") return;
   localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
   localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
-  // Set cookie for Next.js server-side middleware
   document.cookie = `${ACCESS_TOKEN_KEY}=${encodeURIComponent(accessToken)}; path=/; max-age=604800; SameSite=Lax`;
 }
 
@@ -28,6 +21,21 @@ export function saveOnboardedStatus(isOnboarded: boolean): void {
   if (typeof window === "undefined") return;
   localStorage.setItem("elimi_onboarded", String(isOnboarded));
   document.cookie = `elimi_onboarded=${isOnboarded}; path=/; max-age=604800; SameSite=Lax`;
+}
+
+export function getOnboardedStatus(): boolean {
+  if (typeof window === "undefined") return false;
+  return localStorage.getItem("elimi_onboarded") === "true";
+}
+
+export function saveLastOnboardingRoute(route: string): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem("elimi_last_onboarding_route", route);
+}
+
+export function getLastOnboardingRoute(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("elimi_last_onboarding_route");
 }
 
 export function getAccessToken(): string | null {

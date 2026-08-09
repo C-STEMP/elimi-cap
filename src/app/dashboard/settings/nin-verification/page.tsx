@@ -1,14 +1,6 @@
 "use client";
 
-import dynamic from "next/dynamic";
-
-const NinVerificationPage = dynamic(
-  () =>
-    import("@/features/shared/settings/pages/NinVerificationPage").then(
-      (mod) => mod.NinVerificationPage
-    ),
-  { ssr: false }
-);
+import { NinVerificationPage } from "@/features/shared/settings/pages/NinVerificationPage";
 
 export default function NinVerificationRoute() {
   return <NinVerificationPage />;

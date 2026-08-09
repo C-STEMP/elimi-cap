@@ -4,6 +4,7 @@ import { AntdRegistry } from "@ant-design/nextjs-registry";
 import { AntdProvider } from "@/src/components/ui/antd-provider";
 import { ToastProvider } from "@/src/components/ui/toast";
 import { ReduxProvider } from "@/store/provider";
+import { RouteGuard } from "@/src/components/auth/RouteGuard";
 import "./globals.css";
 
 const inter = Inter({
@@ -48,7 +49,9 @@ export default function RootLayout({
         <ReduxProvider>
           <AntdRegistry>
             <AntdProvider>
-              <ToastProvider>{children}</ToastProvider>
+              <ToastProvider>
+                <RouteGuard>{children}</RouteGuard>
+              </ToastProvider>
             </AntdProvider>
           </AntdRegistry>
         </ReduxProvider>

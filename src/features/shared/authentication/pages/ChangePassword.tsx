@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
 import { useToast } from "@/src/components/ui/toast";
@@ -13,15 +13,14 @@ import {
   validatePassword,
   validateConfirmPassword,
 } from "@/src/lib/validation";
+import { ApiError } from "@/src/lib/api/client";
 import { useResetPassword } from "@/src/features/shared/authentication/hooks";
 
 export const ChangePassword: React.FC = () => {
-  const [otp, setOtp] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [errors, setErrors] = useState<{
-    otp?: string;
     password?: string;
     confirmPassword?: string;
   }>({});
@@ -30,21 +29,32 @@ export const ChangePassword: React.FC = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email") ?? "";
-  const mode = searchParams.get("mode"); // "reset" = forgot-password flow
+  const otp = searchParams.get("otp") ?? "";
+  const mode = searchParams.get("mode");
 
   const { mutate: performReset, isPending } = useResetPassword();
+
+  useEffect(() => {
+    if (mode === "reset" && !otp) {
+      toast({
+        type: "error",
+        title: "Verification Required",
+        description: "Please enter your verification code first.",
+      });
+      router.push(
+        `/verify?email=${encodeURIComponent(email)}&purpose=password_reset`,
+      );
+    }
+  }, [mode, otp, email, router, toast]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const otpErr =
-      mode === "reset" && !otp.trim() ? "Verification code is required" : null;
     const passErr = validatePassword(password);
     const confirmErr = validateConfirmPassword(password, confirmPassword);
 
-    if (otpErr || passErr || confirmErr) {
+    if (passErr || confirmErr) {
       setErrors({
-        otp: otpErr || undefined,
         password: passErr || undefined,
         confirmPassword: confirmErr || undefined,
       });
@@ -57,7 +67,23 @@ export const ChangePassword: React.FC = () => {
     }
 
     setErrors({});
-    performReset({ email, otp, newPassword: password });
+    performReset(
+      { email, otp, newPassword: password },
+      {
+        onSuccess: () => {
+          setShowSuccessModal(true);
+        },
+        onError: (error: Error) => {
+          if (error instanceof ApiError && error.statusCode === 422) {
+            setTimeout(() => {
+              router.push(
+                `/verify?email=${encodeURIComponent(email)}&purpose=password_reset`,
+              );
+            }, 1200);
+          }
+        },
+      },
+    );
   };
 
   return (
@@ -77,29 +103,6 @@ export const ChangePassword: React.FC = () => {
       </div>
 
       <form onSubmit={handleSubmit} className="w-full flex flex-col gap-6">
-        {mode === "reset" && (
-          <Input
-            label={
-              <span>
-                Verification Code
-                <span className="text-primary-solid ml-0.5">*</span>
-              </span>
-            }
-            type="text"
-            name="otp"
-            placeholder="4-digit code from email"
-            value={otp}
-            error={errors.otp}
-            maxLength={4}
-            onChange={(e) => {
-              const val = e.target.value.replace(/\D/g, "").slice(0, 4);
-              setOtp(val);
-              if (errors.otp)
-                setErrors((prev) => ({ ...prev, otp: undefined }));
-            }}
-            disabled={isPending}
-          />
-        )}
         <div className="w-full flex flex-col">
           <Input
             label="Password"

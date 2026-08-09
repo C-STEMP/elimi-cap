@@ -18,7 +18,10 @@ import { Input } from "@/src/components/ui/input";
 import { useToast } from "@/src/components/ui/toast";
 import { MOCK_AWARDING_BODY_INFO } from "@/features/assessment-centre/utils/constants";
 
+import { useApplication } from "@/features/assessment-centre/features/Applications/hooks";
+
 interface ApplicationDetailViewProps {
+  id?: string;
   candidateName?: string;
   onBack: () => void;
   onOpenCandidateForm: () => void;
@@ -28,12 +31,14 @@ interface ApplicationDetailViewProps {
 export const AssessmentCentreApplicationDetailView: React.FC<
   ApplicationDetailViewProps
 > = ({
+  id = "app-1",
   candidateName = "Oguntade James",
   onBack,
   onOpenCandidateForm,
   onOpenEvidenceVault,
 }) => {
   const { toast } = useToast();
+  const { forwardToAwardingBody, reviewApplication } = useApplication();
   const [currentMonth, setCurrentMonth] = useState("July");
   const months = [
     "January",

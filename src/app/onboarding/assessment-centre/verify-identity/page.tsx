@@ -1,14 +1,6 @@
 "use client";
 
-import dynamic from "next/dynamic";
-
-const CenterVerifyIdentity = dynamic(
-  () =>
-    import(
-      "@/src/features/assessment-centre/features/Onboarding/pages/CenterVerifyIdentity"
-    ).then((mod) => mod.CenterVerifyIdentity),
-  { ssr: false }
-);
+import { CenterVerifyIdentity } from "@/src/features/assessment-centre/features/Onboarding/pages/CenterVerifyIdentity";
 
 export default function CenterVerifyIdentityPage() {
   return <CenterVerifyIdentity />;

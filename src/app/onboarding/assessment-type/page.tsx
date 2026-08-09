@@ -1,14 +1,6 @@
 "use client";
 
-import dynamic from "next/dynamic";
-
-const AssessmentType = dynamic(
-  () =>
-    import("@/src/features/candidate/features/Onboarding/pages/AssessmentType").then(
-      (mod) => mod.AssessmentType
-    ),
-  { ssr: false }
-);
+import { AssessmentType } from "@/src/features/candidate/features/Onboarding/pages/AssessmentType";
 
 export default function AssessmentTypePage() {
   return <AssessmentType />;

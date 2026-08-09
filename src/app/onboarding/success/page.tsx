@@ -1,14 +1,6 @@
 "use client";
 
-import dynamic from "next/dynamic";
-
-const Success = dynamic(
-  () =>
-    import("@/src/features/candidate/features/Onboarding/pages/Success").then(
-      (mod) => mod.Success
-    ),
-  { ssr: false }
-);
+import { Success } from "@/src/features/candidate/features/Onboarding/pages/Success";
 
 export default function SuccessPage() {
   return <Success />;
