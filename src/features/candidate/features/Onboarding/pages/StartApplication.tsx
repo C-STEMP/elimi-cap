@@ -22,7 +22,6 @@ import {
   useGetTradesBySector,
 } from "@/src/features/shared/reference/hooks";
 
-// antd-zod rule for startApplicationSchema
 const rule = createSchemaFieldRule(startApplicationSchema);
 
 export interface StartApplicationProps {
@@ -30,33 +29,12 @@ export interface StartApplicationProps {
   onContinue?: () => void;
 }
 
-const ASSESSMENT_CENTERS = [
-  "Abuja Vocational & Technical Center",
-  "Lagos Skill Assessment Hub",
-  "Ibadan TVET Center of Excellence",
-  "Port Harcourt Trade Center",
-  "Enugu Vocational Institute",
-  "Kano Competency Assessment Center",
-];
-
-const SECTORS = [
-  "Construction & Building Services",
-  "Automotive & Mechanical",
-  "Electrical & Energy",
-  "Hospitality & Tourism",
-  "Information Technology",
-  "Agriculture & Food",
-];
-
-const TRADES = [
-  "Carpentry & Joinery",
-  "Electrical Installation",
-  "Plumbing & Pipefitting",
-  "Welding & Metal Fabrication",
-  "Masonry & Construction",
-  "Automotive Mechanics",
-  "Solar PV Installation",
-  "Air Conditioning & Refrigeration",
+const FALLBACK_CENTRES: SelectOption[] = [
+  { label: "Abuja Vocational & Technical Center", value: "centre-abuja-01" },
+  { label: "Lagos Skill Assessment Hub", value: "centre-lagos-01" },
+  { label: "Ibadan TVET Center of Excellence", value: "centre-ibadan-01" },
+  { label: "Port Harcourt Trade Center", value: "centre-ph-01" },
+  { label: "Enugu Vocational Institute", value: "centre-enugu-01" },
 ];
 
 interface ControlledSelectProps {
@@ -93,23 +71,29 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
   const dispatch = useAppDispatch();
   const { createApplication } = useApplication();
 
-  const { data: remoteSectors } = useGetSectors();
-  const { data: remoteCentres } = useGetCentres();
+  const { data: remoteSectors = [], isLoading: isLoadingSectors } =
+    useGetSectors();
+  const { data: remoteCentres = [], isLoading: isLoadingCentres } =
+    useGetCentres();
 
   const selectedSectorId = Form.useWatch("sector", form);
-  const { data: remoteTrades } = useGetTradesBySector(selectedSectorId);
+  const { data: remoteTrades = [], isLoading: isLoadingTrades } =
+    useGetTradesBySector(selectedSectorId);
 
-  const centreOptions: SelectOption[] = remoteCentres?.length
-    ? remoteCentres.map((c) => ({ label: c.name, value: c.id }))
-    : ASSESSMENT_CENTERS.map((name) => ({ label: name, value: name }));
+  const centreOptions: SelectOption[] =
+    remoteCentres.length > 0
+      ? remoteCentres.map((c) => ({ label: c.name, value: c.id }))
+      : FALLBACK_CENTRES;
 
-  const sectorOptions: SelectOption[] = remoteSectors?.length
-    ? remoteSectors.map((s) => ({ label: s.name, value: s.id }))
-    : SECTORS.map((name) => ({ label: name, value: name }));
+  const sectorOptions: SelectOption[] = remoteSectors.map((s) => ({
+    label: s.name,
+    value: s.id,
+  }));
 
-  const tradeOptions: SelectOption[] = remoteTrades?.length
-    ? remoteTrades.map((t) => ({ label: t.name, value: t.id }))
-    : TRADES.map((name) => ({ label: name, value: name }));
+  const tradeOptions: SelectOption[] = remoteTrades.map((t) => ({
+    label: t.name,
+    value: t.id,
+  }));
 
   const savedStartApplication = useAppSelector(
     (s) => s.onboarding.startApplication,
@@ -120,7 +104,10 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
   }, [form, savedStartApplication]);
 
   const handleValuesChange = (changedValues: Record<string, string>) => {
-    dispatch(setStartApplication(changedValues));
+    if ("sector" in changedValues) {
+      form.setFieldValue("trade", "");
+    }
+    dispatch(setStartApplication(form.getFieldsValue()));
   };
 
   const handleFinish = (values: {
@@ -130,7 +117,7 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
   }) => {
     setIsSubmitting(true);
 
-    const selectedTradeObj = remoteTrades?.find((t) => t.id === values.trade);
+    const selectedTradeObj = remoteTrades.find((t) => t.id === values.trade);
     const tradeTitle = selectedTradeObj?.name || values.trade;
 
     dispatch(setStartApplication(values));
@@ -206,8 +193,11 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
                 <span className="text-primary-solid ml-0.5">*</span>
               </span>
             }
-            placeholder="Select"
+            placeholder={
+              isLoadingCentres ? "Loading centres..." : "Select Centre"
+            }
             options={centreOptions}
+            disabled={isLoadingCentres}
           />
         </Form.Item>
 
@@ -218,8 +208,11 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
                 Sector<span className="text-primary-solid ml-0.5">*</span>
               </span>
             }
-            placeholder="Select"
+            placeholder={
+              isLoadingSectors ? "Loading sectors..." : "Select Sector"
+            }
             options={sectorOptions}
+            disabled={isLoadingSectors}
           />
         </Form.Item>
 
@@ -230,8 +223,15 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
                 Trade<span className="text-primary-solid ml-0.5">*</span>
               </span>
             }
-            placeholder="Select"
+            placeholder={
+              !selectedSectorId
+                ? "Select Sector First"
+                : isLoadingTrades
+                  ? "Loading trades..."
+                  : "Select Trade"
+            }
             options={tradeOptions}
+            disabled={!selectedSectorId || isLoadingTrades}
           />
         </Form.Item>
 
