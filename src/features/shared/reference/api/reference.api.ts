@@ -49,15 +49,37 @@ export async function getTradesBySectorApi(sectorId: string): Promise<Trade[]> {
 
 export async function getCentresApi(status?: string): Promise<Centre[]> {
   const query = status ? `?status=${status}` : "";
-  return capFetch<Centre[]>(`/admin/centres${query}`, {
-    method: "GET",
-  });
+  try {
+    return await capFetch<Centre[]>(`/admin/centres${query}`, {
+      method: "GET",
+    });
+  } catch (error: any) {
+    if (
+      error?.status === 404 ||
+      error?.code === "http.not_found" ||
+      error?.message?.toLowerCase().includes("not found")
+    ) {
+      return [];
+    }
+    throw error;
+  }
 }
 
 export async function getAwardingBodiesApi(): Promise<AwardingBody[]> {
-  return capFetch<AwardingBody[]>("/admin/awarding-bodies", {
-    method: "GET",
-  });
+  try {
+    return await capFetch<AwardingBody[]>("/admin/awarding-bodies", {
+      method: "GET",
+    });
+  } catch (error: any) {
+    if (
+      error?.status === 404 ||
+      error?.code === "http.not_found" ||
+      error?.message?.toLowerCase().includes("not found")
+    ) {
+      return [];
+    }
+    throw error;
+  }
 }
 
 export async function getThirdPartyReportTemplateApi(): Promise<ThirdPartyReportTemplate> {
