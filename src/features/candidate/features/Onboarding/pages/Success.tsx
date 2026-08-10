@@ -30,6 +30,15 @@ export const Success: React.FC<SuccessProps> = ({
     effectiveRole === "assessment_centre" ||
     effectiveRole === "assessment-center";
 
+  const isNonCandidate =
+    isAssessmentCentre ||
+    effectiveRole === "assessor" ||
+    effectiveRole === "quality-assurance" ||
+    effectiveRole === "quality_assurance" ||
+    effectiveRole === "qaa" ||
+    effectiveRole === "awarding-body" ||
+    effectiveRole === "awarding_body";
+
   const handleStart = () => {
     saveOnboardedStatus(true);
     if (onStartApplication) {
@@ -74,11 +83,18 @@ export const Success: React.FC<SuccessProps> = ({
 
       <div className="text-neutral-secondary text-sm xl:text-base leading-relaxed mt-4 mb-8 font-normal max-w-sm space-y-1">
         <p>Welcome to ELIMI.</p>
-        <p>Your dashboard has been configured based on your selected role.</p>
+        {isNonCandidate ? (
+          <p>
+            Your credentials has been submitted for verification, you will get
+            an update from us within 24hrs.
+          </p>
+        ) : (
+          <p>Your dashboard has been configured based on your selected role.</p>
+        )}
       </div>
 
       <div className="w-full flex flex-col gap-3.5">
-        {isAssessmentCentre ? (
+        {isNonCandidate ? (
           <Button
             type="button"
             onClick={handleDashboard}

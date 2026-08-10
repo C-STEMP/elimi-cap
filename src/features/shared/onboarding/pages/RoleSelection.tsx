@@ -104,6 +104,14 @@ export const RoleSelection: React.FC<RoleSelectionProps> = ({
       setTimeout(() => {
         router.push("/onboarding/assessment-centre/center-info");
       }, 150);
+    } else if (
+      roleId === "quality-assurance" ||
+      roleId === "assessor" ||
+      roleId === "qaa"
+    ) {
+      setTimeout(() => {
+        router.push("/onboarding/assessor/personal-info");
+      }, 150);
     } else {
       toast({
         type: "info",

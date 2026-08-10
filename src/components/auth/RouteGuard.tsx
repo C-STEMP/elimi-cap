@@ -58,6 +58,8 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({ children }) => {
                   targetRoute = "/onboarding/personal-info";
                 } else if (record?.persona === "centre") {
                   targetRoute = "/onboarding/assessment-centre/center-info";
+                } else if (record?.persona === "assessor") {
+                  targetRoute = "/onboarding/assessor/personal-info";
                 } else {
                   targetRoute = "/onboarding/role-selection";
                 }
