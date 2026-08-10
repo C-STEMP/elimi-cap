@@ -44,11 +44,15 @@ interface ControlledSelectProps {
   placeholder?: string;
   options: (string | SelectOption)[];
   disabled?: boolean;
+  error?: string;
+  help?: string;
 }
 
 const FormSelect: React.FC<ControlledSelectProps> = ({
   value = "",
   onChange,
+  error,
+  help,
   ...rest
 }) => (
   <Select

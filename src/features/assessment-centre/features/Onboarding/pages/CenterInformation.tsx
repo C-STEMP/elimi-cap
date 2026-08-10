@@ -152,6 +152,17 @@ export const CenterInformation: React.FC = () => {
     let valid = true;
     const newErrors: Record<string, string> = {};
 
+    if (
+      !logoFile &&
+      !logoPreview &&
+      !logoAssetId &&
+      !savedCentreInfo.logoPreview &&
+      !savedCentreInfo.logoAssetId
+    ) {
+      newErrors.logo = "Center logo is required";
+      valid = false;
+    }
+
     if (!form.centerName.trim()) {
       newErrors.centerName = "Name of Assessment Center is required";
       valid = false;
@@ -211,7 +222,7 @@ export const CenterInformation: React.FC = () => {
         type: "error",
         title: "Input Required",
         description:
-          "Please complete all required fields for Center Information.",
+          "Please upload your center logo and fill in all required fields.",
       });
       return;
     }
@@ -279,35 +290,48 @@ export const CenterInformation: React.FC = () => {
           </div>
 
           {/* Top Right Logo Upload Card */}
-          <label className="relative w-32 h-32 border-2 border-dashed border-red-300 bg-red-50/20 hover:bg-red-50/40 rounded-2xl flex flex-col items-center justify-center p-3 text-center cursor-pointer transition-all shrink-0">
-            <input
-              type="file"
-              accept="image/*"
-              style={{ display: "none" }}
-              className="hidden"
-              onChange={handleLogoChange}
-            />
-            {logoPreview ? (
-              <div className="relative w-full h-full rounded-xl overflow-hidden">
-                <Image
-                  src={logoPreview}
-                  alt="Logo preview"
-                  fill
-                  className="object-cover"
-                />
-              </div>
-            ) : (
-              <>
-                <FiUpload className="w-5 h-5 text-primary-solid mb-1.5" />
-                <span className="font-bold text-xs text-primary-solid">
-                  Upload Logo
-                </span>
-                <span className="text-[10px] text-gray-400 mt-0.5 leading-tight">
-                  5mb image max size
-                </span>
-              </>
+          <div className="flex flex-col items-center sm:items-end gap-1 shrink-0">
+            <label
+              className={`relative w-32 h-32 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center p-3 text-center cursor-pointer transition-all shrink-0 ${
+                errors.logo
+                  ? "border-red-500 bg-red-50/50"
+                  : "border-red-300 bg-red-50/20 hover:bg-red-50/40"
+              }`}
+            >
+              <input
+                type="file"
+                accept="image/*"
+                style={{ display: "none" }}
+                className="hidden"
+                onChange={handleLogoChange}
+              />
+              {logoPreview ? (
+                <div className="relative w-full h-full rounded-xl overflow-hidden">
+                  <Image
+                    src={logoPreview}
+                    alt="Logo preview"
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+              ) : (
+                <>
+                  <FiUpload className="w-5 h-5 text-primary-solid mb-1.5" />
+                  <span className="font-bold text-xs text-primary-solid">
+                    Upload Logo
+                  </span>
+                  <span className="text-[10px] text-gray-400 mt-0.5 leading-tight">
+                    5mb image max size
+                  </span>
+                </>
+              )}
+            </label>
+            {errors.logo && (
+              <span className="text-primary-solid text-xs font-semibold">
+                {errors.logo}
+              </span>
             )}
-          </label>
+          </div>
         </div>
 
         {/* Center Details Fields */}
