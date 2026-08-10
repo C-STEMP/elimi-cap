@@ -9,28 +9,62 @@ import { ApplicationsList } from "@/features/candidate/features/Dashboard/compon
 import { UpcomingCard } from "@/features/candidate/features/Dashboard/components/UpcomingCard";
 import { CalendarWidget } from "@/features/candidate/features/Dashboard/components/CalendarWidget";
 import { VerifiedBadge } from "@/features/candidate/features/Dashboard/components/VerifiedBadge";
-import { useAppSelector } from "@/store/hooks";
+import {
+  useCandidateProfile,
+  useApplicationsSummary,
+  useCandidateEvents,
+} from "@/src/features/shared/onboarding/hooks";
+import { useGetApplications } from "@/src/features/candidate/features/Application/hooks";
 
 export const Dashboard: React.FC = () => {
-  const user = useAppSelector((state) => state.auth.user);
-  const applications = useAppSelector((state) => state.application.applications);
-  const firstName = user?.fullName?.split(" ")[0] || "User";
+  const { data: profile, isLoading: profileLoading } = useCandidateProfile();
+  const { data: summary, isLoading: summaryLoading } = useApplicationsSummary();
+  const { data: applications, isLoading: appsLoading } = useGetApplications();
+  const { data: events, isLoading: eventsLoading } = useCandidateEvents();
 
-  const activeCount = applications.filter(
-    (app) => app.status !== "interview_completed" && app.status !== "certification" && app.status !== "draft"
-  ).length;
-  const completedCount = applications.filter(
-    (app) => app.status === "interview_completed" || app.status === "certification"
-  ).length;
+  const firstName = profile?.name?.split(" ")[0] || "User";
+  const isVerified = profile?.identityVerified ?? false;
 
-  const applicationItems = applications.map((app) => ({
-    id: app.id,
-    title: app.title,
-    subtitle: app.subtitle,
-    status: (app.status === "draft" ? "Not Started" : 
-            app.status === "interview_completed" || app.status === "certification" ? "Completed" : 
-            "In Progress") as "Not Started" | "In Progress" | "Completed",
-  }));
+  const activeCount = summary?.active ?? 0;
+  const completedCount = summary?.completed ?? 0;
+
+  const applicationItems = (applications ?? []).map((app) => {
+    let status: "Not Started" | "In Progress" | "Completed" = "In Progress";
+    if (app.status === "draft") {
+      status = "Not Started";
+    } else if (app.status === "certified") {
+      status = "Completed";
+    }
+
+    return {
+      id: app.id,
+      title: `${app.type} Application`,
+      subtitle: `Status: ${app.currentStageKey || app.status}`,
+      status,
+    };
+  });
+
+  const nextEvent = events && events.length > 0 ? events[0] : null;
+  const upcomingInterview = nextEvent
+    ? {
+        title: nextEvent.name,
+        date: new Date(nextEvent.eventAt).toLocaleDateString("en-GB", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        }),
+        time: new Date(nextEvent.eventAt).toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        }),
+        liveUrl: nextEvent.link || undefined,
+      }
+    : null;
+
+  const interviewDate = nextEvent?.eventAt;
+
+  const isLoading = profileLoading || summaryLoading || appsLoading || eventsLoading;
 
   return (
     <motion.div
@@ -55,17 +89,13 @@ export const Dashboard: React.FC = () => {
             </div>
           </div>
 
-          <ApplicationsList applications={applicationItems} />
+          <ApplicationsList applications={applicationItems} isLoading={isLoading} />
         </div>
 
         <div className="lg:col-span-3 flex flex-col gap-6">
-          <CalendarWidget />
-          <UpcomingCard interview={{
-            title: "Panel Interview",
-            date: "22-07-2026",
-            time: "12:00PM",
-          }} />
-          <VerifiedBadge isVerified={false} />
+          <CalendarWidget panelInterviewDate={interviewDate} />
+          <UpcomingCard interview={upcomingInterview} />
+          <VerifiedBadge isVerified={isVerified} />
         </div>
       </div>
     </motion.div>

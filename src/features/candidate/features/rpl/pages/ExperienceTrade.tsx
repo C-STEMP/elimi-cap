@@ -15,6 +15,8 @@ import { StatusModal } from "@/components/status-modal";
 import { InfoIcon } from "@/src/components/ui/info-icon";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setSidebarVariant, setRplStep } from "@/store/slices/authSlice";
+import { setRPLExperienceTrade } from "@/store/slices/onboardingSlice";
+import { useOnboarding } from "@/src/features/candidate/features/Onboarding/hooks";
 
 import {
   rplExperienceTradeSchema,
@@ -57,40 +59,51 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
   onBack,
   onContinue,
 }) => {
+  const dispatch = useAppDispatch();
+  const { saveOnboarding } = useOnboarding();
   const savedTrade = useAppSelector((s) => s.onboarding.startApplication.trade);
+  const savedRPLExperienceTrade = useAppSelector(
+    (s) => s.onboarding.rplExperienceTrade,
+  );
 
   const [form, setForm] = useState({
     // Qualification Applying For
-    qualificationTitle: savedTrade || "",
-    qualificationCode: "NOS-ELI-L3",
-    completedBefore: "No",
-    previousAssessmentDetails: "",
-    assessmentType: "",
-    individualUnit: [] as string[],
+    qualificationTitle:
+      savedRPLExperienceTrade.qualificationTitle || savedTrade || "",
+    qualificationCode:
+      savedRPLExperienceTrade.qualificationCode || "NOS-ELI-L3",
+    completedBefore: savedRPLExperienceTrade.completedBefore || "No",
+    previousAssessmentDetails:
+      savedRPLExperienceTrade.previousAssessmentDetails || "",
+    assessmentType: savedRPLExperienceTrade.assessmentType || "",
+    individualUnit: savedRPLExperienceTrade.individualUnit || [],
 
     // Current Occupation
-    occupation: "",
-    yearsOfExperience: "",
+    occupation: savedRPLExperienceTrade.occupation || "",
+    yearsOfExperience: savedRPLExperienceTrade.yearsOfExperience || "",
 
     // Employment History
-    employments: [
-      {
-        id: "1",
-        companyName: "",
-        jobTitle: "",
-        employmentType: "",
-        startDate: "",
-        endDate: "",
-        responsibilities: "",
-      },
-    ],
+    employments:
+      savedRPLExperienceTrade.employments?.length > 0
+        ? savedRPLExperienceTrade.employments
+        : [
+            {
+              id: "1",
+              companyName: "",
+              jobTitle: "",
+              employmentType: "",
+              startDate: "",
+              endDate: "",
+              responsibilities: "",
+            },
+          ],
 
     // Why applying for RPL
-    reasonRPL: "",
+    reasonRPL: savedRPLExperienceTrade.reasonRPL || "",
 
     // Evidence Summary
-    selectedEvidence: [] as string[],
-    otherEvidenceText: "",
+    selectedEvidence: savedRPLExperienceTrade.selectedEvidence || [],
+    otherEvidenceText: savedRPLExperienceTrade.otherEvidenceText || "",
 
     isSubmitting: false,
     showSuccessModal: false,
@@ -99,7 +112,15 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const update = (field: string, value: any) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
+    setForm((prev) => {
+      const next = { ...prev, [field]: value };
+      dispatch(
+        setRPLExperienceTrade({
+          [field]: value,
+        }),
+      );
+      return next;
+    });
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
@@ -136,6 +157,8 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
           }));
         }
       }
+
+      dispatch(setRPLExperienceTrade({ employments: updatedEmployments }));
 
       return {
         ...prev,
@@ -175,7 +198,6 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
     }
   };
 
-  const dispatch = useAppDispatch();
   const { toast } = useToast();
   const router = useRouter();
 
@@ -205,7 +227,19 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
 
   const handleConfirmSaveDraft = () => {
     setShowConfirmDraftModal(false);
-    setShowDraftModal(true);
+    saveOnboarding.mutate(
+      {
+        accessibility: {
+          hasImpairment: false,
+          impairment: "",
+        },
+      },
+      {
+        onSuccess: () => {
+          setShowDraftModal(true);
+        },
+      },
+    );
   };
 
   const validateForm = () => {

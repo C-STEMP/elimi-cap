@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { Form } from "antd";
 import { createSchemaFieldRule } from "antd-zod";
-import { Select } from "@/src/components/ui/select";
+import { Select, SelectOption } from "@/src/components/ui/select";
 import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
 import { FiArrowLeft, FiArrowRight } from "react-icons/fi";
@@ -19,6 +19,7 @@ import { useApplication } from "@/src/features/candidate/features/Application/ho
 import {
   useGetSectors,
   useGetCentres,
+  useGetTradesBySector,
 } from "@/src/features/shared/reference/hooks";
 
 // antd-zod rule for startApplicationSchema
@@ -63,7 +64,8 @@ interface ControlledSelectProps {
   onChange?: (value: string) => void;
   label: React.ReactNode;
   placeholder?: string;
-  options: string[];
+  options: (string | SelectOption)[];
+  disabled?: boolean;
 }
 
 const FormSelect: React.FC<ControlledSelectProps> = ({
@@ -94,13 +96,20 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
   const { data: remoteSectors } = useGetSectors();
   const { data: remoteCentres } = useGetCentres();
 
-  const centreOptions = remoteCentres?.length
-    ? remoteCentres.map((c) => c.name)
-    : ASSESSMENT_CENTERS;
+  const selectedSectorId = Form.useWatch("sector", form);
+  const { data: remoteTrades } = useGetTradesBySector(selectedSectorId);
 
-  const sectorOptions = remoteSectors?.length
-    ? remoteSectors.map((s) => s.name)
-    : SECTORS;
+  const centreOptions: SelectOption[] = remoteCentres?.length
+    ? remoteCentres.map((c) => ({ label: c.name, value: c.id }))
+    : ASSESSMENT_CENTERS.map((name) => ({ label: name, value: name }));
+
+  const sectorOptions: SelectOption[] = remoteSectors?.length
+    ? remoteSectors.map((s) => ({ label: s.name, value: s.id }))
+    : SECTORS.map((name) => ({ label: name, value: name }));
+
+  const tradeOptions: SelectOption[] = remoteTrades?.length
+    ? remoteTrades.map((t) => ({ label: t.name, value: t.id }))
+    : TRADES.map((name) => ({ label: name, value: name }));
 
   const savedStartApplication = useAppSelector(
     (s) => s.onboarding.startApplication,
@@ -121,10 +130,13 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
   }) => {
     setIsSubmitting(true);
 
+    const selectedTradeObj = remoteTrades?.find((t) => t.id === values.trade);
+    const tradeTitle = selectedTradeObj?.name || values.trade;
+
     dispatch(setStartApplication(values));
     dispatch(
       createApplicationSlice({
-        title: values.trade,
+        title: tradeTitle,
         subtitle: "Recognition Of Prior Learning",
       }),
     );
@@ -219,7 +231,7 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
               </span>
             }
             placeholder="Select"
-            options={TRADES}
+            options={tradeOptions}
           />
         </Form.Item>
 

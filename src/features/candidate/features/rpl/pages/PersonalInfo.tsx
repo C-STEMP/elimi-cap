@@ -15,39 +15,79 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { ASSETS_URL } from "@/assets";
 import { StatusModal } from "@/components/status-modal";
-import { useAppDispatch } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setSidebarVariant, setRplStep } from "@/store/slices/authSlice";
+import { setPersonalInfo } from "@/store/slices/onboardingSlice";
 import { personalInfoSchema, extractZodErrors } from "@/src/lib/validation";
 import { useCountryStateCity } from "@/src/lib/hooks/useCountryStateCity";
+import { useOnboarding } from "@/src/features/candidate/features/Onboarding/hooks";
 
 export interface RPLPersonalInfoProps {
   onBack?: () => void;
   onSuccess?: () => void;
 }
 
-const initialForm = {
-  firstName: "",
-  lastName: "",
-  middleName: "",
-  dob: "",
-  gender: "",
-  nationality: "",
-  email: "",
-  phoneNumber: "",
-  country: "",
-  state: "",
-  lga: "",
-  streetAddress: "",
-  completedBefore: "no",
-  learnerId: "",
-  impairment: "",
-};
-
 export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
   onBack,
   onSuccess,
 }) => {
-  const [form, setForm] = useState(initialForm);
+  const dispatch = useAppDispatch();
+  const { toast } = useToast();
+  const router = useRouter();
+  const { getOnboarding, saveOnboarding } = useOnboarding();
+
+  const savedPersonalInfo = useAppSelector((s) => s.onboarding.personalInfo);
+
+  const [form, setForm] = useState({
+    firstName: savedPersonalInfo.firstName ?? "",
+    lastName: savedPersonalInfo.lastName ?? "",
+    middleName: savedPersonalInfo.middleName ?? "",
+    dob: savedPersonalInfo.dob ?? "",
+    gender: savedPersonalInfo.gender ?? "",
+    nationality: savedPersonalInfo.nationality ?? "",
+    email: savedPersonalInfo.email ?? "",
+    phoneNumber: savedPersonalInfo.phoneNumber ?? "",
+    country: savedPersonalInfo.country || "Nigeria",
+    state: savedPersonalInfo.state ?? "",
+    lga: savedPersonalInfo.lga ?? "",
+    streetAddress: savedPersonalInfo.streetAddress ?? "",
+    completedBefore: "no",
+    learnerId: "",
+    impairment: savedPersonalInfo.impairment ?? "",
+  });
+
+  // Hydrate from getOnboarding API response if available
+  useEffect(() => {
+    if (getOnboarding.data?.data) {
+      const apiData = getOnboarding.data.data as any;
+      const pd = apiData?.personalDetails;
+      const ci = apiData?.contactInformation;
+      const ra = apiData?.residentialAddress;
+      const acc = apiData?.accessibility;
+
+      const hydrated = {
+        firstName: pd?.firstName || savedPersonalInfo.firstName || "",
+        lastName: pd?.lastName || savedPersonalInfo.lastName || "",
+        middleName: pd?.middleName || savedPersonalInfo.middleName || "",
+        dob: pd?.dob || savedPersonalInfo.dob || "",
+        gender: pd?.gender || savedPersonalInfo.gender || "",
+        nationality: pd?.nationality || savedPersonalInfo.nationality || "",
+        email: ci?.emailAddress || savedPersonalInfo.email || "",
+        phoneNumber: ci?.phoneNumber?.number || savedPersonalInfo.phoneNumber || "",
+        country: ra?.country || savedPersonalInfo.country || "Nigeria",
+        state: ra?.state || savedPersonalInfo.state || "",
+        lga: ra?.lga || savedPersonalInfo.lga || "",
+        streetAddress: ra?.address || savedPersonalInfo.streetAddress || "",
+        completedBefore: "no",
+        learnerId: "",
+        impairment: acc?.impairment || savedPersonalInfo.impairment || "",
+      };
+
+      setForm(hydrated);
+      dispatch(setPersonalInfo(hydrated));
+    }
+  }, [getOnboarding.data]);
+
   const [otherImpairment, setOtherImpairment] = useState("");
   const [passportFile, setPassportFile] = useState<File | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -62,19 +102,41 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
 
   const handleConfirmSaveDraft = () => {
     setShowConfirmDraftModal(false);
-    setShowDraftModal(true);
+    saveOnboarding.mutate(
+      {
+        personalDetails: {
+          firstName: form.firstName,
+          lastName: form.lastName,
+          middleName: form.middleName,
+          dob: form.dob,
+          gender: form.gender,
+          nationality: form.nationality,
+        },
+        contactInformation: {
+          emailAddress: form.email,
+          phoneNumber: {
+            countryCode: "+234",
+            number: form.phoneNumber,
+          },
+        },
+        residentialAddress: {
+          country: form.country,
+          state: form.state,
+          lga: form.lga,
+          address: form.streetAddress,
+        },
+      },
+      {
+        onSuccess: () => {
+          setShowDraftModal(true);
+        },
+      },
+    );
   };
-
-  const dispatch = useAppDispatch();
-  const { toast } = useToast();
-  const router = useRouter();
 
   useEffect(() => {
     dispatch(setSidebarVariant("rpl-form"));
     dispatch(setRplStep(1));
-    if (!form.country) {
-      setForm((prev) => ({ ...prev, country: "Nigeria" }));
-    }
   }, [dispatch]);
 
   // ── Country / State / City cascading selects ────────────────────────────
@@ -83,7 +145,9 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
     form.state,
   );
 
-  const update = (field: keyof typeof initialForm, value: string) => {
+  const update = (field: keyof typeof form, value: string) => {
+    let nextState = "";
+    let nextLga = "";
     setForm((prev) => {
       const next = { ...prev, [field]: value };
       if (field === "country") {
@@ -93,11 +157,21 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
       if (field === "state") {
         next.lga = "";
       }
+      nextState = next.state;
+      nextLga = next.lga;
       return next;
     });
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
+    // Dispatch to Redux immediately for full persistence across steps/pages
+    dispatch(
+      setPersonalInfo({
+        [field]: value,
+        state: nextState,
+        lga: nextLga,
+      } as any),
+    );
   };
 
   const validateForm = () => {

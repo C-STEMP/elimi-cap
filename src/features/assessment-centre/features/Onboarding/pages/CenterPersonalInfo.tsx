@@ -16,25 +16,31 @@ import { ASSESSMENT_CENTRE_ROUTES } from "@/features/assessment-centre/utils/cen
 
 import { formatToIsoDate } from "@/src/lib/validation";
 import { useOnboarding } from "@/features/assessment-centre/features/Onboarding/hooks";
+import { useAppDispatch, useAppSelector } from "@/src/store/hooks";
+import { setCentrePersonalInfo } from "@/src/store/slices/onboardingSlice";
 
 export const CenterPersonalInfo: React.FC = () => {
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const { toast } = useToast();
-  const { saveOnboarding } = useOnboarding();
+  const { getOnboarding, saveOnboarding } = useOnboarding();
+  const savedCentrePersonalInfo = useAppSelector(
+    (s) => s.onboarding.centrePersonalInfo,
+  );
 
   const [form, setForm] = useState({
-    firstName: "",
-    lastName: "",
-    middleName: "",
-    dob: "",
-    gender: "",
-    nationality: "",
-    email: "",
-    phoneNumber: "",
-    country: "Nigeria",
-    state: "",
-    lga: "",
-    streetAddress: "",
+    firstName: savedCentrePersonalInfo.firstName || "",
+    lastName: savedCentrePersonalInfo.lastName || "",
+    middleName: savedCentrePersonalInfo.middleName || "",
+    dob: savedCentrePersonalInfo.dob || "",
+    gender: savedCentrePersonalInfo.gender || "",
+    nationality: savedCentrePersonalInfo.nationality || "",
+    email: savedCentrePersonalInfo.email || "",
+    phoneNumber: savedCentrePersonalInfo.phoneNumber || "",
+    country: savedCentrePersonalInfo.country || "Nigeria",
+    state: savedCentrePersonalInfo.state || "",
+    lga: savedCentrePersonalInfo.lga || "",
+    streetAddress: savedCentrePersonalInfo.streetAddress || "",
   });
 
   const { countries, states, cities } = useCountryStateCity(
@@ -44,12 +50,49 @@ export const CenterPersonalInfo: React.FC = () => {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Hydrate from API when getOnboarding completes
+  React.useEffect(() => {
+    if (getOnboarding.data?.data) {
+      const apiData = getOnboarding.data.data as any;
+      const owner = apiData?.owner;
+      const personalDetails = owner?.personalDetails;
+      const contactInfo = owner?.contactInformation;
+      const resAddr = owner?.residentialAddress;
+
+      if (owner || personalDetails || contactInfo || resAddr) {
+        setForm((prev) => {
+          const next = {
+            firstName: personalDetails?.firstName || prev.firstName || "",
+            lastName: personalDetails?.lastName || prev.lastName || "",
+            middleName: personalDetails?.middleName || prev.middleName || "",
+            dob: personalDetails?.dob || prev.dob || "",
+            gender: personalDetails?.gender || prev.gender || "",
+            nationality: personalDetails?.nationality || prev.nationality || "",
+            email: contactInfo?.emailAddress || prev.email || "",
+            phoneNumber: contactInfo?.phoneNumber?.number || prev.phoneNumber || "",
+            country: resAddr?.country || prev.country || "Nigeria",
+            state: resAddr?.state || prev.state || "",
+            lga: resAddr?.lga || prev.lga || "",
+            streetAddress: resAddr?.address || prev.streetAddress || "",
+          };
+          dispatch(setCentrePersonalInfo(next));
+          return next;
+        });
+      }
+    }
+  }, [getOnboarding.data, dispatch]);
+
   const update = (field: keyof typeof form, value: string) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
+    setForm((prev) => {
+      const next = { ...prev, [field]: value };
+      dispatch(setCentrePersonalInfo(next));
+      return next;
+    });
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
   };
+
 
   const validate = () => {
     let valid = true;

@@ -18,6 +18,17 @@ import { useToast } from "@/src/components/ui/toast";
 import { DeleteAccountModal } from "./DeleteAccountModal";
 import { ASSETS_URL } from "@/assets";
 import { useCountryStateCity } from "@/src/lib/hooks/useCountryStateCity";
+import { useOnboarding } from "@/features/assessment-centre/features/Onboarding/hooks";
+import {
+  useGetCentrePricing,
+  useSetCentrePricing,
+} from "@/src/features/shared/centre/hooks";
+import { useUploadFile } from "@/src/features/shared/storage/hooks";
+import { useAppDispatch, useAppSelector } from "@/src/store/hooks";
+import {
+  setCentreInformation,
+  setCentrePersonalInfo,
+} from "@/src/store/slices/onboardingSlice";
 
 export type SettingsSubTab =
   | "profile"
@@ -28,39 +39,91 @@ export type SettingsSubTab =
 
 export const SettingsView: React.FC = () => {
   const { toast } = useToast();
+  const dispatch = useAppDispatch();
+  const { getOnboarding, saveOnboarding } = useOnboarding();
+  const { data: pricingList = [] } = useGetCentrePricing();
+  const setCentrePricingMutation = useSetCentrePricing();
+  const uploadFileMutation = useUploadFile();
+
+  const savedCentreInfo = useAppSelector(
+    (s) => s.onboarding.centreInformation,
+  );
+  const savedCentrePersonalInfo = useAppSelector(
+    (s) => s.onboarding.centrePersonalInfo,
+  );
+
   const [activeSubTab, setActiveSubTab] = useState<SettingsSubTab>("centre");
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [logoPreview, setLogoPreview] = useState<string | null>(
+    savedCentreInfo.logoPreview || null,
+  );
 
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [middleName, setMiddleName] = useState("");
-  const [dob, setDob] = useState("");
-  const [gender, setGender] = useState("");
-  const [nationality, setNationality] = useState("");
-  const [profileEmail, setProfileEmail] = useState("");
-  const [profilePhone, setProfilePhone] = useState("");
-  const [profileCountry, setProfileCountry] = useState("");
-  const [profileState, setProfileState] = useState("");
-  const [profileLga, setProfileLga] = useState("");
-  const [profileStreet, setProfileStreet] = useState("");
+  const [firstName, setFirstName] = useState(
+    savedCentrePersonalInfo.firstName || "",
+  );
+  const [lastName, setLastName] = useState(
+    savedCentrePersonalInfo.lastName || "",
+  );
+  const [middleName, setMiddleName] = useState(
+    savedCentrePersonalInfo.middleName || "",
+  );
+  const [dob, setDob] = useState(savedCentrePersonalInfo.dob || "");
+  const [gender, setGender] = useState(savedCentrePersonalInfo.gender || "");
+  const [nationality, setNationality] = useState(
+    savedCentrePersonalInfo.nationality || "",
+  );
+  const [profileEmail, setProfileEmail] = useState(
+    savedCentrePersonalInfo.email || "",
+  );
+  const [profilePhone, setProfilePhone] = useState(
+    savedCentrePersonalInfo.phoneNumber || "",
+  );
+  const [profileCountry, setProfileCountry] = useState(
+    savedCentrePersonalInfo.country || "Nigeria",
+  );
+  const [profileState, setProfileState] = useState(
+    savedCentrePersonalInfo.state || "",
+  );
+  const [profileLga, setProfileLga] = useState(
+    savedCentrePersonalInfo.lga || "",
+  );
+  const [profileStreet, setProfileStreet] = useState(
+    savedCentrePersonalInfo.streetAddress || "",
+  );
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [sessionReminders, setSessionReminders] = useState(false);
 
-  const [centreName, setCentreName] = useState("");
-  const [regNo, setRegNo] = useState("");
-  const [centreCountry, setCentreCountry] = useState("");
-  const [centreState, setCentreState] = useState("");
-  const [centreLga, setCentreLga] = useState("");
-  const [centreStreet, setCentreStreet] = useState("");
-  const [supportEmail, setSupportEmail] = useState("");
-  const [supportPhone, setSupportPhone] = useState("");
-  const [bank, setBank] = useState("");
-  const [accountNumber, setAccountNumber] = useState("");
-  const [accountName, setAccountName] = useState("");
+  const [centreName, setCentreName] = useState(
+    savedCentreInfo.centerName || "",
+  );
+  const [regNo, setRegNo] = useState(savedCentreInfo.regNo || "");
+  const [centreCountry, setCentreCountry] = useState(
+    savedCentreInfo.country || "Nigeria",
+  );
+  const [centreState, setCentreState] = useState(
+    savedCentreInfo.state || "",
+  );
+  const [centreLga, setCentreLga] = useState(savedCentreInfo.lga || "");
+  const [centreStreet, setCentreStreet] = useState(
+    savedCentreInfo.streetAddress || "",
+  );
+  const [supportEmail, setSupportEmail] = useState(
+    savedCentreInfo.supportEmail || "",
+  );
+  const [supportPhone, setSupportPhone] = useState(
+    savedCentreInfo.phoneNumber || "",
+  );
+  const [bank, setBank] = useState(savedCentreInfo.bank || "");
+  const [accountNumber, setAccountNumber] = useState(
+    savedCentreInfo.accountNumber || "",
+  );
+  const [accountName, setAccountName] = useState(
+    savedCentreInfo.nameOnAccount || "",
+  );
 
-  const [rplCurrency, setRplCurrency] = useState("");
+  const [rplCurrency, setRplCurrency] = useState("NGN (₦)");
   const [rplAmount, setRplAmount] = useState("45000");
-  const [standardCurrency, setStandardCurrency] = useState("");
+  const [standardCurrency, setStandardCurrency] = useState("NGN (₦)");
   const [standardAmount, setStandardAmount] = useState("65000");
 
   const [currentPassword, setCurrentPassword] = useState("");
@@ -70,13 +133,225 @@ export const SettingsView: React.FC = () => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const handleSaveSettings = () => {
-    toast({
-      type: "success",
-      title: "Settings Saved",
-      description: "Your settings have been updated successfully.",
-    });
+  // Hydrate from backend API getOnboarding
+  React.useEffect(() => {
+    if (getOnboarding.data?.data) {
+      const apiData = getOnboarding.data.data as any;
+
+      // Centre details
+      const cInfo = apiData?.centre?.centreInformation;
+      const cAddr = apiData?.centre?.centreResidentialAddress;
+      const cSupp = apiData?.centre?.centreSupportInformation;
+      const cAcc = apiData?.centre?.centreAccountDetails;
+
+      if (cInfo?.name) setCentreName(cInfo.name);
+      if (cInfo?.registrationNo) setRegNo(cInfo.registrationNo);
+      if (cAddr?.country) setCentreCountry(cAddr.country);
+      if (cAddr?.state) setCentreState(cAddr.state);
+      if (cAddr?.lga) setCentreLga(cAddr.lga);
+      if (cAddr?.address) setCentreStreet(cAddr.address);
+      if (cSupp?.emailAddress) setSupportEmail(cSupp.emailAddress);
+      if (cSupp?.phoneNumber?.number)
+        setSupportPhone(cSupp.phoneNumber.number);
+      if (cAcc?.bank) setBank(cAcc.bank);
+      if (cAcc?.accountNo) setAccountNumber(cAcc.accountNo);
+      if (cAcc?.nameOfAccount) setAccountName(cAcc.nameOfAccount);
+
+      // Owner profile details
+      const owner = apiData?.owner;
+      const pd = owner?.personalDetails;
+      const ci = owner?.contactInformation;
+      const ra = owner?.residentialAddress;
+
+      if (pd?.firstName) setFirstName(pd.firstName);
+      if (pd?.lastName) setLastName(pd.lastName);
+      if (pd?.middleName) setMiddleName(pd.middleName);
+      if (pd?.dob) setDob(pd.dob);
+      if (pd?.gender) setGender(pd.gender);
+      if (pd?.nationality) setNationality(pd.nationality);
+      if (ci?.emailAddress) setProfileEmail(ci.emailAddress);
+      if (ci?.phoneNumber?.number) setProfilePhone(ci.phoneNumber.number);
+      if (ra?.country) setProfileCountry(ra.country);
+      if (ra?.state) setProfileState(ra.state);
+      if (ra?.lga) setProfileLga(ra.lga);
+      if (ra?.address) setProfileStreet(ra.address);
+    }
+  }, [getOnboarding.data]);
+
+  // Hydrate Pricing list
+  React.useEffect(() => {
+    if (pricingList.length > 0) {
+      const rpl = pricingList.find((p) => p.applicationType === "RPL");
+      const nsq = pricingList.find((p) => p.applicationType === "NSQ");
+      if (rpl?.price) {
+        setRplAmount((Number(rpl.price.amountMinorUnits) / 100).toString());
+        setRplCurrency(
+          rpl.price.currency === "USD" ? "USD ($)" : "NGN (₦)",
+        );
+      }
+      if (nsq?.price) {
+        setStandardAmount(
+          (Number(nsq.price.amountMinorUnits) / 100).toString(),
+        );
+        setStandardCurrency(
+          nsq.price.currency === "USD" ? "USD ($)" : "NGN (₦)",
+        );
+      }
+    }
+  }, [pricingList]);
+
+  const handleSaveProfileSettings = () => {
+    saveOnboarding.mutate(
+      {
+        owner: {
+          personalDetails: {
+            firstName,
+            lastName,
+            middleName,
+            dob,
+            gender,
+            nationality,
+          },
+          contactInformation: {
+            emailAddress: profileEmail,
+            phoneNumber: {
+              countryCode: "+234",
+              number: profilePhone,
+            },
+          },
+          residentialAddress: {
+            country: profileCountry,
+            state: profileState,
+            lga: profileLga,
+            address: profileStreet,
+          },
+        },
+      },
+      {
+        onSuccess: () => {
+          dispatch(
+            setCentrePersonalInfo({
+              firstName,
+              lastName,
+              middleName,
+              dob,
+              gender,
+              nationality,
+              email: profileEmail,
+              phoneNumber: profilePhone,
+              country: profileCountry,
+              state: profileState,
+              lga: profileLga,
+              streetAddress: profileStreet,
+            }),
+          );
+        },
+      },
+    );
   };
+
+  const handleSaveCentreSettings = () => {
+    saveOnboarding.mutate(
+      {
+        centre: {
+          centreInformation: {
+            name: centreName,
+            registrationNo: regNo,
+          },
+          centreResidentialAddress: {
+            country: centreCountry,
+            state: centreState,
+            lga: centreLga,
+            address: centreStreet,
+          },
+          centreSupportInformation: {
+            emailAddress: supportEmail,
+            phoneNumber: {
+              countryCode: "+234",
+              number: supportPhone,
+            },
+          },
+          centreAccountDetails: {
+            bank,
+            accountNo: accountNumber,
+            nameOfAccount: accountName,
+          },
+        },
+      },
+      {
+        onSuccess: () => {
+          dispatch(
+            setCentreInformation({
+              centerName: centreName,
+              regNo,
+              country: centreCountry,
+              state: centreState,
+              lga: centreLga,
+              streetAddress: centreStreet,
+              supportEmail,
+              phoneNumber: supportPhone,
+              bank,
+              accountNumber,
+              nameOnAccount: accountName,
+            }),
+          );
+        },
+      },
+    );
+  };
+
+  const handleSavePricingSettings = () => {
+    if (rplAmount) {
+      setCentrePricingMutation.mutate({
+        applicationType: "RPL",
+        price: {
+          amountMinorUnits: (Number(rplAmount) * 100).toString(),
+          currency: rplCurrency.includes("USD") ? "USD" : "NGN",
+        },
+      });
+    }
+    if (standardAmount) {
+      setCentrePricingMutation.mutate({
+        applicationType: "NSQ",
+        price: {
+          amountMinorUnits: (Number(standardAmount) * 100).toString(),
+          currency: standardCurrency.includes("USD") ? "USD" : "NGN",
+        },
+      });
+    }
+  };
+
+  const handlePictureChange = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const localUrl = URL.createObjectURL(file);
+      setLogoPreview(localUrl);
+
+      try {
+        const asset = await uploadFileMutation.mutateAsync({
+          file,
+          purpose: "logo",
+        });
+        if (asset?.url) setLogoPreview(asset.url);
+        if (asset?.assetId) {
+          saveOnboarding.mutate({
+            centre: {
+              centreInformation: {
+                name: centreName,
+                registrationNo: regNo,
+                logoAssetId: asset.assetId,
+              },
+            },
+          });
+        }
+      } catch {
+        // Fallback to local preview
+      }
+    }
+  };
+
 
   const {
     countries,
@@ -98,8 +373,9 @@ export const SettingsView: React.FC = () => {
           <div className="flex items-center gap-3.5">
             <div className="relative w-29 h-29 flex items-center justify-center rounded-xl overflow-hidden shrink-0 bg-primary/10 shadow-xs">
               <Image
-                src={ASSETS_URL.cstempLogo}
+                src={logoPreview || ASSETS_URL.cstempLogo}
                 alt="User Avatar"
+                fill
                 sizes="100px"
                 className="object-cover"
                 priority
@@ -108,6 +384,13 @@ export const SettingsView: React.FC = () => {
             </div>
 
             <div className="flex flex-col items-start justify-center">
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept="image/*"
+                onChange={handlePictureChange}
+                className="hidden"
+              />
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
@@ -384,7 +667,8 @@ export const SettingsView: React.FC = () => {
               <div className="flex justify-end mt-2">
                 <Button
                   type="button"
-                  onClick={handleSaveSettings}
+                  onClick={handleSaveProfileSettings}
+                  loading={saveOnboarding.isPending}
                   variant="amber"
                   size="md"
                   rightIcon={<FiSave className="w-4 h-4" />}
@@ -551,7 +835,8 @@ export const SettingsView: React.FC = () => {
               <div className="flex justify-end mt-2">
                 <Button
                   type="button"
-                  onClick={handleSaveSettings}
+                  onClick={handleSaveCentreSettings}
+                  loading={saveOnboarding.isPending}
                   variant="amber"
                   size="md"
                   rightIcon={<FiSave className="w-4 h-4" />}
@@ -627,7 +912,8 @@ export const SettingsView: React.FC = () => {
               <div className="flex justify-end mt-2">
                 <Button
                   type="button"
-                  onClick={handleSaveSettings}
+                  onClick={handleSavePricingSettings}
+                  loading={setCentrePricingMutation.isPending}
                   variant="amber"
                   size="md"
                   rightIcon={<FiSave className="w-4 h-4" />}

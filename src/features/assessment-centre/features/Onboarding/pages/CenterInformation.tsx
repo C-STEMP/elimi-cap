@@ -17,32 +17,74 @@ import { ASSESSMENT_CENTRE_ROUTES } from "@/features/assessment-centre/utils/cen
 
 import { useOnboarding } from "@/src/features/assessment-centre/features/Onboarding/hooks";
 import { useUploadFile } from "@/src/features/shared/storage/hooks";
+import { useAppDispatch, useAppSelector } from "@/src/store/hooks";
+import { setCentreInformation } from "@/src/store/slices/onboardingSlice";
 
 export const CenterInformation: React.FC = () => {
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const { toast } = useToast();
-  const { saveOnboarding } = useOnboarding();
+  const { getOnboarding, saveOnboarding } = useOnboarding();
   const uploadFileMutation = useUploadFile();
+  const savedCentreInfo = useAppSelector((s) => s.onboarding.centreInformation);
 
   const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  const [logoAssetId, setLogoAssetId] = useState<string | undefined>(undefined);
+  const [logoPreview, setLogoPreview] = useState<string | null>(
+    savedCentreInfo.logoPreview || null,
+  );
+  const [logoAssetId, setLogoAssetId] = useState<string | undefined>(
+    savedCentreInfo.logoAssetId || undefined,
+  );
 
   const [form, setForm] = useState({
-    centerName: "",
-    regNo: "",
-    country: "",
-    state: "",
-    lga: "",
-    streetAddress: "",
-    supportEmail: "",
-    phoneNumber: "",
-    bank: "",
-    accountNumber: "",
-    nameOnAccount: "",
+    centerName: savedCentreInfo.centerName || "",
+    regNo: savedCentreInfo.regNo || "",
+    country: savedCentreInfo.country || "Nigeria",
+    state: savedCentreInfo.state || "",
+    lga: savedCentreInfo.lga || "",
+    streetAddress: savedCentreInfo.streetAddress || "",
+    supportEmail: savedCentreInfo.supportEmail || "",
+    phoneNumber: savedCentreInfo.phoneNumber || "",
+    bank: savedCentreInfo.bank || "",
+    accountNumber: savedCentreInfo.accountNumber || "",
+    nameOnAccount: savedCentreInfo.nameOnAccount || "",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Hydrate from API when getOnboarding completes
+  React.useEffect(() => {
+    if (getOnboarding.data?.data) {
+      const apiData = getOnboarding.data.data as any;
+      const cInfo = apiData?.centre?.centreInformation;
+      const cAddr = apiData?.centre?.centreResidentialAddress;
+      const cSupp = apiData?.centre?.centreSupportInformation;
+      const cAcc = apiData?.centre?.centreAccountDetails;
+
+      setForm((prev) => {
+        const next = {
+          centerName: cInfo?.name || prev.centerName || "",
+          regNo: cInfo?.registrationNo || prev.regNo || "",
+          country: cAddr?.country || prev.country || "Nigeria",
+          state: cAddr?.state || prev.state || "",
+          lga: cAddr?.lga || prev.lga || "",
+          streetAddress: cAddr?.address || prev.streetAddress || "",
+          supportEmail: cSupp?.emailAddress || prev.supportEmail || "",
+          phoneNumber: cSupp?.phoneNumber?.number || prev.phoneNumber || "",
+          bank: cAcc?.bank || prev.bank || "",
+          accountNumber: cAcc?.accountNo || prev.accountNumber || "",
+          nameOnAccount: cAcc?.nameOfAccount || prev.nameOnAccount || "",
+        };
+        dispatch(setCentreInformation(next));
+        return next;
+      });
+
+      if (cInfo?.logoAssetId) {
+        setLogoAssetId(cInfo.logoAssetId);
+        dispatch(setCentreInformation({ logoAssetId: cInfo.logoAssetId }));
+      }
+    }
+  }, [getOnboarding.data, dispatch]);
 
   React.useEffect(() => {
     if (!form.country) {
@@ -54,7 +96,9 @@ export const CenterInformation: React.FC = () => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setLogoFile(file);
-      setLogoPreview(URL.createObjectURL(file));
+      const localUrl = URL.createObjectURL(file);
+      setLogoPreview(localUrl);
+      dispatch(setCentreInformation({ logoPreview: localUrl }));
       if (errors.logo) {
         setErrors((prev) => ({ ...prev, logo: "" }));
       }
@@ -66,9 +110,11 @@ export const CenterInformation: React.FC = () => {
         });
         if (asset?.assetId) {
           setLogoAssetId(asset.assetId);
+          dispatch(setCentreInformation({ logoAssetId: asset.assetId }));
         }
         if (asset?.url) {
           setLogoPreview(asset.url);
+          dispatch(setCentreInformation({ logoPreview: asset.url }));
         }
       } catch {
         // Fallback to local preview
@@ -87,12 +133,14 @@ export const CenterInformation: React.FC = () => {
       if (field === "state") {
         next.lga = "";
       }
+      dispatch(setCentreInformation(next));
       return next;
     });
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
   };
+
 
   // ── Country / State / City cascading selects ────────────────────────────
   const { countries, states, cities } = useCountryStateCity(

@@ -1,19 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   FiSearch,
   FiList,
   FiGrid,
-  FiUserPlus,
-  FiFlag,
-  FiPlus,
-  FiUser,
 } from "react-icons/fi";
 import { Select } from "@/src/components/ui/select";
-import { Button } from "@/src/components/ui/button";
-import { MOCK_STAFF_MEMBERS } from "@/features/assessment-centre/utils/constants";
-import { StaffMember } from "@/features/assessment-centre/types";
+import { useGetStaff } from "@/features/assessment-centre/features/Staff/hooks";
 import { StaffStatusModal, StaffStatusModalMode } from "./StaffStatusModal";
 
 interface StaffListViewProps {
@@ -23,10 +17,8 @@ interface StaffListViewProps {
 
 export const StaffListView: React.FC<StaffListViewProps> = ({
   onSelectStaff,
-  onAddStaff,
 }) => {
-  const [staffMembers, setStaffMembers] =
-    useState<StaffMember[]>(MOCK_STAFF_MEMBERS);
+  const { data: staffMembers = [], isLoading } = useGetStaff();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -42,13 +34,6 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
   };
 
   const handleConfirmDeactivate = () => {
-    setStaffMembers((prev) =>
-      prev.map((staff) =>
-        selectedStaffIds.includes(staff.id)
-          ? { ...staff, status: "Inactive" as const }
-          : staff,
-      ),
-    );
     setDeactivateModalMode("deactivated-success");
   };
 
@@ -71,38 +56,44 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
     }
   };
 
-  const filteredStaff = staffMembers.filter((staff) => {
+  const filteredStaff = useMemo(() => staffMembers.filter((staff) => {
     const matchesSearch =
-      staff.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      staff.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      staff.role.toLowerCase().includes(searchQuery.toLowerCase());
+      (staff.email || "").toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus =
-      statusFilter === "All" || staff.status === statusFilter;
+      statusFilter === "All" || staff.role === statusFilter;
     return matchesSearch && matchesStatus;
-  });
+  }), [staffMembers, searchQuery, statusFilter]);
 
-  const renderStatusBadge = (status: StaffMember["status"]) => {
-    switch (status) {
-      case "Active":
+  const renderStatusBadge = (role: string) => {
+    switch (role) {
+      case "super_admin":
         return (
           <span className="bg-[#1E7F4C]/20 text-[#1E7F4C]  px-4 py-1 rounded-full text-xs inline-block">
-            Active
+            Super Admin
           </span>
         );
-      case "Pending":
+      case "regular_admin":
         return (
           <span className="bg-secondary/20 text-secondary  px-3 py-1 rounded-full text-xs inline-block">
-            Pending
+            Admin
           </span>
         );
-      case "Inactive":
+      default:
         return (
           <span className="bg-black/20 text-black  px-3 py-1 rounded-full text-xs inline-block">
-            Inactive
+            Staff
           </span>
         );
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="w-full flex items-center justify-center py-20">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-solid" />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full flex flex-col gap-6 select-text">
@@ -112,7 +103,7 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
             <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-black" />
             <input
               type="text"
-              placeholder="Search candidates..."
+              placeholder="Search staff..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-[#F8F9FA] border border-[#12312B33] focus:border-gray-400 rounded-xl pl-10 pr-3.5 py-2.5 text-xs sm:text-sm text-neutral-primary outline-none transition-all"
@@ -127,10 +118,10 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               options={[
-                { label: "Status", value: "All" },
-                { label: "Active", value: "Active" },
-                { label: "Pending", value: "Pending" },
-                { label: "Inactive", value: "Inactive" },
+                { label: "Role", value: "All" },
+                { label: "Super Admin", value: "super_admin" },
+                { label: "Admin", value: "regular_admin" },
+                { label: "Staff", value: "staff" },
               ]}
             />
 
@@ -177,7 +168,11 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
           </button>
         </div>
 
-        {viewMode === "grid" ? (
+        {filteredStaff.length === 0 ? (
+          <div className="py-16 flex flex-col items-center justify-center text-center">
+            <p className="text-gray-400 font-normal">No staff members found.</p>
+          </div>
+        ) : viewMode === "grid" ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredStaff.map((staff) => {
               const isSelected = selectedStaffIds.includes(staff.id);
@@ -195,18 +190,15 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
                     />
 
                     <div className="flex flex-col gap-2 lg:gap-4">
-                      <span className=" text-sm text-black">{staff.name}</span>
+                      <span className=" text-sm text-black">{staff.email}</span>
                       <span className="text-xs text-[#19191880] font-normal">
                         {staff.email}
-                      </span>
-                      <span className="text-xs text-[#19191880] font-normal">
-                        {staff.role} / {staff.dateAdded}
                       </span>
                     </div>
                   </div>
 
                   <div className="flex flex-col items-end justify-between h-full gap-6">
-                    {renderStatusBadge(staff.status)}
+                    {renderStatusBadge(staff.role)}
 
                     <button
                       type="button"
@@ -236,11 +228,8 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
                       className="w-4 h-4 rounded text-primary focus:ring-0 cursor-pointer"
                     />
                   </th>
-                  <th className="p-3.5 whitespace-nowrap">Staff Name</th>
                   <th className="p-3.5 whitespace-nowrap">Email</th>
                   <th className="p-3.5 whitespace-nowrap">Role</th>
-                  <th className="p-3.5 whitespace-nowrap">Status</th>
-                  <th className="p-3.5 whitespace-nowrap">Date Added</th>
                   <th className="p-3.5 text-right rounded-r-xl whitespace-nowrap">
                     Action
                   </th>
@@ -262,13 +251,10 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
                           className="w-4 h-4 rounded border-gray-300 text-[#a31d38] focus:ring-0 cursor-pointer"
                         />
                       </td>
-                      <td className="p-3.5 text-black">{staff.name}</td>
                       <td className="p-3.5 text-black">{staff.email}</td>
-                      <td className="p-3.5 text-black">{staff.role}</td>
                       <td className="p-3.5">
-                        {renderStatusBadge(staff.status)}
+                        {renderStatusBadge(staff.role)}
                       </td>
-                      <td className="p-3.5 text-black">{staff.dateAdded}</td>
                       <td className="p-3.5 text-right">
                         <button
                           type="button"
@@ -292,7 +278,7 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
         mode={deactivateModalMode}
         staffName={
           selectedStaffIds.length === 1
-            ? staffMembers.find((s) => s.id === selectedStaffIds[0])?.name
+            ? staffMembers.find((s) => s.id === selectedStaffIds[0])?.email
             : undefined
         }
         onClose={handleCloseDeactivateModal}

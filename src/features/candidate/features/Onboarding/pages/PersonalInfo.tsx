@@ -36,7 +36,7 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
   const dispatch = useAppDispatch();
   const { toast } = useToast();
   const router = useRouter();
-  const { saveOnboarding } = useOnboarding();
+  const { getOnboarding, saveOnboarding } = useOnboarding();
 
   const savedPersonalInfo = useAppSelector((s) => s.onboarding.personalInfo);
 
@@ -49,12 +49,42 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
     nationality: savedPersonalInfo.nationality ?? "",
     email: savedPersonalInfo.email ?? "",
     phoneNumber: savedPersonalInfo.phoneNumber ?? "",
-    country: savedPersonalInfo.country ?? "",
+    country: savedPersonalInfo.country || "Nigeria",
     state: savedPersonalInfo.state ?? "",
     lga: savedPersonalInfo.lga ?? "",
     streetAddress: savedPersonalInfo.streetAddress ?? "",
     impairment: savedPersonalInfo.impairment ?? "",
   });
+
+  // Hydrate from getOnboarding API response
+  useEffect(() => {
+    if (getOnboarding.data?.data) {
+      const apiData = getOnboarding.data.data as any;
+      const pd = apiData?.personalDetails;
+      const ci = apiData?.contactInformation;
+      const ra = apiData?.residentialAddress;
+      const acc = apiData?.accessibility;
+
+      const hydrated = {
+        firstName: pd?.firstName || savedPersonalInfo.firstName || "",
+        lastName: pd?.lastName || savedPersonalInfo.lastName || "",
+        middleName: pd?.middleName || savedPersonalInfo.middleName || "",
+        dob: pd?.dob || savedPersonalInfo.dob || "",
+        gender: pd?.gender || savedPersonalInfo.gender || "",
+        nationality: pd?.nationality || savedPersonalInfo.nationality || "",
+        email: ci?.emailAddress || savedPersonalInfo.email || "",
+        phoneNumber: ci?.phoneNumber?.number || savedPersonalInfo.phoneNumber || "",
+        country: ra?.country || savedPersonalInfo.country || "Nigeria",
+        state: ra?.state || savedPersonalInfo.state || "",
+        lga: ra?.lga || savedPersonalInfo.lga || "",
+        streetAddress: ra?.address || savedPersonalInfo.streetAddress || "",
+        impairment: acc?.impairment || savedPersonalInfo.impairment || "",
+      };
+
+      setForm(hydrated);
+      dispatch(setPersonalInfo(hydrated));
+    }
+  }, [getOnboarding.data]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [otherImpairment, setOtherImpairment] = useState("");
@@ -70,12 +100,11 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
 
   useEffect(() => {
     dispatch(setSidebarVariant("default"));
-    if (!form.country) {
-      setForm((prev) => ({ ...prev, country: "Nigeria" }));
-    }
   }, [dispatch]);
 
   const update = (field: keyof typeof form, value: string) => {
+    let nextState = "";
+    let nextLga = "";
     setForm((prev) => {
       const next = { ...prev, [field]: value };
       if (field === "country") {
@@ -85,13 +114,15 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
       if (field === "state") {
         next.lga = "";
       }
+      nextState = next.state;
+      nextLga = next.lga;
       return next;
     });
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
-    // Persist to Redux
-    dispatch(setPersonalInfo({ [field]: value } as any));
+    // Persist to Redux immediately
+    dispatch(setPersonalInfo({ [field]: value, state: nextState, lga: nextLga } as any));
   };
 
   // ── Validation ─────────────────────────────────────────────────────────────

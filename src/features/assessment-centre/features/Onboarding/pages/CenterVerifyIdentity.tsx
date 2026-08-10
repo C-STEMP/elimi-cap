@@ -14,19 +14,42 @@ import { validateNIN } from "@/src/lib/validation";
 import { ASSESSMENT_CENTRE_ROUTES } from "@/features/assessment-centre/utils/centreRoutes";
 
 import { useOnboarding } from "@/features/assessment-centre/features/Onboarding/hooks";
+import { useAppDispatch, useAppSelector } from "@/src/store/hooks";
+import { setCentreIdentity } from "@/src/store/slices/onboardingSlice";
 
 export const CenterVerifyIdentity: React.FC = () => {
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const { toast } = useToast();
-  const { verifyIdentity, submitOnboarding } = useOnboarding();
+  const { getOnboarding, saveOnboarding, verifyIdentity, submitOnboarding } = useOnboarding();
+  const savedCentreIdentity = useAppSelector((s) => s.onboarding.centreIdentity);
+  const centreInformation = useAppSelector((s) => s.onboarding.centreInformation);
+  const centrePersonalInfo = useAppSelector((s) => s.onboarding.centrePersonalInfo);
 
-  const [nin, setNin] = useState("");
+  const [nin, setNin] = useState(savedCentreIdentity.nin || "");
   const [ninError, setNinError] = useState<string | undefined>(undefined);
-  const [isVerified, setIsVerified] = useState(false);
+  const [isVerified, setIsVerified] = useState(savedCentreIdentity.isVerified || false);
   const [showDraftModal, setShowDraftModal] = useState(false);
   const [modalState, setModalState] = useState<
     "none" | "verifying" | "success" | "error"
   >("none");
+
+  // Hydrate from API when getOnboarding completes
+  React.useEffect(() => {
+    if (getOnboarding.data?.data) {
+      const apiData = getOnboarding.data.data as any;
+      const identityData = apiData?.identityVerification || apiData?.owner?.identity;
+      if (identityData?.identificationNumber) {
+        const idNum = identityData.identificationNumber;
+        setNin(idNum);
+        dispatch(setCentreIdentity({ nin: idNum }));
+      }
+      if (identityData?.verified) {
+        setIsVerified(true);
+        dispatch(setCentreIdentity({ isVerified: true }));
+      }
+    }
+  }, [getOnboarding.data, dispatch]);
 
   const handleStartVerification = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -54,6 +77,7 @@ export const CenterVerifyIdentity: React.FC = () => {
         onSuccess: () => {
           setModalState("success");
           setIsVerified(true);
+          dispatch(setCentreIdentity({ nin, isVerified: true }));
         },
         onError: () => {
           setModalState("error");
@@ -61,6 +85,67 @@ export const CenterVerifyIdentity: React.FC = () => {
       },
     );
   };
+
+  const handleSaveDraft = () => {
+    saveOnboarding.mutate(
+      {
+        centre: {
+          centreInformation: {
+            name: centreInformation.centerName,
+            registrationNo: centreInformation.regNo,
+            logoAssetId: centreInformation.logoAssetId,
+          },
+          centreResidentialAddress: {
+            country: centreInformation.country,
+            state: centreInformation.state,
+            lga: centreInformation.lga,
+            address: centreInformation.streetAddress,
+          },
+          centreSupportInformation: {
+            emailAddress: centreInformation.supportEmail,
+            phoneNumber: {
+              countryCode: "+234",
+              number: centreInformation.phoneNumber,
+            },
+          },
+          centreAccountDetails: {
+            bank: centreInformation.bank,
+            accountNo: centreInformation.accountNumber,
+            nameOfAccount: centreInformation.nameOnAccount,
+          },
+        },
+        owner: {
+          personalDetails: {
+            firstName: centrePersonalInfo.firstName,
+            lastName: centrePersonalInfo.lastName,
+            middleName: centrePersonalInfo.middleName,
+            dob: centrePersonalInfo.dob,
+            gender: centrePersonalInfo.gender,
+            nationality: centrePersonalInfo.nationality,
+          },
+          contactInformation: {
+            emailAddress: centrePersonalInfo.email,
+            phoneNumber: {
+              countryCode: "+234",
+              number: centrePersonalInfo.phoneNumber,
+            },
+          },
+          residentialAddress: {
+            country: centrePersonalInfo.country,
+            state: centrePersonalInfo.state,
+            lga: centrePersonalInfo.lga,
+            address: centrePersonalInfo.streetAddress,
+          },
+        },
+      },
+      {
+        onSettled: () => {
+          setShowDraftModal(true);
+        },
+      },
+    );
+  };
+
 
   const handleContinue = () => {
     if (!isVerified) {
@@ -192,7 +277,7 @@ export const CenterVerifyIdentity: React.FC = () => {
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
           <button
             type="button"
-            onClick={() => setShowDraftModal(true)}
+            onClick={handleSaveDraft}
             className="px-5 h-11 bg-white border border-secondary text-secondary hover:bg-secondary/10 font-semibold text-sm rounded-lg flex items-center justify-center gap-2 transition-all shadow-lg cursor-pointer whitespace-nowrap"
           >
             <span>Save As Draft</span>

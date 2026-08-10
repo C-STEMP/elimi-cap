@@ -9,9 +9,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { ASSETS_URL } from "@/assets";
-import { useAppDispatch } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setSidebarVariant, setRplStep } from "@/store/slices/authSlice";
+import { setRPLIdentity } from "@/store/slices/onboardingSlice";
 import { validateNIN } from "@/src/lib/validation";
+import { useOnboarding } from "@/src/features/candidate/features/Onboarding/hooks";
 
 import { StatusModal } from "@/components/status-modal";
 
@@ -27,9 +29,14 @@ export const RPLVerifyIdentity: React.FC<RPLVerifyIdentityProps> = ({
   onReviewPersonalInfo,
 }) => {
   const dispatch = useAppDispatch();
-  const [nin, setNin] = useState("");
+  const { saveOnboarding } = useOnboarding();
+  const savedRPLIdentity = useAppSelector((s) => s.onboarding.rplIdentity);
+
+  const [nin, setNin] = useState(savedRPLIdentity.nin || "");
   const [ninError, setNinError] = useState<string | undefined>(undefined);
-  const [isVerified, setIsVerified] = useState(false);
+  const [isVerified, setIsVerified] = useState(
+    savedRPLIdentity.isVerified || false,
+  );
   const [modalState, setModalState] = useState<
     "none" | "verifying" | "success" | "error"
   >("none");
@@ -41,6 +48,11 @@ export const RPLVerifyIdentity: React.FC<RPLVerifyIdentityProps> = ({
     dispatch(setSidebarVariant("rpl-form"));
     dispatch(setRplStep(3));
   }, [dispatch]);
+
+  const handleNinChange = (val: string) => {
+    setNin(val);
+    dispatch(setRPLIdentity({ nin: val }));
+  };
 
   const handleStartVerification = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -65,6 +77,7 @@ export const RPLVerifyIdentity: React.FC<RPLVerifyIdentityProps> = ({
       } else {
         setModalState("success");
         setIsVerified(true);
+        dispatch(setRPLIdentity({ nin, isVerified: true }));
       }
     }, 2200);
   };
@@ -78,7 +91,19 @@ export const RPLVerifyIdentity: React.FC<RPLVerifyIdentityProps> = ({
 
   const handleConfirmSaveDraft = () => {
     setShowConfirmDraftModal(false);
-    setShowDraftModal(true);
+    saveOnboarding.mutate(
+      {
+        accessibility: {
+          hasImpairment: false,
+          impairment: "",
+        },
+      },
+      {
+        onSuccess: () => {
+          setShowDraftModal(true);
+        },
+      },
+    );
   };
 
   return (

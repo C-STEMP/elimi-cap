@@ -25,7 +25,7 @@ export interface CalendarWidgetProps {
 }
 
 function parseInterviewDate(dateInput?: string | Date): Date {
-  if (!dateInput) return new Date(2026, 6, 22); // July 22, 2026
+  if (!dateInput) return new Date();
   if (dateInput instanceof Date) return dateInput;
 
   if (typeof dateInput === "string" && dateInput.includes("-")) {
@@ -50,27 +50,28 @@ function parseInterviewDate(dateInput?: string | Date): Date {
   }
 
   const parsed = new Date(dateInput);
-  return isNaN(parsed.getTime()) ? new Date(2026, 6, 22) : parsed;
+  return isNaN(parsed.getTime()) ? new Date() : parsed;
 }
 
 export const CalendarWidget: React.FC<CalendarWidgetProps> = ({
-  panelInterviewDate = "22-07-2026",
+  panelInterviewDate,
 }) => {
-  const parsedInterviewDate = parseInterviewDate(panelInterviewDate);
+  const parsedInterviewDate = panelInterviewDate ? parseInterviewDate(panelInterviewDate) : null;
   const today = new Date();
 
-  const [currentDate, setCurrentDate] = useState(() => parsedInterviewDate);
+  const [currentDate, setCurrentDate] = useState(() => parsedInterviewDate || today);
   const [selectedDate, setSelectedDate] = useState<number | null>(
-    parsedInterviewDate.getDate(),
+    parsedInterviewDate ? parsedInterviewDate.getDate() : null,
   );
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
   const isInterviewMonth =
+    parsedInterviewDate &&
     parsedInterviewDate.getFullYear() === year &&
     parsedInterviewDate.getMonth() === month;
-  const interviewDayNum = parsedInterviewDate.getDate();
+  const interviewDayNum = parsedInterviewDate?.getDate();
 
   // First day of month (0 = Sun, 1 = Mon, ...)
   const firstDayIndex = new Date(year, month, 1).getDay();
@@ -144,7 +145,7 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({
           }
 
           const isInterviewDate =
-            isInterviewMonth && dateNum === interviewDayNum;
+            isInterviewMonth && interviewDayNum !== undefined && dateNum === interviewDayNum;
           const isToday = isCurrentMonthToday && dateNum === today.getDate();
           const isSelected =
             selectedDate === dateNum && !isInterviewDate && !isToday;

@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { FiChevronRight, FiFolder, FiPlus } from "react-icons/fi";
 import { Button } from "@/src/components/ui/button";
 
@@ -14,12 +15,19 @@ export interface ApplicationItem {
 
 interface ApplicationsListProps {
   applications?: ApplicationItem[];
+  isLoading?: boolean;
 }
 
 export const ApplicationsList: React.FC<ApplicationsListProps> = ({
   applications = [],
+  isLoading = false,
 }) => {
+  const router = useRouter();
   const hasApplications = applications.length > 0;
+
+  const handleCreateApplication = () => {
+    router.push("/onboarding/assessment-type?from=dashboard");
+  };
 
   return (
     <div className="bg-white rounded-[22px] p-4 shadow-lg border border-gray-100 flex flex-col justify-between h-full min-h-75">
@@ -38,7 +46,12 @@ export const ApplicationsList: React.FC<ApplicationsListProps> = ({
         )}
       </div>
 
-      {!hasApplications ? (
+      {isLoading ? (
+        <div className="flex-1 flex flex-col items-center justify-center py-10 text-center">
+          <div className="w-12 h-12 rounded-full border-4 border-gray-200 border-t-primary animate-spin mb-4" />
+          <p className="text-gray-400 text-sm">Loading applications...</p>
+        </div>
+      ) : !hasApplications ? (
         <div className="flex-1 flex flex-col items-center justify-center py-10 text-center">
           <div className="w-30 h-30 rounded-full bg-input-bg flex items-center justify-center mb-4">
             <FiFolder className="w-10 h-8.5 text-primary/12" />
@@ -53,10 +66,7 @@ export const ApplicationsList: React.FC<ApplicationsListProps> = ({
           <Button
             variant="secondary"
             rightIcon={<FiPlus className="w-4 h-4 stroke-[2.5]" />}
-            onClick={() =>
-              (window.location.href =
-                "/onboarding/assessment-type?from=dashboard")
-            }
+            onClick={handleCreateApplication}
             className="bg-secondary hover:bg-[#e89b1f] active:scale-95 text-white font-semibold text-sm px-6 py-2.5 rounded-xl shadow-lg transition-all cursor-pointer flex items-center gap-1.5"
           >
             Create Application
@@ -79,7 +89,9 @@ export const ApplicationsList: React.FC<ApplicationsListProps> = ({
                     className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
                       app.status === "Completed"
                         ? "bg-green-100 text-green-800"
-                        : "bg-amber-100 text-amber-700"
+                        : app.status === "Not Started"
+                          ? "bg-gray-100 text-gray-600"
+                          : "bg-amber-100 text-amber-700"
                     }`}
                   >
                     {app.status}

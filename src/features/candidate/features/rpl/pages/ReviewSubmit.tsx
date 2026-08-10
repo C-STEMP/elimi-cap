@@ -8,8 +8,9 @@ import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { ASSETS_URL } from "@/assets";
-import { useAppDispatch } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setSidebarVariant, setRplStep } from "@/store/slices/authSlice";
+import { useOnboarding } from "@/src/features/candidate/features/Onboarding/hooks";
 
 import { StatusModal } from "@/components/status-modal";
 
@@ -27,6 +28,20 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { toast } = useToast();
+  const { submitOnboarding } = useOnboarding();
+
+  const personalInfo = useAppSelector((s) => s.onboarding.personalInfo);
+  const rplExp = useAppSelector((s) => s.onboarding.rplExperienceTrade);
+  const rplId = useAppSelector((s) => s.onboarding.rplIdentity);
+
+  const personalInfoCompleted = Boolean(
+    personalInfo.firstName && personalInfo.lastName,
+  );
+  const expCompleted = Boolean(
+    rplExp.occupation ||
+      rplExp.employments?.some((e) => e.companyName || e.jobTitle),
+  );
+  const identityVerified = Boolean(rplId.isVerified);
 
   const [showConfirmSubmitModal, setShowConfirmSubmitModal] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
@@ -73,7 +88,11 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
 
   const handleConfirmSubmit = () => {
     setShowConfirmSubmitModal(false);
-    setShowSubmitModal(true);
+    submitOnboarding.mutate(undefined, {
+      onSuccess: () => {
+        setShowSubmitModal(true);
+      },
+    });
   };
 
   return (
@@ -106,8 +125,14 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
               Personal Information
             </span>
             <div className="flex items-center gap-3">
-              <span className="px-3 py-1 bg-[#E8F5E9] text-[#2E7D32] text-xs font-semibold rounded-full">
-                100% Completed
+              <span
+                className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                  personalInfoCompleted
+                    ? "bg-[#E8F5E9] text-[#2E7D32]"
+                    : "bg-[#FEF3C7] text-[#D97706]"
+                }`}
+              >
+                {personalInfoCompleted ? "100% Completed" : "In Progress"}
               </span>
               <button
                 type="button"
@@ -127,8 +152,14 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
               Experience &amp; Trade
             </span>
             <div className="flex items-center gap-3">
-              <span className="px-3 py-1 bg-[#FEF3C7] text-[#D97706] text-xs font-semibold rounded-full">
-                60% Completed
+              <span
+                className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                  expCompleted
+                    ? "bg-[#E8F5E9] text-[#2E7D32]"
+                    : "bg-[#FEF3C7] text-[#D97706]"
+                }`}
+              >
+                {expCompleted ? "100% Completed" : "In Progress"}
               </span>
               <button
                 type="button"
@@ -151,8 +182,14 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
               Verify Identity
             </span>
             <div className="flex items-center gap-3">
-              <span className="px-3 py-1 bg-[#FDF2F2] text-[#EF4444] text-xs font-semibold rounded-full">
-                Not Verified
+              <span
+                className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                  identityVerified
+                    ? "bg-[#E8F5E9] text-[#2E7D32]"
+                    : "bg-[#FDF2F2] text-[#EF4444]"
+                }`}
+              >
+                {identityVerified ? "100% Verified" : "Not Verified"}
               </span>
               <button
                 type="button"

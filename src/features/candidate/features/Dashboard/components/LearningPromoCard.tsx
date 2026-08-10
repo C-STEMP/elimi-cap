@@ -2,9 +2,16 @@
 
 import React from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { ASSETS_URL } from "@/assets";
 
 export const LearningPromoCard: React.FC = () => {
+  const router = useRouter();
+
+  const handleStartLearning = () => {
+    router.push("/dashboard/settings");
+  };
+
   return (
     <div className="bg-[#FEEED3] rounded-[22px] p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg border border-[#fae7c9] h-full">
       <div className="flex-1 flex flex-col justify-between h-full items-start">
@@ -19,6 +26,7 @@ export const LearningPromoCard: React.FC = () => {
         </div>
         <button
           type="button"
+          onClick={handleStartLearning}
           className="bg-[#fbab2a] hover:bg-[#e89b1f] text-white font-semibold text-sm px-6 py-2.5 rounded-xl transition-all shadow-lg cursor-pointer active:scale-95"
         >
           Start Learning

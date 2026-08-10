@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
-import { FiSearch, FiPlus, FiList, FiGrid } from "react-icons/fi";
-import { MOCK_JOB_LISTINGS } from "@/features/assessment-centre/utils/constants";
-import { JobListing } from "@/features/assessment-centre/types";
+import React, { useState, useMemo } from "react";
+import { FiSearch, FiList, FiGrid } from "react-icons/fi";
+import { useGetJobPostings } from "@/features/assessment-centre/features/JobListing/hooks";
 
 interface JobListingsViewProps {
   onSelectJob: (jobId: string) => void;
@@ -12,9 +11,8 @@ interface JobListingsViewProps {
 
 export const JobListingsView: React.FC<JobListingsViewProps> = ({
   onSelectJob,
-  onPostRequest,
 }) => {
-  const [jobs, setJobs] = useState<JobListing[]>(MOCK_JOB_LISTINGS);
+  const { data: jobs = [], isLoading } = useGetJobPostings();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedJobIds, setSelectedJobIds] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
@@ -33,41 +31,29 @@ export const JobListingsView: React.FC<JobListingsViewProps> = ({
     );
   };
 
-  const handleMarkAsFilled = () => {
-    if (selectedJobIds.length === 0) return;
-    setJobs((prev) =>
-      prev.map((job) =>
-        selectedJobIds.includes(job.id)
-          ? { ...job, status: "Filled" as const }
-          : job,
-      ),
-    );
-    setSelectedJobIds([]);
-  };
-
-  const handleDelete = () => {
-    if (selectedJobIds.length === 0) return;
-    setJobs((prev) => prev.filter((job) => !selectedJobIds.includes(job.id)));
-    setSelectedJobIds([]);
-  };
-
-  const filteredJobs = jobs.filter(
+  const filteredJobs = useMemo(() => jobs.filter(
     (job) =>
-      job.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.trade.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
+      job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      job.tradeId.toLowerCase().includes(searchQuery.toLowerCase()),
+  ), [jobs, searchQuery]);
+
+  if (isLoading) {
+    return (
+      <div className="w-full flex items-center justify-center py-20">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-solid" />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full flex flex-col gap-6 select-text">
-      {/* Table Container */}
       <div className="bg-white rounded-3xl p-6 shadow-2xs border border-gray-100/80 flex flex-col gap-6">
-        {/* Controls Bar */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
           <div className="relative flex-1 max-w-sm">
             <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search candidates..."
+              placeholder="Search jobs..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-[#F8F9FA] border border-gray-200/80 focus:border-gray-400 rounded-xl pl-10 pr-3.5 py-2.5 text-xs sm:text-sm text-neutral-primary outline-none transition-all"
@@ -101,38 +87,14 @@ export const JobListingsView: React.FC<JobListingsViewProps> = ({
                 <FiGrid className="w-4 h-4" />
               </button>
             </div>
-
-            <div className="flex items-center gap-3 text-xs font-semibold">
-              <button
-                type="button"
-                onClick={handleMarkAsFilled}
-                disabled={selectedJobIds.length === 0}
-                className={`underline transition-colors ${
-                  selectedJobIds.length === 0
-                    ? "text-gray-300 cursor-not-allowed"
-                    : "text-gray-400 hover:text-neutral-primary cursor-pointer"
-                }`}
-              >
-                Mark As Filled
-              </button>
-              <button
-                type="button"
-                onClick={handleDelete}
-                disabled={selectedJobIds.length === 0}
-                className={`underline transition-colors ${
-                  selectedJobIds.length === 0
-                    ? "text-gray-300 cursor-not-allowed"
-                    : "text-gray-400 hover:text-red-600 cursor-pointer"
-                }`}
-              >
-                Delete
-              </button>
-            </div>
           </div>
         </div>
 
-        {/* View Mode 1: Grid Card View */}
-        {viewMode === "grid" ? (
+        {filteredJobs.length === 0 ? (
+          <div className="py-16 flex flex-col items-center justify-center text-center">
+            <p className="text-gray-400 font-normal">No job postings found.</p>
+          </div>
+        ) : viewMode === "grid" ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredJobs.map((job) => {
               const isSelected = selectedJobIds.includes(job.id);
@@ -151,13 +113,13 @@ export const JobListingsView: React.FC<JobListingsViewProps> = ({
 
                     <div className="flex flex-col gap-2">
                       <span className="font-bold text-sm text-neutral-primary">
-                        {job.role}
+                        {job.title}
                       </span>
                       <span className="text-xs text-gray-500 font-normal">
-                        Trade: {job.trade}
+                        Trade: {job.tradeId}
                       </span>
                       <span className="text-xs text-gray-500 font-normal">
-                        Slots: {job.slotsFilled}/{job.slotsTotal} filled
+                        Slots: {job.slot}
                       </span>
                       <span className="text-xs text-gray-400">
                         Deadline: {job.deadline}
@@ -166,9 +128,9 @@ export const JobListingsView: React.FC<JobListingsViewProps> = ({
                   </div>
 
                   <div className="flex flex-col items-end justify-between h-full gap-4">
-                    {job.status === "Filled" ? (
+                    {job.status === "closed" ? (
                       <span className="bg-[#FEE2E2] text-[#991B1B] font-semibold px-3 py-1 rounded-full text-xs inline-block">
-                        Filled
+                        Closed
                       </span>
                     ) : (
                       <span className="bg-[#D1FAE5] text-[#065F46] font-semibold px-3 py-1 rounded-full text-xs inline-block">
@@ -189,7 +151,6 @@ export const JobListingsView: React.FC<JobListingsViewProps> = ({
             })}
           </div>
         ) : (
-          /* View Mode 2: Table List View */
           <div className="w-full overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[700px]">
               <thead>
@@ -205,10 +166,9 @@ export const JobListingsView: React.FC<JobListingsViewProps> = ({
                       className="w-4 h-4 rounded border-gray-300 text-[#a31d38] focus:ring-0 cursor-pointer"
                     />
                   </th>
-                  <th className="p-3.5">Role</th>
+                  <th className="p-3.5">Title</th>
                   <th className="p-3.5">Trade</th>
                   <th className="p-3.5">Slots</th>
-                  <th className="p-3.5">Applicants</th>
                   <th className="p-3.5">Deadline</th>
                   <th className="p-3.5">Status</th>
                   <th className="p-3.5 text-right rounded-r-xl">Action</th>
@@ -231,24 +191,21 @@ export const JobListingsView: React.FC<JobListingsViewProps> = ({
                         />
                       </td>
                       <td className="p-3.5 font-bold text-neutral-primary">
-                        {job.role}
+                        {job.title}
                       </td>
                       <td className="p-3.5 text-neutral-secondary">
-                        {job.trade}
+                        {job.tradeId}
                       </td>
                       <td className="p-3.5 text-neutral-secondary">
-                        {job.slotsFilled}/{job.slotsTotal} filled
-                      </td>
-                      <td className="p-3.5 text-neutral-secondary">
-                        {job.applicantsCount}
+                        {job.slot}
                       </td>
                       <td className="p-3.5 text-neutral-secondary">
                         {job.deadline}
                       </td>
                       <td className="p-3.5">
-                        {job.status === "Filled" ? (
+                        {job.status === "closed" ? (
                           <span className="bg-[#FEE2E2] text-[#991B1B] font-semibold px-3 py-1 rounded-full text-xs inline-block">
-                            Filled
+                            Closed
                           </span>
                         ) : (
                           <span className="bg-[#D1FAE5] text-[#065F46] font-semibold px-3 py-1 rounded-full text-xs inline-block">

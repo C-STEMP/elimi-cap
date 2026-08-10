@@ -76,7 +76,13 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({ children }) => {
       }
 
       if (isOnboardingRoute) {
-        if (isAuth && isOnboarded) {
+        const isApplicationCreationRoute =
+          pathname === "/onboarding/assessment-type" ||
+          pathname === "/onboarding/start-application" ||
+          pathname === "/onboarding/success" ||
+          pathname?.startsWith("/rpl");
+
+        if (isAuth && isOnboarded && !isApplicationCreationRoute) {
           if (isMounted) router.push("/dashboard");
           return;
         }

@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
-import { FiX, FiPlus, FiCalendar } from "react-icons/fi";
+import { FiX, FiPlus } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 import { Input } from "@/src/components/ui/input";
 import { Select } from "@/src/components/ui/select";
@@ -10,6 +10,7 @@ import { DatePicker } from "@/src/components/ui/date-picker";
 import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
 import { ASSETS_URL } from "@/assets";
+import { useCreateJobPosting } from "@/features/assessment-centre/features/JobListing/hooks";
 
 interface PostJobModalProps {
   isOpen: boolean;
@@ -30,6 +31,7 @@ export const PostJobModal: React.FC<PostJobModalProps> = ({
   onJobPosted,
 }) => {
   const { toast } = useToast();
+  const createJobPosting = useCreateJobPosting();
   const [title, setTitle] = useState("");
   const [trade, setTrade] = useState("");
   const [durationValue, setDurationValue] = useState("1");
@@ -74,15 +76,29 @@ export const PostJobModal: React.FC<PostJobModalProps> = ({
       return;
     }
 
-    setStep("success");
-    onJobPosted?.({
-      title,
-      trade,
-      slots: Number(slots) || 1,
-      deadline: deadline || "07/24/2026",
-      description,
-      requirements,
-    });
+    createJobPosting.mutate(
+      {
+        title,
+        tradeId: trade,
+        slot: Number(slots) || 1,
+        deadline: deadline || new Date().toISOString(),
+        description,
+        requirements,
+      },
+      {
+        onSuccess: () => {
+          setStep("success");
+          onJobPosted?.({
+            title,
+            trade,
+            slots: Number(slots) || 1,
+            deadline: deadline || "07/24/2026",
+            description,
+            requirements,
+          });
+        },
+      },
+    );
   };
 
   const handleReset = () => {
@@ -257,6 +273,7 @@ export const PostJobModal: React.FC<PostJobModalProps> = ({
                 variant="amber"
                 size="lg"
                 className="w-full h-12.5 text-white font-bold text-base bg-[#fbab2a] hover:bg-[#e89b1f] mt-3 transition-all shadow-lg cursor-pointer rounded-xl"
+                loading={createJobPosting.isPending}
               >
                 Post Request
               </Button>
