@@ -39,6 +39,12 @@ import heroImg2 from "@/public/hero-img-2.jpg";
 import heroImg3 from "@/public/hero-img-3.jpg";
 import heroImg4 from "@/public/hero-img-4.jpg";
 import landingImg1 from "@/public/landing-img-1.jpg";
+import deactivateStaffImg from "@/assets/icons/deactivate.svg";
+import activateStaffImg from "@/assets/icons/activate.svg";
+import shortlistApplicantImg from "@/assets/icons/shortlist-applicant.png";
+import rejectApplicantImg from "@/assets/icons/reject-applicant.png";
+import warningIcon from "@/assets/icons/warning-icon.svg";
+import cstempLogo from "@/assets/icons/cstemp.png";
 
 export {
   logoIcon,
@@ -77,6 +83,12 @@ export {
   heroImg3,
   heroImg4,
   landingImg1,
+  deactivateStaffImg,
+  activateStaffImg,
+  shortlistApplicantImg,
+  rejectApplicantImg,
+  warningIcon,
+  cstempLogo,
 };
 
 export const ASSETS_URL = {
@@ -116,4 +128,10 @@ export const ASSETS_URL = {
   heroImg3,
   heroImg4,
   landingImg1,
+  deactivateStaffImg,
+  activateStaffImg,
+  shortlistApplicantImg,
+  rejectApplicantImg,
+  warningIcon,
+  cstempLogo,
 };

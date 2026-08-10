@@ -1,0 +1,270 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #aa1d3f;
+  --color-primary-solid: #75152b;
+  --color-primary-hover: #8f1532;
+  --color-secondary: #f9a825;
+  --color-secondary-hover: #e0931b;
+  --color-text-dark: #1e1e1e;
+  --color-input-bg: #f5f6fa;
+  --color-neutral-burgundy: #fffdf0;
+  --color-neutral-primary: #241014;
+  --color-neutral-secondary: #7a6b6e;
+  --color-border-secondary: #b3261e;
+  --color-border-gray: #d9d9d9;
+  --color-error-focus: rgba(170, 29, 63, 0.1);
+
+  /* Custom Tokens */
+  --radius-radius-200: 8px;
+  --border-width-stroke: 1px;
+
+  /* Custom Fonts */
+  --font-sans: var(--font-inter), sans-serif;
+  --font-work: var(--font-work-sans), sans-serif;
+
+  /* Custom Animations */
+  --animate-float-slow: float-slow 12s ease-in-out infinite;
+  --animate-float-slow-reverse: float-slow-reverse 15s ease-in-out infinite;
+  --animate-slide-in: slide-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes float-slow {
+  0%,
+  100% {
+    transform: scale(0.9) translate(0px, 0px);
+  }
+  50% {
+    transform: scale(1.25) translate(-20px, 15px);
+  }
+}
+
+@keyframes float-slow-reverse {
+  0%,
+  100% {
+    transform: scale(1.25) translate(0px, 0px);
+  }
+  50% {
+    transform: scale(0.9) translate(20px, -15px);
+  }
+}
+
+@keyframes slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Base resets & typography */
+@layer base {
+  html {
+    overflow-x: clip;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    overflow-x: clip;
+    color: var(--color-text-dark);
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+}
+
+/* ── react-phone-number-input overrides ──────────────────────────────────── */
+.phone-input-wrapper .PhoneInput {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 0 14px;
+  gap: 8px;
+}
+
+.phone-input-wrapper .PhoneInputCountry {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.phone-input-wrapper .PhoneInputCountrySelect {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+.phone-input-wrapper .PhoneInputCountrySelectArrow {
+  color: rgba(30, 30, 30, 0.6);
+  width: 12px;
+  height: 12px;
+}
+
+.phone-input-wrapper .PhoneInputInput {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 0.875rem;
+  color: #1e1e1e;
+  font-weight: 400;
+  height: 100%;
+  min-width: 0;
+}
+
+.phone-input-wrapper .PhoneInputInput::placeholder {
+  color: #9ca3af;
+}
+
+/* Antd Input overrides to match our custom input design system */
+.ant-input-affix-wrapper {
+  background-color: var(--color-input-bg) !important;
+  border-color: transparent !important;
+  border-radius: var(--radius-radius-200) !important;
+  height: 44px !important;
+  padding-inline: 14px !important;
+  box-shadow: none !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+.ant-input-affix-wrapper .ant-input {
+  background-color: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  height: 100% !important;
+  box-shadow: none !important;
+  color: #1e1e1e !important;
+  font-size: 0.875rem !important;
+  padding-inline: 0 !important;
+}
+
+.ant-input {
+  background-color: var(--color-input-bg) !important;
+  border-color: transparent !important;
+  border-radius: var(--radius-radius-200) !important;
+  height: 44px !important;
+  padding-inline: 14px !important;
+  box-shadow: none !important;
+  transition: all 0.2s ease-in-out !important;
+  color: #1e1e1e !important;
+  font-size: 0.875rem !important;
+}
+
+.ant-input:hover,
+.ant-input-affix-wrapper:hover {
+  border-color: #d9d9d9 !important;
+}
+
+.ant-input-affix-wrapper-focused,
+.ant-input:focus {
+  border-color: rgba(117, 21, 43, 0.4) !important;
+  box-shadow: 0 0 0 2px rgba(117, 21, 43, 0.1) !important;
+}
+
+.ant-input::placeholder {
+  color: #9ca3af !important;
+}
+
+/* Prevent browser autofill background color change (light blue #e8f0fe) */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+.ant-input:-webkit-autofill,
+.ant-input-affix-wrapper input:-webkit-autofill {
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: #1e1e1e !important;
+  transition: background-color 5000s ease-in-out 0s !important;
+  box-shadow: 0 0 0px 1000px #f5f6fa inset !important;
+}
+
+/* Antd Select overrides — make dropdown arrow icon darker & crisp */
+.ant-select-arrow {
+  color: #1e1e1e !important;
+  opacity: 0.9 !important;
+  font-size: 14px !important;
+  transition: color 0.2s ease-in-out, opacity 0.2s ease-in-out !important;
+}
+
+.ant-select-arrow .anticon,
+.ant-select-arrow svg {
+  color: #1e1e1e !important;
+  fill: #1e1e1e !important;
+}
+
+/* Antd Select Dropdown Option Items — vertical spacing & padding */
+.ant-select-item-option {
+  padding: 6px 12px !important;
+  border-radius: 12px !important;
+  margin-bottom: 4px !important;
+  min-height: 40px !important;
+  transition: background-color 0.2s ease !important;
+}
+
+.ant-select-item-option:last-child {
+  margin-bottom: 0 !important;
+}
+
+/* Password eye icon colour */
+.ant-input-password-icon {
+  color: rgba(30, 30, 30, 0.6) !important;
+  font-size: 16px !important;
+  cursor: pointer !important;
+}
+
+.ant-input-password-icon:hover {
+  color: #1e1e1e !important;
+}
+
+/* Antd Button base reset — colours driven by Tailwind !important classes */
+.ant-btn {
+  font-family: var(--font-inter), sans-serif !important;
+}
+
+/* Remove antd's default focus ring (our own focus-visible handles it) */
+.ant-btn:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* ── Ant Design Modal overrides ──────────────────────────────────────────── */
+/* Close button colour */
+.ant-modal-close {
+  color: #7a6b6e !important;
+  top: 20px !important;
+  right: 20px !important;
+}
+
+.ant-modal-close:hover {
+  color: #1e1e1e !important;
+  background-color: #f3f4f6 !important;
+}
+
+/* Ensure the modal content wrapper has the correct border-radius */
+.ant-modal-content {
+  border-radius: 2rem !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* Remove antd's default modal header/footer padding when not used */
+.ant-modal-body {
+  padding: 0 !important;
+}
+
+/* Hide scrollbars for clean horizontal nav scrolling */
+.no-scrollbar::-webkit-scrollbar,
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar,
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
