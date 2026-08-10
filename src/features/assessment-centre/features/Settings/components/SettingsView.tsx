@@ -865,18 +865,13 @@ export const SettingsView: React.FC = () => {
                     value={rplCurrency}
                     onChange={(e) => setRplCurrency(e.target.value)}
                   />
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-text-dark font-medium text-xs leading-[1.4] select-none">
-                      Amount
-                    </label>
-                    <input
-                      type="number"
-                      placeholder="00"
-                      value={rplAmount}
-                      onChange={(e) => setRplAmount(e.target.value)}
-                      className="w-full bg-input-bg border border-transparent focus:border-primary rounded-xl px-3.5 py-2.5 text-xs text-neutral-primary outline-none font-semibold"
-                    />
-                  </div>
+                  <Input
+                    label="Amount"
+                    type="number"
+                    placeholder="00"
+                    value={rplAmount}
+                    onChange={(e) => setRplAmount(e.target.value)}
+                  />
                 </div>
               </div>
 
@@ -894,18 +889,13 @@ export const SettingsView: React.FC = () => {
                     value={standardCurrency}
                     onChange={(e) => setStandardCurrency(e.target.value)}
                   />
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-text-dark font-medium text-xs leading-[1.4] select-none">
-                      Amount
-                    </label>
-                    <input
-                      type="number"
-                      placeholder="00"
-                      value={standardAmount}
-                      onChange={(e) => setStandardAmount(e.target.value)}
-                      className="w-full bg-input-bg border border-transparent focus:border-primary rounded-xl px-3.5 py-2.5 text-xs text-neutral-primary outline-none font-semibold"
-                    />
-                  </div>
+                  <Input
+                    label="Amount"
+                    type="number"
+                    placeholder="00"
+                    value={standardAmount}
+                    onChange={(e) => setStandardAmount(e.target.value)}
+                  />
                 </div>
               </div>
 
@@ -1076,6 +1066,11 @@ export const SettingsView: React.FC = () => {
           )}
         </div>
       </div>
+
+      <DeleteAccountModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+      />
     </div>
   );
 };

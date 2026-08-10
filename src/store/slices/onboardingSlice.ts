@@ -87,6 +87,39 @@ export interface RPLIdentityState {
   isVerified: boolean;
 }
 
+export interface AssessorPersonalInfoState {
+  firstName: string;
+  lastName: string;
+  middleName: string;
+  dob: string;
+  gender: string;
+  nationality: string;
+  email: string;
+  phoneNumber: string;
+  country: string;
+  state: string;
+  lga: string;
+  streetAddress: string;
+  passportFileName?: string;
+  passportPreview?: string;
+}
+
+export interface AssessorDetailsState {
+  assessorId: string;
+  qualifications: string[];
+  qaaCertificateAssetId?: string;
+  qaaCertificateName?: string;
+  qaaCertificateSize?: string;
+  iqmCertificateAssetId?: string;
+  iqmCertificateName?: string;
+  iqmCertificateSize?: string;
+}
+
+export interface AssessorIdentityState {
+  nin: string;
+  isVerified: boolean;
+}
+
 export interface OnboardingState {
   role: string;
   assessmentType: string;
@@ -97,6 +130,9 @@ export interface OnboardingState {
   centreIdentity: CentreIdentityState;
   rplExperienceTrade: RPLExperienceTradeState;
   rplIdentity: RPLIdentityState;
+  assessorPersonalInfo: AssessorPersonalInfoState;
+  assessorDetails: AssessorDetailsState;
+  assessorIdentity: AssessorIdentityState;
 }
 
 const initialState: OnboardingState = {
@@ -184,6 +220,36 @@ const initialState: OnboardingState = {
     nin: "",
     isVerified: false,
   },
+  assessorPersonalInfo: {
+    firstName: "",
+    lastName: "",
+    middleName: "",
+    dob: "",
+    gender: "",
+    nationality: "",
+    email: "",
+    phoneNumber: "",
+    country: "Nigeria",
+    state: "",
+    lga: "",
+    streetAddress: "",
+    passportFileName: "",
+    passportPreview: "",
+  },
+  assessorDetails: {
+    assessorId: "",
+    qualifications: [],
+    qaaCertificateAssetId: "",
+    qaaCertificateName: "",
+    qaaCertificateSize: "",
+    iqmCertificateAssetId: "",
+    iqmCertificateName: "",
+    iqmCertificateSize: "",
+  },
+  assessorIdentity: {
+    nin: "",
+    isVerified: false,
+  },
 };
 
 export const onboardingSlice = createSlice({
@@ -259,6 +325,33 @@ export const onboardingSlice = createSlice({
         ...action.payload,
       };
     },
+    setAssessorPersonalInfo: (
+      state,
+      action: PayloadAction<Partial<AssessorPersonalInfoState>>
+    ) => {
+      state.assessorPersonalInfo = {
+        ...state.assessorPersonalInfo,
+        ...action.payload,
+      };
+    },
+    setAssessorDetails: (
+      state,
+      action: PayloadAction<Partial<AssessorDetailsState>>
+    ) => {
+      state.assessorDetails = {
+        ...state.assessorDetails,
+        ...action.payload,
+      };
+    },
+    setAssessorIdentity: (
+      state,
+      action: PayloadAction<Partial<AssessorIdentityState>>
+    ) => {
+      state.assessorIdentity = {
+        ...state.assessorIdentity,
+        ...action.payload,
+      };
+    },
     resetOnboarding: () => initialState,
   },
 });
@@ -273,6 +366,9 @@ export const {
   setCentreIdentity,
   setRPLExperienceTrade,
   setRPLIdentity,
+  setAssessorPersonalInfo,
+  setAssessorDetails,
+  setAssessorIdentity,
   resetOnboarding,
 } = onboardingSlice.actions;
 
