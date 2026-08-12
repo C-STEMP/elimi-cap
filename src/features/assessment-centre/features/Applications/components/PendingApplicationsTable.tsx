@@ -2,8 +2,6 @@
 
 import React from "react";
 import { FiChevronRight } from "react-icons/fi";
-import { MOCK_PENDING_APPLICATIONS } from "@/features/assessment-centre/utils/constants";
-
 import { useGetApplications } from "@/features/assessment-centre/features/Applications/hooks";
 
 interface TableProps {
@@ -16,6 +14,16 @@ export const PendingApplicationsTable: React.FC<TableProps> = ({
   onViewApplication,
 }) => {
   const { data: remotePending } = useGetApplications("draft");
+
+  const pendingList = (remotePending ?? []).map((app) => ({
+    id: app.id,
+    candidateName: `Candidate (${app.candidateId.slice(0, 8)})`,
+    trade: app.type,
+    assessmentType: app.type,
+    status: "Pending",
+    submittedAt: new Date(app.createdAt).toLocaleDateString("en-GB"),
+  }));
+
   return (
     <div className="bg-white rounded-3xl p-6 shadow-2xs border border-gray-100/80 flex flex-col justify-between select-none">
       {/* Header */}
@@ -52,31 +60,42 @@ export const PendingApplicationsTable: React.FC<TableProps> = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 text-xs sm:text-sm font-medium">
-            {MOCK_PENDING_APPLICATIONS.map((app) => (
-              <tr
-                key={app.id}
-                className="hover:bg-input-bg transition-colors border-4 border-input-bg"
-              >
-                <td className="p-3.5 text-[#12312B]">{app.candidateName}</td>
-                <td className="p-3.5 text-[#12312B]">{app.trade}</td>
-                <td className="p-3.5 text-[#12312B]">{app.assessmentType}</td>
-                <td className="p-3.5">
-                  <span className="bg-secondary/20 text-secondary font-semibold px-3 py-1 rounded-full text-xs inline-block">
-                    {app.status}
-                  </span>
-                </td>
-                <td className="p-3.5 text-[#12312B]">{app.submittedAt}</td>
-                <td className="p-3.5 text-right">
-                  <button
-                    type="button"
-                    onClick={() => onViewApplication?.(app.id)}
-                    className="text-[#12312B] text-sm underline hover:text-[#a31d38] transition-colors cursor-pointer"
-                  >
-                    View
-                  </button>
+            {pendingList.length > 0 ? (
+              pendingList.map((app) => (
+                <tr
+                  key={app.id}
+                  className="hover:bg-input-bg transition-colors border-4 border-input-bg"
+                >
+                  <td className="p-3.5 text-[#12312B]">{app.candidateName}</td>
+                  <td className="p-3.5 text-[#12312B]">{app.trade}</td>
+                  <td className="p-3.5 text-[#12312B]">{app.assessmentType}</td>
+                  <td className="p-3.5">
+                    <span className="bg-secondary/20 text-secondary font-semibold px-3 py-1 rounded-full text-xs inline-block">
+                      {app.status}
+                    </span>
+                  </td>
+                  <td className="p-3.5 text-[#12312B]">{app.submittedAt}</td>
+                  <td className="p-3.5 text-right">
+                    <button
+                      type="button"
+                      onClick={() => onViewApplication?.(app.id)}
+                      className="text-[#12312B] text-sm underline hover:text-[#a31d38] transition-colors cursor-pointer"
+                    >
+                      View
+                    </button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td
+                  colSpan={6}
+                  className="p-8 text-center text-gray-400 font-normal"
+                >
+                  No pending applications found.
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>

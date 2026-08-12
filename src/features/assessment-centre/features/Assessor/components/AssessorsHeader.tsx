@@ -10,6 +10,7 @@ import { Button } from "@/src/components/ui/button";
 import { AssessorItem } from "@/features/assessment-centre/types";
 import { StaffStatusModalMode } from "@/features/assessment-centre/features/Staff/components/StaffStatusModal";
 import { MOCK_ASSESSORS } from "@/features/assessment-centre/utils/constants";
+import { useGetRetainedRequests } from "@/src/features/shared/centre/hooks";
 
 interface AssessorsHeaderProps {
   selectedAssessorId: string | null;
@@ -107,7 +108,7 @@ const AssessorDetailHeader: React.FC<AssessorDetailHeaderProps> = ({
             </span>
             <div className="flex items-baseline gap-1.5 mt-1">
               <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                {assessor.assignedCandidatesCount || 10}
+                {assessor.assignedCandidatesCount || 0}
               </span>
               <span className="text-xs font-normal text-white/70">
                 applications
@@ -126,7 +127,7 @@ const AssessorDetailHeader: React.FC<AssessorDetailHeaderProps> = ({
             </span>
             <div className="flex items-baseline gap-1.5 mt-1">
               <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                {assessor.ongoingCount || 6}
+                {assessor.ongoingCount || 0}
               </span>
               <span className="text-xs font-normal text-white/70">
                 applications
@@ -145,7 +146,7 @@ const AssessorDetailHeader: React.FC<AssessorDetailHeaderProps> = ({
             </span>
             <div className="flex items-baseline gap-1.5 mt-1">
               <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                {assessor.completedCount || 4}
+                {assessor.completedCount || 0}
               </span>
               <span className="text-xs font-normal text-white/70">
                 applications
@@ -162,6 +163,15 @@ const AssessorDetailHeader: React.FC<AssessorDetailHeaderProps> = ({
 };
 
 const AssessorsListHeader: React.FC = () => {
+  const { data: retainedRequests = [] } = useGetRetainedRequests();
+
+  const totalAssessors = retainedRequests.length;
+  const activeAssessors = retainedRequests.filter((r) => r.status === "approved").length;
+  const pendingAssessors = retainedRequests.filter((r) => r.status === "pending").length;
+  const inactiveAssessors = retainedRequests.filter(
+    (r) => r.status === "rejected" || r.status === "revoked",
+  ).length;
+
   return (
     <div className="flex flex-col gap-6 pt-2">
       <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
@@ -176,7 +186,7 @@ const AssessorsListHeader: React.FC = () => {
             </span>
             <div className="flex items-baseline gap-1.5 mt-1">
               <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                43
+                {totalAssessors}
               </span>
               <span className="text-xs font-normal text-white/70">
                 assessors
@@ -195,7 +205,7 @@ const AssessorsListHeader: React.FC = () => {
             </span>
             <div className="flex items-baseline gap-1.5 mt-1">
               <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                30
+                {activeAssessors}
               </span>
               <span className="text-xs font-normal text-white/70">
                 assessors
@@ -214,7 +224,7 @@ const AssessorsListHeader: React.FC = () => {
             </span>
             <div className="flex items-baseline gap-1.5 mt-1">
               <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                3
+                {pendingAssessors}
               </span>
               <span className="text-xs font-normal text-white/70">
                 assessors
@@ -233,7 +243,7 @@ const AssessorsListHeader: React.FC = () => {
             </span>
             <div className="flex items-baseline gap-1.5 mt-1">
               <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                10
+                {inactiveAssessors}
               </span>
               <span className="text-xs font-normal text-white/70">
                 assessors

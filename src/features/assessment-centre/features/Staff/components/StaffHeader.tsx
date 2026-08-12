@@ -11,6 +11,7 @@ import { Button } from "@/src/components/ui/button";
 import { StaffStatusModalMode } from "./StaffStatusModal";
 import { StaffMember } from "@/features/assessment-centre/types";
 import { MOCK_STAFF_MEMBERS } from "@/features/assessment-centre/utils/constants";
+import { useGetCentreStaff } from "@/src/features/shared/centre/hooks";
 
 interface StaffHeaderProps {
   selectedStaffId: string | null;
@@ -102,7 +103,7 @@ const StaffDetailHeader: React.FC<StaffDetailHeaderProps> = ({
             </span>
             <div className="flex items-baseline gap-1.5 mt-1">
               <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                {staff.reviewedApplicationsCount || 220}
+                {staff.reviewedApplicationsCount || 0}
               </span>
               <span className="text-xs font-normal text-white/70">
                 applications
@@ -121,7 +122,7 @@ const StaffDetailHeader: React.FC<StaffDetailHeaderProps> = ({
             </span>
             <div className="flex items-baseline gap-1.5 mt-1">
               <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                {staff.pendingApplicationsCount || 20}
+                {staff.pendingApplicationsCount || 0}
               </span>
               <span className="text-xs font-normal text-white/70">
                 applications
@@ -140,7 +141,7 @@ const StaffDetailHeader: React.FC<StaffDetailHeaderProps> = ({
             </span>
             <div className="flex items-baseline gap-1.5 mt-1">
               <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                {staff.requiresAttentionCount || 10}
+                {staff.requiresAttentionCount || 0}
               </span>
               <span className="text-xs font-normal text-white/70">
                 applications
@@ -161,6 +162,13 @@ interface StaffListHeaderProps {
 }
 
 const StaffListHeader: React.FC<StaffListHeaderProps> = ({ onAddStaff }) => {
+  const { data: staffList = [] } = useGetCentreStaff();
+
+  const totalStaff = staffList.length;
+  const activeStaff = staffList.length;
+  const pendingStaff = 0;
+  const inactiveStaff = 0;
+
   return (
     <div className="flex flex-col gap-6 pt-2">
       <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -187,7 +195,7 @@ const StaffListHeader: React.FC<StaffListHeaderProps> = ({ onAddStaff }) => {
             </span>
             <div className="flex items-baseline gap-1.5 mt-1">
               <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                15
+                {totalStaff}
               </span>
               <span className="text-xs font-normal text-white/70">
                 staffs
@@ -206,7 +214,7 @@ const StaffListHeader: React.FC<StaffListHeaderProps> = ({ onAddStaff }) => {
             </span>
             <div className="flex items-baseline gap-1.5 mt-1">
               <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                10
+                {activeStaff}
               </span>
               <span className="text-xs font-normal text-white/70">
                 staffs
@@ -225,7 +233,7 @@ const StaffListHeader: React.FC<StaffListHeaderProps> = ({ onAddStaff }) => {
             </span>
             <div className="flex items-baseline gap-1.5 mt-1">
               <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                3
+                {pendingStaff}
               </span>
               <span className="text-xs font-normal text-white/70">
                 staffs
@@ -244,7 +252,7 @@ const StaffListHeader: React.FC<StaffListHeaderProps> = ({ onAddStaff }) => {
             </span>
             <div className="flex items-baseline gap-1.5 mt-1">
               <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                2
+                {inactiveStaff}
               </span>
               <span className="text-xs font-normal text-white/70">
                 staffs

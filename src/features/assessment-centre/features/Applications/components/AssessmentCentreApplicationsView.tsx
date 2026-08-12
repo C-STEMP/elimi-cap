@@ -27,7 +27,23 @@ export const AssessmentCentreApplicationsView: React.FC<
 
   const filterTabs = ["All", "Pending", "Ongoing", "Completed", "Archived"];
 
-  const filteredApplications = MOCK_APPLICATIONS_LIST.filter((app) => {
+  const applicationsList = (remoteApps ?? []).map((app) => ({
+    id: app.id,
+    candidateName: `Candidate (${app.candidateId.slice(0, 8)})`,
+    trade: app.type,
+    assessmentType: app.type,
+    status:
+      app.status === "certified"
+        ? "Completed"
+        : app.status === "in_progress"
+        ? "Ongoing"
+        : app.status === "rejected" || app.status === "withdrawn"
+        ? "Archived"
+        : "Pending",
+    submittedAt: new Date(app.createdAt).toLocaleDateString("en-GB"),
+  }));
+
+  const filteredApplications = applicationsList.filter((app) => {
     const matchesTab =
       activeFilterTab === "All" || app.status === activeFilterTab;
     const matchesSearch =

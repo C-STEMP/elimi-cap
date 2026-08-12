@@ -3,9 +3,9 @@
 import React, { useState } from "react";
 import { FiSearch, FiList, FiGrid } from "react-icons/fi";
 import { Select } from "@/src/components/ui/select";
-import { MOCK_ASSESSORS } from "@/features/assessment-centre/utils/constants";
 import { AssessorItem } from "@/features/assessment-centre/types";
 import { StaffStatusModal, StaffStatusModalMode } from "../../Staff/components/StaffStatusModal";
+import { useGetRetainedRequests } from "@/src/features/shared/centre/hooks";
 
 interface AssessorsListViewProps {
   onSelectAssessor: (assessorId: string) => void;
@@ -14,14 +14,35 @@ interface AssessorsListViewProps {
 export const AssessorsListView: React.FC<AssessorsListViewProps> = ({
   onSelectAssessor,
 }) => {
+  const { data: retainedRequests = [], isLoading } = useGetRetainedRequests();
+
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
-  const [assessors, setAssessors] = useState(MOCK_ASSESSORS);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [isDeactivateModalOpen, setIsDeactivateModalOpen] = useState(false);
   const [deactivateModalMode, setDeactivateModalMode] =
     useState<StaffStatusModalMode>("confirm-deactivate");
+
+  const assessors: AssessorItem[] = retainedRequests.map((req) => ({
+    id: req.id,
+    name: req.assessorId ? `Assessor (${req.assessorId.slice(0, 8)})` : "Assessor",
+    email: req.assessorId ? `${req.assessorId.slice(0, 8)}@assessor.ng` : "assessor@ng.org",
+    trade: "Technical Trade",
+    role: "Assessor",
+    status:
+      req.status === "approved"
+        ? "Active"
+        : req.status === "pending"
+        ? "Pending"
+        : "Inactive",
+    assignedCount: 0,
+    experienceYears: 0,
+    tags: [],
+    assignedCandidatesCount: 0,
+    ongoingCount: 0,
+    completedCount: 0,
+  }));
 
   const filteredAssessors = assessors.filter((assessor) => {
     const matchesSearch =
@@ -51,15 +72,6 @@ export const AssessorsListView: React.FC<AssessorsListViewProps> = ({
     if (selectedIds.length === 0) return;
     setDeactivateModalMode("confirm-deactivate");
     setIsDeactivateModalOpen(true);
-  };
-
-  const handleConfirmDeactivate = () => {
-    setAssessors((prev) =>
-      prev.map((a) =>
-        selectedIds.includes(a.id) ? { ...a, status: "Inactive" as const } : a,
-      ),
-    );
-    setDeactivateModalMode("deactivated-success");
   };
 
   const handleCloseDeactivateModal = () => {
@@ -92,11 +104,17 @@ export const AssessorsListView: React.FC<AssessorsListViewProps> = ({
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="w-full bg-white rounded-3xl p-12 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#a31d38]" />
+      </div>
+    );
+  }
+
   return (
     <div className="w-full flex flex-col gap-6 select-text">
-      {/* Main Table Container */}
       <div className="bg-white rounded-3xl p-6 shadow-2xs border border-gray-100/80 flex flex-col gap-6">
-        {/* Controls Bar */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
           <div className="relative flex-1 max-w-sm">
             <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -166,8 +184,11 @@ export const AssessorsListView: React.FC<AssessorsListViewProps> = ({
           </div>
         </div>
 
-        {/* View Mode 1: Grid Card View */}
-        {viewMode === "grid" ? (
+        {filteredAssessors.length === 0 ? (
+          <div className="py-16 flex flex-col items-center justify-center text-center">
+            <p className="text-gray-400 font-normal">No assessors found.</p>
+          </div>
+        ) : viewMode === "grid" ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredAssessors.map((assessor) => {
               const isSelected = selectedIds.includes(assessor.id);
@@ -216,7 +237,6 @@ export const AssessorsListView: React.FC<AssessorsListViewProps> = ({
             })}
           </div>
         ) : (
-          /* View Mode 2: Table List View */
           <div className="w-full overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-175">
               <thead>
@@ -301,7 +321,9 @@ export const AssessorsListView: React.FC<AssessorsListViewProps> = ({
             : undefined
         }
         onClose={handleCloseDeactivateModal}
-        onConfirmDeactivate={handleConfirmDeactivate}
+        onConfirmDeactivate={() => {
+          setDeactivateModalMode("deactivated-success");
+        }}
       />
     </div>
   );

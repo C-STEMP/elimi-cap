@@ -16,7 +16,14 @@ import { ASSETS_URL } from "@/assets";
 import { LogoutModal } from "@/components/LogoutModal";
 import { NotificationDropdown } from "@/features/candidate/features/Dashboard/components/NotificationDropdown";
 import { AssessmentCentreTab } from "@/features/assessment-centre/types";
-import { MOCK_STATS } from "@/features/assessment-centre/utils/constants";
+import { useGetApplications } from "@/src/features/shared/applications/hooks";
+import {
+  useGetCentreStaff,
+  useGetRetainedRequests,
+  useGetCentreWallet,
+} from "@/src/features/shared/centre/hooks";
+import { useGetOnboarding } from "@/src/features/assessment-centre/features/Onboarding/hooks/useOnboarding";
+import { useAppSelector } from "@/src/store/hooks";
 
 interface HeaderProps {
   activeTab: AssessmentCentreTab;
@@ -31,12 +38,67 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
   activeTab,
   onSelectTab,
   onOpenNotifications,
-  title = "Welcome Back, Chidi",
+  title,
   showStats = true,
   children,
 }) => {
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
+
+  const { data: onboardingRecord } = useGetOnboarding();
+  const user = useAppSelector((state) => state.auth.user);
+
+  const centreData = onboardingRecord?.data as any;
+  const centreName =
+    centreData?.centre?.centreInformation?.name ||
+    centreData?.centreInformation?.name ||
+    centreData?.name ||
+    user?.fullName ||
+    "Assessment Centre";
+
+  const displayTitle = title || `Welcome Back, ${centreName}`;
+
+  const { data: applications = [] } = useGetApplications();
+  const { data: assessors = [] } = useGetRetainedRequests();
+  const { data: staff = [] } = useGetCentreStaff();
+  const { data: wallet } = useGetCentreWallet();
+
+  const formattedRevenue = wallet?.balance?.amountMinorUnits
+    ? `${wallet.balance.currency === "USD" ? "$" : "₦"}${(
+        Number(wallet.balance.amountMinorUnits) / 100
+      ).toLocaleString()}`
+    : "₦0";
+
+  const dynamicStats = [
+    {
+      id: "total-applications",
+      label: "Total Applications",
+      count: applications.length.toLocaleString(),
+      unit: "applications",
+      icon: "clipboard",
+    },
+    {
+      id: "total-assessors",
+      label: "Total Assessors",
+      count: assessors.length.toLocaleString(),
+      unit: "assessors",
+      icon: "flag",
+    },
+    {
+      id: "total-staffs",
+      label: "Total Staffs",
+      count: staff.length.toLocaleString(),
+      unit: "staffs",
+      icon: "user",
+    },
+    {
+      id: "total-revenue",
+      label: "Total Revenue",
+      count: formattedRevenue,
+      unit: "",
+      icon: "money",
+    },
+  ];
 
   const navItems: { id: AssessmentCentreTab; label: string }[] = [
     { id: "overview", label: "Overview" },
@@ -173,11 +235,11 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
       ) : showStats ? (
         <div className="flex flex-col gap-5 pt-2">
           <h1 className="text-2xl sm:text-3xl xl:text-[32px] font-extrabold tracking-tight text-white">
-            {title}
+            {displayTitle}
           </h1>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {MOCK_STATS.map((stat) => (
+            {dynamicStats.map((stat) => (
               <div
                 key={stat.id}
                 className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs"

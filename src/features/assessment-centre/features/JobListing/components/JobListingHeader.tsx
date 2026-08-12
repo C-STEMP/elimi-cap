@@ -10,6 +10,7 @@ import {
 import { Button } from "@/src/components/ui/button";
 import { JobListing, AssessorApplicant } from "@/features/assessment-centre/types";
 import { MOCK_JOB_LISTINGS, MOCK_ASSESSOR_APPLICANTS } from "@/features/assessment-centre/utils/constants";
+import { useGetJobPostings } from "@/src/features/shared/centre/hooks";
 
 interface JobListingHeaderProps {
   selectedJobId: string | null;
@@ -197,7 +198,7 @@ const JobDetailHeader: React.FC<JobDetailHeaderProps> = ({
             </span>
             <div className="flex items-baseline gap-1.5 mt-1">
               <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                1
+                0
               </span>
               <span className="text-xs font-normal text-white/70">
                 applicants
@@ -218,6 +219,13 @@ interface JobListHeaderProps {
 }
 
 const JobListHeader: React.FC<JobListHeaderProps> = ({ onPostRequest }) => {
+  const { data: jobListings = [] } = useGetJobPostings();
+
+  const totalJobs = jobListings.length;
+  const openJobs = jobListings.filter((j) => j.status === "open").length;
+  const filledJobs = jobListings.filter((j) => j.status === "closed").length;
+  const totalApplicants = 0;
+
   return (
     <div className="flex flex-col gap-6 pt-2">
       <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -244,7 +252,7 @@ const JobListHeader: React.FC<JobListHeaderProps> = ({ onPostRequest }) => {
             </span>
             <div className="flex items-baseline gap-1.5 mt-1">
               <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                12
+                {totalJobs}
               </span>
               <span className="text-xs font-normal text-white/70">
                 listings
@@ -263,7 +271,7 @@ const JobListHeader: React.FC<JobListHeaderProps> = ({ onPostRequest }) => {
             </span>
             <div className="flex items-baseline gap-1.5 mt-1">
               <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                8
+                {openJobs}
               </span>
               <span className="text-xs font-normal text-white/70">
                 listings
@@ -282,7 +290,7 @@ const JobListHeader: React.FC<JobListHeaderProps> = ({ onPostRequest }) => {
             </span>
             <div className="flex items-baseline gap-1.5 mt-1">
               <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                4
+                {filledJobs}
               </span>
               <span className="text-xs font-normal text-white/70">
                 listings
@@ -301,7 +309,7 @@ const JobListHeader: React.FC<JobListHeaderProps> = ({ onPostRequest }) => {
             </span>
             <div className="flex items-baseline gap-1.5 mt-1">
               <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                95
+                {totalApplicants}
               </span>
               <span className="text-xs font-normal text-white/70">
                 applicants

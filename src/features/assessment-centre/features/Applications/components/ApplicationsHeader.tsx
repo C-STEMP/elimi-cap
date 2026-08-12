@@ -2,6 +2,7 @@
 
 import React from "react";
 import { FiClipboard } from "react-icons/fi";
+import { useGetApplications } from "@/src/features/shared/applications/hooks";
 
 interface ApplicationsHeaderProps {
   selectedCandidateName: string | null;
@@ -24,6 +25,16 @@ export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = ({
   onBackFromEvidenceVault,
   onBackFromCandidateForm,
 }) => {
+  const { data: applications = [] } = useGetApplications();
+
+  const totalCount = applications.length;
+  const pendingCount = applications.filter((a) => a.status === "draft").length;
+  const ongoingCount = applications.filter((a) => a.status === "in_progress").length;
+  const completedCount = applications.filter((a) => a.status === "certified").length;
+  const archivedCount = applications.filter(
+    (a) => a.status === "rejected" || a.status === "withdrawn",
+  ).length;
+
   if (selectedCandidateName && showSelfAssessmentForm) {
     return (
       <div className="flex flex-col gap-1 pt-2">
@@ -173,7 +184,7 @@ export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = ({
           </span>
           <div className="flex items-baseline gap-1 mt-0.5">
             <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-              21,220
+              {totalCount.toLocaleString()}
             </span>
             <span className="text-xs text-white/80 font-normal">
               applications
@@ -187,7 +198,7 @@ export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = ({
           </span>
           <div className="flex items-baseline gap-1 mt-0.5">
             <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-              2,000
+              {pendingCount.toLocaleString()}
             </span>
             <span className="text-xs text-white/80 font-normal">
               applications
@@ -201,7 +212,7 @@ export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = ({
           </span>
           <div className="flex items-baseline gap-1 mt-0.5">
             <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-              1,220
+              {ongoingCount.toLocaleString()}
             </span>
             <span className="text-xs text-white/80 font-normal">
               applications
@@ -215,7 +226,7 @@ export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = ({
           </span>
           <div className="flex items-baseline gap-1 mt-0.5">
             <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-              17,500
+              {completedCount.toLocaleString()}
             </span>
             <span className="text-xs text-white/80 font-normal">
               applications
@@ -229,7 +240,7 @@ export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = ({
           </span>
           <div className="flex items-baseline gap-1 mt-0.5">
             <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-              500
+              {archivedCount.toLocaleString()}
             </span>
             <span className="text-xs text-white/80 font-normal">
               applications
