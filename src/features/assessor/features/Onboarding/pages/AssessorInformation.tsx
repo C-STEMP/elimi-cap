@@ -74,11 +74,11 @@ export const AssessorInformation: React.FC = () => {
   // Hydrate from API
   useEffect(() => {
     if (getOnboarding.data?.data) {
-      const d = (getOnboarding.data.data as any)?.assessorInformation || {};
+      const d = (getOnboarding.data.data as any)?.assessorDetails || {};
       setForm((prev) => {
         const next = {
-          assessorId: d.assessorId || prev.assessorId,
-          qualification: d.qualifications?.[0] || prev.qualification,
+          assessorId: d.assessorNo || prev.assessorId,
+          qualification: prev.qualification,
         };
         dispatch(setAssessorDetails(next));
         return next;
@@ -187,11 +187,12 @@ export const AssessorInformation: React.FC = () => {
     setIsSubmitting(true);
     saveOnboarding.mutate(
       {
-        assessorInformation: {
-          assessorId: form.assessorId,
-          qualifications: [form.qualification],
-          qaaCertificateAssetId: qaaFile?.assetId,
-          iqmCertificateAssetId: iqmFile?.assetId,
+        assessorDetails: {
+          assessorNo: form.assessorId,
+          certifications: {
+            ...(qaaFile ? { qaa: { certificateAssetId: qaaFile.assetId } } : {}),
+            ...(iqmFile ? { iqm: { certificateAssetId: iqmFile.assetId } } : {}),
+          },
         },
       },
       {

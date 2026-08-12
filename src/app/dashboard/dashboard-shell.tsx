@@ -21,7 +21,7 @@ export default function DashboardShell({
       ) : (
         <main
           suppressHydrationWarning
-          className="max-w-7xl xl:max-w-[1440px] mx-auto p-4 lg:p-6 w-full"
+          className="xl:max-w-360 mx-auto p-4 w-full"
         >
           {children}
         </main>

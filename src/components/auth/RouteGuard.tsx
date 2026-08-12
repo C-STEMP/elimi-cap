@@ -8,6 +8,8 @@ import {
   saveOnboardedStatus,
   getLastOnboardingRoute,
   saveLastOnboardingRoute,
+  getPersona,
+  savePersona,
 } from "@/src/lib/auth-storage";
 import { getOnboardingMineApi } from "@/src/features/shared/onboarding/api";
 
@@ -27,7 +29,9 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({ children }) => {
       const isAuth = isAuthenticated();
       const isOnboarded = getOnboardedStatus();
 
-      const isDashboardRoute = pathname?.startsWith("/dashboard");
+      const isDashboardRoute =
+        pathname?.startsWith("/dashboard") ||
+        pathname?.startsWith("/assessment-centre");
       const isOnboardingRoute =
         pathname?.startsWith("/onboarding") || pathname?.startsWith("/rpl");
       const isAuthRoute =
@@ -43,17 +47,21 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({ children }) => {
           return;
         }
 
-        if (!isOnboarded) {
+        let persona = getPersona();
+
+        if (!isOnboarded || !persona) {
           try {
             const record = await getOnboardingMineApi();
+            if (record?.persona) {
+              persona = record.persona;
+              savePersona(record.persona);
+            }
             if (record?.status === "completed") {
               saveOnboardedStatus(true);
-              if (isMounted) setChecking(false);
-              return;
             } else {
               saveOnboardedStatus(false);
               let targetRoute = getLastOnboardingRoute();
-              if (!targetRoute || targetRoute.startsWith("/dashboard")) {
+              if (!targetRoute || targetRoute.startsWith("/dashboard") || targetRoute.startsWith("/assessment-centre")) {
                 if (record?.persona === "candidate") {
                   targetRoute = "/onboarding/personal-info";
                 } else if (record?.persona === "centre") {
@@ -75,6 +83,11 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({ children }) => {
             return;
           }
         }
+
+        if (persona === "centre" && pathname?.startsWith("/dashboard")) {
+          if (isMounted) router.push("/assessment-centre");
+          return;
+        }
       }
 
       if (isOnboardingRoute) {
@@ -85,7 +98,12 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({ children }) => {
           pathname?.startsWith("/rpl");
 
         if (isAuth && isOnboarded && !isApplicationCreationRoute) {
-          if (isMounted) router.push("/dashboard");
+          const persona = getPersona();
+          if (persona === "centre") {
+            if (isMounted) router.push("/assessment-centre");
+          } else {
+            if (isMounted) router.push("/dashboard");
+          }
           return;
         }
         if (pathname) {
@@ -96,7 +114,12 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({ children }) => {
       if (isAuthRoute) {
         if (isAuth) {
           if (isOnboarded) {
-            if (isMounted) router.push("/dashboard");
+            const persona = getPersona();
+            if (persona === "centre") {
+              if (isMounted) router.push("/assessment-centre");
+            } else {
+              if (isMounted) router.push("/dashboard");
+            }
             return;
           } else {
             const lastRoute =

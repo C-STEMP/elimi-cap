@@ -12,9 +12,11 @@ export interface StoredUser {
 
 export function saveTokens(accessToken: string, refreshToken: string): void {
   if (typeof window === "undefined") return;
+  if (!accessToken || !refreshToken) return;
   localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
   localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
   document.cookie = `${ACCESS_TOKEN_KEY}=${encodeURIComponent(accessToken)}; path=/; max-age=604800; SameSite=Lax`;
+  document.cookie = `${REFRESH_TOKEN_KEY}=${encodeURIComponent(refreshToken)}; path=/; max-age=604800; SameSite=Lax`;
 }
 
 export function saveOnboardedStatus(isOnboarded: boolean): void {
@@ -63,12 +65,23 @@ export function getUser(): StoredUser | null {
   }
 }
 
+export function savePersona(persona: string): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem("elimi_persona", persona);
+}
+
+export function getPersona(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("elimi_persona");
+}
+
 export function clearTokens(): void {
   if (typeof window === "undefined") return;
   localStorage.removeItem(ACCESS_TOKEN_KEY);
   localStorage.removeItem(REFRESH_TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
   localStorage.removeItem("elimi_onboarded");
+  localStorage.removeItem("elimi_persona");
   sessionStorage.clear();
   document.cookie = `${ACCESS_TOKEN_KEY}=; path=/; max-age=0; SameSite=Lax`;
   document.cookie = `${REFRESH_TOKEN_KEY}=; path=/; max-age=0; SameSite=Lax`;

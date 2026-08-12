@@ -2,8 +2,8 @@ import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useGoogleLogin } from "@react-oauth/google";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { setCredentials, logout as logoutAction } from "@/store/slices/authSlice";
-import { saveTokens, clearTokens, saveOnboardedStatus } from "@/src/lib/auth-storage";
+import { setCredentials, setRole, logout as logoutAction } from "@/store/slices/authSlice";
+import { saveTokens, clearTokens, saveOnboardedStatus, savePersona } from "@/src/lib/auth-storage";
 import { getOnboardingMineApi } from "@/src/features/shared/onboarding/api";
 import { useToast } from "@/src/components/ui/toast";
 import { ApiError } from "@/src/lib/api/client";
@@ -196,15 +196,25 @@ export function useLogin() {
 
       try {
         const record = await getOnboardingMineApi();
+        if (record?.persona) {
+          savePersona(record.persona);
+          dispatch(setRole(record.persona));
+        }
         if (record?.status === "completed") {
           saveOnboardedStatus(true);
-          router.push("/dashboard");
+          if (record.persona === "centre") {
+            router.push("/assessment-centre");
+          } else {
+            router.push("/dashboard");
+          }
         } else {
           saveOnboardedStatus(false);
           if (record?.persona === "candidate") {
             router.push("/onboarding/personal-info");
           } else if (record?.persona === "centre") {
             router.push("/onboarding/assessment-centre/center-info");
+          } else if (record?.persona === "assessor") {
+            router.push("/onboarding/assessor/personal-info");
           } else {
             router.push("/onboarding/role-selection");
           }

@@ -3,6 +3,8 @@
 import React, { useState } from "react";
 import { useAppSelector } from "@/src/store/hooks";
 import { useGetAssessorCentres } from "../../Centres/hooks";
+import { useGetAssessorApplications } from "../../Applications/hooks";
+import type { Application } from "../../Applications/hooks";
 
 // Header & Overview components
 import {
@@ -39,9 +41,10 @@ import { AssessorSettingsView } from "../../Settings/components/AssessorSettings
 
 export const AssessorDashboard: React.FC = () => {
   const user = useAppSelector((state) => state.auth.user);
-  const userName = user?.fullName || user?.email?.split("@")[0] || "Chidi";
+  const userName = user?.fullName || user?.email?.split("@")[0] || "Assessor";
 
   const { data: centresData } = useGetAssessorCentres();
+  const { data: applicationsData = [] } = useGetAssessorApplications();
 
   const centres: AssessorCentreItem[] = (centresData ?? []).map((r) => ({
     id: r.id,
@@ -58,6 +61,15 @@ export const AssessorDashboard: React.FC = () => {
       ? new Date(r.respondedAt).toLocaleDateString("en-GB")
       : "-",
   }));
+
+  // Derive real stat counts from API data
+  const totalApplications = applicationsData.length;
+  const pendingApplications = applicationsData.filter(
+    (a) => a.status === "in_progress" || a.status === "draft",
+  ).length;
+  const completedApplications = applicationsData.filter(
+    (a) => a.status === "certified",
+  ).length;
 
   const [activeTab, setActiveTab] = useState<AssessorNavTab>("Overview");
 
@@ -91,21 +103,24 @@ export const AssessorDashboard: React.FC = () => {
           onBackFromApplication={() => setSelectedApplication(null)}
           onApplyToCentre={() => setIsApplyModalOpen(true)}
           totalCentresCount={centres.length}
+          totalApplicationsCount={totalApplications}
+          pendingApplicationsCount={pendingApplications}
+          completedApplicationsCount={completedApplications}
         />
 
         {/* Tab Main Content */}
         {activeTab === "Overview" ? (
           <AssessorOverviewView
             onViewAllApplications={() => handleTabChange("Applications")}
-            onSelectApplication={(app) => {
+            onSelectApplication={(app: Application) => {
               setActiveTab("Applications");
               setSelectedApplication({
                 id: app.id,
-                candidateName: app.candidateName,
-                trade: app.trade,
-                assessmentType: app.assessmentType,
-                status: "Pending",
-                submittedAt: app.assignedAt,
+                candidateName: app.candidateId,
+                trade: app.type,
+                assessmentType: app.type,
+                status: app.status === "certified" ? "Completed" : "Pending",
+                submittedAt: app.createdAt,
               });
             }}
             onApplyToCentre={() => setIsApplyModalOpen(true)}

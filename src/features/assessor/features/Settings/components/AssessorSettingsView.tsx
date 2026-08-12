@@ -19,6 +19,8 @@ import { useToast } from "@/src/components/ui/toast";
 import { DeleteAccountModal } from "./DeleteAccountModal";
 import { ASSETS_URL } from "@/assets";
 import { useGetAssessorSectors, useUpdateAssessorSectors } from "../hooks";
+import { useAssessorOnboarding } from "@/src/features/assessor/features/Onboarding/hooks/useOnboarding";
+import { useCountryStateCity } from "@/src/lib/hooks/useCountryStateCity";
 
 export type AssessorSettingsSubTab =
   | "profile"
@@ -29,6 +31,7 @@ export type AssessorSettingsSubTab =
 export const AssessorSettingsView: React.FC = () => {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { getOnboarding, saveOnboarding } = useAssessorOnboarding();
 
   const [activeSubTab, setActiveSubTab] =
     useState<AssessorSettingsSubTab>("profile");
@@ -38,19 +41,21 @@ export const AssessorSettingsView: React.FC = () => {
   );
   const [isVerified, setIsVerified] = useState(true);
 
-  // Profile Information State matching Image 5
-  const [firstName, setFirstName] = useState("Chidi");
-  const [lastName, setLastName] = useState("Umeh");
-  const [middleName, setMiddleName] = useState("Isaac");
+  // Profile Information State
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [middleName, setMiddleName] = useState("");
   const [dob, setDob] = useState("");
   const [gender, setGender] = useState("");
   const [nationality, setNationality] = useState("");
-  const [emailAddress, setEmailAddress] = useState("Joshua.Promes@gmail.com");
-  const [phoneNumber, setPhoneNumber] = useState("0000000000");
-  const [country, setCountry] = useState("");
+  const [emailAddress, setEmailAddress] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [country, setCountry] = useState("Nigeria");
   const [stateOfResidence, setStateOfResidence] = useState("");
   const [lga, setLga] = useState("");
   const [streetAddress, setStreetAddress] = useState("");
+
+  const { countries, states, cities } = useCountryStateCity(country, stateOfResidence);
 
   const [availabilityToggle, setAvailabilityToggle] = useState(true);
   const [emailNotificationsToggle, setEmailNotificationsToggle] = useState(true);
@@ -63,7 +68,7 @@ export const AssessorSettingsView: React.FC = () => {
   const [assessorId, setAssessorId] = useState("");
   const [qualification, setQualification] = useState("");
 
-  // Security State matching Images 2, 3, 4
+  // Security State
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -71,6 +76,39 @@ export const AssessorSettingsView: React.FC = () => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isPasswordSuccessOpen, setIsPasswordSuccessOpen] = useState(false);
+
+  // ── Hydrate from API ───────────────────────────────────────────────────────
+  React.useEffect(() => {
+    if (getOnboarding.data?.data) {
+      const d = getOnboarding.data.data as any;
+
+      // Personal details
+      const pd = d?.personalDetails;
+      if (pd?.firstName) setFirstName(pd.firstName);
+      if (pd?.lastName) setLastName(pd.lastName);
+      if (pd?.middleName) setMiddleName(pd.middleName);
+      if (pd?.dob) setDob(pd.dob);
+      if (pd?.gender) setGender(pd.gender);
+      if (pd?.nationality) setNationality(pd.nationality);
+
+      // Contact information
+      const ci = d?.contactInformation;
+      if (ci?.emailAddress) setEmailAddress(ci.emailAddress);
+      if (ci?.phoneNumber?.number) setPhoneNumber(ci.phoneNumber.number);
+
+      // Residential address
+      const ra = d?.residentialAddress;
+      if (ra?.country) setCountry(ra.country);
+      if (ra?.state) setStateOfResidence(ra.state);
+      if (ra?.lga) setLga(ra.lga);
+      if (ra?.address) setStreetAddress(ra.address);
+
+      // Assessor details
+      const ad = d?.assessorDetails;
+      if (ad?.assessorNo) setAssessorId(ad.assessorNo);
+      if (ad?.sectorIds?.length) setSelectedSectorIds(ad.sectorIds);
+    }
+  }, [getOnboarding.data]);
 
   const handlePictureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -85,15 +123,30 @@ export const AssessorSettingsView: React.FC = () => {
   };
 
   const handleSaveProfile = () => {
-    toast({
-      type: "success",
-      title: "Profile Saved",
-      description: "Your profile information has been saved successfully.",
-    });
+    saveOnboarding.mutate(
+      {
+        personalDetails: { firstName, lastName, middleName, dob, gender, nationality },
+        contactInformation: { emailAddress, phoneNumber: { countryCode: "+234", number: phoneNumber } },
+        residentialAddress: { country, state: stateOfResidence, lga, address: streetAddress },
+      },
+      {
+        onSuccess: () =>
+          toast({ type: "success", title: "Profile Saved", description: "Your profile information has been updated." }),
+        onError: () =>
+          toast({ type: "error", title: "Save Failed", description: "Could not save profile. Please try again." }),
+      },
+    );
   };
 
   const handleSaveAssessorDetails = () => {
-    updateSectorsMutation.mutate(selectedSectorIds);
+    saveOnboarding.mutate(
+      { assessorDetails: { assessorNo: assessorId, sectorIds: selectedSectorIds } },
+      {
+        onSuccess: () => updateSectorsMutation.mutate(selectedSectorIds),
+        onError: () =>
+          toast({ type: "error", title: "Save Failed", description: "Could not save assessor details. Please try again." }),
+      },
+    );
   };
 
   const handleChangePassword = (e: React.FormEvent) => {
@@ -323,16 +376,16 @@ export const AssessorSettingsView: React.FC = () => {
                   <Select
                     label="Country*"
                     placeholder="Select"
-                    options={["Nigeria", "Ghana", "Kenya"]}
+                    options={countries}
                     value={country}
-                    onChange={(e) => setCountry(e.target.value)}
+                    onChange={(e) => { setCountry(e.target.value); setStateOfResidence(""); setLga(""); }}
                   />
                   <Select
                     label="State of Residence*"
                     placeholder="Select"
-                    options={["Lagos", "Abuja", "Kano"]}
+                    options={states}
                     value={stateOfResidence}
-                    onChange={(e) => setStateOfResidence(e.target.value)}
+                    onChange={(e) => { setStateOfResidence(e.target.value); setLga(""); }}
                   />
                 </div>
 
@@ -340,7 +393,7 @@ export const AssessorSettingsView: React.FC = () => {
                   <Select
                     label="Local Government Area (LGA)*"
                     placeholder="Select"
-                    options={["Ikeja", "Surulere", "Alimosho"]}
+                    options={cities}
                     value={lga}
                     onChange={(e) => setLga(e.target.value)}
                   />
