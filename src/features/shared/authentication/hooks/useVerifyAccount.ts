@@ -1,0 +1,1 @@
+export { useVerifyAccount } from "./useAuth";

@@ -33,21 +33,21 @@ export function middleware(request: NextRequest) {
     pathname.startsWith("/applications") ||
     pathname.startsWith("/evidence-vault");
 
-  if (!isAuthenticated && (isDashboardRoute || isOnboardingRoute)) {
-    const signinUrl = new URL("/signin", request.url);
-    signinUrl.searchParams.set("callbackUrl", pathname);
-    return NextResponse.redirect(signinUrl);
-  }
+  // if (!isAuthenticated && (isDashboardRoute || isOnboardingRoute)) {
+  //   const signinUrl = new URL("/signin", request.url);
+  //   signinUrl.searchParams.set("callbackUrl", pathname);
+  //   return NextResponse.redirect(signinUrl);
+  // }
 
-  if (isAuthenticated && isDashboardRoute && !isOnboarded) {
-    const onboardingUrl = new URL("/onboarding/role-selection", request.url);
-    return NextResponse.redirect(onboardingUrl);
-  }
+  // if (isAuthenticated && isDashboardRoute && !isOnboarded) {
+  //   const onboardingUrl = new URL("/onboarding/role-selection", request.url);
+  //   return NextResponse.redirect(onboardingUrl);
+  // }
 
-  if (isAuthenticated && isAuthRoute && isOnboarded) {
-    const dashboardUrl = new URL("/dashboard", request.url);
-    return NextResponse.redirect(dashboardUrl);
-  }
+  // if (isAuthenticated && isAuthRoute && isOnboarded) {
+  //   const dashboardUrl = new URL("/dashboard", request.url);
+  //   return NextResponse.redirect(dashboardUrl);
+  // }
 
   return NextResponse.next();
 }
