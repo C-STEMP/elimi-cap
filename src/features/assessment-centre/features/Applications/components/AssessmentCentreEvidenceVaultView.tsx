@@ -9,7 +9,7 @@ import {
   FiDownload,
   FiFileText,
 } from "react-icons/fi";
-import { ASSETS_URL } from "@/assets";
+import { userAvatar } from "@/assets";
 import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
 
@@ -337,7 +337,7 @@ export const AssessmentCentreEvidenceVaultView: React.FC<
             <div className="flex items-center gap-3 bg-[#F8F9FA] rounded-2xl p-3 border border-gray-100">
               <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 border border-gray-200">
                 <Image
-                  src={ASSETS_URL.userAvatar}
+                  src={userAvatar}
                   alt="Facilitator Avatar"
                   width={48}
                   height={48}

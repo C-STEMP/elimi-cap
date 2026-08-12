@@ -9,7 +9,7 @@ import { Button } from "@/src/components/ui/button";
 import { InfoIcon } from "@/src/components/ui/info-icon";
 import { StatusModal } from "@/components/status-modal";
 import { useToast } from "@/src/components/ui/toast";
-import { ASSETS_URL } from "@/assets";
+import { saveIcon } from "@/assets";
 
 interface Step4Props {
   onSubmit: () => void;
@@ -198,7 +198,7 @@ export const Step4Declaration: React.FC<Step4Props> = ({
             >
               <span>Save As Draft</span>
               <Image
-                src={ASSETS_URL.saveIcon}
+                src={saveIcon}
                 alt="Save icon"
                 width={20}
                 height={20}

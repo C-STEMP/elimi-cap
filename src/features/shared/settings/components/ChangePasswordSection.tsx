@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import { Input } from "@/src/components/ui/input";
-import { ASSETS_URL } from "@/assets";
+import { eyeClosedIcon, saveIcon } from "@/assets";
 import { PasswordRequirements } from "@/src/components/ui/password-requirements";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import { SecurityFormData } from "../types/settings.types";
@@ -81,7 +81,7 @@ export const ChangePasswordSection: React.FC<ChangePasswordSectionProps> = ({
                 <FiEye className="w-5 h-5 text-text-dark/70" />
               ) : (
                 <Image
-                  src={ASSETS_URL.eyeClosedIcon}
+                  src={eyeClosedIcon}
                   alt="Hide password"
                   width={20}
                   height={20}
@@ -111,7 +111,7 @@ export const ChangePasswordSection: React.FC<ChangePasswordSectionProps> = ({
                   <FiEye className="w-5 h-5 text-text-dark/70" />
                 ) : (
                   <Image
-                    src={ASSETS_URL.eyeClosedIcon}
+                    src={eyeClosedIcon}
                     alt="Hide password"
                     width={20}
                     height={20}
@@ -149,7 +149,7 @@ export const ChangePasswordSection: React.FC<ChangePasswordSectionProps> = ({
                 <FiEye className="w-5 h-5 text-text-dark/70" />
               ) : (
                 <Image
-                  src={ASSETS_URL.eyeClosedIcon}
+                  src={eyeClosedIcon}
                   alt="Hide password"
                   width={20}
                   height={20}
@@ -170,7 +170,7 @@ export const ChangePasswordSection: React.FC<ChangePasswordSectionProps> = ({
         >
           <span>{isPending ? "Saving..." : "Change Password"}</span>
           <Image
-            src={ASSETS_URL.saveIcon}
+            src={saveIcon}
             alt="Save"
             width={18}
             height={18}

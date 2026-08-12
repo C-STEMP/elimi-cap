@@ -5,7 +5,7 @@ import Image from "next/image";
 import { FiX, FiSlash, FiLock, FiUnlock } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/src/components/ui/button";
-import { ASSETS_URL } from "@/assets";
+import { activateStaffImg, deactivateStaffImg, successCheckmarkImg } from "@/assets";
 
 export type StaffStatusModalMode =
   | "confirm-deactivate"
@@ -61,7 +61,7 @@ export const StaffStatusModal: React.FC<StaffStatusModalProps> = ({
             <div className="w-full flex flex-col items-center">
               <div className="mt-2 mb-4 relative flex items-center justify-center">
                 <Image
-                  src={ASSETS_URL.deactivateStaffImg}
+                  src={deactivateStaffImg}
                   alt="Staff Deactivated Successfully"
                   width={160}
                   height={160}
@@ -93,7 +93,7 @@ export const StaffStatusModal: React.FC<StaffStatusModalProps> = ({
             <div className="w-full flex flex-col items-center">
               <div className="mt-2 mb-4 relative flex items-center justify-center">
                 <Image
-                  src={ASSETS_URL.successCheckmarkImg}
+                  src={successCheckmarkImg}
                   alt="Staff Deactivated Successfully"
                   width={160}
                   height={160}
@@ -129,7 +129,7 @@ export const StaffStatusModal: React.FC<StaffStatusModalProps> = ({
               {/* Padlock Illustration */}
               <div className="mt-2 mb-4 relative flex items-center justify-center">
                 <Image
-                  src={ASSETS_URL.activateStaffImg}
+                  src={activateStaffImg}
                   alt="Staff Activated Successfully"
                   width={160}
                   height={160}
@@ -164,7 +164,7 @@ export const StaffStatusModal: React.FC<StaffStatusModalProps> = ({
             <div className="w-full flex flex-col items-center">
               <div className="mt-2 mb-4 relative flex items-center justify-center">
                 <Image
-                  src={ASSETS_URL.successCheckmarkImg}
+                  src={successCheckmarkImg}
                   alt="Staff Activated Successfully"
                   width={160}
                   height={160}

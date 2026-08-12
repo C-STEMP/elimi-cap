@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import { FiX, FiEye } from "react-icons/fi";
-import { ASSETS_URL } from "@/assets";
+import { eyeClosedIcon, logoIcon2 } from "@/assets";
 import { Input } from "@/src/components/ui/input";
 
 interface DeleteAccountModalProps {
@@ -56,7 +56,7 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
         {/* Logo Icon from Assets */}
         <div className="flex justify-center mb-4">
           <Image
-            src={ASSETS_URL.logoIcon2}
+            src={logoIcon2}
             alt="ELIMI Logo"
             width={85}
             height={48}
@@ -103,7 +103,7 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
                   <FiEye className="w-5 h-5 text-text-dark/70" />
                 ) : (
                   <Image
-                    src={ASSETS_URL.eyeClosedIcon}
+                    src={eyeClosedIcon}
                     alt="Hide password"
                     width={20}
                     height={20}

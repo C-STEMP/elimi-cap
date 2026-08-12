@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import Image from "next/image";
 import {
   FiBell,
@@ -12,7 +12,7 @@ import {
 } from "react-icons/fi";
 import { BiSolidMessageRoundedDetail } from "react-icons/bi";
 import { Logo } from "@/src/components/ui/logo";
-import { ASSETS_URL } from "@/assets";
+import { faviconIcon } from "@/assets";
 import { LogoutModal } from "@/components/LogoutModal";
 import { NotificationDropdown } from "@/features/candidate/features/Dashboard/components/NotificationDropdown";
 import { AssessmentCentreTab } from "@/features/assessment-centre/types";
@@ -53,72 +53,83 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
   const user = useAppSelector((state) => state.auth.user);
   const effectiveRole = userRole || user?.role || "centre";
 
-  const centreData = onboardingRecord?.data as any;
-  const centreName =
-    centreData?.centre?.centreInformation?.name ||
-    centreData?.centreInformation?.name ||
-    centreData?.name ||
-    user?.fullName ||
-    "Assessment Centre";
+  const centreName = useMemo(() => {
+    const centreData = onboardingRecord?.data as any;
+    return (
+      centreData?.centre?.centreInformation?.name ||
+      centreData?.centreInformation?.name ||
+      centreData?.name ||
+      user?.fullName ||
+      "Assessment Centre"
+    );
+  }, [onboardingRecord?.data, user?.fullName]);
 
-  const displayTitle = title || `Welcome Back, ${centreName}`;
+  const displayTitle = useMemo(
+    () => title || `Welcome Back, ${centreName}`,
+    [title, centreName],
+  );
 
   const { data: applications = [] } = useGetApplications();
   const { data: assessors = [] } = useGetRetainedRequests();
   const { data: staff = [] } = useGetCentreStaff();
   const { data: wallet } = useGetCentreWallet();
 
-  const formattedRevenue = wallet?.balance?.amountMinorUnits
-    ? `${wallet.balance.currency === "USD" ? "$" : "₦"}${(
-        Number(wallet.balance.amountMinorUnits) / 100
-      ).toLocaleString()}`
-    : "₦0";
+  const formattedRevenue = useMemo(() => {
+    return wallet?.balance?.amountMinorUnits
+      ? `${wallet.balance.currency === "USD" ? "$" : "₦"}${(
+          Number(wallet.balance.amountMinorUnits) / 100
+        ).toLocaleString()}`
+      : "₦0";
+  }, [wallet?.balance?.amountMinorUnits, wallet?.balance?.currency]);
 
-  const dynamicStats = [
-    {
-      id: "total-applications",
-      label: "Total Applications",
-      count: applications.length.toLocaleString(),
-      unit: "applications",
-      icon: "clipboard",
-    },
-    {
-      id: "total-assessors",
-      label: "Total Assessors",
-      count: assessors.length.toLocaleString(),
-      unit: "assessors",
-      icon: "flag",
-    },
-    {
-      id: "total-staffs",
-      label: "Total Staffs",
-      count: staff.length.toLocaleString(),
-      unit: "staffs",
-      icon: "user",
-    },
-    {
-      id: "total-revenue",
-      label: "Total Revenue",
-      count: formattedRevenue,
-      unit: "",
-      icon: "money",
-    },
-  ];
+  const dynamicStats = useMemo(
+    () => [
+      {
+        id: "total-applications",
+        label: "Total Applications",
+        count: applications.length.toLocaleString(),
+        unit: "applications",
+        icon: "clipboard",
+      },
+      {
+        id: "total-assessors",
+        label: "Total Assessors",
+        count: assessors.length.toLocaleString(),
+        unit: "assessors",
+        icon: "flag",
+      },
+      {
+        id: "total-staffs",
+        label: "Total Staffs",
+        count: staff.length.toLocaleString(),
+        unit: "staffs",
+        icon: "user",
+      },
+      {
+        id: "total-revenue",
+        label: "Total Revenue",
+        count: formattedRevenue,
+        unit: "",
+        icon: "money",
+      },
+    ],
+    [applications.length, assessors.length, staff.length, formattedRevenue],
+  );
 
-  const permittedTabs = getPermittedTabs(effectiveRole);
-
-  const allNavItems: { id: AssessmentCentreTab; label: string }[] = [
-    { id: "overview", label: "Overview" },
-    { id: "staff", label: "Staff" },
-    { id: "applications", label: "Applications" },
-    { id: "job-listing", label: "Job Listing" },
-    { id: "assessor-request", label: "Assessor Request" },
-    { id: "assessors", label: "Assessors" },
-    { id: "payments", label: "Payments" },
-    { id: "settings", label: "Settings" },
-  ];
-
-  const navItems = allNavItems.filter((item) => permittedTabs.includes(item.id));
+  const navItems = useMemo(() => {
+    const permittedTabs = getPermittedTabs(effectiveRole);
+    const allNavItems: { id: AssessmentCentreTab; label: string }[] = [
+      { id: "overview", label: "Overview" },
+      { id: "staff", label: "Staff" },
+      { id: "applications", label: "Applications" },
+      { id: "job-listing", label: "Job Listing" },
+      { id: "assessor-request", label: "Assessor Request" },
+      { id: "assessors", label: "Assessors" },
+      { id: "payments", label: "Payments" },
+      { id: "settings", label: "Settings" },
+    ];
+    return allNavItems.filter((item) => permittedTabs.includes(item.id));
+  }, [effectiveRole]);
 
   const renderStatIcon = (iconName: string) => {
     switch (iconName) {
@@ -199,7 +210,7 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
 
           <div className="w-10 h-10 rounded-full overflow-hidden border border-white/30 bg-white flex items-center justify-center shrink-0 cursor-pointer">
             <Image
-              src={ASSETS_URL.faviconIcon}
+              src={faviconIcon}
               alt="CSTEMP Logo Badge"
               width={32}
               height={32}

@@ -4,7 +4,7 @@ import React from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/src/components/ui/button";
-import { ASSETS_URL } from "@/assets";
+import { successCheckmarkImg } from "@/assets";
 
 interface SuccessModalProps {
   isOpen: boolean;
@@ -28,7 +28,7 @@ export const SelfAssessmentSuccessModal: React.FC<SuccessModalProps> = ({
         >
           <div className="mt-2 mb-4 relative flex items-center justify-center">
             <Image
-              src={ASSETS_URL.successCheckmarkImg}
+              src={successCheckmarkImg}
               alt="Success Checkmark"
               width={160}
               height={160}

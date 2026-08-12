@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   isAuthenticated,
@@ -17,10 +17,35 @@ interface RouteGuardProps {
   children: React.ReactNode;
 }
 
+let onboardingCheckPromise: Promise<{ persona: string | null; isOnboarded: boolean }> | null = null;
+
+async function checkOnboardingOnce() {
+  if (onboardingCheckPromise) return onboardingCheckPromise;
+  
+  onboardingCheckPromise = (async () => {
+    try {
+      const record = await getOnboardingMineApi();
+      const persona = record?.persona || null;
+      const isOnboarded = record?.status === "completed";
+      
+      if (persona) savePersona(persona);
+      saveOnboardedStatus(isOnboarded);
+      
+      return { persona, isOnboarded };
+    } catch {
+      saveOnboardedStatus(false);
+      return { persona: null, isOnboarded: false };
+    }
+  })();
+  
+  return onboardingCheckPromise;
+}
+
 export const RouteGuard: React.FC<RouteGuardProps> = ({ children }) => {
   const pathname = usePathname();
   const router = useRouter();
   const [checking, setChecking] = useState(true);
+  const checkedRef = useRef(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -28,6 +53,7 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({ children }) => {
     async function checkAuthAndOnboarding() {
       const isAuth = isAuthenticated();
       const isOnboarded = getOnboardedStatus();
+      const persona = getPersona();
 
       const isDashboardRoute =
         pathname?.startsWith("/dashboard") ||
@@ -47,26 +73,26 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({ children }) => {
           return;
         }
 
-        let persona = getPersona();
-
         if (!isOnboarded || !persona) {
+          if (checkedRef.current) {
+            const fallbackRoute =
+              getLastOnboardingRoute() || "/onboarding/role-selection";
+            if (isMounted) router.push(fallbackRoute);
+            return;
+          }
+          
           try {
-            const record = await getOnboardingMineApi();
-            if (record?.persona) {
-              persona = record.persona;
-              savePersona(record.persona);
-            }
-            if (record?.status === "completed") {
-              saveOnboardedStatus(true);
-            } else {
-              saveOnboardedStatus(false);
+            const result = await checkOnboardingOnce();
+            checkedRef.current = true;
+            
+            if (!result.isOnboarded) {
               let targetRoute = getLastOnboardingRoute();
               if (!targetRoute || targetRoute.startsWith("/dashboard") || targetRoute.startsWith("/assessment-centre")) {
-                if (record?.persona === "candidate") {
+                if (result.persona === "candidate") {
                   targetRoute = "/onboarding/personal-info";
-                } else if (record?.persona === "centre") {
+                } else if (result.persona === "centre") {
                   targetRoute = "/onboarding/assessment-centre/center-info";
-                } else if (record?.persona === "assessor") {
+                } else if (result.persona === "assessor") {
                   targetRoute = "/onboarding/assessor/personal-info";
                 } else {
                   targetRoute = "/onboarding/role-selection";
@@ -76,7 +102,6 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({ children }) => {
               return;
             }
           } catch {
-            saveOnboardedStatus(false);
             const fallbackRoute =
               getLastOnboardingRoute() || "/onboarding/role-selection";
             if (isMounted) router.push(fallbackRoute);
@@ -84,7 +109,8 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({ children }) => {
           }
         }
 
-        if (persona === "centre" && pathname?.startsWith("/dashboard")) {
+        const currentPersona = persona || getPersona();
+        if (currentPersona === "centre" && pathname?.startsWith("/dashboard")) {
           if (isMounted) router.push("/assessment-centre");
           return;
         }
@@ -98,8 +124,8 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({ children }) => {
           pathname?.startsWith("/rpl");
 
         if (isAuth && isOnboarded && !isApplicationCreationRoute) {
-          const persona = getPersona();
-          if (persona === "centre") {
+          const currentPersona = persona || getPersona();
+          if (currentPersona === "centre") {
             if (isMounted) router.push("/assessment-centre");
           } else {
             if (isMounted) router.push("/dashboard");
@@ -114,8 +140,8 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({ children }) => {
       if (isAuthRoute) {
         if (isAuth) {
           if (isOnboarded) {
-            const persona = getPersona();
-            if (persona === "centre") {
+            const currentPersona = persona || getPersona();
+            if (currentPersona === "centre") {
               if (isMounted) router.push("/assessment-centre");
             } else {
               if (isMounted) router.push("/dashboard");

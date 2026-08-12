@@ -2,7 +2,7 @@
 
 import React from "react";
 import Image from "next/image";
-import { ASSETS_URL } from "@/assets";
+import { saveIcon } from "@/assets";
 import { ProfileFormData } from "../types/settings.types";
 import { PersonalDetailsSection } from "./PersonalDetailsSection";
 import { ContactInfoSection } from "./ContactInfoSection";
@@ -54,7 +54,7 @@ export const ProfileInfoTab: React.FC<ProfileInfoTabProps> = ({
         >
           <span>{isSaving ? "Saving..." : "Save"}</span>
           <Image
-            src={ASSETS_URL.saveIcon}
+            src={saveIcon}
             alt="Save"
             width={18}
             height={18}

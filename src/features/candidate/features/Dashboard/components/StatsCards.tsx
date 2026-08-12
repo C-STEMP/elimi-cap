@@ -2,7 +2,7 @@
 
 import React from "react";
 import Image from "next/image";
-import { ASSETS_URL } from "@/assets";
+import { fileGreenIcon, fileIcon } from "@/assets";
 
 interface StatsCardsProps {
   activeCount?: number;
@@ -30,7 +30,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
         </div>
         <div className="shrink-0">
           <Image
-            src={ASSETS_URL.fileIcon}
+            src={fileIcon}
             alt="Active applications"
             width={24}
             height={24}
@@ -55,7 +55,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
         </div>
         <div className="shrink-0">
           <Image
-            src={ASSETS_URL.fileGreenIcon}
+            src={fileGreenIcon}
             alt="Completed applications"
             width={24}
             height={24}

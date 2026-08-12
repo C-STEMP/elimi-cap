@@ -16,7 +16,7 @@ import { DatePicker } from "@/src/components/ui/date-picker";
 import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
 import { DeleteAccountModal } from "./DeleteAccountModal";
-import { ASSETS_URL } from "@/assets";
+import { cstempLogo, eyeClosedIcon } from "@/assets";
 import { useCountryStateCity } from "@/src/lib/hooks/useCountryStateCity";
 import { useOnboarding } from "@/features/assessment-centre/features/Onboarding/hooks";
 import {
@@ -373,7 +373,7 @@ export const SettingsView: React.FC = () => {
           <div className="flex items-center gap-3.5">
             <div className="relative w-29 h-29 flex items-center justify-center rounded-xl overflow-hidden shrink-0 bg-primary/10 shadow-xs">
               <Image
-                src={logoPreview || ASSETS_URL.cstempLogo}
+                src={logoPreview || cstempLogo}
                 alt="User Avatar"
                 fill
                 sizes="100px"
@@ -968,7 +968,7 @@ export const SettingsView: React.FC = () => {
                           <FiEye className="w-4 h-4 text-text-dark/70" />
                         ) : (
                           <Image
-                            src={ASSETS_URL.eyeClosedIcon}
+                            src={eyeClosedIcon}
                             alt="Hide password"
                             width={16}
                             height={16}
@@ -999,7 +999,7 @@ export const SettingsView: React.FC = () => {
                           <FiEye className="w-4 h-4 text-text-dark/70" />
                         ) : (
                           <Image
-                            src={ASSETS_URL.eyeClosedIcon}
+                            src={eyeClosedIcon}
                             alt="Hide password"
                             width={16}
                             height={16}
@@ -1030,7 +1030,7 @@ export const SettingsView: React.FC = () => {
                           <FiEye className="w-4 h-4 text-text-dark/70" />
                         ) : (
                           <Image
-                            src={ASSETS_URL.eyeClosedIcon}
+                            src={eyeClosedIcon}
                             alt="Hide password"
                             width={16}
                             height={16}

@@ -1,7 +1,7 @@
 import * as React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ASSETS_URL } from "@/assets";
+import { logoIcon2 } from "@/assets";
 
 interface LogoProps extends React.HTMLAttributes<HTMLDivElement> {
   theme?: "light" | "dark";
@@ -27,7 +27,7 @@ export const Logo: React.FC<LogoProps> = ({
       {...props}
     >
       <Image
-        src={ASSETS_URL.logoIcon2}
+        src={logoIcon2}
         alt="ELIMI Logo"
         width={width}
         height={computedHeight}

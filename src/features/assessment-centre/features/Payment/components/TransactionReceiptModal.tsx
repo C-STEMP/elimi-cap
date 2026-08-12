@@ -6,7 +6,7 @@ import { FiX } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/src/components/ui/button";
 import { PaymentTransaction } from "@/features/assessment-centre/types";
-import { ASSETS_URL } from "@/assets";
+import { logoIcon2 } from "@/assets";
 
 interface TransactionReceiptModalProps {
   isOpen: boolean;
@@ -46,7 +46,7 @@ export const TransactionReceiptModal: React.FC<
             <div className="bg-red-50/60 p-6 rounded-2xl w-full flex flex-col items-center justify-center gap-3 text-center border border-red-100/60">
               <div className="relative w-28 h-8">
                 <Image
-                  src={ASSETS_URL.logoIcon2}
+                  src={logoIcon2}
                   alt="Elimi Logo"
                   fill
                   className="object-cover"

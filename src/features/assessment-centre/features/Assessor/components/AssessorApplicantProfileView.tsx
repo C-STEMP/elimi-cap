@@ -6,7 +6,7 @@ import { FiChevronLeft, FiFileText, FiEye } from "react-icons/fi";
 import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
 import { MOCK_ASSESSOR_APPLICANTS } from "@/features/assessment-centre/utils/constants";
-import { ASSETS_URL } from "@/assets";
+import { userAvatar } from "@/assets";
 import {
   AssessorDecisionModal,
   AssessorDecisionModalMode,
@@ -90,7 +90,7 @@ export const AssessorApplicantProfileView: React.FC<
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden shrink-0 border border-gray-100 bg-gray-50 flex items-center justify-center">
             <Image
-              src={ASSETS_URL.userAvatar}
+              src={userAvatar}
               alt={applicant.name}
               width={80}
               height={80}

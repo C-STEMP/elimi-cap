@@ -7,7 +7,7 @@ import { FiArrowLeft, FiArrowRight, FiCheck, FiEdit2 } from "react-icons/fi";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { ASSETS_URL } from "@/assets";
+import { saveIcon } from "@/assets";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setSidebarVariant, setRplStep } from "@/store/slices/authSlice";
 import { useOnboarding } from "@/src/features/candidate/features/Onboarding/hooks";
@@ -331,7 +331,7 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
           >
             <span>Save As Draft</span>
             <Image
-              src={ASSETS_URL.saveIcon}
+              src={saveIcon}
               alt="Save icon"
               width={20}
               height={20}

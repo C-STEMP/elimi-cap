@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { ASSETS_URL } from "@/assets";
+import { downloadIcon2, userAvatar } from "@/assets";
 import {
   ApplicationFormState,
   Assessor,
@@ -11,7 +11,7 @@ import type { FacilitatorData } from "@/features/candidate/features/Dashboard/co
 
 export const MOCK_FACILITATOR: FacilitatorData = {
   name: "Ngozi Eze",
-  avatar: ASSETS_URL.userAvatar,
+  avatar: userAvatar,
   role: "Facilitator · Carpentry (Level 3)",
   tags: ["Carpentry", "RPL Coordinator"],
 };
@@ -82,7 +82,7 @@ export const MOCK_ASSESSORS: Assessor[] = [
   {
     id: "assessor-1",
     name: "Ngozi Eze",
-    avatar: ASSETS_URL.userAvatar,
+    avatar: userAvatar,
     role: "Panel Member",
     tags: ["Carpentry", "RPL Coordinator"],
     isHighlighted: false,
@@ -90,7 +90,7 @@ export const MOCK_ASSESSORS: Assessor[] = [
   {
     id: "assessor-2",
     name: "Ngozi Eze",
-    avatar: ASSETS_URL.userAvatar,
+    avatar: userAvatar,
     role: "Panel Member",
     tags: ["Carpentry", "RPL Coordinator"],
     isHighlighted: true,
@@ -98,7 +98,7 @@ export const MOCK_ASSESSORS: Assessor[] = [
   {
     id: "assessor-3",
     name: "Ngozi Eze",
-    avatar: ASSETS_URL.userAvatar,
+    avatar: userAvatar,
     role: "Panel Member",
     tags: ["Carpentry", "RPL Coordinator"],
     isHighlighted: false,
@@ -109,7 +109,7 @@ export const MOCK_ASSESSORS_LEAD: Assessor[] = [
   {
     id: "assessor-1",
     name: "Ngozi Eze",
-    avatar: ASSETS_URL.userAvatar,
+    avatar: userAvatar,
     role: "Lead Panelist",
     tags: ["Carpentry", "RPL Coordinator"],
     isHighlighted: false,
@@ -117,7 +117,7 @@ export const MOCK_ASSESSORS_LEAD: Assessor[] = [
   {
     id: "assessor-2",
     name: "Ngozi Eze",
-    avatar: ASSETS_URL.userAvatar,
+    avatar: userAvatar,
     role: "Lead Panelist",
     tags: ["Carpentry", "RPL Coordinator"],
     isHighlighted: false,
@@ -125,7 +125,7 @@ export const MOCK_ASSESSORS_LEAD: Assessor[] = [
   {
     id: "assessor-3",
     name: "Ngozi Eze",
-    avatar: ASSETS_URL.userAvatar,
+    avatar: userAvatar,
     role: "Lead Panelist",
     tags: ["Carpentry", "RPL Coordinator"],
     isHighlighted: false,
@@ -717,7 +717,7 @@ export const getStagesConfig = ({
       actionLeftIcon:
         paymentStatusObj.status === "Successful" ? (
           <Image
-            src={ASSETS_URL.downloadIcon2}
+            src={downloadIcon2}
             alt="Download Receipt"
             width={20}
             height={20}

@@ -72,7 +72,6 @@ export function HeroSection() {
                 className="object-cover transition-transform duration-300 group-hover:scale-105"
                 sizes="(max-width: 640px) 50vw, 25vw"
                 priority
-                loading="eager"
               />
             </div>
             <div className="flex flex-1 flex-col items-center justify-center rounded-xl lg:rounded-2xl bg-[#FBB040] px-2 py-1.5 md:px-3 md:py-2 text-center text-black shadow-lg select-none">
@@ -97,8 +96,6 @@ export function HeroSection() {
               fill
               className="object-cover transition-transform duration-300 group-hover:scale-105"
               sizes="(max-width: 640px) 50vw, 25vw"
-              priority
-              loading="eager"
             />
           </div>
 
@@ -123,8 +120,6 @@ export function HeroSection() {
                 fill
                 className="object-cover transition-transform duration-300 group-hover:scale-105"
                 sizes="(max-width: 640px) 50vw, 25vw"
-                priority
-                loading="eager"
               />
             </div>
           </div>
@@ -141,8 +136,6 @@ export function HeroSection() {
               fill
               className="object-cover transition-transform duration-300 group-hover:scale-105"
               sizes="(max-width: 640px) 50vw, 25vw"
-              priority
-              loading="eager"
             />
           </div>
         </div>

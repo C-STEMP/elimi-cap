@@ -10,7 +10,7 @@ import { FiArrowLeft, FiArrowRight, FiCheck } from "react-icons/fi";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { ASSETS_URL } from "@/assets";
+import { saveIcon } from "@/assets";
 import { StatusModal } from "@/components/status-modal";
 import { InfoIcon } from "@/src/components/ui/info-icon";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
@@ -686,7 +686,7 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
             >
               <span>Save As Draft</span>
               <Image
-                src={ASSETS_URL.saveIcon}
+                src={saveIcon}
                 alt="Save icon"
                 width={20}
                 height={20}

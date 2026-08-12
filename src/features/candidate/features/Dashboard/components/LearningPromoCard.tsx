@@ -3,7 +3,7 @@
 import React from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ASSETS_URL } from "@/assets";
+import { learningBooks } from "@/assets";
 
 export const LearningPromoCard: React.FC = () => {
   const router = useRouter();
@@ -35,7 +35,7 @@ export const LearningPromoCard: React.FC = () => {
 
       <div className="relative w-36 h-36 lg:w-44 lg:h-44 shrink-0 flex items-center justify-center self-center">
         <Image
-          src={ASSETS_URL.learningBooks}
+          src={learningBooks}
           alt="3D Learning Books and Mortarboard Cap"
           fill
           sizes="(max-width: 1024px) 144px, 176px"

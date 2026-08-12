@@ -17,7 +17,7 @@ import { DatePicker } from "@/src/components/ui/date-picker";
 import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
 import { DeleteAccountModal } from "./DeleteAccountModal";
-import { ASSETS_URL } from "@/assets";
+import { eyeClosedIcon, userAvatar } from "@/assets";
 import { useGetAssessorSectors, useUpdateAssessorSectors } from "../hooks";
 import { useAssessorOnboarding } from "@/src/features/assessor/features/Onboarding/hooks/useOnboarding";
 import { useCountryStateCity } from "@/src/lib/hooks/useCountryStateCity";
@@ -178,7 +178,7 @@ export const AssessorSettingsView: React.FC = () => {
           <div className="flex items-center gap-3.5">
             <div className="relative w-24 h-24 flex items-center justify-center rounded-2xl overflow-hidden shrink-0 bg-gray-100 border border-gray-200">
               <Image
-                src={profileImagePreview || ASSETS_URL.userAvatar}
+                src={profileImagePreview || userAvatar}
                 alt="User Avatar"
                 fill
                 sizes="96px"
@@ -748,7 +748,7 @@ export const AssessorSettingsView: React.FC = () => {
                           <FiEye className="w-4 h-4 text-text-dark/70" />
                         ) : (
                           <Image
-                            src={ASSETS_URL.eyeClosedIcon}
+                            src={eyeClosedIcon}
                             alt="Hide password"
                             width={16}
                             height={16}
@@ -780,7 +780,7 @@ export const AssessorSettingsView: React.FC = () => {
                           <FiEye className="w-4 h-4 text-text-dark/70" />
                         ) : (
                           <Image
-                            src={ASSETS_URL.eyeClosedIcon}
+                            src={eyeClosedIcon}
                             alt="Hide password"
                             width={16}
                             height={16}
@@ -812,7 +812,7 @@ export const AssessorSettingsView: React.FC = () => {
                           <FiEye className="w-4 h-4 text-text-dark/70" />
                         ) : (
                           <Image
-                            src={ASSETS_URL.eyeClosedIcon}
+                            src={eyeClosedIcon}
                             alt="Hide password"
                             width={16}
                             height={16}

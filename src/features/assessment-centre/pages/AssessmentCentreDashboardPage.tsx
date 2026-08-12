@@ -1,19 +1,43 @@
 "use client";
 
 import React, { useState } from "react";
+import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 
 // Dashboard feature
 import { AssessmentCentreHeader } from "../features/Dashboard/components/AssessmentCentreHeader";
 import { AssessmentCentreEmptyView } from "../features/Dashboard/components/AssessmentCentreEmptyView";
-import { RevenueChart } from "../features/Dashboard/components/RevenueChart";
-import { TradeChart } from "../features/Dashboard/components/TradeChart";
-import { GenderChart } from "../features/Dashboard/components/GenderChart";
 import { StaffActivityLogCard } from "../features/Dashboard/components/StaffActivityLogCard";
 import { MessagesView } from "../features/Dashboard/components/MessagesView";
-import { NotificationDrawer } from "../features/Dashboard/components/NotificationDrawer";
-import { BroadcastModal } from "../features/Dashboard/components/BroadcastModal";
 import { MessagesHeader } from "../features/Dashboard/components/MessagesHeader";
+
+// Dynamic imports for heavy components (charts use recharts - 9.3MB)
+const RevenueChart = dynamic(
+  () => import("../features/Dashboard/components/RevenueChart").then((mod) => mod.RevenueChart),
+  { ssr: false, loading: () => <div className="h-64 bg-gray-100 animate-pulse rounded-xl" /> }
+);
+
+const TradeChart = dynamic(
+  () => import("../features/Dashboard/components/TradeChart").then((mod) => mod.TradeChart),
+  { ssr: false, loading: () => <div className="h-64 bg-gray-100 animate-pulse rounded-xl" /> }
+);
+
+const GenderChart = dynamic(
+  () => import("../features/Dashboard/components/GenderChart").then((mod) => mod.GenderChart),
+  { ssr: false, loading: () => <div className="h-64 bg-gray-100 animate-pulse rounded-xl" /> }
+);
+
+// Dynamic imports for modals (only shown on user action)
+const NotificationDrawer = dynamic(
+  () => import("../features/Dashboard/components/NotificationDrawer").then((mod) => mod.NotificationDrawer),
+  { ssr: false }
+);
+
+const BroadcastModal = dynamic(
+  () => import("../features/Dashboard/components/BroadcastModal").then((mod) => mod.BroadcastModal),
+  { ssr: false }
+);
+
 // Applications feature
 import { AssessmentStageCard } from "../features/Applications/components/AssessmentStageCard";
 import { PendingApplicationsTable } from "../features/Applications/components/PendingApplicationsTable";
@@ -26,14 +50,30 @@ import { ApplicationsHeader } from "../features/Applications/components/Applicat
 // Staff feature
 import { StaffListView } from "../features/Staff/components/StaffListView";
 import { StaffDetailView } from "../features/Staff/components/StaffDetailView";
-import { AddStaffModal } from "../features/Staff/components/AddStaffModal";
-import { StaffStatusModal, StaffStatusModalMode } from "../features/Staff/components/StaffStatusModal";
 import { StaffHeader } from "../features/Staff/components/StaffHeader";
+
+const AddStaffModal = dynamic(
+  () => import("../features/Staff/components/AddStaffModal").then((mod) => mod.AddStaffModal),
+  { ssr: false }
+);
+
+const StaffStatusModal = dynamic(
+  () => import("../features/Staff/components/StaffStatusModal").then((mod) => mod.StaffStatusModal),
+  { ssr: false }
+);
+
+import type { StaffStatusModalMode } from "../features/Staff/components/StaffStatusModal";
+
 // JobListing feature
 import { JobListingsView } from "../features/JobListing/components/JobListingsView";
 import { JobListingDetailView } from "../features/JobListing/components/JobListingDetailView";
-import { PostJobModal } from "../features/JobListing/components/PostJobModal";
 import { JobListingHeader } from "../features/JobListing/components/JobListingHeader";
+
+const PostJobModal = dynamic(
+  () => import("../features/JobListing/components/PostJobModal").then((mod) => mod.PostJobModal),
+  { ssr: false }
+);
+
 // Assessor feature
 import { AssessorsListView } from "../features/Assessor/components/AssessorsListView";
 import { AssessorProfileDetailView } from "../features/Assessor/components/AssessorProfileDetailView";
@@ -44,9 +84,18 @@ import { AssessorRequestListView } from "../features/AssessorRequest/components/
 import { AssessorRequestHeader } from "../features/AssessorRequest/components/AssessorRequestHeader";
 // Payment feature
 import { PaymentsView } from "../features/Payment/components/PaymentsView";
-import { WithdrawModal } from "../features/Payment/components/WithdrawModal";
-import { TransactionReceiptModal } from "../features/Payment/components/TransactionReceiptModal";
 import { PaymentsHeader } from "../features/Payment/components/PaymentsHeader";
+
+const WithdrawModal = dynamic(
+  () => import("../features/Payment/components/WithdrawModal").then((mod) => mod.WithdrawModal),
+  { ssr: false }
+);
+
+const TransactionReceiptModal = dynamic(
+  () => import("../features/Payment/components/TransactionReceiptModal").then((mod) => mod.TransactionReceiptModal),
+  { ssr: false }
+);
+
 // Settings feature
 import { SettingsView } from "../features/Settings/components/SettingsView";
 import { SettingsHeader } from "../features/Settings/components/SettingsHeader";

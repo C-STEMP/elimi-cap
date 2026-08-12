@@ -17,13 +17,13 @@ export const ReduxProvider: React.FC<{ children: React.ReactNode }> = ({
 
   return (
     <Provider store={store}>
-      <QueryClientProvider client={client}>
-        <GoogleOAuthProvider clientId={googleClientId}>
-          <PersistGate loading={null} persistor={persistor}>
+      <PersistGate loading={null} persistor={persistor}>
+        <QueryClientProvider client={client}>
+          <GoogleOAuthProvider clientId={googleClientId}>
             {children}
-          </PersistGate>
-        </GoogleOAuthProvider>
-      </QueryClientProvider>
+          </GoogleOAuthProvider>
+        </QueryClientProvider>
+      </PersistGate>
     </Provider>
   );
 };

@@ -4,7 +4,7 @@ import React from "react";
 import { useToast } from "@/src/components/ui/toast";
 import { RESOURCES_LIST, ResourceRecord } from "../utils/evidenceConstants";
 import Image from "next/image";
-import { ASSETS_URL } from "@/assets";
+import { downloadIcon, pdfImg } from "@/assets";
 
 export const ResourcesSection: React.FC = () => {
   const { toast } = useToast();
@@ -23,7 +23,7 @@ export const ResourcesSection: React.FC = () => {
             <div className="flex items-center gap-3.5">
               <div className="w-10 sm:w-15 h-10 sm:h-14 bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">
                 <Image
-                  src={ASSETS_URL.pdfImg}
+                  src={pdfImg}
                   width={20}
                   height={20}
                   className=""
@@ -53,7 +53,7 @@ export const ResourcesSection: React.FC = () => {
               aria-label={`Download ${res.name}`}
             >
               <Image
-                src={ASSETS_URL.downloadIcon}
+                src={downloadIcon}
                 width={20}
                 height={20}
                 className=""

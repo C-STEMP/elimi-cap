@@ -8,7 +8,7 @@ import { Input } from "@/src/components/ui/input";
 import { Select } from "@/src/components/ui/select";
 import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
-import { ASSETS_URL } from "@/assets";
+import { successCheckmarkImg } from "@/assets";
 
 import { useAddStaff } from "@/features/assessment-centre/features/Staff/hooks";
 
@@ -162,7 +162,7 @@ export const AddStaffModal: React.FC<AddStaffModalProps> = ({
             <div className="w-full flex flex-col items-center text-center">
               <div className="mt-2 mb-4 relative flex items-center justify-center">
                 <Image
-                  src={ASSETS_URL.successCheckmarkImg}
+                  src={successCheckmarkImg}
                   alt="Staff Added Successfully"
                   width={160}
                   height={160}

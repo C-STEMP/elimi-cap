@@ -14,7 +14,7 @@ import { PhoneInput } from "@/src/components/ui/phone-input";
 import { InfoIcon } from "@/src/components/ui/info-icon";
 import { StatusModal } from "@/components/status-modal";
 import { useToast } from "@/src/components/ui/toast";
-import { ASSETS_URL } from "@/assets";
+import { saveIcon } from "@/assets";
 import {
   selfAssessmentStep1Schema,
   extractZodErrors,
@@ -297,7 +297,7 @@ export const Step1PersonalInfo: React.FC<Step1Props> = ({ onNext, onBack }) => {
             >
               <span>Save As Draft</span>
               <Image
-                src={ASSETS_URL.saveIcon}
+                src={saveIcon}
                 alt="Save icon"
                 width={20}
                 height={20}
