@@ -3,6 +3,7 @@
 import React from "react";
 import { FiDollarSign } from "react-icons/fi";
 import { Button } from "@/src/components/ui/button";
+import { useGetCentreWallet } from "@/src/features/shared/centre/hooks";
 
 interface PaymentsHeaderProps {
   onWithdrawFunds: () => void;
@@ -11,6 +12,14 @@ interface PaymentsHeaderProps {
 export const PaymentsHeader: React.FC<PaymentsHeaderProps> = ({
   onWithdrawFunds,
 }) => {
+  const { data: wallet } = useGetCentreWallet();
+
+  const formattedRevenue = wallet?.balance?.amountMinorUnits
+    ? `${wallet.balance.currency === "USD" ? "$" : "₦"}${(
+        Number(wallet.balance.amountMinorUnits) / 100
+      ).toLocaleString()}`
+    : "₦0";
+
   return (
     <div className="flex flex-col gap-6 pt-2">
       <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -38,7 +47,7 @@ export const PaymentsHeader: React.FC<PaymentsHeaderProps> = ({
             </span>
             <div className="flex items-baseline gap-1.5 mt-1">
               <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                ₦3,125,000
+                {formattedRevenue}
               </span>
             </div>
           </div>
@@ -54,7 +63,7 @@ export const PaymentsHeader: React.FC<PaymentsHeaderProps> = ({
             </span>
             <div className="flex items-baseline gap-1.5 mt-1">
               <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                50
+                0
               </span>
               <span className="text-xs font-normal text-white/70">
                 transactions
@@ -73,7 +82,7 @@ export const PaymentsHeader: React.FC<PaymentsHeaderProps> = ({
             </span>
             <div className="flex items-baseline gap-1.5 mt-1">
               <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                6
+                0
               </span>
               <span className="text-xs font-normal text-white/70">
                 transactions

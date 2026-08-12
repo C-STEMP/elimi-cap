@@ -3,7 +3,6 @@
 import React, { useState } from "react";
 import { FiSearch, FiList, FiGrid } from "react-icons/fi";
 import { Select } from "@/src/components/ui/select";
-import { MOCK_PAYMENT_TRANSACTIONS } from "@/features/assessment-centre/utils/constants";
 import { PaymentTransaction } from "@/features/assessment-centre/types";
 
 interface PaymentsViewProps {
@@ -15,9 +14,7 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
   onWithdrawFunds,
   onSelectReceipt,
 }) => {
-  const [transactions, setTransactions] = useState<PaymentTransaction[]>(
-    MOCK_PAYMENT_TRANSACTIONS,
-  );
+  const [transactions, setTransactions] = useState<PaymentTransaction[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
@@ -64,29 +61,28 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
               ]}
             />
 
-            {/* List / Grid Toggle Buttons */}
             <div className="flex items-center gap-1.5">
               <button
                 type="button"
                 onClick={() => setViewMode("list")}
+                aria-label="List View"
                 className={`w-9 h-9 rounded-full flex items-center justify-center transition-all cursor-pointer ${
                   viewMode === "list"
                     ? "bg-[#FCE8EC] text-[#a31d38] shadow-2xs"
                     : "bg-[#EAEBED] text-gray-700 hover:text-neutral-primary"
                 }`}
-                title="List View"
               >
                 <FiList className="w-4 h-4" />
               </button>
               <button
                 type="button"
                 onClick={() => setViewMode("grid")}
+                aria-label="Grid View"
                 className={`w-9 h-9 rounded-full flex items-center justify-center transition-all cursor-pointer ${
                   viewMode === "grid"
                     ? "bg-[#FCE8EC] text-[#a31d38] shadow-2xs"
                     : "bg-[#EAEBED] text-gray-700 hover:text-neutral-primary"
                 }`}
-                title="Grid View"
               >
                 <FiGrid className="w-4 h-4" />
               </button>
@@ -94,8 +90,11 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
           </div>
         </div>
 
-        {/* View Mode 1: Grid Card View */}
-        {viewMode === "grid" ? (
+        {filteredTransactions.length === 0 ? (
+          <div className="py-16 flex flex-col items-center justify-center text-center">
+            <p className="text-gray-400 font-normal">No transactions found.</p>
+          </div>
+        ) : viewMode === "grid" ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredTransactions.map((tx) => (
               <div
@@ -137,7 +136,6 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
             ))}
           </div>
         ) : (
-          /* View Mode 2: Table List View */
           <div className="w-full overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[700px]">
               <thead>
