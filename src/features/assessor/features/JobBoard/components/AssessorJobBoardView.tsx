@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import { FiSearch, FiList, FiGrid, FiBriefcase } from "react-icons/fi";
-import { ASSETS_URL } from "@/assets";
+import { faviconIcon } from "@/assets";
 import { Button } from "@/src/components/ui/button";
 import { Select } from "@/src/components/ui/select";
 import { ApplyJobModal } from "./ApplyJobModal";
@@ -180,7 +180,7 @@ export const AssessorJobBoardView: React.FC<AssessorJobBoardViewProps> = ({
               <div className="flex flex-col gap-3">
                 <div className="w-12 h-12 rounded-full overflow-hidden border border-gray-200 bg-white flex items-center justify-center">
                   <Image
-                    src={ASSETS_URL.faviconIcon}
+                    src={faviconIcon}
                     alt={job.company}
                     width={36}
                     height={36}

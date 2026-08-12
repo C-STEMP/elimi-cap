@@ -4,7 +4,7 @@ import React from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/src/components/ui/button";
-import { ASSETS_URL } from "@/assets";
+import { successCheckmarkImg, warningIcon } from "@/assets";
 
 export type AssessorRequestModalMode =
   | "confirm-accept"
@@ -48,7 +48,7 @@ export const AssessorRequestModal: React.FC<AssessorRequestModalProps> = ({
             <div className="w-full flex flex-col items-center">
               <div className="mt-2 mb-4 relative flex items-center justify-center">
                 <Image
-                  src={ASSETS_URL.warningIcon}
+                  src={warningIcon}
                   alt="Warning"
                   width={160}
                   height={160}
@@ -93,7 +93,7 @@ export const AssessorRequestModal: React.FC<AssessorRequestModalProps> = ({
             <div className="w-full flex flex-col items-center">
               <div className="mt-2 mb-4 relative flex items-center justify-center">
                 <Image
-                  src={ASSETS_URL.warningIcon}
+                  src={warningIcon}
                   alt="Warning"
                   width={160}
                   height={160}
@@ -138,7 +138,7 @@ export const AssessorRequestModal: React.FC<AssessorRequestModalProps> = ({
             <div className="w-full flex flex-col items-center">
               <div className="mt-2 mb-4 relative flex items-center justify-center">
                 <Image
-                  src={ASSETS_URL.successCheckmarkImg}
+                  src={successCheckmarkImg}
                   alt="Accepted Successfully"
                   width={160}
                   height={160}
@@ -173,7 +173,7 @@ export const AssessorRequestModal: React.FC<AssessorRequestModalProps> = ({
             <div className="w-full flex flex-col items-center">
               <div className="mt-2 mb-4 relative flex items-center justify-center">
                 <Image
-                  src={ASSETS_URL.successCheckmarkImg}
+                  src={successCheckmarkImg}
                   alt="Declined Successfully"
                   width={160}
                   height={160}

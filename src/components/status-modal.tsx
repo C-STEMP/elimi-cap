@@ -4,7 +4,7 @@ import React from "react";
 import Image from "next/image";
 import { Modal } from "antd";
 import { Button } from "./ui/button";
-import { ASSETS_URL } from "@/assets";
+import { loadingIcon, paymentCancelledIcon, paymentSuccessfulIcon, paymentUnsuccessfulIcon, progressSavedIcon, submitedIcon, successCheckmarkImg } from "@/assets";
 import { ErrorCircleIcon } from "./ui/svg-icons";
 
 export type StatusModalVariant =
@@ -68,7 +68,7 @@ export const StatusModal: React.FC<StatusModalProps> = ({
     if (variant === "save-draft-confirm" || variant === "draft-saved") {
       return (
         <Image
-          src={ASSETS_URL.progressSavedIcon}
+          src={progressSavedIcon}
           alt="Save Draft"
           width={180}
           height={180}
@@ -81,7 +81,7 @@ export const StatusModal: React.FC<StatusModalProps> = ({
     if (variant === "payment-successful") {
       return (
         <Image
-          src={ASSETS_URL.paymentSuccessfulIcon}
+          src={paymentSuccessfulIcon}
           alt="Payment Successful"
           width={180}
           height={180}
@@ -94,7 +94,7 @@ export const StatusModal: React.FC<StatusModalProps> = ({
     if (variant === "payment-cancelled") {
       return (
         <Image
-          src={ASSETS_URL.paymentCancelledIcon}
+          src={paymentCancelledIcon}
           alt="Payment Cancelled"
           width={180}
           height={180}
@@ -107,7 +107,7 @@ export const StatusModal: React.FC<StatusModalProps> = ({
     if (variant === "payment-unsuccessful") {
       return (
         <Image
-          src={ASSETS_URL.paymentUnsuccessfulIcon}
+          src={paymentUnsuccessfulIcon}
           alt="Payment Unsuccessful"
           width={180}
           height={180}
@@ -120,7 +120,7 @@ export const StatusModal: React.FC<StatusModalProps> = ({
     if (variant === "processing-payment") {
       return (
         <Image
-          src={ASSETS_URL.loadingIcon}
+          src={loadingIcon}
           alt="Processing Payment"
           width={80}
           height={80}
@@ -133,7 +133,7 @@ export const StatusModal: React.FC<StatusModalProps> = ({
     if (variant === "application-submitted") {
       return (
         <Image
-          src={ASSETS_URL.submitedIcon}
+          src={submitedIcon}
           alt="Application Submitted"
           width={180}
           height={180}
@@ -159,7 +159,7 @@ export const StatusModal: React.FC<StatusModalProps> = ({
     if (type === "success") {
       return (
         <Image
-          src={ASSETS_URL.successCheckmarkImg}
+          src={successCheckmarkImg}
           alt="Success Checkmark"
           width={180}
           height={180}

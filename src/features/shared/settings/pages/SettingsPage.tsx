@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { HeaderBanner } from "@/features/candidate/features/Dashboard/components/HeaderBanner";
-import { ASSETS_URL } from "@/assets";
+import { userAvatar } from "@/assets";
 import { useAppSelector } from "@/store/hooks";
 import { useToast } from "@/src/components/ui/toast";
 import {
@@ -16,9 +17,21 @@ import {
 import { SettingsSidebar } from "../components/SettingsSidebar";
 import { ProfileInfoTab } from "../components/ProfileInfoTab";
 import { SecurityTab } from "../components/SecurityTab";
-import { StatusModal } from "@/components/status-modal";
-import { DeleteAccountModal } from "../components/DeleteAccountModal";
-import { SuccessModal } from "../components/SuccessModal";
+
+const StatusModal = dynamic(
+  () => import("@/components/status-modal").then((mod) => mod.StatusModal),
+  { ssr: false }
+);
+
+const DeleteAccountModal = dynamic(
+  () => import("../components/DeleteAccountModal").then((mod) => mod.DeleteAccountModal),
+  { ssr: false }
+);
+
+const SuccessModal = dynamic(
+  () => import("../components/SuccessModal").then((mod) => mod.SuccessModal),
+  { ssr: false }
+);
 
 export const SettingsPage: React.FC = () => {
   const router = useRouter();
@@ -35,7 +48,7 @@ export const SettingsPage: React.FC = () => {
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  const [avatarSrc, setAvatarSrc] = useState<any>(ASSETS_URL.userAvatar);
+  const [avatarSrc, setAvatarSrc] = useState<any>(userAvatar);
 
   const [profileForm, setProfileForm] = useState<ProfileFormData>({
     firstName: firstName,

@@ -5,7 +5,7 @@ import Image from "next/image";
 import { Input as AntInput } from "antd";
 import type { InputProps as AntInputProps } from "antd";
 import { FiEye } from "react-icons/fi";
-import { ASSETS_URL } from "@/assets";
+import { eyeClosedIcon } from "@/assets";
 
 export interface InputProps extends Omit<
   React.InputHTMLAttributes<HTMLInputElement>,
@@ -144,7 +144,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
                 <FiEye className="w-5 h-5 text-text-dark/70" />
               ) : (
                 <Image
-                  src={ASSETS_URL.eyeClosedIcon}
+                  src={eyeClosedIcon}
                   alt="Hide password"
                   width={20}
                   height={20}

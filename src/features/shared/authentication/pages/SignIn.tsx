@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
-import { ASSETS_URL } from "@/assets";
 import { FcGoogle } from "react-icons/fc";
 import { useToast } from "@/src/components/ui/toast";
 import Link from "next/link";

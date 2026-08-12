@@ -5,7 +5,7 @@ import { FiFolder, FiEye, FiTrash2 } from "react-icons/fi";
 import { Button } from "@/src/components/ui/button";
 import { EvidenceRecord } from "../utils/evidenceConstants";
 import Image from "next/image";
-import { ASSETS_URL } from "@/assets";
+import { pdfImg } from "@/assets";
 
 interface EvidenceSectionProps {
   evidences: EvidenceRecord[];
@@ -36,7 +36,7 @@ export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
                 <div className="flex items-center gap-3.5">
                   <div className="w-10 sm:w-15 h-10 sm:h-14 bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">
                     <Image
-                      src={ASSETS_URL.pdfImg}
+                      src={pdfImg}
                       width={20}
                       height={20}
                       className=""

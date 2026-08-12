@@ -8,7 +8,7 @@ import { Input } from "@/src/components/ui/input";
 import { Button } from "@/src/components/ui/button";
 import { FloatingCircles } from "@/src/features/shared/authentication/components/FloatingCircles";
 import { FiArrowRight, FiCheck, FiX } from "react-icons/fi";
-import { ASSETS_URL } from "@/assets";
+import { errorSymbolIcon, loadingIcon, successCheckmarkImg } from "@/assets";
 
 import { validateNIN } from "@/src/lib/validation";
 import { useToast } from "@/src/components/ui/toast";
@@ -189,9 +189,9 @@ export const NinVerificationPage: React.FC = () => {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center flex flex-col items-center shadow-2xl relative animate-in zoom-in-95 duration-200">
             <div className="w-16 h-16 relative flex items-center justify-center my-2">
-              {ASSETS_URL.loadingIcon ? (
+              {loadingIcon ? (
                 <Image
-                  src={ASSETS_URL.loadingIcon}
+                  src={loadingIcon}
                   alt="Loading"
                   width={64}
                   height={64}
@@ -223,9 +223,9 @@ export const NinVerificationPage: React.FC = () => {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl p-8 max-w-md w-full text-center flex flex-col items-center shadow-2xl relative animate-in zoom-in-95 duration-200">
             <div className="relative w-24 h-24 mb-2 flex items-center justify-center">
-              {ASSETS_URL.successCheckmarkImg ? (
+              {successCheckmarkImg ? (
                 <Image
-                  src={ASSETS_URL.successCheckmarkImg}
+                  src={successCheckmarkImg}
                   alt="Success"
                   width={96}
                   height={96}
@@ -268,9 +268,9 @@ export const NinVerificationPage: React.FC = () => {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl p-6 lg:p-8 max-w-md w-full text-center flex flex-col items-center shadow-2xl relative animate-in zoom-in-95 duration-200">
             <div className="relative w-24 h-24 mb-2 flex items-center justify-center">
-              {ASSETS_URL.errorSymbolIcon ? (
+              {errorSymbolIcon ? (
                 <Image
-                  src={ASSETS_URL.errorSymbolIcon}
+                  src={errorSymbolIcon}
                   alt="Error"
                   width={96}
                   height={96}

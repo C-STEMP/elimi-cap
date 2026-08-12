@@ -6,7 +6,7 @@ import { FiX, FiEye } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/src/components/ui/toast";
 import { Input } from "@/src/components/ui/input";
-import { ASSETS_URL } from "@/assets";
+import { eyeClosedIcon, logoIcon2 } from "@/assets";
 
 interface DeleteAccountModalProps {
   isOpen: boolean;
@@ -72,7 +72,7 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
           {/* Top Elimi Logo */}
           <div className="flex justify-center mb-4">
             <Image
-              src={ASSETS_URL.logoIcon2}
+              src={logoIcon2}
               alt="ELIMI Logo"
               width={85}
               height={48}
@@ -115,7 +115,7 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
                     <FiEye className="w-5 h-5 text-text-dark/70" />
                   ) : (
                     <Image
-                      src={ASSETS_URL.eyeClosedIcon}
+                      src={eyeClosedIcon}
                       alt="Hide password"
                       width={20}
                       height={20}

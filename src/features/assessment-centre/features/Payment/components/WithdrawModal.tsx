@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Input } from "@/src/components/ui/input";
 import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
-import { ASSETS_URL } from "@/assets";
+import { successCheckmarkImg } from "@/assets";
 
 interface WithdrawModalProps {
   isOpen: boolean;
@@ -121,7 +121,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
             <div className="w-full flex flex-col items-center">
               <div className="mt-2 mb-4 relative flex items-center justify-center">
                 <Image
-                  src={ASSETS_URL.successCheckmarkImg}
+                  src={successCheckmarkImg}
                   alt="Withdrawal Request Successful"
                   width={160}
                   height={160}

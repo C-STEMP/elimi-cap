@@ -62,25 +62,25 @@ const NIGERIA_LGAS: Record<string, string[]> = {
  * Resolves both country ISO codes ("NG") and Country Names ("Nigeria").
  * Resolves both state ISO codes ("LA") and State Names ("Lagos").
  */
+// Module-level static cache to avoid parsing country data repeatedly
+const ALL_COUNTRIES_CACHE = Country.getAllCountries();
+const COUNTRY_OPTIONS_CACHE: CountryStateCityOption[] = ALL_COUNTRIES_CACHE.map((c) => ({
+  label: c.name,
+  value: c.name,
+}));
+
 export function useCountryStateCity(
   countryInput?: string,
   stateInput?: string,
 ) {
-  const countries = useMemo<CountryStateCityOption[]>(
-    () =>
-      Country.getAllCountries().map((c) => ({
-        label: c.name,
-        value: c.name,
-      })),
-    [],
-  );
+  const countries = COUNTRY_OPTIONS_CACHE;
 
   // Resolve Country ISO code from name or ISO
   const resolvedCountryCode = useMemo(() => {
     if (!countryInput) return "";
     const clean = countryInput.trim();
     if (clean.length === 2) return clean.toUpperCase();
-    const found = Country.getAllCountries().find(
+    const found = ALL_COUNTRIES_CACHE.find(
       (c) =>
         c.name.toLowerCase() === clean.toLowerCase() ||
         c.isoCode.toLowerCase() === clean.toLowerCase()

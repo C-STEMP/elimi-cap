@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
 import { useToast } from "@/src/components/ui/toast";
-import { ASSETS_URL } from "@/assets";
+import { eyeClosedIcon, googleIcon } from "@/assets";
 import { PasswordRequirements } from "@/src/components/ui/password-requirements";
 import { FiEye } from "react-icons/fi";
 import { FaApple } from "react-icons/fa";
@@ -142,7 +142,7 @@ export const SignUpEmail: React.FC = () => {
                   <FiEye className="w-5 h-5 text-text-dark/70" />
                 ) : (
                   <Image
-                    src={ASSETS_URL.eyeClosedIcon}
+                    src={eyeClosedIcon}
                     alt="Hide password"
                     width={20}
                     height={20}
@@ -194,7 +194,7 @@ export const SignUpEmail: React.FC = () => {
                   <FiEye className="w-5 h-5 text-text-dark/70" />
                 ) : (
                   <Image
-                    src={ASSETS_URL.eyeClosedIcon}
+                    src={eyeClosedIcon}
                     alt="Hide password"
                     width={20}
                     height={20}
@@ -243,7 +243,7 @@ export const SignUpEmail: React.FC = () => {
             disabled={isPending || isGooglePending}
             leftIcon={
               <Image
-                src={ASSETS_URL.googleIcon}
+                src={googleIcon}
                 alt="Google"
                 width={20}
                 height={20}

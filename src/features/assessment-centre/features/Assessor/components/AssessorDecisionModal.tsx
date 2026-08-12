@@ -5,7 +5,7 @@ import Image from "next/image";
 import { FiX } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/src/components/ui/button";
-import { ASSETS_URL } from "@/assets";
+import { rejectApplicantImg, shortlistApplicantImg, successCheckmarkImg } from "@/assets";
 
 export type AssessorDecisionModalMode =
   | "confirm-shortlist"
@@ -61,7 +61,7 @@ export const AssessorDecisionModal: React.FC<AssessorDecisionModalProps> = ({
             <div className="w-full flex flex-col items-center">
               <div className="mt-2 mb-4 relative flex items-center justify-center">
                 <Image
-                  src={ASSETS_URL.shortlistApplicantImg}
+                  src={shortlistApplicantImg}
                   alt="Shortlist Applicant"
                   width={160}
                   height={160}
@@ -96,7 +96,7 @@ export const AssessorDecisionModal: React.FC<AssessorDecisionModalProps> = ({
             <div className="w-full flex flex-col items-center">
               <div className="mt-2 mb-4 relative flex items-center justify-center">
                 <Image
-                  src={ASSETS_URL.successCheckmarkImg}
+                  src={successCheckmarkImg}
                   alt="Shortlisted Successfully"
                   width={160}
                   height={160}
@@ -131,7 +131,7 @@ export const AssessorDecisionModal: React.FC<AssessorDecisionModalProps> = ({
             <div className="w-full flex flex-col items-center">
               <div className="mt-2 mb-4 relative flex items-center justify-center">
                 <Image
-                  src={ASSETS_URL.rejectApplicantImg}
+                  src={rejectApplicantImg}
                   alt="Reject Applicant"
                   width={160}
                   height={160}
@@ -164,7 +164,7 @@ export const AssessorDecisionModal: React.FC<AssessorDecisionModalProps> = ({
             <div className="w-full flex flex-col items-center">
               <div className="mt-2 mb-4 relative flex items-center justify-center">
                 <Image
-                  src={ASSETS_URL.successCheckmarkImg}
+                  src={successCheckmarkImg}
                   alt="Rejected Successfully"
                   width={160}
                   height={160}

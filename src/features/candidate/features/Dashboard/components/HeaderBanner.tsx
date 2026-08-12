@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { FiPlus, FiBell, FiLogOut, FiChevronLeft } from "react-icons/fi";
-import { ASSETS_URL } from "@/assets";
+import { userAvatar } from "@/assets";
 import { Logo } from "@/src/components/ui/logo";
 import { Button } from "@/src/components/ui/button";
 import { LogoutModal } from "@/components/LogoutModal";
@@ -105,7 +105,7 @@ export const HeaderBanner: React.FC<HeaderBannerProps> = ({
             className="relative w-9 h-9 rounded-full overflow-hidden border-2 border-white/30 shrink-0 cursor-pointer hover:opacity-85 transition-opacity"
           >
             <Image
-              src={ASSETS_URL.userAvatar}
+              src={userAvatar}
               alt={userName}
               fill
               sizes="36px"

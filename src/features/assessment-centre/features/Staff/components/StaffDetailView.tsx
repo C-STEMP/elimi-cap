@@ -18,7 +18,7 @@ import {
 } from "@/features/assessment-centre/utils/constants";
 import { PendingApplication } from "@/features/assessment-centre/types";
 import { StaffStatusModal, StaffStatusModalMode } from "./StaffStatusModal";
-import { ASSETS_URL } from "@/assets";
+import { userAvatar } from "@/assets";
 
 interface StaffDetailViewProps {
   staffId: string;
@@ -117,7 +117,7 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden shrink-0 border border-gray-100 bg-gray-50 flex items-center justify-center">
             <Image
-              src={ASSETS_URL.userAvatar}
+              src={userAvatar}
               alt={staff.name}
               width={80}
               height={80}

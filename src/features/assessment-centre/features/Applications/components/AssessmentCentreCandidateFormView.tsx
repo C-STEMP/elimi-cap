@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import { FiCheck, FiDownload, FiPrinter } from "react-icons/fi";
-import { ASSETS_URL } from "@/assets";
+import { logoIcon2, successCheckmarkImg, validationWarningIcon } from "@/assets";
 import { Button } from "@/src/components/ui/button";
 import { PassportUpload } from "@/src/components/ui/passport-upload";
 
@@ -59,7 +59,7 @@ export const AssessmentCentreCandidateFormView: React.FC<
             <div className="flex flex-col items-center text-center gap-3 border-b border-gray-100 pb-6 relative">
               <div className="flex justify-center mb-1">
                 <Image
-                  src={ASSETS_URL.logoIcon2}
+                  src={logoIcon2}
                   alt="ELIMI Logo"
                   width={100}
                   height={40}
@@ -305,7 +305,7 @@ export const AssessmentCentreCandidateFormView: React.FC<
           <div className="bg-white rounded-3xl max-w-sm w-full p-8 shadow-2xl flex flex-col items-center text-center animate-in zoom-in-95 duration-200 select-text">
             <div className="w-24 h-24 mb-4 flex items-center justify-center">
               <Image
-                src={ASSETS_URL.successCheckmarkImg}
+                src={successCheckmarkImg}
                 alt="Success"
                 width={100}
                 height={100}
@@ -336,7 +336,7 @@ export const AssessmentCentreCandidateFormView: React.FC<
           <div className="bg-white rounded-3xl max-w-sm w-full p-8 shadow-2xl flex flex-col items-center text-center animate-in zoom-in-95 duration-200 select-text">
             <div className="w-24 h-24 mb-4 flex items-center justify-center">
               <Image
-                src={ASSETS_URL.validationWarningIcon}
+                src={validationWarningIcon}
                 alt="Warning"
                 width={100}
                 height={100}
@@ -381,7 +381,7 @@ export const AssessmentCentreCandidateFormView: React.FC<
           <div className="bg-white rounded-3xl max-w-sm w-full p-8 shadow-2xl flex flex-col items-center text-center animate-in zoom-in-95 duration-200 select-text">
             <div className="w-24 h-24 mb-4 flex items-center justify-center">
               <Image
-                src={ASSETS_URL.successCheckmarkImg}
+                src={successCheckmarkImg}
                 alt="Accepted"
                 width={100}
                 height={100}

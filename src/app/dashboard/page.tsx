@@ -1,11 +1,20 @@
 "use client";
 
 import React, { useEffect } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useAppSelector } from "@/src/store/hooks";
 import { getPersona } from "@/src/lib/auth-storage";
-import { Dashboard as CandidateDashboard } from "@/features/candidate/features/Dashboard/pages/Dashboard";
-import { AssessorDashboard } from "@/src/features/assessor/features/Dashboard/pages/AssessorDashboard";
+
+const CandidateDashboard = dynamic(
+  () => import("@/features/candidate/features/Dashboard/pages/Dashboard").then((mod) => mod.Dashboard),
+  { ssr: false }
+);
+
+const AssessorDashboard = dynamic(
+  () => import("@/src/features/assessor/features/Dashboard/pages/AssessorDashboard").then((mod) => mod.AssessorDashboard),
+  { ssr: false }
+);
 
 export default function DashboardPage() {
   const router = useRouter();

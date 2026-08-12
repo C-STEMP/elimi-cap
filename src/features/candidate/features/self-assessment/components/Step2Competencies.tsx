@@ -10,7 +10,7 @@ import { Select } from "@/src/components/ui/select";
 import { InfoIcon } from "@/src/components/ui/info-icon";
 import { StatusModal } from "@/components/status-modal";
 import { useToast } from "@/src/components/ui/toast";
-import { ASSETS_URL } from "@/assets";
+import { saveIcon } from "@/assets";
 import { MOCK_COMPETENCIES } from "../utils/constants";
 
 interface Step2Props {
@@ -224,7 +224,7 @@ export const Step2Competencies: React.FC<Step2Props> = ({ onNext, onBack }) => {
             >
               <span>Save As Draft</span>
               <Image
-                src={ASSETS_URL.saveIcon}
+                src={saveIcon}
                 alt="Save icon"
                 width={20}
                 height={20}

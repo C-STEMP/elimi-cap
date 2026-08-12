@@ -1,4 +1,4 @@
-import { ASSETS_URL } from "@/assets";
+import { faviconIcon, userAvatar } from "@/assets";
 import {
   PendingApplication,
   RevenueItem,
@@ -164,7 +164,7 @@ export const MOCK_CONTACTS: ChatContact[] = [
   {
     id: "c-1",
     name: "Oguntade Smason",
-    avatar: ASSETS_URL.userAvatar.src,
+    avatar: userAvatar.src,
     lastMessage: "Excellent progress, Samuel!! I'm looking...",
     unread: true,
     online: true,
@@ -172,7 +172,7 @@ export const MOCK_CONTACTS: ChatContact[] = [
   {
     id: "c-2",
     name: "CSTEMP Admin",
-    avatar: ASSETS_URL.faviconIcon.src,
+    avatar: faviconIcon.src,
     lastMessage: "We are currently working on you resch...",
     unread: true,
     isBroadcast: true,

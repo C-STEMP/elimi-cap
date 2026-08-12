@@ -3,7 +3,7 @@
 import React from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ASSETS_URL } from "@/assets";
+import { successCheckmarkImg } from "@/assets";
 import { FiCheck } from "react-icons/fi";
 
 interface SuccessModalProps {
@@ -36,9 +36,9 @@ export const SuccessModal: React.FC<SuccessModalProps> = ({
       >
         {/* Top 3D Green Checkmark Badge */}
         <div className="relative mb-6 flex items-center justify-center">
-          {ASSETS_URL.successCheckmarkImg ? (
+          {successCheckmarkImg ? (
             <Image
-              src={ASSETS_URL.successCheckmarkImg}
+              src={successCheckmarkImg}
               alt="Success"
               width={180}
               height={180}

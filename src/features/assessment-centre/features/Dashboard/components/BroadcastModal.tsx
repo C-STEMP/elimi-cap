@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Select } from "@/src/components/ui/select";
 import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
-import { ASSETS_URL } from "@/assets";
+import { successCheckmarkImg } from "@/assets";
 
 interface BroadcastModalProps {
   isOpen: boolean;
@@ -141,7 +141,7 @@ export const BroadcastModal: React.FC<BroadcastModalProps> = ({
             <div className="w-full flex flex-col items-center text-center">
               <div className="mt-2 mb-4 relative flex items-center justify-center">
                 <Image
-                  src={ASSETS_URL.successCheckmarkImg}
+                  src={successCheckmarkImg}
                   alt="Broadcast Sent"
                   width={160}
                   height={160}

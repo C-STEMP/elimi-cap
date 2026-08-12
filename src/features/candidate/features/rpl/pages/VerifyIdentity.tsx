@@ -8,7 +8,7 @@ import { FiArrowLeft, FiArrowRight, FiCheckCircle } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { ASSETS_URL } from "@/assets";
+import { errorSymbolIcon, loadingIcon, saveIcon, successCheckmarkImg } from "@/assets";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setSidebarVariant, setRplStep } from "@/store/slices/authSlice";
 import { setRPLIdentity } from "@/store/slices/onboardingSlice";
@@ -221,7 +221,7 @@ export const RPLVerifyIdentity: React.FC<RPLVerifyIdentityProps> = ({
           >
             <span>Save As Draft</span>
             <Image
-              src={ASSETS_URL.saveIcon}
+              src={saveIcon}
               alt="Save icon"
               width={20}
               height={20}
@@ -264,7 +264,7 @@ export const RPLVerifyIdentity: React.FC<RPLVerifyIdentityProps> = ({
               {modalState === "verifying" && (
                 <div className="flex flex-col items-center py-4">
                   <Image
-                    src={ASSETS_URL.loadingIcon}
+                    src={loadingIcon}
                     alt="Verifying..."
                     width={96}
                     height={96}
@@ -288,7 +288,7 @@ export const RPLVerifyIdentity: React.FC<RPLVerifyIdentityProps> = ({
               {modalState === "success" && (
                 <div className="flex flex-col items-center py-2 w-full">
                   <Image
-                    src={ASSETS_URL.successCheckmarkImg}
+                    src={successCheckmarkImg}
                     alt="Identity Confirmed"
                     width={144}
                     height={144}
@@ -328,7 +328,7 @@ export const RPLVerifyIdentity: React.FC<RPLVerifyIdentityProps> = ({
               {modalState === "error" && (
                 <div className="flex flex-col items-center py-2 w-full">
                   <Image
-                    src={ASSETS_URL.errorSymbolIcon}
+                    src={errorSymbolIcon}
                     alt="Verification Failed"
                     width={112}
                     height={112}

@@ -9,7 +9,7 @@ import { Select } from "@/src/components/ui/select";
 import { DatePicker } from "@/src/components/ui/date-picker";
 import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
-import { ASSETS_URL } from "@/assets";
+import { successCheckmarkImg } from "@/assets";
 import { useCreateJobPosting } from "@/features/assessment-centre/features/JobListing/hooks";
 
 interface PostJobModalProps {
@@ -282,7 +282,7 @@ export const PostJobModal: React.FC<PostJobModalProps> = ({
             <div className="w-full flex flex-col items-center text-center">
               <div className="mt-2 mb-4 relative flex items-center justify-center">
                 <Image
-                  src={ASSETS_URL.successCheckmarkImg}
+                  src={successCheckmarkImg}
                   alt="Request Posted Successfully"
                   width={160}
                   height={160}

@@ -9,7 +9,7 @@ import { Input } from "@/src/components/ui/input";
 import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
 import { StatusModal } from "@/components/status-modal";
-import { ASSETS_URL } from "@/assets";
+import { errorSymbolIcon, loadingIcon, saveIcon, successCheckmarkImg } from "@/assets";
 import { validateNIN } from "@/src/lib/validation";
 import { ASSESSMENT_CENTRE_ROUTES } from "@/features/assessment-centre/utils/centreRoutes";
 
@@ -282,7 +282,7 @@ export const CenterVerifyIdentity: React.FC = () => {
           >
             <span>Save As Draft</span>
             <Image
-              src={ASSETS_URL.saveIcon}
+              src={saveIcon}
               alt="Save icon"
               width={20}
               height={20}
@@ -326,7 +326,7 @@ export const CenterVerifyIdentity: React.FC = () => {
               {modalState === "verifying" && (
                 <div className="flex flex-col items-center py-4">
                   <Image
-                    src={ASSETS_URL.loadingIcon}
+                    src={loadingIcon}
                     alt="Verifying..."
                     width={96}
                     height={96}
@@ -350,7 +350,7 @@ export const CenterVerifyIdentity: React.FC = () => {
               {modalState === "success" && (
                 <div className="flex flex-col items-center py-2 w-full">
                   <Image
-                    src={ASSETS_URL.successCheckmarkImg}
+                    src={successCheckmarkImg}
                     alt="Identity Confirmed"
                     width={144}
                     height={144}
@@ -386,7 +386,7 @@ export const CenterVerifyIdentity: React.FC = () => {
               {modalState === "error" && (
                 <div className="flex flex-col items-center py-2 w-full">
                   <Image
-                    src={ASSETS_URL.errorSymbolIcon}
+                    src={errorSymbolIcon}
                     alt="Verification Failed"
                     width={112}
                     height={112}
