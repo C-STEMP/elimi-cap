@@ -80,8 +80,10 @@ export const AssessorVerifyIdentity: React.FC = () => {
 
   const handleConfirmSaveDraft = () => {
     setShowConfirmDraftModal(false);
+    // NIN is never stored in the onboarding draft (§17, §25 — identity-verification
+    // endpoint only). Send an empty merge-patch so the API simply bumps lastUpdatedAt.
     saveOnboarding.mutate(
-      { identityVerification: { nin, isVerified } },
+      {},
       {
         onSuccess: () => {
           toast({

@@ -10,6 +10,7 @@ import { DatePicker } from "@/src/components/ui/date-picker";
 import { PhoneInput } from "@/src/components/ui/phone-input";
 import { Button } from "@/src/components/ui/button";
 import { PassportUpload } from "@/src/components/ui/passport-upload";
+import type { StorageAsset } from "@/src/features/shared/storage/api";
 import { useToast } from "@/src/components/ui/toast";
 import { useCountryStateCity } from "@/src/lib/hooks/useCountryStateCity";
 import { useAppDispatch, useAppSelector } from "@/src/store/hooks";
@@ -17,7 +18,7 @@ import { setSidebarVariant } from "@/src/store/slices/authSlice";
 import { setAssessorPersonalInfo } from "@/src/store/slices/onboardingSlice";
 import { ASSESSOR_ROUTES } from "@/src/features/assessor/utils/assessorRoutes";
 import { useAssessorOnboarding } from "../hooks/useOnboarding";
-import { personalInfoSchema, extractZodErrors } from "@/src/lib/validation";
+import { personalInfoSchema, extractZodErrors, formatToIsoDate } from "@/src/lib/validation";
 
 export const AssessorPersonalInfo: React.FC = () => {
   const router = useRouter();
@@ -27,6 +28,9 @@ export const AssessorPersonalInfo: React.FC = () => {
   const saved = useAppSelector((s) => s.onboarding.assessorPersonalInfo);
 
   const [passportFile, setPassportFile] = useState<File | null>(null);
+  const [passportAssetId, setPassportAssetId] = useState<string>(
+    saved.passportAssetId || "",
+  );
   const [passportError, setPassportError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -106,6 +110,9 @@ export const AssessorPersonalInfo: React.FC = () => {
     if (!passportFile && !saved.passportFileName) {
       setPassportError("Passport photograph is required");
       valid = false;
+    } else if (!passportAssetId && !saved.passportAssetId) {
+      setPassportError("Passport upload is still in progress. Please wait.");
+      valid = false;
     } else {
       setPassportError("");
     }
@@ -138,7 +145,7 @@ export const AssessorPersonalInfo: React.FC = () => {
           firstName: form.firstName,
           lastName: form.lastName,
           middleName: form.middleName,
-          dob: form.dob,
+          dob: formatToIsoDate(form.dob),
           gender: form.gender,
           nationality: form.nationality,
         },
@@ -189,11 +196,20 @@ export const AssessorPersonalInfo: React.FC = () => {
           </div>
 
           <PassportUpload
-            onImageChange={(file) => {
+            onImageChange={(file: File | null, asset?: StorageAsset | null) => {
               setPassportFile(file);
               if (file) {
                 setPassportError("");
-                dispatch(setAssessorPersonalInfo({ passportFileName: file.name }));
+                dispatch(
+                  setAssessorPersonalInfo({
+                    passportFileName: file.name,
+                    passportAssetId: asset?.assetId ?? "",
+                  }),
+                );
+                setPassportAssetId(asset?.assetId ?? "");
+              } else {
+                setPassportAssetId("");
+                dispatch(setAssessorPersonalInfo({ passportFileName: "", passportAssetId: "" }));
               }
             }}
             error={passportError}

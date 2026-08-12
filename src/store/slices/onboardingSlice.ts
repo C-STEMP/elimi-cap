@@ -102,6 +102,7 @@ export interface AssessorPersonalInfoState {
   streetAddress: string;
   passportFileName?: string;
   passportPreview?: string;
+  passportAssetId?: string;
 }
 
 export interface AssessorDetailsState {
@@ -235,6 +236,7 @@ const initialState: OnboardingState = {
     streetAddress: "",
     passportFileName: "",
     passportPreview: "",
+    passportAssetId: "",
   },
   assessorDetails: {
     assessorId: "",

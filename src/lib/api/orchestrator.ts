@@ -1,7 +1,8 @@
 import { createApiInstance, unwrap } from "./client";
 
 const orchestratorClient = createApiInstance(
-  process.env.NEXT_PUBLIC_ORCHESTRATOR_URL || ""
+  process.env.NEXT_PUBLIC_ORCHESTRATOR_URL ||
+    "https://www.staging-api.elimi-ecosystem.e-limi.africa/v1/ol",
 );
 
 export async function orchestratorFetch<T>(
