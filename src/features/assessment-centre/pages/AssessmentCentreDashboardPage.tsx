@@ -54,9 +54,28 @@ import { SettingsHeader } from "../features/Settings/components/SettingsHeader";
 import { AssessmentCentreTab, PaymentTransaction } from "../types";
 import { MOCK_STAFF_MEMBERS, MOCK_ASSESSORS } from "@/features/assessment-centre/utils/constants";
 
+import { useAppSelector } from "@/src/store/hooks";
+import { getPermittedTabs, RoleType } from "../utils/rbac";
+
 export const AssessmentCentreDashboardPage: React.FC = () => {
+  const user = useAppSelector((state) => state.auth.user);
+  const [activeRole, setActiveRole] = useState<RoleType>(
+    user?.role?.toLowerCase().includes("staff")
+      ? "staff"
+      : user?.role?.toLowerCase().includes("admin") && !user?.role?.toLowerCase().includes("super")
+      ? "admin"
+      : "centre",
+  );
   const [activeTab, setActiveTab] = useState<AssessmentCentreTab>("overview");
   const [hasActivity, setHasActivity] = useState(true);
+
+  const handleRoleChange = (newRole: RoleType) => {
+    setActiveRole(newRole);
+    const permitted = getPermittedTabs(newRole);
+    if (!permitted.includes(activeTab)) {
+      setActiveTab("overview");
+    }
+  };
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState(false);
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
@@ -162,6 +181,7 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
         <AssessorsHeader
           selectedAssessorId={selectedAssessorId}
           onBackToList={() => setSelectedAssessorId(null)}
+          userRole={activeRole}
           onDeactivate={(mode) => {
             setAssessorDeactivateModalMode(mode);
             setIsAssessorDeactivateModalOpen(true);
@@ -182,7 +202,10 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
 
     if (activeTab === "messages") {
       return (
-        <MessagesHeader onSendBroadcast={() => setIsBroadcastModalOpen(true)} />
+        <MessagesHeader
+          userRole={activeRole}
+          onSendBroadcast={() => setIsBroadcastModalOpen(true)}
+        />
       );
     }
 
@@ -197,6 +220,7 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
           onSelectTab={setActiveTab}
           onOpenNotifications={() => setIsNotificationsOpen(true)}
           showStats={activeTab === "overview"}
+          userRole={activeRole}
         >
           {renderHeaderContent()}
         </AssessmentCentreHeader>
@@ -208,30 +232,50 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
             transition={{ duration: 0.4, ease: "easeOut" }}
             className="flex flex-col gap-6"
           >
-            <div className="flex items-center justify-end gap-2 text-xs font-semibold text-neutral-secondary">
-              <span>View Mode:</span>
-              <button
-                type="button"
-                onClick={() => setHasActivity(true)}
-                className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
-                  hasActivity
-                    ? "bg-[#a31d38] text-white shadow-2xs font-bold"
-                    : "bg-white text-gray-600 hover:bg-gray-100"
-                }`}
-              >
-                With Data
-              </button>
-              <button
-                type="button"
-                onClick={() => setHasActivity(false)}
-                className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
-                  !hasActivity
-                    ? "bg-[#a31d38] text-white shadow-2xs font-bold"
-                    : "bg-white text-gray-600 hover:bg-gray-100"
-                }`}
-              >
-                Empty State
-              </button>
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div className="flex items-center gap-1.5 bg-white border border-gray-200 p-1 rounded-xl text-xs font-semibold">
+                <span className="px-2 text-gray-500 font-bold">Role:</span>
+                {(["centre", "admin", "staff"] as RoleType[]).map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => handleRoleChange(r)}
+                    className={`px-3 py-1 rounded-lg capitalize transition-all cursor-pointer ${
+                      activeRole === r
+                        ? "bg-[#a31d38] text-white shadow-2xs font-bold"
+                        : "text-gray-600 hover:bg-gray-100"
+                    }`}
+                  >
+                    {r === "centre" ? "Centre (Super Admin)" : r === "admin" ? "Admin" : "Staff"}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-2 text-xs font-semibold text-neutral-secondary">
+                <span>View Mode:</span>
+                <button
+                  type="button"
+                  onClick={() => setHasActivity(true)}
+                  className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                    hasActivity
+                      ? "bg-[#a31d38] text-white shadow-2xs font-bold"
+                      : "bg-white text-gray-600 hover:bg-gray-100"
+                  }`}
+                >
+                  With Data
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHasActivity(false)}
+                  className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                    !hasActivity
+                      ? "bg-[#a31d38] text-white shadow-2xs font-bold"
+                      : "bg-white text-gray-600 hover:bg-gray-100"
+                  }`}
+                >
+                  Empty State
+                </button>
+              </div>
             </div>
 
             {hasActivity ? (
@@ -284,6 +328,7 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
               />
             ) : (
               <StaffListView
+                userRole={activeRole}
                 onSelectStaff={(id) => setSelectedStaffId(id)}
                 onAddStaff={() => setIsAddStaffModalOpen(true)}
               />
@@ -389,6 +434,7 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
               />
             ) : (
               <AssessorsListView
+                userRole={activeRole}
                 onSelectAssessor={(id) => setSelectedAssessorId(id)}
               />
             )}
