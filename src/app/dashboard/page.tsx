@@ -1,19 +1,39 @@
 "use client";
 
+import React, { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useAppSelector } from "@/src/store/hooks";
+import { getPersona } from "@/src/lib/auth-storage";
 import { Dashboard as CandidateDashboard } from "@/features/candidate/features/Dashboard/pages/Dashboard";
 import { AssessorDashboard } from "@/src/features/assessor/features/Dashboard/pages/AssessorDashboard";
 
 export default function DashboardPage() {
+  const router = useRouter();
   const userRole = useAppSelector(
     (state) => state.auth.user?.role || state.onboarding.role,
   );
+  const storedPersona = typeof window !== "undefined" ? getPersona() : null;
+  const effectiveRole = userRole || storedPersona;
+
+  useEffect(() => {
+    if (effectiveRole === "centre") {
+      router.replace("/assessment-centre");
+    }
+  }, [effectiveRole, router]);
+
+  if (effectiveRole === "centre") {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-[#FDF2F4]">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-solid" />
+      </div>
+    );
+  }
 
   const isAssessor =
-    userRole === "assessor" ||
-    userRole === "quality-assurance" ||
-    userRole === "quality_assurance" ||
-    userRole === "qaa";
+    effectiveRole === "assessor" ||
+    effectiveRole === "quality-assurance" ||
+    effectiveRole === "quality_assurance" ||
+    effectiveRole === "qaa";
 
   if (isAssessor) {
     return <AssessorDashboard />;
