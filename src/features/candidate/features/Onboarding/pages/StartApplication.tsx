@@ -29,14 +29,6 @@ export interface StartApplicationProps {
   onContinue?: () => void;
 }
 
-const FALLBACK_CENTRES: SelectOption[] = [
-  { label: "Abuja Vocational & Technical Center", value: "centre-abuja-01" },
-  { label: "Lagos Skill Assessment Hub", value: "centre-lagos-01" },
-  { label: "Ibadan TVET Center of Excellence", value: "centre-ibadan-01" },
-  { label: "Port Harcourt Trade Center", value: "centre-ph-01" },
-  { label: "Enugu Vocational Institute", value: "centre-enugu-01" },
-];
-
 interface ControlledSelectProps {
   value?: string;
   onChange?: (value: string) => void;
@@ -84,10 +76,10 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
   const { data: remoteTrades = [], isLoading: isLoadingTrades } =
     useGetTradesBySector(selectedSectorId);
 
-  const centreOptions: SelectOption[] =
-    remoteCentres.length > 0
-      ? remoteCentres.map((c) => ({ label: c.name, value: c.id }))
-      : FALLBACK_CENTRES;
+  const centreOptions: SelectOption[] = remoteCentres.map((c) => ({
+    label: c.name,
+    value: c.id,
+  }));
 
   const sectorOptions: SelectOption[] = remoteSectors.map((s) => ({
     label: s.name,
@@ -121,44 +113,39 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
   }) => {
     setIsSubmitting(true);
 
-    const selectedTradeObj = remoteTrades.find((t) => t.id === values.trade);
-    const tradeTitle = selectedTradeObj?.name || values.trade;
+    const payload = {
+      type: "RPL" as const,
+      centreId: values.assessmentCenter,
+      sectorId: values.sector,
+      tradeId: values.trade,
+      unitIds: [],
+    };
 
-    dispatch(setStartApplication(values));
-    dispatch(
-      createApplicationSlice({
-        title: tradeTitle,
-        subtitle: "Recognition Of Prior Learning",
-      }),
-    );
-
-    createApplication.mutate(
-      {
-        type: "RPL",
-        sectorId: values.sector,
-        tradeId: values.trade,
-        unitIds: [],
-        centreId: values.assessmentCenter,
+    createApplication.mutate(payload, {
+      onSuccess: (res) => {
+        setIsSubmitting(false);
+        dispatch(
+          createApplicationSlice({
+            title: values.trade,
+            subtitle: values.sector,
+          }),
+        );
+        setShowSuccessModal(true);
       },
-      {
-        onSettled: () => {
-          setIsSubmitting(false);
-          if (onContinue) {
-            onContinue();
-          } else {
-            router.push("/rpl/personal-info");
-          }
-        },
+      onError: (err) => {
+        setIsSubmitting(false);
+        toast({
+          type: "error",
+          title: "Application Error",
+          description: err.message || "Failed to start application. Please try again.",
+        });
       },
-    );
+    });
   };
 
-  const handleFinishFailed = () => {
-    toast({
-      type: "error",
-      title: "Selection Required",
-      description: "Please fill in all required fields.",
-    });
+  const handleModalAction = () => {
+    setShowSuccessModal(false);
+    onContinue?.();
   };
 
   return (
@@ -166,30 +153,27 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
-      className="w-full max-w-110 mx-auto flex flex-col justify-center select-text"
+      className="w-full max-w-140 mx-auto flex flex-col justify-center select-text"
     >
-      <div className="mb-4 text-left w-full">
-        <h1 className="text-2xl xl:text-[28px] font-extrabold tracking-tight text-primary">
+      <div className="mb-6 text-center lg:text-left w-full flex flex-col items-center lg:items-start">
+        <h1 className="text-2xl xl:text-3xl font-extrabold tracking-tight text-neutral-primary text-center lg:text-left">
           Start Application
         </h1>
-        <p className="text-neutral-secondary text-xs xl:text-sm font-normal mt-1">
-          Your journey is about to start
+        <p className="text-neutral-secondary text-[14px] xl:text-[15px] leading-relaxed mt-1.5 max-w-md font-normal text-center lg:text-left mx-auto lg:mx-0">
+          Select your Assessment Centre, Sector, and Trade to begin your
+          Recognition of Prior Learning process.
         </p>
-
-        <h2 className="text-xl xl:text-2xl font-extrabold tracking-tight text-neutral-primary mt-4">
-          Centre Information
-        </h2>
       </div>
 
       <Form
         form={form}
         layout="vertical"
         onFinish={handleFinish}
-        onFinishFailed={handleFinishFailed}
         onValuesChange={handleValuesChange}
-        className="w-full flex flex-col gap-3.5"
+        className="w-full flex flex-col gap-5"
+        requiredMark={false}
       >
-        <Form.Item name="assessmentCenter" rules={[rule]} className="mb-0!">
+        <Form.Item name="assessmentCenter" rules={[rule]}>
           <FormSelect
             label={
               <span>
@@ -201,11 +185,10 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
               isLoadingCentres ? "Loading centres..." : "Select Centre"
             }
             options={centreOptions}
-            disabled={isLoadingCentres}
           />
         </Form.Item>
 
-        <Form.Item name="sector" rules={[rule]} className="mb-0!">
+        <Form.Item name="sector" rules={[rule]}>
           <FormSelect
             label={
               <span>
@@ -216,11 +199,10 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
               isLoadingSectors ? "Loading sectors..." : "Select Sector"
             }
             options={sectorOptions}
-            disabled={isLoadingSectors}
           />
         </Form.Item>
 
-        <Form.Item name="trade" rules={[rule]} className="mb-0!">
+        <Form.Item name="trade" rules={[rule]}>
           <FormSelect
             label={
               <span>
@@ -228,47 +210,49 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
               </span>
             }
             placeholder={
-              !selectedSectorId
-                ? "Select Sector First"
-                : isLoadingTrades
-                  ? "Loading trades..."
-                  : "Select Trade"
+              isLoadingTrades
+                ? "Loading trades..."
+                : selectedSectorId
+                ? "Select Trade"
+                : "Select a Sector first"
             }
-            options={tradeOptions}
             disabled={!selectedSectorId || isLoadingTrades}
+            options={tradeOptions}
           />
         </Form.Item>
 
-        <div className="flex items-center justify-between mt-6">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between mt-6 pt-4 border-t border-gray-100 gap-4">
           <button
             type="button"
-            onClick={onBack || (() => router.back())}
-            className="flex items-center gap-2 text-neutral-secondary hover:text-neutral-primary font-semibold text-sm transition-colors cursor-pointer select-none focus:outline-none"
+            onClick={onBack}
+            className="flex items-center justify-center gap-2 text-sm font-medium text-black hover:text-text-dark transition-colors cursor-pointer"
           >
-            <FiArrowLeft className="w-4 h-4" />
+            <FiArrowLeft className="w-4 h-4 text-black" />
             Back
           </button>
 
-          <Button
-            type="submit"
-            variant="amber"
-            size="md"
-            loading={isSubmitting}
-            rightIcon={<FiArrowRight className="w-4.5 h-4.5" />}
-            className="px-8 h-11 font-bold text-sm rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
-          >
-            Continue
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button
+              type="submit"
+              variant="secondary"
+              size="md"
+              loading={isSubmitting}
+              className="px-6 h-11 text-white font-bold text-sm bg-secondary hover:bg-secondary-hover rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg cursor-pointer whitespace-nowrap"
+            >
+              <span>Continue</span>
+              <FiArrowRight className="w-4 h-4 text-white" />
+            </Button>
+          </div>
         </div>
       </Form>
 
       <StatusModal
         isOpen={showSuccessModal}
+        onClose={handleModalAction}
         type="success"
-        title="Application Submitted"
-        description="Your assessment center and trade selections have been recorded!"
-        actionLabel="Go to Dashboard"
-        onAction={() => router.push("/dashboard?status=submitted")}
+        title="Application Started"
+        description="Your RPL application has been initialized. Proceed to fill out your details."
+        actionLabel="Continue Application"
       />
     </motion.div>
   );
