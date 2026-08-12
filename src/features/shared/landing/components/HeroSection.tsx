@@ -58,7 +58,6 @@ export function HeroSection() {
         </div>
 
         <div className="mt-6 lg:mt-8 grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 lg:gap-4 h-72 sm:h-80 md:h-84 lg:h-96 w-full shrink-0">
-          {/* Column 1: Craftsman Top + 99% Certification Rate Bottom */}
           <div
             data-aos="fade-up"
             data-aos-delay="200"
@@ -96,6 +95,7 @@ export function HeroSection() {
               fill
               className="object-cover transition-transform duration-300 group-hover:scale-105"
               sizes="(max-width: 640px) 50vw, 25vw"
+              loading="eager"
             />
           </div>
 
@@ -120,6 +120,7 @@ export function HeroSection() {
                 fill
                 className="object-cover transition-transform duration-300 group-hover:scale-105"
                 sizes="(max-width: 640px) 50vw, 25vw"
+                loading="eager"
               />
             </div>
           </div>
@@ -136,6 +137,7 @@ export function HeroSection() {
               fill
               className="object-cover transition-transform duration-300 group-hover:scale-105"
               sizes="(max-width: 640px) 50vw, 25vw"
+              loading="eager"
             />
           </div>
         </div>
