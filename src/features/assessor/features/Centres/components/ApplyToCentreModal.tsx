@@ -3,9 +3,10 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { FiX } from "react-icons/fi";
-import { Select } from "@/src/components/ui/select";
+import { Select, SelectOption } from "@/src/components/ui/select";
 import { Button } from "@/src/components/ui/button";
 import { useRequestToJoinCentre } from "../hooks";
+import { useGetCentres } from "@/src/features/shared/reference/hooks";
 
 interface ApplyToCentreModalProps {
   isOpen: boolean;
@@ -14,14 +15,6 @@ interface ApplyToCentreModalProps {
 }
 
 const ROLES = ["Facilitator", "Panelist", "Assessor", "Internal Verifier"];
-const CENTRES = [
-  "Lagos TVET Centre",
-  "Kano TVET Centre",
-  "Abuja TVET Centre",
-  "CSTEMP Edtech",
-  "Bornu TVET Centre",
-  "Kwara TVET Centre",
-];
 
 export const ApplyToCentreModal: React.FC<ApplyToCentreModalProps> = ({
   isOpen,
@@ -31,7 +24,15 @@ export const ApplyToCentreModal: React.FC<ApplyToCentreModalProps> = ({
   const [role, setRole] = useState("");
   const [centre, setCentre] = useState("");
   const [errors, setErrors] = useState<{ role?: string; centre?: string }>({});
+
+  const { data: remoteCentres = [], isLoading: isLoadingCentres } =
+    useGetCentres();
   const requestMutation = useRequestToJoinCentre();
+
+  const centreOptions: SelectOption[] = remoteCentres.map((c) => ({
+    label: c.name,
+    value: c.id,
+  }));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,13 +102,15 @@ export const ApplyToCentreModal: React.FC<ApplyToCentreModalProps> = ({
                 Center<span className="text-primary-solid ml-0.5">*</span>
               </span>
             }
-            placeholder="Select"
+            placeholder={
+              isLoadingCentres ? "Loading centres..." : "Select Centre"
+            }
             value={centre}
             onChange={(e) => {
               setCentre(e.target.value);
               if (errors.centre) setErrors((p) => ({ ...p, centre: "" }));
             }}
-            options={CENTRES}
+            options={centreOptions}
             error={errors.centre}
           />
 

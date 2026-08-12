@@ -10,14 +10,36 @@ import { Select } from "@/src/components/ui/select";
 import { useGetStaff } from "@/features/assessment-centre/features/Staff/hooks";
 import { StaffStatusModal, StaffStatusModalMode } from "./StaffStatusModal";
 
+import { useAppSelector } from "@/src/store/hooks";
+import { useToast } from "@/src/components/ui/toast";
+import { canViewStaffDetails } from "@/features/assessment-centre/utils/rbac";
+
 interface StaffListViewProps {
   onSelectStaff: (staffId: string) => void;
-  onAddStaff: () => void;
+  onAddStaff?: () => void;
+  userRole?: string;
 }
 
 export const StaffListView: React.FC<StaffListViewProps> = ({
   onSelectStaff,
+  userRole,
 }) => {
+  const { toast } = useToast();
+  const user = useAppSelector((state) => state.auth.user);
+  const role = userRole || user?.role;
+  const canViewDetail = canViewStaffDetails(role);
+
+  const handleSelectStaff = (staffId: string) => {
+    if (!canViewDetail) {
+      toast({
+        type: "info",
+        title: "Access Restricted",
+        description: "Staff members cannot view detailed staff profiles.",
+      });
+      return;
+    }
+    onSelectStaff(staffId);
+  };
   const { data: staffMembers = [], isLoading } = useGetStaff();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -202,7 +224,7 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
 
                     <button
                       type="button"
-                      onClick={() => onSelectStaff(staff.id)}
+                      onClick={() => handleSelectStaff(staff.id)}
                       className="text-xs lg:text-sm text-black underline hover:text-[#a31d38] transition-colors cursor-pointer mt-2"
                     >
                       View
@@ -258,7 +280,7 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
                       <td className="p-3.5 text-right">
                         <button
                           type="button"
-                          onClick={() => onSelectStaff(staff.id)}
+                          onClick={() => handleSelectStaff(staff.id)}
                           className="text-black font-bold text-xs underline hover:text-[#a31d38] transition-colors cursor-pointer"
                         >
                           View

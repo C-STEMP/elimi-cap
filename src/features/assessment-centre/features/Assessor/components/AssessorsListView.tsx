@@ -7,14 +7,21 @@ import { AssessorItem } from "@/features/assessment-centre/types";
 import { StaffStatusModal, StaffStatusModalMode } from "../../Staff/components/StaffStatusModal";
 import { useGetRetainedRequests } from "@/src/features/shared/centre/hooks";
 
+import { useAppSelector } from "@/src/store/hooks";
+import { canDeactivateAssessor } from "@/features/assessment-centre/utils/rbac";
+
 interface AssessorsListViewProps {
   onSelectAssessor: (assessorId: string) => void;
+  userRole?: string;
 }
 
 export const AssessorsListView: React.FC<AssessorsListViewProps> = ({
   onSelectAssessor,
+  userRole,
 }) => {
   const { data: retainedRequests = [], isLoading } = useGetRetainedRequests();
+  const user = useAppSelector((state) => state.auth.user);
+  const canDeactivate = canDeactivateAssessor(userRole || user?.role);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -169,18 +176,20 @@ export const AssessorsListView: React.FC<AssessorsListViewProps> = ({
               </button>
             </div>
 
-            <button
-              type="button"
-              onClick={handleOpenDeactivateModal}
-              disabled={selectedIds.length === 0}
-              className={`text-xs font-semibold underline transition-colors ml-1 ${
-                selectedIds.length === 0
-                  ? "text-gray-300 cursor-not-allowed"
-                  : "text-gray-400 hover:text-red-600 cursor-pointer"
-              }`}
-            >
-              Deactivate
-            </button>
+            {canDeactivate ? (
+              <button
+                type="button"
+                onClick={handleOpenDeactivateModal}
+                disabled={selectedIds.length === 0}
+                className={`text-xs font-semibold underline transition-colors ml-1 ${
+                  selectedIds.length === 0
+                    ? "text-gray-300 cursor-not-allowed"
+                    : "text-gray-400 hover:text-red-600 cursor-pointer"
+                }`}
+              >
+                Deactivate
+              </button>
+            ) : null}
           </div>
         </div>
 

@@ -12,16 +12,21 @@ import { StaffStatusModalMode } from "@/features/assessment-centre/features/Staf
 import { MOCK_ASSESSORS } from "@/features/assessment-centre/utils/constants";
 import { useGetRetainedRequests } from "@/src/features/shared/centre/hooks";
 
+import { useAppSelector } from "@/src/store/hooks";
+import { canDeactivateAssessor } from "@/features/assessment-centre/utils/rbac";
+
 interface AssessorsHeaderProps {
   selectedAssessorId: string | null;
   onBackToList: () => void;
   onDeactivate: (mode: StaffStatusModalMode) => void;
+  userRole?: string;
 }
 
 export const AssessorsHeader: React.FC<AssessorsHeaderProps> = ({
   selectedAssessorId,
   onBackToList,
   onDeactivate,
+  userRole,
 }) => {
   if (selectedAssessorId) {
     const assessor =
@@ -32,6 +37,7 @@ export const AssessorsHeader: React.FC<AssessorsHeaderProps> = ({
         assessor={assessor}
         onBack={onBackToList}
         onDeactivate={onDeactivate}
+        userRole={userRole}
       />
     );
   }
@@ -43,13 +49,17 @@ interface AssessorDetailHeaderProps {
   assessor: AssessorItem;
   onBack: () => void;
   onDeactivate: (mode: StaffStatusModalMode) => void;
+  userRole?: string;
 }
 
 const AssessorDetailHeader: React.FC<AssessorDetailHeaderProps> = ({
   assessor,
   onBack,
   onDeactivate,
+  userRole,
 }) => {
+  const user = useAppSelector((state) => state.auth.user);
+  const canDeactivate = canDeactivateAssessor(userRole || user?.role);
   return (
     <div className="flex flex-col gap-6 pt-2">
       <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -76,28 +86,30 @@ const AssessorDetailHeader: React.FC<AssessorDetailHeaderProps> = ({
           </div>
         </div>
 
-        {assessor.status === "Inactive" ? (
-          <Button
-            type="button"
-            onClick={() => onDeactivate("confirm-activate")}
-            variant="amber"
-            size="md"
-            className="px-6 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
-          >
-            Activate
-          </Button>
-        ) : (
-          <Button
-            type="button"
-            onClick={() => onDeactivate("confirm-deactivate")}
-            variant="amber"
-            size="md"
-            rightIcon={<FiSlash className="w-4 h-4" />}
-            className="px-6 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
-          >
-            Deactivate
-          </Button>
-        )}
+        {canDeactivate ? (
+          assessor.status === "Inactive" ? (
+            <Button
+              type="button"
+              onClick={() => onDeactivate("confirm-activate")}
+              variant="amber"
+              size="md"
+              className="px-6 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
+            >
+              Activate
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              onClick={() => onDeactivate("confirm-deactivate")}
+              variant="amber"
+              size="md"
+              rightIcon={<FiSlash className="w-4 h-4" />}
+              className="px-6 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
+            >
+              Deactivate
+            </Button>
+          )
+        ) : null}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

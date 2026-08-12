@@ -25,12 +25,15 @@ import {
 import { useGetOnboarding } from "@/src/features/assessment-centre/features/Onboarding/hooks/useOnboarding";
 import { useAppSelector } from "@/src/store/hooks";
 
+import { getPermittedTabs } from "@/features/assessment-centre/utils/rbac";
+
 interface HeaderProps {
   activeTab: AssessmentCentreTab;
   onSelectTab: (tab: AssessmentCentreTab) => void;
   onOpenNotifications?: () => void;
   title?: string;
   showStats?: boolean;
+  userRole?: string;
   children?: React.ReactNode;
 }
 
@@ -40,6 +43,7 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
   onOpenNotifications,
   title,
   showStats = true,
+  userRole,
   children,
 }) => {
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
@@ -47,6 +51,7 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
 
   const { data: onboardingRecord } = useGetOnboarding();
   const user = useAppSelector((state) => state.auth.user);
+  const effectiveRole = userRole || user?.role || "centre";
 
   const centreData = onboardingRecord?.data as any;
   const centreName =
@@ -100,7 +105,9 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
     },
   ];
 
-  const navItems: { id: AssessmentCentreTab; label: string }[] = [
+  const permittedTabs = getPermittedTabs(effectiveRole);
+
+  const allNavItems: { id: AssessmentCentreTab; label: string }[] = [
     { id: "overview", label: "Overview" },
     { id: "staff", label: "Staff" },
     { id: "applications", label: "Applications" },
@@ -110,6 +117,8 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
     { id: "payments", label: "Payments" },
     { id: "settings", label: "Settings" },
   ];
+
+  const navItems = allNavItems.filter((item) => permittedTabs.includes(item.id));
 
   const renderStatIcon = (iconName: string) => {
     switch (iconName) {

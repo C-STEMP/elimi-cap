@@ -174,6 +174,9 @@ export const VerifyEmail: React.FC = () => {
           </span>
           . It expires in 10 minutes.
         </p>
+        <p className="text-sm font-semibold text-neutral-primary mt-3 text-center lg:text-left">
+          Enter OTP
+        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="w-full flex flex-col gap-6">
