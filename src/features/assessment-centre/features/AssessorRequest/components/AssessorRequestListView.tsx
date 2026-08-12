@@ -23,7 +23,7 @@ export const AssessorRequestListView: React.FC<
     name: req.assessorId ? `Assessor (${req.assessorId.slice(0, 8)})` : "Assessor",
     email: req.assessorId ? `${req.assessorId.slice(0, 8)}@assessor.ng` : "assessor@ng.org",
     trade: "Technical Trade",
-    role: "Assessor Request",
+    role: "Assessor",
     status: "Pending",
     assignedCount: 0,
     experienceYears: 0,
