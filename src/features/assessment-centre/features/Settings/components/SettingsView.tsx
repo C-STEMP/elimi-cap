@@ -18,6 +18,7 @@ import { useToast } from "@/src/components/ui/toast";
 import { DeleteAccountModal } from "./DeleteAccountModal";
 import { ASSETS_URL } from "@/assets";
 import { useCountryStateCity } from "@/src/lib/hooks/useCountryStateCity";
+import { formatToIsoDate } from "@/src/lib/validation";
 import { useOnboarding } from "@/features/assessment-centre/features/Onboarding/hooks";
 import {
   useGetCentrePricing,
@@ -208,7 +209,7 @@ export const SettingsView: React.FC = () => {
             firstName,
             lastName,
             middleName,
-            dob,
+            dob: formatToIsoDate(dob),
             gender,
             nationality,
           },

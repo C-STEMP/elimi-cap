@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useGoogleLogin } from "@react-oauth/google";
+import type { CredentialResponse } from "@react-oauth/google";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setCredentials, setRole, logout as logoutAction } from "@/store/slices/authSlice";
 import { saveTokens, clearTokens, saveOnboardedStatus, savePersona } from "@/src/lib/auth-storage";
@@ -440,7 +440,7 @@ export function useGoogleAuth() {
       dispatch(
         setCredentials({
           user: {
-            userId: data.user.userId,
+            userId: data.user.userId || data.user.id || "",
             email: data.user.email,
             status: data.user.status,
             intents: data.user.intents,
@@ -482,31 +482,30 @@ export function useGoogleAuth() {
     },
   });
 
-  const login = useGoogleLogin({
-    scope: "openid email profile",
-    onSuccess: async (tokenResponse) => {
-      const idToken = (tokenResponse as { id_token?: string }).id_token;
-      if (idToken) {
-        mutation.mutate(idToken);
-      } else {
-        toast({
-          type: "error",
-          title: "Google Sign-In Failed",
-          description: "Unable to retrieve authentication token.",
-        });
-      }
-    },
-    onError: () => {
+  const handleGoogleSuccess = (credentialResponse: CredentialResponse) => {
+    if (credentialResponse.credential) {
+      mutation.mutate(credentialResponse.credential);
+    } else {
       toast({
         type: "error",
-        title: "Google Sign-In Cancelled",
-        description: "You cancelled the Google sign-in process.",
+        title: "Google Sign-In Failed",
+        description: "Unable to retrieve authentication token.",
       });
-    },
-  });
+    }
+  };
+
+  const handleGoogleError = () => {
+    toast({
+      type: "error",
+      title: "Google Sign-In Cancelled",
+      description: "Google sign-in was cancelled or encountered an issue.",
+    });
+  };
 
   return {
-    loginWithGoogle: () => login(),
+    handleGoogleSuccess,
+    handleGoogleError,
+    mutate: mutation.mutate,
     isPending: mutation.isPending,
   };
 }

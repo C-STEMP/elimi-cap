@@ -11,7 +11,7 @@ import { Button } from "@/src/components/ui/button";
 import { LogoutModal } from "@/components/LogoutModal";
 import { NotificationDropdown } from "./NotificationDropdown";
 
-import { useCandidateProfile } from "@/src/features/shared/onboarding/hooks";
+import { useAppSelector } from "@/store/hooks";
 
 interface HeaderBannerProps {
   userName?: string;
@@ -32,7 +32,7 @@ const NAV_LINKS = [
 ];
 
 export const HeaderBanner: React.FC<HeaderBannerProps> = ({
-  userName = "Chidi",
+  userName = "User",
   title,
   backHref,
   backTitle,
@@ -44,8 +44,11 @@ export const HeaderBanner: React.FC<HeaderBannerProps> = ({
 }) => {
   const pathname = usePathname();
   const router = useRouter();
-  const { data: profile } = useCandidateProfile();
-  const displayName = profile?.name || userName;
+  const authUser = useAppSelector((state) => state.auth.user);
+  const displayName =
+    authUser?.fullName ||
+    authUser?.email?.split("@")[0] ||
+    userName;
 
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);

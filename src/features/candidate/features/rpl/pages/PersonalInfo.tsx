@@ -18,7 +18,11 @@ import { StatusModal } from "@/components/status-modal";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setSidebarVariant, setRplStep } from "@/store/slices/authSlice";
 import { setPersonalInfo } from "@/store/slices/onboardingSlice";
-import { personalInfoSchema, extractZodErrors } from "@/src/lib/validation";
+import {
+  personalInfoSchema,
+  extractZodErrors,
+  formatToIsoDate,
+} from "@/src/lib/validation";
 import { useCountryStateCity } from "@/src/lib/hooks/useCountryStateCity";
 import { useOnboarding } from "@/src/features/candidate/features/Onboarding/hooks";
 
@@ -108,7 +112,7 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
           firstName: form.firstName,
           lastName: form.lastName,
           middleName: form.middleName,
-          dob: form.dob,
+          dob: formatToIsoDate(form.dob),
           gender: form.gender,
           nationality: form.nationality,
         },

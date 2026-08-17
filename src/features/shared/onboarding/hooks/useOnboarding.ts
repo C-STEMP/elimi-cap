@@ -182,17 +182,19 @@ export function useVerifyIdentity() {
   });
 }
 
-export function useCandidateProfile() {
+export function useCandidateProfile(enabled = false) {
   return useQuery({
     queryKey: ONBOARDING_QUERY_KEYS.candidateProfile,
     queryFn: () => getCandidateProfileApi(),
+    enabled,
   });
 }
 
-export function useCandidateProfileSignature() {
+export function useCandidateProfileSignature(enabled = false) {
   return useQuery({
     queryKey: ONBOARDING_QUERY_KEYS.candidateSignature,
     queryFn: () => getCandidateProfileSignatureApi(),
+    enabled,
   });
 }
 
@@ -233,17 +235,19 @@ export function useSetCandidateProfileSignature() {
   });
 }
 
-export function useApplicationsSummary() {
+export function useApplicationsSummary(enabled = false) {
   return useQuery({
     queryKey: ONBOARDING_QUERY_KEYS.applicationsSummary,
     queryFn: () => getApplicationsSummaryApi(),
+    enabled,
   });
 }
 
-export function useCandidateEvents() {
+export function useCandidateEvents(enabled = false) {
   return useQuery({
     queryKey: ONBOARDING_QUERY_KEYS.candidateEvents,
     queryFn: () => getCandidateEventsApi(),
+    enabled,
   });
 }
 
@@ -255,21 +259,13 @@ export function useOnboarding() {
   const saveOnboarding = useSaveOnboarding();
   const submitOnboarding = useSubmitOnboarding();
   const verifyIdentity = useVerifyIdentity();
-  const candidateProfile = useCandidateProfile();
-  const candidateSignature = useCandidateProfileSignature();
   const setCandidateSignature = useSetCandidateProfileSignature();
-  const applicationsSummary = useApplicationsSummary();
-  const candidateEvents = useCandidateEvents();
 
   return {
     startOnboarding,
     saveOnboarding,
     submitOnboarding,
     verifyIdentity,
-    candidateProfile,
-    candidateSignature,
     setCandidateSignature,
-    applicationsSummary,
-    candidateEvents,
   };
 }

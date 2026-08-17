@@ -21,6 +21,7 @@ import { ASSETS_URL } from "@/assets";
 import { useGetAssessorSectors, useUpdateAssessorSectors } from "../hooks";
 import { useAssessorOnboarding } from "@/src/features/assessor/features/Onboarding/hooks/useOnboarding";
 import { useCountryStateCity } from "@/src/lib/hooks/useCountryStateCity";
+import { formatToIsoDate } from "@/src/lib/validation";
 
 export type AssessorSettingsSubTab =
   | "profile"
@@ -125,7 +126,7 @@ export const AssessorSettingsView: React.FC = () => {
   const handleSaveProfile = () => {
     saveOnboarding.mutate(
       {
-        personalDetails: { firstName, lastName, middleName, dob, gender, nationality },
+        personalDetails: { firstName, lastName, middleName, dob: formatToIsoDate(dob), gender, nationality },
         contactInformation: { emailAddress, phoneNumber: { countryCode: "+234", number: phoneNumber } },
         residentialAddress: { country, state: stateOfResidence, lga, address: streetAddress },
       },

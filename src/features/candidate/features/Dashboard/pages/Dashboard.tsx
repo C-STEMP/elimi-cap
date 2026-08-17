@@ -9,24 +9,25 @@ import { ApplicationsList } from "@/features/candidate/features/Dashboard/compon
 import { UpcomingCard } from "@/features/candidate/features/Dashboard/components/UpcomingCard";
 import { CalendarWidget } from "@/features/candidate/features/Dashboard/components/CalendarWidget";
 import { VerifiedBadge } from "@/features/candidate/features/Dashboard/components/VerifiedBadge";
-import {
-  useCandidateProfile,
-  useApplicationsSummary,
-  useCandidateEvents,
-} from "@/src/features/shared/onboarding/hooks";
+import { useAppSelector } from "@/store/hooks";
 import { useGetApplications } from "@/src/features/candidate/features/Application/hooks";
 
 export const Dashboard: React.FC = () => {
-  const { data: profile, isLoading: profileLoading } = useCandidateProfile();
-  const { data: summary, isLoading: summaryLoading } = useApplicationsSummary();
+  const authUser = useAppSelector((state) => state.auth.user);
   const { data: applications, isLoading: appsLoading } = useGetApplications();
-  const { data: events, isLoading: eventsLoading } = useCandidateEvents();
 
-  const firstName = profile?.name?.split(" ")[0] || "User";
-  const isVerified = profile?.identityVerified ?? false;
+  const firstName =
+    authUser?.fullName?.split(" ")[0] ||
+    authUser?.email?.split("@")[0] ||
+    "User";
+  const isVerified = authUser?.isVerified ?? false;
 
-  const activeCount = summary?.active ?? 0;
-  const completedCount = summary?.completed ?? 0;
+  const activeCount =
+    applications?.filter(
+      (app) => app.status !== "certified" && app.status !== "rejected",
+    ).length ?? 0;
+  const completedCount =
+    applications?.filter((app) => app.status === "certified").length ?? 0;
 
   const applicationItems = (applications ?? []).map((app) => {
     let status: "Not Started" | "In Progress" | "Completed" = "In Progress";
@@ -44,27 +45,10 @@ export const Dashboard: React.FC = () => {
     };
   });
 
-  const nextEvent = events && events.length > 0 ? events[0] : null;
-  const upcomingInterview = nextEvent
-    ? {
-        title: nextEvent.name,
-        date: new Date(nextEvent.eventAt).toLocaleDateString("en-GB", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-        }),
-        time: new Date(nextEvent.eventAt).toLocaleTimeString("en-US", {
-          hour: "numeric",
-          minute: "2-digit",
-          hour12: true,
-        }),
-        liveUrl: nextEvent.link || undefined,
-      }
-    : null;
+  const upcomingInterview = null;
+  const interviewDate = undefined;
 
-  const interviewDate = nextEvent?.eventAt;
-
-  const isLoading = profileLoading || summaryLoading || appsLoading || eventsLoading;
+  const isLoading = appsLoading;
 
   return (
     <motion.div

@@ -53,19 +53,40 @@ export function formatToIsoDate(dateStr: string): string {
   if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
     return trimmed;
   }
+  if (/^\d{4}-\d{2}-\d{2}T/.test(trimmed)) {
+    return trimmed.slice(0, 10);
+  }
   const parts = trimmed.split(/[/.-]/);
   if (parts.length === 3) {
     if (parts[0].length === 4) {
       const [year, month, day] = parts;
       return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
     } else if (parts[2].length === 4) {
-      const [day, month, year] = parts;
-      return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+      const p0 = parseInt(parts[0], 10);
+      const p1 = parseInt(parts[1], 10);
+      let day = parts[0];
+      let month = parts[1];
+      if (p0 <= 12 && p1 > 12) {
+        month = parts[0];
+        day = parts[1];
+      }
+      return `${parts[2]}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+    } else if (parts[2].length === 2) {
+      const day = parts[0];
+      const month = parts[1];
+      let yearNum = parseInt(parts[2], 10);
+      if (!isNaN(yearNum)) {
+        yearNum += yearNum < 40 ? 2000 : 1900;
+      }
+      return `${yearNum}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
     }
   }
   const d = new Date(trimmed);
   if (!isNaN(d.getTime())) {
-    return d.toISOString().slice(0, 10);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
   }
   return trimmed;
 }
