@@ -292,7 +292,9 @@ export const CenterInformation: React.FC = () => {
           {/* Top Right Logo Upload Card */}
           <div className="flex flex-col items-center sm:items-end gap-1 shrink-0">
             <label
-              className={`relative w-32 h-32 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center p-3 text-center cursor-pointer transition-all shrink-0 ${
+              className={`relative w-32 h-32 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center text-center cursor-pointer transition-all shrink-0 overflow-hidden group ${
+                logoPreview ? "p-0" : "p-3"
+              } ${
                 errors.logo
                   ? "border-red-500 bg-red-50/50"
                   : "border-red-300 bg-red-50/20 hover:bg-red-50/40"
@@ -306,13 +308,17 @@ export const CenterInformation: React.FC = () => {
                 onChange={handleLogoChange}
               />
               {logoPreview ? (
-                <div className="relative w-full h-full rounded-xl overflow-hidden">
+                <div className="relative w-full h-full">
                   <Image
                     src={logoPreview}
                     alt="Logo preview"
                     fill
                     className="object-cover"
                   />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-xs font-semibold gap-1">
+                    <FiUpload className="w-5 h-5" />
+                    <span>Change</span>
+                  </div>
                 </div>
               ) : (
                 <>

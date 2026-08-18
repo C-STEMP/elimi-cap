@@ -14,10 +14,9 @@ export default function AuthLayout({
       suppressHydrationWarning
       className="h-screen w-full flex flex-col lg:flex-row bg-primary-solid lg:bg-white font-sans antialiased overflow-hidden"
     >
-      {/* Mobile Top Header */}
       <div
         suppressHydrationWarning
-        className="w-full bg-primary-solid pt-8 pb-10 flex items-center justify-center lg:hidden shrink-0"
+        className="w-full bg-primary-solid pt-3 pb-5 flex items-center justify-center lg:hidden shrink-0"
       >
         <Logo theme="light" href="/" />
       </div>

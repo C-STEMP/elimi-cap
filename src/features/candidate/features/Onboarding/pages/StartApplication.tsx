@@ -148,6 +148,14 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
     onContinue?.();
   };
 
+  const handleBack = () => {
+    if (onBack) {
+      onBack();
+    } else {
+      router.back();
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 15 }}
@@ -170,7 +178,7 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
         layout="vertical"
         onFinish={handleFinish}
         onValuesChange={handleValuesChange}
-        className="w-full flex flex-col gap-5"
+        className="w-full flex flex-col"
         requiredMark={false}
       >
         <Form.Item name="assessmentCenter" rules={[rule]}>
@@ -224,7 +232,7 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between mt-6 pt-4 border-t border-gray-100 gap-4">
           <button
             type="button"
-            onClick={onBack}
+            onClick={handleBack}
             className="flex items-center justify-center gap-2 text-sm font-medium text-black hover:text-text-dark transition-colors cursor-pointer"
           >
             <FiArrowLeft className="w-4 h-4 text-black" />

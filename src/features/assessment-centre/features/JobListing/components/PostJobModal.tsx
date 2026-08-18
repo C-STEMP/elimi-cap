@@ -11,6 +11,10 @@ import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
 import { ASSETS_URL } from "@/assets";
 import { useCreateJobPosting } from "@/features/assessment-centre/features/JobListing/hooks";
+import {
+  useGetSectors,
+  useGetTradesBySector,
+} from "@/src/features/shared/reference/hooks";
 
 interface PostJobModalProps {
   isOpen: boolean;
@@ -33,7 +37,23 @@ export const PostJobModal: React.FC<PostJobModalProps> = ({
   const { toast } = useToast();
   const createJobPosting = useCreateJobPosting();
   const [title, setTitle] = useState("");
+  const [sector, setSector] = useState("");
   const [trade, setTrade] = useState("");
+
+  const { data: remoteSectors = [], isLoading: isLoadingSectors } =
+    useGetSectors();
+  const { data: remoteTrades = [], isLoading: isLoadingTrades } =
+    useGetTradesBySector(sector);
+
+  const sectorOptions = remoteSectors.map((s) => ({
+    label: s.name,
+    value: s.id,
+  }));
+
+  const tradeOptions = remoteTrades.map((t) => ({
+    label: t.name,
+    value: t.id,
+  }));
   const [durationValue, setDurationValue] = useState("1");
   const [durationUnit, setDurationUnit] = useState("Weeks");
   const [slots, setSlots] = useState("2");
@@ -84,6 +104,7 @@ export const PostJobModal: React.FC<PostJobModalProps> = ({
         deadline: deadline || new Date().toISOString(),
         description,
         requirements,
+        duration: `${durationValue} ${durationUnit}`,
       },
       {
         onSuccess: () => {
@@ -161,41 +182,55 @@ export const PostJobModal: React.FC<PostJobModalProps> = ({
 
                 <div className="grid grid-cols-2 gap-3">
                   <Select
+                    label="Sector"
+                    placeholder={
+                      isLoadingSectors ? "Loading sectors..." : "Select Sector"
+                    }
+                    options={sectorOptions}
+                    value={sector}
+                    onChange={(e) => {
+                      setSector(e.target.value);
+                      setTrade("");
+                    }}
+                  />
+
+                  <Select
                     label="Trade"
-                    placeholder="Select"
-                    options={[
-                      "Carpentry",
-                      "Plumbing",
-                      "Masonry",
-                      "Painting",
-                      "Electrical Installation",
-                    ]}
+                    placeholder={
+                      isLoadingTrades
+                        ? "Loading trades..."
+                        : sector
+                        ? "Select Trade"
+                        : "Select Sector first"
+                    }
+                    disabled={!sector || isLoadingTrades}
+                    options={tradeOptions}
                     value={trade}
                     onChange={(e) => setTrade(e.target.value)}
                   />
+                </div>
 
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-text-dark font-medium text-xs leading-[1.4] select-none">
-                      Duration
-                    </label>
-                    <div className="flex items-center gap-1.5">
-                      <Input
-                        type="number"
-                        min="1"
-                        value={durationValue}
-                        onChange={(e) => setDurationValue(e.target.value)}
-                        containerClassName="w-16"
-                        className="!h-11 !text-center !font-semibold"
-                      />
-                      <Select
-                        containerClassName="flex-1"
-                        size="sm"
-                        showPlaceholderOption={false}
-                        value={durationUnit}
-                        onChange={(e) => setDurationUnit(e.target.value)}
-                        options={["Days", "Weeks", "Months"]}
-                      />
-                    </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-text-dark font-medium text-xs leading-[1.4] select-none">
+                    Duration
+                  </label>
+                  <div className="flex items-center gap-1.5">
+                    <Input
+                      type="number"
+                      min="1"
+                      value={durationValue}
+                      onChange={(e) => setDurationValue(e.target.value)}
+                      containerClassName="w-20"
+                      className="!h-11 !text-center !font-semibold"
+                    />
+                    <Select
+                      containerClassName="flex-1"
+                      size="sm"
+                      showPlaceholderOption={false}
+                      value={durationUnit}
+                      onChange={(e) => setDurationUnit(e.target.value)}
+                      options={["Days", "Weeks", "Months"]}
+                    />
                   </div>
                 </div>
 

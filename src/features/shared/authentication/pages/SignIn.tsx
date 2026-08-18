@@ -14,6 +14,7 @@ import { useAppDispatch } from "@/store/hooks";
 import { setSidebarVariant } from "@/store/slices/authSlice";
 import { validateEmail } from "@/src/lib/validation";
 import { ApiError } from "@/src/lib/api/client";
+import { GoogleLogin } from "@react-oauth/google";
 import {
   useLogin,
   useGoogleAuth,
@@ -39,7 +40,8 @@ export const SignIn: React.FC = () => {
   }>({});
 
   const { mutate: loginUser, isPending: isLoggingIn } = useLogin();
-  const { loginWithGoogle, isPending: isGooglePending } = useGoogleAuth();
+  const { handleGoogleSuccess, handleGoogleError, isPending: isGooglePending } =
+    useGoogleAuth();
 
   const [otpEmail, setOtpEmail] = useState("chidi.umeh@email.com");
   const [otpCode, setOtpCode] = useState<string[]>(["4", "8", "2", ""]);
@@ -349,19 +351,29 @@ export const SignIn: React.FC = () => {
                 />
               </div>
 
-              <Button
-                type="button"
-                variant="outline"
-                size="lg"
-                onClick={() => loginWithGoogle()}
-                disabled={isSubmitting || isLoggingIn || isGooglePending}
-                leftIcon={<FcGoogle className="w-4 h-4 sm:w-5 sm:h-5" />}
-                className="w-full h-12.5 text-text-dark font-medium text-sm xl:text-base cursor-pointer"
-              >
-                {isGooglePending
-                  ? "Connecting to Google..."
-                  : "Continue with Google"}
-              </Button>
+              <div className="relative w-full overflow-hidden rounded-lg">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="lg"
+                  disabled={isSubmitting || isLoggingIn || isGooglePending}
+                  leftIcon={<FcGoogle className="w-4 h-4 sm:w-5 sm:h-5" />}
+                  className="w-full h-12.5 text-text-dark font-medium text-sm xl:text-base cursor-pointer"
+                >
+                  {isGooglePending
+                    ? "Connecting to Google..."
+                    : "Continue with Google"}
+                </Button>
+                <div className="absolute inset-0 opacity-0 overflow-hidden cursor-pointer [&>div]:!w-full [&>div>iframe]:!w-full [&>div>iframe]:!h-full [&>div>iframe]:!scale-150">
+                  <GoogleLogin
+                    onSuccess={handleGoogleSuccess}
+                    onError={handleGoogleError}
+                    width="100%"
+                    shape="rectangular"
+                    size="large"
+                  />
+                </div>
+              </div>
 
               <div
                 suppressHydrationWarning

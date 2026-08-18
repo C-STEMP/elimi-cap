@@ -10,7 +10,7 @@ import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
 import { StatusModal } from "@/components/status-modal";
 import { ASSETS_URL } from "@/assets";
-import { validateNIN } from "@/src/lib/validation";
+import { validateNIN, formatToIsoDate } from "@/src/lib/validation";
 import { ASSESSMENT_CENTRE_ROUTES } from "@/features/assessment-centre/utils/centreRoutes";
 
 import { useOnboarding } from "@/features/assessment-centre/features/Onboarding/hooks";
@@ -119,7 +119,7 @@ export const CenterVerifyIdentity: React.FC = () => {
             firstName: centrePersonalInfo.firstName,
             lastName: centrePersonalInfo.lastName,
             middleName: centrePersonalInfo.middleName,
-            dob: centrePersonalInfo.dob,
+            dob: formatToIsoDate(centrePersonalInfo.dob),
             gender: centrePersonalInfo.gender,
             nationality: centrePersonalInfo.nationality,
           },

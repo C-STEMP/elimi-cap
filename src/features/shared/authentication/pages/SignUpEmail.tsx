@@ -17,6 +17,7 @@ import {
   validatePassword,
   validateConfirmPassword,
 } from "@/src/lib/validation";
+import { GoogleLogin } from "@react-oauth/google";
 import {
   useRegister,
   useGoogleAuth,
@@ -37,7 +38,8 @@ export const SignUpEmail: React.FC = () => {
   const { toast } = useToast();
   const router = useRouter();
   const { mutate: registerUser, isPending } = useRegister();
-  const { loginWithGoogle, isPending: isGooglePending } = useGoogleAuth();
+  const { handleGoogleSuccess, handleGoogleError, isPending: isGooglePending } =
+    useGoogleAuth();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -235,27 +237,37 @@ export const SignUpEmail: React.FC = () => {
         </div>
 
         <div className="w-full flex flex-col gap-3">
-          <Button
-            type="button"
-            variant="outline"
-            size="lg"
-            onClick={() => loginWithGoogle()}
-            disabled={isPending || isGooglePending}
-            leftIcon={
-              <Image
-                src={ASSETS_URL.googleIcon}
-                alt="Google"
-                width={20}
-                height={20}
-                className="w-4 h-4 sm:w-5 sm:h-5"
+          <div className="relative w-full overflow-hidden rounded-lg">
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              disabled={isPending || isGooglePending}
+              leftIcon={
+                <Image
+                  src={ASSETS_URL.googleIcon}
+                  alt="Google"
+                  width={20}
+                  height={20}
+                  className="w-4 h-4 sm:w-5 sm:h-5"
+                />
+              }
+              className="w-full h-12.5 text-text-dark font-medium text-sm xl:text-base cursor-pointer"
+            >
+              {isGooglePending
+                ? "Connecting to Google..."
+                : "Continue with Google"}
+            </Button>
+            <div className="absolute inset-0 opacity-0 overflow-hidden cursor-pointer [&>div]:!w-full [&>div>iframe]:!w-full [&>div>iframe]:!h-full [&>div>iframe]:!scale-150">
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={handleGoogleError}
+                width="100%"
+                shape="rectangular"
+                size="large"
               />
-            }
-            className="w-full h-12.5 text-text-dark font-medium text-sm xl:text-base cursor-pointer"
-          >
-            {isGooglePending
-              ? "Connecting to Google..."
-              : "Continue with Google"}
-          </Button>
+            </div>
+          </div>
 
           <Button
             type="button"

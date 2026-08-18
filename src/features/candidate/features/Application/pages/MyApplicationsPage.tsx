@@ -10,7 +10,8 @@ import { UpcomingCard } from "@/features/candidate/features/Dashboard/components
 import { VerifiedBadge } from "@/features/candidate/features/Dashboard/components/VerifiedBadge";
 import { Button } from "@/src/components/ui/button";
 import { useAppSelector } from "@/store/hooks";
-import { ApplicationStatus } from "@/store/slices/applicationSlice";
+import { Application, ApplicationStatus } from "@/store/slices/applicationSlice";
+import { useGetApplications } from "@/src/features/candidate/features/Application/hooks";
 
 type FilterTab = "All" | "Ongoing" | "Completed" | "Draft";
 
@@ -94,9 +95,27 @@ const getCategory = (
 
 export const MyApplicationsPage: React.FC = () => {
   const router = useRouter();
-  const applications = useAppSelector(
+  const { data: remoteApps = [] } = useGetApplications();
+  const reduxApps = useAppSelector(
     (state) => state.application.applications,
   );
+
+  const applications = React.useMemo(() => {
+    const remoteMapped: Application[] = remoteApps.map((app) => ({
+      id: app.id,
+      title: `${app.type} Application`,
+      subtitle: `Status: ${app.currentStageKey || app.status}`,
+      status: (app.status as any) || "draft",
+      createdAt: app.createdAt,
+      updatedAt: app.updatedAt || app.createdAt,
+      selfAssessmentCompleted: false,
+      paymentCompleted: false,
+      evidenceUploaded: false,
+    }));
+    const ids = new Set(remoteMapped.map((a) => a.id));
+    const uniqueRedux = reduxApps.filter((a) => !ids.has(a.id));
+    return [...remoteMapped, ...uniqueRedux];
+  }, [remoteApps, reduxApps]);
 
   const [activeTab, setActiveTab] = useState<FilterTab>("All");
 
@@ -178,7 +197,7 @@ export const MyApplicationsPage: React.FC = () => {
                 </Button>
               </div>
             ) : (
-              <div className="flex flex-col gap-3.5 flex-1 justify-center py-4">
+              <div className="flex flex-col gap-3.5 flex-1 justify-start pt-4 pb-2">
                 {filteredApplications.map((app) => {
                   const statusDisplay = getStatusDisplay(app.status);
                   return (
@@ -217,13 +236,7 @@ export const MyApplicationsPage: React.FC = () => {
 
         <div className="lg:col-span-3 flex flex-col gap-6">
           <CalendarWidget />
-          <UpcomingCard
-            interview={{
-              title: "Panel Interview",
-              date: "22-07-2026",
-              time: "12:00PM",
-            }}
-          />
+          <UpcomingCard interview={null} />
           <VerifiedBadge isVerified={false} />
         </div>
       </div>

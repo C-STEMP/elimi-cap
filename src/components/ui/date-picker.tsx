@@ -39,14 +39,28 @@ const MONTHS = [
 
 const parseDateString = (str: string): Date | null => {
   if (!str || typeof str !== "string") return null;
-  const parts = str.trim().split(/[/.-]/);
+  const trimmed = str.trim();
+  const parts = trimmed.split(/[/.-]/);
   if (parts.length === 3) {
-    let day = parseInt(parts[0], 10);
-    let month = parseInt(parts[1], 10) - 1;
-    let year = parseInt(parts[2], 10);
-    if (year < 100) {
-      year += 2000;
+    let day = 0;
+    let month = 0;
+    let year = 0;
+
+    if (parts[0].length === 4) {
+      // YYYY-MM-DD (ISO format)
+      year = parseInt(parts[0], 10);
+      month = parseInt(parts[1], 10) - 1;
+      day = parseInt(parts[2].slice(0, 2), 10);
+    } else {
+      // DD/MM/YYYY or MM/DD/YYYY
+      day = parseInt(parts[0], 10);
+      month = parseInt(parts[1], 10) - 1;
+      year = parseInt(parts[2], 10);
+      if (year < 100) {
+        year += 2000;
+      }
     }
+
     if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
       const d = new Date(year, month, day);
       if (
@@ -58,7 +72,8 @@ const parseDateString = (str: string): Date | null => {
       }
     }
   }
-  return null;
+  const d = new Date(trimmed);
+  return isNaN(d.getTime()) ? null : d;
 };
 
 const formatDateString = (date: Date, isShortYear: boolean): string => {
