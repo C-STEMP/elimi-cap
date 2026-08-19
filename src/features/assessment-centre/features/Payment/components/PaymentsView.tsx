@@ -4,6 +4,8 @@ import React, { useState } from "react";
 import { FiSearch, FiList, FiGrid } from "react-icons/fi";
 import { Select } from "@/src/components/ui/select";
 import { PaymentTransaction } from "@/features/assessment-centre/types";
+import { useGetCentrePayments } from "@/src/features/shared/centre/hooks";
+import { Loader } from "@/src/components/ui/loader";
 
 interface PaymentsViewProps {
   onWithdrawFunds: () => void;
@@ -11,13 +13,30 @@ interface PaymentsViewProps {
 }
 
 export const PaymentsView: React.FC<PaymentsViewProps> = ({
-  onWithdrawFunds,
   onSelectReceipt,
 }) => {
-  const [transactions, setTransactions] = useState<PaymentTransaction[]>([]);
+  const { data: remotePayments = [], isLoading } = useGetCentrePayments();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+
+  const transactions: PaymentTransaction[] = remotePayments.map((tx) => ({
+    id: tx.applicationId,
+    candidateName: tx.candidateName || "Candidate",
+    assessmentType: tx.applicationType,
+    amountPaid: `${tx.amount.currency === "USD" ? "$" : "₦"}${(
+      Number(tx.amount.amountMinorUnits || "0") / 100
+    ).toLocaleString()}`,
+    status: tx.status === "completed" ? "Paid" : "Pending",
+    date: tx.paidAt
+      ? new Date(tx.paidAt).toLocaleDateString("en-GB")
+      : tx.initiatedAt
+      ? new Date(tx.initiatedAt).toLocaleDateString("en-GB")
+      : "N/A",
+    transactionId: tx.applicationId,
+    paymentMethod: "Direct Payment",
+    description: `${tx.applicationType} Application Fee`,
+  }));
 
   const filteredTransactions = transactions.filter((tx) => {
     const matchesSearch =
@@ -26,6 +45,14 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
     const matchesStatus = statusFilter === "All" || tx.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  if (isLoading) {
+    return (
+      <div className="w-full bg-white rounded-3xl p-12 flex items-center justify-center">
+        <Loader fullscreen={false} size="small" tip="Loading payments..." />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full flex flex-col gap-6 select-text">

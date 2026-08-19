@@ -9,7 +9,7 @@ import { PassportUpload } from "@/src/components/ui/passport-upload";
 import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
 import { InfoIcon } from "@/src/components/ui/info-icon";
-import { FiArrowLeft, FiArrowRight } from "react-icons/fi";
+import { FiArrowLeft, FiArrowRight, FiCheck } from "react-icons/fi";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -26,6 +26,11 @@ import {
 import { useCountryStateCity } from "@/src/lib/hooks/useCountryStateCity";
 import { useOnboarding } from "@/src/features/candidate/features/Onboarding/hooks";
 
+import {
+  IMPAIRMENT_OPTIONS,
+  GENDER_OPTIONS,
+} from "@/features/candidate/utils";
+
 export interface RPLPersonalInfoProps {
   onBack?: () => void;
   onSuccess?: () => void;
@@ -40,7 +45,10 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
   const router = useRouter();
   const { getOnboarding, saveOnboarding } = useOnboarding();
 
+  const authUser = useAppSelector((s) => s.auth.user);
   const savedPersonalInfo = useAppSelector((s) => s.onboarding.personalInfo);
+
+  const initialEmail = savedPersonalInfo.email || authUser?.email || "";
 
   const [form, setForm] = useState({
     firstName: savedPersonalInfo.firstName ?? "",
@@ -49,7 +57,7 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
     dob: savedPersonalInfo.dob ?? "",
     gender: savedPersonalInfo.gender ?? "",
     nationality: savedPersonalInfo.nationality ?? "",
-    email: savedPersonalInfo.email ?? "",
+    email: initialEmail,
     phoneNumber: savedPersonalInfo.phoneNumber ?? "",
     country: savedPersonalInfo.country || "Nigeria",
     state: savedPersonalInfo.state ?? "",
@@ -57,8 +65,24 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
     streetAddress: savedPersonalInfo.streetAddress ?? "",
     completedBefore: "no",
     learnerId: "",
-    impairment: savedPersonalInfo.impairment ?? "",
+    impairment: savedPersonalInfo.impairment ?? "None / No impairment",
   });
+
+  const [selectedImpairments, setSelectedImpairments] = useState<string[]>(() => {
+    if (
+      !savedPersonalInfo.impairment ||
+      savedPersonalInfo.impairment === "No" ||
+      savedPersonalInfo.impairment === "None"
+    ) {
+      return ["None / No impairment"];
+    }
+    return savedPersonalInfo.impairment
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+  });
+
+  const [otherImpairment, setOtherImpairment] = useState("");
 
   // Hydrate from getOnboarding API response if available
   useEffect(() => {
@@ -71,6 +95,16 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
       const passportAssetId: string = apiData?.passportAssetId ?? "";
       const passportUrl: string = apiData?.passportUrl ?? "";
 
+      const hydratedEmail =
+        ci?.emailAddress || savedPersonalInfo.email || authUser?.email || "";
+
+      const rawImpairment =
+        acc?.impairment || savedPersonalInfo.impairment || "None / No impairment";
+      const parsedImpairments =
+        rawImpairment === "No" || rawImpairment === "None" || !rawImpairment
+          ? ["None / No impairment"]
+          : rawImpairment.split(",").map((s: string) => s.trim()).filter(Boolean);
+
       const hydrated = {
         firstName: pd?.firstName || savedPersonalInfo.firstName || "",
         lastName: pd?.lastName || savedPersonalInfo.lastName || "",
@@ -78,92 +112,50 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
         dob: pd?.dob || savedPersonalInfo.dob || "",
         gender: pd?.gender || savedPersonalInfo.gender || "",
         nationality: pd?.nationality || savedPersonalInfo.nationality || "",
-        email: ci?.emailAddress || savedPersonalInfo.email || "",
-        phoneNumber: ci?.phoneNumber?.number || savedPersonalInfo.phoneNumber || "",
+        email: hydratedEmail,
+        phoneNumber:
+          ci?.phoneNumber?.number || savedPersonalInfo.phoneNumber || "",
         country: ra?.country || savedPersonalInfo.country || "Nigeria",
         state: ra?.state || savedPersonalInfo.state || "",
         lga: ra?.lga || savedPersonalInfo.lga || "",
         streetAddress: ra?.address || savedPersonalInfo.streetAddress || "",
         completedBefore: "no",
         learnerId: "",
-        impairment: acc?.impairment || savedPersonalInfo.impairment || "",
+        impairment: parsedImpairments.join(", "),
       };
 
       setForm(hydrated);
+      setSelectedImpairments(parsedImpairments);
       dispatch(setPersonalInfo(hydrated));
 
       if (passportAssetId || passportUrl) {
         dispatch(setPersonalInfo({ passportAssetId, passportUrl }));
-        setPassportDefaultImage(passportUrl || savedPersonalInfo.passportUrl || "");
+        setPassportDefaultImage(
+          passportUrl || savedPersonalInfo.passportUrl || "",
+        );
       } else if (savedPersonalInfo.passportUrl) {
         setPassportDefaultImage(savedPersonalInfo.passportUrl);
       }
+    } else if (authUser?.email && !form.email) {
+      setForm((prev) => ({ ...prev, email: authUser.email || "" }));
     }
-  }, [getOnboarding.data]);
+  }, [getOnboarding.data, authUser?.email]);
 
-  const [otherImpairment, setOtherImpairment] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [passportFile, setPassportFile] = useState<File | null>(null);
   const [passportDefaultImage, setPassportDefaultImage] = useState<string>(
     savedPersonalInfo.passportUrl || "",
   );
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [passportError, setPassportError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [showConfirmDraftModal, setShowConfirmDraftModal] = useState(false);
-  const [showDraftModal, setShowDraftModal] = useState(false);
 
-  const handleSaveDraft = () => {
-    setShowConfirmDraftModal(true);
-  };
-
-  const handleConfirmSaveDraft = () => {
-    setShowConfirmDraftModal(false);
-    saveOnboarding.mutate(
-      {
-        personalDetails: {
-          firstName: form.firstName,
-          lastName: form.lastName,
-          middleName: form.middleName,
-          dob: formatToIsoDate(form.dob),
-          gender: form.gender,
-          nationality: form.nationality,
-        },
-        contactInformation: {
-          emailAddress: form.email,
-          phoneNumber: {
-            countryCode: "+234",
-            number: form.phoneNumber,
-          },
-        },
-        residentialAddress: {
-          country: form.country,
-          state: form.state,
-          lga: form.lga,
-          address: form.streetAddress,
-        },
-        accessibility: {
-          hasImpairment: form.impairment !== "No" && Boolean(form.impairment),
-          impairment: form.impairment,
-        },
-      },
-      {
-        onSuccess: () => {
-          setShowDraftModal(true);
-        },
-      },
-    );
-  };
+  const { countries, states, cities, resolvedCountryCode } =
+    useCountryStateCity(form.country, form.state);
 
   useEffect(() => {
     dispatch(setSidebarVariant("rpl-form"));
     dispatch(setRplStep(1));
   }, [dispatch]);
-
-  // ── Country / State / City cascading selects ────────────────────────────
-  const { countries, states, cities } = useCountryStateCity(
-    form.country,
-    form.state,
-  );
 
   const update = (field: keyof typeof form, value: string) => {
     let nextState = "";
@@ -184,38 +176,137 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
-    // Dispatch to Redux immediately for full persistence across steps/pages
     dispatch(
-      setPersonalInfo({
-        [field]: value,
-        state: nextState,
-        lga: nextLga,
-      } as any),
+      setPersonalInfo({ [field]: value, state: nextState, lga: nextLga } as any),
     );
   };
 
-  const validateForm = () => {
-    let valid = true;
-    const newErrors: Record<string, string> = {};
+  const handleToggleImpairment = (option: string) => {
+    let next: string[];
+    const isExclusive =
+      option === "None / No impairment" || option === "Prefer not to say";
 
-    if (!passportFile && !passportDefaultImage && !savedPersonalInfo.passportUrl && !savedPersonalInfo.passportAssetId) {
-      newErrors.passport = "Passport photograph is required";
+    if (isExclusive) {
+      next = [option];
+      setOtherImpairment("");
+    } else {
+      const withoutExclusive = selectedImpairments.filter(
+        (x) =>
+          x !== "None / No impairment" &&
+          x !== "Prefer not to say" &&
+          x !== "None" &&
+          x !== "No",
+      );
+      if (withoutExclusive.includes(option)) {
+        next = withoutExclusive.filter((x) => x !== option);
+        if (next.length === 0) next = ["None / No impairment"];
+      } else {
+        next = [...withoutExclusive, option];
+      }
+    }
+    setSelectedImpairments(next);
+    const joined = next.join(", ");
+    update("impairment", joined);
+  };
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    let valid = true;
+
+    const hasPassport = Boolean(
+      passportFile ||
+      passportDefaultImage ||
+      savedPersonalInfo.passportUrl ||
+      savedPersonalInfo.passportAssetId
+    );
+
+    if (!hasPassport) {
+      setPassportError("Passport photograph is required");
+      valid = false;
+    } else {
+      setPassportError("");
+    }
+
+    if (form.completedBefore === "yes" && !form.learnerId.trim()) {
+      newErrors.learnerId = "Learner ID is required";
+      valid = false;
+    }
+
+    if (selectedImpairments.length === 0) {
+      newErrors.impairment = "Please select your impairment status";
+      valid = false;
+    } else if (
+      selectedImpairments.includes("Other") &&
+      !otherImpairment.trim()
+    ) {
+      newErrors.otherImpairment = "Please specify your impairment";
       valid = false;
     }
 
     const result = personalInfoSchema.safeParse(form);
     if (!result.success) {
       Object.assign(newErrors, extractZodErrors(result));
-      if (form.completedBefore !== "yes") {
-        delete newErrors.learnerId;
-      }
-      if (Object.keys(newErrors).length > 0) {
-        valid = false;
-      }
+      valid = false;
     }
 
     setErrors(newErrors);
     return valid;
+  };
+
+  const [showConfirmDraftModal, setShowConfirmDraftModal] = useState(false);
+  const [showDraftModal, setShowDraftModal] = useState(false);
+
+  const handleSaveDraft = () => {
+    setShowConfirmDraftModal(true);
+  };
+
+  const handleConfirmSaveDraft = () => {
+    setShowConfirmDraftModal(false);
+    const resolvedImpairment = selectedImpairments
+      .map((imp) => (imp === "Other" ? `Other: ${otherImpairment}` : imp))
+      .join(", ");
+
+    const hasImpairment =
+      !selectedImpairments.includes("None / No impairment") &&
+      !selectedImpairments.includes("Prefer not to say") &&
+      !selectedImpairments.includes("None") &&
+      !selectedImpairments.includes("No") &&
+      selectedImpairments.length > 0;
+
+    saveOnboarding.mutate(
+      {
+        personalDetails: {
+          firstName: form.firstName,
+          lastName: form.lastName,
+          middleName: form.middleName,
+          dob: formatToIsoDate(form.dob),
+          gender: form.gender,
+          nationality: form.nationality,
+        },
+        contactInformation: {
+          emailAddress: form.email || authUser?.email || "",
+          phoneNumber: {
+            countryCode: resolvedCountryCode ? `+${resolvedCountryCode}` : "+234",
+            number: form.phoneNumber,
+          },
+        },
+        residentialAddress: {
+          country: form.country,
+          state: form.state,
+          lga: form.lga,
+          address: form.streetAddress,
+        },
+        accessibility: {
+          hasImpairment,
+          impairment: resolvedImpairment,
+        },
+      },
+      {
+        onSuccess: () => {
+          setShowDraftModal(true);
+        },
+      },
+    );
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -232,6 +323,26 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
     }
 
     setIsSubmitting(true);
+    const resolvedImpairment = selectedImpairments
+      .map((imp) => (imp === "Other" ? `Other: ${otherImpairment}` : imp))
+      .join(", ");
+
+    const hasImpairment =
+      !selectedImpairments.includes("None / No impairment") &&
+      !selectedImpairments.includes("Prefer not to say") &&
+      !selectedImpairments.includes("None") &&
+      !selectedImpairments.includes("No") &&
+      selectedImpairments.length > 0;
+
+    dispatch(
+      setPersonalInfo({
+        ...form,
+        email: form.email || authUser?.email || "",
+        impairment: resolvedImpairment,
+        passportFileName:
+          passportFile?.name ?? savedPersonalInfo.passportFileName,
+      }),
+    );
 
     saveOnboarding.mutate(
       {
@@ -244,9 +355,9 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
           nationality: form.nationality,
         },
         contactInformation: {
-          emailAddress: form.email,
+          emailAddress: form.email || authUser?.email || "",
           phoneNumber: {
-            countryCode: "+234",
+            countryCode: resolvedCountryCode ? `+${resolvedCountryCode}` : "+234",
             number: form.phoneNumber,
           },
         },
@@ -257,19 +368,13 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
           address: form.streetAddress,
         },
         accessibility: {
-          hasImpairment: form.impairment !== "No" && Boolean(form.impairment),
-          impairment: form.impairment,
+          hasImpairment,
+          impairment: resolvedImpairment,
         },
       },
       {
         onSettled: () => {
           setIsSubmitting(false);
-          toast({
-            type: "success",
-            title: "Personal Information Saved",
-            description: "Step 1 of 4 completed successfully!",
-          });
-
           if (onSuccess) {
             onSuccess();
           } else {
@@ -285,47 +390,62 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
-      className="w-full flex flex-col gap-6 select-text max-w-2xl mx-auto pb-12"
+      className="w-full flex flex-col gap-6 select-text max-w-2xl mx-auto pb-10"
     >
-      <div className="flex flex-col sm:flex-row items-start justify-between gap-4 sm:gap-6">
-        <div className="flex flex-col gap-1 pt-1 w-full sm:w-auto">
-          <h1 className="text-2xl xl:text-[26px] font-extrabold tracking-tight text-primary">
-            Step 1 of 4: Personal Information
-          </h1>
-          <p className="text-neutral-secondary text-xs sm:text-sm font-normal mt-1">
-            Establish the candidate's identity and eligibility.
-          </p>
+      <form onSubmit={handleSubmit} className="w-full flex flex-col gap-4">
+        {/* Step indicator + Passport Upload */}
+        <div className="flex flex-col sm:flex-row items-start justify-between gap-4 sm:gap-6">
+          <div className="flex flex-col gap-2">
+            <h1 className="text-2xl xl:text-[26px] font-extrabold tracking-tight text-primary">
+              Step 1 of 3: Personal Information
+            </h1>
+            <p className="text-xs xl:text-sm text-neutral-secondary font-normal leading-relaxed">
+              Provide your personal details to help us identify you and maintain
+              your <br className="hidden sm:inline" /> official assessment records.
+            </p>
+          </div>
 
-          <h2 className="text-xl xl:text-2xl font-bold tracking-tight text-neutral-primary mt-4 flex items-center gap-1.5">
-            Personal Details <InfoIcon sectionName="Personal Details" />
-          </h2>
+          <PassportUpload
+            required
+            defaultImage={passportDefaultImage}
+            error={passportError}
+            onImageChange={(file, asset) => {
+              setPassportFile(file);
+              const previewUrl =
+                asset?.url || (file ? URL.createObjectURL(file) : "");
+              if (file || previewUrl) {
+                setPassportError("");
+                setPassportDefaultImage(
+                  previewUrl || savedPersonalInfo.passportUrl || "",
+                );
+                dispatch(
+                  setPersonalInfo({
+                    passportAssetId:
+                      asset?.assetId ||
+                      savedPersonalInfo.passportAssetId ||
+                      "",
+                    passportUrl:
+                      previewUrl || savedPersonalInfo.passportUrl || "",
+                    passportFileName:
+                      file?.name ?? savedPersonalInfo.passportFileName ?? "",
+                  }),
+                );
+              } else {
+                setPassportDefaultImage("");
+                dispatch(
+                  setPersonalInfo({
+                    passportAssetId: "",
+                    passportUrl: "",
+                    passportFileName: "",
+                  }),
+                );
+              }
+            }}
+          />
         </div>
 
-        <PassportUpload
-          required
-          defaultImage={passportDefaultImage}
-          error={errors.passport}
-          onImageChange={(file, asset) => {
-            setPassportFile(file);
-            if (errors.passport) {
-              setErrors((prev) => ({ ...prev, passport: "" }));
-            }
-            if (asset) {
-              setPassportDefaultImage(asset.url);
-              dispatch(
-                setPersonalInfo({
-                  passportAssetId: asset.assetId,
-                  passportUrl: asset.url,
-                  passportFileName: file?.name ?? "",
-                }),
-              );
-            }
-          }}
-        />
-      </div>
-
-      <form onSubmit={handleSubmit} className="w-full flex flex-col gap-5">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Section 1: Personal Information Fields */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-2">
           <Input
             label={
               <span>
@@ -381,7 +501,7 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
               </span>
             }
             placeholder="Select"
-            options={["Male", "Female", "Prefer not to say"]}
+            options={GENDER_OPTIONS}
             value={form.gender}
             error={errors.gender}
             onChange={(e) => update("gender", e.target.value)}
@@ -401,6 +521,7 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
           />
         </div>
 
+        {/* Section 2: Contact Information */}
         <div className="flex flex-col gap-4 mt-2">
           <h2 className="text-base sm:text-lg font-bold text-text-dark flex items-center gap-1.5">
             Contact Information <InfoIcon sectionName="Contact Information" />
@@ -416,9 +537,10 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
               }
               type="email"
               placeholder="yourname@email.com"
-              value={form.email}
-              error={errors.email}
-              onChange={(e) => update("email", e.target.value)}
+              value={form.email || authUser?.email || ""}
+              disabled={true}
+              className="bg-gray-100/70 cursor-not-allowed opacity-80"
+              helperText="Auto-filled from your registered account email."
             />
 
             <PhoneInput
@@ -430,9 +552,16 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
               }
               value={form.phoneNumber}
               onChange={(v) => update("phoneNumber", v)}
-              onCountryChange={(cName) => update("country", cName)}
+              onCountryChange={(cName) => {
+                update("country", cName);
+                if (!form.nationality) {
+                  update("nationality", cName);
+                }
+              }}
               error={errors.phoneNumber}
-              defaultCountry="NG"
+              country={
+                resolvedCountryCode ? resolvedCountryCode.toLowerCase() : "ng"
+              }
             />
           </div>
         </div>
@@ -440,7 +569,7 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
         {/* Section 3: Residential Address */}
         <div className="flex flex-col gap-4 mt-2">
           <h2 className="text-base sm:text-lg font-bold text-text-dark flex items-center gap-1.5">
-            Street Address <InfoIcon sectionName="Residential Address" />
+            Residential Address <InfoIcon sectionName="Residential Address" />
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -531,7 +660,11 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
                 >
                   <span>Yes</span>
                   <div
-                    className={`w-4 h-4 rounded-full border flex items-center justify-center ${form.completedBefore === "yes" ? "border-primary-solid bg-primary-solid" : "border-gray-400"}`}
+                    className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                      form.completedBefore === "yes"
+                        ? "border-primary-solid bg-primary-solid"
+                        : "border-gray-400"
+                    }`}
                   >
                     {form.completedBefore === "yes" && (
                       <div className="w-1.5 h-1.5 rounded-full bg-white" />
@@ -553,7 +686,11 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
                 >
                   <span>No</span>
                   <div
-                    className={`w-4 h-4 rounded-full border flex items-center justify-center ${form.completedBefore === "no" ? "border-primary-solid bg-primary-solid" : "border-gray-400"}`}
+                    className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                      form.completedBefore === "no"
+                        ? "border-primary-solid bg-primary-solid"
+                        : "border-gray-400"
+                    }`}
                   >
                     {form.completedBefore === "no" && (
                       <div className="w-1.5 h-1.5 rounded-full bg-white" />
@@ -580,73 +717,90 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
           </div>
         </div>
 
-        {/* Section 5: Accessibility */}
+        {/* Section 5: Accessibility / Impairment (Comprehensive Multi-select) */}
         <div className="flex flex-col gap-4 mt-2">
           <h2 className="text-base sm:text-lg font-bold text-text-dark flex items-center gap-1.5">
             Accessibility <InfoIcon sectionName="Accessibility" />
           </h2>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Select
-              label={
-                <span>
-                  Do you have any impairment?
-                  <span className="text-primary-solid ml-0.5">*</span>
-                </span>
-              }
-              placeholder="Select"
-              options={[
-                "No",
-                "Visual impairment",
-                "Hearing impairment",
-                "Mobility impairment",
-                "Other",
-              ]}
-              value={form.impairment}
-              error={errors.impairment}
-              onChange={(e) => {
-                const val = e.target.value;
-                update("impairment", val);
-                if (val !== "Other") {
-                  setOtherImpairment("");
-                }
-              }}
-            />
+          <div className="flex flex-col gap-2.5">
+            <label className="text-xs sm:text-sm font-medium text-text-dark">
+              Do you have any impairment? (Select all that apply)
+              <span className="text-primary-solid ml-0.5">*</span>
+            </label>
 
-            {form.impairment === "Other" && (
-              <Input
-                label={
-                  <span>
-                    Specify Impairment
-                    <span className="text-primary-solid ml-0.5">*</span>
-                  </span>
-                }
-                type="text"
-                placeholder="Please specify your impairment"
-                value={otherImpairment}
-                error={errors.otherImpairment}
-                onChange={(e) => {
-                  setOtherImpairment(e.target.value);
-                  if (errors.otherImpairment) {
-                    setErrors((prev) => ({ ...prev, otherImpairment: "" }));
+            <div className="flex flex-wrap gap-2.5 w-full">
+              {IMPAIRMENT_OPTIONS.map((opt) => {
+                const isSelected = selectedImpairments.includes(opt);
+                return (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => handleToggleImpairment(opt)}
+                    className={`px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-2 cursor-pointer border text-left leading-snug break-words ${
+                      isSelected
+                        ? "bg-[#a31d38] text-white border-[#a31d38] shadow-xs"
+                        : "bg-white text-neutral-primary border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                    }`}
+                  >
+                    <div
+                      className={`w-4 h-4 rounded-md border flex items-center justify-center shrink-0 transition-colors ${
+                        isSelected
+                          ? "bg-white text-[#a31d38] border-white"
+                          : "border-gray-300 bg-white"
+                      }`}
+                    >
+                      {isSelected && <FiCheck className="w-3 h-3 stroke-[3]" />}
+                    </div>
+                    <span>{opt}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {errors.impairment && (
+              <span className="text-primary-solid text-xs font-semibold mt-1">
+                {errors.impairment}
+              </span>
+            )}
+
+            {selectedImpairments.includes("Other") && (
+              <div className="mt-2 max-w-md">
+                <Input
+                  label={
+                    <span>
+                      Specify Other Impairment
+                      <span className="text-primary-solid ml-0.5">*</span>
+                    </span>
                   }
-                }}
-              />
+                  type="text"
+                  placeholder="Please specify your impairment"
+                  value={otherImpairment}
+                  error={errors.otherImpairment}
+                  onChange={(e) => {
+                    setOtherImpairment(e.target.value);
+                    if (errors.otherImpairment) {
+                      setErrors((prev) => ({ ...prev, otherImpairment: "" }));
+                    }
+                  }}
+                />
+              </div>
             )}
           </div>
         </div>
 
-        <div className="flex items-center justify-between mt-8 pt-4 border-t border-gray-100 gap-4">
+        {/* Bottom Actions */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between mt-8 pt-4 border-t border-gray-100 gap-4">
           <button
             type="button"
             onClick={onBack || (() => router.back())}
-            className="flex items-center gap-2 text-neutral-secondary hover:text-neutral-primary font-semibold text-sm transition-colors cursor-pointer select-none focus:outline-none"
+            className="flex items-center gap-2 text-sm font-medium text-black hover:text-text-dark transition-colors cursor-pointer"
           >
             <FiArrowLeft className="w-4 h-4" />
             Back
           </button>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <button
               type="button"
               onClick={handleSaveDraft}
@@ -664,13 +818,13 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
 
             <Button
               type="submit"
-              variant="amber"
+              variant="secondary"
               size="md"
               loading={isSubmitting}
-              rightIcon={<FiArrowRight className="w-4.5 h-4.5" />}
-              className="px-8 h-11 text-white font-bold text-sm rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
+              className="px-8 h-11 text-white font-bold text-sm bg-secondary hover:bg-secondary-hover rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg cursor-pointer"
             >
-              Continue
+              <span>Next</span>
+              <FiArrowRight className="w-4 h-4" />
             </Button>
           </div>
         </div>
@@ -688,15 +842,6 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
         variant="draft-saved"
         onClose={() => setShowDraftModal(false)}
         onAction={() => router.push("/dashboard")}
-      />
-
-      <StatusModal
-        isOpen={showSuccessModal}
-        type="success"
-        title="Personal Information Saved"
-        description="Step 1 of 4 completed successfully!"
-        actionLabel="Continue Application"
-        onAction={() => setShowSuccessModal(false)}
       />
     </motion.div>
   );

@@ -145,6 +145,38 @@ export const AssessmentCentreCandidateFormView: React.FC<
 
             <div className="flex flex-col gap-3">
               <h3 className="text-sm font-extrabold text-black uppercase tracking-wide">
+                Assessment Centre Details
+              </h3>
+              <div className="grid grid-cols-1 gap-2.5 text-xs sm:text-sm">
+                <div className="flex items-center gap-2 border-b border-gray-200/70 pb-1.5">
+                  <span className="font-semibold text-black shrink-0 w-36">
+                    Centre Name:
+                  </span>
+                  <span className="text-gray-800 font-medium">
+                    Lagos State Skills Assessment Centre
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 border-b border-gray-200/70 pb-1.5">
+                  <span className="font-semibold text-black shrink-0 w-36">
+                    Registration No:
+                  </span>
+                  <span className="text-gray-600 font-medium">
+                    AC-NBTE-0042
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 border-b border-gray-200/70 pb-1.5">
+                  <span className="font-semibold text-black shrink-0 w-36">
+                    Centre Address:
+                  </span>
+                  <span className="text-gray-600 font-medium">
+                    Plot 12 Commercial Avenue, Ikeja, Lagos State
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <h3 className="text-sm font-extrabold text-black uppercase tracking-wide">
                 Evidence Summary
               </h3>
               <div className="grid grid-cols-1 gap-2 text-xs sm:text-sm text-gray-700">

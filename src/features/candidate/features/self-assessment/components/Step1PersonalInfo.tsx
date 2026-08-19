@@ -75,7 +75,12 @@ export const Step1PersonalInfo: React.FC<Step1Props> = ({ onNext, onBack }) => {
     let valid = true;
     const newErrors: Record<string, string> = {};
 
-    if (!passportFile && !passportPreview) {
+    if (
+      !passportFile &&
+      !passportPreview &&
+      !savedPersonalInfo.passportUrl &&
+      !savedPersonalInfo.passportAssetId
+    ) {
       newErrors.passport = "Passport photograph is required";
       valid = false;
     }

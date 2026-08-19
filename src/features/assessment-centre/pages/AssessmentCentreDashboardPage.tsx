@@ -52,22 +52,39 @@ import { SettingsView } from "../features/Settings/components/SettingsView";
 import { SettingsHeader } from "../features/Settings/components/SettingsHeader";
 
 import { AssessmentCentreTab, PaymentTransaction } from "../types";
-import { MOCK_STAFF_MEMBERS, MOCK_ASSESSORS } from "@/features/assessment-centre/utils/constants";
-
 import { useAppSelector } from "@/src/store/hooks";
-import { getPermittedTabs, RoleType } from "../utils/rbac";
+import {
+  useGetCentreDashboard,
+  useGetCentreStaff,
+  useGetRetainedRequests,
+} from "@/src/features/shared/centre/hooks";
+import { useGetApplications } from "@/src/features/shared/applications/hooks";
+import {
+  getPermittedTabs,
+  normalizeRole,
+  canViewPayments,
+  canAddStaff,
+  RoleType,
+} from "../utils/rbac";
 
 export const AssessmentCentreDashboardPage: React.FC = () => {
   const user = useAppSelector((state) => state.auth.user);
   const [activeRole, setActiveRole] = useState<RoleType>(
-    user?.role?.toLowerCase().includes("staff")
-      ? "staff"
-      : user?.role?.toLowerCase().includes("admin") && !user?.role?.toLowerCase().includes("super")
-      ? "admin"
-      : "centre",
+    normalizeRole(user?.centreRole || user?.role),
   );
   const [activeTab, setActiveTab] = useState<AssessmentCentreTab>("overview");
-  const [hasActivity, setHasActivity] = useState(true);
+
+  const { data: dashboardData } = useGetCentreDashboard();
+  const { data: applications = [] } = useGetApplications();
+  const { data: staff = [] } = useGetCentreStaff();
+  const { data: assessors = [] } = useGetRetainedRequests();
+
+  const hasActivity =
+    (dashboardData?.kpis?.applications ?? 0) > 0 ||
+    (dashboardData?.kpis?.staff ?? 0) > 0 ||
+    (dashboardData?.kpis?.assessors ?? 0) > 0 ||
+    applications.length > 0 ||
+    staff.length > 0;
 
   const handleRoleChange = (newRole: RoleType) => {
     setActiveRole(newRole);
@@ -250,38 +267,18 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
                   </button>
                 ))}
               </div>
-
-              <div className="flex items-center gap-2 text-xs font-semibold text-neutral-secondary">
-                <span>View Mode:</span>
-                <button
-                  type="button"
-                  onClick={() => setHasActivity(true)}
-                  className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
-                    hasActivity
-                      ? "bg-[#a31d38] text-white shadow-2xs font-bold"
-                      : "bg-white text-gray-600 hover:bg-gray-100"
-                  }`}
-                >
-                  With Data
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setHasActivity(false)}
-                  className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
-                    !hasActivity
-                      ? "bg-[#a31d38] text-white shadow-2xs font-bold"
-                      : "bg-white text-gray-600 hover:bg-gray-100"
-                  }`}
-                >
-                  Empty State
-                </button>
-              </div>
             </div>
 
             {hasActivity ? (
               <>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-                  <RevenueChart />
+                <div
+                  className={`grid grid-cols-1 ${
+                    canViewPayments(activeRole)
+                      ? "md:grid-cols-2 lg:grid-cols-3"
+                      : "md:grid-cols-2"
+                  } gap-6 items-stretch`}
+                >
+                  {canViewPayments(activeRole) && <RevenueChart />}
                   <TradeChart />
                   <GenderChart />
                 </div>
@@ -501,7 +498,9 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
         mode={staffDeactivateModalMode}
         staffName={
           selectedStaffId
-            ? MOCK_STAFF_MEMBERS.find((s) => s.id === selectedStaffId)?.name
+            ? staff.find((s) => s.id === selectedStaffId)?.name ||
+              staff.find((s) => s.id === selectedStaffId)?.email ||
+              undefined
             : undefined
         }
         onClose={() => setIsStaffDeactivateModalOpen(false)}
@@ -518,7 +517,13 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
         mode={assessorDeactivateModalMode}
         staffName={
           selectedAssessorId
-            ? MOCK_ASSESSORS.find((a) => a.id === selectedAssessorId)?.name
+            ? assessors.find((a) => a.id === selectedAssessorId)?.assessor
+                ?.name ||
+              (assessors.find((a) => a.id === selectedAssessorId)?.assessorId
+                ? `Assessor (${assessors
+                    .find((a) => a.id === selectedAssessorId)
+                    ?.assessorId?.slice(0, 8)})`
+                : undefined)
             : undefined
         }
         onClose={() => setIsAssessorDeactivateModalOpen(false)}

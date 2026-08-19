@@ -2,12 +2,21 @@ import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import type { CredentialResponse } from "@react-oauth/google";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { setCredentials, setRole, markVerified, logout as logoutAction } from "@/store/slices/authSlice";
+import {
+  setCredentials,
+  setRole,
+  setCentreId,
+  setCentreRole,
+  markVerified,
+  logout as logoutAction,
+} from "@/store/slices/authSlice";
 import {
   saveTokens,
   clearTokens,
   saveOnboardedStatus,
   savePersona,
+  saveCentreId,
+  saveCentreRole,
   saveUser,
   resolveUserDestination,
 } from "@/src/lib/auth-storage";
@@ -16,6 +25,7 @@ import {
   parseOnboardingMine,
   getCandidateProfileApi,
 } from "@/src/features/shared/onboarding/api";
+import { getMeApi } from "@/src/features/shared/account/api";
 import { useToast } from "@/src/components/ui/toast";
 import { ApiError } from "@/src/lib/api/client";
 import {
@@ -213,13 +223,28 @@ export function useLogin() {
       });
 
       try {
-        const [res, profile] = await Promise.allSettled([
+        const [res, profile, meRes] = await Promise.allSettled([
           getOnboardingMineApi(),
           getCandidateProfileApi(),
+          getMeApi(),
         ]);
 
         if (profile.status === "fulfilled" && profile.value?.identityVerified) {
           dispatch(markVerified());
+        }
+
+        if (meRes.status === "fulfilled") {
+          if (meRes.value.identityVerified) {
+            dispatch(markVerified());
+          }
+          if (meRes.value.centres && meRes.value.centres.length > 0) {
+            const activeCentre = meRes.value.centres[0];
+            const role = activeCentre.role || "super_admin";
+            saveCentreId(activeCentre.centreId);
+            saveCentreRole(role);
+            dispatch(setCentreId(activeCentre.centreId));
+            dispatch(setCentreRole(role));
+          }
         }
 
         const userEmail = data.user.email || variables.email;
@@ -229,7 +254,16 @@ export function useLogin() {
 
           if (persona) {
             savePersona(persona);
-            dispatch(setRole(persona));
+            if (persona === "centre") {
+              const centreRole =
+                meRes.status === "fulfilled" && meRes.value.centres?.[0]?.role
+                  ? meRes.value.centres[0].role
+                  : "super_admin";
+              dispatch(setRole(centreRole));
+              saveCentreRole(centreRole);
+            } else {
+              dispatch(setRole(persona));
+            }
           }
 
           saveOnboardedStatus(isOnboarded);
@@ -491,13 +525,28 @@ export function useGoogleAuth() {
       });
 
       try {
-        const [res, profile] = await Promise.allSettled([
+        const [res, profile, meRes] = await Promise.allSettled([
           getOnboardingMineApi(),
           getCandidateProfileApi(),
+          getMeApi(),
         ]);
 
         if (profile.status === "fulfilled" && profile.value?.identityVerified) {
           dispatch(markVerified());
+        }
+
+        if (meRes.status === "fulfilled") {
+          if (meRes.value.identityVerified) {
+            dispatch(markVerified());
+          }
+          if (meRes.value.centres && meRes.value.centres.length > 0) {
+            const activeCentre = meRes.value.centres[0];
+            const role = activeCentre.role || "super_admin";
+            saveCentreId(activeCentre.centreId);
+            saveCentreRole(role);
+            dispatch(setCentreId(activeCentre.centreId));
+            dispatch(setCentreRole(role));
+          }
         }
 
         const userEmail = data.user.email;
@@ -507,7 +556,16 @@ export function useGoogleAuth() {
 
           if (persona) {
             savePersona(persona);
-            dispatch(setRole(persona));
+            if (persona === "centre") {
+              const centreRole =
+                meRes.status === "fulfilled" && meRes.value.centres?.[0]?.role
+                  ? meRes.value.centres[0].role
+                  : "super_admin";
+              dispatch(setRole(centreRole));
+              saveCentreRole(centreRole);
+            } else {
+              dispatch(setRole(persona));
+            }
           }
 
           saveOnboardedStatus(isOnboarded);

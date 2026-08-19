@@ -11,12 +11,30 @@ import {
   ResponsiveContainer,
   LabelList,
 } from "recharts";
-import { MOCK_TRADE_DATA } from "@/features/assessment-centre/utils/constants";
-
 import { Select } from "@/src/components/ui/select";
+import { useGetCentreDashboard } from "@/src/features/shared/centre/hooks";
 
 export const TradeChart: React.FC = () => {
-  const [selectedYear, setSelectedYear] = useState("2026");
+  const currentYearStr = String(new Date().getFullYear());
+  const [selectedYear, setSelectedYear] = useState(currentYearStr);
+
+  const { data: dashboardData } = useGetCentreDashboard({
+    year: Number(selectedYear),
+  });
+
+  const rawTrades = dashboardData?.applicationsByTrade || [];
+  const totalCount = rawTrades.reduce((acc, t) => acc + (t.count || 0), 0);
+
+  const chartData =
+    rawTrades.length > 0
+      ? rawTrades.map((t) => ({
+          trade: t.name,
+          percentage: totalCount > 0 ? Math.round((t.count / totalCount) * 100) : 0,
+          count: t.count,
+        }))
+      : [
+          { trade: "General", percentage: 0, count: 0 },
+        ];
 
   return (
     <div className="bg-white rounded-3xl p-6 shadow-2xs border border-gray-100/80 flex flex-col justify-between h-full min-h-95 select-none">
@@ -41,7 +59,7 @@ export const TradeChart: React.FC = () => {
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             layout="vertical"
-            data={MOCK_TRADE_DATA}
+            data={chartData}
             margin={{ top: 5, right: 30, left: 15, bottom: 5 }}
           >
             <CartesianGrid
@@ -64,7 +82,7 @@ export const TradeChart: React.FC = () => {
               tickLine={false}
               axisLine={false}
               tick={{ fontSize: 11, fill: "#111827", fontWeight: 600 }}
-              width={70}
+              width={75}
             />
             <Tooltip
               cursor={{ fill: "rgba(0,0,0,0.03)" }}
@@ -76,7 +94,10 @@ export const TradeChart: React.FC = () => {
                 fontSize: "12px",
                 fontWeight: "bold",
               }}
-              formatter={(val: any) => [`${val}%`, "Percentage"]}
+              formatter={(val: any, _, item: any) => [
+                `${val}% (${item.payload.count} applications)`,
+                "Share",
+              ]}
             />
             <Bar
               dataKey="percentage"
@@ -87,6 +108,7 @@ export const TradeChart: React.FC = () => {
               <LabelList
                 dataKey="percentage"
                 position="right"
+                formatter={(v: any) => `${v}%`}
                 style={{ fontSize: 10, fontWeight: 700, fill: "#374151" }}
               />
             </Bar>

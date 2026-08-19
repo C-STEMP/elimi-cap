@@ -13,7 +13,37 @@ import {
   getAccessToken,
   getRefreshToken,
   saveTokens,
+  getPersona,
+  savePersona,
+  getCentreId,
 } from "@/src/lib/auth-storage";
+
+/**
+ * Synchronously resolve and store the correct persona based on current URL path.
+ * Called at module load so that all subsequent API calls in the same render
+ * cycle already have the right persona in localStorage.
+ */
+function syncPersonaFromRoute(): void {
+  if (typeof window === "undefined") return;
+  const path = window.location.pathname;
+  if (
+    path.startsWith("/dashboard") ||
+    path.startsWith("/applications") ||
+    path.startsWith("/onboarding") ||
+    path.startsWith("/rpl")
+  ) {
+    savePersona("candidate");
+  } else if (path.startsWith("/assessment-centre")) {
+    savePersona("centre");
+  } else if (path.startsWith("/assessor") || path.startsWith("/quality-assurance")) {
+    savePersona("assessor");
+  } else if (path.startsWith("/awarding-body")) {
+    savePersona("awarding_body");
+  }
+}
+
+syncPersonaFromRoute();
+
 
 // ─── Envelope types ───────────────────────────────────────────────────────────
 export interface SuccessEnvelope<T = unknown> {
@@ -90,7 +120,10 @@ function toApiError(
 }
 
 // ─── Factory ──────────────────────────────────────────────────────────────────
-export function createApiInstance(baseURL: string): AxiosInstance {
+export function createApiInstance(
+  baseURL: string,
+  options?: { isCap?: boolean },
+): AxiosInstance {
   const instance = axios.create({
     baseURL,
     headers: { "Content-Type": "application/json" },
@@ -99,6 +132,93 @@ export function createApiInstance(baseURL: string): AxiosInstance {
   instance.interceptors.request.use((config) => {
     const token = getAccessToken();
     if (token) config.headers["Authorization"] = `Bearer ${token}`;
+
+    if (options?.isCap) {
+      const url = config.url || "";
+      const urlPath = url.split("?")[0];
+
+      // Catalogue & public endpoints do not require acting persona
+      const isPublicCatalogue =
+        urlPath === "/sectors" ||
+        urlPath.startsWith("/sectors/") ||
+        urlPath === "/centres" ||
+        urlPath.startsWith("/centres/") ||
+        urlPath.startsWith("/trades/") ||
+        urlPath.startsWith("/admin/") ||
+        urlPath.startsWith("/onboarding/") ||
+        urlPath === "/me";
+
+      // ── Resolve persona ────────────────────────────────────────────────────
+      // Priority: (1) already set on this call, (2) current page route, (3) stored
+      let persona = config.headers["X-CAP-PERSONA"] as string | undefined;
+
+      if (!persona && !isPublicCatalogue && typeof window !== "undefined") {
+        const path = window.location.pathname;
+        if (path.startsWith("/assessment-centre")) {
+          persona = "centre";
+        } else if (
+          path.startsWith("/assessor") ||
+          path.startsWith("/quality-assurance")
+        ) {
+          persona = "assessor";
+        } else if (path.startsWith("/awarding-body")) {
+          persona = "awarding_body";
+        } else if (
+          path.startsWith("/dashboard") ||
+          path.startsWith("/onboarding") ||
+          path.startsWith("/applications") ||
+          path.startsWith("/rpl")
+        ) {
+          persona = "candidate";
+        }
+      }
+
+      // Fall back to stored persona, but guard against cross-workspace bleed
+      if (!persona && !isPublicCatalogue) {
+        const stored = getPersona();
+        if (stored && typeof window !== "undefined") {
+          const path = window.location.pathname;
+          const isCentreRoute = path.startsWith("/assessment-centre");
+          const isAssessorRoute =
+            path.startsWith("/assessor") ||
+            path.startsWith("/quality-assurance");
+          const isAwardingBodyRoute = path.startsWith("/awarding-body");
+          const isCandidateRoute =
+            path.startsWith("/dashboard") ||
+            path.startsWith("/onboarding") ||
+            path.startsWith("/applications") ||
+            path.startsWith("/rpl");
+
+          // Only use stored persona if it matches the active workspace
+          if (
+            (stored === "centre" && isCentreRoute) ||
+            (stored === "assessor" && isAssessorRoute) ||
+            (stored === "awarding_body" && isAwardingBodyRoute) ||
+            (stored === "candidate" && isCandidateRoute) ||
+            // For routes not yet mapped (e.g. auth pages), trust the store
+            (!isCentreRoute && !isAssessorRoute && !isAwardingBodyRoute && !isCandidateRoute)
+          ) {
+            persona = stored;
+          }
+        } else if (stored) {
+          persona = stored;
+        }
+      }
+
+      // ── Attach headers ─────────────────────────────────────────────────────
+      if (persona && !isPublicCatalogue) {
+        config.headers["X-CAP-PERSONA"] = persona;
+
+        // X-CAP-CENTRE-ID is required whenever operating as a centre
+        if (persona === "centre") {
+          const centreId = getCentreId();
+          if (centreId && !config.headers["X-CAP-CENTRE-ID"]) {
+            config.headers["X-CAP-CENTRE-ID"] = centreId;
+          }
+        }
+      }
+    }
+
     return config;
   });
 

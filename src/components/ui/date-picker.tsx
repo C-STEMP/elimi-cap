@@ -299,7 +299,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
           <div
             className={`
               absolute top-full mt-2 z-50
-              w-64 sm:w-68
+              w-72 sm:w-76
               bg-white rounded-2xl shadow-2xl border border-gray-100 p-3 sm:p-3.5
               animate-in fade-in zoom-in-95 duration-150 select-none
               max-w-[calc(100vw-2.5rem)]
@@ -313,12 +313,13 @@ export const DatePicker: React.FC<DatePickerProps> = ({
             `}
           >
             {/* Header: Month/Year Dropdowns & Prev/Next Buttons */}
-            <div className="flex items-center justify-between pb-3 mb-2 border-b border-gray-100 gap-1">
-              <div className="flex items-center gap-1">
+            <div className="flex items-center justify-between pb-3 mb-2 border-b border-gray-100 gap-1.5">
+              <div className="flex items-center gap-1.5">
                 <Select
                   size="sm"
+                  popupMatchSelectWidth={false}
                   showPlaceholderOption={false}
-                  containerClassName="w-28"
+                  containerClassName="w-28 shrink-0"
                   className="!h-8 !py-0 !px-2 font-bold text-xs"
                   value={String(currentMonth)}
                   onChange={(e) =>
@@ -334,8 +335,9 @@ export const DatePicker: React.FC<DatePickerProps> = ({
 
                 <Select
                   size="sm"
+                  popupMatchSelectWidth={false}
                   showPlaceholderOption={false}
-                  containerClassName="w-20"
+                  containerClassName="w-24 shrink-0"
                   className="!h-8 !py-0 !px-2 font-bold text-xs"
                   value={String(currentYear)}
                   onChange={(e) =>

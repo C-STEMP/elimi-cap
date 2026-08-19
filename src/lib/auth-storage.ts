@@ -138,6 +138,26 @@ export function resolveUserDestination(
   return "/onboarding/role-selection";
 }
 
+export function saveCentreId(centreId: string): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem("elimi_centre_id", centreId);
+}
+
+export function getCentreId(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("elimi_centre_id");
+}
+
+export function saveCentreRole(role: string): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem("elimi_centre_role", role);
+}
+
+export function getCentreRole(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("elimi_centre_role");
+}
+
 export function clearTokens(): void {
   if (typeof window === "undefined") return;
   localStorage.removeItem(ACCESS_TOKEN_KEY);
@@ -145,6 +165,8 @@ export function clearTokens(): void {
   localStorage.removeItem(USER_KEY);
   localStorage.removeItem("elimi_onboarded");
   localStorage.removeItem("elimi_persona");
+  localStorage.removeItem("elimi_centre_id");
+  localStorage.removeItem("elimi_centre_role");
   localStorage.removeItem("elimi_last_onboarding_route");
   sessionStorage.clear();
   document.cookie = `${ACCESS_TOKEN_KEY}=; path=/; max-age=0; SameSite=Lax`;

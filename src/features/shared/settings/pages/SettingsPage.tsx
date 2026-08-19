@@ -213,14 +213,15 @@ export const SettingsPage: React.FC = () => {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      className="w-full flex flex-col gap-4"
+      className="w-full flex flex-col min-h-screen"
     >
       <HeaderBanner
         title="Settings"
         userName={realFirstName || user?.email?.split("@")[0] || "User"}
       />
 
-      <div className="flex flex-col lg:flex-row items-start gap-6 w-full">
+      <div className="max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1">
+        <div className="flex flex-col lg:flex-row items-start gap-6 w-full">
         {/* Left Sidebar Card */}
         <SettingsSidebar
           userAvatarSrc={avatarSrc}
@@ -286,6 +287,7 @@ export const SettingsPage: React.FC = () => {
         isOpen={isSuccessModalOpen}
         onClose={() => setIsSuccessModalOpen(false)}
       />
+      </div>
     </motion.div>
   );
 };

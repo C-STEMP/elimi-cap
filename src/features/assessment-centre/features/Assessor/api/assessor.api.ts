@@ -11,7 +11,7 @@ export type { RetainedAssessorRequest, RetainedRequestStatus };
 export async function getRetainedRequestsApi(
   status?: RetainedRequestStatus,
 ): Promise<RetainedAssessorRequest[]> {
-  return getCentreRetainedRequestsApi(status);
+  return getCentreRetainedRequestsApi(status ? { status } : undefined);
 }
 
 export async function approveRetainedRequestApi(id: string): Promise<void> {

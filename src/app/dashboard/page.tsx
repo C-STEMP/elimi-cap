@@ -3,7 +3,7 @@
 import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAppSelector } from "@/src/store/hooks";
-import { getPersona } from "@/src/lib/auth-storage";
+import { getPersona, savePersona } from "@/src/lib/auth-storage";
 import { Dashboard as CandidateDashboard } from "@/features/candidate/features/Dashboard/pages/Dashboard";
 import { AssessorDashboard } from "@/src/features/assessor/features/Dashboard/pages/AssessorDashboard";
 
@@ -20,6 +20,13 @@ export default function DashboardPage() {
   useEffect(() => {
     if (effectiveRole === "centre") {
       router.replace("/assessment-centre");
+    } else if (effectiveRole === "assessor" || effectiveRole === "quality-assurance" || effectiveRole === "quality_assurance") {
+      // Assessors stay on /dashboard — keep assessor persona
+      savePersona("assessor");
+    } else {
+      // Default: candidate workspace — overwrite any stale persona immediately
+      // so that all subsequent API calls in this render cycle use the right hat
+      savePersona("candidate");
     }
   }, [effectiveRole, router]);
 

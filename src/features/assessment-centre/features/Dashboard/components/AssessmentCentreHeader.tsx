@@ -21,6 +21,10 @@ import {
   useGetCentreStaff,
   useGetRetainedRequests,
   useGetCentreWallet,
+  useGetCentreDashboard,
+  useGetCentreApplicationsSummary,
+  useGetCentreStaffSummary,
+  useGetCentreAssessorsSummary,
 } from "@/src/features/shared/centre/hooks";
 import { useGetOnboarding } from "@/src/features/assessment-centre/features/Onboarding/hooks/useOnboarding";
 import { useAppSelector } from "@/src/store/hooks";
@@ -51,7 +55,7 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
 
   const { data: onboardingRecord } = useGetOnboarding();
   const user = useAppSelector((state) => state.auth.user);
-  const effectiveRole = userRole || user?.role || "centre";
+  const effectiveRole = userRole || user?.centreRole || user?.role || "centre";
 
   const centreData = onboardingRecord?.data as any;
   const centreName =
@@ -63,14 +67,33 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
 
   const displayTitle = title || `Welcome Back, ${centreName}`;
 
+  const { data: dashboardData } = useGetCentreDashboard();
+  const { data: appSummary } = useGetCentreApplicationsSummary();
+  const { data: staffSummary } = useGetCentreStaffSummary();
+  const { data: assessorSummary } = useGetCentreAssessorsSummary();
   const { data: applications = [] } = useGetApplications();
   const { data: assessors = [] } = useGetRetainedRequests();
   const { data: staff = [] } = useGetCentreStaff();
   const { data: wallet } = useGetCentreWallet();
 
-  const formattedRevenue = wallet?.balance?.amountMinorUnits
-    ? `${wallet.balance.currency === "USD" ? "$" : "₦"}${(
-        Number(wallet.balance.amountMinorUnits) / 100
+  const totalAppsCount =
+    dashboardData?.kpis?.applications ??
+    appSummary?.total ??
+    applications.length;
+  const totalAssessorsCount =
+    dashboardData?.kpis?.assessors ??
+    assessorSummary?.total ??
+    assessorSummary?.active ??
+    assessors.length;
+  const totalStaffCount =
+    dashboardData?.kpis?.staff ??
+    staffSummary?.total ??
+    staff.length;
+
+  const rawRevenue = dashboardData?.kpis?.revenue || wallet?.balance;
+  const formattedRevenue = rawRevenue?.amountMinorUnits
+    ? `${rawRevenue.currency === "USD" ? "$" : "₦"}${(
+        Number(rawRevenue.amountMinorUnits) / 100
       ).toLocaleString()}`
     : "₦0";
 
@@ -78,21 +101,21 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
     {
       id: "total-applications",
       label: "Total Applications",
-      count: applications.length.toLocaleString(),
+      count: totalAppsCount.toLocaleString(),
       unit: "applications",
       icon: "clipboard",
     },
     {
       id: "total-assessors",
       label: "Total Assessors",
-      count: assessors.length.toLocaleString(),
+      count: totalAssessorsCount.toLocaleString(),
       unit: "assessors",
       icon: "flag",
     },
     {
       id: "total-staffs",
       label: "Total Staffs",
-      count: staff.length.toLocaleString(),
+      count: totalStaffCount.toLocaleString(),
       unit: "staffs",
       icon: "user",
     },

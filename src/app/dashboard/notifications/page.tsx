@@ -15,41 +15,53 @@ import {
 } from "react-icons/fi";
 import { HeaderBanner } from "@/features/candidate/features/Dashboard/components/HeaderBanner";
 import {
-  INITIAL_NOTIFICATIONS,
-  NotificationItem,
-} from "@/features/candidate/features/Dashboard/data/notificationsData";
+  useGetNotifications,
+  useMarkNotificationRead,
+  useMarkAllNotificationsRead,
+  useDeleteNotification,
+} from "@/src/features/shared/notifications/hooks";
+import { Loader } from "@/src/components/ui/loader";
 
-type CategoryFilter = "all" | "unread" | "application" | "assessment" | "system" | "security";
+type CategoryFilter =
+  | "all"
+  | "unread"
+  | "application"
+  | "assessment"
+  | "system"
+  | "security";
 
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState<NotificationItem[]>(
-    INITIAL_NOTIFICATIONS
-  );
   const [activeFilter, setActiveFilter] = useState<CategoryFilter>("all");
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const { data: notifications = [], isLoading } = useGetNotifications();
+  const markReadMutation = useMarkNotificationRead();
+  const markAllReadMutation = useMarkAllNotificationsRead();
+  const deleteMutation = useDeleteNotification();
+
+  const unreadCount = notifications.filter(
+    (n) => !n.read && n.isUnread !== false,
+  ).length;
 
   const filteredNotifications = notifications.filter((n) => {
+    const isUnread = !n.read && n.isUnread !== false;
     if (activeFilter === "all") return true;
-    if (activeFilter === "unread") return !n.read;
+    if (activeFilter === "unread") return isUnread;
     return n.category === activeFilter;
   });
 
   const toggleRead = (id: string) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: !n.read } : n))
-    );
+    markReadMutation.mutate(id);
   };
 
   const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    markAllReadMutation.mutate();
   };
 
   const deleteNotification = (id: string) => {
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
+    deleteMutation.mutate(id);
   };
 
-  const getCategoryIcon = (category: NotificationItem["category"]) => {
+  const getCategoryIcon = (category?: string) => {
     switch (category) {
       case "application":
         return <FiFileText className="w-5 h-5 text-[#a31d38]" />;
@@ -77,7 +89,7 @@ export default function NotificationsPage() {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      className="w-full flex flex-col gap-6"
+      className="w-full flex flex-col min-h-screen"
     >
       <HeaderBanner
         title="Notifications"
@@ -90,8 +102,9 @@ export default function NotificationsPage() {
         showCreateButton={false}
       />
 
-      {/* Main Notifications Card Container */}
-      <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-gray-100/80 flex flex-col gap-6">
+      <div className="max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1 flex flex-col gap-6">
+        {/* Main Notifications Card Container */}
+        <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-xs border border-gray-100/80 flex flex-col gap-6">
         {/* Top Control Bar */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-gray-100 pb-5">
           {/* Category Filter Tabs */}
@@ -105,7 +118,7 @@ export default function NotificationsPage() {
                   onClick={() => setActiveFilter(tab.id)}
                   className={`px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
                     isActive
-                      ? "bg-[#a31d38] text-white shadow-sm"
+                      ? "bg-[#a31d38] text-white shadow-xs"
                       : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                   }`}
                 >
@@ -140,88 +153,98 @@ export default function NotificationsPage() {
         </div>
 
         {/* Notifications List */}
-        {filteredNotifications.length === 0 ? (
+        {isLoading ? (
+          <Loader fullscreen={false} size="small" tip="Loading notifications..." className="py-16" />
+        ) : filteredNotifications.length === 0 ? (
           <div className="py-16 flex flex-col items-center justify-center text-center">
             <div className="w-16 h-16 rounded-3xl bg-gray-100 text-gray-400 flex items-center justify-center mb-4">
               <FiBell className="w-8 h-8" />
             </div>
-            <h3 className="text-lg font-bold text-[#1e1e1e]">No Notifications Found</h3>
+            <h3 className="text-lg font-bold text-[#1e1e1e]">
+              No Notifications Found
+            </h3>
             <p className="text-sm text-gray-500 mt-1 max-w-sm">
               You are all caught up! No notifications match your selected filter.
             </p>
           </div>
         ) : (
           <div className="flex flex-col gap-3">
-            {filteredNotifications.map((notif) => (
-              <div
-                key={notif.id}
-                className={`p-5 rounded-2xl border transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${
-                  !notif.read
-                    ? "border-[#a31d38]/30 bg-[#fffcf5] shadow-xs"
-                    : "border-gray-100 bg-white hover:border-gray-200"
-                }`}
-              >
-                {/* Left Icon & Text */}
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-2xl bg-slate-100 flex items-center justify-center shrink-0 mt-0.5 border border-gray-200/60">
-                    {getCategoryIcon(notif.category)}
-                  </div>
-
-                  <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h4 className="text-sm font-bold text-[#1e1e1e]">
-                        {notif.title}
-                      </h4>
-                      {!notif.read && (
-                        <span className="bg-[#fbab2a] text-black text-[10px] font-extrabold px-2 py-0.5 rounded-full">
-                          Unread
-                        </span>
-                      )}
-                      <span className="text-xs text-gray-400 font-medium">
-                        • {notif.timestamp}
-                      </span>
+            {filteredNotifications.map((notif) => {
+              const isUnread = !notif.read && notif.isUnread !== false;
+              return (
+                <div
+                  key={notif.id}
+                  className={`p-5 rounded-2xl border transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${
+                    isUnread
+                      ? "border-[#a31d38]/30 bg-[#fffcf5] shadow-2xs"
+                      : "border-gray-100 bg-white hover:border-gray-200"
+                  }`}
+                >
+                  {/* Left Icon & Text */}
+                  <div className="flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-2xl bg-slate-100 flex items-center justify-center shrink-0 mt-0.5 border border-gray-200/60">
+                      {getCategoryIcon(notif.category)}
                     </div>
 
-                    <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
-                      {notif.description}
-                    </p>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="text-sm font-bold text-[#1e1e1e]">
+                          {notif.title}
+                        </h4>
+                        {isUnread && (
+                          <span className="bg-[#fbab2a] text-black text-[10px] font-extrabold px-2 py-0.5 rounded-full">
+                            Unread
+                          </span>
+                        )}
+                        <span className="text-xs text-gray-400 font-medium">
+                          • {notif.timestamp || notif.time || (notif.createdAt ? new Date(notif.createdAt).toLocaleDateString() : "")}
+                        </span>
+                      </div>
+
+                      <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
+                        {notif.description}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Right Action Controls */}
+                  <div className="flex items-center gap-2 self-end sm:self-center shrink-0 pt-2 sm:pt-0">
+                    {(notif.link || notif.actionUrl) && (
+                      <Link
+                        href={notif.link || notif.actionUrl || "#"}
+                        className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-[#a31d38] hover:text-white text-xs font-semibold text-gray-700 transition-all flex items-center gap-1 cursor-pointer"
+                      >
+                        <span>View Details</span>
+                        <FiExternalLink className="w-3.5 h-3.5" />
+                      </Link>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => toggleRead(notif.id)}
+                      title={!isUnread ? "Mark as unread" : "Mark as read"}
+                      className="p-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors cursor-pointer"
+                    >
+                      <FiCheck
+                        className={`w-4 h-4 ${!isUnread ? "text-gray-400" : "text-[#a31d38]"}`}
+                      />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => deleteNotification(notif.id)}
+                      title="Delete notification"
+                      className="p-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 transition-colors cursor-pointer"
+                    >
+                      <FiTrash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
-
-                {/* Right Action Controls */}
-                <div className="flex items-center gap-2 self-end sm:self-center shrink-0 pt-2 sm:pt-0">
-                  {notif.link && (
-                    <Link
-                      href={notif.link}
-                      className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-[#a31d38] hover:text-white text-xs font-semibold text-gray-700 transition-all flex items-center gap-1 cursor-pointer"
-                    >
-                      <span>View Details</span>
-                      <FiExternalLink className="w-3.5 h-3.5" />
-                    </Link>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={() => toggleRead(notif.id)}
-                    title={notif.read ? "Mark as unread" : "Mark as read"}
-                    className="p-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors cursor-pointer"
-                  >
-                    <FiCheck className={`w-4 h-4 ${notif.read ? "text-gray-400" : "text-[#a31d38]"}`} />
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => deleteNotification(notif.id)}
-                    title="Delete notification"
-                    className="p-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 transition-colors cursor-pointer"
-                  >
-                    <FiTrash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
+        </div>
       </div>
     </motion.div>
   );

@@ -15,14 +15,22 @@ export const PendingApplicationsTable: React.FC<TableProps> = ({
 }) => {
   const { data: remotePending } = useGetApplications("draft");
 
-  const pendingList = (remotePending ?? []).map((app) => ({
-    id: app.id,
-    candidateName: `Candidate (${app.candidateId.slice(0, 8)})`,
-    trade: app.type,
-    assessmentType: app.type,
-    status: "Pending",
-    submittedAt: new Date(app.createdAt).toLocaleDateString("en-GB"),
-  }));
+  const pendingList = (remotePending ?? []).map((app) => {
+    const rawApp = app as any;
+    return {
+      id: app.id,
+      candidateName:
+        rawApp.candidate?.name ||
+        `${rawApp.candidate?.firstName || ""} ${rawApp.candidate?.lastName || ""}`.trim() ||
+        `Candidate (${app.candidateId?.slice(0, 8) || "N/A"})`,
+      trade: rawApp.trade?.name || app.type || "General",
+      assessmentType: app.type || "RPL",
+      status: "Pending",
+      submittedAt: rawApp.submittedAt
+        ? new Date(rawApp.submittedAt).toLocaleDateString("en-GB")
+        : new Date(app.createdAt).toLocaleDateString("en-GB"),
+    };
+  });
 
   return (
     <div className="bg-white rounded-3xl p-6 shadow-2xs border border-gray-100/80 flex flex-col justify-between select-none">

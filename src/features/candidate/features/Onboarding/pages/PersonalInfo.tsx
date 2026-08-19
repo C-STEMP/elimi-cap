@@ -9,10 +9,9 @@ import { PassportUpload } from "@/src/components/ui/passport-upload";
 import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
 import { InfoIcon } from "@/src/components/ui/info-icon";
-import { FiArrowLeft, FiArrowRight } from "react-icons/fi";
+import { FiArrowLeft, FiArrowRight, FiCheck } from "react-icons/fi";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { StatusModal } from "@/components/status-modal";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setSidebarVariant } from "@/store/slices/authSlice";
 import { setPersonalInfo } from "@/store/slices/onboardingSlice";
@@ -23,6 +22,11 @@ import {
 } from "@/src/lib/validation";
 import { useCountryStateCity } from "@/src/lib/hooks/useCountryStateCity";
 import { useOnboarding } from "@/src/features/candidate/features/Onboarding/hooks";
+
+import {
+  IMPAIRMENT_OPTIONS,
+  GENDER_OPTIONS,
+} from "@/features/candidate/utils";
 
 export interface PersonalInfoProps {
   onBack?: () => void;
@@ -38,7 +42,11 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
   const router = useRouter();
   const { getOnboarding, saveOnboarding } = useOnboarding();
 
+  const authUser = useAppSelector((s) => s.auth.user);
   const savedPersonalInfo = useAppSelector((s) => s.onboarding.personalInfo);
+
+  const initialEmail =
+    savedPersonalInfo.email || authUser?.email || "";
 
   const [form, setForm] = useState({
     firstName: savedPersonalInfo.firstName ?? "",
@@ -47,14 +55,30 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
     dob: savedPersonalInfo.dob ?? "",
     gender: savedPersonalInfo.gender ?? "",
     nationality: savedPersonalInfo.nationality ?? "",
-    email: savedPersonalInfo.email ?? "",
+    email: initialEmail,
     phoneNumber: savedPersonalInfo.phoneNumber ?? "",
     country: savedPersonalInfo.country || "Nigeria",
     state: savedPersonalInfo.state ?? "",
     lga: savedPersonalInfo.lga ?? "",
     streetAddress: savedPersonalInfo.streetAddress ?? "",
-    impairment: savedPersonalInfo.impairment ?? "",
+    impairment: savedPersonalInfo.impairment ?? "None / No impairment",
   });
+
+  const [selectedImpairments, setSelectedImpairments] = useState<string[]>(() => {
+    if (
+      !savedPersonalInfo.impairment ||
+      savedPersonalInfo.impairment === "No" ||
+      savedPersonalInfo.impairment === "None"
+    ) {
+      return ["None / No impairment"];
+    }
+    return savedPersonalInfo.impairment
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+  });
+
+  const [otherImpairment, setOtherImpairment] = useState("");
 
   // Hydrate from getOnboarding API response
   useEffect(() => {
@@ -67,6 +91,16 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
       const passportAssetId: string = apiData?.passportAssetId ?? "";
       const passportUrl: string = apiData?.passportUrl ?? "";
 
+      const hydratedEmail =
+        ci?.emailAddress || savedPersonalInfo.email || authUser?.email || "";
+
+      const rawImpairment =
+        acc?.impairment || savedPersonalInfo.impairment || "None / No impairment";
+      const parsedImpairments =
+        rawImpairment === "No" || rawImpairment === "None" || !rawImpairment
+          ? ["None / No impairment"]
+          : rawImpairment.split(",").map((s: string) => s.trim()).filter(Boolean);
+
       const hydrated = {
         firstName: pd?.firstName || savedPersonalInfo.firstName || "",
         lastName: pd?.lastName || savedPersonalInfo.lastName || "",
@@ -74,42 +108,44 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
         dob: pd?.dob || savedPersonalInfo.dob || "",
         gender: pd?.gender || savedPersonalInfo.gender || "",
         nationality: pd?.nationality || savedPersonalInfo.nationality || "",
-        email: ci?.emailAddress || savedPersonalInfo.email || "",
-        phoneNumber: ci?.phoneNumber?.number || savedPersonalInfo.phoneNumber || "",
+        email: hydratedEmail,
+        phoneNumber:
+          ci?.phoneNumber?.number || savedPersonalInfo.phoneNumber || "",
         country: ra?.country || savedPersonalInfo.country || "Nigeria",
         state: ra?.state || savedPersonalInfo.state || "",
         lga: ra?.lga || savedPersonalInfo.lga || "",
         streetAddress: ra?.address || savedPersonalInfo.streetAddress || "",
-        impairment: acc?.impairment || savedPersonalInfo.impairment || "",
+        impairment: parsedImpairments.join(", "),
       };
 
       setForm(hydrated);
+      setSelectedImpairments(parsedImpairments);
       dispatch(setPersonalInfo(hydrated));
 
       // Restore passport photo from API data
       if (passportAssetId || passportUrl) {
         dispatch(setPersonalInfo({ passportAssetId, passportUrl }));
-        setPassportDefaultImage(passportUrl || savedPersonalInfo.passportUrl || "");
+        setPassportDefaultImage(
+          passportUrl || savedPersonalInfo.passportUrl || "",
+        );
       } else if (savedPersonalInfo.passportUrl) {
         setPassportDefaultImage(savedPersonalInfo.passportUrl);
       }
+    } else if (authUser?.email && !form.email) {
+      setForm((prev) => ({ ...prev, email: authUser.email || "" }));
     }
-  }, [getOnboarding.data]);
+  }, [getOnboarding.data, authUser?.email]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [otherImpairment, setOtherImpairment] = useState("");
   const [passportFile, setPassportFile] = useState<File | null>(null);
   const [passportDefaultImage, setPassportDefaultImage] = useState<string>(
     savedPersonalInfo.passportUrl || "",
   );
   const [passportError, setPassportError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
-  const { countries, states, cities } = useCountryStateCity(
-    form.country,
-    form.state,
-  );
+  const { countries, states, cities, resolvedCountryCode } =
+    useCountryStateCity(form.country, form.state);
 
   useEffect(() => {
     dispatch(setSidebarVariant("default"));
@@ -135,7 +171,37 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
     // Persist to Redux immediately
-    dispatch(setPersonalInfo({ [field]: value, state: nextState, lga: nextLga } as any));
+    dispatch(
+      setPersonalInfo({ [field]: value, state: nextState, lga: nextLga } as any),
+    );
+  };
+
+  const handleToggleImpairment = (option: string) => {
+    let next: string[];
+    const isExclusive =
+      option === "None / No impairment" || option === "Prefer not to say";
+
+    if (isExclusive) {
+      next = [option];
+      setOtherImpairment("");
+    } else {
+      const withoutExclusive = selectedImpairments.filter(
+        (x) =>
+          x !== "None / No impairment" &&
+          x !== "Prefer not to say" &&
+          x !== "None" &&
+          x !== "No",
+      );
+      if (withoutExclusive.includes(option)) {
+        next = withoutExclusive.filter((x) => x !== option);
+        if (next.length === 0) next = ["None / No impairment"];
+      } else {
+        next = [...withoutExclusive, option];
+      }
+    }
+    setSelectedImpairments(next);
+    const joined = next.join(", ");
+    update("impairment", joined);
   };
 
   // ── Validation ─────────────────────────────────────────────────────────────
@@ -143,9 +209,29 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
     const newErrors: Record<string, string> = {};
     let valid = true;
 
-    // Allow proceeding if an existing passport URL is already saved
-    if (!passportFile && !passportDefaultImage) {
+    // Allow proceeding if an existing passport URL/file/asset is already present
+    const hasPassport = Boolean(
+      passportFile ||
+      passportDefaultImage ||
+      savedPersonalInfo.passportUrl ||
+      savedPersonalInfo.passportAssetId
+    );
+
+    if (!hasPassport) {
       setPassportError("Passport photograph is required");
+      valid = false;
+    } else {
+      setPassportError("");
+    }
+
+    if (selectedImpairments.length === 0) {
+      newErrors.impairment = "Please select your impairment status";
+      valid = false;
+    } else if (
+      selectedImpairments.includes("Other") &&
+      !otherImpairment.trim()
+    ) {
+      newErrors.otherImpairment = "Please specify your impairment";
       valid = false;
     }
 
@@ -174,14 +260,26 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
     }
 
     setIsSubmitting(true);
+    const resolvedImpairment = selectedImpairments
+      .map((imp) => (imp === "Other" ? `Other: ${otherImpairment}` : imp))
+      .join(", ");
+
+    const hasImpairment =
+      !selectedImpairments.includes("None / No impairment") &&
+      !selectedImpairments.includes("Prefer not to say") &&
+      !selectedImpairments.includes("None") &&
+      !selectedImpairments.includes("No") &&
+      selectedImpairments.length > 0;
+
     dispatch(
       setPersonalInfo({
         ...form,
-        passportFileName: passportFile?.name ?? savedPersonalInfo.passportFileName,
+        email: form.email || authUser?.email || "",
+        impairment: resolvedImpairment,
+        passportFileName:
+          passportFile?.name ?? savedPersonalInfo.passportFileName,
       }),
     );
-
-    const currentPassportAssetId = savedPersonalInfo.passportAssetId ?? "";
 
     saveOnboarding.mutate(
       {
@@ -194,9 +292,9 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
           nationality: form.nationality,
         },
         contactInformation: {
-          emailAddress: form.email,
+          emailAddress: form.email || authUser?.email || "",
           phoneNumber: {
-            countryCode: "+234",
+            countryCode: resolvedCountryCode ? `+${resolvedCountryCode}` : "+234",
             number: form.phoneNumber,
           },
         },
@@ -207,9 +305,11 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
           address: form.streetAddress,
         },
         accessibility: {
-          hasImpairment: form.impairment !== "No" && Boolean(form.impairment),
-          impairment:
-            form.impairment === "other" ? otherImpairment : form.impairment,
+          hasImpairment,
+          impairment: resolvedImpairment,
+        },
+        previousAssessmentStatus: {
+          hasCompletedPreviousAssessment: false,
         },
       },
       {
@@ -218,7 +318,7 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
           if (onSuccess) {
             onSuccess();
           } else {
-            router.push("/onboarding/success");
+            router.push("/onboarding/verify-identity");
           }
         },
       },
@@ -250,7 +350,7 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
           <div className="flex flex-col w-full sm:w-auto">
             <div className="w-full max-w-109.75 flex justify-start mb-4 sm:mb-6">
               <div className="w-46.5 h-2.5 bg-primary-solid/15 rounded-[10px] overflow-hidden">
-                <div className="w-5/6 h-full bg-primary-solid rounded-[10px] transition-all duration-300" />
+                <div className="w-1/2 h-full bg-primary-solid rounded-[10px] transition-all duration-300" />
               </div>
             </div>
 
@@ -264,21 +364,41 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
             </div>
           </div>
 
-          {/* Passport comes before the heading — placed here as the right column */}
+          {/* Passport Upload */}
           <PassportUpload
             required
             defaultImage={passportDefaultImage}
             error={passportError}
             onImageChange={(file, asset) => {
               setPassportFile(file);
-              if (file) setPassportError("");
-              if (asset) {
-                setPassportDefaultImage(asset.url);
-                dispatch(setPersonalInfo({
-                  passportAssetId: asset.assetId,
-                  passportUrl: asset.url,
-                  passportFileName: file?.name ?? "",
-                }));
+              const previewUrl =
+                asset?.url || (file ? URL.createObjectURL(file) : "");
+              if (file || previewUrl) {
+                setPassportError("");
+                setPassportDefaultImage(
+                  previewUrl || savedPersonalInfo.passportUrl || "",
+                );
+                dispatch(
+                  setPersonalInfo({
+                    passportAssetId:
+                      asset?.assetId ||
+                      savedPersonalInfo.passportAssetId ||
+                      "",
+                    passportUrl:
+                      previewUrl || savedPersonalInfo.passportUrl || "",
+                    passportFileName:
+                      file?.name ?? savedPersonalInfo.passportFileName ?? "",
+                  }),
+                );
+              } else {
+                setPassportDefaultImage("");
+                dispatch(
+                  setPersonalInfo({
+                    passportAssetId: "",
+                    passportUrl: "",
+                    passportFileName: "",
+                  }),
+                );
               }
             }}
           />
@@ -341,7 +461,7 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
               </span>
             }
             placeholder="Select"
-            options={["Male", "Female", "Prefer not to say"]}
+            options={GENDER_OPTIONS}
             value={form.gender}
             error={errors.gender}
             onChange={(e) => update("gender", e.target.value)}
@@ -378,9 +498,10 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
               }
               type="email"
               placeholder="yourname@email.com"
-              value={form.email}
-              error={errors.email}
-              onChange={(e) => update("email", e.target.value)}
+              value={form.email || authUser?.email || ""}
+              disabled={true}
+              className="bg-gray-100/70 cursor-not-allowed opacity-80"
+              helperText="Auto-filled from your registered account email."
             />
 
             <PhoneInput
@@ -399,7 +520,9 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
                 }
               }}
               error={errors.phoneNumber}
-              defaultCountry="NG"
+              country={
+                resolvedCountryCode ? resolvedCountryCode.toLowerCase() : "ng"
+              }
             />
           </div>
         </div>
@@ -473,66 +596,84 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
           </div>
         </div>
 
+        {/* Section 4: Accessibility / Impairment (Comprehensive Multi-select) */}
         <div className="flex flex-col gap-4 mt-2">
           <h2 className="text-base sm:text-lg font-bold text-text-dark flex items-center gap-1.5">
             Accessibility <InfoIcon sectionName="Accessibility" />
           </h2>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Select
-              label={
-                <span>
-                  Do you have any impairment?
-                  <span className="text-primary-solid ml-0.5">*</span>
-                </span>
-              }
-              placeholder="Select"
-              options={[
-                "No",
-                "Visual impairment",
-                "Hearing impairment",
-                "Mobility impairment",
-                "Other",
-              ]}
-              value={form.impairment}
-              error={errors.impairment}
-              onChange={(e) => {
-                const val = e.target.value;
-                update("impairment", val);
-                if (val !== "Other") {
-                  setOtherImpairment("");
-                }
-              }}
-            />
+          <div className="flex flex-col gap-2.5">
+            <label className="text-xs sm:text-sm font-medium text-text-dark">
+              Do you have any impairment? (Select all that apply)
+              <span className="text-primary-solid ml-0.5">*</span>
+            </label>
 
-            {form.impairment === "Other" && (
-              <Input
-                label={
-                  <span>
-                    Specify Impairment
-                    <span className="text-primary-solid ml-0.5">*</span>
-                  </span>
-                }
-                type="text"
-                placeholder="Please specify your impairment"
-                value={otherImpairment}
-                error={errors.otherImpairment}
-                onChange={(e) => {
-                  setOtherImpairment(e.target.value);
-                  if (errors.otherImpairment) {
-                    setErrors((prev) => ({ ...prev, otherImpairment: "" }));
+            <div className="flex flex-wrap gap-2.5 w-full">
+              {IMPAIRMENT_OPTIONS.map((opt) => {
+                const isSelected = selectedImpairments.includes(opt);
+                return (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => handleToggleImpairment(opt)}
+                    className={`px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-2 cursor-pointer border text-left leading-snug wrap-break-word ${
+                      isSelected
+                        ? "bg-[#a31d38] text-white border-[#a31d38] shadow-xs"
+                        : "bg-white text-neutral-primary border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                    }`}
+                  >
+                    <div
+                      className={`w-4 h-4 rounded-md border flex items-center justify-center shrink-0 transition-colors ${
+                        isSelected
+                          ? "bg-white text-[#a31d38] border-white"
+                          : "border-gray-300 bg-white"
+                      }`}
+                    >
+                      {isSelected && <FiCheck className="w-3 h-3 stroke-3" />}
+                    </div>
+                    <span>{opt}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {errors.impairment && (
+              <span className="text-primary-solid text-xs font-semibold mt-1">
+                {errors.impairment}
+              </span>
+            )}
+
+            {selectedImpairments.includes("Other") && (
+              <div className="mt-2 max-w-md">
+                <Input
+                  label={
+                    <span>
+                      Specify Other Impairment
+                      <span className="text-primary-solid ml-0.5">*</span>
+                    </span>
                   }
-                }}
-              />
+                  type="text"
+                  placeholder="Please specify your impairment"
+                  value={otherImpairment}
+                  error={errors.otherImpairment}
+                  onChange={(e) => {
+                    setOtherImpairment(e.target.value);
+                    if (errors.otherImpairment) {
+                      setErrors((prev) => ({ ...prev, otherImpairment: "" }));
+                    }
+                  }}
+                />
+              </div>
             )}
           </div>
         </div>
 
+        {/* Action Buttons */}
         <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-100">
           <button
             type="button"
             onClick={onBack || (() => router.back())}
-            className="flex items-center gap-2 text-neutral-secondary hover:text-neutral-primary font-semibold text-sm transition-colors cursor-pointer select-none focus:outline-none"
+            className="flex items-center gap-2 text-sm font-medium text-black hover:text-text-dark transition-colors cursor-pointer"
           >
             <FiArrowLeft className="w-4 h-4" />
             Back
@@ -540,25 +681,16 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
 
           <Button
             type="submit"
-            variant="amber"
+            variant="secondary"
             size="md"
             loading={isSubmitting}
-            rightIcon={<FiArrowRight className="w-4.5 h-4.5" />}
-            className="px-8 h-11 text-white font-bold text-sm rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
+            className="px-6 h-11 text-white font-bold text-sm bg-secondary hover:bg-secondary-hover rounded-xl flex items-center gap-2 transition-all shadow-lg cursor-pointer"
           >
-            Continue
+            <span>Continue to Verification</span>
+            <FiArrowRight className="w-4 h-4" />
           </Button>
         </div>
       </form>
-
-      <StatusModal
-        isOpen={showSuccessModal}
-        type="success"
-        title="Personal Information Saved"
-        description="Your profile details have been saved successfully!"
-        actionLabel="Continue"
-        onAction={() => setShowSuccessModal(false)}
-      />
     </motion.div>
   );
 };

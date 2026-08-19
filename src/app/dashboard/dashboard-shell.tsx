@@ -14,15 +14,12 @@ export default function DashboardShell({
   return (
     <div
       suppressHydrationWarning
-      className="min-h-screen bg-[#F5FAF8] text-text-dark selection:bg-primary selection:text-white"
+      className="min-h-screen bg-[#F5FAF8] text-text-dark selection:bg-primary selection:text-white flex flex-col"
     >
       {isSelfAssessment ? (
         children
       ) : (
-        <main
-          suppressHydrationWarning
-          className="xl:max-w-360 mx-auto p-4 w-full"
-        >
+        <main suppressHydrationWarning className="w-full flex-1 flex flex-col">
           {children}
         </main>
       )}

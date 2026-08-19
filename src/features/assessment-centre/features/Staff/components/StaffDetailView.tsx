@@ -6,19 +6,16 @@ import {
   FiSearch,
   FiList,
   FiGrid,
-  FiChevronLeft,
-  FiSlash,
-  FiUnlock,
 } from "react-icons/fi";
 import { Select } from "@/src/components/ui/select";
-import { Button } from "@/src/components/ui/button";
 import {
-  MOCK_STAFF_MEMBERS,
-  MOCK_STAFF_APPLICATIONS,
-} from "@/features/assessment-centre/utils/constants";
-import { PendingApplication } from "@/features/assessment-centre/types";
+  useGetCentreStaffDetail,
+  useGetCentreStaffApplications,
+  usePatchCentreStaffBulk,
+} from "@/src/features/shared/centre/hooks";
 import { StaffStatusModal, StaffStatusModalMode } from "./StaffStatusModal";
 import { ASSETS_URL } from "@/assets";
+import { Loader } from "@/src/components/ui/loader";
 
 interface StaffDetailViewProps {
   staffId: string;
@@ -28,47 +25,75 @@ interface StaffDetailViewProps {
 
 export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
   staffId,
-  onBack,
   onViewApplication,
 }) => {
-  const staff =
-    MOCK_STAFF_MEMBERS.find((s) => s.id === staffId) || MOCK_STAFF_MEMBERS[1];
+  const { data: staffDetail, isLoading: isLoadingStaff } =
+    useGetCentreStaffDetail(staffId);
+  const { data: staffApps = [], isLoading: isLoadingApps } =
+    useGetCentreStaffApplications(staffId);
+  const patchStaffBulk = usePatchCentreStaffBulk();
 
-  const [applications, setApplications] = useState<PendingApplication[]>(
-    MOCK_STAFF_APPLICATIONS,
-  );
   const [searchQuery, setSearchQuery] = useState("");
   const [tradeFilter, setTradeFilter] = useState("All");
   const [assessmentFilter, setAssessmentFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
-  const [isDeactivated, setIsDeactivated] = useState(
-    staff.status === "Inactive",
-  );
   const [detailViewMode, setDetailViewMode] = useState<"list" | "grid">("list");
 
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [statusModalMode, setStatusModalMode] =
     useState<StaffStatusModalMode>("confirm-deactivate");
 
-  const handleOpenDeactivateModal = () => {
-    setStatusModalMode("confirm-deactivate");
-    setIsStatusModalOpen(true);
-  };
-
-  const handleOpenActivateModal = () => {
-    setStatusModalMode("confirm-activate");
-    setIsStatusModalOpen(true);
-  };
-
   const handleConfirmDeactivate = () => {
-    setIsDeactivated(true);
-    setStatusModalMode("deactivated-success");
+    patchStaffBulk.mutate(
+      { ids: [staffId], status: "inactive" },
+      {
+        onSuccess: () => {
+          setStatusModalMode("deactivated-success");
+        },
+      },
+    );
   };
 
   const handleConfirmActivate = () => {
-    setIsDeactivated(false);
-    setStatusModalMode("activated-success");
+    patchStaffBulk.mutate(
+      { ids: [staffId], status: "active" },
+      {
+        onSuccess: () => {
+          setStatusModalMode("activated-success");
+        },
+      },
+    );
   };
+
+  const staffName =
+    staffDetail?.name ||
+    staffDetail?.email?.split("@")[0] ||
+    "Staff Member";
+  const staffEmail = staffDetail?.email || "";
+  const isDeactivated = staffDetail?.status === "inactive";
+
+  const applications = staffApps.map((app: any) => ({
+    id: app.id,
+    candidateName:
+      app.candidate?.name ||
+      `${app.candidate?.firstName || ""} ${app.candidate?.lastName || ""}`.trim() ||
+      `Candidate (${app.candidateId?.slice(0, 8) || "N/A"})`,
+    trade: app.trade?.name || app.type || "General",
+    assessmentType: app.type || "RPL",
+    status:
+      app.status === "certified"
+        ? "Certified"
+        : app.status === "in_progress"
+        ? "Ongoing"
+        : app.status === "rejected" || app.status === "withdrawn"
+        ? "Archived"
+        : "Pending",
+    submittedAt: app.submittedAt
+      ? new Date(app.submittedAt).toLocaleDateString("en-GB")
+      : app.createdAt
+      ? new Date(app.createdAt).toLocaleDateString("en-GB")
+      : "N/A",
+  }));
 
   const filteredApplications = applications.filter((app) => {
     const matchesSearch =
@@ -81,7 +106,7 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
     return matchesSearch && matchesTrade && matchesAssessment && matchesStatus;
   });
 
-  const renderStatusBadge = (status: PendingApplication["status"]) => {
+  const renderStatusBadge = (status: string) => {
     switch (status) {
       case "Ongoing":
         return (
@@ -89,16 +114,16 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
             Ongoing
           </span>
         );
-      case "Folder Complete":
-        return (
-          <span className="bg-primary/10 text-primary font-medium px-4 py-1 rounded-full text-xs inline-block">
-            Folder Complete
-          </span>
-        );
       case "Certified":
         return (
           <span className="bg-[#1E7F4C]/20 text-[#1E7F4C] font-medium px-4 py-1 rounded-full text-xs inline-block">
             Certified
+          </span>
+        );
+      case "Archived":
+        return (
+          <span className="bg-[#E5E7EB] text-[#4B5563] font-medium px-4 py-1 rounded-full text-xs inline-block">
+            Archived
           </span>
         );
       default:
@@ -110,6 +135,17 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
     }
   };
 
+  if (isLoadingStaff) {
+    return (
+      <Loader
+        fullscreen={false}
+        size="small"
+        tip="Loading staff details..."
+        className="py-20"
+      />
+    );
+  }
+
   return (
     <div className="w-full flex flex-col gap-6 select-text">
       {/* Staff Profile Card */}
@@ -118,7 +154,7 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
           <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden shrink-0 border border-gray-100 bg-gray-50 flex items-center justify-center">
             <Image
               src={ASSETS_URL.userAvatar}
-              alt={staff.name}
+              alt={staffName}
               width={80}
               height={80}
               className="w-full h-full object-cover"
@@ -127,15 +163,26 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
 
           <div className="flex flex-col gap-1">
             <h2 className="text-lg sm:text-xl font-extrabold text-neutral-primary">
-              {staff.name}
+              {staffName}
             </h2>
             <span className="text-xs text-gray-400 font-medium">
-              {staff.email}
+              {staffEmail}
             </span>
           </div>
         </div>
 
-        <div className="shrink-0">
+        <div className="flex items-center gap-3 shrink-0">
+          {staffDetail?.workload && (
+            <div className="hidden sm:flex items-center gap-2 text-xs text-gray-500 font-medium">
+              <span className="bg-gray-100 px-3 py-1 rounded-lg">
+                Reviewed: {staffDetail.workload.reviewed}
+              </span>
+              <span className="bg-gray-100 px-3 py-1 rounded-lg">
+                Pending: {staffDetail.workload.pending}
+              </span>
+            </div>
+          )}
+
           {isDeactivated ? (
             <span className="bg-[#E5E7EB] text-[#4B5563] font-semibold px-4 py-1.5 rounded-full text-xs inline-block">
               Inactive
@@ -203,8 +250,9 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
               options={[
                 { label: "Status", value: "All" },
                 { label: "Ongoing", value: "Ongoing" },
-                { label: "Folder Complete", value: "Folder Complete" },
                 { label: "Certified", value: "Certified" },
+                { label: "Pending", value: "Pending" },
+                { label: "Archived", value: "Archived" },
               ]}
             />
 
@@ -237,8 +285,18 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
           </div>
         </div>
 
-        {/* View Mode 1: Grid Card View */}
-        {detailViewMode === "grid" ? (
+        {isLoadingApps ? (
+          <Loader
+            fullscreen={false}
+            size="small"
+            tip="Loading applications..."
+            className="py-12"
+          />
+        ) : filteredApplications.length === 0 ? (
+          <div className="py-16 flex flex-col items-center justify-center text-center">
+            <p className="text-gray-400 font-normal">No applications found.</p>
+          </div>
+        ) : detailViewMode === "grid" ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredApplications.map((app) => (
               <div
@@ -272,7 +330,6 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
             ))}
           </div>
         ) : (
-          /* View Mode 2: Table List View */
           <div className="w-full overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-175">
               <thead>
@@ -313,11 +370,11 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
         )}
       </div>
 
-      {/* Staff Status Deactivation / Activation Modal */}
+      {/* Staff Status Modal */}
       <StaffStatusModal
         isOpen={isStatusModalOpen}
         mode={statusModalMode}
-        staffName={staff.name}
+        staffName={staffName}
         onClose={() => setIsStatusModalOpen(false)}
         onConfirmDeactivate={handleConfirmDeactivate}
         onConfirmActivate={handleConfirmActivate}

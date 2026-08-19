@@ -135,29 +135,24 @@ export const AuthSidebar: React.FC = () => {
 
               <div suppressHydrationWarning className="flex flex-col gap-6">
                 <h2 className="text-neutral-burgundy text-3xl xl:text-[34px] font-bold leading-tight tracking-tight max-w-sm">
-                  {pathname?.includes("verify-identity")
-                    ? "NIN Verification"
-                    : "Build a verified career in your trade."}
+                  Build a verified career in your trade.
                 </h2>
                 <p className="text-neutral-burgundy text-sm xl:text-base leading-relaxed max-w-lg font-normal font-work">
-                  {pathname?.includes("verify-identity")
-                    ? "To maintain the integrity of the National Skills Qualification process, every candidate must complete a one-time identity verification using their National Identification Number (NIN). Your verified identity will be used across all ELIMI services and future applications."
-                    : "Learn, get NSQ-certified, and get discovered by employers, all from one ELIMI account."}
+                  Learn, get NSQ-certified, and get discovered by employers, all
+                  from one ELIMI account.
                 </p>
 
-                {!pathname?.includes("verify-identity") && (
-                  <div suppressHydrationWarning className="pt-1">
-                    <Link
-                      href="/#about"
-                      className="inline-flex items-center gap-2 text-white text-sm font-semibold hover:opacity-80 transition-opacity"
-                    >
-                      <span className="underline underline-offset-4">
-                        Learn More
-                      </span>
-                      <HiOutlineArrowNarrowRight className="w-6 h-6" />
-                    </Link>
-                  </div>
-                )}
+                <div suppressHydrationWarning className="pt-1">
+                  <Link
+                    href="/#about"
+                    className="inline-flex items-center gap-2 text-white text-sm font-semibold hover:opacity-80 transition-opacity"
+                  >
+                    <span className="underline underline-offset-4">
+                      Learn More
+                    </span>
+                    <HiOutlineArrowNarrowRight className="w-6 h-6" />
+                  </Link>
+                </div>
               </div>
             </div>
 

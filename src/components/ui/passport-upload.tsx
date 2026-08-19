@@ -59,6 +59,16 @@ export const PassportUpload: React.FC<PassportUploadProps> = ({
 
     const localPreview = URL.createObjectURL(file);
     setPreview(localPreview);
+    onImageChange?.(file, {
+      assetId: "",
+      url: localPreview,
+      provider: "local",
+      type: "passport",
+      metadata: {
+        size: file.size,
+        mimeType: file.type,
+      },
+    });
 
     try {
       const asset = await uploadFileMutation.mutateAsync({ file, purpose });
@@ -67,8 +77,7 @@ export const PassportUpload: React.FC<PassportUploadProps> = ({
       }
       onImageChange?.(file, asset);
     } catch {
-      // Fallback to local preview if network error occurs
-      onImageChange?.(file, null);
+      // Keep local preview even if server upload fails/is offline
     }
   };
 
