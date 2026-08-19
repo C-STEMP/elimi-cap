@@ -10,6 +10,8 @@ import {
   saveLastOnboardingRoute,
   getPersona,
   savePersona,
+  getCentreId,
+  saveCentreId,
   getUser,
   resolveUserDestination,
 } from "@/src/lib/auth-storage";
@@ -17,6 +19,7 @@ import {
   getOnboardingMineApi,
   parseOnboardingMine,
 } from "@/src/features/shared/onboarding/api";
+import { getMeApi } from "@/src/features/shared/account/api";
 import { Loader } from "@/src/components/ui/loader";
 
 interface RouteGuardProps {
@@ -54,15 +57,31 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({ children }) => {
 
       if (isAuth) {
         try {
-          const res = await getOnboardingMineApi();
-          const parsed = parseOnboardingMine(res);
-          if (parsed.persona) {
-            currentPersona = parsed.persona;
-            savePersona(parsed.persona);
+          const [resMine, resMe] = await Promise.allSettled([
+            getOnboardingMineApi(),
+            getMeApi(),
+          ]);
+
+          if (resMine.status === "fulfilled") {
+            const parsed = parseOnboardingMine(resMine.value);
+            if (parsed.persona) {
+              currentPersona = parsed.persona;
+              savePersona(parsed.persona);
+            }
+            if (parsed.isOnboarded) {
+              isOnboarded = true;
+              saveOnboardedStatus(true);
+            }
           }
-          if (parsed.isOnboarded) {
-            isOnboarded = true;
-            saveOnboardedStatus(true);
+
+          if (resMe.status === "fulfilled" && resMe.value) {
+            const meData = resMe.value;
+            if (meData.centres && meData.centres.length > 0) {
+              const activeCentre = meData.centres[0];
+              if (activeCentre?.centreId) {
+                saveCentreId(activeCentre.centreId);
+              }
+            }
           }
         } catch {
           // ignore network error, rely on stored flag

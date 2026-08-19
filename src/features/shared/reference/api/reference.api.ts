@@ -1,4 +1,15 @@
 import { capFetch } from "@/src/lib/api/cap";
+import { orchestratorFetch } from "@/src/lib/api/orchestrator";
+
+export interface Bank {
+  id: number;
+  name: string;
+  slug: string;
+  code: string;
+  type: string;
+  currency: string;
+  country: string;
+}
 
 export interface Sector {
   id: string;
@@ -177,4 +188,27 @@ export async function getThirdPartyReportTemplateApi(): Promise<ThirdPartyReport
       method: "GET",
     },
   );
+}
+
+/**
+ * Orchestrator: List supported banks for payouts
+ */
+export async function getBanksApi(country: string = "nigeria"): Promise<Bank[]> {
+  try {
+    const data = await orchestratorFetch<Bank[]>("/banks", {
+      method: "GET",
+      params: { country: country.toLowerCase() },
+    });
+    return data || [];
+  } catch (error: any) {
+    if (
+      error?.status === 404 ||
+      error?.code === "http.not_found" ||
+      error?.message?.toLowerCase().includes("not found")
+    ) {
+      return [];
+    }
+    console.error("Failed to fetch banks from orchestrator:", error);
+    return [];
+  }
 }
