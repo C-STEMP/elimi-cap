@@ -24,6 +24,7 @@ export const CenterPersonalInfo: React.FC = () => {
   const dispatch = useAppDispatch();
   const { toast } = useToast();
   const { getOnboarding, saveOnboarding } = useOnboarding();
+  const authUser = useAppSelector((s) => s.auth.user);
   const savedCentrePersonalInfo = useAppSelector(
     (s) => s.onboarding.centrePersonalInfo,
   );
@@ -35,7 +36,7 @@ export const CenterPersonalInfo: React.FC = () => {
     dob: savedCentrePersonalInfo.dob || "",
     gender: savedCentrePersonalInfo.gender || "",
     nationality: savedCentrePersonalInfo.nationality || "",
-    email: savedCentrePersonalInfo.email || "",
+    email: savedCentrePersonalInfo.email || authUser?.email || "",
     phoneNumber: savedCentrePersonalInfo.phoneNumber || "",
     country: savedCentrePersonalInfo.country || "Nigeria",
     state: savedCentrePersonalInfo.state || "",
@@ -68,7 +69,7 @@ export const CenterPersonalInfo: React.FC = () => {
             dob: personalDetails?.dob || prev.dob || "",
             gender: personalDetails?.gender || prev.gender || "",
             nationality: personalDetails?.nationality || prev.nationality || "",
-            email: contactInfo?.emailAddress || prev.email || "",
+            email: contactInfo?.emailAddress || prev.email || authUser?.email || "",
             phoneNumber: contactInfo?.phoneNumber?.number || prev.phoneNumber || "",
             country: resAddr?.country || prev.country || "Nigeria",
             state: resAddr?.state || prev.state || "",
@@ -79,8 +80,10 @@ export const CenterPersonalInfo: React.FC = () => {
           return next;
         });
       }
+    } else if (authUser?.email && !form.email) {
+      update("email", authUser.email);
     }
-  }, [getOnboarding.data, dispatch]);
+  }, [getOnboarding.data, authUser?.email, dispatch]);
 
   const update = (field: keyof typeof form, value: string) => {
     setForm((prev) => {
@@ -97,6 +100,8 @@ export const CenterPersonalInfo: React.FC = () => {
   const validate = () => {
     let valid = true;
     const newErrors: Record<string, string> = {};
+
+    const effectiveEmail = form.email.trim() || authUser?.email?.trim() || "";
 
     if (!form.firstName.trim()) {
       newErrors.firstName = "First Name is required";
@@ -118,7 +123,7 @@ export const CenterPersonalInfo: React.FC = () => {
       newErrors.nationality = "Nationality is required";
       valid = false;
     }
-    if (!form.email.trim()) {
+    if (!effectiveEmail) {
       newErrors.email = "Email Address is required";
       valid = false;
     }
@@ -159,6 +164,8 @@ export const CenterPersonalInfo: React.FC = () => {
       return;
     }
 
+    const effectiveEmail = form.email.trim() || authUser?.email?.trim() || "";
+
     saveOnboarding.mutate(
       {
         owner: {
@@ -171,7 +178,7 @@ export const CenterPersonalInfo: React.FC = () => {
             nationality: form.nationality,
           },
           contactInformation: {
-            emailAddress: form.email,
+            emailAddress: effectiveEmail,
             phoneNumber: {
               countryCode: "+234",
               number: form.phoneNumber,
@@ -288,13 +295,7 @@ export const CenterPersonalInfo: React.FC = () => {
               </span>
             }
             placeholder="Select"
-            options={[
-              "Nigerian",
-              "Ghanaian",
-              "Kenyan",
-              "South African",
-              "Other",
-            ]}
+            options={countries}
             value={form.nationality}
             error={errors.nationality}
             onChange={(e) => update("nationality", e.target.value)}
@@ -316,10 +317,11 @@ export const CenterPersonalInfo: React.FC = () => {
                 </span>
               }
               type="email"
-              placeholder="Select"
-              value={form.email}
-              error={errors.email}
-              onChange={(e) => update("email", e.target.value)}
+              placeholder="yourname@email.com"
+              value={form.email || authUser?.email || ""}
+              disabled={true}
+              className="bg-gray-100/70 cursor-not-allowed opacity-80"
+              helperText="Auto-filled from your registered account email."
             />
 
             <PhoneInput
