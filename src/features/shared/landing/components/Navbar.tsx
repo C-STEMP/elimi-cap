@@ -3,8 +3,12 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { logoIcon } from "@/assets";
+import { useAppDispatch } from "@/store/hooks";
+import { logout } from "@/store/slices/authSlice";
+import { resetOnboarding } from "@/store/slices/onboardingSlice";
+import { clearTokens } from "@/src/lib/auth-storage";
 
 const NAV_LINKS = [
   { label: "Home", href: "#" },
@@ -16,10 +20,21 @@ const NAV_LINKS = [
 ];
 
 export function Navbar() {
+  const dispatch = useAppDispatch();
+  const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeLink, setActiveLink] = useState("#");
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
+
+  const handleRegisterClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    clearTokens();
+    dispatch(logout());
+    dispatch(resetOnboarding());
+    setMobileMenuOpen(false);
+    router.push("/signup");
+  };
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -95,6 +110,7 @@ export function Navbar() {
           </Link>
           <Link
             href="/signup"
+            onClick={handleRegisterClick}
             className="whitespace-nowrap rounded-[10px] bg-secondary px-3 md:px-4 lg:px-6 xl:px-10 py-2 lg:py-2.5 text-xs lg:text-sm font-semibold text-white transition-all hover:bg-secondary-hover"
           >
             Register
@@ -164,7 +180,7 @@ export function Navbar() {
               </Link>
               <Link
                 href="/signup"
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={handleRegisterClick}
                 className="rounded-full bg-secondary py-2 text-center text-base font-semibold text-text-dark"
               >
                 Register

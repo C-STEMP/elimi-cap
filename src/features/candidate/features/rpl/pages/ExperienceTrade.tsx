@@ -21,6 +21,7 @@ import { useOnboarding } from "@/src/features/candidate/features/Onboarding/hook
 import {
   rplExperienceTradeSchema,
   extractZodErrors,
+  formatToIsoDate,
 } from "@/src/lib/validation";
 
 export interface RPLExperienceTradeProps {
@@ -60,7 +61,7 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
   onContinue,
 }) => {
   const dispatch = useAppDispatch();
-  const { saveOnboarding } = useOnboarding();
+  const { getOnboarding, saveOnboarding } = useOnboarding();
   const savedTrade = useAppSelector((s) => s.onboarding.startApplication.trade);
   const savedRPLExperienceTrade = useAppSelector(
     (s) => s.onboarding.rplExperienceTrade,
@@ -108,6 +109,22 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
     isSubmitting: false,
     showSuccessModal: false,
   });
+
+  // Hydrate from getOnboarding API response if available
+  useEffect(() => {
+    if (getOnboarding.data?.data) {
+      const apiData = getOnboarding.data.data as any;
+      const rplExp = apiData?.rplExperienceTrade;
+      if (rplExp) {
+        setForm((prev) => ({
+          ...prev,
+          ...rplExp,
+          qualificationTitle: rplExp.qualificationTitle || prev.qualificationTitle || savedTrade || "",
+        }));
+        dispatch(setRPLExperienceTrade(rplExp));
+      }
+    }
+  }, [getOnboarding.data, savedTrade, dispatch]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -227,11 +244,20 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
 
   const handleConfirmSaveDraft = () => {
     setShowConfirmDraftModal(false);
+    const yearsNum = parseInt(form.yearsOfExperience, 10) || 1;
     saveOnboarding.mutate(
       {
-        accessibility: {
-          hasImpairment: false,
-          impairment: "",
+        currentOccupation: {
+          occupation: form.occupation || form.qualificationTitle || "Worker",
+          yearsOfExperience: yearsNum,
+          employmentHistory: form.employments.map((emp) => ({
+            company: emp.companyName || "Self-Employed",
+            jobTitle: emp.jobTitle || form.occupation || "Worker",
+            employmentType: emp.employmentType || "Full-time",
+            startDate: formatToIsoDate(emp.startDate) || new Date().toISOString().split("T")[0],
+            endDate: emp.endDate ? formatToIsoDate(emp.endDate) : undefined,
+            keyResponsibilities: emp.responsibilities || "Trade duties",
+          })),
         },
       },
       {
@@ -283,20 +309,39 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
     }
 
     update("isSubmitting", true);
-    setTimeout(() => {
-      update("isSubmitting", false);
-      toast({
-        type: "success",
-        title: "Experience & Trade Saved",
-        description: "Step 2 of 4 completed successfully!",
-      });
+    const yearsNum = parseInt(form.yearsOfExperience, 10) || 1;
+    saveOnboarding.mutate(
+      {
+        currentOccupation: {
+          occupation: form.occupation || form.qualificationTitle || "Worker",
+          yearsOfExperience: yearsNum,
+          employmentHistory: form.employments.map((emp) => ({
+            company: emp.companyName || "Self-Employed",
+            jobTitle: emp.jobTitle || form.occupation || "Worker",
+            employmentType: emp.employmentType || "Full-time",
+            startDate: formatToIsoDate(emp.startDate) || new Date().toISOString().split("T")[0],
+            endDate: emp.endDate ? formatToIsoDate(emp.endDate) : undefined,
+            keyResponsibilities: emp.responsibilities || "Trade duties",
+          })),
+        },
+      },
+      {
+        onSettled: () => {
+          update("isSubmitting", false);
+          toast({
+            type: "success",
+            title: "Experience & Trade Saved",
+            description: "Step 2 of 4 completed successfully!",
+          });
 
-      if (onContinue) {
-        onContinue();
-      } else {
-        router.push("/rpl/verify-identity");
-      }
-    }, 800);
+          if (onContinue) {
+            onContinue();
+          } else {
+            router.push("/rpl/verify-identity");
+          }
+        },
+      },
+    );
   };
 
   return (

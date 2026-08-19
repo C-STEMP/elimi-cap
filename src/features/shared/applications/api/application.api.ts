@@ -145,3 +145,44 @@ export async function getApplicationReceiptApi(
     method: "GET",
   });
 }
+
+export interface SelfAssessment {
+  applicationId: string;
+  personalInformation?: Record<string, unknown>;
+  frozenPersonalInformation?: Record<string, unknown>;
+  competencies?: Array<Record<string, unknown>>;
+  reflection?: Record<string, unknown>;
+  declaration?: Record<string, unknown>;
+  submittedAt?: string | null;
+}
+
+export interface SaveSelfAssessmentPayload {
+  competencies?: Array<Record<string, unknown>>;
+  reflection?: Record<string, unknown>;
+  declaration?: Record<string, unknown>;
+  submit?: boolean;
+}
+
+export async function getSelfAssessmentApi(
+  applicationId: string,
+): Promise<SelfAssessment> {
+  return capFetch<SelfAssessment>(
+    `/applications/${applicationId}/evidence/self-assessment`,
+    {
+      method: "GET",
+    },
+  );
+}
+
+export async function saveSelfAssessmentApi(
+  applicationId: string,
+  payload: SaveSelfAssessmentPayload,
+): Promise<SelfAssessment> {
+  return capFetch<SelfAssessment>(
+    `/applications/${applicationId}/evidence/self-assessment`,
+    {
+      method: "PUT",
+      data: payload,
+    },
+  );
+}

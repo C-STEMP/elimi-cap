@@ -146,16 +146,38 @@ export function useSubmitOnboarding() {
   });
 }
 
+import { useAppDispatch } from "@/store/hooks";
+import { markVerified } from "@/store/slices/authSlice";
+import {
+  setRPLIdentity,
+  setCentreIdentity,
+  setAssessorIdentity,
+} from "@/store/slices/onboardingSlice";
+
 export function useVerifyIdentity() {
   const queryClient = useQueryClient();
+  const dispatch = useAppDispatch();
   const { toast } = useToast();
 
   return useMutation({
     mutationFn: (payload: IdentityVerificationPayload) => verifyIdentityApi(payload),
 
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
+      dispatch(markVerified());
+      if (variables?.identificationNumber) {
+        dispatch(setRPLIdentity({ nin: variables.identificationNumber, isVerified: true }));
+        dispatch(setCentreIdentity({ nin: variables.identificationNumber, isVerified: true }));
+        dispatch(setAssessorIdentity({ nin: variables.identificationNumber, isVerified: true }));
+      } else {
+        dispatch(setRPLIdentity({ isVerified: true }));
+        dispatch(setCentreIdentity({ isVerified: true }));
+        dispatch(setAssessorIdentity({ isVerified: true }));
+      }
       queryClient.invalidateQueries({
         queryKey: ONBOARDING_QUERY_KEYS.candidateProfile,
+      });
+      queryClient.invalidateQueries({
+        queryKey: ONBOARDING_QUERY_KEYS.mine,
       });
       toast({
         type: "success",

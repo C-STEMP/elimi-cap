@@ -20,6 +20,8 @@ import {
   extractZodErrors,
 } from "@/src/lib/validation";
 
+import { useAppSelector } from "@/store/hooks";
+
 interface Step1Props {
   onNext: () => void;
   onBack: () => void;
@@ -28,21 +30,27 @@ interface Step1Props {
 export const Step1PersonalInfo: React.FC<Step1Props> = ({ onNext, onBack }) => {
   const router = useRouter();
   const { toast } = useToast();
+  const savedPersonalInfo = useAppSelector((state) => state.onboarding.personalInfo);
+  const user = useAppSelector((state) => state.auth.user);
+
   const [showConfirmDraftModal, setShowConfirmDraftModal] = useState(false);
   const [showDraftModal, setShowDraftModal] = useState(false);
   const [passportFile, setPassportFile] = useState<File | null>(null);
+  const [passportPreview, setPassportPreview] = useState<string | null>(
+    savedPersonalInfo.passportUrl || null,
+  );
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    middleName: "",
-    dob: "",
-    email: "",
-    phone: "",
-    state: "",
-    lga: "",
-    address: "",
+    firstName: savedPersonalInfo.firstName || "",
+    lastName: savedPersonalInfo.lastName || "",
+    middleName: savedPersonalInfo.middleName || "",
+    dob: savedPersonalInfo.dob || "",
+    email: savedPersonalInfo.email || user?.email || "",
+    phone: savedPersonalInfo.phoneNumber || user?.phoneNumber || "",
+    state: savedPersonalInfo.state || "",
+    lga: savedPersonalInfo.lga || "",
+    address: savedPersonalInfo.streetAddress || "",
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -67,7 +75,7 @@ export const Step1PersonalInfo: React.FC<Step1Props> = ({ onNext, onBack }) => {
     let valid = true;
     const newErrors: Record<string, string> = {};
 
-    if (!passportFile) {
+    if (!passportFile && !passportPreview) {
       newErrors.passport = "Passport photograph is required";
       valid = false;
     }
@@ -121,9 +129,13 @@ export const Step1PersonalInfo: React.FC<Step1Props> = ({ onNext, onBack }) => {
 
         <PassportUpload
           required
+          defaultImage={passportPreview || undefined}
           error={errors.passport}
-          onImageChange={(file) => {
+          onImageChange={(file, asset) => {
             setPassportFile(file);
+            if (asset?.url) {
+              setPassportPreview(asset.url);
+            }
             if (errors.passport) {
               setErrors((prev) => ({ ...prev, passport: "" }));
             }

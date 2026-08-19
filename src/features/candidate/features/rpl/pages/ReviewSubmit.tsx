@@ -11,8 +11,12 @@ import { ASSETS_URL } from "@/assets";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setSidebarVariant, setRplStep } from "@/store/slices/authSlice";
 import { useOnboarding } from "@/src/features/candidate/features/Onboarding/hooks";
+import { saveOnboardedStatus } from "@/src/lib/auth-storage";
 
 import { StatusModal } from "@/components/status-modal";
+
+import { useCandidateProfile } from "@/src/features/shared/onboarding/hooks";
+import { markVerified } from "@/store/slices/authSlice";
 
 export interface RPLReviewSubmitProps {
   onBack?: () => void;
@@ -29,7 +33,9 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
   const router = useRouter();
   const { toast } = useToast();
   const { submitOnboarding } = useOnboarding();
+  const { data: candidateProfile } = useCandidateProfile(true);
 
+  const user = useAppSelector((s) => s.auth.user);
   const personalInfo = useAppSelector((s) => s.onboarding.personalInfo);
   const rplExp = useAppSelector((s) => s.onboarding.rplExperienceTrade);
   const rplId = useAppSelector((s) => s.onboarding.rplIdentity);
@@ -41,7 +47,17 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
     rplExp.occupation ||
       rplExp.employments?.some((e) => e.companyName || e.jobTitle),
   );
-  const identityVerified = Boolean(rplId.isVerified);
+  const identityVerified = Boolean(
+    rplId.isVerified ||
+    user?.isVerified ||
+    candidateProfile?.identityVerified
+  );
+
+  React.useEffect(() => {
+    if (identityVerified && !user?.isVerified) {
+      dispatch(markVerified());
+    }
+  }, [identityVerified, user?.isVerified, dispatch]);
 
   const [showConfirmSubmitModal, setShowConfirmSubmitModal] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
@@ -90,6 +106,7 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
     setShowConfirmSubmitModal(false);
     submitOnboarding.mutate(undefined, {
       onSuccess: () => {
+        saveOnboardedStatus(true);
         setShowSubmitModal(true);
       },
     });

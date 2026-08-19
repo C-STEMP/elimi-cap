@@ -9,18 +9,34 @@ import { ApplicationsList } from "@/features/candidate/features/Dashboard/compon
 import { UpcomingCard } from "@/features/candidate/features/Dashboard/components/UpcomingCard";
 import { CalendarWidget } from "@/features/candidate/features/Dashboard/components/CalendarWidget";
 import { VerifiedBadge } from "@/features/candidate/features/Dashboard/components/VerifiedBadge";
-import { useAppSelector } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { useGetApplications } from "@/src/features/candidate/features/Application/hooks";
+import { useCandidateProfile } from "@/src/features/shared/onboarding/hooks";
+import { markVerified } from "@/store/slices/authSlice";
 
 export const Dashboard: React.FC = () => {
+  const dispatch = useAppDispatch();
   const authUser = useAppSelector((state) => state.auth.user);
+  const savedRPLIdentity = useAppSelector((s) => s.onboarding.rplIdentity);
+  const { data: candidateProfile } = useCandidateProfile(true);
   const { data: applications, isLoading: appsLoading } = useGetApplications();
+
+  const isVerified = Boolean(
+    authUser?.isVerified ||
+    candidateProfile?.identityVerified ||
+    savedRPLIdentity?.isVerified
+  );
+
+  React.useEffect(() => {
+    if (isVerified && !authUser?.isVerified) {
+      dispatch(markVerified());
+    }
+  }, [isVerified, authUser?.isVerified, dispatch]);
 
   const firstName =
     authUser?.fullName?.split(" ")[0] ||
     authUser?.email?.split("@")[0] ||
     "User";
-  const isVerified = authUser?.isVerified ?? false;
 
   const activeCount =
     applications?.filter(
@@ -37,10 +53,18 @@ export const Dashboard: React.FC = () => {
       status = "Completed";
     }
 
+    const title = (app as any).trade?.name
+      ? `${(app as any).trade.name} (${app.type})`
+      : `${app.type} Application`;
+
+    const subtitle = (app as any).sector?.name
+      ? `${(app as any).sector.name} • Status: ${app.currentStageKey || app.status}`
+      : `Status: ${app.currentStageKey || app.status}`;
+
     return {
       id: app.id,
-      title: `${app.type} Application`,
-      subtitle: `Status: ${app.currentStageKey || app.status}`,
+      title,
+      subtitle,
       status,
     };
   });

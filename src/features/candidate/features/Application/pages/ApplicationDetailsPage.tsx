@@ -23,12 +23,12 @@ import { FacilitatorCard } from "@/features/candidate/features/Dashboard/compone
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import {
   markPaymentComplete,
-  markSelfAssessmentComplete,
   markInternalVerifierCompleted,
   markExternalVerifierCompleted,
 } from "@/store/slices/applicationSlice";
 import { PaymentModal, PaymentModalType } from "@/features/candidate/features/Application/components/PaymentModals";
-import { useApplication } from "@/src/features/candidate/features/Application/hooks";
+import { useApplication, useGetApplicationById } from "@/src/features/candidate/features/Application/hooks";
+import { Loader } from "@/src/components/ui/loader";
 
 const statusToFormState = (
   status: string,
@@ -37,11 +37,11 @@ const statusToFormState = (
 ): ApplicationFormState => {
   if (status === "draft") return "pending";
   if (status === "submitted") return "pending";
-  if (status === "payment_pending") return "pending";
+  if (status === "payment_pending") return "approved";
   if (status === "payment_completed" && !paymentCompleted) return "approved";
   if (status === "folder_arrangement") return "vault_3days";
   if (status === "self_assessment") return "pending";
-  if (status === "evidence_upload") return "figma_screen_1"; // After evidence upload, move to interview stage
+  if (status === "evidence_upload") return "figma_screen_1";
   if (status === "interview_scheduled") return "figma_screen_5";
   if (status === "interview_completed") return "figma_completed_no_events";
   if (status === "certification") return "figma_certification_competent";
@@ -56,23 +56,43 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
   const dispatch = useAppDispatch();
   const { initiatePayment } = useApplication();
 
+  // Real API data
+  const { data: apiApp, isLoading } = useGetApplicationById(id || "");
+
+  // Redux cached data as secondary source
   const reduxApp = useAppSelector((state) =>
     state.application.applications.find((a) => a.id === id),
   );
 
-  const fallbackApp = {
-    id: id || "app-1786013185522",
-    title: "National Vocational Qualification in Carpentry",
-    subtitle: "NSQ Level 3",
-    status: "evidence_upload" as const,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    selfAssessmentCompleted: true,
-    paymentCompleted: true,
-    evidenceUploaded: false,
-  };
-
-  const application = reduxApp || fallbackApp;
+  const application = apiApp
+    ? {
+        id: apiApp.id,
+        title: (apiApp as any).trade?.name
+          ? `${(apiApp as any).trade.name} (${apiApp.type ?? "RPL"})`
+          : `${apiApp.type ?? "RPL"} Application`,
+        subtitle: (apiApp as any).sector?.name
+          ? `${(apiApp as any).sector.name} • Status: ${apiApp.currentStageKey || apiApp.status}`
+          : `Status: ${apiApp.currentStageKey || apiApp.status}`,
+        status: apiApp.status as string,
+        createdAt: apiApp.createdAt,
+        updatedAt: apiApp.updatedAt ?? apiApp.createdAt,
+        selfAssessmentCompleted: reduxApp?.selfAssessmentCompleted ?? false,
+        paymentCompleted: reduxApp?.paymentCompleted ?? false,
+        evidenceUploaded: reduxApp?.evidenceUploaded ?? false,
+      }
+    : reduxApp
+      ? {
+          id: reduxApp.id,
+          title: reduxApp.title ?? "Application",
+          subtitle: `Status: ${reduxApp.status}`,
+          status: reduxApp.status,
+          createdAt: reduxApp.createdAt,
+          updatedAt: reduxApp.updatedAt,
+          selfAssessmentCompleted: reduxApp.selfAssessmentCompleted,
+          paymentCompleted: reduxApp.paymentCompleted,
+          evidenceUploaded: reduxApp.evidenceUploaded,
+        }
+      : null;
 
   const [activePaymentModal, setActivePaymentModal] =
     useState<PaymentModalType>(null);
@@ -81,72 +101,23 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
   const [isInterviewCollapsed, setIsInterviewCollapsed] = useState(false);
 
-  // Comprehensive demo state switcher for all application stages
-  const [demoStage, setDemoStage] = useState<
-    | "draft"
-    | "payment_pending"
-    | "payment_completed"
-    | "folder_arrangement"
-    | "evidence_upload"
-    | "interview_completed"
-    | "internal_verifier_completed"
-    | "external_verifier_completed"
-    | "certification_competent"
-  >("draft");
+  const formState: ApplicationFormState = application
+    ? statusToFormState(
+        application.status,
+        application.selfAssessmentCompleted,
+        application.paymentCompleted,
+      )
+    : "pending";
 
-  // Internal verifier sub-states (only relevant when in interview_completed+ stages)
-  const [demoVerifierState, setDemoVerifierState] = useState<
-    "under_review" | "attention_required" | "completed"
-  >("under_review");
-
-  const formState = statusToFormState(
-    application.status,
-    application.selfAssessmentCompleted,
-    application.paymentCompleted,
-  );
-
-  // Override formState for demo purposes - comprehensive stage switcher
-  const getEffectiveFormState = (): ApplicationFormState => {
-    switch (demoStage) {
-      case "draft":
-        return "pending";
-      case "payment_pending":
-        return "approved";
-      case "payment_completed":
-        return "vault_3days";
-      case "folder_arrangement":
-        return "vault_3days";
-      case "evidence_upload":
-        return "figma_screen_3"; // Interview ongoing
-      case "interview_completed":
-        return "figma_completed_no_events";
-      case "internal_verifier_completed":
-        return "figma_completed_no_events";
-      case "external_verifier_completed":
-        return "figma_completed_no_events";
-      case "certification_competent":
-        return "figma_certification_competent";
-      default:
-        return formState;
-    }
-  };
-
-  const effectiveFormState = getEffectiveFormState();
-
-  const paymentStatus = application.paymentCompleted
-    ? "completed"
-    : "not_started";
   const isVaultActive =
-    effectiveFormState.startsWith("vault_") ||
-    effectiveFormState.startsWith("figma_") ||
-    application.paymentCompleted;
-  const folderStatus = getFolderArrangementStatus(
-    isVaultActive,
-    effectiveFormState,
-  );
-  const formStatus = getFormStatus(effectiveFormState);
+    formState.startsWith("vault_") ||
+    formState.startsWith("figma_") ||
+    (application?.paymentCompleted ?? false);
+  const folderStatus = getFolderArrangementStatus(isVaultActive, formState);
+  const formStatus = getFormStatus(formState);
 
   const handleMakePayment = () => {
+    if (!application) return;
     setActivePaymentModal("processing");
     initiatePayment.mutate(application.id, {
       onSuccess: () => {
@@ -158,9 +129,9 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
   };
 
   const handleStartFolderArrangement = () => {
+    if (!application) return;
     setActivePaymentModal(null);
     dispatch(markPaymentComplete(application.id));
-    setDemoStage("folder_arrangement");
   };
 
   const handleConfirmCallModal = () => {
@@ -173,6 +144,7 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
   };
 
   const handleProceedToExternalVerifier = () => {
+    if (!application) return;
     dispatch(markInternalVerifierCompleted(application.id));
     toast({
       type: "success",
@@ -182,6 +154,7 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
   };
 
   const handleProceedToCertification = () => {
+    if (!application) return;
     dispatch(markExternalVerifierCompleted(application.id));
     toast({
       type: "success",
@@ -190,57 +163,59 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
     });
   };
 
-  const stages = getStagesConfig({
-    formState: effectiveFormState,
-    isVaultActive,
-    folderStatus,
-    formStatus,
-    isInterviewCollapsed,
-    onToggleInterviewCollapse: () =>
-      setIsInterviewCollapsed(!isInterviewCollapsed),
-    onOpenFormModal: () =>
-      router.push(`/dashboard/applications/${application.id}/self-assessment`),
-    onMakePayment: handleMakePayment,
-    onDownloadReceipt: () =>
-      toast({
-        type: "success",
-        title: "Downloading Receipt",
-        description: "Your payment receipt download has started.",
-      }),
-    onNavigateToVault: () =>
-      router.push(`/dashboard/applications/${application.id}/evidence-vault`),
-    onAppeal: () =>
-      toast({
-        type: "info",
-        title: "Appeal Submitted",
-        description: "Your appeal request for the interview has been recorded.",
-      }),
-    onTakeCourse: () =>
-      toast({
-        type: "info",
-        title: "Navigating to Course",
-        description: "Redirecting to Advanced Joinery Finishing course...",
-      }),
-    onOpenSignatureModal: () => setIsSignatureModalOpen(true),
-    onProceedToExternalVerifier: handleProceedToExternalVerifier,
-    onProceedToCertification: handleProceedToCertification,
-    demoVerifierState,
-    demoStage,
-  });
+  const stages = application
+    ? getStagesConfig({
+        formState,
+        isVaultActive,
+        folderStatus,
+        formStatus,
+        isInterviewCollapsed,
+        onToggleInterviewCollapse: () =>
+          setIsInterviewCollapsed(!isInterviewCollapsed),
+        onOpenFormModal: () =>
+          router.push(`/dashboard/applications/${application.id}/self-assessment`),
+        onMakePayment: handleMakePayment,
+        onDownloadReceipt: () =>
+          toast({
+            type: "success",
+            title: "Downloading Receipt",
+            description: "Your payment receipt download has started.",
+          }),
+        onNavigateToVault: () =>
+          router.push(`/dashboard/applications/${application.id}/evidence-vault`),
+        onAppeal: () =>
+          toast({
+            type: "info",
+            title: "Appeal Submitted",
+            description: "Your appeal request for the interview has been recorded.",
+          }),
+        onTakeCourse: () =>
+          toast({
+            type: "info",
+            title: "Navigating to Course",
+            description: "Redirecting to course...",
+          }),
+        onOpenSignatureModal: () => setIsSignatureModalOpen(true),
+        onProceedToExternalVerifier: handleProceedToExternalVerifier,
+        onProceedToCertification: handleProceedToCertification,
+        submittedDate: (application as any).submittedAt || application.createdAt,
+        demoVerifierState: "under_review",
+        demoStage: (application.status as any) ?? "draft",
+      })
+    : [];
 
-  const showUpcomingEvents =
-    demoStage === "interview_completed" ||
-    demoStage === "internal_verifier_completed" ||
-    demoStage === "external_verifier_completed" ||
-    demoStage === "certification_competent";
+  if (isLoading) {
+    return <Loader fullscreen={false} tip="Loading application details..." className="min-h-[60vh]" />;
+  }
 
-  const upcomingInterview = showUpcomingEvents
-    ? {
-        title: "Panel Interview",
-        date: "22-07-2026",
-        time: "12:00PM",
-      }
-    : null;
+  if (!application) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center text-center gap-3">
+        <p className="text-gray-500 text-lg font-semibold">Application not found</p>
+        <p className="text-gray-400 text-sm">This application may have been removed or the link is invalid.</p>
+      </div>
+    );
+  }
 
   return (
     <motion.div
@@ -260,159 +235,6 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
         createButtonText="Create Application"
       />
 
-      {/* Comprehensive Demo Stage Switcher */}
-      <div className="flex items-center gap-2 px-2 mb-2">
-        <div className="flex items-center gap-2 bg-gray-200/60 p-1.5 rounded-xl text-xs flex-wrap">
-          <span className="text-gray-500 font-semibold px-2">Demo Stage:</span>
-          <button
-            type="button"
-            onClick={() => setDemoStage("draft")}
-            className={`px-3 py-1 rounded-lg font-medium transition-all cursor-pointer ${
-              demoStage === "draft"
-                ? "bg-white text-black shadow-xs"
-                : "text-gray-600 hover:text-black"
-            }`}
-          >
-            Draft
-          </button>
-          <button
-            type="button"
-            onClick={() => setDemoStage("payment_pending")}
-            className={`px-3 py-1 rounded-lg font-medium transition-all cursor-pointer ${
-              demoStage === "payment_pending"
-                ? "bg-white text-black shadow-xs"
-                : "text-gray-600 hover:text-black"
-            }`}
-          >
-            Payment Pending
-          </button>
-          <button
-            type="button"
-            onClick={() => setDemoStage("payment_completed")}
-            className={`px-3 py-1 rounded-lg font-medium transition-all cursor-pointer ${
-              demoStage === "payment_completed"
-                ? "bg-white text-black shadow-xs"
-                : "text-gray-600 hover:text-black"
-            }`}
-          >
-            Payment Completed
-          </button>
-          <button
-            type="button"
-            onClick={() => setDemoStage("folder_arrangement")}
-            className={`px-3 py-1 rounded-lg font-medium transition-all cursor-pointer ${
-              demoStage === "folder_arrangement"
-                ? "bg-white text-black shadow-xs"
-                : "text-gray-600 hover:text-black"
-            }`}
-          >
-            Folder Arrangement
-          </button>
-          <button
-            type="button"
-            onClick={() => setDemoStage("evidence_upload")}
-            className={`px-3 py-1 rounded-lg font-medium transition-all cursor-pointer ${
-              demoStage === "evidence_upload"
-                ? "bg-white text-black shadow-xs"
-                : "text-gray-600 hover:text-black"
-            }`}
-          >
-            Evidence Upload
-          </button>
-          <button
-            type="button"
-            onClick={() => setDemoStage("interview_completed")}
-            className={`px-3 py-1 rounded-lg font-medium transition-all cursor-pointer ${
-              demoStage === "interview_completed"
-                ? "bg-white text-black shadow-xs"
-                : "text-gray-600 hover:text-black"
-            }`}
-          >
-            Interview Completed
-          </button>
-          <button
-            type="button"
-            onClick={() => setDemoStage("internal_verifier_completed")}
-            className={`px-3 py-1 rounded-lg font-medium transition-all cursor-pointer ${
-              demoStage === "internal_verifier_completed"
-                ? "bg-white text-black shadow-xs"
-                : "text-gray-600 hover:text-black"
-            }`}
-          >
-            Internal Verifier Done
-          </button>
-          <button
-            type="button"
-            onClick={() => setDemoStage("external_verifier_completed")}
-            className={`px-3 py-1 rounded-lg font-medium transition-all cursor-pointer ${
-              demoStage === "external_verifier_completed"
-                ? "bg-white text-black shadow-xs"
-                : "text-gray-600 hover:text-black"
-            }`}
-          >
-            External Verifier Done
-          </button>
-          <button
-            type="button"
-            onClick={() => setDemoStage("certification_competent")}
-            className={`px-3 py-1 rounded-lg font-medium transition-all cursor-pointer ${
-              demoStage === "certification_competent"
-                ? "bg-white text-black shadow-xs"
-                : "text-gray-600 hover:text-black"
-            }`}
-          >
-            Certification Competent
-          </button>
-        </div>
-      </div>
-
-      {/* Internal Verifier Sub-states (only show when in interview_completed+ stages) */}
-      {(demoStage === "interview_completed" ||
-        demoStage === "internal_verifier_completed" ||
-        demoStage === "external_verifier_completed" ||
-        demoStage === "certification_competent") && (
-        <div className="flex items-center gap-2 px-2 mb-2">
-          <div className="flex items-center gap-2 bg-gray-200/60 p-1.5 rounded-xl text-xs flex-wrap">
-            <span className="text-gray-500 font-semibold px-2">
-              Internal Verifier:
-            </span>
-            <button
-              type="button"
-              onClick={() => setDemoVerifierState("under_review")}
-              className={`px-3 py-1 rounded-lg font-medium transition-all cursor-pointer ${
-                demoVerifierState === "under_review"
-                  ? "bg-white text-black shadow-xs"
-                  : "text-gray-600 hover:text-black"
-              }`}
-            >
-              Under Review
-            </button>
-            <button
-              type="button"
-              onClick={() => setDemoVerifierState("attention_required")}
-              className={`px-3 py-1 rounded-lg font-medium transition-all cursor-pointer ${
-                demoVerifierState === "attention_required"
-                  ? "bg-white text-black shadow-xs"
-                  : "text-gray-600 hover:text-black"
-              }`}
-            >
-              Attention Required
-            </button>
-            <button
-              type="button"
-              onClick={() => setDemoVerifierState("completed")}
-              className={`px-3 py-1 rounded-lg font-medium transition-all cursor-pointer ${
-                demoVerifierState === "completed"
-                  ? "bg-white text-black shadow-xs"
-                  : "text-gray-600 hover:text-black"
-              }`}
-            >
-              Completed
-            </button>
-          </div>
-        </div>
-      )}
-
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         <div className="lg:col-span-8 xl:col-span-9 flex flex-col gap-4 bg-white rounded-2xl p-4 shadow-2xs">
           {stages.map((stage) => (
@@ -422,9 +244,9 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
 
         <div className="lg:col-span-4 xl:col-span-3 flex flex-col gap-6">
           <CalendarWidget />
-          <UpcomingCard interview={upcomingInterview} />
+          <UpcomingCard interview={null} />
           <FacilitatorCard
-            facilitator={MOCK_FACILITATOR}
+            facilitator={null}
             onRequestCall={() => setIsCallRequestModalOpen(true)}
           />
         </div>
@@ -474,3 +296,4 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
     </motion.div>
   );
 };
+

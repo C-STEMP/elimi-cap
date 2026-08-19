@@ -68,6 +68,8 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
       const ci = apiData?.contactInformation;
       const ra = apiData?.residentialAddress;
       const acc = apiData?.accessibility;
+      const passportAssetId: string = apiData?.passportAssetId ?? "";
+      const passportUrl: string = apiData?.passportUrl ?? "";
 
       const hydrated = {
         firstName: pd?.firstName || savedPersonalInfo.firstName || "",
@@ -89,11 +91,21 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
 
       setForm(hydrated);
       dispatch(setPersonalInfo(hydrated));
+
+      if (passportAssetId || passportUrl) {
+        dispatch(setPersonalInfo({ passportAssetId, passportUrl }));
+        setPassportDefaultImage(passportUrl || savedPersonalInfo.passportUrl || "");
+      } else if (savedPersonalInfo.passportUrl) {
+        setPassportDefaultImage(savedPersonalInfo.passportUrl);
+      }
     }
   }, [getOnboarding.data]);
 
   const [otherImpairment, setOtherImpairment] = useState("");
   const [passportFile, setPassportFile] = useState<File | null>(null);
+  const [passportDefaultImage, setPassportDefaultImage] = useState<string>(
+    savedPersonalInfo.passportUrl || "",
+  );
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -128,6 +140,10 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
           state: form.state,
           lga: form.lga,
           address: form.streetAddress,
+        },
+        accessibility: {
+          hasImpairment: form.impairment !== "No" && Boolean(form.impairment),
+          impairment: form.impairment,
         },
       },
       {
@@ -182,7 +198,7 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
     let valid = true;
     const newErrors: Record<string, string> = {};
 
-    if (!passportFile) {
+    if (!passportFile && !passportDefaultImage && !savedPersonalInfo.passportUrl && !savedPersonalInfo.passportAssetId) {
       newErrors.passport = "Passport photograph is required";
       valid = false;
     }
@@ -216,20 +232,52 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
     }
 
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
-      toast({
-        type: "success",
-        title: "Personal Information Saved",
-        description: "Step 1 of 4 completed successfully!",
-      });
 
-      if (onSuccess) {
-        onSuccess();
-      } else {
-        router.push("/rpl/experience-trade");
-      }
-    }, 600);
+    saveOnboarding.mutate(
+      {
+        personalDetails: {
+          firstName: form.firstName,
+          lastName: form.lastName,
+          middleName: form.middleName,
+          dob: formatToIsoDate(form.dob),
+          gender: form.gender,
+          nationality: form.nationality,
+        },
+        contactInformation: {
+          emailAddress: form.email,
+          phoneNumber: {
+            countryCode: "+234",
+            number: form.phoneNumber,
+          },
+        },
+        residentialAddress: {
+          country: form.country,
+          state: form.state,
+          lga: form.lga,
+          address: form.streetAddress,
+        },
+        accessibility: {
+          hasImpairment: form.impairment !== "No" && Boolean(form.impairment),
+          impairment: form.impairment,
+        },
+      },
+      {
+        onSettled: () => {
+          setIsSubmitting(false);
+          toast({
+            type: "success",
+            title: "Personal Information Saved",
+            description: "Step 1 of 4 completed successfully!",
+          });
+
+          if (onSuccess) {
+            onSuccess();
+          } else {
+            router.push("/rpl/experience-trade");
+          }
+        },
+      },
+    );
   };
 
   return (
@@ -255,11 +303,22 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
 
         <PassportUpload
           required
+          defaultImage={passportDefaultImage}
           error={errors.passport}
-          onImageChange={(file) => {
+          onImageChange={(file, asset) => {
             setPassportFile(file);
             if (errors.passport) {
               setErrors((prev) => ({ ...prev, passport: "" }));
+            }
+            if (asset) {
+              setPassportDefaultImage(asset.url);
+              dispatch(
+                setPersonalInfo({
+                  passportAssetId: asset.assetId,
+                  passportUrl: asset.url,
+                  passportFileName: file?.name ?? "",
+                }),
+              );
             }
           }}
         />

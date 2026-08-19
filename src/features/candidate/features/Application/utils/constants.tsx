@@ -166,6 +166,7 @@ export interface GetStagesConfigParams {
   onOpenSignatureModal?: (formId: string) => void;
   onProceedToExternalVerifier?: () => void;
   onProceedToCertification?: () => void;
+  submittedDate?: string;
   demoVerifierState?: "under_review" | "attention_required" | "completed";
   demoStage?:
     | "draft"
@@ -195,6 +196,7 @@ export const getStagesConfig = ({
   onOpenSignatureModal,
   onProceedToExternalVerifier,
   onProceedToCertification,
+  submittedDate,
   demoVerifierState,
   demoStage,
 }: GetStagesConfigParams): StageConfig[] => {
@@ -683,6 +685,10 @@ export const getStagesConfig = ({
   const externalVerifierStatusObj = getExternalVerifierStatus();
   const certificationStatusObj = getCertificationStatus();
 
+  const formattedSubmittedDate = submittedDate
+    ? new Date(submittedDate).toLocaleDateString()
+    : "7/21/2026";
+
   return [
     {
       id: "app-form",
@@ -690,7 +696,7 @@ export const getStagesConfig = ({
       status: appFormStatus.status,
       statusBg: appFormStatus.statusBg,
       statusText: appFormStatus.statusText,
-      subtext: "Submitted on: 7/21/2026",
+      subtext: `Submitted on: ${formattedSubmittedDate}`,
       actionText: "View",
       actionVariant: "outline",
       actionSize: "sm",

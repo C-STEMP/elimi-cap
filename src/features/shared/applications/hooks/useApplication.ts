@@ -11,9 +11,12 @@ import {
   reviewApplicationApi,
   initiateApplicationPaymentApi,
   getApplicationReceiptApi,
+  getSelfAssessmentApi,
+  saveSelfAssessmentApi,
   type CreateApplicationPayload,
   type ReviewDecisionPayload,
   type ApplicationStatus,
+  type SaveSelfAssessmentPayload,
 } from "../api/application.api";
 
 export const APPLICATION_QUERY_KEYS = {
@@ -23,6 +26,7 @@ export const APPLICATION_QUERY_KEYS = {
   history: (id: string) => ["applications", "history", id] as const,
   stages: (id: string) => ["applications", "stages", id] as const,
   receipt: (id: string) => ["applications", "receipt", id] as const,
+  selfAssessment: (id: string) => ["applications", "self-assessment", id] as const,
 };
 
 export function useCreateApplication() {
@@ -43,6 +47,16 @@ export function useCreateApplication() {
     },
 
     onError: (error: Error) => {
+      // Don't show toast for already existing draft/in-progress - the caller handles resuming
+      const msg = error.message?.toLowerCase() || "";
+      if (
+        msg.includes("already has a draft") ||
+        msg.includes("in-progress application") ||
+        (error instanceof ApiError && error.statusCode === 409)
+      ) {
+        return;
+      }
+
       if (error instanceof ApiError) {
         toast({
           type: "error",
@@ -211,6 +225,62 @@ export function useGetApplicationReceipt(id: string) {
     queryKey: APPLICATION_QUERY_KEYS.receipt(id),
     queryFn: () => getApplicationReceiptApi(id),
     enabled: Boolean(id),
+  });
+}
+
+export function useGetSelfAssessment(applicationId: string) {
+  return useQuery({
+    queryKey: APPLICATION_QUERY_KEYS.selfAssessment(applicationId),
+    queryFn: () => getSelfAssessmentApi(applicationId),
+    enabled: Boolean(applicationId),
+  });
+}
+
+export function useSaveSelfAssessment(applicationId: string) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (payload: SaveSelfAssessmentPayload) =>
+      saveSelfAssessmentApi(applicationId, payload),
+
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({
+        queryKey: APPLICATION_QUERY_KEYS.selfAssessment(applicationId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: APPLICATION_QUERY_KEYS.detail(applicationId),
+      });
+      if (data.submittedAt) {
+        toast({
+          type: "success",
+          title: "Self-Assessment Submitted",
+          description: "Your self-assessment has been successfully submitted.",
+        });
+      } else {
+        toast({
+          type: "success",
+          title: "Draft Saved",
+          description: "Your self-assessment draft has been saved.",
+        });
+      }
+    },
+
+    onError: (error: Error) => {
+      if (error instanceof ApiError) {
+        toast({
+          type: "error",
+          title: "Save Failed",
+          description: error.message,
+        });
+      } else {
+        toast({
+          type: "error",
+          title: "Network Error",
+          description: "Unable to save self-assessment. Please try again.",
+        });
+      }
+    },
   });
 }
 

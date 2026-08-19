@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { FiSearch, FiList, FiGrid } from "react-icons/fi";
 import { AssessorItem } from "@/features/assessment-centre/types";
 import { useGetRetainedRequests } from "@/src/features/shared/centre/hooks";
+import { Loader } from "@/src/components/ui/loader";
 
 interface AssessorRequestListViewProps {
   onSelectAssessorRequest: (id: string) => void;
@@ -61,7 +62,7 @@ export const AssessorRequestListView: React.FC<
   if (isLoading) {
     return (
       <div className="w-full bg-white rounded-3xl p-12 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#a31d38]" />
+        <Loader fullscreen={false} size="small" tip="Loading requests..." />
       </div>
     );
   }

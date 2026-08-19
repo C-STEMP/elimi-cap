@@ -10,7 +10,6 @@ export const config = {
     "/onboarding/:path*",
     "/rpl/:path*",
     "/signin",
-    "/signup",
   ],
 };
 
@@ -23,8 +22,6 @@ export function middleware(request: NextRequest) {
   const isAuthenticated = Boolean(token);
   const isOnboarded = isAuthenticated && isOnboardedCookie !== "false";
 
-  const isAuthRoute =
-    pathname.startsWith("/signin") || pathname.startsWith("/signup");
   const isOnboardingRoute =
     pathname.startsWith("/onboarding") || pathname.startsWith("/rpl");
   const isDashboardRoute =
@@ -33,21 +30,26 @@ export function middleware(request: NextRequest) {
     pathname.startsWith("/applications") ||
     pathname.startsWith("/evidence-vault");
 
-  // if (!isAuthenticated && (isDashboardRoute || isOnboardingRoute)) {
-  //   const signinUrl = new URL("/signin", request.url);
-  //   signinUrl.searchParams.set("callbackUrl", pathname);
-  //   return NextResponse.redirect(signinUrl);
-  // }
+  if (!isAuthenticated && (isDashboardRoute || isOnboardingRoute)) {
+    const signinUrl = new URL("/signin", request.url);
+    signinUrl.searchParams.set("callbackUrl", pathname);
+    return NextResponse.redirect(signinUrl);
+  }
 
-  // if (isAuthenticated && isDashboardRoute && !isOnboarded) {
-  //   const onboardingUrl = new URL("/onboarding/role-selection", request.url);
-  //   return NextResponse.redirect(onboardingUrl);
-  // }
+  if (isAuthenticated && isDashboardRoute && !isOnboarded) {
+    const onboardingUrl = new URL("/onboarding/role-selection", request.url);
+    return NextResponse.redirect(onboardingUrl);
+  }
 
-  // if (isAuthenticated && isAuthRoute && isOnboarded) {
-  //   const dashboardUrl = new URL("/dashboard", request.url);
-  //   return NextResponse.redirect(dashboardUrl);
-  // }
+  if (isAuthenticated && isOnboardingRoute && isOnboarded) {
+    const dashboardUrl = new URL("/dashboard", request.url);
+    return NextResponse.redirect(dashboardUrl);
+  }
+
+  if (isAuthenticated && pathname.startsWith("/signin") && isOnboarded) {
+    const dashboardUrl = new URL("/dashboard", request.url);
+    return NextResponse.redirect(dashboardUrl);
+  }
 
   return NextResponse.next();
 }

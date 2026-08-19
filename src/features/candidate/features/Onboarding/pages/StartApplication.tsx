@@ -15,7 +15,10 @@ import { createApplication as createApplicationSlice } from "@/store/slices/appl
 import { setStartApplication } from "@/store/slices/onboardingSlice";
 import { startApplicationSchema } from "@/src/lib/validation";
 
-import { useApplication } from "@/src/features/candidate/features/Application/hooks";
+import {
+  useApplication,
+  useGetApplications,
+} from "@/src/features/candidate/features/Application/hooks";
 import {
   useGetSectors,
   useGetCentres,
@@ -91,13 +94,22 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
     value: t.id,
   }));
 
+  const { data: existingApps = [] } = useGetApplications();
+
   const savedStartApplication = useAppSelector(
     (s) => s.onboarding.startApplication,
   );
 
   useEffect(() => {
-    form.setFieldsValue(savedStartApplication);
-  }, [form, savedStartApplication]);
+    if (savedStartApplication.trade || savedStartApplication.sector || savedStartApplication.assessmentCenter) {
+      form.setFieldsValue(savedStartApplication);
+    } else if (existingApps.length > 0) {
+      const activeApp = existingApps.find((a) => a.status === "draft" || a.status === "in_progress") || existingApps[0];
+      if (activeApp?.centreId) {
+        form.setFieldValue("assessmentCenter", activeApp.centreId);
+      }
+    }
+  }, [form, savedStartApplication, existingApps]);
 
   const handleValuesChange = (changedValues: Record<string, string>) => {
     if ("sector" in changedValues) {
@@ -122,7 +134,7 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
     };
 
     createApplication.mutate(payload, {
-      onSuccess: (res) => {
+      onSuccess: () => {
         setIsSubmitting(false);
         dispatch(
           createApplicationSlice({
@@ -132,20 +144,51 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
         );
         setShowSuccessModal(true);
       },
-      onError: (err) => {
+      onError: (err: any) => {
         setIsSubmitting(false);
-        toast({
-          type: "error",
-          title: "Application Error",
-          description: err.message || "Failed to start application. Please try again.",
-        });
+        const errorMsg = err?.message?.toLowerCase() || "";
+        const isConflict =
+          errorMsg.includes("already has a draft") ||
+          errorMsg.includes("in-progress application") ||
+          errorMsg.includes("already exists") ||
+          err?.statusCode === 409;
+
+        if (isConflict) {
+          // Candidate already has this application active — smoothly resume!
+          dispatch(
+            createApplicationSlice({
+              title: values.trade,
+              subtitle: values.sector,
+            }),
+          );
+          toast({
+            type: "info",
+            title: "Resuming Application",
+            description: "Existing application found. Continuing to details...",
+          });
+          if (onContinue) {
+            onContinue();
+          } else {
+            router.push("/rpl/personal-info");
+          }
+        } else {
+          toast({
+            type: "error",
+            title: "Application Error",
+            description: err.message || "Failed to start application. Please try again.",
+          });
+        }
       },
     });
   };
 
   const handleModalAction = () => {
     setShowSuccessModal(false);
-    onContinue?.();
+    if (onContinue) {
+      onContinue();
+    } else {
+      router.push("/rpl/personal-info");
+    }
   };
 
   const handleBack = () => {

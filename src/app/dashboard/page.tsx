@@ -7,6 +7,8 @@ import { getPersona } from "@/src/lib/auth-storage";
 import { Dashboard as CandidateDashboard } from "@/features/candidate/features/Dashboard/pages/Dashboard";
 import { AssessorDashboard } from "@/src/features/assessor/features/Dashboard/pages/AssessorDashboard";
 
+import { Loader } from "@/src/components/ui/loader";
+
 export default function DashboardPage() {
   const router = useRouter();
   const userRole = useAppSelector(
@@ -22,11 +24,7 @@ export default function DashboardPage() {
   }, [effectiveRole, router]);
 
   if (effectiveRole === "centre") {
-    return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-[#FDF2F4]">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-solid" />
-      </div>
-    );
+    return <Loader tip="Redirecting to Assessment Centre..." />;
   }
 
   const isAssessor =

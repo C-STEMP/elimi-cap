@@ -22,6 +22,9 @@ import { StatusModal } from "@/components/status-modal";
 import { DeleteAccountModal } from "../components/DeleteAccountModal";
 import { SuccessModal } from "../components/SuccessModal";
 
+import { useCandidateProfile } from "@/src/features/shared/onboarding/hooks";
+import { markVerified } from "@/store/slices/authSlice";
+
 export const SettingsPage: React.FC = () => {
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -32,6 +35,38 @@ export const SettingsPage: React.FC = () => {
   const centrePersonalInfo = useAppSelector(
     (state) => state.onboarding.centrePersonalInfo,
   );
+  const savedRPLIdentity = useAppSelector((s) => s.onboarding.rplIdentity);
+  const savedCentreIdentity = useAppSelector((s) => s.onboarding.centreIdentity);
+  const savedAssessorIdentity = useAppSelector((s) => s.onboarding.assessorIdentity);
+
+  const { data: candidateProfile } = useCandidateProfile(true);
+
+  const isVerified = Boolean(
+    user?.isVerified ||
+    candidateProfile?.identityVerified ||
+    savedRPLIdentity?.isVerified ||
+    savedCentreIdentity?.isVerified ||
+    savedAssessorIdentity?.isVerified ||
+    user?.status === "active"
+  );
+
+  React.useEffect(() => {
+    if (isVerified && !user?.isVerified) {
+      dispatch(markVerified());
+    }
+  }, [isVerified, user?.isVerified, dispatch]);
+
+  const verificationStatus: VerificationStatus = isVerified
+    ? "verified"
+    : "not_verified";
+
+  const [activeTab, setActiveTab] = useState<SettingsTab>("profile");
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isConfirmDeleteModalOpen, setIsConfirmDeleteOpen] = useState(false);
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const [avatarSrc, setAvatarSrc] = useState<any>(ASSETS_URL.userAvatar);
 
   const nameParts = (user?.fullName || "").trim().split(/\s+/).filter(Boolean);
   const realFirstName =
@@ -65,19 +100,6 @@ export const SettingsPage: React.FC = () => {
   const realAddress =
     personalInfo.streetAddress || centrePersonalInfo.streetAddress || "";
   const realImpairment = personalInfo.impairment || "";
-
-  const isVerified = user?.isVerified ?? (user?.status === "active");
-  const verificationStatus: VerificationStatus = isVerified
-    ? "verified"
-    : "not_verified";
-
-  const [activeTab, setActiveTab] = useState<SettingsTab>("profile");
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [isConfirmDeleteModalOpen, setIsConfirmDeleteOpen] = useState(false);
-  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-
-  const [avatarSrc, setAvatarSrc] = useState<any>(ASSETS_URL.userAvatar);
 
   const [profileForm, setProfileForm] = useState<ProfileFormData>({
     firstName: realFirstName,
