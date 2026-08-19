@@ -29,10 +29,26 @@ export interface ResidentialAddress {
   address: string;
 }
 
+export interface EmploymentHistoryItem {
+  company: string;
+  jobTitle: string;
+  employmentType: string;
+  startDate: string;
+  endDate?: string;
+  keyResponsibilities: string;
+}
+
+export interface CurrentOccupation {
+  occupation: string;
+  yearsOfExperience: number;
+  employmentHistory: EmploymentHistoryItem[];
+}
+
 export interface CandidateOnboardingPayload {
   personalDetails?: PersonalDetails;
   contactInformation?: ContactInformation;
   residentialAddress?: ResidentialAddress;
+  currentOccupation?: CurrentOccupation;
   previousAssessmentStatus?: {
     hasCompletedPreviousAssessment: boolean;
     uniqueLearnerId?: string;

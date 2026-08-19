@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from "react";
 import { FiSearch, FiList, FiGrid } from "react-icons/fi";
 import { useGetJobPostings } from "@/features/assessment-centre/features/JobListing/hooks";
+import { Loader } from "@/src/components/ui/loader";
 
 interface JobListingsViewProps {
   onSelectJob: (jobId: string) => void;
@@ -38,11 +39,7 @@ export const JobListingsView: React.FC<JobListingsViewProps> = ({
   ), [jobs, searchQuery]);
 
   if (isLoading) {
-    return (
-      <div className="w-full flex items-center justify-center py-20">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-solid" />
-      </div>
-    );
+    return <Loader fullscreen={false} size="small" tip="Loading job listings..." className="py-20" />;
   }
 
   return (

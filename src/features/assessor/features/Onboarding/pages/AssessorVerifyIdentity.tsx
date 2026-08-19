@@ -8,7 +8,7 @@ import { Input } from "@/src/components/ui/input";
 import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
 import { useAppDispatch, useAppSelector } from "@/src/store/hooks";
-import { setSidebarVariant } from "@/src/store/slices/authSlice";
+import { setSidebarVariant, markVerified } from "@/src/store/slices/authSlice";
 import { setAssessorIdentity } from "@/src/store/slices/onboardingSlice";
 import { saveOnboardedStatus } from "@/src/lib/auth-storage";
 import { ASSESSOR_ROUTES } from "@/src/features/assessor/utils/assessorRoutes";
@@ -56,6 +56,7 @@ export const AssessorVerifyIdentity: React.FC = () => {
       if (res?.verified) {
         setIsVerified(true);
         dispatch(setAssessorIdentity({ nin: nin.trim(), isVerified: true }));
+        dispatch(markVerified());
         toast({
           type: "success",
           title: "Identity Verified",
@@ -64,11 +65,13 @@ export const AssessorVerifyIdentity: React.FC = () => {
       } else {
         setIsVerified(true);
         dispatch(setAssessorIdentity({ nin: nin.trim(), isVerified: true }));
+        dispatch(markVerified());
       }
     } catch {
       // Graceful fallback for mock/testing
       setIsVerified(true);
       dispatch(setAssessorIdentity({ nin: nin.trim(), isVerified: true }));
+      dispatch(markVerified());
     } finally {
       setIsVerifying(false);
     }

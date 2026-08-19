@@ -86,6 +86,11 @@ export const authSlice = createSlice({
         state.user.isVerified = true;
       }
     },
+    setVerified: (state, action: PayloadAction<boolean>) => {
+      if (state.user) {
+        state.user.isVerified = action.payload;
+      }
+    },
     logout: (state) => {
       state.user = null;
       state.token = null;
@@ -103,6 +108,7 @@ export const {
   setSidebarVariant,
   setRplStep,
   markVerified,
+  setVerified,
   logout,
 } = authSlice.actions;
 export const authReducer = authSlice.reducer;

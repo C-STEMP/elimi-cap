@@ -11,42 +11,49 @@ import { Step4Declaration } from "../components/Step4Declaration";
 import { SelfAssessmentSuccessModal } from "../components/SelfAssessmentSuccessModal";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { markSelfAssessmentComplete } from "@/store/slices/applicationSlice";
+import {
+  useGetApplicationById,
+  useGetSelfAssessment,
+  useSaveSelfAssessment,
+} from "@/src/features/shared/applications/hooks";
 
 interface SelfAssessmentPageProps {
   id?: string;
 }
 
 export const SelfAssessmentPage: React.FC<SelfAssessmentPageProps> = ({
-  id,
+  id = "",
 }) => {
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const reduxApp = useAppSelector((state) =>
-    state.application.applications.find((a) => a.id === id),
-  );
-
-  const fallbackApp = {
-    id: id || "app-1786013185522",
-    title: "National Vocational Qualification in Carpentry",
-    subtitle: "NSQ Level 3",
-    status: "self_assessment" as const,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    selfAssessmentCompleted: false,
-    paymentCompleted: false,
-    evidenceUploaded: false,
-  };
-
-  const application = reduxApp || fallbackApp;
+  const { data: apiApp } = useGetApplicationById(id);
+  const { data: savedSelfAssessment } = useGetSelfAssessment(id);
+  const saveSelfAssessmentMutation = useSaveSelfAssessment(id);
 
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
   const handleNavigateToVault = () => {
-    if (application) {
-      dispatch(markSelfAssessmentComplete(application.id));
+    if (id) {
+      dispatch(markSelfAssessmentComplete(id));
     }
     router.push(`/dashboard/applications/${id}/evidence-vault`);
+  };
+
+  const handleSubmitSelfAssessment = () => {
+    saveSelfAssessmentMutation.mutate(
+      {
+        competencies: (savedSelfAssessment?.competencies as any) || [],
+        reflection: savedSelfAssessment?.reflection || {},
+        declaration: savedSelfAssessment?.declaration || {},
+        submit: true,
+      },
+      {
+        onSuccess: () => {
+          setIsSubmitted(true);
+        },
+      },
+    );
   };
 
   return (
@@ -94,7 +101,7 @@ export const SelfAssessmentPage: React.FC<SelfAssessmentPageProps> = ({
 
           {currentStep === 4 && (
             <Step4Declaration
-              onSubmit={() => setIsSubmitted(true)}
+              onSubmit={handleSubmitSelfAssessment}
               onBack={() => setCurrentStep(3)}
             />
           )}

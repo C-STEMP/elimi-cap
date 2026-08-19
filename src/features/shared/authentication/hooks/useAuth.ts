@@ -2,9 +2,20 @@ import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import type { CredentialResponse } from "@react-oauth/google";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { setCredentials, setRole, logout as logoutAction } from "@/store/slices/authSlice";
-import { saveTokens, clearTokens, saveOnboardedStatus, savePersona } from "@/src/lib/auth-storage";
-import { getOnboardingMineApi } from "@/src/features/shared/onboarding/api";
+import { setCredentials, setRole, markVerified, logout as logoutAction } from "@/store/slices/authSlice";
+import {
+  saveTokens,
+  clearTokens,
+  saveOnboardedStatus,
+  savePersona,
+  saveUser,
+  resolveUserDestination,
+} from "@/src/lib/auth-storage";
+import {
+  getOnboardingMineApi,
+  parseOnboardingMine,
+  getCandidateProfileApi,
+} from "@/src/features/shared/onboarding/api";
 import { useToast } from "@/src/components/ui/toast";
 import { ApiError } from "@/src/lib/api/client";
 import {
@@ -170,14 +181,21 @@ export function useLogin() {
   return useMutation({
     mutationFn: (payload: LoginPayload) => loginApi(payload),
 
-    onSuccess: async (data) => {
+    onSuccess: async (data, variables) => {
       saveTokens(data.accessToken, data.refreshToken);
+      saveUser({
+        userId: data.user.userId || data.user.id || "",
+        email: data.user.email || variables.email,
+        status: data.user.status,
+        intents: data.user.intents || [],
+        createdAt: data.user.createdAt || new Date().toISOString(),
+      });
 
       dispatch(
         setCredentials({
           user: {
-            userId: data.user.userId,
-            email: data.user.email,
+            userId: data.user.userId || data.user.id || "",
+            email: data.user.email || variables.email,
             status: data.user.status,
             intents: data.user.intents,
             createdAt: data.user.createdAt,
@@ -191,33 +209,40 @@ export function useLogin() {
       toast({
         type: "success",
         title: "Welcome Back!",
-        description: `Signed in as ${data.user.email}`,
+        description: `Signed in as ${data.user.email || variables.email}`,
       });
 
       try {
-        const record = await getOnboardingMineApi();
-        if (record?.persona) {
-          savePersona(record.persona);
-          dispatch(setRole(record.persona));
+        const [res, profile] = await Promise.allSettled([
+          getOnboardingMineApi(),
+          getCandidateProfileApi(),
+        ]);
+
+        if (profile.status === "fulfilled" && profile.value?.identityVerified) {
+          dispatch(markVerified());
         }
-        if (record?.status === "completed") {
-          saveOnboardedStatus(true);
-          if (record.persona === "centre") {
-            router.push("/assessment-centre");
-          } else {
-            router.push("/dashboard");
+
+        const userEmail = data.user.email || variables.email;
+
+        if (res.status === "fulfilled") {
+          const { isOnboarded, persona } = parseOnboardingMine(res.value);
+
+          if (persona) {
+            savePersona(persona);
+            dispatch(setRole(persona));
           }
+
+          saveOnboardedStatus(isOnboarded);
+          const destination = resolveUserDestination(
+            isOnboarded,
+            persona,
+            userEmail,
+          );
+          router.push(destination);
         } else {
           saveOnboardedStatus(false);
-          if (record?.persona === "candidate") {
-            router.push("/onboarding/personal-info");
-          } else if (record?.persona === "centre") {
-            router.push("/onboarding/assessment-centre/center-info");
-          } else if (record?.persona === "assessor") {
-            router.push("/onboarding/assessor/personal-info");
-          } else {
-            router.push("/onboarding/role-selection");
-          }
+          const destination = resolveUserDestination(false, null, userEmail);
+          router.push(destination);
         }
       } catch {
         saveOnboardedStatus(false);
@@ -434,8 +459,15 @@ export function useGoogleAuth() {
       return googleAuthApi({ idToken, intents: ["cap"] });
     },
 
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       saveTokens(data.accessToken, data.refreshToken);
+      saveUser({
+        userId: data.user.userId || data.user.id || "",
+        email: data.user.email,
+        status: data.user.status,
+        intents: data.user.intents || [],
+        createdAt: data.user.createdAt || new Date().toISOString(),
+      });
 
       dispatch(
         setCredentials({
@@ -458,9 +490,40 @@ export function useGoogleAuth() {
         description: `Signed in as ${data.user.email}`,
       });
 
-      if (data.user.intents?.includes("cap")) {
-        router.push("/dashboard");
-      } else {
+      try {
+        const [res, profile] = await Promise.allSettled([
+          getOnboardingMineApi(),
+          getCandidateProfileApi(),
+        ]);
+
+        if (profile.status === "fulfilled" && profile.value?.identityVerified) {
+          dispatch(markVerified());
+        }
+
+        const userEmail = data.user.email;
+
+        if (res.status === "fulfilled") {
+          const { isOnboarded, persona } = parseOnboardingMine(res.value);
+
+          if (persona) {
+            savePersona(persona);
+            dispatch(setRole(persona));
+          }
+
+          saveOnboardedStatus(isOnboarded);
+          const destination = resolveUserDestination(
+            isOnboarded,
+            persona,
+            userEmail,
+          );
+          router.push(destination);
+        } else {
+          saveOnboardedStatus(false);
+          const destination = resolveUserDestination(false, null, userEmail);
+          router.push(destination);
+        }
+      } catch {
+        saveOnboardedStatus(false);
         router.push("/onboarding/role-selection");
       }
     },

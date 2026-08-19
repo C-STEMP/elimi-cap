@@ -15,6 +15,8 @@ export interface PersonalInfoState {
   streetAddress: string;
   impairment: string;
   passportFileName: string;
+  passportAssetId: string;
+  passportUrl: string;
 }
 
 export interface StartApplicationState {
@@ -154,6 +156,8 @@ const initialState: OnboardingState = {
     streetAddress: "",
     impairment: "",
     passportFileName: "",
+    passportAssetId: "",
+    passportUrl: "",
   },
   startApplication: {
     assessmentCenter: "",

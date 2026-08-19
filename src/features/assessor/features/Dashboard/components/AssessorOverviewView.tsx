@@ -5,6 +5,7 @@ import { FiChevronRight, FiClipboard, FiPlus } from "react-icons/fi";
 import { Button } from "@/src/components/ui/button";
 import { useGetAssessorApplications } from "@/src/features/assessor/features/Applications/hooks";
 import type { Application } from "@/src/features/shared/applications/api";
+import { Loader } from "@/src/components/ui/loader";
 
 interface AssessorOverviewViewProps {
   onViewAllApplications: () => void;
@@ -45,9 +46,7 @@ export const AssessorOverviewView: React.FC<AssessorOverviewViewProps> = ({
       </div>
 
       {isLoading ? (
-        <div className="my-auto flex items-center justify-center p-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#a31d38]" />
-        </div>
+        <Loader fullscreen={false} size="small" tip="Loading applications..." className="p-8" />
       ) : applications.length > 0 ? (
         <div className="w-full overflow-x-auto max-w-full rounded-2xl border border-gray-100">
           <table className="w-full text-left text-xs sm:text-sm border-collapse min-w-[520px]">

@@ -28,8 +28,43 @@ export async function startOnboardingApi(
   });
 }
 
-export async function getOnboardingMineApi(): Promise<OnboardingSummary> {
-  return capFetch<OnboardingSummary>("/onboarding/mine", {
+export interface OnboardingMineResponse {
+  onboardings: OnboardingSummary[];
+}
+
+export function parseOnboardingMine(res: any): {
+  isOnboarded: boolean;
+  persona: PersonaType | null;
+  activeRecord: OnboardingSummary | null;
+} {
+  if (!res) return { isOnboarded: false, persona: null, activeRecord: null };
+  const list: OnboardingSummary[] = Array.isArray(res?.onboardings)
+    ? res.onboardings
+    : Array.isArray(res)
+    ? res
+    : res?.persona
+    ? [res]
+    : [];
+
+  const completed = list.find((o) => o.status === "completed");
+  if (completed) {
+    return {
+      isOnboarded: true,
+      persona: completed.persona || null,
+      activeRecord: completed,
+    };
+  }
+
+  const draft = list.find((o) => o.status === "draft") || list[0];
+  return {
+    isOnboarded: false,
+    persona: draft?.persona || null,
+    activeRecord: draft || null,
+  };
+}
+
+export async function getOnboardingMineApi(): Promise<OnboardingMineResponse> {
+  return capFetch<OnboardingMineResponse>("/onboarding/mine", {
     method: "GET",
   });
 }

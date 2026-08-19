@@ -1,8 +1,25 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { heroImg1, heroImg2, heroImg3, heroImg4 } from "@/assets";
+import { clearTokens } from "@/src/lib/auth-storage";
+import { useAppDispatch } from "@/store/hooks";
+import { logout } from "@/store/slices/authSlice";
+import { resetOnboarding } from "@/store/slices/onboardingSlice";
 
 export function HeroSection() {
+  const router = useRouter();
+  const dispatch = useAppDispatch();
+
+  const handleGetStarted = (e: React.MouseEvent) => {
+    e.preventDefault();
+    clearTokens();
+    dispatch(logout());
+    dispatch(resetOnboarding());
+    router.push("/signup");
+  };
   return (
     <section className="relative flex flex-col justify-between overflow-hidden bg-[#661126] text-white pt-4 lg:pt-10 pb-10">
       <div className="mx-auto flex flex-col justify-between h-full w-full px-4 text-center sm:px-6 lg:px-8 xl:px-16">
@@ -44,6 +61,7 @@ export function HeroSection() {
           >
             <Link
               href="/signup"
+              onClick={handleGetStarted}
               className="rounded-[10px] bg-secondary px-5 lg:px-16 py-2.5 text-sm font-semibold text-white transition-all hover:bg-secondary-hover"
             >
               Get Started

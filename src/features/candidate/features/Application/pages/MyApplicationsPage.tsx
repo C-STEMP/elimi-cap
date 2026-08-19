@@ -9,9 +9,12 @@ import { CalendarWidget } from "@/features/candidate/features/Dashboard/componen
 import { UpcomingCard } from "@/features/candidate/features/Dashboard/components/UpcomingCard";
 import { VerifiedBadge } from "@/features/candidate/features/Dashboard/components/VerifiedBadge";
 import { Button } from "@/src/components/ui/button";
-import { useAppSelector } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { Application, ApplicationStatus } from "@/store/slices/applicationSlice";
 import { useGetApplications } from "@/src/features/candidate/features/Application/hooks";
+import { useCandidateProfile } from "@/src/features/shared/onboarding/hooks";
+import { markVerified } from "@/store/slices/authSlice";
+import { Loader } from "@/src/components/ui/loader";
 
 type FilterTab = "All" | "Ongoing" | "Completed" | "Draft";
 
@@ -95,16 +98,34 @@ const getCategory = (
 
 export const MyApplicationsPage: React.FC = () => {
   const router = useRouter();
-  const { data: remoteApps = [] } = useGetApplications();
-  const reduxApps = useAppSelector(
-    (state) => state.application.applications,
+  const dispatch = useAppDispatch();
+  const authUser = useAppSelector((state) => state.auth.user);
+  const savedRPLIdentity = useAppSelector((s) => s.onboarding.rplIdentity);
+  const { data: candidateProfile } = useCandidateProfile(true);
+
+  const isVerified = Boolean(
+    authUser?.isVerified ||
+    candidateProfile?.identityVerified ||
+    savedRPLIdentity?.isVerified
   );
 
+  React.useEffect(() => {
+    if (isVerified && !authUser?.isVerified) {
+      dispatch(markVerified());
+    }
+  }, [isVerified, authUser?.isVerified, dispatch]);
+
+  const { data: remoteApps = [], isLoading } = useGetApplications();
+
   const applications = React.useMemo(() => {
-    const remoteMapped: Application[] = remoteApps.map((app) => ({
+    return remoteApps.map((app) => ({
       id: app.id,
-      title: `${app.type} Application`,
-      subtitle: `Status: ${app.currentStageKey || app.status}`,
+      title: (app as any).trade?.name
+        ? `${(app as any).trade.name} (${app.type})`
+        : `${app.type} Application`,
+      subtitle: (app as any).sector?.name
+        ? `${(app as any).sector.name} • Status: ${app.currentStageKey || app.status}`
+        : `Status: ${app.currentStageKey || app.status}`,
       status: (app.status as any) || "draft",
       createdAt: app.createdAt,
       updatedAt: app.updatedAt || app.createdAt,
@@ -112,10 +133,7 @@ export const MyApplicationsPage: React.FC = () => {
       paymentCompleted: false,
       evidenceUploaded: false,
     }));
-    const ids = new Set(remoteMapped.map((a) => a.id));
-    const uniqueRedux = reduxApps.filter((a) => !ids.has(a.id));
-    return [...remoteMapped, ...uniqueRedux];
-  }, [remoteApps, reduxApps]);
+  }, [remoteApps]);
 
   const [activeTab, setActiveTab] = useState<FilterTab>("All");
 
@@ -147,7 +165,7 @@ export const MyApplicationsPage: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         <div className="lg:col-span-9 flex flex-col gap-6">
-          <div className="bg-white rounded-[22px] p-4 shadow-lg border border-[#F7F4EF] min-h-75 flex flex-col">
+          <div className="bg-white rounded-[22px] p-5 lg:p-6 shadow-lg border border-[#F7F4EF] min-h-75 flex flex-col">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 gap-4 border-b border-gray-100/60">
               <h2 className="text-black font-medium text-lg tracking-tight">
                 My Applications
@@ -173,7 +191,9 @@ export const MyApplicationsPage: React.FC = () => {
               </div>
             </div>
 
-            {filteredApplications.length === 0 ? (
+            {isLoading ? (
+              <Loader fullscreen={false} size="small" tip="Loading applications..." className="py-12" />
+            ) : filteredApplications.length === 0 ? (
               <div className="flex-1 flex flex-col items-center justify-center py-10 text-center">
                 <div className="w-30 h-30 rounded-full bg-input-bg flex items-center justify-center mb-4">
                   <FiFolder className="w-10 h-8.5 text-primary/12" />
@@ -237,7 +257,7 @@ export const MyApplicationsPage: React.FC = () => {
         <div className="lg:col-span-3 flex flex-col gap-6">
           <CalendarWidget />
           <UpcomingCard interview={null} />
-          <VerifiedBadge isVerified={false} />
+          <VerifiedBadge isVerified={isVerified} />
         </div>
       </div>
     </motion.div>

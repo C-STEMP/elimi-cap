@@ -1,6 +1,6 @@
 import { configureStore, combineReducers } from "@reduxjs/toolkit";
 import { persistStore, persistReducer } from "redux-persist";
-import { sessionStorage } from "./storage";
+import { localStorage } from "./storage";
 import { authReducer } from "./slices/authSlice";
 import { sessionReducer } from "./slices/sessionSlice";
 import { applicationReducer } from "./slices/applicationSlice";
@@ -8,7 +8,7 @@ import { onboardingReducer } from "./slices/onboardingSlice";
 
 const persistConfig = {
   key: "root",
-  storage: sessionStorage,
+  storage: localStorage,
 };
 
 const rootReducer = combineReducers({

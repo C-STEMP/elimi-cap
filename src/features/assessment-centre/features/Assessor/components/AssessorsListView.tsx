@@ -9,6 +9,7 @@ import { useGetRetainedRequests } from "@/src/features/shared/centre/hooks";
 
 import { useAppSelector } from "@/src/store/hooks";
 import { canDeactivateAssessor } from "@/features/assessment-centre/utils/rbac";
+import { Loader } from "@/src/components/ui/loader";
 
 interface AssessorsListViewProps {
   onSelectAssessor: (assessorId: string) => void;
@@ -114,7 +115,7 @@ export const AssessorsListView: React.FC<AssessorsListViewProps> = ({
   if (isLoading) {
     return (
       <div className="w-full bg-white rounded-3xl p-12 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#a31d38]" />
+        <Loader fullscreen={false} size="small" tip="Loading assessors..." />
       </div>
     );
   }

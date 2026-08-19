@@ -10,8 +10,14 @@ import {
   saveLastOnboardingRoute,
   getPersona,
   savePersona,
+  getUser,
+  resolveUserDestination,
 } from "@/src/lib/auth-storage";
-import { getOnboardingMineApi } from "@/src/features/shared/onboarding/api";
+import {
+  getOnboardingMineApi,
+  parseOnboardingMine,
+} from "@/src/features/shared/onboarding/api";
+import { Loader } from "@/src/components/ui/loader";
 
 interface RouteGuardProps {
   children: React.ReactNode;
@@ -26,18 +32,42 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({ children }) => {
     let isMounted = true;
 
     async function checkAuthAndOnboarding() {
+      // 1. Signup / Register pages should NEVER be restricted or redirected back to dashboard
+      if (pathname === "/signup" || pathname === "/register") {
+        if (isMounted) setChecking(false);
+        return;
+      }
+
       const isAuth = isAuthenticated();
-      const isOnboarded = getOnboardedStatus();
+      let isOnboarded = getOnboardedStatus();
+      const currentUser = getUser();
+      const userEmail = currentUser?.email;
 
       const isDashboardRoute =
         pathname?.startsWith("/dashboard") ||
         pathname?.startsWith("/assessment-centre");
       const isOnboardingRoute =
         pathname?.startsWith("/onboarding") || pathname?.startsWith("/rpl");
-      const isAuthRoute =
-        pathname === "/signin" ||
-        pathname === "/signup" ||
-        pathname === "/register";
+      const isSignInRoute = pathname === "/signin";
+
+      let currentPersona = getPersona();
+
+      if (isAuth) {
+        try {
+          const res = await getOnboardingMineApi();
+          const parsed = parseOnboardingMine(res);
+          if (parsed.persona) {
+            currentPersona = parsed.persona;
+            savePersona(parsed.persona);
+          }
+          if (parsed.isOnboarded) {
+            isOnboarded = true;
+            saveOnboardedStatus(true);
+          }
+        } catch {
+          // ignore network error, rely on stored flag
+        }
+      }
 
       if (isDashboardRoute) {
         if (!isAuth) {
@@ -47,86 +77,47 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({ children }) => {
           return;
         }
 
-        let persona = getPersona();
-
-        if (!isOnboarded || !persona) {
-          try {
-            const record = await getOnboardingMineApi();
-            if (record?.persona) {
-              persona = record.persona;
-              savePersona(record.persona);
-            }
-            if (record?.status === "completed") {
-              saveOnboardedStatus(true);
-            } else {
-              saveOnboardedStatus(false);
-              let targetRoute = getLastOnboardingRoute();
-              if (!targetRoute || targetRoute.startsWith("/dashboard") || targetRoute.startsWith("/assessment-centre")) {
-                if (record?.persona === "candidate") {
-                  targetRoute = "/onboarding/personal-info";
-                } else if (record?.persona === "centre") {
-                  targetRoute = "/onboarding/assessment-centre/center-info";
-                } else if (record?.persona === "assessor") {
-                  targetRoute = "/onboarding/assessor/personal-info";
-                } else {
-                  targetRoute = "/onboarding/role-selection";
-                }
-              }
-              if (isMounted) router.push(targetRoute);
-              return;
-            }
-          } catch {
-            saveOnboardedStatus(false);
-            const fallbackRoute =
-              getLastOnboardingRoute() || "/onboarding/role-selection";
-            if (isMounted) router.push(fallbackRoute);
-            return;
-          }
+        if (!isOnboarded) {
+          saveOnboardedStatus(false);
+          const targetRoute = resolveUserDestination(
+            false,
+            currentPersona,
+            userEmail,
+          );
+          if (isMounted) router.push(targetRoute);
+          return;
         }
 
-        if (persona === "centre" && pathname?.startsWith("/dashboard")) {
+        if (currentPersona === "centre" && pathname?.startsWith("/dashboard")) {
           if (isMounted) router.push("/assessment-centre");
           return;
         }
       }
 
       if (isOnboardingRoute) {
-        const isApplicationCreationRoute =
-          pathname === "/onboarding/assessment-type" ||
-          pathname === "/onboarding/start-application" ||
-          pathname === "/onboarding/success" ||
-          pathname?.startsWith("/rpl");
-
-        if (isAuth && isOnboarded && !isApplicationCreationRoute) {
-          const persona = getPersona();
-          if (persona === "centre") {
-            if (isMounted) router.push("/assessment-centre");
-          } else {
-            if (isMounted) router.push("/dashboard");
-          }
+        if (isAuth && isOnboarded) {
+          const destination = resolveUserDestination(
+            true,
+            currentPersona,
+            userEmail,
+          );
+          if (isMounted) router.push(destination);
           return;
         }
-        if (pathname) {
-          saveLastOnboardingRoute(pathname);
+        if (pathname && isAuth) {
+          saveLastOnboardingRoute(pathname, userEmail);
         }
       }
 
-      if (isAuthRoute) {
+      if (isSignInRoute) {
         if (isAuth) {
-          if (isOnboarded) {
-            const persona = getPersona();
-            if (persona === "centre") {
-              if (isMounted) router.push("/assessment-centre");
-            } else {
-              if (isMounted) router.push("/dashboard");
-            }
-            return;
-          } else {
-            const lastRoute =
-              getLastOnboardingRoute() || "/onboarding/role-selection";
-            if (isMounted) router.push(lastRoute);
-            return;
-          }
+          const destination = resolveUserDestination(
+            isOnboarded,
+            currentPersona,
+            userEmail,
+          );
+          if (isMounted) router.push(destination);
+          return;
         }
       }
 
@@ -141,16 +132,7 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({ children }) => {
   }, [pathname, router]);
 
   if (checking) {
-    return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-[#FDF2F4]">
-        <div className="flex flex-col items-center gap-3">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-solid" />
-          <span className="text-primary-solid font-medium text-sm">
-            Loading...
-          </span>
-        </div>
-      </div>
-    );
+    return <Loader tip="Checking session..." />;
   }
 
   return <>{children}</>;

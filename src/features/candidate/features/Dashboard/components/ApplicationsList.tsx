@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FiChevronRight, FiFolder, FiPlus } from "react-icons/fi";
 import { Button } from "@/src/components/ui/button";
+import { Loader } from "@/src/components/ui/loader";
 
 export interface ApplicationItem {
   id: string;
@@ -30,7 +31,7 @@ export const ApplicationsList: React.FC<ApplicationsListProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-[22px] p-4 shadow-lg border border-gray-100 flex flex-col justify-between h-full min-h-75">
+    <div className="bg-white rounded-[22px] p-5 lg:p-6 shadow-lg border border-gray-100 flex flex-col justify-start">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-black font-medium text-lg tracking-tight">
           My Applications
@@ -47,12 +48,9 @@ export const ApplicationsList: React.FC<ApplicationsListProps> = ({
       </div>
 
       {isLoading ? (
-        <div className="flex-1 flex flex-col items-center justify-center py-10 text-center">
-          <div className="w-12 h-12 rounded-full border-4 border-gray-200 border-t-primary animate-spin mb-4" />
-          <p className="text-gray-400 text-sm">Loading applications...</p>
-        </div>
+        <Loader fullscreen={false} size="small" tip="Loading applications..." className="py-8" />
       ) : !hasApplications ? (
-        <div className="flex-1 flex flex-col items-center justify-center py-10 text-center">
+        <div className="flex flex-col items-center justify-center py-10 text-center">
           <div className="w-30 h-30 rounded-full bg-input-bg flex items-center justify-center mb-4">
             <FiFolder className="w-10 h-8.5 text-primary/12" />
           </div>
@@ -73,7 +71,7 @@ export const ApplicationsList: React.FC<ApplicationsListProps> = ({
           </Button>
         </div>
       ) : (
-        <div className="flex flex-col gap-3.5 flex-1 justify-center">
+        <div className="flex flex-col gap-3.5 w-full">
           {applications.map((app) => (
             <Link
               key={app.id}

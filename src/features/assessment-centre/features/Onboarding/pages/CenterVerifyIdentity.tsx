@@ -16,6 +16,7 @@ import { ASSESSMENT_CENTRE_ROUTES } from "@/features/assessment-centre/utils/cen
 import { useOnboarding } from "@/features/assessment-centre/features/Onboarding/hooks";
 import { useAppDispatch, useAppSelector } from "@/src/store/hooks";
 import { setCentreIdentity } from "@/src/store/slices/onboardingSlice";
+import { markVerified } from "@/src/store/slices/authSlice";
 
 export const CenterVerifyIdentity: React.FC = () => {
   const router = useRouter();
@@ -78,6 +79,7 @@ export const CenterVerifyIdentity: React.FC = () => {
           setModalState("success");
           setIsVerified(true);
           dispatch(setCentreIdentity({ nin, isVerified: true }));
+          dispatch(markVerified());
         },
         onError: () => {
           setModalState("error");

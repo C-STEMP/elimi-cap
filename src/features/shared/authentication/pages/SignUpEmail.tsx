@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
 import { useToast } from "@/src/components/ui/toast";
@@ -12,6 +12,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { useAppDispatch } from "@/store/hooks";
+import { logout } from "@/store/slices/authSlice";
+import { resetOnboarding } from "@/store/slices/onboardingSlice";
+import { clearTokens } from "@/src/lib/auth-storage";
 import {
   validateEmail,
   validatePassword,
@@ -24,6 +28,14 @@ import {
 } from "@/src/features/shared/authentication/hooks";
 
 export const SignUpEmail: React.FC = () => {
+  const dispatch = useAppDispatch();
+
+  useEffect(() => {
+    clearTokens();
+    dispatch(logout());
+    dispatch(resetOnboarding());
+  }, [dispatch]);
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");

@@ -64,6 +64,8 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
       const ci = apiData?.contactInformation;
       const ra = apiData?.residentialAddress;
       const acc = apiData?.accessibility;
+      const passportAssetId: string = apiData?.passportAssetId ?? "";
+      const passportUrl: string = apiData?.passportUrl ?? "";
 
       const hydrated = {
         firstName: pd?.firstName || savedPersonalInfo.firstName || "",
@@ -83,12 +85,23 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
 
       setForm(hydrated);
       dispatch(setPersonalInfo(hydrated));
+
+      // Restore passport photo from API data
+      if (passportAssetId || passportUrl) {
+        dispatch(setPersonalInfo({ passportAssetId, passportUrl }));
+        setPassportDefaultImage(passportUrl || savedPersonalInfo.passportUrl || "");
+      } else if (savedPersonalInfo.passportUrl) {
+        setPassportDefaultImage(savedPersonalInfo.passportUrl);
+      }
     }
   }, [getOnboarding.data]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [otherImpairment, setOtherImpairment] = useState("");
   const [passportFile, setPassportFile] = useState<File | null>(null);
+  const [passportDefaultImage, setPassportDefaultImage] = useState<string>(
+    savedPersonalInfo.passportUrl || "",
+  );
   const [passportError, setPassportError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -130,7 +143,8 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
     const newErrors: Record<string, string> = {};
     let valid = true;
 
-    if (!passportFile) {
+    // Allow proceeding if an existing passport URL is already saved
+    if (!passportFile && !passportDefaultImage) {
       setPassportError("Passport photograph is required");
       valid = false;
     }
@@ -163,9 +177,11 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
     dispatch(
       setPersonalInfo({
         ...form,
-        passportFileName: passportFile!.name,
+        passportFileName: passportFile?.name ?? savedPersonalInfo.passportFileName,
       }),
     );
+
+    const currentPassportAssetId = savedPersonalInfo.passportAssetId ?? "";
 
     saveOnboarding.mutate(
       {
@@ -191,7 +207,7 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
           address: form.streetAddress,
         },
         accessibility: {
-          hasImpairment: Boolean(form.impairment),
+          hasImpairment: form.impairment !== "No" && Boolean(form.impairment),
           impairment:
             form.impairment === "other" ? otherImpairment : form.impairment,
         },
@@ -251,10 +267,19 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
           {/* Passport comes before the heading — placed here as the right column */}
           <PassportUpload
             required
+            defaultImage={passportDefaultImage}
             error={passportError}
-            onImageChange={(file) => {
+            onImageChange={(file, asset) => {
               setPassportFile(file);
               if (file) setPassportError("");
+              if (asset) {
+                setPassportDefaultImage(asset.url);
+                dispatch(setPersonalInfo({
+                  passportAssetId: asset.assetId,
+                  passportUrl: asset.url,
+                  passportFileName: file?.name ?? "",
+                }));
+              }
             }}
           />
         </div>
