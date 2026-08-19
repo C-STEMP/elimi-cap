@@ -134,11 +134,25 @@ export function createApiInstance(
     if (token) config.headers["Authorization"] = `Bearer ${token}`;
 
     if (options?.isCap) {
+      const url = config.url || "";
+      const urlPath = url.split("?")[0];
+
+      // Catalogue & public endpoints do not require acting persona
+      const isPublicCatalogue =
+        urlPath === "/sectors" ||
+        urlPath.startsWith("/sectors/") ||
+        urlPath === "/centres" ||
+        urlPath.startsWith("/centres/") ||
+        urlPath.startsWith("/trades/") ||
+        urlPath.startsWith("/admin/") ||
+        urlPath.startsWith("/onboarding/") ||
+        urlPath === "/me";
+
       // ── Resolve persona ────────────────────────────────────────────────────
       // Priority: (1) already set on this call, (2) current page route, (3) stored
       let persona = config.headers["X-CAP-PERSONA"] as string | undefined;
 
-      if (!persona && typeof window !== "undefined") {
+      if (!persona && !isPublicCatalogue && typeof window !== "undefined") {
         const path = window.location.pathname;
         if (path.startsWith("/assessment-centre")) {
           persona = "centre";
@@ -160,7 +174,7 @@ export function createApiInstance(
       }
 
       // Fall back to stored persona, but guard against cross-workspace bleed
-      if (!persona) {
+      if (!persona && !isPublicCatalogue) {
         const stored = getPersona();
         if (stored && typeof window !== "undefined") {
           const path = window.location.pathname;
@@ -192,7 +206,7 @@ export function createApiInstance(
       }
 
       // ── Attach headers ─────────────────────────────────────────────────────
-      if (persona) {
+      if (persona && !isPublicCatalogue) {
         config.headers["X-CAP-PERSONA"] = persona;
 
         // X-CAP-CENTRE-ID is required whenever operating as a centre
