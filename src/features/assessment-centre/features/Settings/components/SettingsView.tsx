@@ -23,7 +23,14 @@ import { useOnboarding } from "@/features/assessment-centre/features/Onboarding/
 import {
   useGetCentrePricing,
   useSetCentrePricing,
+  useGetCentreProfile,
+  usePatchCentreProfile,
 } from "@/src/features/shared/centre/hooks";
+import {
+  useGetMeProfile,
+  usePatchMeProfile,
+  useGetDeletionEligibility,
+} from "@/src/features/shared/account/hooks";
 import { useUploadFile } from "@/src/features/shared/storage/hooks";
 import { useAppDispatch, useAppSelector } from "@/src/store/hooks";
 import {
@@ -45,6 +52,8 @@ export const SettingsView: React.FC = () => {
   const { data: pricingList = [] } = useGetCentrePricing();
   const setCentrePricingMutation = useSetCentrePricing();
   const uploadFileMutation = useUploadFile();
+  const patchMeProfileMutation = usePatchMeProfile();
+  const patchCentreProfileMutation = usePatchCentreProfile();
 
   const savedCentreInfo = useAppSelector(
     (s) => s.onboarding.centreInformation,
@@ -202,6 +211,30 @@ export const SettingsView: React.FC = () => {
   }, [pricingList]);
 
   const handleSaveProfileSettings = () => {
+    patchMeProfileMutation.mutate({
+      personalDetails: {
+        firstName,
+        lastName,
+        middleName,
+        dob: formatToIsoDate(dob),
+        gender,
+        nationality,
+      },
+      contactInformation: {
+        emailAddress: profileEmail,
+        phoneNumber: {
+          countryCode: "+234",
+          number: profilePhone,
+        },
+      },
+      residentialAddress: {
+        country: profileCountry,
+        state: profileState,
+        lga: profileLga,
+        address: profileStreet,
+      },
+    });
+
     saveOnboarding.mutate(
       {
         owner: {
@@ -252,6 +285,28 @@ export const SettingsView: React.FC = () => {
   };
 
   const handleSaveCentreSettings = () => {
+    patchCentreProfileMutation.mutate({
+      name: centreName,
+      address: {
+        country: centreCountry,
+        state: centreState,
+        lga: centreLga,
+        address: centreStreet,
+      },
+      supportContact: {
+        emailAddress: supportEmail,
+        phoneNumber: {
+          countryCode: "+234",
+          number: supportPhone,
+        },
+      },
+      accountDetails: {
+        bank,
+        accountNo: accountNumber,
+        nameOfAccount: accountName,
+      },
+    });
+
     saveOnboarding.mutate(
       {
         centre: {

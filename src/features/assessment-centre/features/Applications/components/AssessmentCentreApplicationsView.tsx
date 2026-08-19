@@ -27,21 +27,29 @@ export const AssessmentCentreApplicationsView: React.FC<
 
   const filterTabs = ["All", "Pending", "Ongoing", "Completed", "Archived"];
 
-  const applicationsList = (remoteApps ?? []).map((app) => ({
-    id: app.id,
-    candidateName: `Candidate (${app.candidateId.slice(0, 8)})`,
-    trade: app.type,
-    assessmentType: app.type,
-    status:
-      app.status === "certified"
-        ? "Completed"
-        : app.status === "in_progress"
-        ? "Ongoing"
-        : app.status === "rejected" || app.status === "withdrawn"
-        ? "Archived"
-        : "Pending",
-    submittedAt: new Date(app.createdAt).toLocaleDateString("en-GB"),
-  }));
+  const applicationsList = (remoteApps ?? []).map((app) => {
+    const rawApp = app as any;
+    return {
+      id: app.id,
+      candidateName:
+        rawApp.candidate?.name ||
+        `${rawApp.candidate?.firstName || ""} ${rawApp.candidate?.lastName || ""}`.trim() ||
+        `Candidate (${app.candidateId?.slice(0, 8) || "N/A"})`,
+      trade: rawApp.trade?.name || app.type || "General",
+      assessmentType: app.type || "RPL",
+      status:
+        app.status === "certified"
+          ? "Completed"
+          : app.status === "in_progress"
+          ? "Ongoing"
+          : app.status === "rejected" || app.status === "withdrawn"
+          ? "Archived"
+          : "Pending",
+      submittedAt: rawApp.submittedAt
+        ? new Date(rawApp.submittedAt).toLocaleDateString("en-GB")
+        : new Date(app.createdAt).toLocaleDateString("en-GB"),
+    };
+  });
 
   const filteredApplications = applicationsList.filter((app) => {
     const matchesTab =

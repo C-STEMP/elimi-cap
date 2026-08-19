@@ -337,7 +337,7 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
           if (onContinue) {
             onContinue();
           } else {
-            router.push("/rpl/verify-identity");
+            router.push("/rpl/review-submit");
           }
         },
       },

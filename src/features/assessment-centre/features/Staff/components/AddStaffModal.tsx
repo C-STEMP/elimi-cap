@@ -60,19 +60,25 @@ export const AddStaffModal: React.FC<AddStaffModalProps> = ({
     }
 
     const mappedRole =
-      role === "super-admin"
+      role.toLowerCase().includes("super")
         ? "super_admin"
-        : role === "admin"
+        : role.toLowerCase().includes("admin")
         ? "regular_admin"
         : "staff";
 
-    addStaffMutation.mutate({
-      email,
-      role: mappedRole,
-    });
-
-    setStep("success");
-    onStaffAdded?.({ name, email, role });
+    addStaffMutation.mutate(
+      {
+        name: name.trim(),
+        email: email.trim(),
+        role: mappedRole,
+      },
+      {
+        onSuccess: () => {
+          setStep("success");
+          onStaffAdded?.({ name, email, role });
+        },
+      },
+    );
   };
 
   const handleReset = () => {

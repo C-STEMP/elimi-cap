@@ -24,6 +24,8 @@ export interface SelectProps {
   showPlaceholderOption?: boolean;
   containerClassName?: string;
   className?: string;
+  popupClassName?: string;
+  popupMatchSelectWidth?: boolean | number;
   id?: string;
   name?: string;
 }
@@ -31,6 +33,8 @@ export interface SelectProps {
 export const Select: React.FC<SelectProps> = ({
   className = "",
   containerClassName = "",
+  popupClassName = "",
+  popupMatchSelectWidth,
   label,
   error,
   helperText,
@@ -104,10 +108,17 @@ export const Select: React.FC<SelectProps> = ({
         onChange={handleChange}
         options={normalizedOptions}
         className={`w-full ${className}`}
+        popupMatchSelectWidth={
+          popupMatchSelectWidth !== undefined
+            ? popupMatchSelectWidth
+            : size === "sm"
+              ? false
+              : true
+        }
         suffixIcon={
           <FiChevronDown className="w-4 h-4 text-text-dark stroke-[2.5] opacity-90 transition-transform duration-200" />
         }
-        popupClassName="rounded-2xl shadow-2xl border border-gray-100"
+        popupClassName={`rounded-2xl shadow-2xl border border-gray-100 ${popupClassName}`}
         status={error ? "error" : undefined}
         optionRender={(option) => {
           const isSelected = multiple
@@ -115,32 +126,32 @@ export const Select: React.FC<SelectProps> = ({
             : antValue === option.value;
 
           return (
-            <div className="flex items-center justify-between w-full py-0.5">
-              <span className="text-xs xl:text-sm font-medium text-text-dark">
+            <div className="flex items-center justify-between gap-3 w-full py-0.5 min-w-0">
+              <span className="text-xs xl:text-sm font-medium text-text-dark whitespace-nowrap">
                 {option.label}
               </span>
               {multiple ? (
                 <div
-                  className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all shrink-0 ${
+                  className={`w-4.5 h-4.5 rounded-md border flex items-center justify-center transition-all shrink-0 ${
                     isSelected
                       ? "bg-neutral-900 border-neutral-900 text-white"
                       : "bg-white border-neutral-400"
                   }`}
                 >
                   {isSelected && (
-                    <FiCheck className="w-3.5 h-3.5 stroke-3 text-white" />
+                    <FiCheck className="w-3 h-3 stroke-3 text-white" />
                   )}
                 </div>
               ) : (
                 <div
-                  className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all shrink-0 ${
+                  className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all shrink-0 ${
                     isSelected
                       ? "border-neutral-900 bg-neutral-900"
                       : "border-neutral-400 bg-white"
                   }`}
                 >
                   {isSelected && (
-                    <div className="w-2 h-2 rounded-full bg-white" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-white" />
                   )}
                 </div>
               )}
@@ -149,7 +160,11 @@ export const Select: React.FC<SelectProps> = ({
         }}
         styles={{
           popup: {
-            root: { padding: "8px", borderRadius: "16px" },
+            root: {
+              padding: "6px",
+              borderRadius: "16px",
+              minWidth: size === "sm" ? 100 : undefined,
+            },
           },
         }}
         style={{ width: "100%" }}

@@ -9,16 +9,11 @@ import { useToast } from "@/src/components/ui/toast";
 import { FiArrowLeft, FiArrowRight } from "react-icons/fi";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { StatusModal } from "@/components/status-modal";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { createApplication as createApplicationSlice } from "@/store/slices/applicationSlice";
 import { setStartApplication } from "@/store/slices/onboardingSlice";
 import { startApplicationSchema } from "@/src/lib/validation";
 
-import {
-  useApplication,
-  useGetApplications,
-} from "@/src/features/candidate/features/Application/hooks";
+import { useGetApplications } from "@/src/features/candidate/features/Application/hooks";
 import {
   useGetSectors,
   useGetCentres,
@@ -63,12 +58,10 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
 }) => {
   const [form] = Form.useForm();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const { toast } = useToast();
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const { createApplication } = useApplication();
 
   const { data: remoteSectors = [], isLoading: isLoadingSectors } =
     useGetSectors();
@@ -101,10 +94,17 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
   );
 
   useEffect(() => {
-    if (savedStartApplication.trade || savedStartApplication.sector || savedStartApplication.assessmentCenter) {
+    if (
+      savedStartApplication.trade ||
+      savedStartApplication.sector ||
+      savedStartApplication.assessmentCenter
+    ) {
       form.setFieldsValue(savedStartApplication);
     } else if (existingApps.length > 0) {
-      const activeApp = existingApps.find((a) => a.status === "draft" || a.status === "in_progress") || existingApps[0];
+      const activeApp =
+        existingApps.find(
+          (a) => a.status === "draft" || a.status === "in_progress",
+        ) || existingApps[0];
       if (activeApp?.centreId) {
         form.setFieldValue("assessmentCenter", activeApp.centreId);
       }
@@ -123,71 +123,21 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
     sector: string;
     trade: string;
   }) => {
-    setIsSubmitting(true);
+    if (!values.assessmentCenter || !values.sector || !values.trade) {
+      toast({
+        type: "error",
+        title: "Required Fields",
+        description: "Please select an assessment centre, sector, and trade.",
+      });
+      return;
+    }
 
-    const payload = {
-      type: "RPL" as const,
-      centreId: values.assessmentCenter,
-      sectorId: values.sector,
-      tradeId: values.trade,
-      unitIds: [],
-    };
+    dispatch(setStartApplication(values));
 
-    createApplication.mutate(payload, {
-      onSuccess: () => {
-        setIsSubmitting(false);
-        dispatch(
-          createApplicationSlice({
-            title: values.trade,
-            subtitle: values.sector,
-          }),
-        );
-        setShowSuccessModal(true);
-      },
-      onError: (err: any) => {
-        setIsSubmitting(false);
-        const errorMsg = err?.message?.toLowerCase() || "";
-        const isConflict =
-          errorMsg.includes("already has a draft") ||
-          errorMsg.includes("in-progress application") ||
-          errorMsg.includes("already exists") ||
-          err?.statusCode === 409;
-
-        if (isConflict) {
-          // Candidate already has this application active — smoothly resume!
-          dispatch(
-            createApplicationSlice({
-              title: values.trade,
-              subtitle: values.sector,
-            }),
-          );
-          toast({
-            type: "info",
-            title: "Resuming Application",
-            description: "Existing application found. Continuing to details...",
-          });
-          if (onContinue) {
-            onContinue();
-          } else {
-            router.push("/rpl/personal-info");
-          }
-        } else {
-          toast({
-            type: "error",
-            title: "Application Error",
-            description: err.message || "Failed to start application. Please try again.",
-          });
-        }
-      },
-    });
-  };
-
-  const handleModalAction = () => {
-    setShowSuccessModal(false);
     if (onContinue) {
       onContinue();
     } else {
-      router.push("/rpl/personal-info");
+      router.push("/dashboard/assessment-type?from=start-application");
     }
   };
 
@@ -195,7 +145,7 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
     if (onBack) {
       onBack();
     } else {
-      router.back();
+      router.push("/dashboard");
     }
   };
 
@@ -208,11 +158,11 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
     >
       <div className="mb-6 text-center lg:text-left w-full flex flex-col items-center lg:items-start">
         <h1 className="text-2xl xl:text-3xl font-extrabold tracking-tight text-neutral-primary text-center lg:text-left">
-          Start Application
+          Create Application
         </h1>
         <p className="text-neutral-secondary text-[14px] xl:text-[15px] leading-relaxed mt-1.5 max-w-md font-normal text-center lg:text-left mx-auto lg:mx-0">
           Select your Assessment Centre, Sector, and Trade to begin your
-          Recognition of Prior Learning process.
+          assessment application.
         </p>
       </div>
 
@@ -279,7 +229,7 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
             className="flex items-center justify-center gap-2 text-sm font-medium text-black hover:text-text-dark transition-colors cursor-pointer"
           >
             <FiArrowLeft className="w-4 h-4 text-black" />
-            Back
+            Back to Dashboard
           </button>
 
           <div className="flex items-center gap-3">
@@ -290,21 +240,12 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
               loading={isSubmitting}
               className="px-6 h-11 text-white font-bold text-sm bg-secondary hover:bg-secondary-hover rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg cursor-pointer whitespace-nowrap"
             >
-              <span>Continue</span>
+              <span>Continue to Assessment Type</span>
               <FiArrowRight className="w-4 h-4 text-white" />
             </Button>
           </div>
         </div>
       </Form>
-
-      <StatusModal
-        isOpen={showSuccessModal}
-        onClose={handleModalAction}
-        type="success"
-        title="Application Started"
-        description="Your RPL application has been initialized. Proceed to fill out your details."
-        actionLabel="Continue Application"
-      />
     </motion.div>
   );
 };

@@ -146,13 +146,12 @@ export const dobSchema = z
   .refine(
     (val) => {
       if (!val || typeof val !== "string") return false;
-      const parts = val.trim().split(/[/.-]/);
-      if (parts.length !== 3) return false;
-      let day = parseInt(parts[0], 10);
-      let month = parseInt(parts[1], 10) - 1;
-      let year = parseInt(parts[2], 10);
-      if (year < 100) year += 2000;
-      if (isNaN(day) || isNaN(month) || isNaN(year)) return false;
+      const iso = formatToIsoDate(val);
+      if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return false;
+      const [yearStr, monthStr, dayStr] = iso.split("-");
+      const year = parseInt(yearStr, 10);
+      const month = parseInt(monthStr, 10) - 1;
+      const day = parseInt(dayStr, 10);
 
       const dobDate = new Date(year, month, day);
       if (
@@ -172,7 +171,7 @@ export const dobSchema = z
 
       return age >= 18;
     },
-    { message: "Applicant must be 18 years or older" }
+    { message: "Applicant must be 18 years or older" },
   );
 
 export const personalInfoSchema = z.object({

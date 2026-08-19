@@ -173,7 +173,7 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
         onToggleInterviewCollapse: () =>
           setIsInterviewCollapsed(!isInterviewCollapsed),
         onOpenFormModal: () =>
-          router.push(`/dashboard/applications/${application.id}/self-assessment`),
+          router.push(`/dashboard/applications/${application.id}/application-form`),
         onMakePayment: handleMakePayment,
         onDownloadReceipt: () =>
           toast({
@@ -222,7 +222,7 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      className="w-full flex flex-col gap-2"
+      className="w-full flex flex-col min-h-screen"
     >
       <HeaderBanner
         backHref="/dashboard/applications"
@@ -235,20 +235,22 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
         createButtonText="Create Application"
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        <div className="lg:col-span-8 xl:col-span-9 flex flex-col gap-4 bg-white rounded-2xl p-4 shadow-2xs">
-          {stages.map((stage) => (
-            <ApplicationStageCard key={stage.id} stage={stage} />
-          ))}
-        </div>
+      <div className="max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          <div className="lg:col-span-8 xl:col-span-9 flex flex-col gap-4 bg-white rounded-2xl p-4 shadow-2xs">
+            {stages.map((stage) => (
+              <ApplicationStageCard key={stage.id} stage={stage} />
+            ))}
+          </div>
 
-        <div className="lg:col-span-4 xl:col-span-3 flex flex-col gap-6">
-          <CalendarWidget />
-          <UpcomingCard interview={null} />
-          <FacilitatorCard
-            facilitator={null}
-            onRequestCall={() => setIsCallRequestModalOpen(true)}
-          />
+          <div className="lg:col-span-4 xl:col-span-3 flex flex-col gap-6">
+            <CalendarWidget />
+            <UpcomingCard interview={null} />
+            <FacilitatorCard
+              facilitator={null}
+              onRequestCall={() => setIsCallRequestModalOpen(true)}
+            />
+          </div>
         </div>
       </div>
 

@@ -8,12 +8,20 @@ import { Select } from "@/src/components/ui/select";
 import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
 import { ASSETS_URL } from "@/assets";
+import { useSendBroadcastMessage } from "@/src/features/shared/messages/hooks";
 
 interface BroadcastModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSendSuccess?: (message: string, recipient: string) => void;
 }
+
+const RECIPIENT_MAP: Record<string, string> = {
+  "All Candidates": "all_candidates",
+  "All Assessors": "all_assessors",
+  "All Staff": "all_staff",
+  "Specific Trade Group": "trade_group",
+};
 
 export const BroadcastModal: React.FC<BroadcastModalProps> = ({
   isOpen,
@@ -24,6 +32,8 @@ export const BroadcastModal: React.FC<BroadcastModalProps> = ({
   const [recipient, setRecipient] = useState("");
   const [message, setMessage] = useState("");
   const [step, setStep] = useState<"form" | "success">("form");
+
+  const sendBroadcastMutation = useSendBroadcastMessage();
 
   if (!isOpen) return null;
 
@@ -47,8 +57,21 @@ export const BroadcastModal: React.FC<BroadcastModalProps> = ({
       return;
     }
 
-    setStep("success");
-    onSendSuccess?.(message, recipient);
+    const recipientGroup = RECIPIENT_MAP[recipient] || recipient;
+
+    sendBroadcastMutation.mutate(
+      {
+        recipientGroup,
+        message: message.trim(),
+        subject: `Broadcast to ${recipient}`,
+      },
+      {
+        onSuccess: () => {
+          setStep("success");
+          onSendSuccess?.(message, recipient);
+        },
+      },
+    );
   };
 
   const handleReset = () => {
@@ -94,7 +117,7 @@ export const BroadcastModal: React.FC<BroadcastModalProps> = ({
                   Send Broadcast Message
                 </h3>
                 <p className="text-xs sm:text-sm text-gray-500 font-normal">
-                  Send a broadcast message
+                  Dispatch a broadcast notification to your centre network
                 </p>
               </div>
 
@@ -120,7 +143,7 @@ export const BroadcastModal: React.FC<BroadcastModalProps> = ({
                   </label>
                   <textarea
                     rows={4}
-                    placeholder="Type Here"
+                    placeholder="Type your message here..."
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     className="w-full bg-[#F8F9FA] border border-gray-200/80 focus:border-gray-400 rounded-2xl p-4 text-xs sm:text-sm text-neutral-primary outline-none resize-none transition-all placeholder:text-gray-400"
@@ -132,6 +155,7 @@ export const BroadcastModal: React.FC<BroadcastModalProps> = ({
                 type="submit"
                 variant="amber"
                 size="lg"
+                loading={sendBroadcastMutation.isPending}
                 className="w-full h-12.5 text-white font-bold text-base bg-[#fbab2a] hover:bg-[#e89b1f] mt-4 transition-all shadow-lg cursor-pointer rounded-xl"
               >
                 Send Message
@@ -156,7 +180,7 @@ export const BroadcastModal: React.FC<BroadcastModalProps> = ({
               </h3>
 
               <p className="text-neutral-secondary text-xs sm:text-sm mb-8 leading-relaxed font-normal">
-                Broadcast Message sent successfully
+                Broadcast message has been dispatched successfully.
               </p>
 
               <Button

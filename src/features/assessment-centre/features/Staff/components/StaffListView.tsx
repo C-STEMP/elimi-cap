@@ -1,18 +1,20 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import {
-  FiSearch,
-  FiList,
-  FiGrid,
-} from "react-icons/fi";
+import { FiSearch, FiList, FiGrid } from "react-icons/fi";
 import { Select } from "@/src/components/ui/select";
-import { useGetStaff } from "@/features/assessment-centre/features/Staff/hooks";
+import {
+  useGetCentreStaff,
+  usePatchCentreStaffBulk,
+} from "@/src/features/shared/centre/hooks";
 import { StaffStatusModal, StaffStatusModalMode } from "./StaffStatusModal";
 
 import { useAppSelector } from "@/src/store/hooks";
 import { useToast } from "@/src/components/ui/toast";
-import { canViewStaffDetails } from "@/features/assessment-centre/utils/rbac";
+import {
+  canViewStaffDetails,
+  canDeactivateStaff,
+} from "@/features/assessment-centre/utils/rbac";
 import { Loader } from "@/src/components/ui/loader";
 
 interface StaffListViewProps {
@@ -29,6 +31,7 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
   const user = useAppSelector((state) => state.auth.user);
   const role = userRole || user?.role;
   const canViewDetail = canViewStaffDetails(role);
+  const canDeactivate = canDeactivateStaff(role);
 
   const handleSelectStaff = (staffId: string) => {
     if (!canViewDetail) {
@@ -41,7 +44,10 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
     }
     onSelectStaff(staffId);
   };
-  const { data: staffMembers = [], isLoading } = useGetStaff();
+
+  const { data: staffMembers = [], isLoading } = useGetCentreStaff();
+  const patchStaffBulk = usePatchCentreStaffBulk();
+
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -57,7 +63,14 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
   };
 
   const handleConfirmDeactivate = () => {
-    setDeactivateModalMode("deactivated-success");
+    patchStaffBulk.mutate(
+      { ids: selectedStaffIds, status: "inactive" },
+      {
+        onSuccess: () => {
+          setDeactivateModalMode("deactivated-success");
+        },
+      },
+    );
   };
 
   const handleCloseDeactivateModal = () => {
@@ -79,39 +92,78 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
     }
   };
 
-  const filteredStaff = useMemo(() => staffMembers.filter((staff) => {
-    const matchesSearch =
-      (staff.email || "").toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus =
-      statusFilter === "All" || staff.role === statusFilter;
-    return matchesSearch && matchesStatus;
-  }), [staffMembers, searchQuery, statusFilter]);
+  const filteredStaff = useMemo(
+    () =>
+      staffMembers.filter((staff) => {
+        const matchesSearch =
+          (staff.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (staff.email || "").toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesStatus =
+          statusFilter === "All" ||
+          staff.role === statusFilter ||
+          staff.status === statusFilter;
+        return matchesSearch && matchesStatus;
+      }),
+    [staffMembers, searchQuery, statusFilter],
+  );
 
-  const renderStatusBadge = (role: string) => {
-    switch (role) {
+  const renderRoleBadge = (roleStr: string) => {
+    switch (roleStr) {
       case "super_admin":
         return (
-          <span className="bg-[#1E7F4C]/20 text-[#1E7F4C]  px-4 py-1 rounded-full text-xs inline-block">
+          <span className="bg-[#1E7F4C]/20 text-[#1E7F4C] font-semibold px-3 py-1 rounded-full text-xs inline-block whitespace-nowrap">
             Super Admin
           </span>
         );
       case "regular_admin":
         return (
-          <span className="bg-secondary/20 text-secondary  px-3 py-1 rounded-full text-xs inline-block">
+          <span className="bg-secondary/20 text-secondary font-semibold px-3 py-1 rounded-full text-xs inline-block whitespace-nowrap">
             Admin
           </span>
         );
       default:
         return (
-          <span className="bg-black/20 text-black  px-3 py-1 rounded-full text-xs inline-block">
+          <span className="bg-black/10 text-black font-semibold px-3 py-1 rounded-full text-xs inline-block whitespace-nowrap">
             Staff
           </span>
         );
     }
   };
 
+  const renderStatusBadge = (statusStr: string) => {
+    switch (statusStr) {
+      case "active":
+        return (
+          <span className="bg-[#D1FAE5] text-[#065F46] font-semibold px-2.5 py-0.5 rounded-full text-[11px] inline-block">
+            Active
+          </span>
+        );
+      case "pending":
+        return (
+          <span className="bg-[#FEF3C7] text-[#D97706] font-semibold px-2.5 py-0.5 rounded-full text-[11px] inline-block">
+            Pending
+          </span>
+        );
+      case "inactive":
+        return (
+          <span className="bg-[#E5E7EB] text-[#4B5563] font-semibold px-2.5 py-0.5 rounded-full text-[11px] inline-block">
+            Inactive
+          </span>
+        );
+      default:
+        return null;
+    }
+  };
+
   if (isLoading) {
-    return <Loader fullscreen={false} size="small" tip="Loading staff members..." className="py-20" />;
+    return (
+      <Loader
+        fullscreen={false}
+        size="small"
+        tip="Loading staff members..."
+        className="py-20"
+      />
+    );
   }
 
   return (
@@ -129,7 +181,7 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
             />
           </div>
 
-          <div className="flex items-center sm:justify-end gap-3">
+          <div className="flex items-center sm:justify-end gap-3 flex-wrap">
             <Select
               size="sm"
               showPlaceholderOption={false}
@@ -137,10 +189,13 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               options={[
-                { label: "Role", value: "All" },
+                { label: "Role / Status", value: "All" },
                 { label: "Super Admin", value: "super_admin" },
                 { label: "Admin", value: "regular_admin" },
                 { label: "Staff", value: "staff" },
+                { label: "Active", value: "active" },
+                { label: "Pending", value: "pending" },
+                { label: "Inactive", value: "inactive" },
               ]}
             />
 
@@ -172,20 +227,23 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
             </div>
           </div>
         </div>
-        <div className="flex items-center justify-end">
-          <button
-            type="button"
-            onClick={handleOpenDeactivateModal}
-            disabled={selectedStaffIds.length === 0}
-            className={`text-xs font-semibold underline transition-colors ml-1 ${
-              selectedStaffIds.length === 0
-                ? "text-gray-300 cursor-not-allowed"
-                : "text-gray-400 hover:text-red-600 cursor-pointer"
-            }`}
-          >
-            Deactivate
-          </button>
-        </div>
+
+        {canDeactivate && (
+          <div className="flex items-center justify-end">
+            <button
+              type="button"
+              onClick={handleOpenDeactivateModal}
+              disabled={selectedStaffIds.length === 0}
+              className={`text-xs font-semibold underline transition-colors ml-1 ${
+                selectedStaffIds.length === 0
+                  ? "text-gray-300 cursor-not-allowed"
+                  : "text-gray-400 hover:text-red-600 cursor-pointer"
+              }`}
+            >
+              Deactivate
+            </button>
+          </div>
+        )}
 
         {filteredStaff.length === 0 ? (
           <div className="py-16 flex flex-col items-center justify-center text-center">
@@ -195,6 +253,7 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredStaff.map((staff) => {
               const isSelected = selectedStaffIds.includes(staff.id);
+              const displayName = staff.name || staff.email.split("@")[0];
               return (
                 <div
                   key={staff.id}
@@ -208,24 +267,33 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
                       className="mt-1 w-4 h-4 rounded border-gray-300 text-[#a31d38] focus:ring-0 cursor-pointer place-self-center"
                     />
 
-                    <div className="flex flex-col gap-2 lg:gap-4">
-                      <span className=" text-sm text-black">{staff.email}</span>
+                    <div className="flex flex-col gap-1.5 lg:gap-2">
+                      <span className="font-bold text-sm text-black">
+                        {displayName}
+                      </span>
                       <span className="text-xs text-[#19191880] font-normal">
                         {staff.email}
                       </span>
+                      {staff.status && (
+                        <div className="mt-1">
+                          {renderStatusBadge(staff.status)}
+                        </div>
+                      )}
                     </div>
                   </div>
 
                   <div className="flex flex-col items-end justify-between h-full gap-6">
-                    {renderStatusBadge(staff.role)}
+                    {renderRoleBadge(staff.role)}
 
-                    <button
-                      type="button"
-                      onClick={() => handleSelectStaff(staff.id)}
-                      className="text-xs lg:text-sm text-black underline hover:text-[#a31d38] transition-colors cursor-pointer mt-2"
-                    >
-                      View
-                    </button>
+                    {canViewDetail && (
+                      <button
+                        type="button"
+                        onClick={() => handleSelectStaff(staff.id)}
+                        className="text-xs lg:text-sm text-black underline hover:text-[#a31d38] transition-colors cursor-pointer mt-2 font-medium"
+                      >
+                        View
+                      </button>
+                    )}
                   </div>
                 </div>
               );
@@ -247,16 +315,19 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
                       className="w-4 h-4 rounded text-primary focus:ring-0 cursor-pointer"
                     />
                   </th>
+                  <th className="p-3.5 whitespace-nowrap">Name</th>
                   <th className="p-3.5 whitespace-nowrap">Email</th>
                   <th className="p-3.5 whitespace-nowrap">Role</th>
+                  <th className="p-3.5 whitespace-nowrap">Status</th>
                   <th className="p-3.5 text-right rounded-r-xl whitespace-nowrap">
                     Action
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100 text-xs sm:text-sm  text-black">
+              <tbody className="divide-y divide-gray-100 text-xs sm:text-sm text-black">
                 {filteredStaff.map((staff) => {
                   const isSelected = selectedStaffIds.includes(staff.id);
+                  const displayName = staff.name || staff.email.split("@")[0];
                   return (
                     <tr
                       key={staff.id}
@@ -270,18 +341,22 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
                           className="w-4 h-4 rounded border-gray-300 text-[#a31d38] focus:ring-0 cursor-pointer"
                         />
                       </td>
+                      <td className="p-3.5 font-bold text-black">{displayName}</td>
                       <td className="p-3.5 text-black">{staff.email}</td>
-                      <td className="p-3.5">
-                        {renderStatusBadge(staff.role)}
-                      </td>
+                      <td className="p-3.5">{renderRoleBadge(staff.role)}</td>
+                      <td className="p-3.5">{renderStatusBadge(staff.status)}</td>
                       <td className="p-3.5 text-right">
-                        <button
-                          type="button"
-                          onClick={() => handleSelectStaff(staff.id)}
-                          className="text-black font-bold text-xs underline hover:text-[#a31d38] transition-colors cursor-pointer"
-                        >
-                          View
-                        </button>
+                        {canViewDetail ? (
+                          <button
+                            type="button"
+                            onClick={() => handleSelectStaff(staff.id)}
+                            className="text-black font-bold text-xs underline hover:text-[#a31d38] transition-colors cursor-pointer"
+                          >
+                            View
+                          </button>
+                        ) : (
+                          <span className="text-gray-300 text-xs">—</span>
+                        )}
                       </td>
                     </tr>
                   );
@@ -297,7 +372,8 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
         mode={deactivateModalMode}
         staffName={
           selectedStaffIds.length === 1
-            ? staffMembers.find((s) => s.id === selectedStaffIds[0])?.email
+            ? staffMembers.find((s) => s.id === selectedStaffIds[0])?.name ||
+              staffMembers.find((s) => s.id === selectedStaffIds[0])?.email
             : undefined
         }
         onClose={handleCloseDeactivateModal}

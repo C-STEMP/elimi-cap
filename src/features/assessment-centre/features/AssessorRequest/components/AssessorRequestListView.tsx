@@ -19,20 +19,25 @@ export const AssessorRequestListView: React.FC<
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [statusFilter, setStatusFilter] = useState<string>("All");
 
-  const items: AssessorItem[] = requests.map((req) => ({
-    id: req.id,
-    name: req.assessorId ? `Assessor (${req.assessorId.slice(0, 8)})` : "Assessor",
-    email: req.assessorId ? `${req.assessorId.slice(0, 8)}@assessor.ng` : "assessor@ng.org",
-    trade: "Technical Trade",
-    role: "Assessor",
-    status: "Pending",
-    assignedCount: 0,
-    experienceYears: 0,
-    tags: [],
-    assignedCandidatesCount: 0,
-    ongoingCount: 0,
-    completedCount: 0,
-  }));
+  const items: AssessorItem[] = requests.map((req) => {
+    const assessorSnap = req.assessor;
+    const sectorsStr = (assessorSnap?.sectors || []).map((s) => s.name).join(", ");
+    const primaryRole = (assessorSnap?.qualifications?.[0] as any) || "Assessor";
+    return {
+      id: req.id,
+      name: assessorSnap?.name || (req.assessorId ? `Assessor (${req.assessorId.slice(0, 8)})` : "Assessor"),
+      email: assessorSnap?.email || (req.assessorId ? `${req.assessorId.slice(0, 8)}@assessor.ng` : "assessor@ng.org"),
+      trade: sectorsStr || "Technical Trade",
+      role: primaryRole,
+      status: "Pending",
+      assignedCount: 0,
+      experienceYears: assessorSnap?.yearsOfExperience || 0,
+      tags: assessorSnap?.qualifications || [],
+      assignedCandidatesCount: 0,
+      ongoingCount: 0,
+      completedCount: 0,
+    };
+  });
 
   const filteredItems = items.filter((item) => {
     const matchesSearch =

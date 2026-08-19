@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import {
@@ -13,9 +13,11 @@ import {
   FiCheck,
 } from "react-icons/fi";
 import {
-  INITIAL_NOTIFICATIONS,
-  NotificationItem,
-} from "../data/notificationsData";
+  useGetNotifications,
+  useMarkNotificationRead,
+  useMarkAllNotificationsRead,
+} from "@/src/features/shared/notifications/hooks";
+import { NotificationItem } from "@/src/features/shared/notifications/api";
 
 interface NotificationDropdownProps {
   isOpen: boolean;
@@ -29,15 +31,26 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
   maxItems = 3,
 }) => {
   const router = useRouter();
-  const [notifications, setNotifications] = useState<NotificationItem[]>(
-    INITIAL_NOTIFICATIONS
-  );
+  const { data: remoteNotifications = [], isLoading } = useGetNotifications();
+  const markReadMutation = useMarkNotificationRead();
+  const markAllReadMutation = useMarkAllNotificationsRead();
 
+  const notifications = remoteNotifications;
   const previewNotifications = notifications.slice(0, maxItems);
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const unreadCount = notifications.filter((n) => !n.read && n.isUnread !== false).length;
 
   const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    markAllReadMutation.mutate();
+  };
+
+  const handleNotificationClick = (notif: NotificationItem) => {
+    if (!notif.read) {
+      markReadMutation.mutate(notif.id);
+    }
+    if (notif.link || notif.actionUrl) {
+      onClose();
+      router.push(notif.link || notif.actionUrl || "/dashboard/notifications");
+    }
   };
 
   const handleViewMore = () => {
@@ -45,7 +58,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
     router.push("/dashboard/notifications");
   };
 
-  const getCategoryIcon = (category: NotificationItem["category"]) => {
+  const getCategoryIcon = (category?: string) => {
     switch (category) {
       case "application":
         return <FiFileText className="w-4 h-4 text-[#a31d38]" />;
@@ -104,45 +117,53 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
 
             {/* Notification Preview List (Max Items) */}
             <div className="divide-y divide-gray-100 max-h-[320px] overflow-y-auto">
-              {previewNotifications.map((notif) => (
-                <div
-                  key={notif.id}
-                  onClick={() => {
-                    if (notif.link) {
-                      onClose();
-                      router.push(notif.link);
-                    }
-                  }}
-                  className={`p-4 flex gap-3 transition-colors cursor-pointer ${
-                    !notif.read ? "bg-[#fffdf8]" : "hover:bg-gray-50"
-                  }`}
-                >
-                  {/* Category Icon Badge */}
-                  <div className="w-8 h-8 rounded-xl bg-gray-100 flex items-center justify-center shrink-0 mt-0.5">
-                    {getCategoryIcon(notif.category)}
-                  </div>
-
-                  {/* Body Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <h4 className="text-xs font-bold text-[#1e1e1e] truncate">
-                        {notif.title}
-                      </h4>
-                      <span className="text-[10px] text-gray-400 font-medium shrink-0">
-                        {notif.timestamp}
-                      </span>
-                    </div>
-                    <p className="text-xs text-gray-600 line-clamp-2 mt-0.5 leading-snug">
-                      {notif.description}
-                    </p>
-                  </div>
-
-                  {/* Unread Dot */}
-                  {!notif.read && (
-                    <div className="w-2 h-2 rounded-full bg-[#fbab2a] shrink-0 mt-1.5" />
-                  )}
+              {isLoading ? (
+                <div className="py-8 text-center text-xs text-gray-400">
+                  Loading notifications...
                 </div>
-              ))}
+              ) : previewNotifications.length === 0 ? (
+                <div className="py-8 text-center text-xs text-gray-400">
+                  No notifications yet.
+                </div>
+              ) : (
+                previewNotifications.map((notif) => {
+                  const isUnread = !notif.read && notif.isUnread !== false;
+                  return (
+                    <div
+                      key={notif.id}
+                      onClick={() => handleNotificationClick(notif)}
+                      className={`p-4 flex gap-3 transition-colors cursor-pointer ${
+                        isUnread ? "bg-[#fffdf8]" : "hover:bg-gray-50"
+                      }`}
+                    >
+                      {/* Category Icon Badge */}
+                      <div className="w-8 h-8 rounded-xl bg-gray-100 flex items-center justify-center shrink-0 mt-0.5">
+                        {getCategoryIcon(notif.category)}
+                      </div>
+
+                      {/* Body Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <h4 className="text-xs font-bold text-[#1e1e1e] truncate">
+                            {notif.title}
+                          </h4>
+                          <span className="text-[10px] text-gray-400 font-medium shrink-0">
+                            {notif.timestamp || notif.time || (notif.createdAt ? new Date(notif.createdAt).toLocaleDateString() : "")}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-600 line-clamp-2 mt-0.5 leading-snug">
+                          {notif.description}
+                        </p>
+                      </div>
+
+                      {/* Unread Dot */}
+                      {isUnread && (
+                        <div className="w-2 h-2 rounded-full bg-[#fbab2a] shrink-0 mt-1.5" />
+                      )}
+                    </div>
+                  );
+                })
+              )}
             </div>
 
             {/* Footer View More Action */}

@@ -44,7 +44,7 @@ export const Success: React.FC<SuccessProps> = ({
     if (onStartApplication) {
       onStartApplication();
     } else {
-      router.push("/onboarding/start-application");
+      router.push("/dashboard/start-application");
     }
   };
 

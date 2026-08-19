@@ -13,6 +13,8 @@ export interface UserProfile {
   fullName?: string;
   isVerified?: boolean;
   role?: string;
+  centreId?: string;
+  centreRole?: string;
   assessmentType?: string;
   phoneNumber?: string;
 }
@@ -36,7 +38,6 @@ const initialState: AuthState = {
   sidebarVariant: "default",
   rplStep: 1,
 };
-
 
 export const authSlice = createSlice({
   name: "auth",
@@ -63,6 +64,20 @@ export const authSlice = createSlice({
         state.user.role = action.payload;
       } else {
         state.user = { email: "", role: action.payload };
+      }
+    },
+    setCentreId: (state, action: PayloadAction<string>) => {
+      if (state.user) {
+        state.user.centreId = action.payload;
+      } else {
+        state.user = { email: "", centreId: action.payload };
+      }
+    },
+    setCentreRole: (state, action: PayloadAction<string>) => {
+      if (state.user) {
+        state.user.centreRole = action.payload;
+      } else {
+        state.user = { email: "", centreRole: action.payload };
       }
     },
     setAssessmentType: (state, action: PayloadAction<string>) => {
@@ -104,6 +119,8 @@ export const {
   setCredentials,
   updateEmail,
   setRole,
+  setCentreId,
+  setCentreRole,
   setAssessmentType,
   setSidebarVariant,
   setRplStep,

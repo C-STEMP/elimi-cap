@@ -107,11 +107,13 @@ export const AssessorPersonalInfo: React.FC = () => {
     let valid = true;
     const newErrors: Record<string, string> = {};
 
-    if (!passportFile && !saved.passportFileName) {
+    if (
+      !passportFile &&
+      !saved.passportFileName &&
+      !saved.passportPreview &&
+      !saved.passportAssetId
+    ) {
       setPassportError("Passport photograph is required");
-      valid = false;
-    } else if (!passportAssetId && !saved.passportAssetId) {
-      setPassportError("Passport upload is still in progress. Please wait.");
       valid = false;
     } else {
       setPassportError("");

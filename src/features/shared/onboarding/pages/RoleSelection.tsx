@@ -12,6 +12,7 @@ import { motion } from "framer-motion";
 
 import { useOnboarding } from "@/src/features/shared/onboarding/hooks";
 import { type PersonaType } from "@/src/features/shared/onboarding/api";
+import { savePersona } from "@/src/lib/auth-storage";
 
 export interface RoleOption {
   id: string;
@@ -85,6 +86,7 @@ export const RoleSelection: React.FC<RoleSelectionProps> = ({
 
     const persona = personaMap[roleId];
     if (persona) {
+      savePersona(persona);
       startOnboarding.mutate(persona);
     }
 
@@ -94,7 +96,7 @@ export const RoleSelection: React.FC<RoleSelectionProps> = ({
 
     if (roleId === "candidate") {
       setTimeout(() => {
-        router.push("/onboarding/assessment-type?from=role");
+        router.push("/onboarding/personal-info");
       }, 150);
     } else if (
       roleId === "assessment-centre" ||

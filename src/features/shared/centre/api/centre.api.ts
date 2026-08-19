@@ -1,38 +1,157 @@
 import { capFetch } from "@/src/lib/api/cap";
+import type {
+  PersonalDetails,
+  ContactInformation,
+  ResidentialAddress,
+} from "@/src/features/shared/account/api";
 
 export type CentreStaffRole = "super_admin" | "regular_admin" | "staff";
+export type CentreStaffStatus = "pending" | "active" | "inactive";
 
+export interface Money {
+  amountMinorUnits: string;
+  currency: string;
+}
+
+export interface PaginationMeta {
+  pagination?: {
+    nextCursor: string | null;
+    hasMore: boolean;
+    limit: number;
+  };
+}
+
+// ─── Staff Types ─────────────────────────────────────────────────────────────
 export interface CentreStaff {
   id: string;
   email: string;
+  name?: string | null;
   role: CentreStaffRole;
+  status: CentreStaffStatus;
+  createdAt: string;
 }
 
 export interface AddCentreStaffPayload {
+  name: string;
   email: string;
   role: CentreStaffRole;
 }
 
-export interface JobPosting {
-  id: string;
-  title: string;
-  tradeId: string;
-  slot: number;
-  deadline: string;
-  description: string;
-  requirements: string[];
-  duration?: string | null;
-  status: "open" | "closed";
+export interface CentreStaffWorkload {
+  reviewed: number;
+  pending: number;
+  requiresAttention: number;
 }
 
-export interface CreateJobPostingPayload {
-  title: string;
-  tradeId: string;
-  slot: number;
-  deadline: string;
-  description: string;
-  requirements: string[];
-  duration?: string;
+export interface CentreStaffDetail extends CentreStaff {
+  workload: CentreStaffWorkload;
+}
+
+export interface CentreStaffSummary {
+  total: number;
+  active: number;
+  pending: number;
+  inactive: number;
+}
+
+// ─── Dashboard & Summary Types ───────────────────────────────────────────────
+export interface CentreDashboardKpis {
+  applications: number;
+  staff: number;
+  assessors: number;
+  revenue?: Money;
+}
+
+export interface RevenueMonthBucket {
+  month: number;
+  amount: Money;
+}
+
+export interface NamedCountBucket {
+  id: string;
+  name: string;
+  count: number;
+}
+
+export interface GenderCountBucket {
+  gender: "female" | "male" | "other" | "unspecified";
+  count: number;
+}
+
+export interface StageCountBucket {
+  stageKey: string;
+  label: string;
+  count: number;
+}
+
+export interface CentreActivityItem {
+  id: string;
+  actorName: string;
+  role: CentreStaffRole;
+  action: string;
+  occurredAt: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface CentreDashboard {
+  year: number;
+  applicationType?: "RPL" | "NSQ" | null;
+  kpis: CentreDashboardKpis;
+  revenueByMonth?: RevenueMonthBucket[];
+  applicationsByTrade: NamedCountBucket[];
+  genderDistribution: GenderCountBucket[];
+  candidatesByStage: StageCountBucket[];
+  staffActivity: CentreActivityItem[];
+}
+
+export interface CentreApplicationsSummary {
+  total: number;
+  pending: number;
+  ongoing: number;
+  completed: number;
+  archived: number;
+}
+
+// ─── Assessor & Retained Requests Types ───────────────────────────────────────
+export type AssessorQualification = "QAA" | "IQM" | "IV" | "EV";
+
+export interface AssessorCertificate {
+  kind: "qaa" | "iqm" | "ev";
+  assetId: string;
+  url: string;
+}
+
+export interface AssessorSnapshot {
+  id: string;
+  name: string;
+  email?: string | null;
+  qualifications: AssessorQualification[];
+  sectors: { id: string; name: string }[];
+  yearsOfExperience?: number | null;
+  certificates: AssessorCertificate[];
+}
+
+export interface CentreAssessorListItem extends AssessorSnapshot {
+  retainedRequestId: string;
+  status: "pending" | "approved" | "revoked";
+  assignedCount: number;
+}
+
+export interface CentreAssessorSummary {
+  total: number;
+  active: number;
+  pending: number;
+  inactive: number;
+}
+
+export interface CentreAssessorWorkload {
+  assigned: number;
+  ongoing: number;
+  completed: number;
+}
+
+export interface CentreAssessorDetail extends CentreAssessorListItem {
+  workload: CentreAssessorWorkload;
 }
 
 export type RetainedRequestStatus =
@@ -49,13 +168,54 @@ export interface RetainedAssessorRequest {
   requestedAt: string;
   respondedAt?: string | null;
   respondedBy?: string | null;
+  assessor?: AssessorSnapshot | null;
 }
 
-export interface Money {
-  amountMinorUnits: string;
-  currency: string;
+// ─── Job Postings Types ──────────────────────────────────────────────────────
+export type JobPostingStatus = "open" | "closed" | "filled" | "cancelled";
+
+export interface JobPosting {
+  id: string;
+  title: string;
+  tradeId: string;
+  slot: number;
+  deadline: string;
+  description: string;
+  requirements: string[];
+  duration?: string | null;
+  status: JobPostingStatus;
+  trade?: {
+    id: string;
+    name: string;
+  };
+  applicantCount?: number;
+  slotsOccupied?: number;
+  createdAt?: string;
 }
 
+export interface CreateJobPostingPayload {
+  title: string;
+  tradeId: string;
+  slot: number;
+  deadline: string;
+  description: string;
+  requirements: string[];
+  duration?: string;
+}
+
+export interface JobPostingApplication {
+  id: string;
+  jobPostingId: string;
+  status: "applied" | "accepted" | "rejected" | "withdrawn";
+  createdAt?: string;
+  trade?: {
+    id: string;
+    name: string;
+  };
+  assessor?: AssessorSnapshot | null;
+}
+
+// ─── Pricing, Wallet & Payments Types ────────────────────────────────────────
 export interface CentrePricing {
   applicationType: "RPL" | "NSQ";
   price: Money;
@@ -75,10 +235,89 @@ export interface WithdrawPayload {
   amount: Money;
 }
 
-export async function getCentreStaffApi(): Promise<CentreStaff[]> {
-  return capFetch<CentreStaff[]>("/centre/staff", {
-    method: "GET",
-  });
+export interface CentrePaymentsSummary {
+  totalRevenue: Money;
+  completedCount: number;
+  pendingCount: number;
+}
+
+export interface CentrePaymentListItem {
+  applicationId: string;
+  candidateName: string;
+  applicationType: "RPL" | "NSQ";
+  amount: Money;
+  status: "pending" | "completed" | "failed";
+  paidAt?: string | null;
+  initiatedAt?: string | null;
+  receiptAvailable: boolean;
+}
+
+// ─── Profile & Policy Types ──────────────────────────────────────────────────
+export interface CentreAccountDetails {
+  bank?: string;
+  accountNo?: string;
+  nameOfAccount?: string;
+}
+
+export interface CentreProfile {
+  id: string;
+  name: string;
+  registrationNo: string;
+  logoAssetId?: string | null;
+  status: "pending" | "approved" | "suspended" | "rejected";
+  ownerIdentityVerified: boolean;
+  address?: ResidentialAddress | null;
+  formattedAddress?: string | null;
+  supportContact?: ContactInformation | null;
+  accountDetails?: CentreAccountDetails | null;
+}
+
+export interface CentreProfilePatch {
+  name?: string;
+  logoAssetId?: string | null;
+  address?: ResidentialAddress;
+  supportContact?: ContactInformation;
+  accountDetails?: CentreAccountDetails;
+}
+
+export interface CentreNotificationPolicy {
+  events: {
+    event: "application.submitted";
+    recipientCapUserIds?: string[];
+    recipientRoles?: CentreStaffRole[];
+  }[];
+}
+
+// ─── Directory Hit ───────────────────────────────────────────────────────────
+export interface DirectoryHit {
+  id: string;
+  kind: "staff" | "candidate" | "assessor";
+  displayName: string;
+  subtitle?: string | null;
+  userId?: string | null;
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// API CALL FUNCTIONS
+// ═════════════════════════════════════════════════════════════════════════════
+
+// ─── Staff API ───────────────────────────────────────────────────────────────
+export async function getCentreStaffApi(params?: {
+  status?: CentreStaffStatus;
+  q?: string;
+  sort?: string;
+  order?: "asc" | "desc";
+  cursor?: string;
+  limit?: number;
+}): Promise<CentreStaff[]> {
+  const res = await capFetch<CentreStaff[] | { data: CentreStaff[]; meta: PaginationMeta }>(
+    "/centre/staff",
+    {
+      method: "GET",
+      params: params as Record<string, unknown>,
+    },
+  );
+  return Array.isArray(res) ? res : (res as any)?.data || [];
 }
 
 export async function addCentreStaffApi(
@@ -90,31 +329,158 @@ export async function addCentreStaffApi(
   });
 }
 
-export async function getCentreJobPostingsApi(): Promise<JobPosting[]> {
-  return capFetch<JobPosting[]>("/centre/job-postings", {
-    method: "GET",
-  });
-}
-
-export async function createCentreJobPostingApi(
-  payload: CreateJobPostingPayload,
-): Promise<JobPosting> {
-  return capFetch<JobPosting>("/centre/job-postings", {
-    method: "POST",
+export async function patchCentreStaffBulkApi(payload: {
+  ids: string[];
+  status: "active" | "inactive";
+}): Promise<void> {
+  await capFetch<void>("/centre/staff", {
+    method: "PATCH",
     data: payload,
   });
 }
 
-export async function getCentreRetainedRequestsApi(
-  status?: RetainedRequestStatus,
-): Promise<RetainedAssessorRequest[]> {
-  const query = status ? `?status=${status}` : "";
-  return capFetch<RetainedAssessorRequest[]>(
-    `/centre/retained-requests${query}`,
+export async function getCentreStaffSummaryApi(): Promise<CentreStaffSummary> {
+  return capFetch<CentreStaffSummary>("/centre/staff/summary", {
+    method: "GET",
+  });
+}
+
+export async function getCentreStaffDetailApi(
+  id: string,
+): Promise<CentreStaffDetail> {
+  return capFetch<CentreStaffDetail>(`/centre/staff/${id}`, {
+    method: "GET",
+  });
+}
+
+export async function getCentreStaffApplicationsApi(
+  id: string,
+  params?: {
+    q?: string;
+    tradeId?: string;
+    type?: "RPL" | "NSQ";
+    status?: string;
+    queue?: "pending" | "requires_attention";
+    sort?: string;
+    order?: "asc" | "desc";
+    cursor?: string;
+    limit?: number;
+  },
+): Promise<any[]> {
+  const res = await capFetch<any[] | { data: any[]; meta: PaginationMeta }>(
+    `/centre/staff/${id}/applications`,
     {
       method: "GET",
+      params: params as Record<string, unknown>,
     },
   );
+  return Array.isArray(res) ? res : (res as any)?.data || [];
+}
+
+// ─── Dashboard & Summary API ─────────────────────────────────────────────────
+export async function getCentreDashboardApi(params?: {
+  year?: number;
+  applicationType?: "RPL" | "NSQ";
+}): Promise<CentreDashboard> {
+  return capFetch<CentreDashboard>("/centre/dashboard", {
+    method: "GET",
+    params: params as Record<string, unknown>,
+  });
+}
+
+export async function getCentreApplicationsSummaryApi(): Promise<CentreApplicationsSummary> {
+  return capFetch<CentreApplicationsSummary>("/centre/applications/summary", {
+    method: "GET",
+  });
+}
+
+// ─── Assessor & Retained Requests API ─────────────────────────────────────────
+export async function getCentreAssessorsApi(params?: {
+  qualification?: AssessorQualification;
+  q?: string;
+  status?: "pending" | "approved" | "revoked" | "all";
+  cursor?: string;
+  limit?: number;
+}): Promise<CentreAssessorListItem[]> {
+  const res = await capFetch<
+    CentreAssessorListItem[] | { data: CentreAssessorListItem[]; meta: PaginationMeta }
+  >("/centre/assessors", {
+    method: "GET",
+    params: params as Record<string, unknown>,
+  });
+  return Array.isArray(res) ? res : (res as any)?.data || [];
+}
+
+export async function getCentreAssessorsSummaryApi(): Promise<CentreAssessorSummary> {
+  return capFetch<CentreAssessorSummary>("/centre/assessors/summary", {
+    method: "GET",
+  });
+}
+
+export async function getCentreAssessorDetailApi(
+  id: string,
+): Promise<CentreAssessorDetail> {
+  return capFetch<CentreAssessorDetail>(`/centre/assessors/${id}`, {
+    method: "GET",
+  });
+}
+
+export async function getCentreAssessorApplicationsApi(
+  id: string,
+  params?: {
+    q?: string;
+    tradeId?: string;
+    type?: "RPL" | "NSQ";
+    status?: string;
+    sort?: string;
+    order?: "asc" | "desc";
+    cursor?: string;
+    limit?: number;
+  },
+): Promise<any[]> {
+  const res = await capFetch<any[] | { data: any[]; meta: PaginationMeta }>(
+    `/centre/assessors/${id}/applications`,
+    {
+      method: "GET",
+      params: params as Record<string, unknown>,
+    },
+  );
+  return Array.isArray(res) ? res : (res as any)?.data || [];
+}
+
+export async function getCentreRetainedRequestsApi(params?: {
+  status?: RetainedRequestStatus;
+  q?: string;
+  sort?: string;
+  order?: "asc" | "desc";
+  cursor?: string;
+  limit?: number;
+}): Promise<RetainedAssessorRequest[]> {
+  const res = await capFetch<
+    RetainedAssessorRequest[] | { data: RetainedAssessorRequest[]; meta: PaginationMeta }
+  >("/centre/retained-requests", {
+    method: "GET",
+    params: params as Record<string, unknown>,
+  });
+  return Array.isArray(res) ? res : (res as any)?.data || [];
+}
+
+export async function patchCentreRetainedRequestsBulkApi(payload: {
+  ids: string[];
+  decision: "approve" | "reject";
+}): Promise<void> {
+  await capFetch<void>("/centre/retained-requests/bulk", {
+    method: "PATCH",
+    data: payload,
+  });
+}
+
+export async function getCentreRetainedRequestDetailApi(
+  id: string,
+): Promise<RetainedAssessorRequest> {
+  return capFetch<RetainedAssessorRequest>(`/centre/retained-requests/${id}`, {
+    method: "GET",
+  });
 }
 
 export async function approveRetainedRequestApi(id: string): Promise<void> {
@@ -129,19 +495,180 @@ export async function rejectRetainedRequestApi(id: string): Promise<void> {
   });
 }
 
-export async function getCentrePricingApi(): Promise<CentrePricing[]> {
-  return capFetch<CentrePricing[]>("/centre/pricing", {
+export async function revokeRetainedRequestApi(id: string): Promise<void> {
+  await capFetch<void>(`/centre/retained-requests/${id}/revoke`, {
+    method: "PATCH",
+  });
+}
+
+// ─── Job Postings API ────────────────────────────────────────────────────────
+export async function getCentreJobPostingsApi(params?: {
+  q?: string;
+  status?: JobPostingStatus;
+  sort?: string;
+  order?: "asc" | "desc";
+  cursor?: string;
+  limit?: number;
+}): Promise<JobPosting[]> {
+  const res = await capFetch<
+    JobPosting[] | { data: JobPosting[]; meta: PaginationMeta }
+  >("/centre/job-postings", {
+    method: "GET",
+    params: params as Record<string, unknown>,
+  });
+  return Array.isArray(res) ? res : (res as any)?.data || [];
+}
+
+export async function createCentreJobPostingApi(
+  payload: CreateJobPostingPayload,
+): Promise<JobPosting> {
+  return capFetch<JobPosting>("/centre/job-postings", {
+    method: "POST",
+    data: payload,
+  });
+}
+
+export async function patchCentreJobPostingsBulkApi(payload: {
+  ids: string[];
+  status: "closed";
+}): Promise<void> {
+  await capFetch<void>("/centre/job-postings/bulk", {
+    method: "PATCH",
+    data: payload,
+  });
+}
+
+export async function getCentreJobPostingDetailApi(
+  id: string,
+): Promise<JobPosting> {
+  return capFetch<JobPosting>(`/centre/job-postings/${id}`, {
     method: "GET",
   });
 }
 
-export async function setCentrePricingApi(
+export async function patchCentreJobPostingApi(
+  id: string,
+  payload: { status: "closed" },
+): Promise<JobPosting> {
+  return capFetch<JobPosting>(`/centre/job-postings/${id}`, {
+    method: "PATCH",
+    data: payload,
+  });
+}
+
+export async function deleteCentreJobPostingApi(id: string): Promise<void> {
+  await capFetch<void>(`/centre/job-postings/${id}`, {
+    method: "DELETE",
+  });
+}
+
+export async function getCentreJobPostingApplicationsApi(
+  id: string,
+  params?: {
+    q?: string;
+    status?: "applied" | "accepted" | "rejected" | "withdrawn";
+    sort?: string;
+    order?: "asc" | "desc";
+    cursor?: string;
+    limit?: number;
+  },
+): Promise<JobPostingApplication[]> {
+  const res = await capFetch<
+    JobPostingApplication[] | { data: JobPostingApplication[]; meta: PaginationMeta }
+  >(`/centre/job-postings/${id}/applications`, {
+    method: "GET",
+    params: params as Record<string, unknown>,
+  });
+  return Array.isArray(res) ? res : (res as any)?.data || [];
+}
+
+export async function patchCentreJobPostingApplicationsBulkApi(
+  id: string,
+  payload: {
+    ids: string[];
+    decision: "shortlist" | "reject";
+  },
+): Promise<void> {
+  await capFetch<void>(`/centre/job-postings/${id}/applications/bulk`, {
+    method: "PATCH",
+    data: payload,
+  });
+}
+
+export async function getCentreJobPostingApplicationDetailApi(
+  id: string,
+  applicationId: string,
+): Promise<JobPostingApplication> {
+  return capFetch<JobPostingApplication>(
+    `/centre/job-postings/${id}/applications/${applicationId}`,
+    {
+      method: "GET",
+    },
+  );
+}
+
+export async function patchCentreJobPostingApplicationDecisionApi(
+  id: string,
+  applicationId: string,
+  payload: { decision: "shortlist" | "reject" },
+): Promise<JobPostingApplication> {
+  return capFetch<JobPostingApplication>(
+    `/centre/job-postings/${id}/applications/${applicationId}`,
+    {
+      method: "PATCH",
+      data: payload,
+    },
+  );
+}
+
+// ─── Pricing, Wallet & Payments API ──────────────────────────────────────────
+export async function getCentrePricingApi(): Promise<CentrePricing[]> {
+  const res = await capFetch<CentrePricing[]>("/centre/pricing", {
+    method: "GET",
+  });
+  return Array.isArray(res) ? res : (res as any)?.data || [];
+}
+
+export async function postCentrePricingApi(
   payload: SetCentrePricingPayload,
 ): Promise<CentrePricing> {
   return capFetch<CentrePricing>("/centre/pricing", {
     method: "POST",
     data: payload,
   });
+}
+
+export async function putCentrePricingBatchApi(payload: {
+  items: SetCentrePricingPayload[];
+}): Promise<CentrePricing[]> {
+  const res = await capFetch<CentrePricing[]>("/centre/pricing", {
+    method: "PUT",
+    data: payload,
+  });
+  return Array.isArray(res) ? res : (res as any)?.data || [];
+}
+
+export async function getCentrePaymentsSummaryApi(): Promise<CentrePaymentsSummary> {
+  return capFetch<CentrePaymentsSummary>("/centre/payments/summary", {
+    method: "GET",
+  });
+}
+
+export async function getCentrePaymentsApi(params?: {
+  cursor?: string;
+  limit?: number;
+  q?: string;
+  status?: "pending" | "completed" | "failed";
+  sort?: "paidAt" | "initiatedAt";
+  order?: "asc" | "desc";
+}): Promise<CentrePaymentListItem[]> {
+  const res = await capFetch<
+    CentrePaymentListItem[] | { data: CentrePaymentListItem[]; meta: PaginationMeta }
+  >("/centre/payments", {
+    method: "GET",
+    params: params as Record<string, unknown>,
+  });
+  return Array.isArray(res) ? res : (res as any)?.data || [];
 }
 
 export async function getCentreWalletApi(): Promise<Wallet> {
@@ -157,4 +684,60 @@ export async function withdrawCentreWalletApi(
     method: "POST",
     data: payload,
   });
+}
+
+// ─── Profile & Policy API ────────────────────────────────────────────────────
+export async function getCentreProfileApi(): Promise<CentreProfile> {
+  return capFetch<CentreProfile>("/centre/profile", {
+    method: "GET",
+  });
+}
+
+export async function patchCentreProfileApi(
+  payload: CentreProfilePatch,
+): Promise<CentreProfile> {
+  return capFetch<CentreProfile>("/centre/profile", {
+    method: "PATCH",
+    data: payload,
+  });
+}
+
+export async function getCentreNotificationPolicyApi(): Promise<CentreNotificationPolicy> {
+  return capFetch<CentreNotificationPolicy>("/centre/notification-policy", {
+    method: "GET",
+  });
+}
+
+export async function putCentreNotificationPolicyApi(
+  payload: CentreNotificationPolicy,
+): Promise<CentreNotificationPolicy> {
+  return capFetch<CentreNotificationPolicy>("/centre/notification-policy", {
+    method: "PUT",
+    data: payload,
+  });
+}
+
+export async function patchCentreNotificationPolicyApi(
+  payload: Partial<CentreNotificationPolicy>,
+): Promise<CentreNotificationPolicy> {
+  return capFetch<CentreNotificationPolicy>("/centre/notification-policy", {
+    method: "PATCH",
+    data: payload,
+  });
+}
+
+// ─── Directory API ───────────────────────────────────────────────────────────
+export async function getDirectoryApi(params?: {
+  q?: string;
+  kinds?: string;
+  cursor?: string;
+  limit?: number;
+}): Promise<DirectoryHit[]> {
+  const res = await capFetch<
+    DirectoryHit[] | { data: DirectoryHit[]; meta: PaginationMeta }
+  >("/directory", {
+    method: "GET",
+    params: params as Record<string, unknown>,
+  });
+  return Array.isArray(res) ? res : (res as any)?.data || [];
 }

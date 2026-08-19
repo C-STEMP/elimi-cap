@@ -113,7 +113,7 @@ export const JobListingsView: React.FC<JobListingsViewProps> = ({
                         {job.title}
                       </span>
                       <span className="text-xs text-gray-500 font-normal">
-                        Trade: {job.tradeId}
+                        Trade: {job.trade?.name || job.tradeId}
                       </span>
                       <span className="text-xs text-gray-500 font-normal">
                         Slots: {job.slot}
@@ -191,7 +191,7 @@ export const JobListingsView: React.FC<JobListingsViewProps> = ({
                         {job.title}
                       </td>
                       <td className="p-3.5 text-neutral-secondary">
-                        {job.tradeId}
+                        {job.trade?.name || job.tradeId}
                       </td>
                       <td className="p-3.5 text-neutral-secondary">
                         {job.slot}

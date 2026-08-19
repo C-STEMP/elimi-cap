@@ -111,7 +111,7 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      className="w-full flex flex-col gap-2"
+      className="w-full flex flex-col min-h-screen"
     >
       <HeaderBanner
         backHref={`/dashboard/applications/${application.id}`}
@@ -138,6 +138,8 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
           </Button>
         }
       />
+
+      <div className="max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1 flex flex-col gap-6">
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         <div className="lg:col-span-8 xl:col-span-9 flex flex-col gap-6">
@@ -172,6 +174,7 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
             }}
           />
         </div>
+      </div>
       </div>
 
       <UploadEvidenceModal

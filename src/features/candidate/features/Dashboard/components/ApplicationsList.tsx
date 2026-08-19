@@ -27,7 +27,7 @@ export const ApplicationsList: React.FC<ApplicationsListProps> = ({
   const hasApplications = applications.length > 0;
 
   const handleCreateApplication = () => {
-    router.push("/onboarding/assessment-type?from=dashboard");
+    router.push("/dashboard/start-application");
   };
 
   return (
@@ -61,14 +61,13 @@ export const ApplicationsList: React.FC<ApplicationsListProps> = ({
             Click &quot;Create Application&quot; in the top header to get
             started with your Recognition of Prior Learning journey.
           </p>
-          <Button
-            variant="secondary"
-            rightIcon={<FiPlus className="w-4 h-4 stroke-[2.5]" />}
-            onClick={handleCreateApplication}
-            className="bg-secondary hover:bg-[#e89b1f] active:scale-95 text-white font-semibold text-sm px-6 py-2.5 rounded-xl shadow-lg transition-all cursor-pointer flex items-center gap-1.5"
+          <Link
+            href="/dashboard/start-application"
+            className="bg-secondary hover:bg-[#e89b1f] active:scale-95 text-white font-semibold text-sm px-6 py-2.5 rounded-xl shadow-lg transition-all cursor-pointer inline-flex items-center gap-1.5 no-underline select-none"
           >
-            Create Application
-          </Button>
+            <span>Create Application</span>
+            <FiPlus className="w-4 h-4 stroke-[2.5]" />
+          </Link>
         </div>
       ) : (
         <div className="flex flex-col gap-3.5 w-full">

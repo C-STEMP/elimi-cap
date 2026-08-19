@@ -71,7 +71,7 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
 
   React.useEffect(() => {
     dispatch(setSidebarVariant("rpl-form"));
-    dispatch(setRplStep(4));
+    dispatch(setRplStep(3));
   }, [dispatch]);
 
   const allChecked =
@@ -121,7 +121,7 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
     >
       <div className="flex flex-col gap-2">
         <h1 className="text-2xl xl:text-[26px] font-extrabold tracking-tight text-primary">
-          Step 4 of 4: Review And Submit
+          Step 3 of 3: Review And Submit
         </h1>
         <p className="text-xs xl:text-sm text-neutral-secondary font-normal leading-relaxed">
           Please review the information you&apos;ve provided before submitting
@@ -193,33 +193,21 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
             </div>
           </div>
 
-          {/* Card 3: Verify Identity */}
+          {/* Card 3: Identity Verification (from Onboarding) */}
           <div className="p-4 bg-gray-50/80 border border-gray-100 rounded-xl flex items-center justify-between transition-all">
             <span className="text-sm xl:text-base font-medium text-neutral-primary">
-              Verify Identity
+              Identity Verification (NIN)
             </span>
             <div className="flex items-center gap-3">
               <span
                 className={`px-3 py-1 text-xs font-semibold rounded-full ${
                   identityVerified
                     ? "bg-[#E8F5E9] text-[#2E7D32]"
-                    : "bg-[#FDF2F2] text-[#EF4444]"
+                    : "bg-[#FEF3C7] text-[#D97706]"
                 }`}
               >
-                {identityVerified ? "100% Verified" : "Not Verified"}
+                {identityVerified ? "Verified" : "Pending"}
               </span>
-              <button
-                type="button"
-                onClick={() =>
-                  onEditStep
-                    ? onEditStep(3)
-                    : router.push("/rpl/verify-identity")
-                }
-                className="text-neutral-secondary hover:text-neutral-primary p-1 transition-colors cursor-pointer"
-                title="Edit Verify Identity"
-              >
-                <FiEdit2 className="w-4 h-4" />
-              </button>
             </div>
           </div>
         </div>

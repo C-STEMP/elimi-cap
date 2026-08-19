@@ -1,13 +1,16 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { RoleCard } from "@/src/components/ui/role-card";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setAssessmentType } from "@/store/slices/authSlice";
 import { setOnboardingAssessmentType } from "@/store/slices/onboardingSlice";
+import { createApplication as createApplicationSlice } from "@/store/slices/applicationSlice";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FiArrowLeft } from "react-icons/fi";
 import { motion } from "framer-motion";
+import { useToast } from "@/src/components/ui/toast";
+import { useApplication } from "@/src/features/candidate/features/Application/hooks";
 
 export interface AssessmentOption {
   id: string;
@@ -23,8 +26,8 @@ const ASSESSMENT_OPTIONS: AssessmentOption[] = [
   },
   {
     id: "nsq",
-    title: "NSQ",
-    description: "National Skills Qualification",
+    title: "Standard Assessment",
+    description: "Standard Assessment (National Skills Qualification)",
   },
 ];
 
@@ -39,22 +42,23 @@ export const AssessmentType: React.FC<AssessmentTypeProps> = ({
 }) => {
   const dispatch = useAppDispatch();
   const router = useRouter();
+  const { toast } = useToast();
   const searchParams = useSearchParams();
   const fromSource = searchParams?.get("from");
+
+  const { createApplication } = useApplication();
+  const savedStartApplication = useAppSelector(
+    (s) => s.onboarding.startApplication,
+  );
 
   const savedAssessmentType = useAppSelector(
     (state) =>
       state.onboarding.assessmentType || state.auth.user?.assessmentType || "",
   );
-  const [selectedType, setSelectedType] = React.useState<string | null>(
+  const [selectedType, setSelectedType] = useState<string | null>(
     savedAssessmentType || null,
   );
-
-  React.useEffect(() => {
-    if (savedAssessmentType) {
-      setSelectedType(savedAssessmentType);
-    }
-  }, [savedAssessmentType]);
+  const [isCreating, setIsCreating] = useState(false);
 
   const handleSelectType = (id: string) => {
     setSelectedType(id);
@@ -63,22 +67,112 @@ export const AssessmentType: React.FC<AssessmentTypeProps> = ({
 
     if (onSelectType) {
       onSelectType(id);
-    } else {
-      setTimeout(() => {
-        if (fromSource === "role") {
-          router.push("/onboarding/personal-info");
-        } else {
-          router.push("/onboarding/start-application");
-        }
-      }, 200);
+      return;
     }
+
+    // Check if centre/sector/trade are selected
+    if (
+      !savedStartApplication?.assessmentCenter ||
+      !savedStartApplication?.sector ||
+      !savedStartApplication?.trade
+    ) {
+      toast({
+        type: "info",
+        title: "Application Details Needed",
+        description:
+          "Please select your Assessment Centre, Sector, and Trade first.",
+      });
+      router.push("/dashboard/start-application");
+      return;
+    }
+
+    setIsCreating(true);
+    const appType = id === "rpl" ? "RPL" : "NSQ";
+
+    createApplication.mutate(
+      {
+        type: appType,
+        centreId: savedStartApplication.assessmentCenter,
+        sectorId: savedStartApplication.sector,
+        tradeId: savedStartApplication.trade,
+        unitIds: [],
+      },
+      {
+        onSuccess: (res: any) => {
+          setIsCreating(false);
+          const createdApp = res?.data || res;
+          dispatch(
+            createApplicationSlice({
+              title: savedStartApplication.trade,
+              subtitle: savedStartApplication.sector,
+            }),
+          );
+
+          toast({
+            type: "success",
+            title: "Application Created",
+            description: `Your ${id === "rpl" ? "RPL" : "Standard"} assessment application has been initialized.`,
+          });
+
+          if (id === "rpl") {
+            router.push(
+              createdApp?.id
+                ? `/dashboard/applications/${createdApp.id}`
+                : "/rpl/personal-info",
+            );
+          } else {
+            router.push(
+              createdApp?.id
+                ? `/dashboard/applications/${createdApp.id}`
+                : "/dashboard/applications",
+            );
+          }
+        },
+        onError: (err: any) => {
+          setIsCreating(false);
+          const errorMsg = err?.message?.toLowerCase() || "";
+          const isConflict =
+            errorMsg.includes("already has a draft") ||
+            errorMsg.includes("in-progress application") ||
+            errorMsg.includes("already exists") ||
+            err?.statusCode === 409;
+
+          if (isConflict) {
+            dispatch(
+              createApplicationSlice({
+                title: savedStartApplication.trade,
+                subtitle: savedStartApplication.sector,
+              }),
+            );
+            toast({
+              type: "info",
+              title: "Existing Application Found",
+              description: "Resuming your active application...",
+            });
+            if (id === "rpl") {
+              router.push("/rpl/personal-info");
+            } else {
+              router.push("/dashboard/applications");
+            }
+          } else {
+            toast({
+              type: "error",
+              title: "Application Error",
+              description:
+                err.message ||
+                "Failed to create application. Please try again.",
+            });
+          }
+        },
+      },
+    );
   };
 
   const handleBack = () => {
     if (onBack) {
       onBack();
     } else {
-      router.back();
+      router.push("/dashboard/start-application");
     }
   };
 
@@ -87,7 +181,7 @@ export const AssessmentType: React.FC<AssessmentTypeProps> = ({
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
-      className="w-full flex flex-col justify-center select-text max-w-110"
+      className="w-full flex flex-col justify-center select-text max-w-110 mx-auto"
     >
       <div className="w-full flex justify-start mb-4">
         <button
@@ -96,14 +190,8 @@ export const AssessmentType: React.FC<AssessmentTypeProps> = ({
           className="flex items-center gap-2 text-neutral-secondary hover:text-neutral-primary font-semibold text-sm transition-colors cursor-pointer select-none focus:outline-none"
         >
           <FiArrowLeft className="w-4 h-4" />
-          Back
+          Back to Create Application
         </button>
-      </div>
-
-      <div className="w-full max-w-109.75 flex justify-start mb-6">
-        <div className="w-46.5 h-2.5 bg-primary-solid/15 rounded-[10px] overflow-hidden">
-          <div className="w-2/3 h-full bg-primary-solid rounded-[10px] transition-all duration-300" />
-        </div>
       </div>
 
       <div className="mb-6 text-left">
@@ -111,11 +199,11 @@ export const AssessmentType: React.FC<AssessmentTypeProps> = ({
           Select Assessment Type
         </h1>
         <p className="text-neutral-secondary text-sm leading-relaxed mt-1 font-normal">
-          Choose the assessment you are interested in
+          Choose the assessment type you are applying for
         </p>
       </div>
 
-      <div className="w-full flex flex-col gap-3 xl:gap-6">
+      <div className="w-full flex flex-col gap-4">
         {ASSESSMENT_OPTIONS.map((option, idx) => (
           <RoleCard
             key={option.id}
@@ -128,6 +216,12 @@ export const AssessmentType: React.FC<AssessmentTypeProps> = ({
           />
         ))}
       </div>
+
+      {isCreating && (
+        <div className="mt-4 text-center text-xs font-semibold text-[#a31d38] animate-pulse">
+          Initializing application...
+        </div>
+      )}
     </motion.div>
   );
 };

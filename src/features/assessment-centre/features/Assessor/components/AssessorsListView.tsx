@@ -4,8 +4,14 @@ import React, { useState } from "react";
 import { FiSearch, FiList, FiGrid } from "react-icons/fi";
 import { Select } from "@/src/components/ui/select";
 import { AssessorItem } from "@/features/assessment-centre/types";
-import { StaffStatusModal, StaffStatusModalMode } from "../../Staff/components/StaffStatusModal";
-import { useGetRetainedRequests } from "@/src/features/shared/centre/hooks";
+import {
+  StaffStatusModal,
+  StaffStatusModalMode,
+} from "../../Staff/components/StaffStatusModal";
+import {
+  useGetCentreAssessors,
+  useRevokeRetainedRequest,
+} from "@/src/features/shared/centre/hooks";
 
 import { useAppSelector } from "@/src/store/hooks";
 import { canDeactivateAssessor } from "@/features/assessment-centre/utils/rbac";
@@ -20,7 +26,10 @@ export const AssessorsListView: React.FC<AssessorsListViewProps> = ({
   onSelectAssessor,
   userRole,
 }) => {
-  const { data: retainedRequests = [], isLoading } = useGetRetainedRequests();
+  const { data: remoteAssessors = [], isLoading } = useGetCentreAssessors({
+    status: "all",
+  });
+  const revokeRetained = useRevokeRetainedRequest();
   const user = useAppSelector((state) => state.auth.user);
   const canDeactivate = canDeactivateAssessor(userRole || user?.role);
 
@@ -32,25 +41,29 @@ export const AssessorsListView: React.FC<AssessorsListViewProps> = ({
   const [deactivateModalMode, setDeactivateModalMode] =
     useState<StaffStatusModalMode>("confirm-deactivate");
 
-  const assessors: AssessorItem[] = retainedRequests.map((req) => ({
-    id: req.id,
-    name: req.assessorId ? `Assessor (${req.assessorId.slice(0, 8)})` : "Assessor",
-    email: req.assessorId ? `${req.assessorId.slice(0, 8)}@assessor.ng` : "assessor@ng.org",
-    trade: "Technical Trade",
-    role: "Assessor",
-    status:
-      req.status === "approved"
-        ? "Active"
-        : req.status === "pending"
-        ? "Pending"
-        : "Inactive",
-    assignedCount: 0,
-    experienceYears: 0,
-    tags: [],
-    assignedCandidatesCount: 0,
-    ongoingCount: 0,
-    completedCount: 0,
-  }));
+  const assessors: AssessorItem[] = remoteAssessors.map((item) => {
+    const sectorsStr = (item.sectors || []).map((s) => s.name).join(", ");
+    const primaryRole = (item.qualifications?.[0] as any) || "Assessor";
+    return {
+      id: item.id,
+      name: item.name || "Assessor",
+      email: item.email || "assessor@ng.org",
+      trade: sectorsStr || "General",
+      role: primaryRole,
+      status:
+        item.status === "approved"
+          ? "Active"
+          : item.status === "pending"
+          ? "Pending"
+          : "Inactive",
+      assignedCount: item.assignedCount || 0,
+      experienceYears: item.yearsOfExperience || 0,
+      tags: item.qualifications || [],
+      assignedCandidatesCount: item.assignedCount || 0,
+      ongoingCount: 0,
+      completedCount: 0,
+    };
+  });
 
   const filteredAssessors = assessors.filter((assessor) => {
     const matchesSearch =
@@ -80,6 +93,19 @@ export const AssessorsListView: React.FC<AssessorsListViewProps> = ({
     if (selectedIds.length === 0) return;
     setDeactivateModalMode("confirm-deactivate");
     setIsDeactivateModalOpen(true);
+  };
+
+  const handleConfirmDeactivate = () => {
+    const selectedItem = remoteAssessors.find((a) => selectedIds.includes(a.id));
+    if (selectedItem?.retainedRequestId) {
+      revokeRetained.mutate(selectedItem.retainedRequestId, {
+        onSuccess: () => {
+          setDeactivateModalMode("deactivated-success");
+        },
+      });
+    } else {
+      setDeactivateModalMode("deactivated-success");
+    }
   };
 
   const handleCloseDeactivateModal = () => {
