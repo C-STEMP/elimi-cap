@@ -32,6 +32,8 @@ import {
   useGetDeletionEligibility,
 } from "@/src/features/shared/account/hooks";
 import { useUploadFile } from "@/src/features/shared/storage/hooks";
+import { useGetBanks } from "@/src/features/shared/reference/hooks";
+import { SelectOption } from "@/src/components/ui/select";
 import { useAppDispatch, useAppSelector } from "@/src/store/hooks";
 import {
   setCentreInformation,
@@ -130,6 +132,56 @@ export const SettingsView: React.FC = () => {
   const [accountName, setAccountName] = useState(
     savedCentreInfo.nameOnAccount || "",
   );
+
+  const { data: remoteBanks = [], isLoading: isLoadingBanks } = useGetBanks(
+    centreCountry ? centreCountry.toLowerCase() : "nigeria",
+  );
+
+  const bankOptions: (string | SelectOption)[] = React.useMemo(() => {
+    if (remoteBanks && remoteBanks.length > 0) {
+      return remoteBanks.map((b) => ({
+        label: b.name,
+        value: b.name,
+      }));
+    }
+    return [
+      "Access Bank",
+      "Citibank",
+      "Ecobank",
+      "Fidelity Bank",
+      "First Bank",
+      "First City Monument Bank (FCMB)",
+      "Globus Bank",
+      "GTBank",
+      "Heritage Bank",
+      "Jaiz Bank",
+      "Keystone Bank",
+      "Kuda Bank",
+      "Moniepoint MFB",
+      "OPay",
+      "Optimus Bank",
+      "Palmpay",
+      "Parallex Bank",
+      "Polaris Bank",
+      "Premium Trust Bank",
+      "Providus Bank",
+      "Rubies MFB",
+      "Signature Bank",
+      "Stanbic IBTC Bank",
+      "Standard Chartered Bank",
+      "Sterling Bank",
+      "SunTrust Bank",
+      "TAJ Bank",
+      "Titan Trust Bank",
+      "Union Bank",
+      "UBA",
+      "Unity Bank",
+      "VFD Microfinance Bank",
+      "Wema Bank",
+      "Zenith Bank",
+      "Other",
+    ];
+  }, [remoteBanks]);
 
   const [rplCurrency, setRplCurrency] = useState("NGN (₦)");
   const [rplAmount, setRplAmount] = useState("45000");
@@ -576,7 +628,7 @@ export const SettingsView: React.FC = () => {
                   <Select
                     label="Nationality*"
                     placeholder="Select"
-                    options={["Nigerian", "Other"]}
+                    options={countries}
                     value={nationality}
                     onChange={(e) => setNationality(e.target.value)}
                   />
@@ -858,13 +910,8 @@ export const SettingsView: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Select
                     label="Bank*"
-                    placeholder="Select"
-                    options={[
-                      "GTBank",
-                      "Access Bank",
-                      "Zenith Bank",
-                      "First Bank",
-                    ]}
+                    placeholder={isLoadingBanks ? "Loading banks..." : "Select Bank"}
+                    options={bankOptions}
                     value={bank}
                     onChange={(e) => setBank(e.target.value)}
                   />

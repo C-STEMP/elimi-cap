@@ -27,6 +27,7 @@ export const AssessorPersonalInfo: React.FC = () => {
   const { getOnboarding, saveOnboarding } = useAssessorOnboarding();
   const saved = useAppSelector((s) => s.onboarding.assessorPersonalInfo);
 
+  const authUser = useAppSelector((s) => s.auth.user);
   const [passportFile, setPassportFile] = useState<File | null>(null);
   const [passportAssetId, setPassportAssetId] = useState<string>(
     saved.passportAssetId || "",
@@ -41,7 +42,7 @@ export const AssessorPersonalInfo: React.FC = () => {
     dob: saved.dob || "",
     gender: saved.gender || "",
     nationality: saved.nationality || "Nigerian",
-    email: saved.email || "",
+    email: saved.email || authUser?.email || "",
     phoneNumber: saved.phoneNumber || "",
     country: saved.country || "Nigeria",
     state: saved.state || "",
@@ -72,7 +73,7 @@ export const AssessorPersonalInfo: React.FC = () => {
           dob: p.dob || prev.dob,
           gender: p.gender || prev.gender,
           nationality: p.nationality || prev.nationality || "Nigerian",
-          email: c.emailAddress || prev.email,
+          email: c.emailAddress || prev.email || authUser?.email || "",
           phoneNumber: c.phoneNumber?.number || prev.phoneNumber,
           country: r.country || prev.country || "Nigeria",
           state: r.state || prev.state,
@@ -82,8 +83,10 @@ export const AssessorPersonalInfo: React.FC = () => {
         dispatch(setAssessorPersonalInfo(next));
         return next;
       });
+    } else if (authUser?.email && !form.email) {
+      update("email", authUser.email);
     }
-  }, [getOnboarding.data, dispatch]);
+  }, [getOnboarding.data, authUser?.email, dispatch]);
 
   const update = (field: keyof typeof form, value: string) => {
     setForm((prev) => {
@@ -119,7 +122,12 @@ export const AssessorPersonalInfo: React.FC = () => {
       setPassportError("");
     }
 
-    const result = personalInfoSchema.safeParse({ ...form, impairment: "No" });
+    const effectiveEmail = form.email.trim() || authUser?.email?.trim() || "";
+    const result = personalInfoSchema.safeParse({
+      ...form,
+      email: effectiveEmail,
+      impairment: "No",
+    });
     if (!result.success) {
       Object.assign(newErrors, extractZodErrors(result));
       valid = false;
@@ -140,6 +148,8 @@ export const AssessorPersonalInfo: React.FC = () => {
       return;
     }
 
+    const effectiveEmail = form.email.trim() || authUser?.email?.trim() || "";
+
     setIsSubmitting(true);
     saveOnboarding.mutate(
       {
@@ -152,7 +162,7 @@ export const AssessorPersonalInfo: React.FC = () => {
           nationality: form.nationality,
         },
         contactInformation: {
-          emailAddress: form.email,
+          emailAddress: effectiveEmail,
           phoneNumber: { countryCode: "+234", number: form.phoneNumber },
         },
         residentialAddress: {
@@ -280,11 +290,12 @@ export const AssessorPersonalInfo: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               label={<span>Email Address<span className="text-primary-solid ml-0.5">*</span></span>}
-              placeholder="Select"
+              placeholder="yourname@email.com"
               type="email"
-              value={form.email}
-              onChange={(e) => update("email", e.target.value)}
-              error={errors.email}
+              value={form.email || authUser?.email || ""}
+              disabled={true}
+              className="bg-gray-100/70 cursor-not-allowed opacity-80"
+              helperText="Auto-filled from your registered account email."
             />
             <PhoneInput
               label={<span>Phone Number<span className="text-primary-solid ml-0.5">*</span></span>}

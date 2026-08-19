@@ -59,6 +59,12 @@ import {
   useGetRetainedRequests,
 } from "@/src/features/shared/centre/hooks";
 import { useGetApplications } from "@/src/features/shared/applications/hooks";
+import { useGetMe } from "@/src/features/shared/account/hooks";
+import {
+  saveCentreId,
+  saveCentreRole,
+  getCentreRole,
+} from "@/src/lib/auth-storage";
 import {
   getPermittedTabs,
   normalizeRole,
@@ -69,9 +75,25 @@ import {
 
 export const AssessmentCentreDashboardPage: React.FC = () => {
   const user = useAppSelector((state) => state.auth.user);
-  const [activeRole, setActiveRole] = useState<RoleType>(
-    normalizeRole(user?.centreRole || user?.role),
+  const { data: meData } = useGetMe();
+  const activeCentre = meData?.centres?.[0];
+
+  React.useEffect(() => {
+    if (activeCentre?.centreId) {
+      saveCentreId(activeCentre.centreId);
+    }
+    if (activeCentre?.role) {
+      saveCentreRole(activeCentre.role);
+    }
+  }, [activeCentre]);
+
+  const activeRole: RoleType = normalizeRole(
+    activeCentre?.role ||
+      user?.centreRole ||
+      (typeof window !== "undefined" ? getCentreRole() : null) ||
+      user?.role,
   );
+
   const [activeTab, setActiveTab] = useState<AssessmentCentreTab>("overview");
 
   const { data: dashboardData } = useGetCentreDashboard();
@@ -86,13 +108,13 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
     applications.length > 0 ||
     staff.length > 0;
 
-  const handleRoleChange = (newRole: RoleType) => {
-    setActiveRole(newRole);
-    const permitted = getPermittedTabs(newRole);
+  // Auto-switch to overview if the user's role is restricted on the current tab
+  React.useEffect(() => {
+    const permitted = getPermittedTabs(activeRole);
     if (!permitted.includes(activeTab)) {
       setActiveTab("overview");
     }
-  };
+  }, [activeRole, activeTab]);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState(false);
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
@@ -249,26 +271,6 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
             transition={{ duration: 0.4, ease: "easeOut" }}
             className="flex flex-col gap-6"
           >
-            <div className="flex items-center justify-between gap-4 flex-wrap">
-              <div className="flex items-center gap-1.5 bg-white border border-gray-200 p-1 rounded-xl text-xs font-semibold">
-                <span className="px-2 text-gray-500 font-bold">Role:</span>
-                {(["centre", "admin", "staff"] as RoleType[]).map((r) => (
-                  <button
-                    key={r}
-                    type="button"
-                    onClick={() => handleRoleChange(r)}
-                    className={`px-3 py-1 rounded-lg capitalize transition-all cursor-pointer ${
-                      activeRole === r
-                        ? "bg-[#a31d38] text-white shadow-2xs font-bold"
-                        : "text-gray-600 hover:bg-gray-100"
-                    }`}
-                  >
-                    {r === "centre" ? "Centre (Super Admin)" : r === "admin" ? "Admin" : "Staff"}
-                  </button>
-                ))}
-              </div>
-            </div>
-
             {hasActivity ? (
               <>
                 <div

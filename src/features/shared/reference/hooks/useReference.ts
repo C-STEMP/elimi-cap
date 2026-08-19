@@ -8,6 +8,7 @@ import {
   getCentresApi,
   getAwardingBodiesApi,
   getThirdPartyReportTemplateApi,
+  getBanksApi,
 } from "../api/reference.api";
 
 export const REFERENCE_QUERY_KEYS = {
@@ -22,6 +23,7 @@ export const REFERENCE_QUERY_KEYS = {
     ["catalogue", "centres", params] as const,
   awardingBodies: ["reference", "awarding-bodies"] as const,
   template: ["reference", "third-party-template"] as const,
+  banks: (country?: string) => ["reference", "banks", country] as const,
 };
 
 export function useGetSectors() {
@@ -84,19 +86,29 @@ export function useGetThirdPartyReportTemplate() {
   });
 }
 
+export function useGetBanks(country: string = "nigeria") {
+  return useQuery({
+    queryKey: REFERENCE_QUERY_KEYS.banks(country),
+    queryFn: () => getBanksApi(country),
+    staleTime: 1000 * 60 * 60 * 24, // 24 hours caching per API spec
+  });
+}
+
 /**
  * Composite hook grouping Reference / Catalogue data operations
  */
-export function useReference() {
+export function useReference(country: string = "nigeria") {
   const sectors = useGetSectors();
   const centres = useGetCentres();
   const awardingBodies = useGetAwardingBodies();
   const thirdPartyTemplate = useGetThirdPartyReportTemplate();
+  const banks = useGetBanks(country);
 
   return {
     sectors,
     centres,
     awardingBodies,
     thirdPartyTemplate,
+    banks,
   };
 }

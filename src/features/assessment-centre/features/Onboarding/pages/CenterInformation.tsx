@@ -17,8 +17,10 @@ import { ASSESSMENT_CENTRE_ROUTES } from "@/features/assessment-centre/utils/cen
 
 import { useOnboarding } from "@/src/features/assessment-centre/features/Onboarding/hooks";
 import { useUploadFile } from "@/src/features/shared/storage/hooks";
+import { useGetBanks } from "@/src/features/shared/reference/hooks";
 import { useAppDispatch, useAppSelector } from "@/src/store/hooks";
 import { setCentreInformation } from "@/src/store/slices/onboardingSlice";
+import { SelectOption } from "@/src/components/ui/select";
 
 export const CenterInformation: React.FC = () => {
   const router = useRouter();
@@ -49,6 +51,56 @@ export const CenterInformation: React.FC = () => {
     accountNumber: savedCentreInfo.accountNumber || "",
     nameOnAccount: savedCentreInfo.nameOnAccount || "",
   });
+
+  const { data: remoteBanks = [], isLoading: isLoadingBanks } = useGetBanks(
+    form.country ? form.country.toLowerCase() : "nigeria",
+  );
+
+  const bankOptions: (string | SelectOption)[] = React.useMemo(() => {
+    if (remoteBanks && remoteBanks.length > 0) {
+      return remoteBanks.map((b) => ({
+        label: b.name,
+        value: b.name,
+      }));
+    }
+    return [
+      "Access Bank",
+      "Citibank",
+      "Ecobank",
+      "Fidelity Bank",
+      "First Bank",
+      "First City Monument Bank (FCMB)",
+      "Globus Bank",
+      "GTBank",
+      "Heritage Bank",
+      "Jaiz Bank",
+      "Keystone Bank",
+      "Kuda Bank",
+      "Moniepoint MFB",
+      "OPay",
+      "Optimus Bank",
+      "Palmpay",
+      "Parallex Bank",
+      "Polaris Bank",
+      "Premium Trust Bank",
+      "Providus Bank",
+      "Rubies MFB",
+      "Signature Bank",
+      "Stanbic IBTC Bank",
+      "Standard Chartered Bank",
+      "Sterling Bank",
+      "SunTrust Bank",
+      "TAJ Bank",
+      "Titan Trust Bank",
+      "Union Bank",
+      "UBA",
+      "Unity Bank",
+      "VFD Microfinance Bank",
+      "Wema Bank",
+      "Zenith Bank",
+      "Other",
+    ];
+  }, [remoteBanks]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -479,18 +531,8 @@ export const CenterInformation: React.FC = () => {
                   Bank<span className="text-primary-solid ml-0.5">*</span>
                 </span>
               }
-              placeholder="Select"
-              options={[
-                "Access Bank",
-                "GTBank",
-                "First Bank",
-                "Zenith Bank",
-                "UBA",
-                "Kuda Bank",
-                "Moniepoint",
-                "OPay",
-                "Other",
-              ]}
+              placeholder={isLoadingBanks ? "Loading banks..." : "Select Bank"}
+              options={bankOptions}
               value={form.bank}
               error={errors.bank}
               onChange={(e) => update("bank", e.target.value)}
