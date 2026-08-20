@@ -22,15 +22,15 @@ export function middleware(request: NextRequest) {
   const isAuthenticated = Boolean(token);
   const isOnboarded = isAuthenticated && isOnboardedCookie !== "false";
 
-  const isOnboardingRoute =
-    pathname.startsWith("/onboarding") || pathname.startsWith("/rpl");
+  const isOnboardingRoute = pathname.startsWith("/onboarding");
+  const isRplRoute = pathname.startsWith("/rpl");
   const isDashboardRoute =
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/assessment-centre/dashboard") ||
     pathname.startsWith("/applications") ||
     pathname.startsWith("/evidence-vault");
 
-  if (!isAuthenticated && (isDashboardRoute || isOnboardingRoute)) {
+  if (!isAuthenticated && (isDashboardRoute || isOnboardingRoute || isRplRoute)) {
     const signinUrl = new URL("/signin", request.url);
     signinUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(signinUrl);
