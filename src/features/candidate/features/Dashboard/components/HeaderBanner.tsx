@@ -38,7 +38,7 @@ export const HeaderBanner: React.FC<HeaderBannerProps> = ({
   breadcrumbs,
   showCreateButton = true,
   createButtonText = "Create Application",
-  createButtonHref = "/dashboard/start-application",
+  createButtonHref = "/rpl/personal-info",
   rightAction,
 }) => {
   const pathname = usePathname();
