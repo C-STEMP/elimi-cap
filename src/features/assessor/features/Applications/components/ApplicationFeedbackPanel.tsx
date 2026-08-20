@@ -6,14 +6,29 @@ import { FiCheckCircle } from "react-icons/fi";
 import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
 
-export const ApplicationFeedbackPanel: React.FC = () => {
+import { useGetApplicationHistory } from "@/src/features/shared/applications/hooks";
+
+interface ApplicationFeedbackPanelProps {
+  applicationId?: string;
+}
+
+export const ApplicationFeedbackPanel: React.FC<
+  ApplicationFeedbackPanelProps
+> = ({ applicationId }) => {
   const { toast } = useToast();
   const [feedbackComment, setFeedbackComment] = useState("");
-  const [comments, setComments] = useState<string[]>([
-    "Lorem ipsum dolor Lorem ipsum dolor Lorem ipsum dolor Lorem ipsum dolor Lorem ipsum dolor Lorem ipsum dolor",
-    "Lorem ipsum dolor Lorem ipsum dolor Lorem ipsum dolor Lorem ipsum dolor Lorem ipsum dolor Lorem ipsum dolor",
-  ]);
+  const [localComments, setLocalComments] = useState<string[]>([]);
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
+
+  const { data: history = [] } = useGetApplicationHistory(applicationId || "");
+
+  const historyFeedbacks = history
+    .filter((h) => h.feedback)
+    .map((h) => ({
+      text: h.feedback as string,
+      date: h.createdAt ? new Date(h.createdAt).toLocaleDateString("en-GB") : undefined,
+      version: h.versionNo,
+    }));
 
   const handleSendFeedback = () => {
     if (!feedbackComment.trim()) {
@@ -24,7 +39,7 @@ export const ApplicationFeedbackPanel: React.FC = () => {
       });
       return;
     }
-    setComments([feedbackComment, ...comments]);
+    setLocalComments([feedbackComment, ...localComments]);
     setFeedbackComment("");
     setIsSuccessOpen(true);
   };
@@ -35,7 +50,7 @@ export const ApplicationFeedbackPanel: React.FC = () => {
         <h4 className="font-bold text-sm text-neutral-primary">Send Feedback</h4>
         <textarea
           rows={4}
-          placeholder="Type Here"
+          placeholder="Type feedback for candidate..."
           value={feedbackComment}
           onChange={(e) => setFeedbackComment(e.target.value)}
           className="w-full bg-gray-50/70 border border-gray-200 rounded-xl p-3 text-xs text-neutral-primary focus:outline-none focus:ring-2 focus:ring-amber-500/20"
@@ -52,14 +67,26 @@ export const ApplicationFeedbackPanel: React.FC = () => {
 
       <div className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex flex-col gap-3">
         <h4 className="font-bold text-sm text-neutral-primary">Past Comments</h4>
-        {comments.length > 0 ? (
+        {localComments.length > 0 || historyFeedbacks.length > 0 ? (
           <div className="flex flex-col gap-2.5 max-h-80 overflow-y-auto pr-1">
-            {comments.map((cmt, idx) => (
+            {localComments.map((cmt, idx) => (
               <div
-                key={idx}
-                className="bg-gray-100/80 rounded-xl p-3 text-xs text-neutral-primary leading-relaxed border border-gray-100"
+                key={`local-${idx}`}
+                className="bg-amber-50/80 rounded-xl p-3 text-xs text-neutral-primary leading-relaxed border border-amber-200"
               >
+                <div className="text-[10px] text-amber-700 font-bold mb-1">New Feedback</div>
                 {cmt}
+              </div>
+            ))}
+            {historyFeedbacks.map((cmt, idx) => (
+              <div
+                key={`hist-${idx}`}
+                className="bg-gray-50 rounded-xl p-3 text-xs text-neutral-primary leading-relaxed border border-gray-100"
+              >
+                <div className="text-[10px] text-gray-400 font-medium mb-1">
+                  Version {cmt.version} {cmt.date ? `• ${cmt.date}` : ""}
+                </div>
+                {cmt.text}
               </div>
             ))}
           </div>

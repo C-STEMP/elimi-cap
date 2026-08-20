@@ -39,28 +39,66 @@ import { AssessorJobDetailView } from "../../JobBoard/components/AssessorJobDeta
 import { AssessorSettingsView } from "../../Settings/components/AssessorSettingsView";
 
 
+import { useGetCentres } from "@/src/features/shared/reference/hooks";
+
 export const AssessorDashboard: React.FC = () => {
   const user = useAppSelector((state) => state.auth.user);
   const userName = user?.fullName || user?.email?.split("@")[0] || "Assessor";
 
   const { data: centresData } = useGetAssessorCentres();
   const { data: applicationsData = [] } = useGetAssessorApplications();
+  const { data: remoteCentres = [] } = useGetCentres();
 
-  const centres: AssessorCentreItem[] = (centresData ?? []).map((r) => ({
-    id: r.id,
-    name: r.centreId,
-    role: "Assessor",
-    candidateAssigned: "-",
-    status:
-      r.status === "approved"
-        ? "Active"
-        : r.status === "pending"
-        ? "Pending"
-        : "Inactive",
-    joinedAt: r.respondedAt
-      ? new Date(r.respondedAt).toLocaleDateString("en-GB")
-      : "-",
-  }));
+  const centresMap = React.useMemo(() => {
+    const map = new Map<string, string>();
+    const list = Array.isArray(remoteCentres)
+      ? remoteCentres
+      : (remoteCentres as any)?.data || [];
+    list.forEach((c: any) => {
+      if (c && c.id && c.name) {
+        map.set(c.id, c.name);
+        map.set(c.id.trim(), c.name);
+        map.set(c.id.trim().toLowerCase(), c.name);
+      }
+    });
+    return map;
+  }, [remoteCentres]);
+
+  const centres: AssessorCentreItem[] = (
+    Array.isArray(centresData) ? centresData : (centresData as any)?.data || []
+  ).map((r: any) => {
+    const rawCentreId = r.centreId || r.id;
+    const directName = r.centre?.name || r.centreName;
+    const resolvedName =
+      directName ||
+      centresMap.get(rawCentreId) ||
+      centresMap.get(rawCentreId?.trim()) ||
+      centresMap.get(rawCentreId?.trim()?.toLowerCase()) ||
+      rawCentreId;
+
+    const assignedCount = applicationsData.filter(
+      (a) => a.centreId === rawCentreId || a.centreId === r.id,
+    ).length;
+
+    return {
+      id: r.id,
+      centreId: rawCentreId,
+      name: resolvedName,
+      role: "Assessor",
+      candidateAssigned: assignedCount,
+      status:
+        r.status === "approved"
+          ? "Active"
+          : r.status === "pending"
+          ? "Pending"
+          : "Inactive",
+      joinedAt: r.respondedAt
+        ? new Date(r.respondedAt).toLocaleDateString("en-GB")
+        : r.requestedAt
+        ? new Date(r.requestedAt).toLocaleDateString("en-GB")
+        : "-",
+    };
+  });
 
   // Derive real stat counts from API data
   const totalApplications = applicationsData.length;
@@ -116,10 +154,14 @@ export const AssessorDashboard: React.FC = () => {
               setActiveTab("Applications");
               setSelectedApplication({
                 id: app.id,
-                candidateName: app.candidateId,
-                trade: app.type,
+                candidateName:
+                  app.candidate?.name ||
+                  (app.candidate?.firstName
+                    ? `${app.candidate.firstName} ${app.candidate.lastName || ""}`.trim()
+                    : app.candidateId),
+                trade: app.trade?.name || app.tradeId || (app.type === "NSQ" ? "Standard Assessment" : "RPL"),
                 assessmentType: app.type,
-                status: app.status === "certified" ? "Completed" : "Pending",
+                status: app.status === "certified" ? "Completed" : app.status === "in_progress" ? "Ongoing" : "Pending",
                 submittedAt: app.createdAt,
               });
             }}
@@ -130,6 +172,10 @@ export const AssessorDashboard: React.FC = () => {
             <AssessorCentreDetailView
               centre={selectedCentre}
               onBack={() => setSelectedCentre(null)}
+              onSelectApplication={(appRecord) => {
+                setActiveTab("Applications");
+                setSelectedApplication(appRecord);
+              }}
             />
           ) : (
             <AssessorCentresView

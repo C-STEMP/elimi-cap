@@ -22,11 +22,12 @@ export interface AssessorJobRecord {
 }
 
 function mapJobPostingToRecord(job: JobPosting): AssessorJobRecord {
+  const tradeTitle = job.trade?.name || job.tradeId || "Trade";
   return {
     id: job.id,
-    company: "CSTEMP EDTECH",
+    company: "Assessment Centre",
     title: job.title,
-    trade: job.tradeId,
+    trade: tradeTitle,
     duration: job.duration ?? "N/A",
     deadline: job.deadline
       ? new Date(job.deadline).toLocaleDateString("en-US", {

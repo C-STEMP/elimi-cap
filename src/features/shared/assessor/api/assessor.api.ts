@@ -49,9 +49,10 @@ export async function applyToJobPostingApi(
 export async function getAssessorRetainedRequestsApi(): Promise<
   RetainedAssessorRequest[]
 > {
-  return capFetch<RetainedAssessorRequest[]>("/assessor/retained-requests", {
+  const res = await capFetch<RetainedAssessorRequest[] | { data: RetainedAssessorRequest[]; meta?: unknown }>("/assessor/retained-requests", {
     method: "GET",
   });
+  return Array.isArray(res) ? res : (res as any)?.data || [];
 }
 
 export async function requestRetainedAssessorApi(

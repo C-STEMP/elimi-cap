@@ -143,9 +143,10 @@ export async function getCentresApi(params?: {
   const query = searchParams.toString() ? `?${searchParams.toString()}` : "";
 
   try {
-    return await capFetch<Centre[]>(`/centres${query}`, {
+    const res = await capFetch<Centre[] | { data: Centre[]; meta?: unknown }>(`/centres${query}`, {
       method: "GET",
     });
+    return Array.isArray(res) ? res : (res as any)?.data || [];
   } catch (error: any) {
     if (
       error?.status === 404 ||

@@ -1,4 +1,9 @@
 import { capFetch } from "@/src/lib/api/cap";
+import type {
+  PersonalDetails,
+  ContactInformation,
+  ResidentialAddress,
+} from "@/src/features/shared/account/api";
 
 export type ApplicationType = "RPL" | "NSQ";
 
@@ -8,6 +13,19 @@ export type ApplicationStatus =
   | "certified"
   | "rejected"
   | "withdrawn";
+
+export interface ApplicationCandidateRef {
+  id: string;
+  firstName: string;
+  lastName: string;
+  name: string;
+}
+
+export interface ApplicationNamedRef {
+  id: string;
+  name: string;
+  slug?: string;
+}
 
 export interface Application {
   id: string;
@@ -19,6 +37,13 @@ export interface Application {
   currentStageKey: string;
   createdAt: string;
   updatedAt?: string;
+  submittedAt?: string | null;
+  sectorId?: string | null;
+  tradeId?: string | null;
+  candidate?: ApplicationCandidateRef;
+  centre?: ApplicationNamedRef;
+  sector?: ApplicationNamedRef | null;
+  trade?: ApplicationNamedRef | null;
 }
 
 export interface CreateApplicationPayload {
@@ -42,6 +67,68 @@ export interface ApplicationStage {
     | "rejected";
   enteredAt?: string | null;
   deadline?: string | null;
+  amountMinorUnits?: string;
+  currency?: string;
+  receipt?: {
+    assetId: string;
+    url?: string | null;
+  } | null;
+}
+
+export interface CurrentOccupationHistory {
+  company: string;
+  jobTitle: string;
+  employmentType: string;
+  startDate: string;
+  endDate?: string;
+  keyResponsibilities: string;
+}
+
+export interface CurrentOccupation {
+  occupation: string;
+  yearsOfExperience: number;
+  employmentHistory: CurrentOccupationHistory[];
+}
+
+export interface EvidenceCandidateCanProvide {
+  resume?: boolean;
+  workSamples?: boolean;
+  employmentLetter?: boolean;
+  certificates?: boolean;
+  statementsOfAttainment?: boolean;
+  thirdPartyReportsOrReferences?: boolean;
+  jobDescriptions?: boolean;
+  photosOrVideosOfWork?: boolean;
+  other?: boolean;
+}
+
+export interface AssessmentDeclaration {
+  infoProvidedIsAccurate?: boolean;
+  understandsDoesNotGuaranteeCertification?: boolean;
+  understandsThatNeedsToProvideSufficientEvidenceToDemonstrateCompetence?: boolean;
+  agreesToTermsAndPrivacyPolicy?: boolean;
+}
+
+export interface ApplicationDetail extends Application {
+  unitIds?: string[];
+  identityVerified?: boolean;
+  identityFieldsLocked?: boolean;
+  reasonForSeekingRPL?: string | null;
+  evidenceCandidateCanProvide?: EvidenceCandidateCanProvide | null;
+  assessmentDeclaration?: AssessmentDeclaration | null;
+  personalInformation?: {
+    personalDetails?: PersonalDetails;
+    contactInformation?: ContactInformation;
+    residentialAddress?: ResidentialAddress;
+  };
+  currentOccupation?: CurrentOccupation | null;
+  frozenProfile?: Record<string, unknown> | null;
+  internalVerifier?: {
+    assessorId: string;
+    name: string;
+    qualifications: string[];
+    assignedAt: string;
+  } | null;
 }
 
 export interface ApplicationVersion {

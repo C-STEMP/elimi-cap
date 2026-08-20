@@ -14,6 +14,7 @@ import { ApplyToCentreModal } from "./ApplyToCentreModal";
 
 export interface AssessorCentreItem {
   id: string;
+  centreId?: string;
   name: string;
   role: string;
   candidateAssigned: number | string;
