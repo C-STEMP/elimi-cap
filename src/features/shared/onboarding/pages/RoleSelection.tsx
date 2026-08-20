@@ -24,22 +24,17 @@ const ROLES: RoleOption[] = [
   {
     id: "candidate",
     title: "Candidate/Learner",
-    description: "Lorem ipsum dolor",
+    description: "Recognition of Prior Learning & Skills Assessment",
   },
   {
     id: "quality-assurance",
     title: "Quality Assurance",
-    description: "Competency assessment Portal",
+    description: "Competency Assessment & Quality Assurance",
   },
   {
     id: "assessment-centre",
     title: "Assessment Centre",
-    description: "Lorem ipsum dolor",
-  },
-  {
-    id: "awarding-body",
-    title: "Awarding Body",
-    description: "Lorem ipsum dolor",
+    description: "Accredited Training & Assessment Centre",
   },
 ];
 

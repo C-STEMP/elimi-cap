@@ -519,12 +519,55 @@ export async function getCentreJobPostingsApi(params?: {
   return Array.isArray(res) ? res : (res as any)?.data || [];
 }
 
+function toIsoDateTimeString(dateStr?: string): string {
+  if (!dateStr || !dateStr.trim()) {
+    const d = new Date();
+    d.setDate(d.getDate() + 30);
+    return d.toISOString();
+  }
+  const trimmed = dateStr.trim();
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(trimmed)) {
+    const parsed = new Date(trimmed);
+    return isNaN(parsed.getTime()) ? new Date().toISOString() : parsed.toISOString();
+  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    const [y, m, d] = trimmed.split("-").map(Number);
+    return new Date(Date.UTC(y, m - 1, d, 23, 59, 59)).toISOString();
+  }
+  const parts = trimmed.split(/[/.-]/);
+  if (parts.length === 3) {
+    if (parts[0].length === 4) {
+      const [y, m, d] = parts.map(Number);
+      return new Date(Date.UTC(y, m - 1, d, 23, 59, 59)).toISOString();
+    }
+    const p0 = parseInt(parts[0], 10);
+    const p1 = parseInt(parts[1], 10);
+    let year = parseInt(parts[2], 10);
+    if (year < 100) year += 2000;
+
+    let day = p0;
+    let month = p1;
+    if (p0 <= 12 && p1 > 12) {
+      month = p0;
+      day = p1;
+    }
+    const d = new Date(Date.UTC(year, month - 1, day, 23, 59, 59));
+    return isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
+  }
+  const parsed = new Date(trimmed);
+  return isNaN(parsed.getTime()) ? new Date().toISOString() : parsed.toISOString();
+}
+
 export async function createCentreJobPostingApi(
   payload: CreateJobPostingPayload,
 ): Promise<JobPosting> {
+  const normalizedPayload = {
+    ...payload,
+    deadline: toIsoDateTimeString(payload.deadline),
+  };
   return capFetch<JobPosting>("/centre/job-postings", {
     method: "POST",
-    data: payload,
+    data: normalizedPayload,
   });
 }
 
