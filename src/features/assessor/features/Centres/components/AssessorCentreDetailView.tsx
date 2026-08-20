@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   FiSearch,
   FiList,
@@ -9,73 +9,80 @@ import {
 } from "react-icons/fi";
 import { Select } from "@/src/components/ui/select";
 import type { AssessorCentreItem } from "./AssessorCentresView";
-
-export interface AssignedCandidateItem {
-  id: string;
-  role: string;
-  candidateName: string;
-  trade: string;
-  assessmentType: string;
-  status: "Ongoing" | "Completed" | "Pending";
-  assignedAt: string;
-}
-
-const MOCK_ASSIGNED_CANDIDATES: AssignedCandidateItem[] = [
-  {
-    id: "ac1",
-    role: "Panelist",
-    candidateName: "Oguntade James",
-    trade: "Masonry",
-    assessmentType: "RPL",
-    status: "Ongoing",
-    assignedAt: "07/22/2026",
-  },
-  {
-    id: "ac2",
-    role: "Panelist",
-    candidateName: "Favour Smith",
-    trade: "Carpentry",
-    assessmentType: "RPL",
-    status: "Ongoing",
-    assignedAt: "07/22/2026",
-  },
-  {
-    id: "ac3",
-    role: "Internal Verifier",
-    candidateName: "Samson David",
-    trade: "Plumbing",
-    assessmentType: "NSQ",
-    status: "Ongoing",
-    assignedAt: "07/22/2026",
-  },
-  {
-    id: "ac4",
-    role: "Internal Verifier",
-    candidateName: "Oriade Sophie",
-    trade: "Painting",
-    assessmentType: "NSQ",
-    status: "Completed",
-    assignedAt: "07/22/2026",
-  },
-];
+import { useGetAssessorApplications } from "../../Applications/hooks";
+import type { AssessorApplicationRecord } from "../../Applications/components/AssessorApplicationsView";
+import { Loader } from "@/src/components/ui/loader";
 
 interface AssessorCentreDetailViewProps {
   centre: AssessorCentreItem;
   onBack: () => void;
+  onSelectApplication?: (app: AssessorApplicationRecord) => void;
 }
 
 export const AssessorCentreDetailView: React.FC<
   AssessorCentreDetailViewProps
-> = ({ centre, onBack }) => {
+> = ({ centre, onBack, onSelectApplication }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [tradeFilter, setTradeFilter] = useState("All");
   const [typeFilter, setTypeFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
 
-  const [candidates] = useState<AssignedCandidateItem[]>(
-    centre.status === "Inactive" ? [] : MOCK_ASSIGNED_CANDIDATES,
-  );
+  const { data: allApplications = [], isLoading } = useGetAssessorApplications();
+
+  const targetCentreId = centre.centreId || centre.id;
+
+  const centreApplications = useMemo(() => {
+    return allApplications.filter(
+      (a) => a.centreId === targetCentreId || a.centreId === centre.id,
+    );
+  }, [allApplications, targetCentreId, centre.id]);
+
+  const candidates = useMemo(() => {
+    return centreApplications.map((app) => {
+      const candidateName =
+        app.candidate?.name ||
+        (app.candidate?.firstName
+          ? `${app.candidate.firstName} ${app.candidate.lastName || ""}`.trim()
+          : app.candidateId);
+      const tradeName = app.trade?.name || app.tradeId || (app.type === "NSQ" ? "Standard Assessment" : "RPL");
+      const statusLabel: "Ongoing" | "Completed" | "Pending" =
+        app.status === "certified"
+          ? "Completed"
+          : app.status === "in_progress"
+          ? "Ongoing"
+          : "Pending";
+
+      return {
+        id: app.id,
+        role: "Assessor",
+        candidateName,
+        trade: tradeName,
+        assessmentType: app.type,
+        status: statusLabel,
+        assignedAt: app.createdAt
+          ? new Date(app.createdAt).toLocaleDateString("en-GB")
+          : "-",
+        rawApp: app,
+      };
+    });
+  }, [centreApplications]);
+
+  const availableTrades = useMemo(() => {
+    const set = new Set<string>();
+    candidates.forEach((c) => {
+      if (c.trade) set.add(c.trade);
+    });
+    return Array.from(set);
+  }, [candidates]);
+
+  const availableTypes = useMemo(() => {
+    const set = new Set<string>();
+    candidates.forEach((c) => {
+      if (c.assessmentType) set.add(c.assessmentType);
+    });
+    return Array.from(set);
+  }, [candidates]);
 
   const filteredCandidates = candidates.filter((c) => {
     const matchesSearch =
@@ -98,14 +105,21 @@ export const AssessorCentreDetailView: React.FC<
     <div className="w-full bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col gap-6 select-text min-h-125">
       {/* Top Title & Status Badge Bar */}
       <div className="flex items-center justify-between border-b border-gray-100 pb-4">
-        <h2 className="text-lg font-bold text-neutral-primary">
-          Assigned Candidates
-        </h2>
+        <div className="flex items-center gap-3">
+          <h2 className="text-lg font-bold text-neutral-primary">
+            Assigned Candidates
+          </h2>
+          <span className="text-xs text-gray-500 font-medium">
+            ({centre.name})
+          </span>
+        </div>
 
         <span
           className={`inline-flex items-center px-3.5 py-1 rounded-full text-xs font-semibold ${
             centre.status === "Active"
               ? "bg-emerald-100 text-emerald-700"
+              : centre.status === "Pending"
+              ? "bg-amber-100 text-amber-700"
               : "bg-gray-200 text-gray-700"
           }`}
         >
@@ -127,23 +141,27 @@ export const AssessorCentreDetailView: React.FC<
         </div>
 
         <div className="flex items-center gap-3 w-full md:w-auto justify-end flex-wrap">
-          <div className="w-28">
-            <Select
-              placeholder="Trade"
-              value={tradeFilter === "All" ? "" : tradeFilter}
-              onChange={(e) => setTradeFilter(e.target.value || "All")}
-              options={["Masonry", "Carpentry", "Plumbing", "Painting"]}
-            />
-          </div>
+          {availableTrades.length > 0 && (
+            <div className="w-32">
+              <Select
+                placeholder="Trade"
+                value={tradeFilter === "All" ? "" : tradeFilter}
+                onChange={(e) => setTradeFilter(e.target.value || "All")}
+                options={availableTrades}
+              />
+            </div>
+          )}
 
-          <div className="w-36">
-            <Select
-              placeholder="Assessment Type"
-              value={typeFilter === "All" ? "" : typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value || "All")}
-              options={["RPL", "NSQ"]}
-            />
-          </div>
+          {availableTypes.length > 0 && (
+            <div className="w-36">
+              <Select
+                placeholder="Assessment Type"
+                value={typeFilter === "All" ? "" : typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value || "All")}
+                options={availableTypes}
+              />
+            </div>
+          )}
 
           <div className="w-28">
             <Select
@@ -182,7 +200,9 @@ export const AssessorCentreDetailView: React.FC<
       </div>
 
       {/* Candidates Table or Empty View */}
-      {filteredCandidates.length > 0 ? (
+      {isLoading ? (
+        <Loader fullscreen={false} size="small" tip="Loading assigned candidates..." className="p-8" />
+      ) : filteredCandidates.length > 0 ? (
         <div className="w-full overflow-x-auto max-w-full rounded-2xl border border-gray-100">
           <table className="w-full text-left text-xs sm:text-sm border-collapse min-w-[650px]">
             <thead>
@@ -213,6 +233,8 @@ export const AssessorCentreDetailView: React.FC<
                       className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
                         c.status === "Completed"
                           ? "bg-emerald-100 text-emerald-700"
+                          : c.status === "Ongoing"
+                          ? "bg-rose-100 text-rose-700"
                           : "bg-amber-100 text-amber-700"
                       }`}
                     >
@@ -223,6 +245,18 @@ export const AssessorCentreDetailView: React.FC<
                   <td className="p-3.5 text-right">
                     <button
                       type="button"
+                      onClick={() => {
+                        if (onSelectApplication) {
+                          onSelectApplication({
+                            id: c.id,
+                            candidateName: c.candidateName,
+                            trade: c.trade,
+                            assessmentType: c.assessmentType,
+                            status: c.status === "Completed" ? "Completed" : c.status === "Ongoing" ? "Ongoing" : "Pending",
+                            submittedAt: c.assignedAt,
+                          });
+                        }
+                      }}
                       className="font-bold text-xs text-neutral-primary hover:text-primary-solid underline cursor-pointer"
                     >
                       View
@@ -239,14 +273,14 @@ export const AssessorCentreDetailView: React.FC<
             <FiFolder className="w-8 h-8" />
           </div>
           <h3 className="text-base sm:text-lg font-bold text-neutral-primary">
-            No applications yet
+            No candidates assigned yet
           </h3>
           <p className="text-xs sm:text-sm text-neutral-secondary mt-1 max-w-sm leading-relaxed">
-            Click &quot;Create Application&quot; in the top header to get started
-            with your Recognition of Prior Learning journey.
+            Candidates assigned to you at this assessment centre will appear here.
           </p>
         </div>
       )}
     </div>
   );
 };
+

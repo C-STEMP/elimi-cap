@@ -31,13 +31,25 @@ function mapApplicationToRecord(app: Application): AssessorApplicationRecord {
     rejected: "Archived",
     withdrawn: "Archived",
   };
+  const candidateName =
+    app.candidate?.name ||
+    (app.candidate?.firstName
+      ? `${app.candidate.firstName} ${app.candidate.lastName || ""}`.trim()
+      : app.candidateId);
+  const tradeName =
+    app.trade?.name ||
+    app.tradeId ||
+    (app.type === "NSQ" ? "Standard Assessment" : "RPL");
+
   return {
     id: app.id,
-    candidateName: app.candidateId,
-    trade: app.currentStageKey,
+    candidateName,
+    trade: tradeName,
     assessmentType: app.type,
     status: statusMap[app.status] ?? "Pending",
-    submittedAt: app.createdAt
+    submittedAt: app.submittedAt
+      ? new Date(app.submittedAt).toLocaleDateString("en-GB")
+      : app.createdAt
       ? new Date(app.createdAt).toLocaleDateString("en-GB")
       : "-",
   };

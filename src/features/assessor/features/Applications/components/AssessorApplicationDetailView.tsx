@@ -11,11 +11,25 @@ import { ApplicationSidebarWidgets } from "./ApplicationSidebarWidgets";
 import { AssignFacilitatorModal } from "../../Payment/components/AssignFacilitatorModal";
 import { NotifyAwardingBodyModal } from "../../Payment/components/NotifyAwardingBodyModal";
 import type { AssessorApplicationRecord } from "./AssessorApplicationsView";
+import {
+  useGetApplicationById,
+  useGetApplicationStages,
+} from "@/src/features/shared/applications/hooks";
 
 interface AssessorApplicationDetailViewProps {
   application: AssessorApplicationRecord;
   onBack: () => void;
 }
+
+const STAGE_STATUS_LABEL: Record<string, string> = {
+  not_started: "Not Started",
+  awaiting_payment: "Awaiting Payment",
+  in_progress: "In Progress",
+  under_review: "Under Review",
+  scheduled: "Scheduled",
+  successful: "Approved",
+  rejected: "Rejected",
+};
 
 export const AssessorApplicationDetailView: React.FC<
   AssessorApplicationDetailViewProps
@@ -23,12 +37,15 @@ export const AssessorApplicationDetailView: React.FC<
   const { toast } = useToast();
   const [showApplicationForm, setShowApplicationForm] = useState(false);
   const [isAccepted, setIsAccepted] = useState(true);
-  const [isPaymentPaid] = useState(true);
+
+  // Live Application details & stages from backend
+  const { data: appDetail } = useGetApplicationById(application.id);
+  const { data: apiStages = [] } = useGetApplicationStages(application.id);
 
   // Facilitator state
   const [isFacilitatorAssigned, setIsFacilitatorAssigned] = useState(false);
-  const [facilitatorName, setFacilitatorName] = useState("Ngozi Eze");
-  const [tradeName, setTradeName] = useState("Carpentry");
+  const [facilitatorName, setFacilitatorName] = useState("Assigned Facilitator");
+  const [tradeName, setTradeName] = useState(application.trade || "Trade");
 
   // Modals visibility state
   const [isConfirmAcceptOpen, setIsConfirmAcceptOpen] = useState(false);
@@ -36,34 +53,64 @@ export const AssessorApplicationDetailView: React.FC<
   const [isNotifyAwardingOpen, setIsNotifyAwardingOpen] = useState(false);
   const [isAwardingNotified, setIsAwardingNotified] = useState(false);
 
-  const stages = [
+  const defaultStages = [
     {
-      id: "form",
+      id: "application_form",
       title: "Application Form",
       status: isAccepted ? "Approved" : "Pending",
-      date: "Submitted on: 7/21/2026",
+      date: application.submittedAt ? `Submitted on: ${application.submittedAt}` : "--",
       canView: true,
     },
     {
       id: "payment",
       title: "Payment",
-      status: isPaymentPaid ? "Successful" : "Not Started",
-      date: isPaymentPaid ? "Paid On: 7/22/2026" : "--",
-      amountText: "RPL Assessment Fee — Carpentry (Level 3)",
-      amountValue: "₦45,000",
+      status: "Not Started",
+      date: "--",
+      amountText: `${appDetail?.type ?? application.assessmentType} Assessment Fee`,
+      amountValue: undefined,
     },
     {
-      id: "folder",
+      id: "folder_arrangement",
       title: "Folder Arrangement",
-      status: isFacilitatorAssigned ? "14 Days Left" : "Not Started",
-      date: isFacilitatorAssigned ? "Started on: 7/23/2026" : "--",
+      status: isFacilitatorAssigned ? "In Progress" : "Not Started",
+      date: "--",
     },
-    { id: "interview", title: "Interview Stage", status: "Not Started", date: "---" },
-    { id: "verifier", title: "Internal Verifier", status: "Not Started", date: "---" },
-    { id: "awarding", title: "Notify Awarding Body", status: isAwardingNotified ? "Completed" : "Not Started", date: "---" },
-    { id: "external", title: "External Verifier", status: "Not Started", date: "---" },
-    { id: "cert", title: "Certification", status: "Not Started", date: "---" },
+    { id: "interview", title: "Interview Stage", status: "Not Started", date: "--" },
+    { id: "internal_verification", title: "Internal Verifier", status: "Not Started", date: "--" },
+    { id: "notify_awarding", title: "Notify Awarding Body", status: isAwardingNotified ? "Completed" : "Not Started", date: "--" },
+    { id: "external_verification", title: "External Verifier", status: "Not Started", date: "--" },
+    { id: "certification", title: "Certification", status: "Not Started", date: "--" },
   ];
+
+  const stages = apiStages.length > 0
+    ? apiStages.map((stg) => {
+        const formattedStatus = STAGE_STATUS_LABEL[stg.status] ?? stg.status;
+        const isPaid = stg.stageKey === "payment" && (stg.status === "successful" || stg.status === "in_progress");
+        const date = stg.enteredAt
+          ? `Entered: ${new Date(stg.enteredAt).toLocaleDateString("en-GB")}`
+          : stg.deadline
+          ? `Deadline: ${new Date(stg.deadline).toLocaleDateString("en-GB")}`
+          : "--";
+
+        return {
+          id: stg.stageKey,
+          title: stg.label,
+          status: formattedStatus,
+          date,
+          canView: stg.stageKey === "application_form",
+          isPaid,
+          amountText: stg.amountMinorUnits
+            ? `${appDetail?.type ?? application.assessmentType} Assessment Fee`
+            : undefined,
+          amountValue: stg.amountMinorUnits
+            ? `₦${(Number(stg.amountMinorUnits) / 100).toLocaleString()}`
+            : undefined,
+        };
+      })
+    : defaultStages;
+
+  const paymentStage = stages.find((s) => s.id === "payment");
+  const isPaymentPaid = paymentStage?.status === "Approved" || paymentStage?.status === "Successful" || (paymentStage as any)?.isPaid;
 
   return (
     <div className="w-full flex flex-col gap-6 select-text">
@@ -233,6 +280,8 @@ export const AssessorApplicationDetailView: React.FC<
         <CandidateApplicationFormView
           candidateName={application.candidateName}
           trade={application.trade}
+          applicationId={application.id}
+          applicationDetail={appDetail}
         />
       )}
 
