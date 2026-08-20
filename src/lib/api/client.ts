@@ -1,8 +1,3 @@
-/**
- * lib/api/client.ts
- * Shared axios factory, envelope types, and ApiError used by both clients.
- */
-
 import axios, {
   AxiosError,
   AxiosInstance,
@@ -18,11 +13,6 @@ import {
   getCentreId,
 } from "@/src/lib/auth-storage";
 
-/**
- * Synchronously resolve and store the correct persona based on current URL path.
- * Called at module load so that all subsequent API calls in the same render
- * cycle already have the right persona in localStorage.
- */
 function syncPersonaFromRoute(): void {
   if (typeof window === "undefined") return;
   const path = window.location.pathname;
@@ -35,7 +25,10 @@ function syncPersonaFromRoute(): void {
     savePersona("candidate");
   } else if (path.startsWith("/assessment-centre")) {
     savePersona("centre");
-  } else if (path.startsWith("/assessor") || path.startsWith("/quality-assurance")) {
+  } else if (
+    path.startsWith("/assessor") ||
+    path.startsWith("/quality-assurance")
+  ) {
     savePersona("assessor");
   } else if (path.startsWith("/awarding-body")) {
     savePersona("awarding_body");
@@ -44,8 +37,6 @@ function syncPersonaFromRoute(): void {
 
 syncPersonaFromRoute();
 
-
-// ─── Envelope types ───────────────────────────────────────────────────────────
 export interface SuccessEnvelope<T = unknown> {
   success: true;
   data: T;
@@ -73,12 +64,10 @@ export class ApiError extends Error {
   }
 }
 
-// ─── Retry flag ───────────────────────────────────────────────────────────────
 interface RetryableRequest extends InternalAxiosRequestConfig {
   _isRetryRequest?: boolean;
 }
 
-// ─── Refresh State & Queue ───────────────────────────────────────────────────
 let isRefreshing = false;
 let failedQueue: Array<{
   resolve: (token: string) => void;
@@ -119,7 +108,6 @@ function toApiError(
   return new ApiError(status, "NETWORK_ERROR", error.message);
 }
 
-// ─── Factory ──────────────────────────────────────────────────────────────────
 export function createApiInstance(
   baseURL: string,
   options?: { isCap?: boolean },
@@ -137,85 +125,106 @@ export function createApiInstance(
       const url = config.url || "";
       const urlPath = url.split("?")[0];
 
-      // Catalogue & public endpoints do not require acting persona
-      const isPublicCatalogue =
+      const isExempt =
+        urlPath === "/identity-verification" ||
+        urlPath.startsWith("/identity-verification/") ||
+        urlPath === "/onboarding" ||
+        urlPath.startsWith("/onboarding/") ||
+        urlPath === "/me" ||
+        urlPath.startsWith("/me/") ||
         urlPath === "/sectors" ||
         urlPath.startsWith("/sectors/") ||
+        urlPath === "/trades" ||
+        urlPath.startsWith("/trades/") ||
         urlPath === "/centres" ||
         urlPath.startsWith("/centres/") ||
-        urlPath.startsWith("/trades/") ||
-        urlPath.startsWith("/admin/") ||
-        urlPath.startsWith("/onboarding/") ||
-        urlPath === "/me";
+        urlPath === "/evidence/third-party-report-template" ||
+        urlPath === "/admin/terms" ||
+        urlPath === "/admin/awarding-bodies";
 
-      // ── Resolve persona ────────────────────────────────────────────────────
-      // Priority: (1) already set on this call, (2) current page route, (3) stored
-      let persona = config.headers["X-CAP-PERSONA"] as string | undefined;
+      if (!isExempt) {
+        let persona = config.headers["X-CAP-PERSONA"] as string | undefined;
 
-      if (!persona && !isPublicCatalogue && typeof window !== "undefined") {
-        const path = window.location.pathname;
-        if (path.startsWith("/assessment-centre")) {
-          persona = "centre";
-        } else if (
-          path.startsWith("/assessor") ||
-          path.startsWith("/quality-assurance")
-        ) {
-          persona = "assessor";
-        } else if (path.startsWith("/awarding-body")) {
-          persona = "awarding_body";
-        } else if (
-          path.startsWith("/dashboard") ||
-          path.startsWith("/onboarding") ||
-          path.startsWith("/applications") ||
-          path.startsWith("/rpl")
-        ) {
-          persona = "candidate";
+        if (!persona) {
+          if (urlPath.startsWith("/centre/") || urlPath === "/directory") {
+            persona = "centre";
+          } else if (urlPath.startsWith("/candidate/")) {
+            persona = "candidate";
+          } else if (urlPath.startsWith("/assessor/")) {
+            persona = "assessor";
+          } else if (urlPath.startsWith("/awarding-body/")) {
+            persona = "awarding_body";
+          }
         }
-      }
 
-      // Fall back to stored persona, but guard against cross-workspace bleed
-      if (!persona && !isPublicCatalogue) {
-        const stored = getPersona();
-        if (stored && typeof window !== "undefined") {
+        if (!persona && typeof window !== "undefined") {
           const path = window.location.pathname;
-          const isCentreRoute = path.startsWith("/assessment-centre");
-          const isAssessorRoute =
+          if (path.startsWith("/assessment-centre")) {
+            persona = "centre";
+          } else if (
             path.startsWith("/assessor") ||
-            path.startsWith("/quality-assurance");
-          const isAwardingBodyRoute = path.startsWith("/awarding-body");
-          const isCandidateRoute =
+            path.startsWith("/quality-assurance")
+          ) {
+            persona = "assessor";
+          } else if (path.startsWith("/awarding-body")) {
+            persona = "awarding_body";
+          } else if (
             path.startsWith("/dashboard") ||
             path.startsWith("/onboarding") ||
             path.startsWith("/applications") ||
-            path.startsWith("/rpl");
-
-          // Only use stored persona if it matches the active workspace
-          if (
-            (stored === "centre" && isCentreRoute) ||
-            (stored === "assessor" && isAssessorRoute) ||
-            (stored === "awarding_body" && isAwardingBodyRoute) ||
-            (stored === "candidate" && isCandidateRoute) ||
-            // For routes not yet mapped (e.g. auth pages), trust the store
-            (!isCentreRoute && !isAssessorRoute && !isAwardingBodyRoute && !isCandidateRoute)
+            path.startsWith("/rpl")
           ) {
+            persona = "candidate";
+          }
+        }
+
+        if (!persona) {
+          const stored = getPersona();
+          if (stored && typeof window !== "undefined") {
+            const path = window.location.pathname;
+            const isCentreRoute = path.startsWith("/assessment-centre");
+            const isAssessorRoute =
+              path.startsWith("/assessor") ||
+              path.startsWith("/quality-assurance");
+            const isAwardingBodyRoute = path.startsWith("/awarding-body");
+            const isCandidateRoute =
+              path.startsWith("/dashboard") ||
+              path.startsWith("/onboarding") ||
+              path.startsWith("/applications") ||
+              path.startsWith("/rpl");
+
+            if (
+              (stored === "centre" && isCentreRoute) ||
+              (stored === "assessor" && isAssessorRoute) ||
+              (stored === "awarding_body" && isAwardingBodyRoute) ||
+              (stored === "candidate" && isCandidateRoute) ||
+              (!isCentreRoute &&
+                !isAssessorRoute &&
+                !isAwardingBodyRoute &&
+                !isCandidateRoute)
+            ) {
+              persona = stored;
+            }
+          } else if (stored) {
             persona = stored;
           }
-        } else if (stored) {
-          persona = stored;
         }
-      }
 
-      // ── Attach headers ─────────────────────────────────────────────────────
-      if (persona && !isPublicCatalogue) {
-        config.headers["X-CAP-PERSONA"] = persona;
+        if (persona) {
+          config.headers["X-CAP-PERSONA"] = persona;
 
-        // X-CAP-CENTRE-ID is required whenever operating as a centre
-        if (persona === "centre") {
-          const centreId = getCentreId();
-          if (centreId && !config.headers["X-CAP-CENTRE-ID"]) {
-            config.headers["X-CAP-CENTRE-ID"] = centreId;
+          if (persona === "centre") {
+            const centreId = getCentreId();
+            if (centreId && !config.headers["X-CAP-CENTRE-ID"]) {
+              config.headers["X-CAP-CENTRE-ID"] = centreId;
+            }
+          } else {
+            delete config.headers["X-CAP-CENTRE-ID"];
           }
         }
+      } else {
+        delete config.headers["X-CAP-PERSONA"];
+        delete config.headers["X-CAP-CENTRE-ID"];
       }
     }
 
@@ -302,7 +311,6 @@ export function createApiInstance(
   return instance;
 }
 
-// ─── Unwrap SuccessEnvelope ───────────────────────────────────────────────────
 export async function unwrap<T>(
   promise: Promise<{ data: SuccessEnvelope<T> | ErrorEnvelope }>,
 ): Promise<T> {
