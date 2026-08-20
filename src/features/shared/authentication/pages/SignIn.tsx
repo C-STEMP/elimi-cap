@@ -4,7 +4,6 @@ import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
 import { ASSETS_URL } from "@/assets";
-import { FcGoogle } from "react-icons/fc";
 import { useToast } from "@/src/components/ui/toast";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -15,6 +14,7 @@ import { setSidebarVariant } from "@/store/slices/authSlice";
 import { validateEmail } from "@/src/lib/validation";
 import { ApiError } from "@/src/lib/api/client";
 import { GoogleLogin } from "@react-oauth/google";
+import Image from "next/image";
 import {
   useLogin,
   useGoogleAuth,
@@ -357,7 +357,15 @@ export const SignIn: React.FC = () => {
                   variant="outline"
                   size="lg"
                   disabled={isSubmitting || isLoggingIn || isGooglePending}
-                  leftIcon={<FcGoogle className="w-4 h-4 sm:w-5 sm:h-5" />}
+                  leftIcon={
+                    <Image
+                      src={ASSETS_URL.googleIcon}
+                      alt="Google"
+                      width={20}
+                      height={20}
+                      className="w-4 h-4 sm:w-5 sm:h-5"
+                    />
+                  }
                   className="w-full h-12.5 text-text-dark font-medium text-sm xl:text-base cursor-pointer"
                 >
                   {isGooglePending

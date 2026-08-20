@@ -70,8 +70,8 @@ export const StatusModal: React.FC<StatusModalProps> = ({
         <Image
           src={ASSETS_URL.progressSavedIcon}
           alt="Save Draft"
-          width={180}
-          height={180}
+          width={100}
+          height={100}
           className="w-auto h-auto object-contain"
           style={{ width: "auto", height: "auto" }}
           priority
@@ -83,8 +83,8 @@ export const StatusModal: React.FC<StatusModalProps> = ({
         <Image
           src={ASSETS_URL.paymentSuccessfulIcon}
           alt="Payment Successful"
-          width={180}
-          height={180}
+          width={100}
+          height={100}
           className="w-auto h-auto object-contain"
           style={{ width: "auto", height: "auto" }}
           priority
@@ -96,8 +96,8 @@ export const StatusModal: React.FC<StatusModalProps> = ({
         <Image
           src={ASSETS_URL.paymentCancelledIcon}
           alt="Payment Cancelled"
-          width={180}
-          height={180}
+          width={100}
+          height={100}
           className="w-auto h-auto object-contain"
           style={{ width: "auto", height: "auto" }}
           priority
@@ -109,8 +109,8 @@ export const StatusModal: React.FC<StatusModalProps> = ({
         <Image
           src={ASSETS_URL.paymentUnsuccessfulIcon}
           alt="Payment Unsuccessful"
-          width={180}
-          height={180}
+          width={100}
+          height={100}
           className="w-auto h-auto object-contain"
           style={{ width: "auto", height: "auto" }}
           priority
@@ -135,8 +135,8 @@ export const StatusModal: React.FC<StatusModalProps> = ({
         <Image
           src={ASSETS_URL.submitedIcon}
           alt="Application Submitted"
-          width={180}
-          height={180}
+          width={100}
+          height={100}
           className="w-auto h-auto object-contain"
           style={{ width: "auto", height: "auto" }}
           priority
@@ -148,8 +148,8 @@ export const StatusModal: React.FC<StatusModalProps> = ({
         <Image
           src={iconSrc}
           alt={title || "Status"}
-          width={180}
-          height={180}
+          width={100}
+          height={100}
           className="w-auto h-auto object-contain"
           style={{ width: "auto", height: "auto" }}
           priority
@@ -161,8 +161,8 @@ export const StatusModal: React.FC<StatusModalProps> = ({
         <Image
           src={ASSETS_URL.successCheckmarkImg}
           alt="Success Checkmark"
-          width={180}
-          height={180}
+          width={100}
+          height={100}
           className="w-auto h-auto object-contain"
           style={{ width: "auto", height: "auto" }}
           priority
@@ -170,7 +170,7 @@ export const StatusModal: React.FC<StatusModalProps> = ({
       );
     }
     return (
-      <div className="w-35 h-35 flex items-center justify-center bg-red-50 rounded-full border-4 border-red-100 shadow-lg animate-pulse">
+      <div className="w-25 h-25 flex items-center justify-center bg-red-50 rounded-full border-4 border-red-100 shadow-lg animate-pulse">
         <ErrorCircleIcon />
       </div>
     );

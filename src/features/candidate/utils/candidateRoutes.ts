@@ -37,7 +37,7 @@ export const CANDIDATE_ROUTES = {
     personalInfo: "/onboarding/personal-info",
     verifyIdentity: "/onboarding/verify-identity",
     assessmentType: "/dashboard/assessment-type",
-    startApplication: "/dashboard/start-application",
+    startApplication: "/rpl/personal-info",
     success: "/onboarding/success?role=candidate",
   },
 
@@ -197,7 +197,7 @@ export const CANDIDATE_ROUTE_LIST: CandidateRouteMeta[] = [
     id: "onboarding-start-application",
     feature: "Onboarding: Start Application",
     routePath: CANDIDATE_ROUTES.onboarding.startApplication,
-    appRouterFile: "src/app/dashboard/start-application/page.tsx",
+    appRouterFile: "src/app/rpl/personal-info/page.tsx",
     description: "Initial application launch pad for candidate onboarding.",
     category: "Onboarding",
   },
