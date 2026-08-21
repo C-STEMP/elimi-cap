@@ -29,33 +29,26 @@ export const ONBOARDING_QUERY_KEYS = {
 
 export function useStartOnboarding() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation({
     mutationFn: (persona: PersonaType) => startOnboardingApi({ persona }),
 
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ONBOARDING_QUERY_KEYS.mine });
-      toast({
-        type: "success",
-        title: "Onboarding Started",
-        description: `Started onboarding for ${data.persona}.`,
-      });
     },
 
     onError: (error: Error) => {
-      if (error instanceof ApiError) {
-        toast({
-          type: "error",
-          title: "Failed to Start Onboarding",
-          description: error.message,
-        });
-      } else {
-        toast({
-          type: "error",
-          title: "Network Error",
-          description: "Unable to connect. Please try again.",
-        });
+      // Don't show a toast here for conflict errors (409) — those are handled
+      // gracefully in the caller (RoleSelection). Only log network / unknown errors.
+      const apiError = error as any;
+      const isConflict =
+        apiError?.statusCode === 409 ||
+        apiError?.message?.toLowerCase?.().includes("already") ||
+        apiError?.message?.toLowerCase?.().includes("conflict");
+
+      if (!isConflict) {
+        // Re-throw so the caller's onError fires with the original error
+        throw error;
       }
     },
   });

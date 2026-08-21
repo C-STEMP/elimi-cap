@@ -85,24 +85,21 @@ export const RPLVerifyIdentity: React.FC<RPLVerifyIdentityProps> = ({
     verifyIdentityMutation.mutate(
       { type: "nin", identificationNumber: nin },
       {
-        onSuccess: (res) => {
+        onSuccess: () => {
           setModalState("success");
           setIsVerified(true);
           dispatch(setRPLIdentity({ nin, isVerified: true }));
           dispatch(markVerified());
         },
-        onError: () => {
-          // Fallback simulation for staging/mock testing
-          setTimeout(() => {
-            if (nin.trim() === "00000000000" || nin.trim().endsWith("000")) {
-              setModalState("error");
-            } else {
-              setModalState("success");
-              setIsVerified(true);
-              dispatch(setRPLIdentity({ nin, isVerified: true }));
-              dispatch(markVerified());
-            }
-          }, 1500);
+        onError: (err: any) => {
+          setModalState("error");
+          toast({
+            type: "error",
+            title: "Verification Failed",
+            description:
+              err?.message ||
+              "Your NIN could not be verified. Please check your details and try again.",
+          });
         },
       },
     );

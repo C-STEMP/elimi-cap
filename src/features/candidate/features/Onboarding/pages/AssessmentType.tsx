@@ -115,11 +115,11 @@ export const AssessmentType: React.FC<AssessmentTypeProps> = ({
           });
 
           if (id === "rpl") {
-            router.push(
-              createdApp?.id
-                ? `/dashboard/applications/${createdApp.id}`
-                : "/rpl/personal-info",
-            );
+            // Always route into the RPL stages regardless of whether the
+            // backend returned an ID — going to /dashboard/applications/:id
+            // would skip the personal-info → experience-trade → verify-identity
+            // → review-submit flow entirely.
+            router.push("/rpl/personal-info");
           } else {
             router.push(
               createdApp?.id

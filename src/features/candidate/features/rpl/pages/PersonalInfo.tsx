@@ -373,13 +373,23 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
         },
       },
       {
-        onSettled: () => {
+        onSuccess: () => {
           setIsSubmitting(false);
           if (onSuccess) {
             onSuccess();
           } else {
             router.push("/rpl/experience-trade");
           }
+        },
+        onError: (err: any) => {
+          setIsSubmitting(false);
+          toast({
+            type: "error",
+            title: "Save Failed",
+            description:
+              err?.message ||
+              "Failed to save your personal information. Please try again.",
+          });
         },
       },
     );

@@ -1,13 +1,8 @@
-import type { NextConfig } from "next";
+import { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "res.cloudinary.com",
-      },
-    ],
+    remotePatterns: [{ protocol: "https", hostname: "res.cloudinary.com" }],
   },
   async headers() {
     return [
@@ -22,24 +17,14 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  transpilePackages: [
-    "antd",
-    "@ant-design/icons",
-    "@ant-design/cssinjs",
-    "rc-util",
-    "rc-pagination",
-    "rc-picker",
-    "rc-table",
-    "rc-tree",
-    "rc-select",
-    "rc-field-form",
-    "rc-input",
-    "rc-trigger",
-    "rc-align",
-    "rc-motion",
-    "rc-virtual-list",
-  ],
+  experimental: {
+    optimizePackageImports: [
+      "antd",
+      "@ant-design/icons",
+      "framer-motion",
+      "recharts",
+    ],
+  },
 };
 
 export default nextConfig;
-

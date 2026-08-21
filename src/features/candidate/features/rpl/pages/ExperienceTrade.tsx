@@ -326,7 +326,7 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
         },
       },
       {
-        onSettled: () => {
+        onSuccess: () => {
           update("isSubmitting", false);
           toast({
             type: "success",
@@ -337,8 +337,18 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
           if (onContinue) {
             onContinue();
           } else {
-            router.push("/rpl/review-submit");
+            router.push("/rpl/verify-identity");
           }
+        },
+        onError: (err: any) => {
+          update("isSubmitting", false);
+          toast({
+            type: "error",
+            title: "Save Failed",
+            description:
+              err?.message ||
+              "Failed to save your experience & trade details. Please try again.",
+          });
         },
       },
     );
