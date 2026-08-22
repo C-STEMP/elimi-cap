@@ -59,13 +59,13 @@ export const StaffStatusModal: React.FC<StaffStatusModalProps> = ({
 
           {mode === "confirm-deactivate" && (
             <div className="w-full flex flex-col items-center">
-              <div className="mt-2 mb-4 w-[100px] h-[100px] relative flex items-center justify-center mx-auto">
+              <div className="mt-2 mb-4 w-25 h-25 relative flex items-center justify-center mx-auto">
                 <Image
                   src={ASSETS_URL.deactivateStaffImg}
                   alt="Staff Deactivated Successfully"
                   width={100}
                   height={100}
-                  className="w-[100px] h-[100px] object-contain"
+                  className="w-25 h-25 object-contain"
                   style={{ width: 100, height: 100 }}
                   priority
                 />
@@ -91,13 +91,13 @@ export const StaffStatusModal: React.FC<StaffStatusModalProps> = ({
 
           {mode === "deactivated-success" && (
             <div className="w-full flex flex-col items-center">
-              <div className="mt-2 mb-4 w-[100px] h-[100px] relative flex items-center justify-center mx-auto">
+              <div className="mt-2 mb-4 w-25 h-25 relative flex items-center justify-center mx-auto">
                 <Image
                   src={ASSETS_URL.successCheckmarkImg}
                   alt="Staff Deactivated Successfully"
                   width={100}
                   height={100}
-                  className="w-[100px] h-[100px] object-contain"
+                  className="w-25 h-25 object-contain"
                   style={{ width: 100, height: 100 }}
                   priority
                 />
@@ -127,13 +127,13 @@ export const StaffStatusModal: React.FC<StaffStatusModalProps> = ({
           {mode === "confirm-activate" && (
             <div className="w-full flex flex-col items-center">
               {/* Padlock Illustration */}
-              <div className="mt-2 mb-4 w-[100px] h-[100px] relative flex items-center justify-center mx-auto">
+              <div className="mt-2 mb-4 w-25 h-25 relative flex items-center justify-center mx-auto">
                 <Image
                   src={ASSETS_URL.activateStaffImg}
                   alt="Staff Activated Successfully"
                   width={100}
                   height={100}
-                  className="w-[100px] h-[100px] object-contain"
+                  className="w-25 h-25 object-contain"
                   style={{ width: 100, height: 100 }}
                   priority
                 />
@@ -162,13 +162,13 @@ export const StaffStatusModal: React.FC<StaffStatusModalProps> = ({
           {/* Mode 4: Activated Success (Image 2) */}
           {mode === "activated-success" && (
             <div className="w-full flex flex-col items-center">
-              <div className="mt-2 mb-4 w-[100px] h-[100px] relative flex items-center justify-center mx-auto">
+              <div className="mt-2 mb-4 w-25 h-25 relative flex items-center justify-center mx-auto">
                 <Image
                   src={ASSETS_URL.successCheckmarkImg}
                   alt="Staff Activated Successfully"
                   width={100}
                   height={100}
-                  className="w-[100px] h-[100px] object-contain"
+                  className="w-25 h-25 object-contain"
                   style={{ width: 100, height: 100 }}
                   priority
                 />

@@ -35,25 +35,25 @@ export const SuccessModal: React.FC<SuccessModalProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top 3D Green Checkmark Badge */}
-        <div className="relative mb-6 w-[100px] h-[100px] flex items-center justify-center mx-auto">
+        <div className="relative mb-6 w-25 h-25 flex items-center justify-center mx-auto">
           {ASSETS_URL.successCheckmarkImg ? (
             <Image
               src={ASSETS_URL.successCheckmarkImg}
               alt="Success"
               width={100}
               height={100}
-              className="w-[100px] h-[100px] object-contain drop-shadow-md"
+              className="w-25 h-25 object-contain drop-shadow-md"
               style={{ width: 100, height: 100 }}
             />
           ) : (
-            <div className="w-[100px] h-[100px] rounded-full bg-linear-to-b from-[#66bb6a] to-[#2e7d32] flex items-center justify-center shadow-lg shadow-green-600/30 ring-4 ring-green-100">
+            <div className="w-25 h-25 rounded-full bg-linear-to-b from-[#66bb6a] to-[#2e7d32] flex items-center justify-center shadow-lg shadow-green-600/30 ring-4 ring-green-100">
               <FiCheck className="w-12 h-12 text-white stroke-3" />
             </div>
           )}
         </div>
 
         {/* Title */}
-        <h3 className="text-2xl font-bold text-[#1e1e1e] mb-2">{title}</h3>
+        <h3 className="text-2xl font-bold text-text-dark mb-2">{title}</h3>
 
         {/* Message */}
         <p className="text-sm text-gray-500 mb-6 leading-relaxed">{message}</p>

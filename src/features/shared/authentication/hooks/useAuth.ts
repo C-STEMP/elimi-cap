@@ -107,6 +107,15 @@ export function useVerifyAccount() {
 
     onSuccess: (data) => {
       saveTokens(data.accessToken, data.refreshToken);
+      saveOnboardedStatus(false);
+      savePersona("");
+      saveUser({
+        userId: data.user.userId || data.user.id || "",
+        email: data.user.email,
+        status: data.user.status,
+        intents: data.user.intents || [],
+        createdAt: data.user.createdAt || new Date().toISOString(),
+      });
 
       dispatch(
         setCredentials({
