@@ -38,7 +38,6 @@ import { AssessorJobDetailView } from "../../JobBoard/components/AssessorJobDeta
 // Settings feature components
 import { AssessorSettingsView } from "../../Settings/components/AssessorSettingsView";
 
-
 import { useGetCentres } from "@/src/features/shared/reference/hooks";
 
 export const AssessorDashboard: React.FC = () => {
@@ -90,13 +89,13 @@ export const AssessorDashboard: React.FC = () => {
         r.status === "approved"
           ? "Active"
           : r.status === "pending"
-          ? "Pending"
-          : "Inactive",
+            ? "Pending"
+            : "Inactive",
       joinedAt: r.respondedAt
         ? new Date(r.respondedAt).toLocaleDateString("en-GB")
         : r.requestedAt
-        ? new Date(r.requestedAt).toLocaleDateString("en-GB")
-        : "-",
+          ? new Date(r.requestedAt).toLocaleDateString("en-GB")
+          : "-",
     };
   });
 
@@ -111,12 +110,13 @@ export const AssessorDashboard: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<AssessorNavTab>("Overview");
 
-  const [selectedCentre, setSelectedCentre] = useState<AssessorCentreItem | null>(
-    null,
-  );
+  const [selectedCentre, setSelectedCentre] =
+    useState<AssessorCentreItem | null>(null);
   const [selectedApplication, setSelectedApplication] =
     useState<AssessorApplicationRecord | null>(null);
-  const [selectedJob, setSelectedJob] = useState<AssessorJobRecord | null>(null);
+  const [selectedJob, setSelectedJob] = useState<AssessorJobRecord | null>(
+    null,
+  );
 
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
 
@@ -129,7 +129,7 @@ export const AssessorDashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen w-full bg-[#f8f9fb] p-4 sm:p-6 select-text">
-      <div className="max-w-7xl mx-auto flex flex-col gap-6">
+      <div className="mx-auto flex flex-col gap-6">
         {/* Header Banner */}
         <AssessorHeaderBanner
           userName={userName}
@@ -159,9 +159,17 @@ export const AssessorDashboard: React.FC = () => {
                   (app.candidate?.firstName
                     ? `${app.candidate.firstName} ${app.candidate.lastName || ""}`.trim()
                     : app.candidateId),
-                trade: app.trade?.name || app.tradeId || (app.type === "NSQ" ? "Standard Assessment" : "RPL"),
+                trade:
+                  app.trade?.name ||
+                  app.tradeId ||
+                  (app.type === "NSQ" ? "Standard Assessment" : "RPL"),
                 assessmentType: app.type,
-                status: app.status === "certified" ? "Completed" : app.status === "in_progress" ? "Ongoing" : "Pending",
+                status:
+                  app.status === "certified"
+                    ? "Completed"
+                    : app.status === "in_progress"
+                      ? "Ongoing"
+                      : "Pending",
                 submittedAt: app.createdAt,
               });
             }}
@@ -202,14 +210,12 @@ export const AssessorDashboard: React.FC = () => {
               onBack={() => setSelectedJob(null)}
             />
           ) : (
-            <AssessorJobBoardView
-              onSelectJob={(job) => setSelectedJob(job)}
-            />
+            <AssessorJobBoardView onSelectJob={(job) => setSelectedJob(job)} />
           )
         ) : activeTab === "Settings" ? (
           <AssessorSettingsView />
         ) : (
-          <div className="w-full bg-white rounded-3xl p-8 shadow-sm border border-gray-100 flex flex-col items-center justify-center min-h-[350px] text-center">
+          <div className="w-full bg-white rounded-3xl p-8 shadow-sm border border-gray-100 flex flex-col items-center justify-center min-h-87.5 text-center">
             <h3 className="text-lg font-bold text-neutral-primary">
               {activeTab} Section
             </h3>

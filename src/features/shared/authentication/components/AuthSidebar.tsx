@@ -26,19 +26,36 @@ export const AuthSidebar: React.FC = () => {
   const nonRplRoutes = [
     "/signin",
     "/signup",
+    "/register",
     "/forgot-password",
     "/change-password",
+    "/complete-signup",
     "/verify",
+    "/enter-otp",
     "/welcome",
     "/onboarding",
   ];
 
   const isExplicitNonRplRoute = nonRplRoutes.some((route) =>
-    pathname?.startsWith(route),
+    pathname === route || pathname?.startsWith(route + "/"),
   );
 
+  const isRplPath = pathname?.startsWith("/rpl");
+
   const isRplRoute =
-    sidebarVariant === "rpl-form" || pathname?.includes("/rpl");
+    !isExplicitNonRplRoute &&
+    (isRplPath || (pathname === "/onboarding" && sidebarVariant === "rpl-form"));
+
+  const effectiveRplStep =
+    pathname === "/rpl/personal-info"
+      ? 1
+      : pathname === "/rpl/experience-trade"
+      ? 2
+      : pathname === "/rpl/verify-identity"
+      ? 3
+      : pathname === "/rpl/review-submit"
+      ? 4
+      : rplStep;
 
   return (
     <div
@@ -67,9 +84,9 @@ export const AuthSidebar: React.FC = () => {
                 className="flex flex-col gap-0 mt-4"
               >
                 {RPL_STEPS.map((step, idx) => {
-                  const isActive = rplStep === step.id;
-                  const isPast = rplStep > step.id;
-                  const isClickable = isPast || step.id < rplStep;
+                  const isActive = effectiveRplStep === step.id;
+                  const isPast = effectiveRplStep > step.id;
+                  const isClickable = isPast || step.id < effectiveRplStep;
                   const isLast = idx === RPL_STEPS.length - 1;
 
                   const handleStepClick = () => {

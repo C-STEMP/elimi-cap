@@ -25,6 +25,7 @@ import {
 } from "@/src/lib/validation";
 import { useCountryStateCity } from "@/src/lib/hooks/useCountryStateCity";
 import { useOnboarding } from "@/src/features/candidate/features/Onboarding/hooks";
+import { useRplApplicationSubmission } from "../hooks/useRplApplicationSubmission";
 
 import {
   IMPAIRMENT_OPTIONS,
@@ -255,58 +256,29 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
 
   const [showConfirmDraftModal, setShowConfirmDraftModal] = useState(false);
   const [showDraftModal, setShowDraftModal] = useState(false);
+  const { saveDraft } = useRplApplicationSubmission();
 
   const handleSaveDraft = () => {
     setShowConfirmDraftModal(true);
   };
 
-  const handleConfirmSaveDraft = () => {
+  const handleConfirmSaveDraft = async () => {
     setShowConfirmDraftModal(false);
     const resolvedImpairment = selectedImpairments
       .map((imp) => (imp === "Other" ? `Other: ${otherImpairment}` : imp))
       .join(", ");
 
-    const hasImpairment =
-      !selectedImpairments.includes("None / No impairment") &&
-      !selectedImpairments.includes("Prefer not to say") &&
-      !selectedImpairments.includes("None") &&
-      !selectedImpairments.includes("No") &&
-      selectedImpairments.length > 0;
-
-    saveOnboarding.mutate(
-      {
-        personalDetails: {
-          firstName: form.firstName,
-          lastName: form.lastName,
-          middleName: form.middleName,
-          dob: formatToIsoDate(form.dob),
-          gender: form.gender,
-          nationality: form.nationality,
-        },
-        contactInformation: {
-          emailAddress: form.email || authUser?.email || "",
-          phoneNumber: {
-            countryCode: resolvedCountryCode ? `+${resolvedCountryCode}` : "+234",
-            number: form.phoneNumber,
-          },
-        },
-        residentialAddress: {
-          country: form.country,
-          state: form.state,
-          lga: form.lga,
-          address: form.streetAddress,
-        },
-        accessibility: {
-          hasImpairment,
-          impairment: resolvedImpairment,
-        },
-      },
-      {
-        onSuccess: () => {
-          setShowDraftModal(true);
-        },
-      },
+    dispatch(
+      setPersonalInfo({
+        ...form,
+        email: form.email || authUser?.email || "",
+        impairment: resolvedImpairment,
+        passportFileName:
+          passportFile?.name ?? savedPersonalInfo.passportFileName,
+      }),
     );
+    await saveDraft();
+    setShowDraftModal(true);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -327,13 +299,6 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
       .map((imp) => (imp === "Other" ? `Other: ${otherImpairment}` : imp))
       .join(", ");
 
-    const hasImpairment =
-      !selectedImpairments.includes("None / No impairment") &&
-      !selectedImpairments.includes("Prefer not to say") &&
-      !selectedImpairments.includes("None") &&
-      !selectedImpairments.includes("No") &&
-      selectedImpairments.length > 0;
-
     dispatch(
       setPersonalInfo({
         ...form,
@@ -344,45 +309,14 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
       }),
     );
 
-    saveOnboarding.mutate(
-      {
-        personalDetails: {
-          firstName: form.firstName,
-          lastName: form.lastName,
-          middleName: form.middleName,
-          dob: formatToIsoDate(form.dob),
-          gender: form.gender,
-          nationality: form.nationality,
-        },
-        contactInformation: {
-          emailAddress: form.email || authUser?.email || "",
-          phoneNumber: {
-            countryCode: resolvedCountryCode ? `+${resolvedCountryCode}` : "+234",
-            number: form.phoneNumber,
-          },
-        },
-        residentialAddress: {
-          country: form.country,
-          state: form.state,
-          lga: form.lga,
-          address: form.streetAddress,
-        },
-        accessibility: {
-          hasImpairment,
-          impairment: resolvedImpairment,
-        },
-      },
-      {
-        onSettled: () => {
-          setIsSubmitting(false);
-          if (onSuccess) {
-            onSuccess();
-          } else {
-            router.push("/rpl/experience-trade");
-          }
-        },
-      },
-    );
+    saveDraft().finally(() => {
+      setIsSubmitting(false);
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        router.push("/rpl/experience-trade");
+      }
+    });
   };
 
   return (
@@ -393,11 +327,18 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
       className="w-full flex flex-col gap-6 select-text max-w-2xl mx-auto pb-10"
     >
       <form onSubmit={handleSubmit} className="w-full flex flex-col gap-4">
+        {/* Step Progress Bar */}
+        <div className="w-full max-w-109.75 flex justify-start">
+          <div className="w-46.5 h-2.5 bg-primary-solid/15 rounded-[10px] overflow-hidden">
+            <div className="w-1/4 h-full bg-primary-solid rounded-[10px] transition-all duration-300" />
+          </div>
+        </div>
+
         {/* Step indicator + Passport Upload */}
         <div className="flex flex-col sm:flex-row items-start justify-between gap-4 sm:gap-6">
           <div className="flex flex-col gap-2">
             <h1 className="text-2xl xl:text-[26px] font-extrabold tracking-tight text-primary">
-              Step 1 of 3: Personal Information
+              Step 1 of 4: Personal Information
             </h1>
             <p className="text-xs xl:text-sm text-neutral-secondary font-normal leading-relaxed">
               Provide your personal details to help us identify you and maintain

@@ -59,14 +59,14 @@ export const AssessorDecisionModal: React.FC<AssessorDecisionModalProps> = ({
           {/* Mode 1: Confirm Shortlist (Image 1) */}
           {mode === "confirm-shortlist" && (
             <div className="w-full flex flex-col items-center">
-              <div className="mt-2 mb-4 relative flex items-center justify-center">
+              <div className="mt-2 mb-4 w-[100px] h-[100px] relative flex items-center justify-center mx-auto">
                 <Image
                   src={ASSETS_URL.shortlistApplicantImg}
                   alt="Shortlist Applicant"
-                  width={160}
-                  height={160}
-                  className="w-36 h-36 object-contain"
-                  style={{ width: "auto", height: "auto" }}
+                  width={100}
+                  height={100}
+                  className="w-[100px] h-[100px] object-contain"
+                  style={{ width: 100, height: 100 }}
                   priority
                 />
               </div>
@@ -94,14 +94,14 @@ export const AssessorDecisionModal: React.FC<AssessorDecisionModalProps> = ({
           {/* Mode 2: Shortlisted Success (Image 2) */}
           {mode === "shortlisted-success" && (
             <div className="w-full flex flex-col items-center">
-              <div className="mt-2 mb-4 relative flex items-center justify-center">
+              <div className="mt-2 mb-4 w-[100px] h-[100px] relative flex items-center justify-center mx-auto">
                 <Image
                   src={ASSETS_URL.successCheckmarkImg}
                   alt="Shortlisted Successfully"
-                  width={160}
-                  height={160}
-                  className="w-36 h-36 object-contain"
-                  style={{ width: "auto", height: "auto" }}
+                  width={100}
+                  height={100}
+                  className="w-[100px] h-[100px] object-contain"
+                  style={{ width: 100, height: 100 }}
                   priority
                 />
               </div>
@@ -129,14 +129,14 @@ export const AssessorDecisionModal: React.FC<AssessorDecisionModalProps> = ({
           {/* Mode 3: Confirm Reject (Image 3) */}
           {mode === "confirm-reject" && (
             <div className="w-full flex flex-col items-center">
-              <div className="mt-2 mb-4 relative flex items-center justify-center">
+              <div className="mt-2 mb-4 w-[100px] h-[100px] relative flex items-center justify-center mx-auto">
                 <Image
                   src={ASSETS_URL.rejectApplicantImg}
                   alt="Reject Applicant"
-                  width={160}
-                  height={160}
-                  className="w-36 h-36 object-contain"
-                  style={{ width: "auto", height: "auto" }}
+                  width={100}
+                  height={100}
+                  className="w-[100px] h-[100px] object-contain"
+                  style={{ width: 100, height: 100 }}
                   priority
                 />
               </div>
@@ -162,14 +162,14 @@ export const AssessorDecisionModal: React.FC<AssessorDecisionModalProps> = ({
           {/* Mode 4: Rejected Success */}
           {mode === "rejected-success" && (
             <div className="w-full flex flex-col items-center">
-              <div className="mt-2 mb-4 relative flex items-center justify-center">
+              <div className="mt-2 mb-4 w-[100px] h-[100px] relative flex items-center justify-center mx-auto">
                 <Image
                   src={ASSETS_URL.successCheckmarkImg}
                   alt="Rejected Successfully"
-                  width={160}
-                  height={160}
-                  className="w-36 h-36 object-contain"
-                  style={{ width: "auto", height: "auto" }}
+                  width={100}
+                  height={100}
+                  className="w-[100px] h-[100px] object-contain"
+                  style={{ width: 100, height: 100 }}
                   priority
                 />
               </div>

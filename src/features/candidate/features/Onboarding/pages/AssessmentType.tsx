@@ -26,8 +26,8 @@ const ASSESSMENT_OPTIONS: AssessmentOption[] = [
   },
   {
     id: "nsq",
-    title: "Standard Assessment",
-    description: "Standard Assessment (National Skills Qualification)",
+    title: "NSQ",
+    description: "National Skills Qualification",
   },
 ];
 
@@ -42,14 +42,6 @@ export const AssessmentType: React.FC<AssessmentTypeProps> = ({
 }) => {
   const dispatch = useAppDispatch();
   const router = useRouter();
-  const { toast } = useToast();
-  const searchParams = useSearchParams();
-  const fromSource = searchParams?.get("from");
-
-  const { createApplication } = useApplication();
-  const savedStartApplication = useAppSelector(
-    (s) => s.onboarding.startApplication,
-  );
 
   const savedAssessmentType = useAppSelector(
     (state) =>
@@ -58,7 +50,6 @@ export const AssessmentType: React.FC<AssessmentTypeProps> = ({
   const [selectedType, setSelectedType] = useState<string | null>(
     savedAssessmentType || null,
   );
-  const [isCreating, setIsCreating] = useState(false);
 
   const handleSelectType = (id: string) => {
     setSelectedType(id);
@@ -70,109 +61,14 @@ export const AssessmentType: React.FC<AssessmentTypeProps> = ({
       return;
     }
 
-    // Check if centre/sector/trade are selected
-    if (
-      !savedStartApplication?.assessmentCenter ||
-      !savedStartApplication?.sector ||
-      !savedStartApplication?.trade
-    ) {
-      toast({
-        type: "info",
-        title: "Application Details Needed",
-        description:
-          "Please select your Assessment Centre, Sector, and Trade first.",
-      });
-      router.push("/dashboard/start-application");
-      return;
-    }
-
-    setIsCreating(true);
-    const appType = id === "rpl" ? "RPL" : "NSQ";
-
-    createApplication.mutate(
-      {
-        type: appType,
-        centreId: savedStartApplication.assessmentCenter,
-        sectorId: savedStartApplication.sector,
-        tradeId: savedStartApplication.trade,
-        unitIds: [],
-      },
-      {
-        onSuccess: (res: any) => {
-          setIsCreating(false);
-          const createdApp = res?.data || res;
-          dispatch(
-            createApplicationSlice({
-              title: savedStartApplication.trade,
-              subtitle: savedStartApplication.sector,
-            }),
-          );
-
-          toast({
-            type: "success",
-            title: "Application Created",
-            description: `Your ${id === "rpl" ? "RPL" : "Standard"} assessment application has been initialized.`,
-          });
-
-          if (id === "rpl") {
-            router.push(
-              createdApp?.id
-                ? `/dashboard/applications/${createdApp.id}`
-                : "/rpl/personal-info",
-            );
-          } else {
-            router.push(
-              createdApp?.id
-                ? `/dashboard/applications/${createdApp.id}`
-                : "/dashboard/applications",
-            );
-          }
-        },
-        onError: (err: any) => {
-          setIsCreating(false);
-          const errorMsg = err?.message?.toLowerCase() || "";
-          const isConflict =
-            errorMsg.includes("already has a draft") ||
-            errorMsg.includes("in-progress application") ||
-            errorMsg.includes("already exists") ||
-            err?.statusCode === 409;
-
-          if (isConflict) {
-            dispatch(
-              createApplicationSlice({
-                title: savedStartApplication.trade,
-                subtitle: savedStartApplication.sector,
-              }),
-            );
-            toast({
-              type: "info",
-              title: "Existing Application Found",
-              description: "Resuming your active application...",
-            });
-            if (id === "rpl") {
-              router.push("/rpl/personal-info");
-            } else {
-              router.push("/dashboard/applications");
-            }
-          } else {
-            toast({
-              type: "error",
-              title: "Application Error",
-              description:
-                err.message ||
-                "Failed to create application. Please try again.",
-            });
-          }
-        },
-      },
-    );
+    router.push("/onboarding/start-application");
   };
 
   const handleBack = () => {
     if (onBack) {
       onBack();
     } else {
-      router.push("/dashboard/start-application");
+      router.push("/dashboard");
     }
   };
 
@@ -183,14 +79,14 @@ export const AssessmentType: React.FC<AssessmentTypeProps> = ({
       transition={{ duration: 0.4, ease: "easeOut" }}
       className="w-full flex flex-col justify-center select-text max-w-110 mx-auto"
     >
-      <div className="w-full flex justify-start mb-4">
+      <div className="w-full flex justify-start mb-6">
         <button
           type="button"
           onClick={handleBack}
           className="flex items-center gap-2 text-neutral-secondary hover:text-neutral-primary font-semibold text-sm transition-colors cursor-pointer select-none focus:outline-none"
         >
           <FiArrowLeft className="w-4 h-4" />
-          Back to Create Application
+          Back
         </button>
       </div>
 
@@ -199,7 +95,7 @@ export const AssessmentType: React.FC<AssessmentTypeProps> = ({
           Select Assessment Type
         </h1>
         <p className="text-neutral-secondary text-sm leading-relaxed mt-1 font-normal">
-          Choose the assessment type you are applying for
+          Choose the assessment you are interested in
         </p>
       </div>
 
@@ -216,12 +112,6 @@ export const AssessmentType: React.FC<AssessmentTypeProps> = ({
           />
         ))}
       </div>
-
-      {isCreating && (
-        <div className="mt-4 text-center text-xs font-semibold text-[#a31d38] animate-pulse">
-          Initializing application...
-        </div>
-      )}
     </motion.div>
   );
 };

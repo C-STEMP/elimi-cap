@@ -20,14 +20,21 @@ import { ApplicationStageCard } from "../components/ApplicationStageCard";
 import { ApplicationFormModal } from "../components/ApplicationFormModal";
 import { UploadSignatureModal } from "../components/UploadSignatureModal";
 import { FacilitatorCard } from "@/features/candidate/features/Dashboard/components/FacilitatorCard";
+import { FiEdit2, FiLock, FiFileText } from "react-icons/fi";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import {
+  setCurrentApplication,
   markPaymentComplete,
   markInternalVerifierCompleted,
   markExternalVerifierCompleted,
 } from "@/store/slices/applicationSlice";
+import {
+  setPersonalInfo,
+  setRPLExperienceTrade,
+} from "@/store/slices/onboardingSlice";
 import { PaymentModal, PaymentModalType } from "@/features/candidate/features/Application/components/PaymentModals";
 import { useApplication, useGetApplicationById } from "@/src/features/candidate/features/Application/hooks";
+import type { ApplicationDetail } from "@/src/features/shared/applications/api";
 import { Loader } from "@/src/components/ui/loader";
 
 const statusToFormState = (
@@ -163,6 +170,82 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
     });
   };
 
+  const isDraft = application?.status === "draft";
+
+  const handleEditApplication = () => {
+    if (!application) return;
+    dispatch(setCurrentApplication(application.id));
+
+    const detailApp = apiApp as unknown as ApplicationDetail | undefined;
+    if (detailApp) {
+      if (detailApp.personalInformation?.personalDetails) {
+        dispatch(
+          setPersonalInfo({
+            firstName:
+              detailApp.personalInformation.personalDetails.firstName || "",
+            lastName:
+              detailApp.personalInformation.personalDetails.lastName || "",
+            middleName:
+              detailApp.personalInformation.personalDetails.middleName || "",
+            dob: detailApp.personalInformation.personalDetails.dob || "",
+            gender:
+              detailApp.personalInformation.personalDetails.gender || "",
+            nationality:
+              detailApp.personalInformation.personalDetails.nationality || "",
+            email:
+              detailApp.personalInformation.contactInformation?.emailAddress ||
+              "",
+            phoneNumber:
+              detailApp.personalInformation.contactInformation?.phoneNumber
+                ?.number || "",
+            country:
+              detailApp.personalInformation.residentialAddress?.country || "",
+            state:
+              detailApp.personalInformation.residentialAddress?.state || "",
+            lga: detailApp.personalInformation.residentialAddress?.lga || "",
+            streetAddress:
+              detailApp.personalInformation.residentialAddress?.address || "",
+            impairment: "",
+            passportFileName: "",
+            passportAssetId: "",
+            passportUrl: "",
+          }),
+        );
+      }
+      if (detailApp.currentOccupation) {
+        dispatch(
+          setRPLExperienceTrade({
+            occupation: detailApp.currentOccupation.occupation || "",
+            yearsOfExperience: String(
+              detailApp.currentOccupation.yearsOfExperience || 1,
+            ),
+            employments: (
+              detailApp.currentOccupation.employmentHistory || []
+            ).map((emp, i) => ({
+              id: `emp-${i + 1}`,
+              companyName: emp.company || "",
+              jobTitle: emp.jobTitle || "",
+              employmentType: emp.employmentType || "Full-time",
+              startDate: emp.startDate || "",
+              endDate: emp.endDate || "",
+              responsibilities: emp.keyResponsibilities || "",
+            })),
+            qualificationTitle: (detailApp as any).trade?.name || "",
+            qualificationCode: "",
+            completedBefore: "no",
+            previousAssessmentDetails: "",
+            assessmentType: "rpl",
+            individualUnit: (detailApp as any).unitIds || [],
+            reasonRPL: (detailApp as any).reasonForSeekingRPL || "",
+            selectedEvidence: [],
+            otherEvidenceText: "",
+          }),
+        );
+      }
+    }
+    router.push("/rpl/personal-info");
+  };
+
   const stages = application
     ? getStagesConfig({
         formState,
@@ -172,8 +255,15 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
         isInterviewCollapsed,
         onToggleInterviewCollapse: () =>
           setIsInterviewCollapsed(!isInterviewCollapsed),
-        onOpenFormModal: () =>
-          router.push(`/dashboard/applications/${application.id}/application-form`),
+        onOpenFormModal: () => {
+          if (isDraft) {
+            handleEditApplication();
+          } else {
+            router.push(
+              `/dashboard/applications/${application.id}/application-form`,
+            );
+          }
+        },
         onMakePayment: handleMakePayment,
         onDownloadReceipt: () =>
           toast({
@@ -231,13 +321,69 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
           { label: "My Applications", href: "/dashboard/applications" },
           { label: application.title },
         ]}
-        showCreateButton={true}
-        createButtonText="Create Application"
+        showCreateButton={!isDraft}
+        rightAction={
+          isDraft ? (
+            <button
+              type="button"
+              onClick={handleEditApplication}
+              className="bg-[#fbab2a] hover:bg-[#e89b1f] active:scale-95 text-white font-semibold text-xs sm:text-sm px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-lg transition-all cursor-pointer shrink-0 select-none"
+            >
+              <FiEdit2 className="w-4 h-4" />
+              <span>Edit Application</span>
+            </button>
+          ) : (
+            <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-xl text-white text-xs font-semibold select-none">
+              <FiLock className="w-3.5 h-3.5" />
+              <span>Submitted & Locked</span>
+            </div>
+          )
+        }
       />
 
       <div className="max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           <div className="lg:col-span-8 xl:col-span-9 flex flex-col gap-4 bg-white rounded-2xl p-4 shadow-2xs">
+            {/* Draft Status / Locked Status Banner */}
+            {isDraft ? (
+              <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 shrink-0">
+                    <FiFileText className="w-5 h-5" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-bold text-amber-900">
+                      Draft Application
+                    </span>
+                    <span className="text-xs text-amber-700 font-normal">
+                      This application is saved as a draft. You can continue editing your personal details and experience before submitting.
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleEditApplication}
+                  className="px-4 py-2 bg-secondary text-white font-bold text-xs rounded-lg hover:bg-secondary/90 transition-all cursor-pointer whitespace-nowrap"
+                >
+                  Edit Application
+                </button>
+              </div>
+            ) : (
+              <div className="p-4 rounded-xl bg-green-50 border border-green-200 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center text-green-700 shrink-0">
+                  <FiLock className="w-5 h-5" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-sm font-bold text-green-900">
+                    Application Submitted
+                  </span>
+                  <span className="text-xs text-green-700 font-normal">
+                    This application has been submitted for review and is locked from further editing.
+                  </span>
+                </div>
+              </div>
+            )}
+
             {stages.map((stage) => (
               <ApplicationStageCard key={stage.id} stage={stage} />
             ))}

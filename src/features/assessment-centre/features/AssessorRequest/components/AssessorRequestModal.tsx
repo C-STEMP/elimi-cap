@@ -46,14 +46,14 @@ export const AssessorRequestModal: React.FC<AssessorRequestModalProps> = ({
           {/* Mode 1: Confirm Accept Request (Image 2 match) */}
           {mode === "confirm-accept" && (
             <div className="w-full flex flex-col items-center">
-              <div className="mt-2 mb-4 relative flex items-center justify-center">
+              <div className="mt-2 mb-4 w-[100px] h-[100px] relative flex items-center justify-center mx-auto">
                 <Image
                   src={ASSETS_URL.warningIcon}
                   alt="Warning"
-                  width={160}
-                  height={160}
-                  className="w-36 h-36 object-contain"
-                  style={{ width: "auto", height: "auto" }}
+                  width={100}
+                  height={100}
+                  className="w-[100px] h-[100px] object-contain"
+                  style={{ width: 100, height: 100 }}
                   priority
                 />
               </div>
@@ -91,14 +91,14 @@ export const AssessorRequestModal: React.FC<AssessorRequestModalProps> = ({
           {/* Mode 1.5: Confirm Decline Request (Image 2 match) */}
           {mode === "confirm-decline" && (
             <div className="w-full flex flex-col items-center">
-              <div className="mt-2 mb-4 relative flex items-center justify-center">
+              <div className="mt-2 mb-4 w-[100px] h-[100px] relative flex items-center justify-center mx-auto">
                 <Image
                   src={ASSETS_URL.warningIcon}
                   alt="Warning"
-                  width={160}
-                  height={160}
-                  className="w-36 h-36 object-contain"
-                  style={{ width: "auto", height: "auto" }}
+                  width={100}
+                  height={100}
+                  className="w-[100px] h-[100px] object-contain"
+                  style={{ width: 100, height: 100 }}
                   priority
                 />
               </div>
@@ -136,14 +136,14 @@ export const AssessorRequestModal: React.FC<AssessorRequestModalProps> = ({
           {/* Mode 2: Accepted Success */}
           {mode === "accepted-success" && (
             <div className="w-full flex flex-col items-center">
-              <div className="mt-2 mb-4 relative flex items-center justify-center">
+              <div className="mt-2 mb-4 w-[100px] h-[100px] relative flex items-center justify-center mx-auto">
                 <Image
                   src={ASSETS_URL.successCheckmarkImg}
                   alt="Accepted Successfully"
-                  width={160}
-                  height={160}
-                  className="w-36 h-36 object-contain"
-                  style={{ width: "auto", height: "auto" }}
+                  width={100}
+                  height={100}
+                  className="w-[100px] h-[100px] object-contain"
+                  style={{ width: 100, height: 100 }}
                   priority
                 />
               </div>
@@ -171,14 +171,14 @@ export const AssessorRequestModal: React.FC<AssessorRequestModalProps> = ({
           {/* Mode 3: Declined Success */}
           {mode === "declined-success" && (
             <div className="w-full flex flex-col items-center">
-              <div className="mt-2 mb-4 relative flex items-center justify-center">
+              <div className="mt-2 mb-4 w-[100px] h-[100px] relative flex items-center justify-center mx-auto">
                 <Image
                   src={ASSETS_URL.successCheckmarkImg}
                   alt="Declined Successfully"
-                  width={160}
-                  height={160}
-                  className="w-36 h-36 object-contain"
-                  style={{ width: "auto", height: "auto" }}
+                  width={100}
+                  height={100}
+                  className="w-[100px] h-[100px] object-contain"
+                  style={{ width: 100, height: 100 }}
                   priority
                 />
               </div>

@@ -49,8 +49,12 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({ children }) => {
       const isDashboardRoute =
         pathname?.startsWith("/dashboard") ||
         pathname?.startsWith("/assessment-centre");
-      const isOnboardingRoute =
-        pathname?.startsWith("/onboarding") || pathname?.startsWith("/rpl");
+      const isRplRoute = pathname?.startsWith("/rpl");
+      const isAllowedOnboardingRoute =
+        pathname?.startsWith("/onboarding/success") ||
+        pathname?.startsWith("/onboarding/start-application");
+      const isPreOnboardingRoute =
+        pathname?.startsWith("/onboarding") && !isAllowedOnboardingRoute;
       const isSignInRoute = pathname === "/signin";
 
       let currentPersona = getPersona();
@@ -113,7 +117,27 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({ children }) => {
         }
       }
 
-      if (isOnboardingRoute) {
+      if (isRplRoute) {
+        if (!isAuth) {
+          if (isMounted) {
+            router.push(`/signin?redirect=${encodeURIComponent(pathname)}`);
+          }
+          return;
+        }
+        // Allow RPL application flow
+      }
+
+      if (isAllowedOnboardingRoute) {
+        if (!isAuth) {
+          if (isMounted) {
+            router.push(`/signin?redirect=${encodeURIComponent(pathname)}`);
+          }
+          return;
+        }
+        // Allow user to view success page and select start application or dashboard
+      }
+
+      if (isPreOnboardingRoute) {
         if (isAuth && isOnboarded) {
           const destination = resolveUserDestination(
             true,

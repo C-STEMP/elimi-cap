@@ -17,6 +17,7 @@ import { StatusModal } from "@/components/status-modal";
 
 import { useCandidateProfile } from "@/src/features/shared/onboarding/hooks";
 import { markVerified } from "@/store/slices/authSlice";
+import { useRplApplicationSubmission } from "../hooks/useRplApplicationSubmission";
 
 export interface RPLReviewSubmitProps {
   onBack?: () => void;
@@ -71,7 +72,7 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
 
   React.useEffect(() => {
     dispatch(setSidebarVariant("rpl-form"));
-    dispatch(setRplStep(3));
+    dispatch(setRplStep(4));
   }, [dispatch]);
 
   const allChecked =
@@ -86,13 +87,15 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
 
   const [showConfirmDraftModal, setShowConfirmDraftModal] = useState(false);
   const [showDraftModal, setShowDraftModal] = useState(false);
+  const { saveDraft, submitApplication } = useRplApplicationSubmission();
 
   const handleSaveDraft = () => {
     setShowConfirmDraftModal(true);
   };
 
-  const handleConfirmSaveDraft = () => {
+  const handleConfirmSaveDraft = async () => {
     setShowConfirmDraftModal(false);
+    await saveDraft();
     setShowDraftModal(true);
   };
 
@@ -102,14 +105,11 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
     setShowConfirmSubmitModal(true);
   };
 
-  const handleConfirmSubmit = () => {
+  const handleConfirmSubmit = async () => {
     setShowConfirmSubmitModal(false);
-    submitOnboarding.mutate(undefined, {
-      onSuccess: () => {
-        saveOnboardedStatus(true);
-        setShowSubmitModal(true);
-      },
-    });
+    await submitApplication(declarations);
+    saveOnboardedStatus(true);
+    setShowSubmitModal(true);
   };
 
   return (
@@ -119,9 +119,16 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
       transition={{ duration: 0.4, ease: "easeOut" }}
       className="w-full flex flex-col gap-6 select-text max-w-2xl mx-auto pb-10"
     >
+      {/* Step Progress Bar */}
+      <div className="w-full max-w-109.75 flex justify-start">
+        <div className="w-46.5 h-2.5 bg-primary-solid/15 rounded-[10px] overflow-hidden">
+          <div className="w-full h-full bg-primary-solid rounded-[10px] transition-all duration-300" />
+        </div>
+      </div>
+
       <div className="flex flex-col gap-2">
         <h1 className="text-2xl xl:text-[26px] font-extrabold tracking-tight text-primary">
-          Step 3 of 3: Review And Submit
+          Step 4 of 4: Review And Submit
         </h1>
         <p className="text-xs xl:text-sm text-neutral-secondary font-normal leading-relaxed">
           Please review the information you&apos;ve provided before submitting

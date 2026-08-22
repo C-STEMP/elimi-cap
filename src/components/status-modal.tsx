@@ -64,7 +64,13 @@ export const StatusModal: React.FC<StatusModalProps> = ({
   customIcon,
 }) => {
   const renderIcon = () => {
-    if (customIcon) return customIcon;
+    if (customIcon) {
+      return (
+        <div className="w-[100px] h-[100px] flex items-center justify-center relative shrink-0 mx-auto">
+          {customIcon}
+        </div>
+      );
+    }
     if (variant === "save-draft-confirm" || variant === "draft-saved") {
       return (
         <Image
@@ -72,8 +78,8 @@ export const StatusModal: React.FC<StatusModalProps> = ({
           alt="Save Draft"
           width={100}
           height={100}
-          className="w-auto h-auto object-contain"
-          style={{ width: "auto", height: "auto" }}
+          className="w-[100px] h-[100px] object-contain shrink-0 mx-auto"
+          style={{ width: 100, height: 100 }}
           priority
         />
       );
@@ -85,8 +91,8 @@ export const StatusModal: React.FC<StatusModalProps> = ({
           alt="Payment Successful"
           width={100}
           height={100}
-          className="w-auto h-auto object-contain"
-          style={{ width: "auto", height: "auto" }}
+          className="w-[100px] h-[100px] object-contain shrink-0 mx-auto"
+          style={{ width: 100, height: 100 }}
           priority
         />
       );
@@ -98,8 +104,8 @@ export const StatusModal: React.FC<StatusModalProps> = ({
           alt="Payment Cancelled"
           width={100}
           height={100}
-          className="w-auto h-auto object-contain"
-          style={{ width: "auto", height: "auto" }}
+          className="w-[100px] h-[100px] object-contain shrink-0 mx-auto"
+          style={{ width: 100, height: 100 }}
           priority
         />
       );
@@ -111,8 +117,8 @@ export const StatusModal: React.FC<StatusModalProps> = ({
           alt="Payment Unsuccessful"
           width={100}
           height={100}
-          className="w-auto h-auto object-contain"
-          style={{ width: "auto", height: "auto" }}
+          className="w-[100px] h-[100px] object-contain shrink-0 mx-auto"
+          style={{ width: 100, height: 100 }}
           priority
         />
       );
@@ -122,10 +128,10 @@ export const StatusModal: React.FC<StatusModalProps> = ({
         <Image
           src={ASSETS_URL.loadingIcon}
           alt="Processing Payment"
-          width={80}
-          height={80}
-          className="w-auto h-auto object-contain animate-spin my-4"
-          style={{ width: "auto", height: "auto" }}
+          width={100}
+          height={100}
+          className="w-[100px] h-[100px] object-contain animate-spin my-2 shrink-0 mx-auto"
+          style={{ width: 100, height: 100 }}
           priority
         />
       );
@@ -137,8 +143,8 @@ export const StatusModal: React.FC<StatusModalProps> = ({
           alt="Application Submitted"
           width={100}
           height={100}
-          className="w-auto h-auto object-contain"
-          style={{ width: "auto", height: "auto" }}
+          className="w-[100px] h-[100px] object-contain shrink-0 mx-auto"
+          style={{ width: 100, height: 100 }}
           priority
         />
       );
@@ -150,8 +156,8 @@ export const StatusModal: React.FC<StatusModalProps> = ({
           alt={title || "Status"}
           width={100}
           height={100}
-          className="w-auto h-auto object-contain"
-          style={{ width: "auto", height: "auto" }}
+          className="w-[100px] h-[100px] object-contain shrink-0 mx-auto"
+          style={{ width: 100, height: 100 }}
           priority
         />
       );
@@ -163,14 +169,14 @@ export const StatusModal: React.FC<StatusModalProps> = ({
           alt="Success Checkmark"
           width={100}
           height={100}
-          className="w-auto h-auto object-contain"
-          style={{ width: "auto", height: "auto" }}
+          className="w-[100px] h-[100px] object-contain shrink-0 mx-auto"
+          style={{ width: 100, height: 100 }}
           priority
         />
       );
     }
     return (
-      <div className="w-25 h-25 flex items-center justify-center bg-red-50 rounded-full border-4 border-red-100 shadow-lg animate-pulse">
+      <div className="w-[100px] h-[100px] flex items-center justify-center bg-red-50 rounded-full border-4 border-red-100 shadow-lg animate-pulse shrink-0 mx-auto">
         <ErrorCircleIcon />
       </div>
     );
@@ -253,7 +259,7 @@ export const StatusModal: React.FC<StatusModalProps> = ({
       }}
     >
       {/* Icon */}
-      <div className="mt-2 flex items-center justify-center">
+      <div className="mt-2 flex items-center justify-center w-[100px] h-[100px] mx-auto shrink-0 relative">
         {renderIcon()}
       </div>
 

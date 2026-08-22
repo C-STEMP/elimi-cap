@@ -36,8 +36,8 @@ export const CANDIDATE_ROUTES = {
     roleSelection: "/onboarding/role-selection",
     personalInfo: "/onboarding/personal-info",
     verifyIdentity: "/onboarding/verify-identity",
-    assessmentType: "/dashboard/assessment-type",
-    startApplication: "/rpl/personal-info",
+    assessmentType: "/onboarding/assessment-type",
+    startApplication: "/onboarding/start-application",
     success: "/onboarding/success?role=candidate",
   },
 

@@ -17,6 +17,7 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setSidebarVariant, setRplStep } from "@/store/slices/authSlice";
 import { setRPLExperienceTrade } from "@/store/slices/onboardingSlice";
 import { useOnboarding } from "@/src/features/candidate/features/Onboarding/hooks";
+import { useRplApplicationSubmission } from "../hooks/useRplApplicationSubmission";
 
 import {
   rplExperienceTradeSchema,
@@ -237,35 +238,17 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
 
   const [showConfirmDraftModal, setShowConfirmDraftModal] = useState(false);
   const [showDraftModal, setShowDraftModal] = useState(false);
+  const { saveDraft } = useRplApplicationSubmission();
 
   const handleSaveDraft = () => {
     setShowConfirmDraftModal(true);
   };
 
-  const handleConfirmSaveDraft = () => {
+  const handleConfirmSaveDraft = async () => {
     setShowConfirmDraftModal(false);
-    const yearsNum = parseInt(form.yearsOfExperience, 10) || 1;
-    saveOnboarding.mutate(
-      {
-        currentOccupation: {
-          occupation: form.occupation || form.qualificationTitle || "Worker",
-          yearsOfExperience: yearsNum,
-          employmentHistory: form.employments.map((emp) => ({
-            company: emp.companyName || "Self-Employed",
-            jobTitle: emp.jobTitle || form.occupation || "Worker",
-            employmentType: emp.employmentType || "Full-time",
-            startDate: formatToIsoDate(emp.startDate) || new Date().toISOString().split("T")[0],
-            endDate: emp.endDate ? formatToIsoDate(emp.endDate) : undefined,
-            keyResponsibilities: emp.responsibilities || "Trade duties",
-          })),
-        },
-      },
-      {
-        onSuccess: () => {
-          setShowDraftModal(true);
-        },
-      },
-    );
+    dispatch(setRPLExperienceTrade(form));
+    await saveDraft();
+    setShowDraftModal(true);
   };
 
   const validateForm = () => {
@@ -309,39 +292,21 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
     }
 
     update("isSubmitting", true);
-    const yearsNum = parseInt(form.yearsOfExperience, 10) || 1;
-    saveOnboarding.mutate(
-      {
-        currentOccupation: {
-          occupation: form.occupation || form.qualificationTitle || "Worker",
-          yearsOfExperience: yearsNum,
-          employmentHistory: form.employments.map((emp) => ({
-            company: emp.companyName || "Self-Employed",
-            jobTitle: emp.jobTitle || form.occupation || "Worker",
-            employmentType: emp.employmentType || "Full-time",
-            startDate: formatToIsoDate(emp.startDate) || new Date().toISOString().split("T")[0],
-            endDate: emp.endDate ? formatToIsoDate(emp.endDate) : undefined,
-            keyResponsibilities: emp.responsibilities || "Trade duties",
-          })),
-        },
-      },
-      {
-        onSettled: () => {
-          update("isSubmitting", false);
-          toast({
-            type: "success",
-            title: "Experience & Trade Saved",
-            description: "Step 2 of 4 completed successfully!",
-          });
+    dispatch(setRPLExperienceTrade(form));
+    saveDraft().finally(() => {
+      update("isSubmitting", false);
+      toast({
+        type: "success",
+        title: "Experience & Trade Saved",
+        description: "Step 2 of 4 completed successfully!",
+      });
 
-          if (onContinue) {
-            onContinue();
-          } else {
-            router.push("/rpl/review-submit");
-          }
-        },
-      },
-    );
+      if (onContinue) {
+        onContinue();
+      } else {
+        router.push("/rpl/verify-identity");
+      }
+    });
   };
 
   return (
@@ -352,6 +317,13 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
       className="w-full flex flex-col gap-6 select-text max-w-2xl mx-auto pb-12"
     >
       <form onSubmit={handleSubmit} className="w-full flex flex-col gap-6">
+        {/* Step Progress Bar */}
+        <div className="w-full max-w-109.75 flex justify-start">
+          <div className="w-46.5 h-2.5 bg-primary-solid/15 rounded-[10px] overflow-hidden">
+            <div className="w-2/4 h-full bg-primary-solid rounded-[10px] transition-all duration-300" />
+          </div>
+        </div>
+
         {/* Header Title */}
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl xl:text-[26px] font-bold tracking-tight text-primary">

@@ -1,5 +1,6 @@
 import {
   useCreateApplication as useSharedCreateApplication,
+  usePatchApplicationDraft as useSharedPatchApplicationDraft,
   useGetApplications as useSharedGetApplications,
   useGetApplicationById as useSharedGetApplicationById,
   useSubmitApplication as useSharedSubmitApplication,
@@ -11,6 +12,10 @@ import type { ApplicationStatus } from "../api/application.api";
 
 export function useCreateApplication() {
   return useSharedCreateApplication();
+}
+
+export function usePatchApplicationDraft() {
+  return useSharedPatchApplicationDraft();
 }
 
 export function useGetApplications(status?: ApplicationStatus) {
