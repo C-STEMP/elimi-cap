@@ -324,8 +324,8 @@ export const AssessmentCentreApplicationDetailView: React.FC<
               Upcoming Events
             </h3>
 
-            <div className="w-12 h-12 rounded-full bg-[#fde8ec] text-[#b3261e] flex items-center justify-center">
-              <FiCalendar className="w-6 h-6 stroke-[2]" />
+            <div className="w-12 h-12 rounded-full bg-[#fde8ec] text-border-secondary flex items-center justify-center">
+              <FiCalendar className="w-6 h-6 stroke-2" />
             </div>
 
             <div className="flex flex-col gap-1 mt-1">
