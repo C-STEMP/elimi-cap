@@ -22,11 +22,47 @@ const workSans = Work_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "ELIMI | Unified TVET Platform",
+  title: "ELIMI :: Nigeria's Unified TVET Platform",
   description:
-    "ELIMI is a 3-in-1 Technical and Vocational Education and Training platform built on a unified identity model — one user, seamless access across all three modules.",
+    "ELIMI is a 3-in-1 Technical and Vocational Education and Training platform built on a unified identity model — one user, seamless access across all three modules for training, certification, and employment.",
   icons: {
-    icon: "/icons/favicon.svg",
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/icon.png", type: "image/png", sizes: "512x512" },
+    ],
+    apple: "/apple-icon.png",
+  },
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL ||
+      process.env.NEXTAUTH_URL ||
+      "https://cap.elimi.africa"
+  ),
+  openGraph: {
+    title: "ELIMI — Nigeria's Unified TVET Platform",
+    description:
+      "ELIMI is a 3-in-1 Technical and Vocational Education and Training platform built on a unified identity model — one user, seamless access across all three modules for training, certification, and employment.",
+    url:
+      process.env.NEXT_PUBLIC_APP_URL ||
+      process.env.NEXTAUTH_URL ||
+      "https://cap.elimi.africa",
+    siteName: "ELIMI :: Nigeria's Unified TVET Platform",
+    images: [
+      {
+        url: "/landing-img-1.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Preview image for ELIMI :: Nigeria's Unified TVET Platform",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ELIMI :: Nigeria's Unified TVET Platform",
+    description:
+      "ELIMI is a 3-in-1 Technical and Vocational Education and Training platform built on a unified identity model — one user, seamless access across all three modules for training, certification, and employment.",
+    images: ["/landing-img-1.jpg"],
   },
 };
 

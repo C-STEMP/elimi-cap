@@ -20,12 +20,13 @@ export default function DashboardPage() {
   useEffect(() => {
     if (effectiveRole === "centre") {
       router.replace("/assessment-centre");
-    } else if (effectiveRole === "assessor" || effectiveRole === "quality-assurance" || effectiveRole === "quality_assurance") {
-      // Assessors stay on /dashboard — keep assessor persona
+    } else if (
+      effectiveRole === "assessor" ||
+      effectiveRole === "quality-assurance" ||
+      effectiveRole === "quality_assurance"
+    ) {
       savePersona("assessor");
     } else {
-      // Default: candidate workspace — overwrite any stale persona immediately
-      // so that all subsequent API calls in this render cycle use the right hat
       savePersona("candidate");
     }
   }, [effectiveRole, router]);
