@@ -266,14 +266,16 @@ export const CandidateVerifyIdentity: React.FC = () => {
             >
               {modalState === "verifying" && (
                 <div className="flex flex-col items-center py-4">
-                  <Image
-                    src={ASSETS_URL.loadingIcon}
-                    alt="Verifying..."
-                    width={96}
-                    height={96}
-                    className="w-24 h-auto mb-6 animate-spin"
-                    style={{ width: "auto", height: "auto" }}
-                  />
+                  <div className="w-[100px] h-[100px] mb-6 relative flex items-center justify-center mx-auto">
+                    <Image
+                      src={ASSETS_URL.loadingIcon}
+                      alt="Verifying..."
+                      width={100}
+                      height={100}
+                      className="w-[100px] h-[100px] object-contain animate-spin"
+                      style={{ width: 100, height: 100 }}
+                    />
+                  </div>
                   <h3 className="text-xl sm:text-2xl font-extrabold text-neutral-primary mb-3">
                     Verifying...
                   </h3>
@@ -290,15 +292,17 @@ export const CandidateVerifyIdentity: React.FC = () => {
 
               {modalState === "success" && (
                 <div className="flex flex-col items-center py-2 w-full">
-                  <Image
-                    src={ASSETS_URL.successCheckmarkImg}
-                    alt="Identity Confirmed"
-                    width={144}
-                    height={144}
-                    className="w-32 h-auto sm:w-36 sm:h-auto mb-6 object-contain"
-                    style={{ width: "auto", height: "auto" }}
-                    priority
-                  />
+                  <div className="w-[100px] h-[100px] mb-6 relative flex items-center justify-center mx-auto">
+                    <Image
+                      src={ASSETS_URL.successCheckmarkImg}
+                      alt="Identity Confirmed"
+                      width={100}
+                      height={100}
+                      className="w-[100px] h-[100px] object-contain"
+                      style={{ width: 100, height: 100 }}
+                      priority
+                    />
+                  </div>
                   <h3 className="text-xl sm:text-2xl font-extrabold text-neutral-primary mb-3">
                     Identity Confirmed
                   </h3>
@@ -326,14 +330,16 @@ export const CandidateVerifyIdentity: React.FC = () => {
 
               {modalState === "error" && (
                 <div className="flex flex-col items-center py-2 w-full">
-                  <Image
-                    src={ASSETS_URL.errorSymbolIcon}
-                    alt="Verification Failed"
-                    width={112}
-                    height={112}
-                    className="w-28 h-auto mb-6"
-                    style={{ width: "auto", height: "auto" }}
-                  />
+                  <div className="w-[100px] h-[100px] mb-6 relative flex items-center justify-center mx-auto">
+                    <Image
+                      src={ASSETS_URL.errorSymbolIcon}
+                      alt="Verification Failed"
+                      width={100}
+                      height={100}
+                      className="w-[100px] h-[100px] object-contain"
+                      style={{ width: 100, height: 100 }}
+                    />
+                  </div>
                   <h3 className="text-xl sm:text-2xl font-extrabold text-neutral-primary mb-2">
                     We couldn&apos;t verify your identity
                   </h3>

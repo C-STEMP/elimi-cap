@@ -11,7 +11,11 @@ import { Button } from "@/src/components/ui/button";
 import { StaffStatusModalMode } from "./StaffStatusModal";
 import { StaffMember } from "@/features/assessment-centre/types";
 import { MOCK_STAFF_MEMBERS } from "@/features/assessment-centre/utils/constants";
-import { useGetCentreStaff } from "@/src/features/shared/centre/hooks";
+import {
+  useGetCentreStaff,
+  useGetCentreStaffSummary,
+  useGetCentreStaffDetail,
+} from "@/src/features/shared/centre/hooks";
 
 interface StaffHeaderProps {
   selectedStaffId: string | null;
@@ -27,26 +31,60 @@ export const StaffHeader: React.FC<StaffHeaderProps> = ({
   onDeactivate,
 }) => {
   if (selectedStaffId) {
-    const staff =
-      MOCK_STAFF_MEMBERS.find((s) => s.id === selectedStaffId) ||
-      MOCK_STAFF_MEMBERS[1];
-    return <StaffDetailHeader staff={staff} onBack={onBack} onDeactivate={onDeactivate} />;
+    const mockStaff = MOCK_STAFF_MEMBERS.find((s) => s.id === selectedStaffId);
+    return (
+      <StaffDetailHeader
+        staffId={selectedStaffId}
+        fallbackStaff={mockStaff}
+        onBack={onBack}
+        onDeactivate={onDeactivate}
+      />
+    );
   }
 
   return <StaffListHeader onAddStaff={onAddStaff} />;
 };
 
 interface StaffDetailHeaderProps {
-  staff: StaffMember;
+  staffId: string;
+  fallbackStaff?: StaffMember;
   onBack: () => void;
   onDeactivate: (mode: StaffStatusModalMode) => void;
 }
 
 const StaffDetailHeader: React.FC<StaffDetailHeaderProps> = ({
-  staff,
+  staffId,
+  fallbackStaff,
   onBack,
   onDeactivate,
 }) => {
+  const { data: staffDetail } = useGetCentreStaffDetail(staffId);
+
+  const staffName =
+    staffDetail?.name ||
+    staffDetail?.email?.split("@")[0] ||
+    fallbackStaff?.name ||
+    "Staff Member";
+
+  const staffStatus = staffDetail?.status
+    ? staffDetail.status === "inactive"
+      ? "Inactive"
+      : "Active"
+    : fallbackStaff?.status || "Active";
+
+  const reviewedCount =
+    staffDetail?.workload?.reviewed ??
+    fallbackStaff?.reviewedApplicationsCount ??
+    0;
+  const pendingCount =
+    staffDetail?.workload?.pending ??
+    fallbackStaff?.pendingApplicationsCount ??
+    0;
+  const requiresAttentionCount =
+    staffDetail?.workload?.requiresAttention ??
+    fallbackStaff?.requiresAttentionCount ??
+    0;
+
   return (
     <div className="flex flex-col gap-6 pt-2">
       <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -57,7 +95,7 @@ const StaffDetailHeader: React.FC<StaffDetailHeaderProps> = ({
             className="flex items-center gap-2 text-white font-bold text-2xl lg:text-3xl tracking-tight hover:opacity-90 text-left cursor-pointer"
           >
             <span className="text-xl font-bold">&lt;</span>
-            <span>{staff.name}</span>
+            <span>{staffName}</span>
           </button>
           <div className="flex items-center gap-2 text-xs lg:text-sm text-white/90 font-normal">
             <span
@@ -67,11 +105,11 @@ const StaffDetailHeader: React.FC<StaffDetailHeaderProps> = ({
               Staff
             </span>
             <span>&gt;</span>
-            <span className="font-semibold text-white">{staff.name}</span>
+            <span className="font-semibold text-white">{staffName}</span>
           </div>
         </div>
 
-        {staff.status === "Inactive" ? (
+        {staffStatus === "Inactive" ? (
           <Button
             type="button"
             onClick={() => onDeactivate("confirm-activate")}
@@ -103,7 +141,7 @@ const StaffDetailHeader: React.FC<StaffDetailHeaderProps> = ({
             </span>
             <div className="flex items-baseline gap-1.5 mt-1">
               <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                {staff.reviewedApplicationsCount || 0}
+                {reviewedCount}
               </span>
               <span className="text-xs font-normal text-white/70">
                 applications
@@ -122,7 +160,7 @@ const StaffDetailHeader: React.FC<StaffDetailHeaderProps> = ({
             </span>
             <div className="flex items-baseline gap-1.5 mt-1">
               <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                {staff.pendingApplicationsCount || 0}
+                {pendingCount}
               </span>
               <span className="text-xs font-normal text-white/70">
                 applications
@@ -141,7 +179,7 @@ const StaffDetailHeader: React.FC<StaffDetailHeaderProps> = ({
             </span>
             <div className="flex items-baseline gap-1.5 mt-1">
               <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                {staff.requiresAttentionCount || 0}
+                {requiresAttentionCount}
               </span>
               <span className="text-xs font-normal text-white/70">
                 applications
@@ -163,11 +201,18 @@ interface StaffListHeaderProps {
 
 const StaffListHeader: React.FC<StaffListHeaderProps> = ({ onAddStaff }) => {
   const { data: staffList = [] } = useGetCentreStaff();
+  const { data: staffSummary } = useGetCentreStaffSummary();
 
-  const totalStaff = staffList.length;
-  const activeStaff = staffList.length;
-  const pendingStaff = 0;
-  const inactiveStaff = 0;
+  const totalStaff = staffSummary?.total ?? staffList.length;
+  const activeStaff =
+    staffSummary?.active ??
+    staffList.filter((s) => s.status === "active").length;
+  const pendingStaff =
+    staffSummary?.pending ??
+    staffList.filter((s) => s.status === "pending").length;
+  const inactiveStaff =
+    staffSummary?.inactive ??
+    staffList.filter((s) => s.status === "inactive").length;
 
   return (
     <div className="flex flex-col gap-6 pt-2">

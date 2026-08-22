@@ -224,7 +224,10 @@ const JobListHeader: React.FC<JobListHeaderProps> = ({ onPostRequest }) => {
   const totalJobs = jobListings.length;
   const openJobs = jobListings.filter((j) => j.status === "open").length;
   const filledJobs = jobListings.filter((j) => j.status === "closed").length;
-  const totalApplicants = 0;
+  const totalApplicants = jobListings.reduce(
+    (sum, j: any) => sum + (j.applicantCount || (j.applicants?.length ?? 0)),
+    0,
+  );
 
   return (
     <div className="flex flex-col gap-6 pt-2">

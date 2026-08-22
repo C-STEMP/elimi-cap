@@ -4,9 +4,11 @@ import React, { useState } from "react";
 import { FiSearch, FiFilter, FiList, FiGrid } from "react-icons/fi";
 import { AssessmentCentreFilterModal } from "./AssessmentCentreFilterModal";
 import { useToast } from "@/src/components/ui/toast";
-import { MOCK_APPLICATIONS_LIST } from "@/features/assessment-centre/utils/constants";
 
-import { useApplication, useGetApplications } from "@/features/assessment-centre/features/Applications/hooks";
+import {
+  useApplication,
+  useGetApplications,
+} from "@/features/assessment-centre/features/Applications/hooks";
 
 interface ApplicationsViewProps {
   onSelectCandidate: (candidateName: string) => void;
@@ -41,10 +43,10 @@ export const AssessmentCentreApplicationsView: React.FC<
         app.status === "certified"
           ? "Completed"
           : app.status === "in_progress"
-          ? "Ongoing"
-          : app.status === "rejected" || app.status === "withdrawn"
-          ? "Archived"
-          : "Pending",
+            ? "Ongoing"
+            : app.status === "rejected" || app.status === "withdrawn"
+              ? "Archived"
+              : "Pending",
       submittedAt: rawApp.submittedAt
         ? new Date(rawApp.submittedAt).toLocaleDateString("en-GB")
         : new Date(app.createdAt).toLocaleDateString("en-GB"),
@@ -146,7 +148,7 @@ export const AssessmentCentreApplicationsView: React.FC<
             />
           </div>
 
-          <div className="flex items-center gap-3 self-end sm:self-auto">
+          <div className="flex items-center gap-3 justify-end">
             <button
               type="button"
               onClick={() => setIsFilterModalOpen(true)}

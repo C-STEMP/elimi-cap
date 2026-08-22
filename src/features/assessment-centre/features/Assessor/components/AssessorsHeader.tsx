@@ -10,7 +10,11 @@ import { Button } from "@/src/components/ui/button";
 import { AssessorItem } from "@/features/assessment-centre/types";
 import { StaffStatusModalMode } from "@/features/assessment-centre/features/Staff/components/StaffStatusModal";
 import { MOCK_ASSESSORS } from "@/features/assessment-centre/utils/constants";
-import { useGetRetainedRequests } from "@/src/features/shared/centre/hooks";
+import {
+  useGetRetainedRequests,
+  useGetCentreAssessorsSummary,
+  useGetCentreAssessorDetail,
+} from "@/src/features/shared/centre/hooks";
 
 import { useAppSelector } from "@/src/store/hooks";
 import { canDeactivateAssessor } from "@/features/assessment-centre/utils/rbac";
@@ -29,12 +33,11 @@ export const AssessorsHeader: React.FC<AssessorsHeaderProps> = ({
   userRole,
 }) => {
   if (selectedAssessorId) {
-    const assessor =
-      MOCK_ASSESSORS.find((a) => a.id === selectedAssessorId) ||
-      MOCK_ASSESSORS[0];
+    const mockAssessor = MOCK_ASSESSORS.find((a) => a.id === selectedAssessorId);
     return (
       <AssessorDetailHeader
-        assessor={assessor}
+        assessorId={selectedAssessorId}
+        fallbackAssessor={mockAssessor}
         onBack={onBackToList}
         onDeactivate={onDeactivate}
         userRole={userRole}
@@ -46,20 +49,47 @@ export const AssessorsHeader: React.FC<AssessorsHeaderProps> = ({
 };
 
 interface AssessorDetailHeaderProps {
-  assessor: AssessorItem;
+  assessorId: string;
+  fallbackAssessor?: AssessorItem;
   onBack: () => void;
   onDeactivate: (mode: StaffStatusModalMode) => void;
   userRole?: string;
 }
 
 const AssessorDetailHeader: React.FC<AssessorDetailHeaderProps> = ({
-  assessor,
+  assessorId,
+  fallbackAssessor,
   onBack,
   onDeactivate,
   userRole,
 }) => {
+  const { data: assessorDetail } = useGetCentreAssessorDetail(assessorId);
   const user = useAppSelector((state) => state.auth.user);
   const canDeactivate = canDeactivateAssessor(userRole || user?.role);
+
+  const assessorName =
+    assessorDetail?.name ||
+    assessorDetail?.email?.split("@")[0] ||
+    fallbackAssessor?.name ||
+    "Assessor";
+
+  const assessorStatus = assessorDetail?.status
+    ? assessorDetail.status === "revoked" || assessorDetail.status === "pending"
+      ? "Inactive"
+      : "Active"
+    : fallbackAssessor?.status || "Active";
+
+  const assignedCount =
+    assessorDetail?.workload?.assigned ??
+    fallbackAssessor?.assignedCandidatesCount ??
+    0;
+  const ongoingCount =
+    assessorDetail?.workload?.ongoing ?? fallbackAssessor?.ongoingCount ?? 0;
+  const completedCount =
+    assessorDetail?.workload?.completed ??
+    fallbackAssessor?.completedCount ??
+    0;
+
   return (
     <div className="flex flex-col gap-6 pt-2">
       <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -70,7 +100,7 @@ const AssessorDetailHeader: React.FC<AssessorDetailHeaderProps> = ({
             className="flex items-center gap-2 text-white font-bold text-2xl lg:text-3xl tracking-tight hover:opacity-90 text-left cursor-pointer"
           >
             <span className="text-xl font-bold">&lt;</span>
-            <span>{assessor.name}</span>
+            <span>{assessorName}</span>
           </button>
           <div className="flex items-center gap-2 text-xs lg:text-sm text-white/90 font-normal">
             <span
@@ -81,13 +111,13 @@ const AssessorDetailHeader: React.FC<AssessorDetailHeaderProps> = ({
             </span>
             <span>&gt;</span>
             <span className="font-semibold text-white">
-              {assessor.name}
+              {assessorName}
             </span>
           </div>
         </div>
 
         {canDeactivate ? (
-          assessor.status === "Inactive" ? (
+          assessorStatus === "Inactive" ? (
             <Button
               type="button"
               onClick={() => onDeactivate("confirm-activate")}
@@ -120,7 +150,7 @@ const AssessorDetailHeader: React.FC<AssessorDetailHeaderProps> = ({
             </span>
             <div className="flex items-baseline gap-1.5 mt-1">
               <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                {assessor.assignedCandidatesCount || 0}
+                {assignedCount}
               </span>
               <span className="text-xs font-normal text-white/70">
                 applications
@@ -139,7 +169,7 @@ const AssessorDetailHeader: React.FC<AssessorDetailHeaderProps> = ({
             </span>
             <div className="flex items-baseline gap-1.5 mt-1">
               <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                {assessor.ongoingCount || 0}
+                {ongoingCount}
               </span>
               <span className="text-xs font-normal text-white/70">
                 applications
@@ -158,7 +188,7 @@ const AssessorDetailHeader: React.FC<AssessorDetailHeaderProps> = ({
             </span>
             <div className="flex items-baseline gap-1.5 mt-1">
               <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                {assessor.completedCount || 0}
+                {completedCount}
               </span>
               <span className="text-xs font-normal text-white/70">
                 applications
@@ -176,13 +206,20 @@ const AssessorDetailHeader: React.FC<AssessorDetailHeaderProps> = ({
 
 const AssessorsListHeader: React.FC = () => {
   const { data: retainedRequests = [] } = useGetRetainedRequests();
+  const { data: assessorSummary } = useGetCentreAssessorsSummary();
 
-  const totalAssessors = retainedRequests.length;
-  const activeAssessors = retainedRequests.filter((r) => r.status === "approved").length;
-  const pendingAssessors = retainedRequests.filter((r) => r.status === "pending").length;
-  const inactiveAssessors = retainedRequests.filter(
-    (r) => r.status === "rejected" || r.status === "revoked",
-  ).length;
+  const totalAssessors = assessorSummary?.total ?? retainedRequests.length;
+  const activeAssessors =
+    assessorSummary?.active ??
+    retainedRequests.filter((r) => r.status === "approved").length;
+  const pendingAssessors =
+    assessorSummary?.pending ??
+    retainedRequests.filter((r) => r.status === "pending").length;
+  const inactiveAssessors =
+    assessorSummary?.inactive ??
+    retainedRequests.filter(
+      (r) => r.status === "rejected" || r.status === "revoked",
+    ).length;
 
   return (
     <div className="flex flex-col gap-6 pt-2">
