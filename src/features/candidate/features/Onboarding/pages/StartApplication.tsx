@@ -13,12 +13,16 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setStartApplication } from "@/store/slices/onboardingSlice";
 import { startApplicationSchema } from "@/src/lib/validation";
 
-import { useGetApplications } from "@/src/features/candidate/features/Application/hooks";
+import { useGetApplications, useApplication } from "@/src/features/candidate/features/Application/hooks";
 import {
   useGetSectors,
   useGetCentres,
   useGetTradesBySector,
 } from "@/src/features/shared/reference/hooks";
+import {
+  setCurrentApplication,
+  createApplication as createApplicationSlice,
+} from "@/store/slices/applicationSlice";
 
 const rule = createSchemaFieldRule(startApplicationSchema);
 
@@ -62,6 +66,14 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
   const { toast } = useToast();
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const { createApplication } = useApplication();
+
+  const assessmentType = useAppSelector(
+    (state) =>
+      state.onboarding.assessmentType ||
+      state.auth.user?.assessmentType ||
+      "rpl",
+  );
 
   const { data: remoteSectors = [], isLoading: isLoadingSectors } =
     useGetSectors();
@@ -132,20 +144,90 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
       return;
     }
 
+    setIsSubmitting(true);
     dispatch(setStartApplication(values));
 
-    if (onContinue) {
-      onContinue();
-    } else {
-      router.push("/dashboard/assessment-type?from=start-application");
-    }
+    const appType = assessmentType === "nsq" ? "NSQ" : "RPL";
+
+    createApplication.mutate(
+      {
+        type: appType,
+        centreId: values.assessmentCenter,
+        sectorId: values.sector,
+        tradeId: values.trade,
+        unitIds: [],
+      },
+      {
+        onSuccess: (res: any) => {
+          setIsSubmitting(false);
+          const createdApp = res?.data || res;
+          if (createdApp?.id) {
+            dispatch(setCurrentApplication(createdApp.id));
+          }
+          dispatch(
+            createApplicationSlice({
+              title: values.trade,
+              subtitle: values.sector,
+            }),
+          );
+
+          if (onContinue) {
+            onContinue();
+          } else if (appType === "RPL") {
+            router.push("/rpl/personal-info");
+          } else {
+            router.push(
+              createdApp?.id
+                ? `/dashboard/applications/${createdApp.id}`
+                : "/dashboard/applications",
+            );
+          }
+        },
+        onError: (err: any) => {
+          setIsSubmitting(false);
+          const errorMsg = err?.message?.toLowerCase() || "";
+          const isConflict =
+            errorMsg.includes("already") ||
+            errorMsg.includes("in-progress") ||
+            errorMsg.includes("exists") ||
+            err?.statusCode === 409;
+
+          if (isConflict) {
+            dispatch(
+              createApplicationSlice({
+                title: values.trade,
+                subtitle: values.sector,
+              }),
+            );
+            if (onContinue) {
+              onContinue();
+            } else if (appType === "RPL") {
+              router.push("/rpl/personal-info");
+            } else {
+              router.push("/dashboard/applications");
+            }
+          } else {
+            toast({
+              type: "error",
+              title: "Application Error",
+              description:
+                err.message ||
+                "Failed to initialize application. Please try again.",
+            });
+            if (appType === "RPL") {
+              router.push("/rpl/personal-info");
+            }
+          }
+        },
+      },
+    );
   };
 
   const handleBack = () => {
     if (onBack) {
       onBack();
     } else {
-      router.push("/dashboard");
+      router.push("/onboarding/assessment-type");
     }
   };
 
@@ -154,16 +236,18 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
-      className="w-full max-w-140 mx-auto flex flex-col justify-center select-text"
+      className="w-full max-w-110 mx-auto flex flex-col justify-center select-text"
     >
-      <div className="mb-6 text-center lg:text-left w-full flex flex-col items-center lg:items-start">
-        <h1 className="text-2xl xl:text-3xl font-extrabold tracking-tight text-neutral-primary text-center lg:text-left">
-          Create Application
+      <div className="mb-6 text-left w-full flex flex-col items-start">
+        <h1 className="text-2xl xl:text-3xl font-extrabold tracking-tight text-primary">
+          Start Application
         </h1>
-        <p className="text-neutral-secondary text-[14px] xl:text-[15px] leading-relaxed mt-1.5 max-w-md font-normal text-center lg:text-left mx-auto lg:mx-0">
-          Select your Assessment Centre, Sector, and Trade to begin your
-          assessment application.
+        <p className="text-neutral-secondary text-sm font-normal mt-0.5">
+          Your journey is about to start
         </p>
+        <h2 className="text-xl xl:text-2xl font-extrabold tracking-tight text-neutral-primary mt-4">
+          Centre Information
+        </h2>
       </div>
 
       <Form
@@ -183,7 +267,7 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
               </span>
             }
             placeholder={
-              isLoadingCentres ? "Loading centres..." : "Select Centre"
+              isLoadingCentres ? "Loading centres..." : "Select"
             }
             options={centreOptions}
           />
@@ -197,7 +281,7 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
               </span>
             }
             placeholder={
-              isLoadingSectors ? "Loading sectors..." : "Select Sector"
+              isLoadingSectors ? "Loading sectors..." : "Select"
             }
             options={sectorOptions}
           />
@@ -214,7 +298,7 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
               isLoadingTrades
                 ? "Loading trades..."
                 : selectedSectorId
-                ? "Select Trade"
+                ? "Select"
                 : "Select a Sector first"
             }
             disabled={!selectedSectorId || isLoadingTrades}
@@ -222,28 +306,26 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
           />
         </Form.Item>
 
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between mt-6 pt-4 border-t border-gray-100 gap-4">
+        <div className="flex items-center justify-between mt-8 pt-4 gap-4">
           <button
             type="button"
             onClick={handleBack}
-            className="flex items-center justify-center gap-2 text-sm font-medium text-black hover:text-text-dark transition-colors cursor-pointer"
+            className="flex items-center gap-2 text-sm font-semibold text-neutral-secondary hover:text-neutral-primary transition-colors cursor-pointer select-none focus:outline-none"
           >
-            <FiArrowLeft className="w-4 h-4 text-black" />
-            Back to Dashboard
+            <FiArrowLeft className="w-4 h-4" />
+            Back
           </button>
 
-          <div className="flex items-center gap-3">
-            <Button
-              type="submit"
-              variant="secondary"
-              size="md"
-              loading={isSubmitting}
-              className="px-6 h-11 text-white font-bold text-sm bg-secondary hover:bg-secondary-hover rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg cursor-pointer whitespace-nowrap"
-            >
-              <span>Continue to Assessment Type</span>
-              <FiArrowRight className="w-4 h-4 text-white" />
-            </Button>
-          </div>
+          <Button
+            type="submit"
+            variant="amber"
+            size="lg"
+            loading={isSubmitting}
+            className="px-8 h-12 text-white font-bold text-base bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg cursor-pointer whitespace-nowrap"
+          >
+            <span>Continue</span>
+            <FiArrowRight className="w-4 h-4 text-white" />
+          </Button>
         </div>
       </Form>
     </motion.div>

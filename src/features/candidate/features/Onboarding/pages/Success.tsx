@@ -44,7 +44,7 @@ export const Success: React.FC<SuccessProps> = ({
     if (onStartApplication) {
       onStartApplication();
     } else {
-      router.push("/rpl/personal-info");
+      router.push("/onboarding/assessment-type");
     }
   };
 

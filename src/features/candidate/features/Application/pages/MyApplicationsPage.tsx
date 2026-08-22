@@ -210,7 +210,7 @@ export const MyApplicationsPage: React.FC = () => {
                   </p>
 
                   <Link
-                    href="/rpl/personal-info"
+                    href="/onboarding/assessment-type"
                     className="bg-secondary hover:bg-[#e89b1f] active:scale-95 text-white font-semibold text-sm px-6 py-2.5 rounded-xl shadow-lg transition-all cursor-pointer inline-flex items-center gap-1.5 no-underline select-none"
                   >
                     <span>Create Application</span>
