@@ -38,7 +38,6 @@ export const AssessmentCentreApplicationDetailView: React.FC<
   onOpenEvidenceVault,
 }) => {
   const { toast } = useToast();
-  const { forwardToAwardingBody, reviewApplication } = useApplication();
   const [currentMonth, setCurrentMonth] = useState("July");
   const months = [
     "January",
@@ -74,62 +73,6 @@ export const AssessmentCentreApplicationDetailView: React.FC<
   const handleNextMonth = () => {
     const idx = months.indexOf(currentMonth);
     setCurrentMonth(months[(idx + 1) % 12]);
-  };
-
-  const [paymentStatus] = useState<"paid" | "unpaid">("paid");
-  const [hasFacilitator] = useState(true);
-  const [isInterviewScheduled] = useState(true);
-  const [hasInternalVerifier] = useState(true);
-
-  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
-  const [isAssignSuccessOpen, setIsAssignSuccessOpen] = useState(false);
-  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
-  const [isScheduleSuccessOpen, setIsScheduleSuccessOpen] = useState(false);
-  const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
-  const [isRescheduleSuccessOpen, setIsRescheduleSuccessOpen] = useState(false);
-
-  const [isVerifierModalOpen, setIsVerifierModalOpen] = useState(false);
-  const [isVerifierSuccessOpen, setIsVerifierSuccessOpen] = useState(false);
-
-  const [isConfirmEVOpen, setIsConfirmEVOpen] = useState(false);
-  const [isEVSuccessOpen, setIsEVSuccessOpen] = useState(false);
-
-  const [trade, setTrade] = useState("");
-  const [facilitatorName, setFacilitatorName] = useState("");
-  const [verifierName, setVerifierName] = useState("");
-
-  const [interviewMode, setInterviewMode] = useState<"Physical" | "Virtual">(
-    "Physical",
-  );
-  const [sameAsCompanyAddress, setSameAsCompanyAddress] = useState(true);
-
-  const handleAssignSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsAssignModalOpen(false);
-    setIsAssignSuccessOpen(true);
-  };
-
-  const handleScheduleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsScheduleModalOpen(false);
-    setIsScheduleSuccessOpen(true);
-  };
-
-  const handleRescheduleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsRescheduleModalOpen(false);
-    setIsRescheduleSuccessOpen(true);
-  };
-
-  const handleVerifierSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsVerifierModalOpen(false);
-    setIsVerifierSuccessOpen(true);
-  };
-
-  const handleRequestEV = () => {
-    setIsConfirmEVOpen(false);
-    setIsEVSuccessOpen(true);
   };
 
   return (
@@ -381,8 +324,8 @@ export const AssessmentCentreApplicationDetailView: React.FC<
               Upcoming Events
             </h3>
 
-            <div className="w-12 h-12 rounded-full bg-[#fde8ec] text-[#b3261e] flex items-center justify-center">
-              <FiCalendar className="w-6 h-6 stroke-[2]" />
+            <div className="w-12 h-12 rounded-full bg-[#fde8ec] text-border-secondary flex items-center justify-center">
+              <FiCalendar className="w-6 h-6 stroke-2" />
             </div>
 
             <div className="flex flex-col gap-1 mt-1">

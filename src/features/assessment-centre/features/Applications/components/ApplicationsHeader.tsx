@@ -3,6 +3,7 @@
 import React from "react";
 import { FiClipboard } from "react-icons/fi";
 import { useGetApplications } from "@/src/features/shared/applications/hooks";
+import { useGetCentreApplicationsSummary } from "@/src/features/shared/centre/hooks";
 
 interface ApplicationsHeaderProps {
   selectedCandidateName: string | null;
@@ -26,14 +27,22 @@ export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = ({
   onBackFromCandidateForm,
 }) => {
   const { data: applications = [] } = useGetApplications();
+  const { data: appSummary } = useGetCentreApplicationsSummary();
 
-  const totalCount = applications.length;
-  const pendingCount = applications.filter((a) => a.status === "draft").length;
-  const ongoingCount = applications.filter((a) => a.status === "in_progress").length;
-  const completedCount = applications.filter((a) => a.status === "certified").length;
-  const archivedCount = applications.filter(
-    (a) => a.status === "rejected" || a.status === "withdrawn",
-  ).length;
+  const totalCount = appSummary?.total ?? applications.length;
+  const pendingCount =
+    appSummary?.pending ?? applications.filter((a) => a.status === "draft").length;
+  const ongoingCount =
+    appSummary?.ongoing ??
+    applications.filter((a) => a.status === "in_progress").length;
+  const completedCount =
+    appSummary?.completed ??
+    applications.filter((a) => a.status === "certified").length;
+  const archivedCount =
+    appSummary?.archived ??
+    applications.filter(
+      (a) => a.status === "rejected" || a.status === "withdrawn",
+    ).length;
 
   if (selectedCandidateName && showSelfAssessmentForm) {
     return (

@@ -59,10 +59,9 @@ export const AddStaffModal: React.FC<AddStaffModalProps> = ({
       return;
     }
 
-    const mappedRole =
-      role.toLowerCase().includes("super")
-        ? "super_admin"
-        : role.toLowerCase().includes("admin")
+    const mappedRole = role.toLowerCase().includes("super")
+      ? "super_admin"
+      : role.toLowerCase().includes("admin")
         ? "regular_admin"
         : "staff";
 
@@ -166,14 +165,14 @@ export const AddStaffModal: React.FC<AddStaffModalProps> = ({
             </form>
           ) : (
             <div className="w-full flex flex-col items-center text-center">
-              <div className="mt-2 mb-4 relative flex items-center justify-center">
+              <div className="mt-2 mb-4 w-25 h-25 relative flex items-center justify-center mx-auto">
                 <Image
                   src={ASSETS_URL.successCheckmarkImg}
                   alt="Staff Added Successfully"
-                  width={160}
-                  height={160}
-                  className="w-36 h-36 object-contain"
-                  style={{ width: "auto", height: "auto" }}
+                  width={100}
+                  height={100}
+                  className="w-25 h-25 object-contain"
+                  style={{ width: 100, height: 100 }}
                   priority
                 />
               </div>

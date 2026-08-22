@@ -2,11 +2,7 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
-import {
-  FiSearch,
-  FiList,
-  FiGrid,
-} from "react-icons/fi";
+import { FiSearch, FiList, FiGrid } from "react-icons/fi";
 import { Select } from "@/src/components/ui/select";
 import {
   useGetCentreStaffDetail,
@@ -66,9 +62,7 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
   };
 
   const staffName =
-    staffDetail?.name ||
-    staffDetail?.email?.split("@")[0] ||
-    "Staff Member";
+    staffDetail?.name || staffDetail?.email?.split("@")[0] || "Staff Member";
   const staffEmail = staffDetail?.email || "";
   const isDeactivated = staffDetail?.status === "inactive";
 
@@ -84,15 +78,15 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
       app.status === "certified"
         ? "Certified"
         : app.status === "in_progress"
-        ? "Ongoing"
-        : app.status === "rejected" || app.status === "withdrawn"
-        ? "Archived"
-        : "Pending",
+          ? "Ongoing"
+          : app.status === "rejected" || app.status === "withdrawn"
+            ? "Archived"
+            : "Pending",
     submittedAt: app.submittedAt
       ? new Date(app.submittedAt).toLocaleDateString("en-GB")
       : app.createdAt
-      ? new Date(app.createdAt).toLocaleDateString("en-GB")
-      : "N/A",
+        ? new Date(app.createdAt).toLocaleDateString("en-GB")
+        : "N/A",
   }));
 
   const filteredApplications = applications.filter((app) => {
@@ -212,7 +206,7 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
             />
           </div>
 
-          <div className="flex items-center flex-wrap sm:justify-end gap-3">
+          <div className="flex items-center justify-end gap-3">
             <Select
               size="sm"
               showPlaceholderOption={false}
