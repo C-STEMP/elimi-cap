@@ -335,13 +335,13 @@ export const AssessmentCentreCandidateFormView: React.FC<
       {isFeedbackSuccessOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl max-w-sm w-full p-8 shadow-2xl flex flex-col items-center text-center animate-in zoom-in-95 duration-200 select-text">
-            <div className="w-[100px] h-[100px] mb-4 flex items-center justify-center">
+            <div className="w-25 h-25 mb-4 flex items-center justify-center">
               <Image
                 src={ASSETS_URL.successCheckmarkImg}
                 alt="Success"
                 width={100}
                 height={100}
-                className="w-[100px] h-[100px] object-contain"
+                className="w-25 h-25 object-contain"
                 style={{ width: 100, height: 100 }}
               />
             </div>
@@ -367,13 +367,13 @@ export const AssessmentCentreCandidateFormView: React.FC<
       {isConfirmAcceptOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl max-w-sm w-full p-8 shadow-2xl flex flex-col items-center text-center animate-in zoom-in-95 duration-200 select-text">
-            <div className="w-[100px] h-[100px] mb-4 flex items-center justify-center">
+            <div className="w-25 h-25 mb-4 flex items-center justify-center">
               <Image
                 src={ASSETS_URL.validationWarningIcon}
                 alt="Warning"
                 width={100}
                 height={100}
-                className="w-[100px] h-[100px] object-contain"
+                className="w-25 h-25 object-contain"
                 style={{ width: 100, height: 100 }}
               />
             </div>
@@ -413,13 +413,13 @@ export const AssessmentCentreCandidateFormView: React.FC<
       {isAcceptSuccessOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl max-w-sm w-full p-8 shadow-2xl flex flex-col items-center text-center animate-in zoom-in-95 duration-200 select-text">
-            <div className="w-[100px] h-[100px] mb-4 flex items-center justify-center">
+            <div className="w-25 h-25 mb-4 flex items-center justify-center">
               <Image
                 src={ASSETS_URL.successCheckmarkImg}
                 alt="Accepted"
                 width={100}
                 height={100}
-                className="w-[100px] h-[100px] object-contain"
+                className="w-25 h-25 object-contain"
                 style={{ width: 100, height: 100 }}
               />
             </div>

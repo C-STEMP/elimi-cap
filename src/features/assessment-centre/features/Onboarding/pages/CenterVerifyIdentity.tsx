@@ -22,14 +22,23 @@ export const CenterVerifyIdentity: React.FC = () => {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { toast } = useToast();
-  const { getOnboarding, saveOnboarding, verifyIdentity, submitOnboarding } = useOnboarding();
-  const savedCentreIdentity = useAppSelector((s) => s.onboarding.centreIdentity);
-  const centreInformation = useAppSelector((s) => s.onboarding.centreInformation);
-  const centrePersonalInfo = useAppSelector((s) => s.onboarding.centrePersonalInfo);
+  const { getOnboarding, saveOnboarding, verifyIdentity, submitOnboarding } =
+    useOnboarding();
+  const savedCentreIdentity = useAppSelector(
+    (s) => s.onboarding.centreIdentity,
+  );
+  const centreInformation = useAppSelector(
+    (s) => s.onboarding.centreInformation,
+  );
+  const centrePersonalInfo = useAppSelector(
+    (s) => s.onboarding.centrePersonalInfo,
+  );
 
   const [nin, setNin] = useState(savedCentreIdentity.nin || "");
   const [ninError, setNinError] = useState<string | undefined>(undefined);
-  const [isVerified, setIsVerified] = useState(savedCentreIdentity.isVerified || false);
+  const [isVerified, setIsVerified] = useState(
+    savedCentreIdentity.isVerified || false,
+  );
   const [showDraftModal, setShowDraftModal] = useState(false);
   const [modalState, setModalState] = useState<
     "none" | "verifying" | "success" | "error"
@@ -39,7 +48,8 @@ export const CenterVerifyIdentity: React.FC = () => {
   React.useEffect(() => {
     if (getOnboarding.data?.data) {
       const apiData = getOnboarding.data.data as any;
-      const identityData = apiData?.identityVerification || apiData?.owner?.identity;
+      const identityData =
+        apiData?.identityVerification || apiData?.owner?.identity;
       if (identityData?.identificationNumber) {
         const idNum = identityData.identificationNumber;
         setNin(idNum);
@@ -147,7 +157,6 @@ export const CenterVerifyIdentity: React.FC = () => {
       },
     );
   };
-
 
   const handleContinue = () => {
     if (!isVerified) {
@@ -327,13 +336,13 @@ export const CenterVerifyIdentity: React.FC = () => {
             >
               {modalState === "verifying" && (
                 <div className="flex flex-col items-center py-4">
-                  <div className="w-[100px] h-[100px] mb-6 relative flex items-center justify-center mx-auto">
+                  <div className="w-25 h-25 mb-6 relative flex items-center justify-center mx-auto">
                     <Image
                       src={ASSETS_URL.loadingIcon}
                       alt="Verifying..."
                       width={100}
                       height={100}
-                      className="w-[100px] h-[100px] object-contain animate-spin"
+                      className="w-25 h-25 object-contain animate-spin"
                       style={{ width: 100, height: 100 }}
                     />
                   </div>
@@ -353,13 +362,13 @@ export const CenterVerifyIdentity: React.FC = () => {
 
               {modalState === "success" && (
                 <div className="flex flex-col items-center py-2 w-full">
-                  <div className="w-[100px] h-[100px] mb-6 relative flex items-center justify-center mx-auto">
+                  <div className="w-25 h-25 mb-6 relative flex items-center justify-center mx-auto">
                     <Image
                       src={ASSETS_URL.successCheckmarkImg}
                       alt="Identity Confirmed"
                       width={100}
                       height={100}
-                      className="w-[100px] h-[100px] object-contain"
+                      className="w-25 h-25 object-contain"
                       style={{ width: 100, height: 100 }}
                       priority
                     />
@@ -391,13 +400,13 @@ export const CenterVerifyIdentity: React.FC = () => {
 
               {modalState === "error" && (
                 <div className="flex flex-col items-center py-2 w-full">
-                  <div className="w-[100px] h-[100px] mb-6 relative flex items-center justify-center mx-auto">
+                  <div className="w-25 h-25 mb-6 relative flex items-center justify-center mx-auto">
                     <Image
                       src={ASSETS_URL.errorSymbolIcon}
                       alt="Verification Failed"
                       width={100}
                       height={100}
-                      className="w-[100px] h-[100px] object-contain"
+                      className="w-25 h-25 object-contain"
                       style={{ width: 100, height: 100 }}
                     />
                   </div>

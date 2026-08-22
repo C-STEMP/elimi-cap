@@ -163,13 +163,13 @@ export const BroadcastModal: React.FC<BroadcastModalProps> = ({
             </form>
           ) : (
             <div className="w-full flex flex-col items-center text-center">
-              <div className="mt-2 mb-4 w-[100px] h-[100px] relative flex items-center justify-center mx-auto">
+              <div className="mt-2 mb-4 w-25 h-25 relative flex items-center justify-center mx-auto">
                 <Image
                   src={ASSETS_URL.successCheckmarkImg}
                   alt="Broadcast Sent"
                   width={100}
                   height={100}
-                  className="w-[100px] h-[100px] object-contain"
+                  className="w-25 h-25 object-contain"
                   style={{ width: 100, height: 100 }}
                   priority
                 />

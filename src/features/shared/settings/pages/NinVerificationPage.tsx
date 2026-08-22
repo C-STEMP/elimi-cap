@@ -222,18 +222,18 @@ export const NinVerificationPage: React.FC = () => {
       {step === "success" && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl p-8 max-w-md w-full text-center flex flex-col items-center shadow-2xl relative animate-in zoom-in-95 duration-200">
-            <div className="relative w-[100px] h-[100px] mb-2 flex items-center justify-center mx-auto">
+            <div className="relative w-25 h-25 mb-2 flex items-center justify-center mx-auto">
               {ASSETS_URL.successCheckmarkImg ? (
                 <Image
                   src={ASSETS_URL.successCheckmarkImg}
                   alt="Success"
                   width={100}
                   height={100}
-                  className="w-[100px] h-[100px] object-contain drop-shadow-md"
+                  className="w-25 h-25 object-contain drop-shadow-md"
                   style={{ width: 100, height: 100 }}
                 />
               ) : (
-                <div className="w-[100px] h-[100px] rounded-full bg-linear-to-b from-[#66bb6a] to-[#2e7d32] flex items-center justify-center shadow-lg shadow-green-600/30">
+                <div className="w-25 h-25 rounded-full bg-linear-to-b from-[#66bb6a] to-[#2e7d32] flex items-center justify-center shadow-lg shadow-green-600/30">
                   <FiCheck className="w-12 h-12 text-white stroke-3" />
                 </div>
               )}
@@ -267,18 +267,18 @@ export const NinVerificationPage: React.FC = () => {
       {step === "error" && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl p-6 lg:p-8 max-w-md w-full text-center flex flex-col items-center shadow-2xl relative animate-in zoom-in-95 duration-200">
-            <div className="relative w-[100px] h-[100px] mb-2 flex items-center justify-center mx-auto">
+            <div className="relative w-25 h-25 mb-2 flex items-center justify-center mx-auto">
               {ASSETS_URL.errorSymbolIcon ? (
                 <Image
                   src={ASSETS_URL.errorSymbolIcon}
                   alt="Error"
                   width={100}
                   height={100}
-                  className="w-[100px] h-[100px] object-contain drop-shadow-md"
+                  className="w-25 h-25 object-contain drop-shadow-md"
                   style={{ width: 100, height: 100 }}
                 />
               ) : (
-                <div className="w-[100px] h-[100px] rounded-full bg-red-500 flex items-center justify-center shadow-lg shadow-red-500/30">
+                <div className="w-25 h-25 rounded-full bg-red-500 flex items-center justify-center shadow-lg shadow-red-500/30">
                   <FiX className="w-12 h-12 text-white stroke-3" />
                 </div>
               )}

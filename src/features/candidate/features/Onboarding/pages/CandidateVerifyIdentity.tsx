@@ -130,10 +130,11 @@ export const CandidateVerifyIdentity: React.FC = () => {
           Verify Identity
         </h1>
         <p className="text-neutral-secondary text-xs sm:text-sm font-normal mt-1 leading-relaxed">
-          To maintain the integrity of the National Skills Qualification process,
-          every candidate must complete a one-time identity verification using
-          their National Identification Number (NIN). Your verified identity will
-          be used across all ELIMI services and future applications.
+          To maintain the integrity of the National Skills Qualification
+          process, every candidate must complete a one-time identity
+          verification using their National Identification Number (NIN). Your
+          verified identity will be used across all ELIMI services and future
+          applications.
         </p>
       </div>
 
@@ -143,8 +144,8 @@ export const CandidateVerifyIdentity: React.FC = () => {
           Before You Begin
         </h2>
         <p className="text-text-dark text-xs xl:text-sm font-normal">
-          We&apos;ll compare the information you&apos;ve entered with your official
-          NIN records.
+          We&apos;ll compare the information you&apos;ve entered with your
+          official NIN records.
         </p>
 
         <div className="flex flex-col gap-1.5 text-xs xl:text-sm text-text-dark font-normal">
@@ -266,13 +267,13 @@ export const CandidateVerifyIdentity: React.FC = () => {
             >
               {modalState === "verifying" && (
                 <div className="flex flex-col items-center py-4">
-                  <div className="w-[100px] h-[100px] mb-6 relative flex items-center justify-center mx-auto">
+                  <div className="w-25 h-25 mb-6 relative flex items-center justify-center mx-auto">
                     <Image
                       src={ASSETS_URL.loadingIcon}
                       alt="Verifying..."
                       width={100}
                       height={100}
-                      className="w-[100px] h-[100px] object-contain animate-spin"
+                      className="w-25 h-25 object-contain animate-spin"
                       style={{ width: 100, height: 100 }}
                     />
                   </div>
@@ -292,13 +293,13 @@ export const CandidateVerifyIdentity: React.FC = () => {
 
               {modalState === "success" && (
                 <div className="flex flex-col items-center py-2 w-full">
-                  <div className="w-[100px] h-[100px] mb-6 relative flex items-center justify-center mx-auto">
+                  <div className="w-25 h-25 mb-6 relative flex items-center justify-center mx-auto">
                     <Image
                       src={ASSETS_URL.successCheckmarkImg}
                       alt="Identity Confirmed"
                       width={100}
                       height={100}
-                      className="w-[100px] h-[100px] object-contain"
+                      className="w-25 h-25 object-contain"
                       style={{ width: 100, height: 100 }}
                       priority
                     />
@@ -330,13 +331,13 @@ export const CandidateVerifyIdentity: React.FC = () => {
 
               {modalState === "error" && (
                 <div className="flex flex-col items-center py-2 w-full">
-                  <div className="w-[100px] h-[100px] mb-6 relative flex items-center justify-center mx-auto">
+                  <div className="w-25 h-25 mb-6 relative flex items-center justify-center mx-auto">
                     <Image
                       src={ASSETS_URL.errorSymbolIcon}
                       alt="Verification Failed"
                       width={100}
                       height={100}
-                      className="w-[100px] h-[100px] object-contain"
+                      className="w-25 h-25 object-contain"
                       style={{ width: 100, height: 100 }}
                     />
                   </div>

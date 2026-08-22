@@ -10,7 +10,11 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { ASSETS_URL } from "@/assets";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { setSidebarVariant, setRplStep, markVerified } from "@/store/slices/authSlice";
+import {
+  setSidebarVariant,
+  setRplStep,
+  markVerified,
+} from "@/store/slices/authSlice";
 import { setRPLIdentity } from "@/store/slices/onboardingSlice";
 import { validateNIN } from "@/src/lib/validation";
 import { useOnboarding } from "@/src/features/candidate/features/Onboarding/hooks";
@@ -284,13 +288,13 @@ export const RPLVerifyIdentity: React.FC<RPLVerifyIdentityProps> = ({
             >
               {modalState === "verifying" && (
                 <div className="flex flex-col items-center py-4">
-                  <div className="w-[100px] h-[100px] mb-6 relative flex items-center justify-center mx-auto">
+                  <div className="w-25 h-25 mb-6 relative flex items-center justify-center mx-auto">
                     <Image
                       src={ASSETS_URL.loadingIcon}
                       alt="Verifying..."
                       width={100}
                       height={100}
-                      className="w-[100px] h-[100px] object-contain animate-spin"
+                      className="w-25 h-25 object-contain animate-spin"
                       style={{ width: 100, height: 100 }}
                     />
                   </div>
@@ -310,13 +314,13 @@ export const RPLVerifyIdentity: React.FC<RPLVerifyIdentityProps> = ({
 
               {modalState === "success" && (
                 <div className="flex flex-col items-center py-2 w-full">
-                  <div className="w-[100px] h-[100px] mb-6 relative flex items-center justify-center mx-auto">
+                  <div className="w-25 h-25 mb-6 relative flex items-center justify-center mx-auto">
                     <Image
                       src={ASSETS_URL.successCheckmarkImg}
                       alt="Identity Confirmed"
                       width={100}
                       height={100}
-                      className="w-[100px] h-[100px] object-contain"
+                      className="w-25 h-25 object-contain"
                       style={{ width: 100, height: 100 }}
                       priority
                     />
@@ -352,13 +356,13 @@ export const RPLVerifyIdentity: React.FC<RPLVerifyIdentityProps> = ({
 
               {modalState === "error" && (
                 <div className="flex flex-col items-center py-2 w-full">
-                  <div className="w-[100px] h-[100px] mb-6 relative flex items-center justify-center mx-auto">
+                  <div className="w-25 h-25 mb-6 relative flex items-center justify-center mx-auto">
                     <Image
                       src={ASSETS_URL.errorSymbolIcon}
                       alt="Verification Failed"
                       width={100}
                       height={100}
-                      className="w-[100px] h-[100px] object-contain"
+                      className="w-25 h-25 object-contain"
                       style={{ width: 100, height: 100 }}
                     />
                   </div>
