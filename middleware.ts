@@ -22,15 +22,22 @@ export function middleware(request: NextRequest) {
   const isAuthenticated = Boolean(token);
   const isOnboarded = isAuthenticated && isOnboardedCookie !== "false";
 
-  const isOnboardingRoute = pathname.startsWith("/onboarding");
   const isRplRoute = pathname.startsWith("/rpl");
+  const isAllowedOnboardingRoute =
+    pathname.startsWith("/onboarding/success") ||
+    pathname.startsWith("/onboarding/start-application");
+  const isPreOnboardingRoute =
+    pathname.startsWith("/onboarding") && !isAllowedOnboardingRoute;
   const isDashboardRoute =
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/assessment-centre/dashboard") ||
     pathname.startsWith("/applications") ||
     pathname.startsWith("/evidence-vault");
 
-  if (!isAuthenticated && (isDashboardRoute || isOnboardingRoute || isRplRoute)) {
+  if (
+    !isAuthenticated &&
+    (isDashboardRoute || isPreOnboardingRoute || isAllowedOnboardingRoute || isRplRoute)
+  ) {
     const signinUrl = new URL("/signin", request.url);
     signinUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(signinUrl);
@@ -41,7 +48,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(onboardingUrl);
   }
 
-  if (isAuthenticated && isOnboardingRoute && isOnboarded) {
+  if (isAuthenticated && isPreOnboardingRoute && isOnboarded) {
     const dashboardUrl = new URL("/dashboard", request.url);
     return NextResponse.redirect(dashboardUrl);
   }

@@ -3,6 +3,7 @@ import { useToast } from "@/src/components/ui/toast";
 import { ApiError } from "@/src/lib/api/client";
 import {
   createApplicationApi,
+  patchApplicationDraftApi,
   getApplicationsApi,
   getApplicationByIdApi,
   submitApplicationApi,
@@ -13,6 +14,7 @@ import {
   getApplicationReceiptApi,
   getSelfAssessmentApi,
   saveSelfAssessmentApi,
+  type Application,
   type CreateApplicationPayload,
   type ReviewDecisionPayload,
   type ApplicationStatus,
@@ -122,6 +124,27 @@ export function useSubmitApplication() {
           description: "Unable to submit application. Please try again.",
         });
       }
+    },
+  });
+}
+
+export function usePatchApplicationDraft() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: Record<string, unknown>;
+    }) => patchApplicationDraftApi(id, payload),
+
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({
+        queryKey: APPLICATION_QUERY_KEYS.detail(data.id),
+      });
+      queryClient.invalidateQueries({ queryKey: APPLICATION_QUERY_KEYS.all });
     },
   });
 }

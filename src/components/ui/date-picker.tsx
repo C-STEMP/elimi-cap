@@ -2,7 +2,6 @@
 
 import React, { useState, useRef, useEffect, useId } from "react";
 import { FiCalendar, FiChevronLeft, FiChevronRight } from "react-icons/fi";
-import { Select } from "@/src/components/ui/select";
 
 export interface DatePickerProps {
   label?: React.ReactNode;
@@ -15,6 +14,10 @@ export interface DatePickerProps {
   disabled?: boolean;
   minYear?: number;
   maxYear?: number;
+  minAge?: number;
+  maxDate?: Date;
+  minDate?: Date;
+  disableFutureDates?: boolean;
   containerClassName?: string;
   className?: string;
   id?: string;
@@ -76,21 +79,25 @@ const parseDateString = (str: string): Date | null => {
   return isNaN(d.getTime()) ? null : d;
 };
 
-const formatDateString = (date: Date, isShortYear: boolean): string => {
+const formatDateString = (
+  date: Date,
+  isShortYear: boolean,
+  isMonthFirst: boolean,
+): string => {
   const d = String(date.getDate()).padStart(2, "0");
   const m = String(date.getMonth() + 1).padStart(2, "0");
   const y = isShortYear
     ? String(date.getFullYear()).slice(-2)
     : String(date.getFullYear());
-  return `${d}/${m}/${y}`;
+  return isMonthFirst ? `${m}/${d}/${y}` : `${d}/${m}/${y}`;
 };
 
 /**
  * Coerces raw typed input into a guided dd/mm/yyyy mask.
  * Inserts slashes automatically so users don't need to type them.
  */
-function maskDateInput(raw: string, prev: string): string {
-  // Strip everything that isn't a digit or slash
+function maskDateInput(raw: string): string {
+  // Strip everything that isn't a digit
   const digits = raw.replace(/[^\d]/g, "");
 
   // Auto-insert slashes at positions 2 and 4
@@ -111,8 +118,12 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   helperText,
   required = false,
   disabled = false,
-  minYear = 1940,
-  maxYear = 2035,
+  minYear = 1930,
+  maxYear,
+  minAge,
+  maxDate,
+  minDate,
+  disableFutureDates,
   containerClassName = "",
   className = "",
   id,
@@ -123,11 +134,67 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   const [mounted, setMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const today = new Date();
+
+  // Helper to safely extract plain text from React nodes without JSON.stringify circular errors
+  const getLabelText = (node: React.ReactNode): string => {
+    if (!node) return "";
+    if (typeof node === "string" || typeof node === "number") return String(node);
+    if (Array.isArray(node)) return node.map(getLabelText).join(" ");
+    if (React.isValidElement(node)) {
+      const props = (node as any).props;
+      if (props && props.children) {
+        return getLabelText(props.children);
+      }
+    }
+    return "";
+  };
+
+  const labelText = getLabelText(label);
+
+  // Detect if this field is Date of Birth (DOB)
+  const isDob =
+    minAge !== undefined ||
+    name === "dob" ||
+    name === "dateOfBirth" ||
+    /birth|dob/i.test(labelText);
+
+  // Enforce 18+ for DOB unless explicitly overridden
+  const effectiveMinAge = minAge !== undefined ? minAge : isDob ? 18 : undefined;
+
+  // Compute maximum allowable date
+  const effectiveMaxDate: Date | undefined = maxDate
+    ? maxDate
+    : effectiveMinAge !== undefined
+    ? new Date(
+        today.getFullYear() - effectiveMinAge,
+        today.getMonth(),
+        today.getDate(),
+      )
+    : disableFutureDates
+    ? today
+    : undefined;
+
+  const effectiveMaxYear = effectiveMaxDate
+    ? effectiveMaxDate.getFullYear()
+    : maxYear || today.getFullYear() + 10;
 
   const selectedDate = parseDateString(value);
-  const defaultViewYear = maxYear || new Date().getFullYear() - 18;
+
+  // Default initial calendar view: if DOB, open at 18 years ago; otherwise current date
+  const defaultInitialYear = effectiveMaxDate
+    ? effectiveMaxDate.getFullYear()
+    : today.getFullYear();
+  const defaultInitialMonth = effectiveMaxDate
+    ? effectiveMaxDate.getMonth()
+    : today.getMonth();
+
   const [viewDate, setViewDate] = useState<Date>(
-    () => selectedDate || new Date(defaultViewYear, 0, 1),
+    () =>
+      selectedDate ||
+      new Date(defaultInitialYear, defaultInitialMonth, 1),
   );
 
   useEffect(() => {
@@ -138,7 +205,6 @@ export const DatePicker: React.FC<DatePickerProps> = ({
     if (selectedDate) {
       setViewDate(selectedDate);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
   const inputId = id || (mounted ? reactId : undefined);
@@ -163,34 +229,79 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   const currentYear = viewDate.getFullYear();
   const currentMonth = viewDate.getMonth();
 
+  const isShortYear =
+    placeholder.includes("yy") && !placeholder.includes("yyyy");
+  const isMonthFirst =
+    placeholder.toLowerCase().startsWith("mm");
+
   const handlePrevMonth = () => {
     setViewDate(new Date(currentYear, currentMonth - 1, 1));
   };
 
   const handleNextMonth = () => {
-    setViewDate(new Date(currentYear, currentMonth + 1, 1));
+    // Prevent navigating past effectiveMaxDate year/month if restricted
+    const nextMonthDate = new Date(currentYear, currentMonth + 1, 1);
+    if (
+      effectiveMaxDate &&
+      (nextMonthDate.getFullYear() > effectiveMaxDate.getFullYear() ||
+        (nextMonthDate.getFullYear() === effectiveMaxDate.getFullYear() &&
+          nextMonthDate.getMonth() > effectiveMaxDate.getMonth()))
+    ) {
+      return;
+    }
+    setViewDate(nextMonthDate);
+  };
+
+  const isDayDisabled = (day: number): boolean => {
+    const dateToCheck = new Date(currentYear, currentMonth, day, 23, 59, 59);
+    if (effectiveMaxDate && dateToCheck > effectiveMaxDate) {
+      return true;
+    }
+    if (minDate && dateToCheck < minDate) {
+      return true;
+    }
+    return false;
   };
 
   const handleDaySelect = (day: number) => {
+    if (isDayDisabled(day)) return;
+
     const newDate = new Date(currentYear, currentMonth, day);
-    const isShortYear =
-      placeholder.includes("yy") && !placeholder.includes("yyyy");
-    const formatted = formatDateString(newDate, isShortYear);
-    if (onChange) {
-      onChange(formatted);
-    }
+    const formatted = formatDateString(newDate, isShortYear, isMonthFirst);
+    onChange?.(formatted);
+    setViewDate(newDate);
     setIsOpen(false);
   };
 
   // ── Typed-input handler ──────────────────────────────────────────────────────
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const prev = value;
-    const masked = maskDateInput(e.target.value, prev);
+    const rawVal = e.target.value;
+    const masked = maskDateInput(rawVal);
     onChange?.(masked);
 
-    // Sync calendar view when a valid date is typed
-    const parsed = parseDateString(masked);
-    if (parsed) setViewDate(parsed);
+    // If user finished typing (10 chars for dd/mm/yyyy or 8 chars for dd/mm/yy)
+    const targetLength = isShortYear ? 8 : 10;
+    if (masked.length === targetLength) {
+      const parsed = parseDateString(masked);
+      if (parsed && !isNaN(parsed.getTime())) {
+        // If not disabled by age/limits, sync calendar and close
+        const isExceeding =
+          effectiveMaxDate && parsed > effectiveMaxDate;
+        const isUnderMin = minDate && parsed < minDate;
+
+        if (!isExceeding && !isUnderMin) {
+          setViewDate(parsed);
+        }
+        // Auto-close calendar when typing is complete
+        setIsOpen(false);
+      }
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" || e.key === "Escape") {
+      setIsOpen(false);
+    }
   };
 
   // Generate calendar grid
@@ -198,12 +309,14 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
   const prevMonthDays = new Date(currentYear, currentMonth, 0).getDate();
 
-  const daysGrid: { day: number; isCurrentMonth: boolean }[] = [];
+  const daysGrid: { day: number; isCurrentMonth: boolean; disabled: boolean }[] =
+    [];
 
   for (let i = firstDayOfWeek - 1; i >= 0; i--) {
     daysGrid.push({
       day: prevMonthDays - i,
       isCurrentMonth: false,
+      disabled: true,
     });
   }
 
@@ -211,6 +324,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
     daysGrid.push({
       day: d,
       isCurrentMonth: true,
+      disabled: isDayDisabled(d),
     });
   }
 
@@ -220,16 +334,24 @@ export const DatePicker: React.FC<DatePickerProps> = ({
       daysGrid.push({
         day: d,
         isCurrentMonth: false,
+        disabled: true,
       });
     }
   }
 
+  // Generate years list (sorted descending so recent eligible years appear first)
   const years: number[] = [];
-  for (let y = minYear; y <= maxYear; y++) {
+  for (let y = effectiveMaxYear; y >= minYear; y--) {
     years.push(y);
   }
 
-  const today = new Date();
+  // Next month disabled state
+  const isNextMonthDisabled = Boolean(
+    effectiveMaxDate &&
+      (currentYear > effectiveMaxDate.getFullYear() ||
+        (currentYear === effectiveMaxDate.getFullYear() &&
+          currentMonth >= effectiveMaxDate.getMonth())),
+  );
 
   return (
     <div
@@ -248,6 +370,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
       <div className="relative w-full flex items-center">
         {/* Typeable text input */}
         <input
+          ref={inputRef}
           id={inputId}
           name={name}
           type="text"
@@ -256,8 +379,17 @@ export const DatePicker: React.FC<DatePickerProps> = ({
           value={value}
           required={required}
           disabled={disabled}
-          maxLength={10} /* dd/mm/yyyy = 10 chars */
+          maxLength={isShortYear ? 8 : 10}
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck={false}
+          data-lpignore="true"
+          data-form-type="other"
+          aria-autocomplete="none"
           onChange={handleInputChange}
+          onKeyDown={handleKeyDown}
+          onClick={() => !disabled && setIsOpen(true)}
           onFocus={() => !disabled && setIsOpen(true)}
           className={`
             w-full h-11 xl:h-12
@@ -280,14 +412,19 @@ export const DatePicker: React.FC<DatePickerProps> = ({
           `}
         />
 
-        {/* Calendar toggle button — same look as before */}
+        {/* Calendar toggle button */}
         <button
           type="button"
           tabIndex={-1}
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            if (!disabled) setIsOpen(!isOpen);
+            if (!disabled) {
+              setIsOpen((prev) => !prev);
+              if (!isOpen) {
+                inputRef.current?.focus();
+              }
+            }
           }}
           className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center justify-center text-text-dark/60 hover:text-text-dark transition-colors cursor-pointer select-none focus:outline-none"
           aria-label="Toggle calendar"
@@ -299,10 +436,10 @@ export const DatePicker: React.FC<DatePickerProps> = ({
           <div
             className={`
               absolute top-full mt-2 z-50
-              w-72 sm:w-76
-              bg-white rounded-2xl shadow-2xl border border-gray-100 p-3 sm:p-3.5
+              w-76 sm:w-80
+              bg-white rounded-2xl shadow-2xl border border-gray-100 p-3.5 sm:p-4
               animate-in fade-in zoom-in-95 duration-150 select-none
-              max-w-[calc(100vw-2.5rem)]
+              max-w-[calc(100vw-2rem)]
               ${
                 align === "right"
                   ? "right-0 left-auto"
@@ -312,59 +449,74 @@ export const DatePicker: React.FC<DatePickerProps> = ({
               }
             `}
           >
-            {/* Header: Month/Year Dropdowns & Prev/Next Buttons */}
-            <div className="flex items-center justify-between pb-3 mb-2 border-b border-gray-100 gap-1.5">
-              <div className="flex items-center gap-1.5">
-                <Select
-                  size="sm"
-                  popupMatchSelectWidth={false}
-                  showPlaceholderOption={false}
-                  containerClassName="w-28 shrink-0"
-                  className="!h-8 !py-0 !px-2 font-bold text-xs"
+            {/* Header: Clean native Month/Year Dropdowns & Prev/Next Buttons */}
+            <div className="flex items-center justify-between pb-3 mb-2.5 border-b border-gray-100 gap-1.5 w-full">
+              <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                {/* Month Select */}
+                <select
                   value={String(currentMonth)}
                   onChange={(e) =>
                     setViewDate(
                       new Date(currentYear, parseInt(e.target.value, 10), 1),
                     )
                   }
-                  options={MONTHS.map((m, idx) => ({
-                    label: m,
-                    value: String(idx),
-                  }))}
-                />
+                  className="flex-1 min-w-0 h-8 px-2 py-0 text-xs font-bold text-neutral-800 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg outline-none cursor-pointer transition-colors"
+                >
+                  {MONTHS.map((m, idx) => {
+                    const isMonthDisabled = Boolean(
+                      effectiveMaxDate &&
+                        currentYear === effectiveMaxDate.getFullYear() &&
+                        idx > effectiveMaxDate.getMonth(),
+                    );
+                    return (
+                      <option
+                        key={m}
+                        value={String(idx)}
+                        disabled={isMonthDisabled}
+                      >
+                        {m}
+                      </option>
+                    );
+                  })}
+                </select>
 
-                <Select
-                  size="sm"
-                  popupMatchSelectWidth={false}
-                  showPlaceholderOption={false}
-                  containerClassName="w-24 shrink-0"
-                  className="!h-8 !py-0 !px-2 font-bold text-xs"
+                {/* Year Select */}
+                <select
                   value={String(currentYear)}
                   onChange={(e) =>
                     setViewDate(
                       new Date(parseInt(e.target.value, 10), currentMonth, 1),
                     )
                   }
-                  options={years.map((y) => ({
-                    label: String(y),
-                    value: String(y),
-                  }))}
-                />
+                  className="w-20 sm:w-22 shrink-0 h-8 px-2 py-0 text-xs font-bold text-neutral-800 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg outline-none cursor-pointer transition-colors"
+                >
+                  {years.map((y) => (
+                    <option key={y} value={String(y)}>
+                      {y}
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              <div className="flex items-center gap-1 shrink-0">
+              {/* Prev / Next Buttons */}
+              <div className="flex items-center gap-0.5 shrink-0 ml-1">
                 <button
                   type="button"
                   onClick={handlePrevMonth}
-                  className="w-7 h-7 flex items-center justify-center text-gray-500 hover:text-neutral-primary hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+                  className="w-7 h-7 flex items-center justify-center text-gray-500 hover:text-neutral-900 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
                   title="Previous month"
                 >
                   <FiChevronLeft className="w-4 h-4" />
                 </button>
                 <button
                   type="button"
+                  disabled={isNextMonthDisabled}
                   onClick={handleNextMonth}
-                  className="w-7 h-7 flex items-center justify-center text-gray-500 hover:text-neutral-primary hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+                  className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors ${
+                    isNextMonthDisabled
+                      ? "text-gray-300 cursor-not-allowed opacity-40"
+                      : "text-gray-500 hover:text-neutral-900 hover:bg-gray-100 cursor-pointer"
+                  }`}
                   title="Next month"
                 >
                   <FiChevronRight className="w-4 h-4" />
@@ -373,11 +525,11 @@ export const DatePicker: React.FC<DatePickerProps> = ({
             </div>
 
             {/* Weekdays */}
-            <div className="grid grid-cols-7 gap-1 text-center mb-1">
+            <div className="grid grid-cols-7 gap-1 text-center mb-1.5">
               {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((day) => (
                 <span
                   key={day}
-                  className="text-[11px] font-semibold text-neutral-400 py-1"
+                  className="text-[11px] font-semibold text-neutral-400 py-0.5"
                 >
                   {day}
                 </span>
@@ -404,18 +556,18 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                   <button
                     key={index}
                     type="button"
-                    disabled={!item.isCurrentMonth}
+                    disabled={!item.isCurrentMonth || item.disabled}
                     onClick={() => handleDaySelect(item.day)}
                     className={`
-                      w-8 h-8 mx-auto flex items-center justify-center text-xs rounded-lg transition-all cursor-pointer font-medium
+                      w-8.5 h-8.5 mx-auto flex items-center justify-center text-xs rounded-lg transition-all font-medium select-none
                       ${
-                        !item.isCurrentMonth
-                          ? "text-gray-300 cursor-not-allowed opacity-30"
+                        !item.isCurrentMonth || item.disabled
+                          ? "text-gray-300 cursor-not-allowed opacity-25"
                           : isSelected
-                          ? "bg-secondary text-white font-bold shadow-xs"
+                          ? "bg-secondary text-white font-bold shadow-xs cursor-pointer"
                           : isToday
-                          ? "bg-gray-100 text-secondary font-bold border border-secondary/30"
-                          : "text-neutral-700 hover:bg-secondary/10 hover:text-secondary"
+                          ? "bg-amber-50 text-secondary font-bold border border-secondary/40 cursor-pointer"
+                          : "text-neutral-700 hover:bg-secondary/10 hover:text-secondary cursor-pointer"
                       }
                     `}
                   >
@@ -424,6 +576,15 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                 );
               })}
             </div>
+
+            {/* Age helper badge for Date of Birth fields */}
+            {effectiveMinAge !== undefined && (
+              <div className="mt-2.5 pt-2 border-t border-gray-100 text-center">
+                <span className="text-[10.5px] text-neutral-400 font-medium">
+                  Must be at least {effectiveMinAge} years old
+                </span>
+              </div>
+            )}
           </div>
         )}
       </div>

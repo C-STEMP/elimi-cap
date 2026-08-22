@@ -40,14 +40,45 @@ export const Dashboard: React.FC = () => {
     authUser?.email?.split("@")[0] ||
     "User";
 
+  const reduxApplications = useAppSelector(
+    (state) => state.application.applications,
+  );
+
+  const allApplications = React.useMemo(() => {
+    const remote = applications || [];
+    const remoteIds = new Set(remote.map((a) => a.id));
+    const merged = [...remote];
+
+    for (const localApp of reduxApplications) {
+      if (!remoteIds.has(localApp.id)) {
+        merged.push({
+          id: localApp.id,
+          candidateId: authUser?.id || "candidate",
+          centreId: "centre-1",
+          type: "RPL",
+          status:
+            localApp.status === "submitted"
+              ? "in_progress"
+              : (localApp.status as any),
+          currentStageKey:
+            localApp.status === "submitted" ? "application_form" : "draft",
+          createdAt: localApp.createdAt,
+          trade: { id: "trade", name: localApp.title },
+          sector: { id: "sector", name: localApp.subtitle },
+        } as any);
+      }
+    }
+    return merged;
+  }, [applications, reduxApplications, authUser?.id]);
+
   const activeCount =
-    applications?.filter(
+    allApplications.filter(
       (app) => app.status !== "certified" && app.status !== "rejected",
     ).length ?? 0;
   const completedCount =
-    applications?.filter((app) => app.status === "certified").length ?? 0;
+    allApplications.filter((app) => app.status === "certified").length ?? 0;
 
-  const applicationItems = (applications ?? []).map((app) => {
+  const applicationItems = allApplications.map((app) => {
     let status: "Not Started" | "In Progress" | "Completed" = "In Progress";
     if (app.status === "draft") {
       status = "Not Started";

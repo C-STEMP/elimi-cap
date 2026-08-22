@@ -18,6 +18,7 @@ import { useOnboarding } from "@/src/features/candidate/features/Onboarding/hook
 import { StatusModal } from "@/components/status-modal";
 
 import { useVerifyIdentity } from "@/src/features/shared/onboarding/hooks";
+import { useRplApplicationSubmission } from "../hooks/useRplApplicationSubmission";
 
 export interface RPLVerifyIdentityProps {
   onBack?: () => void;
@@ -107,13 +108,15 @@ export const RPLVerifyIdentity: React.FC<RPLVerifyIdentityProps> = ({
 
   const [showConfirmDraftModal, setShowConfirmDraftModal] = useState(false);
   const [showDraftModal, setShowDraftModal] = useState(false);
+  const { saveDraft } = useRplApplicationSubmission();
 
   const handleSaveDraft = () => {
     setShowConfirmDraftModal(true);
   };
 
-  const handleConfirmSaveDraft = () => {
+  const handleConfirmSaveDraft = async () => {
     setShowConfirmDraftModal(false);
+    await saveDraft();
     setShowDraftModal(true);
   };
 
@@ -124,6 +127,13 @@ export const RPLVerifyIdentity: React.FC<RPLVerifyIdentityProps> = ({
       transition={{ duration: 0.4, ease: "easeOut" }}
       className="w-full flex flex-col gap-6 select-text max-w-2xl mx-auto pb-10"
     >
+      {/* Step Progress Bar */}
+      <div className="w-full max-w-109.75 flex justify-start">
+        <div className="w-46.5 h-2.5 bg-primary-solid/15 rounded-[10px] overflow-hidden">
+          <div className="w-3/4 h-full bg-primary-solid rounded-[10px] transition-all duration-300" />
+        </div>
+      </div>
+
       {/* Title section */}
       <div className="flex flex-col gap-2">
         <h1 className="text-2xl xl:text-[26px] font-extrabold tracking-tight text-primary">

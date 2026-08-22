@@ -215,7 +215,7 @@ export const AssessorDashboard: React.FC = () => {
         ) : activeTab === "Settings" ? (
           <AssessorSettingsView />
         ) : (
-          <div className="w-full bg-white rounded-3xl p-8 shadow-sm border border-gray-100 flex flex-col items-center justify-center min-h-[350px] text-center">
+          <div className="w-full bg-white rounded-3xl p-8 shadow-sm border border-gray-100 flex flex-col items-center justify-center min-h-87.5 text-center">
             <h3 className="text-lg font-bold text-neutral-primary">
               {activeTab} Section
             </h3>
