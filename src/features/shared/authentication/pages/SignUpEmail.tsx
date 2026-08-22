@@ -15,7 +15,7 @@ import { motion } from "framer-motion";
 import { useAppDispatch } from "@/store/hooks";
 import { logout } from "@/store/slices/authSlice";
 import { resetOnboarding } from "@/store/slices/onboardingSlice";
-import { clearTokens } from "@/src/lib/auth-storage";
+import { clearTokens, saveOnboardedStatus, savePersona } from "@/src/lib/auth-storage";
 import {
   validateEmail,
   validatePassword,
@@ -32,6 +32,8 @@ export const SignUpEmail: React.FC = () => {
 
   useEffect(() => {
     clearTokens();
+    saveOnboardedStatus(false);
+    savePersona("");
     dispatch(logout());
     dispatch(resetOnboarding());
   }, [dispatch]);

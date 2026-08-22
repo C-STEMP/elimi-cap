@@ -20,12 +20,13 @@ export function middleware(request: NextRequest) {
   const isOnboardedCookie = request.cookies.get("elimi_onboarded")?.value;
 
   const isAuthenticated = Boolean(token);
-  const isOnboarded = isAuthenticated && isOnboardedCookie !== "false";
+  const isOnboarded = isAuthenticated && isOnboardedCookie === "true";
 
   const isRplRoute = pathname.startsWith("/rpl");
   const isAllowedOnboardingRoute =
     pathname.startsWith("/onboarding/success") ||
-    pathname.startsWith("/onboarding/start-application");
+    pathname.startsWith("/onboarding/start-application") ||
+    pathname.startsWith("/onboarding/assessment-type");
   const isPreOnboardingRoute =
     pathname.startsWith("/onboarding") && !isAllowedOnboardingRoute;
   const isDashboardRoute =
@@ -44,7 +45,7 @@ export function middleware(request: NextRequest) {
   }
 
   if (isAuthenticated && isDashboardRoute && !isOnboarded) {
-    const onboardingUrl = new URL("/onboarding/role-selection", request.url);
+    const onboardingUrl = new URL("/onboarding/welcome", request.url);
     return NextResponse.redirect(onboardingUrl);
   }
 

@@ -26,13 +26,13 @@ export const SelfAssessmentSuccessModal: React.FC<SuccessModalProps> = ({
           exit={{ opacity: 0, scale: 0.95 }}
           className="bg-white rounded-3xl p-8 sm:p-10 max-w-md w-full text-center shadow-2xl relative flex flex-col items-center"
         >
-          <div className="mt-2 mb-4 w-[100px] h-[100px] relative flex items-center justify-center mx-auto">
+          <div className="mt-2 mb-4 w-25 h-25 relative flex items-center justify-center mx-auto">
             <Image
               src={ASSETS_URL.successCheckmarkImg}
               alt="Success Checkmark"
               width={100}
               height={100}
-              className="w-[100px] h-[100px] object-contain"
+              className="w-25 h-25 object-contain"
               style={{ width: 100, height: 100 }}
               priority
             />

@@ -95,7 +95,7 @@ export function resolveUserDestination(
   }
 
   if (!persona) {
-    return "/onboarding/role-selection";
+    return "/onboarding/welcome";
   }
 
   const savedRoute =
@@ -135,7 +135,7 @@ export function resolveUserDestination(
     return "/onboarding/assessor/personal-info";
   }
 
-  return "/onboarding/role-selection";
+  return "/onboarding/welcome";
 }
 
 export function saveCentreId(centreId: string): void {

@@ -66,7 +66,7 @@ export const StatusModal: React.FC<StatusModalProps> = ({
   const renderIcon = () => {
     if (customIcon) {
       return (
-        <div className="w-[100px] h-[100px] flex items-center justify-center relative shrink-0 mx-auto">
+        <div className="w-25 h-25 flex items-center justify-center relative shrink-0 mx-auto">
           {customIcon}
         </div>
       );
@@ -78,7 +78,7 @@ export const StatusModal: React.FC<StatusModalProps> = ({
           alt="Save Draft"
           width={100}
           height={100}
-          className="w-[100px] h-[100px] object-contain shrink-0 mx-auto"
+          className="w-25 h-25 object-contain shrink-0 mx-auto"
           style={{ width: 100, height: 100 }}
           priority
         />
@@ -91,7 +91,7 @@ export const StatusModal: React.FC<StatusModalProps> = ({
           alt="Payment Successful"
           width={100}
           height={100}
-          className="w-[100px] h-[100px] object-contain shrink-0 mx-auto"
+          className="w-25 h-25 object-contain shrink-0 mx-auto"
           style={{ width: 100, height: 100 }}
           priority
         />
@@ -104,7 +104,7 @@ export const StatusModal: React.FC<StatusModalProps> = ({
           alt="Payment Cancelled"
           width={100}
           height={100}
-          className="w-[100px] h-[100px] object-contain shrink-0 mx-auto"
+          className="w-25 h-25 object-contain shrink-0 mx-auto"
           style={{ width: 100, height: 100 }}
           priority
         />
@@ -117,7 +117,7 @@ export const StatusModal: React.FC<StatusModalProps> = ({
           alt="Payment Unsuccessful"
           width={100}
           height={100}
-          className="w-[100px] h-[100px] object-contain shrink-0 mx-auto"
+          className="w-25 h-25 object-contain shrink-0 mx-auto"
           style={{ width: 100, height: 100 }}
           priority
         />
@@ -130,7 +130,7 @@ export const StatusModal: React.FC<StatusModalProps> = ({
           alt="Processing Payment"
           width={100}
           height={100}
-          className="w-[100px] h-[100px] object-contain animate-spin my-2 shrink-0 mx-auto"
+          className="w-25 h-25 object-contain animate-spin my-2 shrink-0 mx-auto"
           style={{ width: 100, height: 100 }}
           priority
         />
@@ -143,7 +143,7 @@ export const StatusModal: React.FC<StatusModalProps> = ({
           alt="Application Submitted"
           width={100}
           height={100}
-          className="w-[100px] h-[100px] object-contain shrink-0 mx-auto"
+          className="w-25 h-25 object-contain shrink-0 mx-auto"
           style={{ width: 100, height: 100 }}
           priority
         />
@@ -156,7 +156,7 @@ export const StatusModal: React.FC<StatusModalProps> = ({
           alt={title || "Status"}
           width={100}
           height={100}
-          className="w-[100px] h-[100px] object-contain shrink-0 mx-auto"
+          className="w-25 h-25 object-contain shrink-0 mx-auto"
           style={{ width: 100, height: 100 }}
           priority
         />
@@ -169,14 +169,14 @@ export const StatusModal: React.FC<StatusModalProps> = ({
           alt="Success Checkmark"
           width={100}
           height={100}
-          className="w-[100px] h-[100px] object-contain shrink-0 mx-auto"
+          className="w-25 h-25 object-contain shrink-0 mx-auto"
           style={{ width: 100, height: 100 }}
           priority
         />
       );
     }
     return (
-      <div className="w-[100px] h-[100px] flex items-center justify-center bg-red-50 rounded-full border-4 border-red-100 shadow-lg animate-pulse shrink-0 mx-auto">
+      <div className="w-25 h-25 flex items-center justify-center bg-red-50 rounded-full border-4 border-red-100 shadow-lg animate-pulse shrink-0 mx-auto">
         <ErrorCircleIcon />
       </div>
     );
@@ -231,7 +231,8 @@ export const StatusModal: React.FC<StatusModalProps> = ({
           ? "Yes, Submit Application"
           : variant === "payment-successful"
             ? "Start Folder Arrangement"
-            : variant === "payment-cancelled" || variant === "payment-unsuccessful"
+            : variant === "payment-cancelled" ||
+                variant === "payment-unsuccessful"
               ? "Try again"
               : variant === "processing-payment"
                 ? undefined
@@ -259,7 +260,7 @@ export const StatusModal: React.FC<StatusModalProps> = ({
       }}
     >
       {/* Icon */}
-      <div className="mt-2 flex items-center justify-center w-[100px] h-[100px] mx-auto shrink-0 relative">
+      <div className="mt-2 flex items-center justify-center w-25 h-25 mx-auto shrink-0 relative">
         {renderIcon()}
       </div>
 
@@ -274,7 +275,8 @@ export const StatusModal: React.FC<StatusModalProps> = ({
       </p>
 
       {/* Action buttons */}
-      {variant === "save-draft-confirm" || variant === "submit-application-confirm" ? (
+      {variant === "save-draft-confirm" ||
+      variant === "submit-application-confirm" ? (
         <div className="flex flex-col gap-2.5 mt-8">
           <Button
             onClick={onAction}
@@ -298,7 +300,8 @@ export const StatusModal: React.FC<StatusModalProps> = ({
           )}
         </div>
       ) : (
-        modalActionLabel && (onAction || onClose) && (
+        modalActionLabel &&
+        (onAction || onClose) && (
           <Button
             onClick={onAction || onClose}
             variant="amber"
