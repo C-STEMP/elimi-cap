@@ -27,15 +27,15 @@ export const metadata: Metadata = {
     "ELIMI is a 3-in-1 Technical and Vocational Education and Training platform built on a unified identity model — one user, seamless access across all three modules for training, certification, and employment.",
   icons: {
     icon: [
-      { url: "/favicon.ico" },
+      { url: "/icon.ico" },
       { url: "/icon.png", type: "image/png", sizes: "512x512" },
     ],
-    apple: "/apple-icon.png",
+    apple: "/apple-icon.ico",
   },
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_APP_URL ||
       process.env.NEXTAUTH_URL ||
-      "https://cap.elimi.africa"
+      "https://cap.elimi.africa",
   ),
   openGraph: {
     title: "ELIMI — Nigeria's Unified TVET Platform",
