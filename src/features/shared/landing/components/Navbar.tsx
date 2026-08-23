@@ -65,7 +65,7 @@ export function Navbar() {
         scrolled ? "shadow-lg bg-[#661126]/95 backdrop-blur-md" : ""
       }`}
     >
-      <div className="mx-auto flex w-full items-center justify-between px-4 sm:px-6 lg:px-8 xl:px-16">
+      <div className="mx-auto flex w-full items-center justify-between px-4 lg:px-8 xl:px-16">
         <Link
           href="/"
           className="flex items-center gap-2 rounded-lg outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
@@ -148,7 +148,7 @@ export function Navbar() {
       </div>
 
       {mobileMenuOpen && (
-        <div className="absolute top-20 left-0 right-0 border-t border-white/10 bg-[#540C1D] px-6 pt-4 pb-8 md:hidden shadow-2xl">
+        <div className="absolute top-20 left-0 right-0 border-t border-white/10 bg-[#540C1D] px-4 pt-4 pb-8 md:hidden shadow-2xl">
           <div className="flex flex-col gap-3">
             {NAV_LINKS.map((link) => {
               const isActive = activeLink === link.href;
