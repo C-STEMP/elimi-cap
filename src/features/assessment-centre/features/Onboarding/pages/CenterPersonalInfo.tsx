@@ -61,36 +61,41 @@ export const CenterPersonalInfo: React.FC = () => {
       const resAddr = owner?.residentialAddress;
 
       if (owner || personalDetails || contactInfo || resAddr) {
-        setForm((prev) => {
-          const next = {
-            firstName: personalDetails?.firstName || prev.firstName || "",
-            lastName: personalDetails?.lastName || prev.lastName || "",
-            middleName: personalDetails?.middleName || prev.middleName || "",
-            dob: personalDetails?.dob || prev.dob || "",
-            gender: personalDetails?.gender || prev.gender || "",
-            nationality: personalDetails?.nationality || prev.nationality || "",
-            email: contactInfo?.emailAddress || prev.email || authUser?.email || "",
-            phoneNumber: contactInfo?.phoneNumber?.number || prev.phoneNumber || "",
-            country: resAddr?.country || prev.country || "Nigeria",
-            state: resAddr?.state || prev.state || "",
-            lga: resAddr?.lga || prev.lga || "",
-            streetAddress: resAddr?.address || prev.streetAddress || "",
-          };
-          dispatch(setCentrePersonalInfo(next));
-          return next;
-        });
+        const next = {
+          firstName: personalDetails?.firstName || form.firstName || "",
+          lastName: personalDetails?.lastName || form.lastName || "",
+          middleName: personalDetails?.middleName || form.middleName || "",
+          dob: personalDetails?.dob || form.dob || "",
+          gender: personalDetails?.gender || form.gender || "",
+          nationality: personalDetails?.nationality || form.nationality || "",
+          email: contactInfo?.emailAddress || form.email || authUser?.email || "",
+          phoneNumber: contactInfo?.phoneNumber?.number || form.phoneNumber || "",
+          country: resAddr?.country || form.country || "Nigeria",
+          state: resAddr?.state || form.state || "",
+          lga: resAddr?.lga || form.lga || "",
+          streetAddress: resAddr?.address || form.streetAddress || "",
+        };
+        setForm(next);
+        dispatch(setCentrePersonalInfo(next));
       }
     } else if (authUser?.email && !form.email) {
-      update("email", authUser.email);
+      setForm((prev) => ({ ...prev, email: authUser.email || "" }));
+      dispatch(setCentrePersonalInfo({ email: authUser.email }));
     }
   }, [getOnboarding.data, authUser?.email, dispatch]);
 
   const update = (field: keyof typeof form, value: string) => {
-    setForm((prev) => {
-      const next = { ...prev, [field]: value };
-      dispatch(setCentrePersonalInfo(next));
-      return next;
-    });
+    const updatedValues: Partial<typeof form> = { [field]: value };
+    if (field === "country") {
+      updatedValues.state = "";
+      updatedValues.lga = "";
+    }
+    if (field === "state") {
+      updatedValues.lga = "";
+    }
+
+    setForm((prev) => ({ ...prev, ...updatedValues }));
+    dispatch(setCentrePersonalInfo(updatedValues));
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }

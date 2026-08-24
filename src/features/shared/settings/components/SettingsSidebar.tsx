@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import Image, { StaticImageData } from "next/image";
-import { FiShield, FiCheckCircle } from "react-icons/fi";
+import { FiShield, FiCheckCircle, FiCamera, FiUpload } from "react-icons/fi";
 import { SettingsTab, VerificationStatus } from "../types/settings.types";
+import { CameraCaptureModal } from "@/src/components/ui/camera-capture-modal";
 
 interface SettingsSidebarProps {
   userAvatarSrc: StaticImageData | string;
@@ -23,6 +24,7 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
   onAvatarChange,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
   const isVerified = verificationStatus === "verified";
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -31,57 +33,77 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
     }
   };
 
+  const handleCameraCapture = (file: File) => {
+    if (onAvatarChange) {
+      onAvatarChange(file);
+    }
+  };
+
   return (
-    <div className="bg-white rounded-[20px] p-5 shadow-lg border border-gray-100/80 flex flex-col gap-6 w-full lg:w-72 shrink-0">
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/png, image/jpeg, image/jpg"
-        style={{ display: "none" }}
-        className="hidden"
-        onChange={handleFileChange}
-      />
+    <>
+      <div className="bg-white rounded-[20px] p-5 shadow-lg border border-gray-100/80 flex flex-col gap-6 w-full lg:w-72 shrink-0">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/png, image/jpeg, image/jpg"
+          style={{ display: "none" }}
+          className="hidden"
+          onChange={handleFileChange}
+        />
 
-      <div className="flex items-center gap-3.5">
-        <div className="relative w-20 h-20 rounded-xl overflow-hidden shrink-0 border border-gray-100 shadow-xs">
-          <Image
-            src={userAvatarSrc}
-            alt="User Avatar"
-            fill
-            sizes="80px"
-            className="object-cover"
-            priority
-            loading="eager"
-          />
-        </div>
+        <div className="flex items-center gap-3.5">
+          <div className="relative w-20 h-20 rounded-xl overflow-hidden shrink-0 border border-gray-100 shadow-xs">
+            <Image
+              src={userAvatarSrc}
+              alt="User Avatar"
+              fill
+              sizes="80px"
+              className="object-cover"
+              priority
+              loading="eager"
+            />
+          </div>
 
-        <div className="flex flex-col items-start justify-center">
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="bg-primary font-sans hover:bg-[#721328] text-white text-[11px] font-semibold px-4 py-1.5 rounded-xl transition-colors cursor-pointer"
-          >
-            Change Picture
-          </button>
-          <span className="text-[10px] font-sans text-[#191913] mt-1 font-medium">
-            JPG or PNG 10mb
-          </span>
+          <div className="flex flex-col items-start justify-center gap-1">
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="bg-primary font-sans hover:bg-[#721328] text-white text-[11px] font-semibold px-3 py-1.5 rounded-xl transition-colors cursor-pointer flex items-center gap-1"
+                title="Upload image"
+              >
+                <FiUpload className="w-3 h-3" />
+                <span>Upload</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsCameraOpen(true)}
+                className="bg-primary/10 hover:bg-primary/20 text-primary p-1.5 rounded-xl text-[11px] font-semibold transition-colors cursor-pointer"
+                title="Take photo with camera"
+                aria-label="Take photo with camera"
+              >
+                <FiCamera className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <span className="text-[10px] font-sans text-[#191913] font-medium">
+              Upload or Snap
+            </span>
 
-          <div className="mt-4">
-            {isVerified ? (
-              <div className="flex items-center gap-1 text-[11px] font-medium text-[#1E7F4C]">
-                <FiCheckCircle className="w-3.5 h-3.5 stroke-[2.5]" />
-                <span>Verified</span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1 text-[11px] font-medium text-border-secondary">
-                <FiShield className="w-3.5 h-3.5 stroke-[2.5]" />
-                <span>Not Verified</span>
-              </div>
-            )}
+            <div className="mt-2">
+              {isVerified ? (
+                <div className="flex items-center gap-1 text-[11px] font-medium text-[#1E7F4C]">
+                  <FiCheckCircle className="w-3.5 h-3.5 stroke-[2.5]" />
+                  <span>Verified</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1 text-[11px] font-medium text-border-secondary">
+                  <FiShield className="w-3.5 h-3.5 stroke-[2.5]" />
+                  <span>Not Verified</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
 
       <nav className="flex flex-col gap-1.5 lg:gap-6 pt-2">
         <button
@@ -119,5 +141,13 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
         </div>
       </nav>
     </div>
-  );
+
+    <CameraCaptureModal
+      isOpen={isCameraOpen}
+      onClose={() => setIsCameraOpen(false)}
+      onCapture={handleCameraCapture}
+      title="Take Profile Photograph"
+    />
+  </>
+);
 };

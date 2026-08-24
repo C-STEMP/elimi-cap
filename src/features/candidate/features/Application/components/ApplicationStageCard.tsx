@@ -30,30 +30,100 @@ export const ApplicationStageCard: React.FC<ApplicationStageCardProps> = ({
   const isCollapsible = stage.isCollapsible ?? true;
 
   return (
-    <div className="bg-[#F8F9FA] rounded-[20px] p-5 sm:p-6 shadow-2xs border border-gray-100/70 flex flex-col justify-between transition-all">
-      <div className="flex items-center justify-between gap-4">
+    <div className="bg-[#F8F9FA] rounded-[20px] p-4 sm:p-6 shadow-2xs border border-gray-100/70 flex flex-col justify-between transition-all w-full overflow-hidden">
+      {/* Mobile Layout (< sm) */}
+      <div className="flex flex-col gap-2.5 sm:hidden w-full">
+        {/* Top Row: Title + Badge on left, Chevron on right */}
         <div
           onClick={isCollapsible ? handleToggle : undefined}
-          className={`flex flex-col flex-1 ${
+          className={`flex items-center justify-between gap-2 w-full ${
             isCollapsible ? "cursor-pointer select-none" : ""
           }`}
         >
-          <div className="flex items-center gap-3 flex-wrap">
-            <h3 className="text-black font-bold text-lg sm:text-xl lg:text-2xl tracking-tight">
+          <div className="flex items-center gap-2 flex-wrap min-w-0">
+            <h3 className="text-black font-bold text-base tracking-tight break-words">
               {stage.title}
             </h3>
             <span
-              className={`${stage.statusBg} ${stage.statusText} text-xs font-semibold px-3 py-1 rounded-full shadow-2xs`}
+              className={`${stage.statusBg} ${stage.statusText} text-[11px] font-semibold px-2.5 py-0.5 rounded-full shadow-2xs shrink-0`}
             >
               {stage.status}
             </span>
           </div>
-          <p className="text-gray-400 text-xs sm:text-sm font-normal mt-1.5">
+
+          {isCollapsible && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleToggle();
+              }}
+              className="p-1 text-gray-500 hover:text-gray-800 transition-colors cursor-pointer rounded-lg hover:bg-gray-200/50 shrink-0"
+              aria-label="Toggle section"
+            >
+              {isCollapsed ? (
+                <FiChevronDown className="w-5 h-5" />
+              ) : (
+                <FiChevronUp className="w-5 h-5" />
+              )}
+            </button>
+          )}
+        </div>
+
+        {/* Bottom Row: Subtext on left, Action Button on right */}
+        <div className="flex items-center justify-between gap-2.5 w-full pt-0.5">
+          <p className="text-gray-400 text-xs font-normal break-words flex-1 min-w-0">
+            {stage.subtext}
+          </p>
+
+          {stage.actionText && (
+            <Button
+              type="button"
+              onClick={stage.onActionClick}
+              size="sm"
+              leftIcon={stage.actionLeftIcon}
+              rightIcon={stage.actionRightIcon}
+              loading={stage.actionLoading}
+              className={`shrink-0 font-bold text-xs px-4 py-2 rounded-xl transition-all cursor-pointer shadow-none! focus:outline-none focus:ring-0 focus:ring-transparent focus-visible:outline-none focus-visible:ring-0 active:outline-none outline-none whitespace-nowrap ${
+                stage.actionText === "View"
+                  ? "bg-white! text-secondary! border border-gray-200! hover:bg-gray-50! shadow-none!"
+                  : stage.actionText === "Make Payment"
+                    ? "bg-white! text-[#FBAB2A]! border border-gray-200! hover:bg-gray-50! shadow-none!"
+                    : isOutline
+                      ? "bg-white! text-secondary! border border-gray-200! hover:bg-gray-50! shadow-none!"
+                      : "bg-[#FBAB2A]! text-white! hover:bg-[#E89B1F]! shadow-none!"
+              }`}
+            >
+              {stage.actionText}
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Desktop / Tablet Layout (>= sm) */}
+      <div className="hidden sm:flex sm:items-center justify-between gap-4 w-full">
+        <div
+          onClick={isCollapsible ? handleToggle : undefined}
+          className={`flex flex-col flex-1 min-w-0 ${
+            isCollapsible ? "cursor-pointer select-none" : ""
+          }`}
+        >
+          <div className="flex items-center gap-3 flex-wrap">
+            <h3 className="text-black font-bold text-xl lg:text-2xl tracking-tight break-words">
+              {stage.title}
+            </h3>
+            <span
+              className={`${stage.statusBg} ${stage.statusText} text-xs font-semibold px-3 py-1 rounded-full shadow-2xs shrink-0`}
+            >
+              {stage.status}
+            </span>
+          </div>
+          <p className="text-gray-400 text-sm font-normal mt-1 break-words">
             {stage.subtext}
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 shrink-0">
           {isCollapsible && (
             <button
               type="button"
@@ -77,7 +147,7 @@ export const ApplicationStageCard: React.FC<ApplicationStageCardProps> = ({
               leftIcon={stage.actionLeftIcon}
               rightIcon={stage.actionRightIcon}
               loading={stage.actionLoading}
-              className={`shrink-0 font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl transition-all cursor-pointer shadow-none! focus:outline-none focus:ring-0 focus:ring-transparent focus-visible:outline-none focus-visible:ring-0 active:outline-none outline-none ${
+              className={`shrink-0 font-bold text-sm px-6 py-2.5 rounded-xl transition-all cursor-pointer shadow-none! focus:outline-none focus:ring-0 focus:ring-transparent focus-visible:outline-none focus-visible:ring-0 active:outline-none outline-none whitespace-nowrap ${
                 stage.actionText === "View"
                   ? "bg-white! text-secondary! border border-gray-200! hover:bg-gray-50! shadow-none!"
                   : stage.actionText === "Make Payment"
@@ -292,12 +362,12 @@ export const ApplicationStageCard: React.FC<ApplicationStageCardProps> = ({
       )}
 
       {stage.showPaymentDetails && (
-        <div className="mt-4 bg-white rounded-2xl p-4 sm:p-5 flex items-center justify-between border border-gray-100 shadow-2xs">
-          <span className="text-black font-semibold text-xs sm:text-base">
-            RPL Assessment Fee — Carpentry (Level 3)
+        <div className="mt-4 bg-white rounded-2xl p-3.5 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4 border border-gray-100 shadow-2xs">
+          <span className="text-black font-semibold text-xs sm:text-base break-words">
+            {stage.paymentDetailsText || "Assessment Fee"}
           </span>
-          <span className="text-[#a31d38] font-extrabold text-base sm:text-xl">
-            ₦45,000
+          <span className="text-[#a31d38] font-extrabold text-sm sm:text-xl shrink-0">
+            {stage.paymentAmountText || "₦45,000"}
           </span>
         </div>
       )}

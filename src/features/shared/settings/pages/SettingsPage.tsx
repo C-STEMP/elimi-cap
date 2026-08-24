@@ -23,15 +23,20 @@ import { DeleteAccountModal } from "../components/DeleteAccountModal";
 import { SuccessModal } from "../components/SuccessModal";
 
 import { useCandidateProfile } from "@/src/features/shared/onboarding/hooks";
-import { markVerified } from "@/store/slices/authSlice";
+import { markVerified, updateUser } from "@/store/slices/authSlice";
+import { useUploadFile } from "@/src/features/shared/storage/hooks";
 
 export const SettingsPage: React.FC = () => {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { toast } = useToast();
+  const uploadFileMutation = useUploadFile();
 
   const user = useAppSelector((state) => state.auth.user);
   const personalInfo = useAppSelector((state) => state.onboarding.personalInfo);
+  const assessorPersonalInfo = useAppSelector(
+    (state) => state.onboarding.assessorPersonalInfo,
+  );
   const centrePersonalInfo = useAppSelector(
     (state) => state.onboarding.centrePersonalInfo,
   );
@@ -66,7 +71,27 @@ export const SettingsPage: React.FC = () => {
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  const [avatarSrc, setAvatarSrc] = useState<any>(ASSETS_URL.userAvatar);
+  const uploadedAvatar =
+    personalInfo?.passportUrl ||
+    personalInfo?.passportPreview ||
+    (assessorPersonalInfo as any)?.passportUrl ||
+    (assessorPersonalInfo as any)?.passportPreview ||
+    (centrePersonalInfo as any)?.passportUrl ||
+    (centrePersonalInfo as any)?.passportPreview ||
+    (savedAssessorIdentity as any)?.passportUrl ||
+    user?.avatar ||
+    user?.avatarUrl ||
+    user?.passportUrl;
+
+  const [avatarSrc, setAvatarSrc] = useState<any>(
+    uploadedAvatar || ASSETS_URL.userAvatar,
+  );
+
+  React.useEffect(() => {
+    if (uploadedAvatar) {
+      setAvatarSrc(uploadedAvatar);
+    }
+  }, [uploadedAvatar]);
 
   const nameParts = (user?.fullName || "").trim().split(/\s+/).filter(Boolean);
   const realFirstName =
@@ -169,14 +194,43 @@ export const SettingsPage: React.FC = () => {
     setSecurityForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleAvatarChange = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      if (e.target?.result) {
-        setAvatarSrc(e.target.result as string);
+  const handleAvatarChange = async (file: File) => {
+    const localUrl = URL.createObjectURL(file);
+    setAvatarSrc(localUrl);
+    dispatch(
+      setPersonalInfo({
+        passportUrl: localUrl,
+        passportPreview: localUrl,
+        passportFileName: file.name,
+      }),
+    );
+    dispatch(updateUser({ avatar: localUrl, passportUrl: localUrl }));
+
+    try {
+      const asset = await uploadFileMutation.mutateAsync({
+        file,
+        purpose: "passport",
+      });
+      if (asset?.url) {
+        setAvatarSrc(asset.url);
+        dispatch(
+          setPersonalInfo({
+            passportUrl: asset.url,
+            passportAssetId: asset.assetId,
+            passportPreview: asset.url,
+          }),
+        );
+        dispatch(updateUser({ avatar: asset.url, passportUrl: asset.url }));
       }
-    };
-    reader.readAsDataURL(file);
+    } catch {
+      // Local preview remains
+    }
+
+    toast({
+      type: "success",
+      title: "Profile Picture Updated",
+      description: "Your new profile picture has been applied.",
+    });
   };
 
   const handleSaveProfile = () => {

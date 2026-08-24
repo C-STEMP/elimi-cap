@@ -11,6 +11,7 @@ import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { markEvidenceUploaded } from "@/store/slices/applicationSlice";
+import { useGetApplicationById } from "@/src/features/candidate/features/Application/hooks";
 import { EvidenceRecord } from "../utils/evidenceConstants";
 import {
   UploadEvidenceModal,
@@ -31,23 +32,40 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
   const { toast } = useToast();
   const dispatch = useAppDispatch();
   const router = useRouter();
+  const { data: apiApp } = useGetApplicationById(applicationId || "");
   const reduxApp = useAppSelector((state) =>
     state.application.applications.find((a) => a.id === applicationId),
   );
 
-  const fallbackApp = {
-    id: applicationId || "app-1786013185522",
-    title: "National Vocational Qualification in Carpentry",
-    subtitle: "NSQ Level 3",
-    status: "evidence_upload" as const,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    selfAssessmentCompleted: true,
-    paymentCompleted: true,
-    evidenceUploaded: false,
-  };
+  const rawTrade =
+    (apiApp as any)?.trade?.name ||
+    (typeof (apiApp as any)?.trade === "string" ? (apiApp as any)?.trade : "");
+  const typeLabel = apiApp?.type === "NSQ" ? "Standard Assessment" : (apiApp?.type || "RPL");
+  const dynamicTitle = rawTrade ? `${rawTrade} (${typeLabel})` : `${typeLabel} Application`;
 
-  const application = reduxApp || fallbackApp;
+  const application = apiApp
+    ? {
+        id: apiApp.id,
+        title: dynamicTitle,
+        subtitle: `Status: ${apiApp.status}`,
+        status: "evidence_upload" as const,
+        createdAt: apiApp.createdAt,
+        updatedAt: apiApp.updatedAt ?? apiApp.createdAt,
+        selfAssessmentCompleted: true,
+        paymentCompleted: true,
+        evidenceUploaded: false,
+      }
+    : reduxApp || {
+        id: applicationId || "",
+        title: "Application Evidence Vault",
+        subtitle: "Evidence Vault",
+        status: "evidence_upload" as const,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        selfAssessmentCompleted: true,
+        paymentCompleted: true,
+        evidenceUploaded: false,
+      };
 
   const [evidences, setEvidences] = useState<EvidenceRecord[]>([]);
 

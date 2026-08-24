@@ -113,23 +113,21 @@ export const CenterInformation: React.FC = () => {
       const cSupp = apiData?.centre?.centreSupportInformation;
       const cAcc = apiData?.centre?.centreAccountDetails;
 
-      setForm((prev) => {
-        const next = {
-          centerName: cInfo?.name || prev.centerName || "",
-          regNo: cInfo?.registrationNo || prev.regNo || "",
-          country: cAddr?.country || prev.country || "Nigeria",
-          state: cAddr?.state || prev.state || "",
-          lga: cAddr?.lga || prev.lga || "",
-          streetAddress: cAddr?.address || prev.streetAddress || "",
-          supportEmail: cSupp?.emailAddress || prev.supportEmail || "",
-          phoneNumber: cSupp?.phoneNumber?.number || prev.phoneNumber || "",
-          bank: cAcc?.bank || prev.bank || "",
-          accountNumber: cAcc?.accountNo || prev.accountNumber || "",
-          nameOnAccount: cAcc?.nameOfAccount || prev.nameOnAccount || "",
-        };
-        dispatch(setCentreInformation(next));
-        return next;
-      });
+      const next = {
+        centerName: cInfo?.name || form.centerName || "",
+        regNo: cInfo?.registrationNo || form.regNo || "",
+        country: cAddr?.country || form.country || "Nigeria",
+        state: cAddr?.state || form.state || "",
+        lga: cAddr?.lga || form.lga || "",
+        streetAddress: cAddr?.address || form.streetAddress || "",
+        supportEmail: cSupp?.emailAddress || form.supportEmail || "",
+        phoneNumber: cSupp?.phoneNumber?.number || form.phoneNumber || "",
+        bank: cAcc?.bank || form.bank || "",
+        accountNumber: cAcc?.accountNo || form.accountNumber || "",
+        nameOnAccount: cAcc?.nameOfAccount || form.nameOnAccount || "",
+      };
+      setForm(next);
+      dispatch(setCentreInformation(next));
 
       if (cInfo?.logoAssetId) {
         setLogoAssetId(cInfo.logoAssetId);
@@ -175,19 +173,17 @@ export const CenterInformation: React.FC = () => {
   };
 
   const update = (field: keyof typeof form, value: string) => {
-    setForm((prev) => {
-      const next = { ...prev, [field]: value };
-      // Reset dependent location fields
-      if (field === "country") {
-        next.state = "";
-        next.lga = "";
-      }
-      if (field === "state") {
-        next.lga = "";
-      }
-      dispatch(setCentreInformation(next));
-      return next;
-    });
+    const updatedValues: Partial<typeof form> = { [field]: value };
+    if (field === "country") {
+      updatedValues.state = "";
+      updatedValues.lga = "";
+    }
+    if (field === "state") {
+      updatedValues.lga = "";
+    }
+
+    setForm((prev) => ({ ...prev, ...updatedValues }));
+    dispatch(setCentreInformation(updatedValues));
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }

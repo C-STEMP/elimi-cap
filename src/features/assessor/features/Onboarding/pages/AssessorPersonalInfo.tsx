@@ -14,7 +14,7 @@ import type { StorageAsset } from "@/src/features/shared/storage/api";
 import { useToast } from "@/src/components/ui/toast";
 import { useCountryStateCity } from "@/src/lib/hooks/useCountryStateCity";
 import { useAppDispatch, useAppSelector } from "@/src/store/hooks";
-import { setSidebarVariant } from "@/src/store/slices/authSlice";
+import { setSidebarVariant, updateUser } from "@/src/store/slices/authSlice";
 import { setAssessorPersonalInfo } from "@/src/store/slices/onboardingSlice";
 import { ASSESSOR_ROUTES } from "@/src/features/assessor/utils/assessorRoutes";
 import { useAssessorOnboarding } from "../hooks/useOnboarding";
@@ -65,42 +65,40 @@ export const AssessorPersonalInfo: React.FC = () => {
       const c = d?.contactInformation || {};
       const r = d?.residentialAddress || {};
 
-      setForm((prev) => {
-        const next = {
-          firstName: p.firstName || prev.firstName,
-          lastName: p.lastName || prev.lastName,
-          middleName: p.middleName || prev.middleName,
-          dob: p.dob || prev.dob,
-          gender: p.gender || prev.gender,
-          nationality: p.nationality || prev.nationality || "Nigerian",
-          email: c.emailAddress || prev.email || authUser?.email || "",
-          phoneNumber: c.phoneNumber?.number || prev.phoneNumber,
-          country: r.country || prev.country || "Nigeria",
-          state: r.state || prev.state,
-          lga: r.lga || prev.lga,
-          streetAddress: r.address || prev.streetAddress,
-        };
-        dispatch(setAssessorPersonalInfo(next));
-        return next;
-      });
+      const next = {
+        firstName: p.firstName || form.firstName,
+        lastName: p.lastName || form.lastName,
+        middleName: p.middleName || form.middleName,
+        dob: p.dob || form.dob,
+        gender: p.gender || form.gender,
+        nationality: p.nationality || form.nationality || "Nigerian",
+        email: c.emailAddress || form.email || authUser?.email || "",
+        phoneNumber: c.phoneNumber?.number || form.phoneNumber,
+        country: r.country || form.country || "Nigeria",
+        state: r.state || form.state,
+        lga: r.lga || form.lga,
+        streetAddress: r.address || form.streetAddress,
+      };
+      setForm(next);
+      dispatch(setAssessorPersonalInfo(next));
     } else if (authUser?.email && !form.email) {
-      update("email", authUser.email);
+      setForm((prev) => ({ ...prev, email: authUser.email || "" }));
+      dispatch(setAssessorPersonalInfo({ email: authUser.email }));
     }
   }, [getOnboarding.data, authUser?.email, dispatch]);
 
   const update = (field: keyof typeof form, value: string) => {
-    setForm((prev) => {
-      const next = { ...prev, [field]: value };
-      if (field === "country") {
-        next.state = "";
-        next.lga = "";
-      }
-      if (field === "state") {
-        next.lga = "";
-      }
-      dispatch(setAssessorPersonalInfo(next));
-      return next;
-    });
+    const updatedValues: Partial<typeof form> = { [field]: value };
+    if (field === "country") {
+      updatedValues.state = "";
+      updatedValues.lga = "";
+    }
+    if (field === "state") {
+      updatedValues.lga = "";
+    }
+
+    setForm((prev) => ({ ...prev, ...updatedValues }));
+    dispatch(setAssessorPersonalInfo(updatedValues));
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
@@ -212,20 +210,32 @@ export const AssessorPersonalInfo: React.FC = () => {
               setPassportFile(file);
               if (file) {
                 setPassportError("");
+                const previewUrl = URL.createObjectURL(file);
+                const finalUrl = asset?.url || previewUrl;
                 dispatch(
                   setAssessorPersonalInfo({
                     passportFileName: file.name,
                     passportAssetId: asset?.assetId ?? "",
+                    passportPreview: previewUrl,
+                    passportUrl: finalUrl,
                   }),
                 );
+                dispatch(updateUser({ avatar: finalUrl, passportUrl: finalUrl }));
                 setPassportAssetId(asset?.assetId ?? "");
               } else {
                 setPassportAssetId("");
-                dispatch(setAssessorPersonalInfo({ passportFileName: "", passportAssetId: "" }));
+                dispatch(
+                  setAssessorPersonalInfo({
+                    passportFileName: "",
+                    passportAssetId: "",
+                    passportPreview: "",
+                    passportUrl: "",
+                  }),
+                );
               }
             }}
             error={passportError}
-            defaultImage={saved.passportPreview}
+            defaultImage={saved.passportPreview || saved.passportUrl}
           />
         </div>
 

@@ -18,10 +18,16 @@ import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
 import { DeleteAccountModal } from "./DeleteAccountModal";
 import { ASSETS_URL } from "@/assets";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { useGetAssessorSectors, useUpdateAssessorSectors } from "../hooks";
 import { useAssessorOnboarding } from "@/src/features/assessor/features/Onboarding/hooks/useOnboarding";
 import { useCountryStateCity } from "@/src/lib/hooks/useCountryStateCity";
 import { formatToIsoDate } from "@/src/lib/validation";
+import { useUploadFile } from "@/src/features/shared/storage/hooks";
+import { updateUser } from "@/src/store/slices/authSlice";
+import { setAssessorPersonalInfo } from "@/src/store/slices/onboardingSlice";
+import { CameraCaptureModal } from "@/src/components/ui/camera-capture-modal";
+import { FiCamera } from "react-icons/fi";
 
 export type AssessorSettingsSubTab =
   | "profile"
@@ -31,15 +37,41 @@ export type AssessorSettingsSubTab =
 
 export const AssessorSettingsView: React.FC = () => {
   const { toast } = useToast();
+  const dispatch = useAppDispatch();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { getOnboarding, saveOnboarding } = useAssessorOnboarding();
+  const uploadFileMutation = useUploadFile();
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+
+  const authUser = useAppSelector((state) => state.auth.user);
+  const assessorPersonalInfo = useAppSelector(
+    (s) => s.onboarding.assessorPersonalInfo,
+  );
+  const personalInfo = useAppSelector(
+    (s) => s.onboarding.personalInfo,
+  );
+
+  const uploadedAvatar =
+    (assessorPersonalInfo as any)?.passportUrl ||
+    (assessorPersonalInfo as any)?.passportPreview ||
+    personalInfo?.passportUrl ||
+    personalInfo?.passportPreview ||
+    authUser?.avatar ||
+    authUser?.avatarUrl ||
+    authUser?.passportUrl;
 
   const [activeSubTab, setActiveSubTab] =
     useState<AssessorSettingsSubTab>("profile");
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [profileImagePreview, setProfileImagePreview] = useState<string | null>(
-    null,
+    uploadedAvatar || null,
   );
+
+  React.useEffect(() => {
+    if (uploadedAvatar) {
+      setProfileImagePreview(uploadedAvatar);
+    }
+  }, [uploadedAvatar]);
   const [isVerified, setIsVerified] = useState(true);
 
   // Profile Information State
@@ -111,15 +143,48 @@ export const AssessorSettingsView: React.FC = () => {
     }
   }, [getOnboarding.data]);
 
+  const processPicture = async (file: File) => {
+    const localUrl = URL.createObjectURL(file);
+    setProfileImagePreview(localUrl);
+    dispatch(updateUser({ avatar: localUrl, passportUrl: localUrl }));
+    dispatch(
+      setAssessorPersonalInfo({
+        passportUrl: localUrl,
+        passportPreview: localUrl,
+        passportFileName: file.name,
+      }),
+    );
+
+    try {
+      const asset = await uploadFileMutation.mutateAsync({
+        file,
+        purpose: "passport",
+      });
+      if (asset?.url) {
+        setProfileImagePreview(asset.url);
+        dispatch(updateUser({ avatar: asset.url, passportUrl: asset.url }));
+        dispatch(
+          setAssessorPersonalInfo({
+            passportUrl: asset.url,
+            passportAssetId: asset.assetId,
+            passportPreview: asset.url,
+          }),
+        );
+      }
+    } catch {
+      // Local preview remains
+    }
+
+    toast({
+      type: "success",
+      title: "Picture Updated",
+      description: "Profile picture uploaded successfully.",
+    });
+  };
+
   const handlePictureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setProfileImagePreview(URL.createObjectURL(file));
-      toast({
-        type: "success",
-        title: "Picture Updated",
-        description: "Profile picture uploaded successfully.",
-      });
+      processPicture(e.target.files[0]);
     }
   };
 
@@ -173,11 +238,19 @@ export const AssessorSettingsView: React.FC = () => {
 
   return (
     <div className="w-full flex flex-col gap-6 select-text">
+      <CameraCaptureModal
+        isOpen={isCameraOpen}
+        onClose={() => setIsCameraOpen(false)}
+        onCapture={(file) => {
+          setIsCameraOpen(false);
+          processPicture(file);
+        }}
+      />
       <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Sidebar matching Images 1-5 */}
         <div className="lg:col-span-4 xl:col-span-3 bg-white rounded-3xl p-6 shadow-2xs border border-gray-100/80 flex flex-col gap-6 w-full">
           <div className="flex items-center gap-3.5">
-            <div className="relative w-24 h-24 flex items-center justify-center rounded-2xl overflow-hidden shrink-0 bg-gray-100 border border-gray-200">
+            <div className="relative w-24 h-24 flex items-center justify-center rounded-2xl overflow-hidden shrink-0 bg-gray-100 border border-gray-200 shadow-xs">
               <Image
                 src={profileImagePreview || ASSETS_URL.userAvatar}
                 alt="User Avatar"
@@ -196,15 +269,27 @@ export const AssessorSettingsView: React.FC = () => {
                 onChange={handlePictureChange}
                 className="hidden"
               />
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="bg-[#a31d38] font-sans hover:bg-[#83172e] text-white text-[11px] font-semibold px-3.5 py-1.5 rounded-xl transition-colors cursor-pointer"
-              >
-                Change Picture
-              </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="bg-[#a31d38] font-sans hover:bg-[#83172e] text-white text-[11px] font-semibold px-3 py-1.5 rounded-xl transition-colors cursor-pointer flex items-center gap-1"
+                >
+                  <FiUpload className="w-3 h-3" />
+                  <span>Upload</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsCameraOpen(true)}
+                  className="bg-primary/10 hover:bg-primary/20 text-[#a31d38] p-1.5 rounded-xl text-[11px] font-semibold transition-colors cursor-pointer"
+                  title="Take photo with camera"
+                  aria-label="Take photo with camera"
+                >
+                  <FiCamera className="w-3.5 h-3.5" />
+                </button>
+              </div>
               <span className="text-[10px] font-sans text-gray-400 mt-1 font-medium">
-                JPG or PNG 10mb
+                Upload or Snap
               </span>
 
               {isVerified ? (

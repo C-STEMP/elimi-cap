@@ -21,6 +21,7 @@ interface ToastContextType {
   toast: (options: Omit<Toast, "id">) => void;
   toasts: Toast[];
   dismiss: (id: string) => void;
+  dismissAll: () => void;
 }
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
@@ -53,8 +54,12 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
+  const dismissAll = useCallback(() => {
+    setToasts([]);
+  }, []);
+
   return (
-    <ToastContext.Provider value={{ toast, toasts, dismiss }}>
+    <ToastContext.Provider value={{ toast, toasts, dismiss, dismissAll }}>
       {children}
       <ToastContainer toasts={toasts} dismiss={dismiss} />
     </ToastContext.Provider>

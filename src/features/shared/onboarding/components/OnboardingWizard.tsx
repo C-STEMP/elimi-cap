@@ -57,13 +57,13 @@ export const OnboardingWizard: React.FC = () => {
   const handleSelectRole = (roleId: string) => {
     dispatch(setRole(roleId));
     if (roleId === "candidate") {
-      setTimeout(() => setStep("assessment-type"), 150);
+      setTimeout(() => setStep("complete-profile"), 150);
     }
   };
 
   const handleSelectAssessmentType = (typeId: string) => {
     dispatch(setAssessmentType(typeId));
-    setTimeout(() => setStep("complete-profile"), 150);
+    setTimeout(() => setStep("start-application"), 150);
   };
 
   return (

@@ -98,30 +98,41 @@ export const CandidateApplicationFormView: React.FC<
     authUser?.email ||
     "------";
 
-  const tradeName =
-    (apiApp as any)?.trade?.name ||
-    (apiApp as any)?.tradeName ||
-    savedExperience.qualificationTitle ||
-    "Cosmetology (RPL)";
-
-  const tradeCode =
-    (apiApp as any)?.trade?.slug ||
-    (apiApp as any)?.tradeId ||
-    savedExperience.occupation ||
-    "NBTE/RPL/COS-01";
-
-  const passportUrl =
-    savedPersonalInfo.passportUrl ||
-    (authUser as any)?.avatar ||
-    (authUser as any)?.avatarUrl ||
-    "";
-
   const savedStartApp = useAppSelector(
     (state) => state.onboarding.startApplication,
   );
   const savedCentreInfo = useAppSelector(
     (state) => state.onboarding.centreInformation,
   );
+
+  const isRawId = (str?: string) => {
+    if (!str) return false;
+    if (/^[0-9A-Z]{20,}$/.test(str) || /^[0-9a-f]{8}-[0-9a-f]{4}/i.test(str))
+      return true;
+    return false;
+  };
+
+  const rawTrade =
+    (apiApp as any)?.trade?.name ||
+    (apiApp as any)?.tradeName ||
+    savedStartApp?.tradeName ||
+    savedExperience.qualificationTitle;
+
+  const tradeName =
+    rawTrade && !isRawId(rawTrade)
+      ? rawTrade
+      : savedStartApp?.tradeName || "Cosmetology (RPL)";
+
+  const tradeCode =
+    (apiApp as any)?.trade?.slug ||
+    savedExperience.qualificationCode ||
+    "NOS-ELI-L3";
+
+  const passportUrl =
+    savedPersonalInfo.passportUrl ||
+    (authUser as any)?.avatar ||
+    (authUser as any)?.avatarUrl ||
+    "";
 
   const centreName =
     (apiApp as any)?.centre?.name ||

@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { useAppSelector } from "@/store/hooks";
 
+import { useToast } from "@/src/components/ui/toast";
 import { saveOnboardedStatus } from "@/src/lib/auth-storage";
 
 export interface SuccessProps {
@@ -20,8 +21,13 @@ export const Success: React.FC<SuccessProps> = ({
 }) => {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { dismissAll } = useToast();
   const userRole = useAppSelector((state) => state.auth.user?.role);
   const paramRole = searchParams.get("role");
+
+  React.useEffect(() => {
+    dismissAll();
+  }, [dismissAll]);
 
   const effectiveRole = paramRole || userRole;
 

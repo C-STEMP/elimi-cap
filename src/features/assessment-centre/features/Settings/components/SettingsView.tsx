@@ -66,9 +66,27 @@ export const SettingsView: React.FC = () => {
 
   const [activeSubTab, setActiveSubTab] = useState<SettingsSubTab>("centre");
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
+  const authUser = useAppSelector((state) => state.auth.user);
+  const savedPersonalInfo = useAppSelector((s) => s.onboarding.personalInfo);
+
+  const uploadedAvatar =
+    (savedCentrePersonalInfo as any)?.passportUrl ||
+    savedCentreInfo?.logoPreview ||
+    savedPersonalInfo?.passportUrl ||
+    authUser?.avatar ||
+    (authUser as any)?.avatarUrl ||
+    (authUser as any)?.passportUrl;
+
   const [logoPreview, setLogoPreview] = useState<string | null>(
-    savedCentreInfo.logoPreview || null,
+    savedCentreInfo.logoPreview || uploadedAvatar || null,
   );
+
+  React.useEffect(() => {
+    if (uploadedAvatar && !logoPreview) {
+      setLogoPreview(uploadedAvatar);
+    }
+  }, [uploadedAvatar, logoPreview]);
 
   const [firstName, setFirstName] = useState(
     savedCentrePersonalInfo.firstName || "",

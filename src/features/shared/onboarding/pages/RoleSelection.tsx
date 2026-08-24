@@ -7,7 +7,7 @@ import { setRole } from "@/store/slices/authSlice";
 import { setOnboardingRole } from "@/store/slices/onboardingSlice";
 import { useToast } from "@/src/components/ui/toast";
 import { useRouter } from "next/navigation";
-import { FiArrowLeft, FiLock } from "react-icons/fi";
+import { FiArrowLeft } from "react-icons/fi";
 import { motion } from "framer-motion";
 
 import { useOnboarding } from "@/src/features/shared/onboarding/hooks";
@@ -102,17 +102,16 @@ export const RoleSelection: React.FC<RoleSelectionProps> = ({
     ? (PERSONA_TO_ROLE_ID[storedPersona] ?? storedPersona)
     : null;
 
-  // The "locked" role is whichever we already know about
-  const lockedRoleId = reduxRole || storedRoleId || null;
+  const currentRoleId = reduxRole || storedRoleId || null;
 
   const [selectedRole, setSelectedRole] = React.useState<string | null>(
-    lockedRoleId,
+    currentRoleId,
   );
 
   // Keep local state in sync if Redux hydrates after mount
   React.useEffect(() => {
-    if (lockedRoleId) setSelectedRole(lockedRoleId);
-  }, [lockedRoleId]);
+    if (currentRoleId) setSelectedRole(currentRoleId);
+  }, [currentRoleId]);
 
   // ─── Navigation helper ────────────────────────────────────────────────────
   const navigateToRole = (roleId: string) => {
@@ -131,35 +130,12 @@ export const RoleSelection: React.FC<RoleSelectionProps> = ({
 
   // ─── Handler ─────────────────────────────────────────────────────────────
   const handleSelectRole = (roleId: string) => {
-    // If a persona is already locked (from a previous session or the backend),
-    // only allow re-entering that same persona's flow — never switch personas.
-    if (lockedRoleId) {
-      if (roleId !== lockedRoleId) {
-        toast({
-          type: "error",
-          title: "Persona Already Set",
-          description:
-            "Your role has already been saved. You cannot switch to a different persona during onboarding.",
-        });
-        return;
-      }
-
-      // Re-entering the same locked flow — navigate without calling startOnboarding again
-      dispatch(setRole(roleId));
-      dispatch(setOnboardingRole(roleId));
-      if (onSelectRole) onSelectRole(roleId);
-      navigateToRole(roleId);
-      return;
-    }
-
-    // No persona locked yet — this is a fresh selection
     setSelectedRole(roleId);
     dispatch(setRole(roleId));
     dispatch(setOnboardingRole(roleId));
 
     const persona = PERSONA_MAP[roleId];
     if (!persona) {
-      // Role not yet supported
       toast({
         type: "info",
         title: "Role Selected",
@@ -172,14 +148,14 @@ export const RoleSelection: React.FC<RoleSelectionProps> = ({
     // Persist persona locally immediately so the RouteGuard stays consistent
     savePersona(persona);
 
-    // Call startOnboarding and navigate ONLY on success to avoid conflicts
+    // Call startOnboarding and navigate
     startOnboarding.mutate(persona, {
       onSuccess: () => {
         if (onSelectRole) onSelectRole(roleId);
         navigateToRole(roleId);
       },
       onError: (err: any) => {
-        // If a conflict error (persona already exists on the backend), navigate anyway
+        // If a conflict error (persona already exists on the backend) or any response, navigate to role flow
         const msg = err?.message?.toLowerCase() ?? "";
         const isConflict =
           msg.includes("already") ||
@@ -191,10 +167,8 @@ export const RoleSelection: React.FC<RoleSelectionProps> = ({
           if (onSelectRole) onSelectRole(roleId);
           navigateToRole(roleId);
         } else {
-          // Real failure — reset local persona so the user can retry
-          savePersona("");
-          setSelectedRole(null);
-          // Toast is already shown by useStartOnboarding's onError handler
+          if (onSelectRole) onSelectRole(roleId);
+          navigateToRole(roleId);
         }
       },
     });
@@ -241,41 +215,18 @@ export const RoleSelection: React.FC<RoleSelectionProps> = ({
         </p>
       </div>
 
-      {/* Lock notice — shown if a persona has already been saved */}
-      {lockedRoleId && (
-        <div className="flex items-start gap-2.5 mb-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 font-medium">
-          <FiLock className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
-          <span>
-            Your role has already been saved. Click your role to continue where
-            you left off.
-          </span>
-        </div>
-      )}
-
       <div className="w-full flex flex-col gap-3 xl:gap-4">
-        {ROLES.map((role, idx) => {
-          const isLocked = Boolean(lockedRoleId);
-          const isThisRoleLocked = lockedRoleId === role.id;
-          const isOtherLocked = isLocked && !isThisRoleLocked;
-
-          return (
-            <div
-              key={role.id}
-              className={
-                isOtherLocked ? "opacity-40 pointer-events-none" : undefined
-              }
-            >
-              <RoleCard
-                id={role.id}
-                index={idx}
-                title={role.title}
-                description={role.description}
-                isSelected={selectedRole === role.id}
-                onSelect={handleSelectRole}
-              />
-            </div>
-          );
-        })}
+        {ROLES.map((role, idx) => (
+          <RoleCard
+            key={role.id}
+            id={role.id}
+            index={idx}
+            title={role.title}
+            description={role.description}
+            isSelected={selectedRole === role.id}
+            onSelect={handleSelectRole}
+          />
+        ))}
       </div>
 
       {/* Spinner feedback while startOnboarding is in flight */}

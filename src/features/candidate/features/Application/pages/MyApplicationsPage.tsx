@@ -90,36 +90,16 @@ export const MyApplicationsPage: React.FC = () => {
     }
   }, [isVerified, authUser?.isVerified, dispatch]);
 
-  const reduxApplications = useAppSelector(
-    (state) => state.application.applications,
-  );
+  const isRawId = (str?: string) => {
+    if (!str) return false;
+    if (/^[0-9A-Z]{20,}$/.test(str) || /^[0-9a-f]{8}-[0-9a-f]{4}/i.test(str))
+      return true;
+    return false;
+  };
 
   const allApplications = React.useMemo(() => {
-    const remote = applications || [];
-    const remoteIds = new Set(remote.map((a) => a.id));
-    const merged = [...remote];
-
-    for (const localApp of reduxApplications) {
-      if (!remoteIds.has(localApp.id)) {
-        merged.push({
-          id: localApp.id,
-          candidateId: authUser?.id || "candidate",
-          centreId: "centre-1",
-          type: "RPL",
-          status:
-            localApp.status === "submitted"
-              ? "in_progress"
-              : (localApp.status as any),
-          currentStageKey:
-            localApp.status === "submitted" ? "application_form" : "draft",
-          createdAt: localApp.createdAt,
-          trade: { id: "trade", name: localApp.title },
-          sector: { id: "sector", name: localApp.subtitle },
-        } as any);
-      }
-    }
-    return merged;
-  }, [applications, reduxApplications, authUser?.id]);
+    return applications || [];
+  }, [applications]);
 
   const filteredApplications = allApplications.filter((app: Application) => {
     if (activeTab === "All") return true;
@@ -132,18 +112,37 @@ export const MyApplicationsPage: React.FC = () => {
   });
 
   const getApplicationTitle = (app: Application) => {
-    const typeLabel = app.type === "NSQ" ? "Standard Assessment" : app.type;
-    if ((app as any).trade?.name) {
-      return `${(app as any).trade.name} (${typeLabel})`;
+    const typeLabel = app.type === "NSQ" ? "Standard Assessment" : (app.type || "RPL");
+    const rawTrade =
+      (app as any).trade?.name ||
+      (typeof (app as any).trade === "string" ? (app as any).trade : "");
+
+    const tradeTitle = rawTrade && !isRawId(rawTrade) ? rawTrade : "";
+
+    if (tradeTitle) {
+      return `${tradeTitle} (${typeLabel})`;
     }
     return `${typeLabel} Application`;
   };
 
   const getApplicationSubtitle = (app: Application) => {
-    if ((app as any).sector?.name) {
-      return `${(app as any).sector.name} • Status: ${app.currentStageKey || app.status}`;
+    const rawSector =
+      (app as any).sector?.name ||
+      (typeof (app as any).sector === "string" ? (app as any).sector : "");
+
+    const sectorTitle = rawSector && !isRawId(rawSector) ? rawSector : "";
+
+    const statusText =
+      app.status === "draft"
+        ? "Draft"
+        : app.currentStageKey
+          ? app.currentStageKey.replace(/_/g, " ")
+          : app.status;
+
+    if (sectorTitle) {
+      return `${sectorTitle} • Status: ${statusText}`;
     }
-    return `Status: ${app.currentStageKey || app.status}`;
+    return `Status: ${statusText}`;
   };
 
   return (

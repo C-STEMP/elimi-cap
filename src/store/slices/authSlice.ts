@@ -17,6 +17,9 @@ export interface UserProfile {
   centreRole?: string;
   assessmentType?: string;
   phoneNumber?: string;
+  avatar?: string;
+  avatarUrl?: string;
+  passportUrl?: string;
 }
 
 export interface AuthState {
@@ -106,6 +109,13 @@ export const authSlice = createSlice({
         state.user.isVerified = action.payload;
       }
     },
+    updateUser: (state, action: PayloadAction<Partial<UserProfile>>) => {
+      if (state.user) {
+        state.user = { ...state.user, ...action.payload };
+      } else {
+        state.user = action.payload as UserProfile;
+      }
+    },
     logout: (state) => {
       state.user = null;
       state.token = null;
@@ -126,6 +136,7 @@ export const {
   setRplStep,
   markVerified,
   setVerified,
+  updateUser,
   logout,
 } = authSlice.actions;
 export const authReducer = authSlice.reducer;

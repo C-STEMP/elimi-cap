@@ -63,6 +63,13 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
   const dispatch = useAppDispatch();
   const { initiatePayment } = useApplication();
 
+  const isRawId = (str?: string) => {
+    if (!str) return false;
+    if (/^[0-9A-Z]{20,}$/.test(str) || /^[0-9a-f]{8}-[0-9a-f]{4}/i.test(str))
+      return true;
+    return false;
+  };
+
   // Real API data
   const { data: apiApp, isLoading } = useGetApplicationById(id || "");
 
@@ -70,17 +77,44 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
   const reduxApp = useAppSelector((state) =>
     state.application.applications.find((a) => a.id === id),
   );
+  const savedStartApp = useAppSelector((s) => s.onboarding.startApplication);
+  const savedRplExp = useAppSelector((s) => s.onboarding.rplExperienceTrade);
+
+  const rawTrade =
+    (apiApp as any)?.trade?.name ||
+    (typeof (apiApp as any)?.trade === "string" ? (apiApp as any).trade : "") ||
+    reduxApp?.title ||
+    savedStartApp?.tradeName ||
+    savedRplExp?.qualificationTitle;
+
+  const resolvedTrade =
+    rawTrade && !isRawId(rawTrade)
+      ? rawTrade
+      : savedStartApp?.tradeName ||
+        savedRplExp?.qualificationTitle ||
+        "RPL";
+
+  const rawSector =
+    (apiApp as any)?.sector?.name ||
+    (typeof (apiApp as any)?.sector === "string" ? (apiApp as any).sector : "") ||
+    reduxApp?.subtitle ||
+    savedStartApp?.sectorName;
+
+  const resolvedSector =
+    rawSector && !isRawId(rawSector) ? rawSector : savedStartApp?.sectorName || "";
 
   const application = apiApp
     ? {
         id: apiApp.id,
-        title: (apiApp as any).trade?.name
-          ? `${(apiApp as any).trade.name} (${apiApp.type ?? "RPL"})`
-          : `${apiApp.type ?? "RPL"} Application`,
-        subtitle: (apiApp as any).sector?.name
-          ? `${(apiApp as any).sector.name} • Status: ${apiApp.currentStageKey || apiApp.status}`
+        title: `${resolvedTrade} (${apiApp.type ?? "RPL"})`,
+        subtitle: resolvedSector
+          ? `${resolvedSector} • Status: ${apiApp.currentStageKey || apiApp.status}`
           : `Status: ${apiApp.currentStageKey || apiApp.status}`,
-        status: apiApp.status as string,
+        status:
+          apiApp.status === "draft" &&
+          ((apiApp as any)?.submittedAt || reduxApp?.status === "submitted")
+            ? "submitted"
+            : (apiApp.status as string),
         createdAt: apiApp.createdAt,
         updatedAt: apiApp.updatedAt ?? apiApp.createdAt,
         selfAssessmentCompleted: reduxApp?.selfAssessmentCompleted ?? false,
@@ -90,7 +124,7 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
     : reduxApp
       ? {
           id: reduxApp.id,
-          title: reduxApp.title ?? "Application",
+          title: reduxApp.title && !isRawId(reduxApp.title) ? reduxApp.title : resolvedTrade,
           subtitle: `Status: ${reduxApp.status}`,
           status: reduxApp.status,
           createdAt: reduxApp.createdAt,
@@ -170,7 +204,11 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
     });
   };
 
-  const isDraft = application?.status === "draft";
+  const isDraft =
+    application?.status === "draft" &&
+    reduxApp?.status !== "submitted" &&
+    !(apiApp as any)?.submittedAt &&
+    !(application as any)?.submittedAt;
 
   const handleEditApplication = () => {
     if (!application) return;
@@ -289,8 +327,12 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
         onProceedToExternalVerifier: handleProceedToExternalVerifier,
         onProceedToCertification: handleProceedToCertification,
         submittedDate: (application as any).submittedAt || application.createdAt,
-        demoVerifierState: "under_review",
-        demoStage: (application.status as any) ?? "draft",
+        isDraft,
+        tradeName: resolvedTrade,
+        paymentCompleted: application.paymentCompleted,
+        evidenceUploaded: application.evidenceUploaded || application.selfAssessmentCompleted,
+        internalVerifierCompleted: (reduxApp as any)?.internalVerifierCompleted ?? false,
+        externalVerifierCompleted: (reduxApp as any)?.externalVerifierCompleted ?? false,
       })
     : [];
 
