@@ -118,7 +118,11 @@ export const Select: React.FC<SelectProps> = ({
         suffixIcon={
           <FiChevronDown className="w-4 h-4 text-text-dark stroke-[2.5] opacity-90 transition-transform duration-200" />
         }
-        popupClassName={`rounded-2xl shadow-2xl border border-gray-100 ${popupClassName}`}
+        classNames={{
+          popup: {
+            root: `rounded-2xl shadow-2xl border border-gray-100 ${popupClassName}`,
+          },
+        }}
         status={error ? "error" : undefined}
         optionRender={(option) => {
           const isSelected = multiple

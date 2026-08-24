@@ -127,7 +127,21 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
     if ("sector" in changedValues) {
       form.setFieldValue("trade", "");
     }
-    dispatch(setStartApplication(form.getFieldsValue()));
+    const currentValues = form.getFieldsValue();
+    const tradeObj = remoteTrades.find((t) => t.id === currentValues.trade);
+    const sectorObj = remoteSectors.find((s) => s.id === currentValues.sector);
+    const centreObj = remoteCentres.find(
+      (c) => c.id === currentValues.assessmentCenter,
+    );
+
+    dispatch(
+      setStartApplication({
+        ...currentValues,
+        tradeName: tradeObj?.name || currentValues.trade,
+        sectorName: sectorObj?.name || currentValues.sector,
+        centreName: centreObj?.name || currentValues.assessmentCenter,
+      }),
+    );
   };
 
   const handleFinish = (values: {
@@ -144,10 +158,56 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
       return;
     }
 
+    const tradeObj = remoteTrades.find((t) => t.id === values.trade);
+    const tradeName = tradeObj?.name || values.trade;
+    const sectorObj = remoteSectors.find((s) => s.id === values.sector);
+    const sectorName = sectorObj?.name || values.sector;
+    const centreObj = remoteCentres.find(
+      (c) => c.id === values.assessmentCenter,
+    );
+    const centreName = centreObj?.name || values.assessmentCenter;
+
     setIsSubmitting(true);
-    dispatch(setStartApplication(values));
+    dispatch(
+      setStartApplication({
+        ...values,
+        tradeName,
+        sectorName,
+        centreName,
+      }),
+    );
 
     const appType = assessmentType === "nsq" ? "NSQ" : "RPL";
+
+    const existingApp = existingApps.find(
+      (a) => (a.type || "RPL").toUpperCase() === appType.toUpperCase(),
+    );
+
+    if (existingApp) {
+      if (existingApp.status !== "draft") {
+        toast({
+          type: "info",
+          title: `${appType} Application Already Submitted`,
+          description: `You have already submitted an ${appType} application. You can only have one ${appType} application.`,
+        });
+        router.push(`/dashboard/applications/${existingApp.id}`);
+        return;
+      }
+
+      toast({
+        type: "info",
+        title: "Draft Application Found",
+        description:
+          "You have a saved draft application. Continuing to your application details...",
+      });
+      dispatch(setCurrentApplication(existingApp.id));
+      if (onContinue) {
+        onContinue();
+      } else {
+        router.push("/rpl/personal-info");
+      }
+      return;
+    }
 
     createApplication.mutate(
       {
@@ -166,8 +226,8 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
           }
           dispatch(
             createApplicationSlice({
-              title: values.trade,
-              subtitle: values.sector,
+              title: tradeName,
+              subtitle: sectorName,
             }),
           );
 
@@ -195,8 +255,8 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
           if (isConflict) {
             dispatch(
               createApplicationSlice({
-                title: values.trade,
-                subtitle: values.sector,
+                title: tradeName,
+                subtitle: sectorName,
               }),
             );
             if (onContinue) {

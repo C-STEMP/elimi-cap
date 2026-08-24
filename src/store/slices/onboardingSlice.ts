@@ -17,12 +17,16 @@ export interface PersonalInfoState {
   passportFileName: string;
   passportAssetId: string;
   passportUrl: string;
+  passportPreview?: string;
 }
 
 export interface StartApplicationState {
   assessmentCenter: string;
   sector: string;
   trade: string;
+  tradeName?: string;
+  sectorName?: string;
+  centreName?: string;
 }
 
 export interface CentreInformationState {
@@ -105,6 +109,7 @@ export interface AssessorPersonalInfoState {
   passportFileName?: string;
   passportPreview?: string;
   passportAssetId?: string;
+  passportUrl?: string;
 }
 
 export interface AssessorDetailsState {

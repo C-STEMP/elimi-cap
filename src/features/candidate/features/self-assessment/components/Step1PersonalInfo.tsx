@@ -92,17 +92,60 @@ export const Step1PersonalInfo: React.FC<Step1Props> = ({ onNext, onBack }) => {
     }
 
     setErrors(newErrors);
-    return valid;
+    const hasPassport = Boolean(
+      passportPreview ||
+      savedPersonalInfo.passportUrl ||
+      savedPersonalInfo.passportAssetId
+    );
+    return {
+      valid: valid && Object.keys(newErrors).length === 0,
+      hasPassport,
+      errors: newErrors,
+    };
   };
 
   const handleContinue = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!validateForm()) {
+    const { valid, hasPassport, errors: formErrors } = validateForm();
+
+    if (!valid) {
+      const fieldLabels: Record<string, string> = {
+        firstName: "First Name",
+        lastName: "Last Name",
+        dob: "Date of Birth",
+        gender: "Gender",
+        nationality: "Nationality",
+        phoneNumber: "Phone Number",
+        country: "Country",
+        state: "State of Residence",
+        lga: "City / LGA",
+        streetAddress: "Residential Address",
+        impairment: "Impairment status",
+        passport: "Passport photograph",
+      };
+
+      const missingLabels = Object.keys(formErrors)
+        .filter((k) => k !== "passport")
+        .map((k) => fieldLabels[k] || k)
+        .filter(Boolean);
+
+      let desc = "";
+      if (!hasPassport && missingLabels.length > 0) {
+        desc = `Please upload your passport photograph and fill in the required fields: ${missingLabels.slice(0, 3).join(", ")}${missingLabels.length > 3 ? "..." : "."}`;
+      } else if (!hasPassport) {
+        desc = "Please upload your passport photograph.";
+      } else if (missingLabels.length === 1) {
+        desc = `Please complete the required field: ${missingLabels[0]}.`;
+      } else if (missingLabels.length <= 3) {
+        desc = `Please fill in all required fields: ${missingLabels.join(", ")}.`;
+      } else {
+        desc = `Please complete the required fields: ${missingLabels.slice(0, 3).join(", ")}, and ${missingLabels.length - 3} more.`;
+      }
+
       toast({
         type: "error",
         title: "Input Required",
-        description:
-          "Please upload your passport photograph and fill in all required fields.",
+        description: desc,
       });
       return;
     }

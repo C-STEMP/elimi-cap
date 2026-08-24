@@ -40,36 +40,16 @@ export const Dashboard: React.FC = () => {
     authUser?.email?.split("@")[0] ||
     "User";
 
-  const reduxApplications = useAppSelector(
-    (state) => state.application.applications,
-  );
+  const isRawId = (str?: string) => {
+    if (!str) return false;
+    if (/^[0-9A-Z]{20,}$/.test(str) || /^[0-9a-f]{8}-[0-9a-f]{4}/i.test(str))
+      return true;
+    return false;
+  };
 
   const allApplications = React.useMemo(() => {
-    const remote = applications || [];
-    const remoteIds = new Set(remote.map((a) => a.id));
-    const merged = [...remote];
-
-    for (const localApp of reduxApplications) {
-      if (!remoteIds.has(localApp.id)) {
-        merged.push({
-          id: localApp.id,
-          candidateId: authUser?.id || "candidate",
-          centreId: "centre-1",
-          type: "RPL",
-          status:
-            localApp.status === "submitted"
-              ? "in_progress"
-              : (localApp.status as any),
-          currentStageKey:
-            localApp.status === "submitted" ? "application_form" : "draft",
-          createdAt: localApp.createdAt,
-          trade: { id: "trade", name: localApp.title },
-          sector: { id: "sector", name: localApp.subtitle },
-        } as any);
-      }
-    }
-    return merged;
-  }, [applications, reduxApplications, authUser?.id]);
+    return applications || [];
+  }, [applications]);
 
   const activeCount =
     allApplications.filter(
@@ -88,13 +68,32 @@ export const Dashboard: React.FC = () => {
 
     const typeLabel = app.type === "NSQ" ? "Standard Assessment" : app.type;
 
-    const title = (app as any).trade?.name
-      ? `${(app as any).trade.name} (${typeLabel})`
+    const rawTrade =
+      (app as any).trade?.name ||
+      (typeof (app as any).trade === "string" ? (app as any).trade : "");
+
+    const tradeTitle = rawTrade && !isRawId(rawTrade) ? rawTrade : "";
+
+    const title = tradeTitle
+      ? `${tradeTitle} (${typeLabel})`
       : `${typeLabel} Application`;
 
-    const subtitle = (app as any).sector?.name
-      ? `${(app as any).sector.name} • Status: ${app.currentStageKey || app.status}`
-      : `Status: ${app.currentStageKey || app.status}`;
+    const rawSector =
+      (app as any).sector?.name ||
+      (typeof (app as any).sector === "string" ? (app as any).sector : "");
+
+    const sectorTitle = rawSector && !isRawId(rawSector) ? rawSector : "";
+
+    const statusText =
+      app.status === "draft"
+        ? "Draft"
+        : app.currentStageKey
+          ? app.currentStageKey.replace(/_/g, " ")
+          : app.status;
+
+    const subtitle = sectorTitle
+      ? `${sectorTitle} • Status: ${statusText}`
+      : `Status: ${statusText}`;
 
     return {
       id: app.id,

@@ -18,6 +18,10 @@ import { setSidebarVariant, setRplStep } from "@/store/slices/authSlice";
 import { setRPLExperienceTrade } from "@/store/slices/onboardingSlice";
 import { useOnboarding } from "@/src/features/candidate/features/Onboarding/hooks";
 import { useRplApplicationSubmission } from "../hooks/useRplApplicationSubmission";
+import {
+  useGetTradeDetail,
+  useGetTradesBySector,
+} from "@/src/features/shared/reference/hooks";
 
 import {
   rplExperienceTradeSchema,
@@ -51,7 +55,7 @@ const parseDate = (str: string): Date | null => {
     let year = parseInt(parts[2], 10);
     if (year < 100) year += 2000;
     if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
-      return new Date(year, month, day);
+      return new Date(year, day ? month : 0, day);
     }
   }
   return null;
@@ -64,14 +68,41 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
   const dispatch = useAppDispatch();
   const { getOnboarding, saveOnboarding } = useOnboarding();
   const savedTrade = useAppSelector((s) => s.onboarding.startApplication.trade);
+  const savedTradeName = useAppSelector(
+    (s) => s.onboarding.startApplication.tradeName,
+  );
+  const savedSector = useAppSelector(
+    (s) => s.onboarding.startApplication.sector,
+  );
   const savedRPLExperienceTrade = useAppSelector(
     (s) => s.onboarding.rplExperienceTrade,
   );
 
+  const { data: tradeDetail } = useGetTradeDetail(savedTrade);
+  const { data: remoteTrades = [] } = useGetTradesBySector(savedSector);
+
+  const isLikelyId = (str?: string) => {
+    if (!str) return false;
+    if (str === savedTrade && savedTrade.length > 15) return true;
+    if (
+      /^[0-9A-Z]{20,}$/.test(str) ||
+      /^[0-9a-f]{8}-[0-9a-f]{4}/i.test(str)
+    ) {
+      return true;
+    }
+    return false;
+  };
+
+  const initialTradeTitle =
+    (!isLikelyId(savedRPLExperienceTrade.qualificationTitle) &&
+      savedRPLExperienceTrade.qualificationTitle) ||
+    savedTradeName ||
+    (!isLikelyId(savedTrade) ? savedTrade : "") ||
+    "";
+
   const [form, setForm] = useState({
     // Qualification Applying For
-    qualificationTitle:
-      savedRPLExperienceTrade.qualificationTitle || savedTrade || "",
+    qualificationTitle: initialTradeTitle,
     qualificationCode:
       savedRPLExperienceTrade.qualificationCode || "NOS-ELI-L3",
     completedBefore: savedRPLExperienceTrade.completedBefore || "No",
@@ -111,80 +142,111 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
     showSuccessModal: false,
   });
 
+  // Resolve human-readable trade name if available and title is empty or raw ID
+  useEffect(() => {
+    const resolvedName =
+      savedTradeName ||
+      tradeDetail?.name ||
+      remoteTrades.find((t) => t.id === savedTrade)?.name;
+
+    if (resolvedName) {
+      setForm((prev) => {
+        if (!prev.qualificationTitle || isLikelyId(prev.qualificationTitle)) {
+          return {
+            ...prev,
+            qualificationTitle: resolvedName,
+          };
+        }
+        return prev;
+      });
+    }
+  }, [savedTradeName, tradeDetail, remoteTrades, savedTrade]);
+
   // Hydrate from getOnboarding API response if available
   useEffect(() => {
     if (getOnboarding.data?.data) {
       const apiData = getOnboarding.data.data as any;
       const rplExp = apiData?.rplExperienceTrade;
       if (rplExp) {
+        const resolvedTitle =
+          (!isLikelyId(rplExp.qualificationTitle) &&
+            rplExp.qualificationTitle) ||
+          savedTradeName ||
+          tradeDetail?.name ||
+          (!isLikelyId(savedTrade) ? savedTrade : "") ||
+          "";
+
         setForm((prev) => ({
           ...prev,
           ...rplExp,
-          qualificationTitle: rplExp.qualificationTitle || prev.qualificationTitle || savedTrade || "",
+          qualificationTitle:
+            resolvedTitle ||
+            prev.qualificationTitle ||
+            savedTradeName ||
+            "",
         }));
-        dispatch(setRPLExperienceTrade(rplExp));
+        dispatch(
+          setRPLExperienceTrade({
+            ...rplExp,
+            qualificationTitle:
+              resolvedTitle || rplExp.qualificationTitle,
+          }),
+        );
       }
     }
-  }, [getOnboarding.data, savedTrade, dispatch]);
+  }, [getOnboarding.data, savedTrade, savedTradeName, tradeDetail, dispatch]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const update = (field: string, value: any) => {
-    setForm((prev) => {
-      const next = { ...prev, [field]: value };
-      dispatch(
-        setRPLExperienceTrade({
-          [field]: value,
-        }),
-      );
-      return next;
-    });
+    setForm((prev) => ({ ...prev, [field]: value }));
+    dispatch(
+      setRPLExperienceTrade({
+        [field]: value,
+      }),
+    );
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
   };
 
   const updateEmployment = (id: string, field: string, value: any) => {
-    setForm((prev) => {
-      const updatedEmployments = prev.employments.map((emp) =>
-        emp.id === id ? { ...emp, [field]: value } : emp,
-      );
+    const updatedEmployments = form.employments.map((emp) =>
+      emp.id === id ? { ...emp, [field]: value } : emp,
+    );
 
-      const targetEmp = updatedEmployments.find((emp) => emp.id === id);
-      if (targetEmp && (field === "startDate" || field === "endDate")) {
-        const sVal = targetEmp.startDate;
-        const eVal = targetEmp.endDate;
-        if (sVal && eVal) {
-          const start = parseDate(sVal);
-          const end = parseDate(eVal);
-          if (start && end && end <= start) {
-            setErrors((errs) => ({
-              ...errs,
-              [`empDate_${id}`]: "End date must be greater than start date",
-            }));
-          } else {
-            setErrors((errs) => ({
-              ...errs,
-              [`empDate_${id}`]: "",
-            }));
-          }
+    setForm((prev) => ({
+      ...prev,
+      employments: updatedEmployments,
+    }));
+
+    dispatch(setRPLExperienceTrade({ employments: updatedEmployments }));
+
+    const targetEmp = updatedEmployments.find((emp) => emp.id === id);
+    if (targetEmp && (field === "startDate" || field === "endDate")) {
+      const sVal = targetEmp.startDate;
+      const eVal = targetEmp.endDate;
+      if (sVal && eVal) {
+        const start = parseDate(sVal);
+        const end = parseDate(eVal);
+        if (start && end && end <= start) {
+          setErrors((errs) => ({
+            ...errs,
+            [`empDate_${id}`]: "End date must be greater than start date",
+          }));
         } else {
           setErrors((errs) => ({
             ...errs,
             [`empDate_${id}`]: "",
           }));
         }
+      } else {
+        setErrors((errs) => ({
+          ...errs,
+          [`empDate_${id}`]: "",
+        }));
       }
-
-      dispatch(setRPLExperienceTrade({ employments: updatedEmployments }));
-
-      return {
-        ...prev,
-        employments: updatedEmployments,
-      };
-    });
-
-    if (field !== "startDate" && field !== "endDate" && errors[field]) {
+    } else if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
   };

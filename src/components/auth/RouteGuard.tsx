@@ -52,7 +52,8 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({ children }) => {
       const isRplRoute = pathname?.startsWith("/rpl");
       const isAllowedOnboardingRoute =
         pathname?.startsWith("/onboarding/success") ||
-        pathname?.startsWith("/onboarding/start-application");
+        pathname?.startsWith("/onboarding/start-application") ||
+        pathname?.startsWith("/onboarding/assessment-type");
       const isPreOnboardingRoute =
         pathname?.startsWith("/onboarding") && !isAllowedOnboardingRoute;
       const isSignInRoute = pathname === "/signin";

@@ -14,6 +14,8 @@ export interface RoleCardProps {
   index?: number;
   hoverColor?: RoleHoverColor;
   isSelected?: boolean;
+  badge?: string;
+  disabled?: boolean;
   onSelect?: (id: string) => void;
 }
 
@@ -32,6 +34,8 @@ export const RoleCard: React.FC<RoleCardProps> = ({
   index = 0,
   hoverColor,
   isSelected = false,
+  badge,
+  disabled = false,
   onSelect,
 }) => {
   const effectiveColor: RoleHoverColor =
@@ -41,9 +45,21 @@ export const RoleCard: React.FC<RoleCardProps> = ({
   return (
     <button
       type="button"
-      onClick={() => onSelect?.(id)}
-      className="group relative w-full max-w-109.75 aspect-439/199 rounded-[10px] flex items-end justify-between px-4 sm:px-8 pb-4 sm:pb-7 text-left select-none cursor-pointer overflow-hidden focus:outline-none active:scale-[0.995] transition-all duration-300 ease-out hover:translate-x-1.5"
+      onClick={() => !disabled && onSelect?.(id)}
+      disabled={disabled}
+      className={`group relative w-full max-w-109.75 aspect-439/199 rounded-[10px] flex items-end justify-between px-4 sm:px-8 pb-4 sm:pb-7 text-left select-none overflow-hidden focus:outline-none transition-all duration-300 ease-out ${
+        disabled
+          ? "opacity-80 cursor-pointer"
+          : "cursor-pointer active:scale-[0.995] hover:translate-x-1.5"
+      }`}
     >
+      {badge && (
+        <div className="absolute top-3.5 right-4 sm:top-5 sm:right-6 z-20">
+          <span className="bg-amber-100 text-amber-900 border border-amber-300 text-[10px] sm:text-xs font-bold px-3 py-1 rounded-full shadow-2xs">
+            {badge}
+          </span>
+        </div>
+      )}
       <Image
         src={ASSETS_URL.cardWhite}
         alt="Default Card Background"

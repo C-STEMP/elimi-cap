@@ -28,11 +28,6 @@ export function useSaveOnboarding() {
       queryClient.invalidateQueries({
         queryKey: ONBOARDING_QUERY_KEYS.persona("candidate"),
       });
-      toast({
-        type: "success",
-        title: "Progress Saved",
-        description: "Your onboarding details have been saved successfully.",
-      });
     },
 
     onError: (error: Error) => {

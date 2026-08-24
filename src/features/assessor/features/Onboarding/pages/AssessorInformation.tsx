@@ -66,6 +66,9 @@ export const AssessorInformation: React.FC = () => {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadingType, setUploadingType] = useState<"qaa" | "iqm" | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [uploadingFileName, setUploadingFileName] = useState<string>("");
 
   useEffect(() => {
     dispatch(setSidebarVariant("default"));
@@ -75,23 +78,23 @@ export const AssessorInformation: React.FC = () => {
   useEffect(() => {
     if (getOnboarding.data?.data) {
       const d = (getOnboarding.data.data as any)?.assessorDetails || {};
-      setForm((prev) => {
-        const next = {
-          assessorId: d.assessorNo || prev.assessorId,
-          qualification: prev.qualification,
-        };
-        dispatch(setAssessorDetails(next));
-        return next;
-      });
+      const next = {
+        assessorId: d.assessorNo || form.assessorId,
+        qualification: form.qualification,
+      };
+      setForm(next);
+      dispatch(setAssessorDetails(next));
     }
   }, [getOnboarding.data, dispatch]);
 
   const update = (field: keyof typeof form, value: string) => {
-    setForm((prev) => {
-      const next = { ...prev, [field]: value };
-      dispatch(setAssessorDetails({ [field]: value, qualifications: [next.qualification] }));
-      return next;
-    });
+    setForm((prev) => ({ ...prev, [field]: value }));
+    dispatch(
+      setAssessorDetails({
+        [field]: value,
+        qualifications: field === "qualification" ? [value] : [form.qualification],
+      }),
+    );
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
@@ -105,11 +108,22 @@ export const AssessorInformation: React.FC = () => {
       const file = e.target.files[0];
       const sizeMb = `${(file.size / (1024 * 1024)).toFixed(1)} mb`;
 
+      setUploadingType(type);
+      setUploadingFileName(file.name);
+      setUploadProgress(20);
+
+      const progressInterval = setInterval(() => {
+        setUploadProgress((prev) => (prev < 85 ? prev + 15 : prev));
+      }, 180);
+
       try {
         const asset = await uploadFileMutation.mutateAsync({
           file,
           purpose: "certificate",
         });
+
+        clearInterval(progressInterval);
+        setUploadProgress(100);
 
         const fileData = {
           name: file.name,
@@ -139,11 +153,16 @@ export const AssessorInformation: React.FC = () => {
           setErrors((prev) => ({ ...prev, iqm: "" }));
         }
       } catch {
+        clearInterval(progressInterval);
         toast({
           type: "error",
           title: "Upload Failed",
           description: `Failed to upload ${type.toUpperCase()} Certificate.`,
         });
+      } finally {
+        setUploadingType(null);
+        setUploadProgress(0);
+        setUploadingFileName("");
       }
     }
   };
@@ -287,8 +306,31 @@ export const AssessorInformation: React.FC = () => {
               </span>
             )}
 
+            {/* QAA Uploading Progress Bar */}
+            {uploadingType === "qaa" && (
+              <div className="mt-3 w-full border border-primary-solid/20 bg-primary-solid/5 rounded-xl p-3 flex flex-col gap-2 shadow-xs">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-4 h-4 border-2 border-primary-solid border-t-transparent rounded-full animate-spin shrink-0" />
+                    <span className="text-xs font-semibold text-neutral-primary truncate">
+                      Uploading {uploadingFileName || "Certificate"}...
+                    </span>
+                  </div>
+                  <span className="text-xs font-bold text-primary-solid shrink-0">
+                    {uploadProgress}%
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden">
+                  <div
+                    className="bg-primary-solid h-full rounded-full transition-all duration-200 ease-out"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
             {/* QAA File Completed Item */}
-            {qaaFile && (
+            {qaaFile && !uploadingType && (
               <div className="mt-3 w-full border border-gray-200 bg-white rounded-xl p-3 flex items-center justify-between shadow-xs">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-lg bg-red-50 flex items-center justify-center text-primary-solid">
@@ -344,6 +386,7 @@ export const AssessorInformation: React.FC = () => {
                 type="file"
                 accept=".jpg,.png,.pdf,.doc,.docx,.mp4,.webp"
                 className="hidden"
+                disabled={uploadingType === "iqm"}
                 onChange={(e) => handleCertificateUpload(e, "iqm")}
               />
               <FiUpload className="w-5 h-5 text-primary-solid mb-1.5" />
@@ -360,8 +403,31 @@ export const AssessorInformation: React.FC = () => {
               </span>
             )}
 
+            {/* IQM Uploading Progress Bar */}
+            {uploadingType === "iqm" && (
+              <div className="mt-3 w-full border border-primary-solid/20 bg-primary-solid/5 rounded-xl p-3 flex flex-col gap-2 shadow-xs">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-4 h-4 border-2 border-primary-solid border-t-transparent rounded-full animate-spin shrink-0" />
+                    <span className="text-xs font-semibold text-neutral-primary truncate">
+                      Uploading {uploadingFileName || "Certificate"}...
+                    </span>
+                  </div>
+                  <span className="text-xs font-bold text-primary-solid shrink-0">
+                    {uploadProgress}%
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden">
+                  <div
+                    className="bg-primary-solid h-full rounded-full transition-all duration-200 ease-out"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
             {/* IQM File Completed Item */}
-            {iqmFile && (
+            {iqmFile && !uploadingType && (
               <div className="mt-3 w-full border border-gray-200 bg-white rounded-xl p-3 flex items-center justify-between shadow-xs">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-lg bg-red-50 flex items-center justify-center text-primary-solid">

@@ -9,6 +9,7 @@ import { onboardingReducer } from "./slices/onboardingSlice";
 const persistConfig = {
   key: "root",
   storage: localStorage,
+  whitelist: ["auth", "session"],
 };
 
 const rootReducer = combineReducers({

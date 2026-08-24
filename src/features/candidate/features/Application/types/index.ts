@@ -60,6 +60,8 @@ export interface StageConfig {
   alertMessage?: string | null;
   delayedMessage?: string | null;
   showPaymentDetails?: boolean;
+  paymentDetailsText?: string;
+  paymentAmountText?: string;
   onActionClick?: () => void;
   isCollapsible?: boolean;
   isCollapsed?: boolean;

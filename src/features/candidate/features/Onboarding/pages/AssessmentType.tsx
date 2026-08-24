@@ -12,10 +12,13 @@ import { motion } from "framer-motion";
 import { useToast } from "@/src/components/ui/toast";
 import { useApplication } from "@/src/features/candidate/features/Application/hooks";
 
+import { useGetApplications } from "@/src/features/candidate/features/Application/hooks";
+
 export interface AssessmentOption {
   id: string;
   title: string;
   description: string;
+  badge?: string;
 }
 
 const ASSESSMENT_OPTIONS: AssessmentOption[] = [
@@ -28,6 +31,7 @@ const ASSESSMENT_OPTIONS: AssessmentOption[] = [
     id: "nsq",
     title: "NSQ",
     description: "National Skills Qualification",
+    badge: "Coming Soon",
   },
 ];
 
@@ -42,6 +46,8 @@ export const AssessmentType: React.FC<AssessmentTypeProps> = ({
 }) => {
   const dispatch = useAppDispatch();
   const router = useRouter();
+  const { toast } = useToast();
+  const { data: applications = [] } = useGetApplications();
 
   const savedAssessmentType = useAppSelector(
     (state) =>
@@ -52,6 +58,43 @@ export const AssessmentType: React.FC<AssessmentTypeProps> = ({
   );
 
   const handleSelectType = (id: string) => {
+    if (id === "nsq") {
+      toast({
+        type: "info",
+        title: "Coming Soon",
+        description: "National Skills Qualification (NSQ) assessment is coming soon.",
+      });
+      return;
+    }
+
+    if (id === "rpl") {
+      const existingRpl = applications.find(
+        (a) => a.type === "RPL" || !a.type,
+      );
+
+      if (existingRpl) {
+        if (existingRpl.status !== "draft") {
+          toast({
+            type: "info",
+            title: "RPL Application Already Submitted",
+            description:
+              "You have already submitted an RPL application. You can only have one RPL application.",
+          });
+          router.push(`/dashboard/applications/${existingRpl.id}`);
+          return;
+        }
+
+        toast({
+          type: "info",
+          title: "Draft Application Found",
+          description:
+            "You have a saved draft application. You can continue and edit your application.",
+        });
+        router.push("/rpl/personal-info");
+        return;
+      }
+    }
+
     setSelectedType(id);
     dispatch(setAssessmentType(id));
     dispatch(setOnboardingAssessmentType(id));
@@ -107,6 +150,7 @@ export const AssessmentType: React.FC<AssessmentTypeProps> = ({
             index={idx}
             title={option.title}
             description={option.description}
+            badge={option.badge}
             isSelected={selectedType === option.id}
             onSelect={handleSelectType}
           />

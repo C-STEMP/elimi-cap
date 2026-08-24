@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import {
   FiBell,
@@ -16,7 +17,7 @@ import { Logo } from "@/src/components/ui/logo";
 import { Button } from "@/src/components/ui/button";
 import { LogoutModal } from "@/components/LogoutModal";
 import { NotificationDropdown } from "@/features/candidate/features/Dashboard/components/NotificationDropdown";
-import { useAppDispatch } from "@/src/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/src/store/hooks";
 import { logout } from "@/src/store/slices/authSlice";
 import { useRouter } from "next/navigation";
 
@@ -58,6 +59,17 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
 }) => {
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const authUser = useAppSelector((state) => state.auth.user);
+  const assessorPersonalInfo = useAppSelector(
+    (state) => state.onboarding.assessorPersonalInfo,
+  );
+  const personalInfo = useAppSelector((state) => state.onboarding.personalInfo);
+  const uploadedAvatar =
+    (assessorPersonalInfo as any)?.passportUrl ||
+    personalInfo?.passportUrl ||
+    authUser?.avatar ||
+    authUser?.avatarUrl ||
+    authUser?.passportUrl;
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
 
@@ -138,8 +150,21 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
             />
           </div>
 
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden border border-white/30 bg-white/20 flex items-center justify-center text-xs sm:text-sm font-bold text-white shrink-0 cursor-pointer">
-            {userName.charAt(0).toUpperCase()}
+          <div
+            onClick={() => onSelectTab("Settings")}
+            className="w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden border border-white/30 bg-white/20 flex items-center justify-center text-xs sm:text-sm font-bold text-white shrink-0 cursor-pointer relative"
+          >
+            {uploadedAvatar ? (
+              <Image
+                src={uploadedAvatar}
+                alt={userName}
+                fill
+                sizes="40px"
+                className="object-cover"
+              />
+            ) : (
+              userName.charAt(0).toUpperCase()
+            )}
           </div>
 
           <button
