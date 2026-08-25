@@ -7,6 +7,7 @@ import {
   useGetApplicationStages as useSharedGetApplicationStages,
   useInitiateApplicationPayment as useSharedInitiateApplicationPayment,
   useGetApplicationReceipt as useSharedGetApplicationReceipt,
+  useGetPaymentQuote as useSharedGetPaymentQuote,
 } from "@/src/features/shared/applications/hooks";
 import type { ApplicationStatus } from "../api/application.api";
 
@@ -36,6 +37,10 @@ export function useGetApplicationStages(id: string) {
 
 export function useInitiateApplicationPayment() {
   return useSharedInitiateApplicationPayment();
+}
+
+export function useGetPaymentQuote(id: string) {
+  return useSharedGetPaymentQuote(id);
 }
 
 export function useGetApplicationReceipt(id: string) {

@@ -179,6 +179,7 @@ export interface GetStagesConfigParams {
   submittedDate?: string;
   isDraft?: boolean;
   tradeName?: string;
+  paymentAmountText?: string;
   paymentCompleted?: boolean;
   evidenceUploaded?: boolean;
   interviewCompleted?: boolean;
@@ -201,6 +202,7 @@ export const getStagesConfig = ({
   submittedDate,
   isDraft = false,
   tradeName,
+  paymentAmountText,
   paymentCompleted = false,
   evidenceUploaded = false,
   interviewCompleted = false,
@@ -254,7 +256,7 @@ export const getStagesConfig = ({
         : "--",
     showPaymentDetails: isPaymentActive && !isPaymentPaid,
     paymentDetailsText: `RPL Assessment Fee — ${tradeName || "Trade"} (Level 3)`,
-    paymentAmountText: "₦45,000",
+    paymentAmountText: paymentAmountText || "₦45,000",
     actionText: !isPaymentActive
       ? undefined
       : isPaymentPaid
