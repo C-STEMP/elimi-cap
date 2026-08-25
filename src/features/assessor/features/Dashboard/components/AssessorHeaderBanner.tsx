@@ -11,6 +11,7 @@ import {
   FiFlag,
   FiChevronLeft,
   FiPlus,
+  FiCheck,
 } from "react-icons/fi";
 import { BiSolidMessageRoundedDetail } from "react-icons/bi";
 import { Logo } from "@/src/components/ui/logo";
@@ -20,6 +21,7 @@ import { NotificationDropdown } from "@/features/candidate/features/Dashboard/co
 import { useAppDispatch, useAppSelector } from "@/src/store/hooks";
 import { logout } from "@/src/store/slices/authSlice";
 import { useRouter } from "next/navigation";
+import { AssessorApplicationStatsCards } from "../../Applications/components/list";
 
 export type AssessorNavTab =
   | "Overview"
@@ -35,6 +37,13 @@ interface AssessorHeaderBannerProps {
   selectedCentreName?: string | null;
   onBackFromCentre?: () => void;
   selectedApplicationName?: string | null;
+  applicationSubView?:
+    | "stages"
+    | "application_form"
+    | "evidence_vault"
+    | "assessment_form";
+  canMarkAsComplete?: boolean;
+  onMarkAsComplete?: () => void;
   onBackFromApplication?: () => void;
   onApplyToCentre?: () => void;
   totalCentresCount?: number;
@@ -50,6 +59,9 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
   selectedCentreName,
   onBackFromCentre,
   selectedApplicationName,
+  applicationSubView = "stages",
+  canMarkAsComplete = false,
+  onMarkAsComplete,
   onBackFromApplication,
   onApplyToCentre,
   totalCentresCount = 0,
@@ -286,74 +298,89 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
             </div>
           </div>
         </div>
-      ) : activeTab === "Applications" && !selectedApplicationName ? (
-        <div className="flex flex-col gap-5 pt-2">
-          <h1 className="text-2xl sm:text-3xl xl:text-[32px] font-extrabold tracking-tight text-white">
-            Applications
-          </h1>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5">
-            <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 flex flex-col justify-between text-white border border-white/15 transition-all shadow-xs">
-              <span className="text-xs font-medium text-white/80">
-                Total Applications
-              </span>
-              <div className="flex items-baseline gap-1 mt-1">
-                <span className="text-xl font-extrabold text-white">
-                  {totalApplicationsCount}
+      ) : activeTab === "Applications" ? (
+        selectedApplicationName ? (
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
+            <div className="flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={onBackFromApplication}
+                className="flex items-center gap-2 text-white font-bold text-2xl sm:text-3xl hover:opacity-90 transition-opacity w-fit cursor-pointer"
+              >
+                <FiChevronLeft className="w-6 h-6 stroke-[2.5]" />
+                <span>
+                  {applicationSubView === "evidence_vault"
+                    ? "Evidence Vault"
+                    : applicationSubView === "application_form"
+                      ? "Application Form"
+                      : selectedApplicationName}
                 </span>
-                <span className="text-[11px] text-white/80">applications</span>
+              </button>
+              <div className="flex items-center gap-2 text-xs sm:text-sm text-white/90 font-normal">
+                <span
+                  onClick={onBackFromApplication}
+                  className="hover:underline cursor-pointer"
+                >
+                  Applications
+                </span>
+                <span>&gt;</span>
+                <span
+                  onClick={
+                    applicationSubView !== "stages"
+                      ? onBackFromApplication
+                      : undefined
+                  }
+                  className={
+                    applicationSubView !== "stages"
+                      ? "hover:underline cursor-pointer"
+                      : "font-semibold text-white"
+                  }
+                >
+                  {selectedApplicationName}
+                </span>
+                {applicationSubView !== "stages" && (
+                  <>
+                    <span>&gt;</span>
+                    <span className="font-semibold text-white">
+                      {applicationSubView === "evidence_vault"
+                        ? "Evidence Vault"
+                        : "Application Form"}
+                    </span>
+                  </>
+                )}
               </div>
             </div>
 
-            <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 flex flex-col justify-between text-white border border-white/15 transition-all shadow-xs">
-              <span className="text-xs font-medium text-white/80">
-                Pending
-              </span>
-              <div className="flex items-baseline gap-1 mt-1">
-                <span className="text-xl font-extrabold text-white">
-                  {pendingApplicationsCount}
-                </span>
-                <span className="text-[11px] text-white/80">applications</span>
-              </div>
-            </div>
-
-            <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 flex flex-col justify-between text-white border border-white/15 transition-all shadow-xs">
-              <span className="text-xs font-medium text-white/80">
-                Ongoing
-              </span>
-              <div className="flex items-baseline gap-1 mt-1">
-                <span className="text-xl font-extrabold text-white">
-                  {totalApplicationsCount - completedApplicationsCount - pendingApplicationsCount}
-                </span>
-                <span className="text-[11px] text-white/80">applications</span>
-              </div>
-            </div>
-
-            <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 flex flex-col justify-between text-white border border-white/15 transition-all shadow-xs">
-              <span className="text-xs font-medium text-white/80">
-                Completed
-              </span>
-              <div className="flex items-baseline gap-1 mt-1">
-                <span className="text-xl font-extrabold text-white">
-                  {completedApplicationsCount}
-                </span>
-                <span className="text-[11px] text-white/80">applications</span>
-              </div>
-            </div>
-
-            <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 flex flex-col justify-between text-white border border-white/15 transition-all shadow-xs">
-              <span className="text-xs font-medium text-white/80">
-                Archived
-              </span>
-              <div className="flex items-baseline gap-1 mt-1">
-                <span className="text-xl font-extrabold text-white">
-                  —
-                </span>
-                <span className="text-[11px] text-white/80">applications</span>
-              </div>
-            </div>
+            {/* Mark As Complete Button: only shows when all uploaded evidence are approved */}
+            {applicationSubView === "evidence_vault" && canMarkAsComplete && (
+              <Button
+                type="button"
+                variant="amber"
+                size="md"
+                onClick={onMarkAsComplete}
+                className="bg-[#FBAB2A] hover:bg-[#E89B1F] text-white font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl shadow-lg flex items-center gap-2 cursor-pointer transition-all self-start sm:self-center shrink-0"
+              >
+                <span>Mark As Complete</span>
+                <FiCheck className="w-4 h-4 stroke-[3]" />
+              </Button>
+            )}
           </div>
-        </div>
+        ) : (
+          <div className="flex flex-col gap-5 pt-2">
+            <h1 className="text-2xl sm:text-3xl xl:text-[32px] font-extrabold tracking-tight text-white">
+              Applications
+            </h1>
+
+            <AssessorApplicationStatsCards
+              stats={{
+                total: totalApplicationsCount || 1220,
+                pending: pendingApplicationsCount || 200,
+                completed: completedApplicationsCount || 1000,
+                archived: 20,
+              }}
+            />
+          </div>
+        )
       ) : activeTab === "Centres" ? (
         selectedCentreName ? (
           <div className="flex flex-col gap-2 pt-2">

@@ -26,7 +26,10 @@ import {
   AssessorApplicationsView,
   type AssessorApplicationRecord,
 } from "../../Applications/components/AssessorApplicationsView";
-import { AssessorApplicationDetailView } from "../../Applications/components/AssessorApplicationDetailView";
+import {
+  AssessorApplicationDetailView,
+  type AssessorDetailSubView,
+} from "../../Applications/components/AssessorApplicationDetailView";
 
 // JobBoard feature components
 import {
@@ -39,8 +42,10 @@ import { AssessorJobDetailView } from "../../JobBoard/components/AssessorJobDeta
 import { AssessorSettingsView } from "../../Settings/components/AssessorSettingsView";
 
 import { useGetCentres } from "@/src/features/shared/reference/hooks";
+import { useToast } from "@/src/components/ui/toast";
 
 export const AssessorDashboard: React.FC = () => {
+  const { toast } = useToast();
   const user = useAppSelector((state) => state.auth.user);
   const userName = user?.fullName || user?.email?.split("@")[0] || "Assessor";
 
@@ -114,6 +119,10 @@ export const AssessorDashboard: React.FC = () => {
     useState<AssessorCentreItem | null>(null);
   const [selectedApplication, setSelectedApplication] =
     useState<AssessorApplicationRecord | null>(null);
+  const [applicationSubView, setApplicationSubView] =
+    useState<AssessorDetailSubView>("stages");
+  const [canMarkAsComplete, setCanMarkAsComplete] = useState(false);
+  const [triggerMarkComplete, setTriggerMarkComplete] = useState(false);
   const [selectedJob, setSelectedJob] = useState<AssessorJobRecord | null>(
     null,
   );
@@ -124,7 +133,33 @@ export const AssessorDashboard: React.FC = () => {
     setActiveTab(tab);
     setSelectedCentre(null);
     setSelectedApplication(null);
+    setApplicationSubView("stages");
+    setCanMarkAsComplete(false);
+    setTriggerMarkComplete(false);
     setSelectedJob(null);
+  };
+
+  const handleBackFromApplication = () => {
+    if (applicationSubView !== "stages") {
+      setApplicationSubView("stages");
+    } else {
+      setSelectedApplication(null);
+      setCanMarkAsComplete(false);
+      setTriggerMarkComplete(false);
+    }
+  };
+
+  const handleTriggerMarkComplete = () => {
+    setTriggerMarkComplete(true);
+  };
+
+  const handleMarkAsCompleteFinished = () => {
+    toast({
+      type: "success",
+      title: "Folder Marked As Complete",
+      description: "You have successfully marked this folder as complete.",
+    });
+    setApplicationSubView("stages");
   };
 
   return (
@@ -138,7 +173,10 @@ export const AssessorDashboard: React.FC = () => {
           selectedCentreName={selectedCentre?.name}
           onBackFromCentre={() => setSelectedCentre(null)}
           selectedApplicationName={selectedApplication?.candidateName}
-          onBackFromApplication={() => setSelectedApplication(null)}
+          applicationSubView={applicationSubView}
+          canMarkAsComplete={canMarkAsComplete}
+          onMarkAsComplete={handleTriggerMarkComplete}
+          onBackFromApplication={handleBackFromApplication}
           onApplyToCentre={() => setIsApplyModalOpen(true)}
           totalCentresCount={centres.length}
           totalApplicationsCount={totalApplications}
@@ -172,6 +210,9 @@ export const AssessorDashboard: React.FC = () => {
                       : "Pending",
                 submittedAt: app.createdAt,
               });
+              setApplicationSubView("stages");
+              setCanMarkAsComplete(false);
+              setTriggerMarkComplete(false);
             }}
             onApplyToCentre={() => setIsApplyModalOpen(true)}
           />
@@ -183,6 +224,9 @@ export const AssessorDashboard: React.FC = () => {
               onSelectApplication={(appRecord) => {
                 setActiveTab("Applications");
                 setSelectedApplication(appRecord);
+                setApplicationSubView("stages");
+                setCanMarkAsComplete(false);
+                setTriggerMarkComplete(false);
               }}
             />
           ) : (
@@ -196,11 +240,22 @@ export const AssessorDashboard: React.FC = () => {
           selectedApplication ? (
             <AssessorApplicationDetailView
               application={selectedApplication}
-              onBack={() => setSelectedApplication(null)}
+              subView={applicationSubView}
+              onSubViewChange={setApplicationSubView}
+              onAllApprovedChange={setCanMarkAsComplete}
+              onMarkAsComplete={handleMarkAsCompleteFinished}
+              triggerMarkComplete={triggerMarkComplete}
+              onResetTriggerMarkComplete={() => setTriggerMarkComplete(false)}
+              onBack={handleBackFromApplication}
             />
           ) : (
             <AssessorApplicationsView
-              onSelectApplication={(app) => setSelectedApplication(app)}
+              onSelectApplication={(app) => {
+                setSelectedApplication(app);
+                setApplicationSubView("stages");
+                setCanMarkAsComplete(false);
+                setTriggerMarkComplete(false);
+              }}
             />
           )
         ) : activeTab === "Job Board" ? (

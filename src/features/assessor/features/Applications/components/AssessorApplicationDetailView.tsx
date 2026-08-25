@@ -1,318 +1,360 @@
 "use client";
 
 import React, { useState } from "react";
-import { FiChevronLeft, FiCheckCircle, FiFlag } from "react-icons/fi";
-import { Button } from "@/src/components/ui/button";
+import {
+  AssessorApplicationStagesList,
+  AssessorCalendarWidget,
+  AssessorUpcomingEventsWidget,
+  AssessorAssessmentFormsWidget,
+  ConfirmMarkCompetentModal,
+  MarkCompetentSuccessModal,
+  ConfirmMarkCandidateCompetentModal,
+  CandidateCompetentSuccessModal,
+  ConfirmMarkCandidateIncompetentModal,
+  CandidateIncompetentSuccessModal,
+  ScheduleObservationModal,
+  ObservationScheduledSuccessModal,
+  CandidateInconclusiveSuccessModal,
+} from "./detail";
+import { CandidateApplicationFormView } from "./CandidateApplicationFormView";
+import { AssessorEvidenceVaultView } from "./evidence-vault";
+import { AssessorAssessmentFormView } from "./assessment-forms";
+import type {
+  AssessorApplicationRecord,
+  ApplicationStageFormToSign,
+} from "../types/applications.types";
+import { useGetApplicationById } from "@/src/features/shared/applications/hooks";
 import { useToast } from "@/src/components/ui/toast";
 
-import { CandidateApplicationFormView } from "./CandidateApplicationFormView";
-import { AcceptApplicationModal } from "./AcceptApplicationModal";
-import { ApplicationSidebarWidgets } from "./ApplicationSidebarWidgets";
-import { AssignFacilitatorModal } from "../../Payment/components/AssignFacilitatorModal";
-import { NotifyAwardingBodyModal } from "../../Payment/components/NotifyAwardingBodyModal";
-import type { AssessorApplicationRecord } from "./AssessorApplicationsView";
-import {
-  useGetApplicationById,
-  useGetApplicationStages,
-} from "@/src/features/shared/applications/hooks";
+export type AssessorDetailSubView =
+  | "stages"
+  | "application_form"
+  | "evidence_vault"
+  | "assessment_form";
+
+const DEFAULT_FORMS_TO_SIGN: ApplicationStageFormToSign[] = [
+  {
+    id: "form-1",
+    title: "Skills Demonstration Records Form",
+    description: "Lorem ipsum dolor",
+    signed: false,
+  },
+  {
+    id: "form-2",
+    title: "Assessment Grid/Mapping Form",
+    description: "Lorem ipsum dolor",
+    signed: false,
+  },
+  {
+    id: "form-3",
+    title: "Practical Observation Checklist Form",
+    description: "Lorem ipsum dolor",
+    signed: false,
+  },
+];
 
 interface AssessorApplicationDetailViewProps {
   application: AssessorApplicationRecord;
   onBack: () => void;
+  subView?: AssessorDetailSubView;
+  onSubViewChange?: (subView: AssessorDetailSubView) => void;
+  onAllApprovedChange?: (allApproved: boolean) => void;
+  onMarkAsComplete?: () => void;
+  triggerMarkComplete?: boolean;
+  onResetTriggerMarkComplete?: () => void;
 }
-
-const STAGE_STATUS_LABEL: Record<string, string> = {
-  not_started: "Not Started",
-  awaiting_payment: "Awaiting Payment",
-  in_progress: "In Progress",
-  under_review: "Under Review",
-  scheduled: "Scheduled",
-  successful: "Approved",
-  rejected: "Rejected",
-};
 
 export const AssessorApplicationDetailView: React.FC<
   AssessorApplicationDetailViewProps
-> = ({ application, onBack }) => {
+> = ({
+  application,
+  onBack,
+  subView: externalSubView,
+  onSubViewChange,
+  onAllApprovedChange,
+  onMarkAsComplete,
+  triggerMarkComplete,
+  onResetTriggerMarkComplete,
+}) => {
   const { toast } = useToast();
-  const [showApplicationForm, setShowApplicationForm] = useState(false);
-  const [isAccepted, setIsAccepted] = useState(true);
+  const [internalSubView, setInternalSubView] =
+    useState<AssessorDetailSubView>("stages");
 
-  // Live Application details & stages from backend
+  const [selectedAssessmentFormId, setSelectedAssessmentFormId] =
+    useState<string>("skills_demo");
+
+  const [interviewOutcome, setInterviewOutcome] = useState<
+    "ongoing" | "competent" | "incompetent" | "inconclusive" | "awaiting_signature"
+  >(application.status === "Completed" ? "competent" : "ongoing");
+
+  const [interviewFeedback, setInterviewFeedback] = useState<{
+    title?: string;
+    reason: string;
+    recommendation: string;
+  } | null>(null);
+
+  const [formsToSign, setFormsToSign] =
+    useState<ApplicationStageFormToSign[]>(DEFAULT_FORMS_TO_SIGN);
+
+  // Internal Verifier Modals State
+  const [isConfirmCompetentOpen, setIsConfirmCompetentOpen] = useState(false);
+  const [isCompetentSuccessOpen, setIsCompetentSuccessOpen] = useState(false);
+
+  // Lead Panelist / Interview Stage Competent Modals State
+  const [isConfirmCandidateCompetentOpen, setIsConfirmCandidateCompetentOpen] =
+    useState(false);
+  const [
+    isCandidateCompetentSuccessOpen,
+    setIsCandidateCompetentSuccessOpen,
+  ] = useState(false);
+
+  // Lead Panelist / Interview Stage Incompetent Modals State
+  const [
+    isConfirmCandidateIncompetentOpen,
+    setIsConfirmCandidateIncompetentOpen,
+  ] = useState(false);
+  const [
+    isCandidateIncompetentSuccessOpen,
+    setIsCandidateIncompetentSuccessOpen,
+  ] = useState(false);
+  const [
+    isCandidateInconclusiveSuccessOpen,
+    setIsCandidateInconclusiveSuccessOpen,
+  ] = useState(false);
+
+  // Observation Scheduling Modals State
+  const [isScheduleObservationOpen, setIsScheduleObservationOpen] =
+    useState(false);
+  const [isObservationSuccessOpen, setIsObservationSuccessOpen] =
+    useState(false);
+  const [scheduledObservationEvent, setScheduledObservationEvent] = useState<{
+    title: string;
+    time: string;
+    date: string;
+    address: string;
+  } | null>(null);
+
+  const subView = externalSubView !== undefined ? externalSubView : internalSubView;
+
+  const setSubView = (next: AssessorDetailSubView) => {
+    setInternalSubView(next);
+    onSubViewChange?.(next);
+  };
+
   const { data: appDetail } = useGetApplicationById(application.id);
-  const { data: apiStages = [] } = useGetApplicationStages(application.id);
 
-  // Facilitator state
-  const [isFacilitatorAssigned, setIsFacilitatorAssigned] = useState(false);
-  const [facilitatorName, setFacilitatorName] = useState("Assigned Facilitator");
-  const [tradeName, setTradeName] = useState(application.trade || "Trade");
+  const handleConfirmCompetent = () => {
+    setIsConfirmCompetentOpen(false);
+    setIsCompetentSuccessOpen(true);
+  };
 
-  // Modals visibility state
-  const [isConfirmAcceptOpen, setIsConfirmAcceptOpen] = useState(false);
-  const [isAssignFacilitatorOpen, setIsAssignFacilitatorOpen] = useState(false);
-  const [isNotifyAwardingOpen, setIsNotifyAwardingOpen] = useState(false);
-  const [isAwardingNotified, setIsAwardingNotified] = useState(false);
+  const handleConfirmCandidateCompetent = () => {
+    setIsConfirmCandidateCompetentOpen(false);
+    setIsCandidateCompetentSuccessOpen(true);
+  };
 
-  const defaultStages = [
-    {
-      id: "application_form",
-      title: "Application Form",
-      status: isAccepted ? "Approved" : "Pending",
-      date: application.submittedAt ? `Submitted on: ${application.submittedAt}` : "--",
-      canView: true,
-    },
-    {
-      id: "payment",
-      title: "Payment",
-      status: "Not Started",
-      date: "--",
-      amountText: `${appDetail?.type ?? application.assessmentType} Assessment Fee`,
-      amountValue: undefined,
-    },
-    {
-      id: "folder_arrangement",
-      title: "Folder Arrangement",
-      status: isFacilitatorAssigned ? "In Progress" : "Not Started",
-      date: "--",
-    },
-    { id: "interview", title: "Interview Stage", status: "Not Started", date: "--" },
-    { id: "internal_verification", title: "Internal Verifier", status: "Not Started", date: "--" },
-    { id: "notify_awarding", title: "Notify Awarding Body", status: isAwardingNotified ? "Completed" : "Not Started", date: "--" },
-    { id: "external_verification", title: "External Verifier", status: "Not Started", date: "--" },
-    { id: "certification", title: "Certification", status: "Not Started", date: "--" },
-  ];
+  const handleCandidateCompetentSuccessContinue = () => {
+    setIsCandidateCompetentSuccessOpen(false);
+    setInterviewOutcome("competent");
+  };
 
-  const stages = apiStages.length > 0
-    ? apiStages.map((stg) => {
-        const formattedStatus = STAGE_STATUS_LABEL[stg.status] ?? stg.status;
-        const isPaid = stg.stageKey === "payment" && (stg.status === "successful" || stg.status === "in_progress");
-        const date = stg.enteredAt
-          ? `Entered: ${new Date(stg.enteredAt).toLocaleDateString("en-GB")}`
-          : stg.deadline
-          ? `Deadline: ${new Date(stg.deadline).toLocaleDateString("en-GB")}`
-          : "--";
+  const handleConfirmCandidateIncompetent = (data: {
+    reason: string;
+    recommendation: string;
+  }) => {
+    setInterviewFeedback({
+      title: "Interview Inconclusive",
+      reason: data.reason,
+      recommendation: data.recommendation,
+    });
+    setIsConfirmCandidateIncompetentOpen(false);
+    setIsCandidateIncompetentSuccessOpen(true);
+  };
 
-        return {
-          id: stg.stageKey,
-          title: stg.label,
-          status: formattedStatus,
-          date,
-          canView: stg.stageKey === "application_form",
-          isPaid,
-          amountText: stg.amountMinorUnits
-            ? `${appDetail?.type ?? application.assessmentType} Assessment Fee`
-            : undefined,
-          amountValue: stg.amountMinorUnits
-            ? `₦${(Number(stg.amountMinorUnits) / 100).toLocaleString()}`
-            : undefined,
-        };
-      })
-    : defaultStages;
+  const handleCandidateIncompetentSuccessContinue = () => {
+    setIsCandidateIncompetentSuccessOpen(false);
+    setInterviewOutcome("inconclusive");
+  };
 
-  const paymentStage = stages.find((s) => s.id === "payment");
-  const isPaymentPaid = paymentStage?.status === "Approved" || paymentStage?.status === "Successful" || (paymentStage as any)?.isPaid;
+  const handleConfirmCandidateInconclusive = () => {
+    setIsCandidateInconclusiveSuccessOpen(true);
+  };
+
+  const handleCandidateInconclusiveSuccessContinue = () => {
+    setIsCandidateInconclusiveSuccessOpen(false);
+    setInterviewOutcome("inconclusive");
+  };
+
+  const handleScheduleObservationSubmit = (data: {
+    date: string;
+    time: string;
+    location: string;
+  }) => {
+    setScheduledObservationEvent({
+      title: "Physically Observation",
+      time: data.time,
+      date: data.date,
+      address: data.location,
+    });
+    setIsScheduleObservationOpen(false);
+    setIsObservationSuccessOpen(true);
+  };
+
+  const handleObservationSuccessContinue = () => {
+    setIsObservationSuccessOpen(false);
+    setInterviewOutcome("awaiting_signature");
+  };
+
+  const handleAppendSignature = (formId: string) => {
+    setFormsToSign((prev) =>
+      prev.map((f) => (f.id === formId ? { ...f, signed: true } : f)),
+    );
+    toast({
+      type: "success",
+      title: "Signature Appended",
+      description: "Your signature has been added to the form.",
+    });
+  };
+
+  if (subView === "application_form") {
+    return (
+      <CandidateApplicationFormView
+        candidateName={application.candidateName}
+        trade={application.trade}
+        applicationId={application.id}
+        applicationDetail={appDetail}
+      />
+    );
+  }
+
+  if (subView === "evidence_vault") {
+    return (
+      <AssessorEvidenceVaultView
+        candidateName={application.candidateName}
+        onBack={() => setSubView("stages")}
+        onAllApprovedChange={onAllApprovedChange}
+        onMarkAsComplete={onMarkAsComplete}
+        triggerMarkComplete={triggerMarkComplete}
+        onResetTriggerMarkComplete={onResetTriggerMarkComplete}
+      />
+    );
+  }
+
+  if (subView === "assessment_form") {
+    return (
+      <AssessorAssessmentFormView
+        formId={selectedAssessmentFormId}
+        candidateName={application.candidateName}
+        onBack={() => setSubView("stages")}
+      />
+    );
+  }
+
+  const activeApplicationRecord: AssessorApplicationRecord = {
+    ...application,
+    status: interviewOutcome === "competent" ? "Completed" : application.status,
+  };
+
+  const upcomingEvent =
+    interviewOutcome === "awaiting_signature" && scheduledObservationEvent
+      ? scheduledObservationEvent
+      : interviewOutcome === "ongoing"
+        ? {
+            title: "Panel Interview",
+            time: "12:00PM",
+            date: "22/03/2026",
+            address: "Cstemp Centre",
+          }
+        : null;
 
   return (
-    <div className="w-full flex flex-col gap-6 select-text">
-      {/* Header Banner Row */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#a31d38] text-white p-6 rounded-3xl shadow-md">
-        <div className="flex flex-col gap-1">
-          <button
-            type="button"
-            onClick={() => {
-              if (showApplicationForm) {
-                setShowApplicationForm(false);
-              } else {
-                onBack();
-              }
-            }}
-            className="flex items-center gap-2 text-white font-bold text-2xl sm:text-3xl hover:opacity-90 transition-opacity w-fit cursor-pointer"
-          >
-            <FiChevronLeft className="w-6 h-6 stroke-[2.5]" />
-            <span>
-              {showApplicationForm
-                ? "Application Form"
-                : application.candidateName}
-            </span>
-          </button>
-          <div className="flex items-center gap-2 text-xs sm:text-sm text-white/90 font-normal">
-            <span onClick={onBack} className="hover:underline cursor-pointer">
-              Applications
-            </span>
-            <span>&gt;</span>
-            <span
-              onClick={() => setShowApplicationForm(false)}
-              className={`${
-                showApplicationForm ? "hover:underline cursor-pointer" : "font-semibold"
-              }`}
-            >
-              {application.candidateName}
-            </span>
-            {showApplicationForm && (
-              <>
-                <span>&gt;</span>
-                <span className="font-semibold">Application Form</span>
-              </>
-            )}
-          </div>
-        </div>
-
-        {showApplicationForm && (
-          <Button
-            variant="amber"
-            size="md"
-            onClick={() => setIsConfirmAcceptOpen(true)}
-            rightIcon={<FiCheckCircle className="w-4 h-4" />}
-            className="bg-[#FBAB2A] hover:bg-[#E89B1F] text-white font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl shadow-lg shrink-0 cursor-pointer"
-          >
-            {isAccepted ? "Accepted ✓" : "Accept Application"}
-          </Button>
-        )}
+    <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-6 items-start select-text">
+      {/* Left Column: Stages Timeline */}
+      <div className="lg:col-span-8 flex flex-col gap-4">
+        <AssessorApplicationStagesList
+          application={activeApplicationRecord}
+          interviewOutcome={interviewOutcome}
+          interviewFeedback={interviewFeedback}
+          formsToSign={formsToSign}
+          onAppendSignature={handleAppendSignature}
+          onViewApplicationForm={() => setSubView("application_form")}
+          onOpenEvidenceVault={() => setSubView("evidence_vault")}
+          onMarkCompetent={() => setIsConfirmCompetentOpen(true)}
+          onMarkCandidateCompetent={() =>
+            setIsConfirmCandidateCompetentOpen(true)
+          }
+          onMarkCandidateIncompetent={() =>
+            setIsConfirmCandidateIncompetentOpen(true)
+          }
+          onMarkCandidateInconclusive={handleConfirmCandidateInconclusive}
+          onScheduleObservation={() => setIsScheduleObservationOpen(true)}
+        />
       </div>
 
-      {/* Main View Render */}
-      {!showApplicationForm ? (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Left Column: Stages List */}
-          <div className="lg:col-span-8 flex flex-col gap-3.5">
-            {stages.map((stg) => (
-              <div
-                key={stg.id}
-                className="bg-white rounded-2xl p-5 shadow-xs border border-gray-100 flex flex-col gap-3 hover:border-gray-200 transition-all"
-              >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-3">
-                      <h3 className="text-base sm:text-lg font-bold text-neutral-primary">
-                        {stg.title}
-                      </h3>
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                          stg.status === "Approved" || stg.status === "Successful" || stg.status === "Completed"
-                            ? "bg-emerald-100 text-emerald-700"
-                            : stg.status === "14 Days Left" || stg.status === "Pending"
-                            ? "bg-[#FEF3C7] text-[#D97706]"
-                            : "bg-gray-200 text-gray-700"
-                        }`}
-                      >
-                        {stg.status}
-                      </span>
-                    </div>
-                    <span className="text-xs text-gray-400">{stg.date}</span>
-                  </div>
-
-                  {stg.canView && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowApplicationForm(true)}
-                      className="border-gray-200 text-neutral-primary hover:bg-gray-50 font-bold text-xs sm:text-sm px-6 h-9 rounded-xl cursor-pointer self-start sm:self-center"
-                    >
-                      View
-                    </Button>
-                  )}
-
-                  {stg.id === "payment" && isPaymentPaid && (
-                    !isFacilitatorAssigned ? (
-                      <Button
-                        variant="amber"
-                        size="sm"
-                        onClick={() => setIsAssignFacilitatorOpen(true)}
-                        className="bg-[#FBAB2A] hover:bg-[#E89B1F] text-white font-bold text-xs sm:text-sm px-5 h-10 rounded-xl shadow-md cursor-pointer self-start sm:self-center shrink-0"
-                      >
-                        Assign Facilitator
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setIsAssignFacilitatorOpen(true)}
-                        leftIcon={<FiFlag className="w-4 h-4 text-[#FBAB2A]" />}
-                        className="border-[#FBAB2A] text-[#FBAB2A] hover:bg-amber-50 font-bold text-xs sm:text-sm px-4 h-10 rounded-xl cursor-pointer self-start sm:self-center shrink-0"
-                      >
-                        Change Facilitator
-                      </Button>
-                    )
-                  )}
-
-                  {stg.id === "folder" && isFacilitatorAssigned && (
-                    <Button
-                      variant="amber"
-                      size="sm"
-                      onClick={() =>
-                        toast({
-                          type: "info",
-                          title: "Evidence Vault",
-                          description: "Opening candidate evidence vault...",
-                        })
-                      }
-                      className="bg-[#FBAB2A] hover:bg-[#E89B1F] text-white font-bold text-xs sm:text-sm px-5 h-10 rounded-xl shadow-md cursor-pointer self-start sm:self-center shrink-0"
-                    >
-                      Evidence Vault
-                    </Button>
-                  )}
-                </div>
-
-                {stg.id === "payment" && !isPaymentPaid && stg.amountText && (
-                  <div className="bg-gray-50/70 rounded-xl p-4 flex items-center justify-between border border-gray-100 mt-1">
-                    <span className="text-xs sm:text-sm font-semibold text-neutral-primary">
-                      {stg.amountText}
-                    </span>
-                    <span className="text-sm sm:text-base font-extrabold text-[#a31d38]">
-                      {stg.amountValue}
-                    </span>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-
-          {/* Right Column: Widgets */}
-          <div className="lg:col-span-4 flex flex-col gap-6">
-            <ApplicationSidebarWidgets
-              isFacilitatorAssigned={isFacilitatorAssigned}
-              facilitatorName={facilitatorName}
-              tradeName={tradeName}
-            />
-          </div>
-        </div>
-      ) : (
-        <CandidateApplicationFormView
-          candidateName={application.candidateName}
-          trade={application.trade}
-          applicationId={application.id}
-          applicationDetail={appDetail}
+      {/* Right Column: Calendar, Events, and Assessment Forms Widgets */}
+      <div className="lg:col-span-4 flex flex-col gap-6">
+        <AssessorCalendarWidget highlightedDays={[10, 13]} />
+        <AssessorUpcomingEventsWidget event={upcomingEvent} />
+        <AssessorAssessmentFormsWidget
+          onViewForm={(form) => {
+            setSelectedAssessmentFormId(form.id);
+            setSubView("assessment_form");
+          }}
         />
-      )}
+      </div>
 
-      {/* Feature Modals */}
-      <AcceptApplicationModal
-        isOpen={isConfirmAcceptOpen}
-        onClose={() => setIsConfirmAcceptOpen(false)}
-        onSuccess={() => {
-          setIsConfirmAcceptOpen(false);
-          setIsAccepted(true);
-        }}
+      {/* Internal Verifier Modals */}
+      <ConfirmMarkCompetentModal
+        isOpen={isConfirmCompetentOpen}
+        onClose={() => setIsConfirmCompetentOpen(false)}
+        onConfirm={handleConfirmCompetent}
       />
 
-      <AssignFacilitatorModal
-        isOpen={isAssignFacilitatorOpen}
-        onClose={() => setIsAssignFacilitatorOpen(false)}
-        onSuccess={(name, trade) => {
-          setIsAssignFacilitatorOpen(false);
-          setIsFacilitatorAssigned(true);
-          setFacilitatorName(name);
-          setTradeName(trade);
-        }}
+      <MarkCompetentSuccessModal
+        isOpen={isCompetentSuccessOpen}
+        onClose={() => setIsCompetentSuccessOpen(false)}
       />
 
-      <NotifyAwardingBodyModal
-        isOpen={isNotifyAwardingOpen}
-        onClose={() => setIsNotifyAwardingOpen(false)}
-        onSuccess={() => {
-          setIsNotifyAwardingOpen(false);
-          setIsAwardingNotified(true);
-        }}
+      {/* Lead Panelist / Interview Stage Competent Modals */}
+      <ConfirmMarkCandidateCompetentModal
+        isOpen={isConfirmCandidateCompetentOpen}
+        onClose={() => setIsConfirmCandidateCompetentOpen(false)}
+        onConfirm={handleConfirmCandidateCompetent}
+      />
+
+      <CandidateCompetentSuccessModal
+        isOpen={isCandidateCompetentSuccessOpen}
+        onClose={handleCandidateCompetentSuccessContinue}
+      />
+
+      {/* Lead Panelist / Interview Stage Incompetent Modals */}
+      <ConfirmMarkCandidateIncompetentModal
+        isOpen={isConfirmCandidateIncompetentOpen}
+        onClose={() => setIsConfirmCandidateIncompetentOpen(false)}
+        onConfirm={handleConfirmCandidateIncompetent}
+      />
+
+      <CandidateIncompetentSuccessModal
+        isOpen={isCandidateIncompetentSuccessOpen}
+        onClose={handleCandidateIncompetentSuccessContinue}
+      />
+
+      {/* Candidate Inconclusive Success Modal */}
+      <CandidateInconclusiveSuccessModal
+        isOpen={isCandidateInconclusiveSuccessOpen}
+        onClose={handleCandidateInconclusiveSuccessContinue}
+      />
+
+      {/* Observation Scheduling Modals */}
+      <ScheduleObservationModal
+        isOpen={isScheduleObservationOpen}
+        onClose={() => setIsScheduleObservationOpen(false)}
+        onSchedule={handleScheduleObservationSubmit}
+      />
+
+      <ObservationScheduledSuccessModal
+        isOpen={isObservationSuccessOpen}
+        onClose={handleObservationSuccessContinue}
       />
     </div>
   );
