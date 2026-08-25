@@ -9,10 +9,10 @@ export default function DashboardStartApplicationPage() {
     <>
       <HeaderBanner
         backHref="/dashboard"
-        backTitle="Create Application"
+        backTitle="Start Assessment"
         breadcrumbs={[
           { label: "Dashboard", href: "/dashboard" },
-          { label: "Create Application" },
+          { label: "Start Assessment" },
         ]}
         showCreateButton={false}
       />

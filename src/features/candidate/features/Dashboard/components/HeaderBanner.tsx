@@ -37,7 +37,7 @@ export const HeaderBanner: React.FC<HeaderBannerProps> = ({
   backTitle,
   breadcrumbs,
   showCreateButton = true,
-  createButtonText = "Create Application",
+  createButtonText = "Start Assessment",
   createButtonHref = "/onboarding/assessment-type",
   rightAction,
 }) => {

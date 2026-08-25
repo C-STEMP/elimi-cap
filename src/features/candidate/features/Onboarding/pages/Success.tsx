@@ -119,7 +119,7 @@ export const Success: React.FC<SuccessProps> = ({
               size="md"
               className="w-full h-12.5 text-white! font-bold text-base bg-[#f9a825]! hover:bg-[#e0931b]! transition-all shadow-md cursor-pointer rounded-xl"
             >
-              Start Application
+              Start Assessment
             </Button>
 
             <Button
