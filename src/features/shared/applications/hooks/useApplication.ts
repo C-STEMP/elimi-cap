@@ -11,6 +11,7 @@ import {
   getApplicationStagesApi,
   reviewApplicationApi,
   initiateApplicationPaymentApi,
+  getPaymentQuoteApi,
   getApplicationReceiptApi,
   getSelfAssessmentApi,
   saveSelfAssessmentApi,
@@ -215,12 +216,12 @@ export function useInitiateApplicationPayment() {
     mutationFn: (id: string) => initiateApplicationPaymentApi(id),
 
     onSuccess: (data) => {
-      toast({
-        type: "success",
-        title: "Redirecting to Checkout",
-        description: "Payment session created.",
-      });
-      if (data.checkoutUrl) {
+      if (data?.checkoutUrl) {
+        toast({
+          type: "success",
+          title: "Redirecting to Paystack",
+          description: "Redirecting to secure payment checkout...",
+        });
         window.location.href = data.checkoutUrl;
       }
     },
@@ -240,6 +241,14 @@ export function useInitiateApplicationPayment() {
         });
       }
     },
+  });
+}
+
+export function useGetPaymentQuote(id: string) {
+  return useQuery({
+    queryKey: ["applications", "payment-quote", id],
+    queryFn: () => getPaymentQuoteApi(id),
+    enabled: Boolean(id),
   });
 }
 

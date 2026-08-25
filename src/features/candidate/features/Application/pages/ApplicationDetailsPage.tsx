@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { HeaderBanner } from "@/features/candidate/features/Dashboard/components/HeaderBanner";
 import { CalendarWidget } from "@/features/candidate/features/Dashboard/components/CalendarWidget";
@@ -33,7 +33,13 @@ import {
   setRPLExperienceTrade,
 } from "@/store/slices/onboardingSlice";
 import { PaymentModal, PaymentModalType } from "@/features/candidate/features/Application/components/PaymentModals";
-import { useApplication, useGetApplicationById } from "@/src/features/candidate/features/Application/hooks";
+import {
+  useApplication,
+  useGetApplicationById,
+  useGetApplicationStages,
+  useGetPaymentQuote,
+  useGetApplicationReceipt,
+} from "@/src/features/candidate/features/Application/hooks";
 import type { ApplicationDetail } from "@/src/features/shared/applications/api";
 import { Loader } from "@/src/components/ui/loader";
 
@@ -44,9 +50,13 @@ const statusToFormState = (
 ): ApplicationFormState => {
   if (status === "draft") return "pending";
   if (status === "submitted") return "pending";
-  if (status === "payment_pending") return "approved";
-  if (status === "payment_completed" && !paymentCompleted) return "approved";
-  if (status === "folder_arrangement") return "vault_3days";
+  if (status === "in_progress") {
+    if (!paymentCompleted) return "pending";
+    if (!selfAssessmentCompleted) return "figma_screen_1";
+    return "figma_screen_5";
+  }
+  if (status === "application_form") return "pending";
+  if (status === "payment") return "pending";
   if (status === "self_assessment") return "pending";
   if (status === "evidence_upload") return "figma_screen_1";
   if (status === "interview_scheduled") return "figma_screen_5";
@@ -59,6 +69,7 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
   id,
 }) => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const dispatch = useAppDispatch();
   const { initiatePayment } = useApplication();
@@ -72,6 +83,9 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
 
   // Real API data
   const { data: apiApp, isLoading } = useGetApplicationById(id || "");
+  const { data: stagesData } = useGetApplicationStages(id || "");
+  const { data: paymentQuote } = useGetPaymentQuote(id || "");
+  const { data: receiptData } = useGetApplicationReceipt(id || "");
 
   // Redux cached data as secondary source
   const reduxApp = useAppSelector((state) =>
@@ -103,6 +117,11 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
   const resolvedSector =
     rawSector && !isRawId(rawSector) ? rawSector : savedStartApp?.sectorName || "";
 
+  const paymentStageFromApi = stagesData?.find((s) => s.stageKey === "payment");
+  const isPaymentPaid =
+    paymentStageFromApi?.status === "successful" ||
+    (reduxApp?.paymentCompleted ?? false);
+
   const application = apiApp
     ? {
         id: apiApp.id,
@@ -118,7 +137,7 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
         createdAt: apiApp.createdAt,
         updatedAt: apiApp.updatedAt ?? apiApp.createdAt,
         selfAssessmentCompleted: reduxApp?.selfAssessmentCompleted ?? false,
-        paymentCompleted: reduxApp?.paymentCompleted ?? false,
+        paymentCompleted: isPaymentPaid,
         evidenceUploaded: reduxApp?.evidenceUploaded ?? false,
       }
     : reduxApp
@@ -130,7 +149,7 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
           createdAt: reduxApp.createdAt,
           updatedAt: reduxApp.updatedAt,
           selfAssessmentCompleted: reduxApp.selfAssessmentCompleted,
-          paymentCompleted: reduxApp.paymentCompleted,
+          paymentCompleted: isPaymentPaid,
           evidenceUploaded: reduxApp.evidenceUploaded,
         }
       : null;
@@ -141,6 +160,27 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
   const [isCallRequestModalOpen, setIsCallRequestModalOpen] = useState(false);
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
   const [isInterviewCollapsed, setIsInterviewCollapsed] = useState(false);
+
+  // Check for redirect callback from Paystack
+  useEffect(() => {
+    const paymentParam = searchParams.get("payment");
+    const referenceParam =
+      searchParams.get("reference") || searchParams.get("trxref");
+
+    if (paymentParam === "success" || referenceParam) {
+      if (id) {
+        dispatch(markPaymentComplete(id));
+      }
+      setActivePaymentModal("success");
+      toast({
+        type: "success",
+        title: "Payment Confirmed",
+        description: "Your payment was processed successfully via Paystack.",
+      });
+    } else if (paymentParam === "cancelled" || paymentParam === "failed") {
+      setActivePaymentModal("unsuccessful");
+    }
+  }, [searchParams, id, dispatch]);
 
   const formState: ApplicationFormState = application
     ? statusToFormState(
@@ -161,10 +201,34 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
     if (!application) return;
     setActivePaymentModal("processing");
     initiatePayment.mutate(application.id, {
-      onSuccess: () => {
-        setTimeout(() => {
-          setActivePaymentModal("success");
-        }, 800);
+      onSuccess: (data: any) => {
+        const checkoutUrl = data?.checkoutUrl || data?.data?.checkoutUrl;
+        if (checkoutUrl) {
+          window.location.href = checkoutUrl;
+        } else {
+          setTimeout(() => {
+            setActivePaymentModal("success");
+            dispatch(markPaymentComplete(application.id));
+          }, 800);
+        }
+      },
+      onError: (err: any) => {
+        if (
+          err?.statusCode === 409 ||
+          err?.message?.toLowerCase()?.includes("already exists") ||
+          err?.message?.toLowerCase()?.includes("pending or successful payment")
+        ) {
+          toast({
+            type: "info",
+            title: "Payment Already Recorded",
+            description:
+              "A payment session for this application is already active or completed.",
+          });
+          setActivePaymentModal(null);
+          dispatch(markPaymentComplete(application.id));
+        } else {
+          setActivePaymentModal("unsuccessful");
+        }
       },
     });
   };
@@ -303,12 +367,19 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
           }
         },
         onMakePayment: handleMakePayment,
-        onDownloadReceipt: () =>
-          toast({
-            type: "success",
-            title: "Downloading Receipt",
-            description: "Your payment receipt download has started.",
-          }),
+        onDownloadReceipt: () => {
+          const receiptUrl =
+            receiptData?.url || paymentStageFromApi?.receipt?.url;
+          if (receiptUrl) {
+            window.open(receiptUrl, "_blank");
+          } else {
+            toast({
+              type: "success",
+              title: "Payment Receipt",
+              description: `Payment receipt completed for ${resolvedTrade}.`,
+            });
+          }
+        },
         onNavigateToVault: () =>
           router.push(`/dashboard/applications/${application.id}/evidence-vault`),
         onAppeal: () =>
@@ -329,6 +400,11 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
         submittedDate: (application as any).submittedAt || application.createdAt,
         isDraft,
         tradeName: resolvedTrade,
+        paymentAmountText: paymentQuote?.amountMinorUnits
+          ? `₦${(Number(paymentQuote.amountMinorUnits) / 100).toLocaleString()}`
+          : paymentStageFromApi?.amountMinorUnits
+            ? `₦${(Number(paymentStageFromApi.amountMinorUnits) / 100).toLocaleString()}`
+            : "₦45,000",
         paymentCompleted: application.paymentCompleted,
         evidenceUploaded: application.evidenceUploaded || application.selfAssessmentCompleted,
         internalVerifierCompleted: (reduxApp as any)?.internalVerifierCompleted ?? false,

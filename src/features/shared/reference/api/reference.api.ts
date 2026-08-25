@@ -11,6 +11,23 @@ export interface Bank {
   country: string;
 }
 
+export interface Country {
+  code: string;
+  name: string;
+}
+
+export interface State {
+  code: string;
+  name: string;
+  countryCode: string;
+}
+
+export interface Lga {
+  name: string;
+  stateCode: string;
+  countryCode: string;
+}
+
 export interface Sector {
   id: string;
   slug: string;
@@ -213,3 +230,77 @@ export async function getBanksApi(country: string = "nigeria"): Promise<Bank[]> 
     return [];
   }
 }
+
+/**
+ * Orchestrator: List countries
+ */
+export async function getCountriesApi(): Promise<Country[]> {
+  try {
+    const data = await orchestratorFetch<Country[]>("/address/countries", {
+      method: "GET",
+    });
+    return data || [];
+  } catch (error: any) {
+    if (
+      error?.status === 404 ||
+      error?.code === "http.not_found" ||
+      error?.message?.toLowerCase().includes("not found")
+    ) {
+      return [];
+    }
+    console.error("Failed to fetch countries from orchestrator:", error);
+    return [];
+  }
+}
+
+/**
+ * Orchestrator: List states for a country
+ */
+export async function getStatesApi(country: string): Promise<State[]> {
+  if (!country) return [];
+  try {
+    const data = await orchestratorFetch<State[]>("/address/states", {
+      method: "GET",
+      params: { country },
+    });
+    return data || [];
+  } catch (error: any) {
+    if (
+      error?.status === 404 ||
+      error?.code === "http.not_found" ||
+      error?.message?.toLowerCase().includes("not found")
+    ) {
+      return [];
+    }
+    console.error("Failed to fetch states from orchestrator:", error);
+    return [];
+  }
+}
+
+/**
+ * Orchestrator: List 3rd-level admin units (LGAs / ADM2) for a country + state
+ */
+export async function getLgasApi(
+  country: string,
+  state: string,
+): Promise<Lga[]> {
+  if (!country || !state) return [];
+  try {
+    const data = await orchestratorFetch<Lga[]>("/address/lgas", {
+      method: "GET",
+      params: { country, state },
+    });
+    return data || [];
+  } catch (error: any) {
+    if (
+      error?.status === 404 ||
+      error?.code === "http.not_found" ||
+      error?.message?.toLowerCase().includes("not found")
+    ) {
+      return [];
+    }
+    console.error("Failed to fetch LGAs from orchestrator:", error);
+    return [];
+  }
+}
+
