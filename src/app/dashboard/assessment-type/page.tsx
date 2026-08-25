@@ -12,7 +12,7 @@ export default function DashboardAssessmentTypePage() {
         backTitle="Assessment Type"
         breadcrumbs={[
           { label: "Dashboard", href: "/dashboard" },
-          { label: "Create Application", href: "/dashboard/start-application" },
+          { label: "Start Assessment", href: "/dashboard/start-application" },
           { label: "Assessment Type" },
         ]}
         showCreateButton={false}

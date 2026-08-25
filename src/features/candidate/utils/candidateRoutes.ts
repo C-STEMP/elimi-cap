@@ -195,7 +195,7 @@ export const CANDIDATE_ROUTE_LIST: CandidateRouteMeta[] = [
   },
   {
     id: "onboarding-start-application",
-    feature: "Onboarding: Start Application",
+    feature: "Onboarding: Start Assessment",
     routePath: CANDIDATE_ROUTES.onboarding.startApplication,
     appRouterFile: "src/app/rpl/personal-info/page.tsx",
     description: "Initial application launch pad for candidate onboarding.",
