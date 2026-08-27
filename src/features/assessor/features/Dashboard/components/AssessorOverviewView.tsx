@@ -9,7 +9,7 @@ import { Loader } from "@/src/components/ui/loader";
 
 interface AssessorOverviewViewProps {
   onViewAllApplications: () => void;
-  onSelectApplication: (app: Application) => void;
+  onSelectApplication: (app: any) => void;
   onApplyToCentre: () => void;
 }
 
@@ -38,34 +38,37 @@ export const AssessorOverviewView: React.FC<AssessorOverviewViewProps> = ({
         <button
           type="button"
           onClick={onViewAllApplications}
-          className="text-xs font-semibold text-[#a31d38] hover:underline flex items-center gap-1 cursor-pointer"
+          className="text-xs sm:text-sm font-semibold text-neutral-primary hover:text-primary-solid flex items-center gap-1 transition-colors cursor-pointer"
         >
-          <span>View All</span>
-          <FiChevronRight className="w-3.5 h-3.5" />
+          View All
+          <FiChevronRight className="w-4 h-4" />
         </button>
       </div>
 
       {isLoading ? (
-        <Loader fullscreen={false} size="small" tip="Loading applications..." className="p-8" />
+        <div className="flex items-center justify-center py-12">
+          <Loader />
+        </div>
       ) : applications.length > 0 ? (
-        <div className="w-full overflow-x-auto max-w-full rounded-2xl border border-gray-100">
-          <table className="w-full text-left text-xs sm:text-sm border-collapse min-w-[520px]">
+        <div className="w-full overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[500px]">
             <thead>
-              <tr className="bg-gray-50/70 text-gray-500 font-semibold border-b border-gray-100">
-                <th className="p-3.5 rounded-l-xl">Application ID</th>
+              <tr className="border-b border-gray-100 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                <th className="p-3.5">ID</th>
                 <th className="p-3.5">Type</th>
                 <th className="p-3.5">Status</th>
                 <th className="p-3.5">Stage</th>
-                <th className="p-3.5">Created</th>
-                <th className="p-3.5 rounded-r-xl text-right">Action</th>
+                <th className="p-3.5">Date</th>
+                <th className="p-3.5 text-right">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-50 text-xs sm:text-sm">
               {applications.map((app) => {
-                const s = STATUS_LABEL[app.status] ?? {
-                  label: app.status,
-                  className: "bg-gray-100 text-gray-600",
-                };
+                const s =
+                  STATUS_LABEL[app.status] || {
+                    label: app.status,
+                    className: "bg-gray-100 text-gray-600",
+                  };
                 return (
                   <tr key={app.id} className="hover:bg-gray-50/60 transition-colors">
                     <td className="p-3.5 font-mono text-xs text-neutral-primary">
@@ -80,10 +83,12 @@ export const AssessorOverviewView: React.FC<AssessorOverviewViewProps> = ({
                       </span>
                     </td>
                     <td className="p-3.5 text-gray-500 text-xs">
-                      {app.currentStageKey ?? "—"}
+                      {(app as any).currentStageKey ?? "—"}
                     </td>
                     <td className="p-3.5 text-gray-500 text-xs">
-                      {new Date(app.createdAt).toLocaleDateString("en-GB")}
+                      {app.createdAt
+                        ? new Date(app.createdAt).toLocaleDateString("en-GB")
+                        : "—"}
                     </td>
                     <td className="p-3.5 text-right">
                       <button

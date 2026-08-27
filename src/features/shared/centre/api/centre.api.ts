@@ -160,6 +160,40 @@ export type RetainedRequestStatus =
   | "rejected"
   | "revoked";
 
+export type CentreAssessorAssignmentRole =
+  | "facilitator"
+  | "panelist"
+  | "lead_panelist"
+  | "observer"
+  | "iv"
+  | "unit_assessor"
+  | "ev";
+
+export interface CentreAssessorApplication {
+  id: string;
+  centreId: string;
+  tradeId: string;
+  type: string;
+  status: string;
+  candidateId: string;
+  candidate?: {
+    id: string;
+    name?: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+  };
+  trade?: {
+    id: string;
+    name: string;
+  };
+  currentStageKey?: string;
+  roles?: CentreAssessorAssignmentRole[];
+  createdAt?: string;
+  updatedAt?: string;
+  [key: string]: any;
+}
+
 export interface RetainedAssessorRequest {
   id: string;
   assessorId: string;
@@ -264,8 +298,13 @@ export interface CentreProfile {
   name: string;
   registrationNo: string;
   logoAssetId?: string | null;
+  logo?: {
+    assetId: string;
+    url?: string | null;
+  } | null;
   status: "pending" | "approved" | "suspended" | "rejected";
   ownerIdentityVerified: boolean;
+  onboarding?: any;
   address?: ResidentialAddress | null;
   formattedAddress?: string | null;
   supportContact?: ContactInformation | null;

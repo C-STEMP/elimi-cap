@@ -12,6 +12,8 @@ import {
   FiChevronLeft,
   FiPlus,
   FiCheck,
+  FiMenu,
+  FiX,
 } from "react-icons/fi";
 import { BiSolidMessageRoundedDetail } from "react-icons/bi";
 import { Logo } from "@/src/components/ui/logo";
@@ -21,6 +23,7 @@ import { NotificationDropdown } from "@/features/candidate/features/Dashboard/co
 import { useAppDispatch, useAppSelector } from "@/src/store/hooks";
 import { logout } from "@/src/store/slices/authSlice";
 import { useRouter } from "next/navigation";
+import { useGetMeProfile } from "@/src/features/shared/account/hooks";
 import { AssessorApplicationStatsCards } from "../../Applications/components/list";
 
 export type AssessorNavTab =
@@ -72,11 +75,13 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
   const router = useRouter();
   const dispatch = useAppDispatch();
   const authUser = useAppSelector((state) => state.auth.user);
+  const { data: meProfile } = useGetMeProfile();
   const assessorPersonalInfo = useAppSelector(
     (state) => state.onboarding.assessorPersonalInfo,
   );
   const personalInfo = useAppSelector((state) => state.onboarding.personalInfo);
   const uploadedAvatar =
+    meProfile?.photo?.url ||
     (assessorPersonalInfo as any)?.passportUrl ||
     personalInfo?.passportUrl ||
     authUser?.avatar ||
@@ -84,6 +89,19 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
     authUser?.passportUrl;
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const rawFirstName =
+    meProfile?.personalDetails?.firstName ||
+    assessorPersonalInfo?.firstName ||
+    personalInfo?.firstName ||
+    (authUser as any)?.firstName ||
+    (authUser as any)?.name?.split(" ")[0] ||
+    authUser?.fullName?.split(" ")[0] ||
+    (authUser?.email ? authUser.email.split("@")[0] : userName);
+
+  const effectiveUserName =
+    rawFirstName.charAt(0).toUpperCase() + rawFirstName.slice(1);
 
   const navItems: AssessorNavTab[] = [
     "Overview",
@@ -99,13 +117,14 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
   };
 
   return (
-    <motion.div
+    <motion.header
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="w-full bg-[#a31d38] text-white rounded-3xl p-6 sm:p-8 flex flex-col gap-6 shadow-md select-none transition-all relative"
+      className="w-full bg-[#a31d38] text-white shadow-md select-none transition-all relative"
     >
-      {/* Top Bar */}
-      <div className="flex items-center justify-between gap-2 sm:gap-4 border-b border-white/10 pb-5">
+      <div className="max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 flex flex-col gap-6">
+        {/* Top Bar */}
+        <div className="flex items-center justify-between gap-2 sm:gap-4 border-b border-white/10 pb-5">
         <div className="shrink-0 cursor-pointer">
           <Logo theme="light" href="/" />
         </div>
@@ -169,16 +188,17 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
             {uploadedAvatar ? (
               <Image
                 src={uploadedAvatar}
-                alt={userName}
+                alt={effectiveUserName}
                 fill
                 sizes="40px"
                 className="object-cover"
               />
             ) : (
-              userName.charAt(0).toUpperCase()
+              effectiveUserName.charAt(0).toUpperCase()
             )}
           </div>
 
+          {/* Desktop Logout Button */}
           <button
             type="button"
             onClick={() => setIsLogoutOpen(true)}
@@ -188,35 +208,65 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
           >
             <FiLogOut className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
+
+          {/* Mobile Hamburger Toggle */}
+          <button
+            type="button"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="flex xl:hidden w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/10 hover:bg-white/20 items-center justify-center text-white/90 transition-all cursor-pointer"
+            aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+          >
+            {isMobileMenuOpen ? (
+              <FiX className="w-4 h-4 sm:w-5 sm:h-5" />
+            ) : (
+              <FiMenu className="w-4 h-4 sm:w-5 sm:h-5" />
+            )}
+          </button>
         </div>
       </div>
 
-      {/* Mobile Navigation Tabs */}
-      <div className="flex xl:hidden items-center gap-2 overflow-x-auto pb-2 scrollbar-none pt-1">
-        {navItems.map((tab) => {
-          const isActive = activeTab === tab;
-          return (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => onSelectTab(tab)}
-              className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-                isActive
-                  ? "bg-white/25 text-white shadow-xs"
-                  : "bg-white/10 text-white/80 hover:text-white"
-              }`}
-            >
-              {tab}
-            </button>
-          );
-        })}
-      </div>
+      {/* Mobile Navigation Tabs (Dropdown when hamburger open or horizontal scroll) */}
+      {isMobileMenuOpen && (
+        <div className="flex xl:hidden flex-col gap-2 pt-2 pb-2 border-b border-white/10 animate-fadeIn">
+          {navItems.map((tab) => {
+            const isActive = activeTab === tab;
+            return (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => {
+                  onSelectTab(tab);
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all cursor-pointer text-left ${
+                  isActive
+                    ? "bg-white/25 text-white shadow-xs"
+                    : "text-white/80 hover:text-white hover:bg-white/10"
+                }`}
+              >
+                {tab}
+              </button>
+            );
+          })}
+          <button
+            type="button"
+            onClick={() => {
+              setIsMobileMenuOpen(false);
+              setIsLogoutOpen(true);
+            }}
+            className="px-4 py-2 rounded-xl text-sm font-semibold text-white/80 hover:text-white hover:bg-white/10 flex items-center gap-2 text-left mt-1 cursor-pointer"
+          >
+            <FiLogOut className="w-4 h-4" />
+            <span>Log out</span>
+          </button>
+        </div>
+      )}
 
       {/* Banner Body Content according to Active Tab & Selected Detail */}
       {activeTab === "Overview" ? (
         <div className="flex flex-col gap-5 pt-2">
           <h1 className="text-2xl sm:text-3xl xl:text-[32px] font-extrabold tracking-tight text-white">
-            Welcome Back, {userName}
+            Welcome Back, {effectiveUserName}
           </h1>
 
           {/* Overview Stat Cards Grid */}
@@ -514,6 +564,7 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
         isOpen={isLogoutOpen}
         onClose={() => setIsLogoutOpen(false)}
       />
-    </motion.div>
+      </div>
+    </motion.header>
   );
 };

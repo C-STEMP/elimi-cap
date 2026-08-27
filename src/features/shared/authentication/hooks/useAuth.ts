@@ -322,11 +322,24 @@ export function useLogin() {
               description: "Invalid email or password. Please try again.",
             });
           }
-        } else if (error.statusCode === 403) {
+        } else if (
+          error.statusCode === 403 ||
+          error.code === "user.unverified" ||
+          (error.message || "").toLowerCase().includes("not verified")
+        ) {
+          try {
+            resendOtpApi({
+              email: variables.email,
+              purpose: "account_verify",
+            });
+          } catch {
+            // Ignore error if auto-resend encounters rate-limit
+          }
           toast({
-            type: "error",
-            title: "Account Not Verified",
-            description: "Please verify your email first.",
+            type: "info",
+            title: "Verification Code Sent",
+            description:
+              "We sent a verification code to your email. Please verify your account to continue.",
           });
           router.push(`/verify?email=${encodeURIComponent(variables.email)}`);
         } else {

@@ -16,14 +16,9 @@ import {
 function syncPersonaFromRoute(): void {
   if (typeof window === "undefined") return;
   const path = window.location.pathname;
-  if (
-    path.startsWith("/dashboard") ||
-    path.startsWith("/applications") ||
-    path.startsWith("/onboarding") ||
-    path.startsWith("/rpl")
-  ) {
-    savePersona("candidate");
-  } else if (path.startsWith("/assessment-centre")) {
+  const stored = getPersona();
+
+  if (path.startsWith("/assessment-centre")) {
     savePersona("centre");
   } else if (
     path.startsWith("/assessor") ||
@@ -32,6 +27,24 @@ function syncPersonaFromRoute(): void {
     savePersona("assessor");
   } else if (path.startsWith("/awarding-body")) {
     savePersona("awarding_body");
+  } else if (
+    path.startsWith("/applications") ||
+    path.startsWith("/rpl")
+  ) {
+    if (stored !== "assessor" && stored !== "centre" && stored !== "awarding_body") {
+      savePersona("candidate");
+    }
+  } else if (path.startsWith("/dashboard")) {
+    // /dashboard can be candidate or assessor workspace; do not overwrite if assessor
+    if (!stored || (stored !== "assessor" && stored !== "centre" && stored !== "awarding_body")) {
+      savePersona("candidate");
+    }
+  } else if (path.startsWith("/onboarding")) {
+    if (path.includes("/assessor")) {
+      savePersona("assessor");
+    } else if (path.includes("/assessment-centre")) {
+      savePersona("centre");
+    }
   }
 }
 
@@ -96,14 +109,31 @@ function toApiError(
   error: AxiosError<SuccessEnvelope | ErrorEnvelope>,
 ): ApiError {
   const status = error.response?.status ?? 0;
-  const body = error.response?.data as ErrorEnvelope | undefined;
-  if (body && body.success === false) {
-    return new ApiError(
-      status,
-      body.error?.code ?? "UNKNOWN",
-      body.error?.message ?? "An unexpected error occurred.",
-      body.error?.details,
-    );
+  const body = error.response?.data as any;
+  if (body && (body.success === false || body.error)) {
+    const errorObj = body.error || body;
+    const code = errorObj.code ?? body.code ?? "UNKNOWN";
+    let message =
+      errorObj.message ?? body.message ?? "An unexpected error occurred.";
+    const details = errorObj.details || body.details;
+
+    if (Array.isArray(details) && details.length > 0) {
+      const detailedIssues = details
+        .map((d: any) => {
+          if (typeof d === "string") return d;
+          if (d?.field && d?.issue) return `${d.field}: ${d.issue}`;
+          if (d?.issue) return d.issue;
+          if (d?.message) return d.message;
+          return "";
+        })
+        .filter(Boolean);
+
+      if (detailedIssues.length > 0) {
+        message = detailedIssues.join("; ");
+      }
+    }
+
+    return new ApiError(status, code, message, details);
   }
   return new ApiError(status, "NETWORK_ERROR", error.message);
 }
@@ -157,6 +187,13 @@ export function createApiInstance(
           }
         }
 
+        if (!persona) {
+          const stored = getPersona();
+          if (stored) {
+            persona = stored;
+          }
+        }
+
         if (!persona && typeof window !== "undefined") {
           const path = window.location.pathname;
           if (path.startsWith("/assessment-centre")) {
@@ -175,38 +212,6 @@ export function createApiInstance(
             path.startsWith("/rpl")
           ) {
             persona = "candidate";
-          }
-        }
-
-        if (!persona) {
-          const stored = getPersona();
-          if (stored && typeof window !== "undefined") {
-            const path = window.location.pathname;
-            const isCentreRoute = path.startsWith("/assessment-centre");
-            const isAssessorRoute =
-              path.startsWith("/assessor") ||
-              path.startsWith("/quality-assurance");
-            const isAwardingBodyRoute = path.startsWith("/awarding-body");
-            const isCandidateRoute =
-              path.startsWith("/dashboard") ||
-              path.startsWith("/onboarding") ||
-              path.startsWith("/applications") ||
-              path.startsWith("/rpl");
-
-            if (
-              (stored === "centre" && isCentreRoute) ||
-              (stored === "assessor" && isAssessorRoute) ||
-              (stored === "awarding_body" && isAwardingBodyRoute) ||
-              (stored === "candidate" && isCandidateRoute) ||
-              (!isCentreRoute &&
-                !isAssessorRoute &&
-                !isAwardingBodyRoute &&
-                !isCandidateRoute)
-            ) {
-              persona = stored;
-            }
-          } else if (stored) {
-            persona = stored;
           }
         }
 

@@ -11,23 +11,23 @@ interface InterviewQuestionItem {
   rating: "Satisfactory" | "Needs Improvement";
 }
 
-const DEFAULT_QUESTIONS: InterviewQuestionItem[] = [
+const INITIAL_QUESTIONS: InterviewQuestionItem[] = [
   {
     id: "q-1",
-    question: "Explain the critical difference between mortise-and-tenon and dowel joints in load-bearing frames.",
-    candidateResponse: "Candidate articulated structural load distribution and glue-surface advantages accurately.",
+    question: "Technical discussion & core competency explanation",
+    candidateResponse: "",
     rating: "Satisfactory",
   },
   {
     id: "q-2",
-    question: "What safety protocols are required when handling toxic wood finishes and solvent-based lacquers?",
-    candidateResponse: "Mentioned respirator mask grading, cross-ventilation, and eye-wash station locations.",
+    question: "Workplace health, safety, and operational standards compliance",
+    candidateResponse: "",
     rating: "Satisfactory",
   },
   {
     id: "q-3",
-    question: "Describe your method for moisture content testing prior to wood fabrication.",
-    candidateResponse: "Explained digital pin-probe readings and equilibrium moisture content thresholds.",
+    question: "Quality assurance, tools handling, and execution methodology",
+    candidateResponse: "",
     rating: "Satisfactory",
   },
 ];
@@ -45,7 +45,7 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
 }) => {
   const { toast } = useToast();
   const [questions, setQuestions] =
-    useState<InterviewQuestionItem[]>(DEFAULT_QUESTIONS);
+    useState<InterviewQuestionItem[]>(INITIAL_QUESTIONS);
   const [verdict, setVerdict] = useState<"Competent" | "Not Competent">(
     "Competent",
   );

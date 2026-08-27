@@ -72,9 +72,34 @@ export async function getOnboardingMineApi(): Promise<OnboardingMineResponse> {
 export async function getOnboardingPersonaApi(
   persona: PersonaType,
 ): Promise<OnboardingRecord> {
-  return capFetch<OnboardingRecord>(`/onboarding/${persona}`, {
-    method: "GET",
-  });
+  try {
+    return await capFetch<OnboardingRecord>(`/onboarding/${persona}`, {
+      method: "GET",
+    });
+  } catch (error: any) {
+    const isNotFound =
+      error?.code === "onboarding.not_found" ||
+      error?.statusCode === 404 ||
+      error?.message?.toLowerCase()?.includes("not found");
+
+    if (isNotFound) {
+      try {
+        await startOnboardingApi({ persona });
+        return await capFetch<OnboardingRecord>(`/onboarding/${persona}`, {
+          method: "GET",
+        });
+      } catch {
+        return {
+          onboardingId: "",
+          persona,
+          status: "draft",
+          createdAt: new Date().toISOString(),
+          data: {},
+        };
+      }
+    }
+    throw error;
+  }
 }
 
 export interface SaveOnboardingPayload {
@@ -85,10 +110,33 @@ export interface SaveOnboardingPayload {
 export async function saveOnboardingApi(
   payload: SaveOnboardingPayload,
 ): Promise<OnboardingRecord> {
-  return capFetch<OnboardingRecord>(`/onboarding/${payload.persona}/save`, {
-    method: "PATCH",
-    data: payload.data,
-  });
+  try {
+    return await capFetch<OnboardingRecord>(`/onboarding/${payload.persona}/save`, {
+      method: "PATCH",
+      data: payload.data,
+    });
+  } catch (error: any) {
+    const isNotFound =
+      error?.code === "onboarding.not_found" ||
+      error?.statusCode === 404 ||
+      error?.message?.toLowerCase()?.includes("not found");
+
+    if (isNotFound) {
+      try {
+        await startOnboardingApi({ persona: payload.persona });
+        return await capFetch<OnboardingRecord>(
+          `/onboarding/${payload.persona}/save`,
+          {
+            method: "PATCH",
+            data: payload.data,
+          },
+        );
+      } catch (retryError) {
+        throw retryError;
+      }
+    }
+    throw error;
+  }
 }
 
 export interface SubmitOnboardingResponse {
@@ -99,9 +147,31 @@ export interface SubmitOnboardingResponse {
 export async function submitOnboardingApi(
   persona: PersonaType,
 ): Promise<SubmitOnboardingResponse> {
-  return capFetch<SubmitOnboardingResponse>(`/onboarding/${persona}/submit`, {
-    method: "POST",
-  });
+  try {
+    return await capFetch<SubmitOnboardingResponse>(`/onboarding/${persona}/submit`, {
+      method: "POST",
+    });
+  } catch (error: any) {
+    const isNotFound =
+      error?.code === "onboarding.not_found" ||
+      error?.statusCode === 404 ||
+      error?.message?.toLowerCase()?.includes("not found");
+
+    if (isNotFound) {
+      try {
+        await startOnboardingApi({ persona });
+        return await capFetch<SubmitOnboardingResponse>(
+          `/onboarding/${persona}/submit`,
+          {
+            method: "POST",
+          },
+        );
+      } catch (retryError) {
+        throw retryError;
+      }
+    }
+    throw error;
+  }
 }
 
 export interface IdentityVerificationPayload {

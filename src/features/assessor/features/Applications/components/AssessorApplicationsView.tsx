@@ -11,64 +11,10 @@ import type {
   AssessorApplicationRecord,
   AssessorFilterCriteria,
 } from "../types/applications.types";
-import type { Application } from "../api";
 
 export type { AssessorApplicationRecord };
 
-const DEFAULT_MOCK_APPLICATIONS: AssessorApplicationRecord[] = [
-  {
-    id: "app-1",
-    role: "Facilitator",
-    candidateName: "Oguntade James",
-    trade: "Masonry",
-    assessmentType: "RPL",
-    status: "Ongoing",
-    assignedAt: "07/22/2026",
-    submittedAt: "07/22/2026",
-  },
-  {
-    id: "app-2",
-    role: "Panelist",
-    candidateName: "Oguntade James",
-    trade: "Masonry",
-    assessmentType: "RPL",
-    status: "Ongoing",
-    assignedAt: "07/22/2026",
-    submittedAt: "07/22/2026",
-  },
-  {
-    id: "app-3",
-    role: "Panelist",
-    candidateName: "Favour Smith",
-    trade: "Carpentry",
-    assessmentType: "RPL",
-    status: "Ongoing",
-    assignedAt: "07/22/2026",
-    submittedAt: "07/22/2026",
-  },
-  {
-    id: "app-4",
-    role: "Internal Verifier",
-    candidateName: "Samson David",
-    trade: "Plumbing",
-    assessmentType: "NSQ",
-    status: "Ongoing",
-    assignedAt: "07/22/2026",
-    submittedAt: "07/22/2026",
-  },
-  {
-    id: "app-5",
-    role: "Internal Verifier",
-    candidateName: "Oriade Sophie",
-    trade: "Painting",
-    assessmentType: "NSQ",
-    status: "Completed",
-    assignedAt: "07/22/2026",
-    submittedAt: "07/22/2026",
-  },
-];
-
-function mapApplicationToRecord(app: Application): AssessorApplicationRecord {
+function mapApplicationToRecord(app: any): AssessorApplicationRecord {
   const statusMap: Record<string, AssessorApplicationRecord["status"]> = {
     draft: "Pending",
     in_progress: "Ongoing",
@@ -88,9 +34,14 @@ function mapApplicationToRecord(app: Application): AssessorApplicationRecord {
     app.tradeId ||
     (app.type === "NSQ" ? "Standard Assessment" : "RPL");
 
+  const resolvedRole =
+    Array.isArray(app.roles) && app.roles.length > 0
+      ? app.roles.map((r: string) => r.replace(/_/g, " ")).join(", ")
+      : app.role || "Assessor";
+
   return {
     id: app.id,
-    role: "Facilitator",
+    role: resolvedRole.charAt(0).toUpperCase() + resolvedRole.slice(1),
     candidateName,
     trade: tradeName,
     assessmentType: app.type || "RPL",
@@ -99,7 +50,7 @@ function mapApplicationToRecord(app: Application): AssessorApplicationRecord {
       ? new Date(app.submittedAt).toLocaleDateString("en-GB")
       : app.createdAt
         ? new Date(app.createdAt).toLocaleDateString("en-GB")
-        : "07/22/2026",
+        : "-",
     submittedAt: app.submittedAt
       ? new Date(app.submittedAt).toLocaleDateString("en-GB")
       : app.createdAt
@@ -129,7 +80,7 @@ export const AssessorApplicationsView: React.FC<
     if (apiApplications && apiApplications.length > 0) {
       return apiApplications.map(mapApplicationToRecord);
     }
-    return DEFAULT_MOCK_APPLICATIONS;
+    return [];
   }, [apiApplications]);
 
   const filteredApps = useMemo(() => {

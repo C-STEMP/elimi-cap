@@ -94,18 +94,7 @@ export const VerifyEmail: React.FC = () => {
   const handleResend = () => {
     if (isResending) return;
     const purpose = isPasswordReset ? "password_reset" : "account_verify";
-    resendCode(
-      { email: rawEmail, purpose },
-      {
-        onSuccess: () => {
-          toast({
-            type: "success",
-            title: "Code Resent",
-            description: "A new verification code has been sent to your email.",
-          });
-        },
-      },
-    );
+    resendCode({ email: rawEmail, purpose });
   };
 
   const handleSubmit = (e: React.FormEvent) => {

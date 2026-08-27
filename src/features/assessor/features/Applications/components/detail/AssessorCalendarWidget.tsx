@@ -3,6 +3,8 @@
 import React, { useState } from "react";
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 
+import { useGetAssessorEvents } from "@/src/features/shared/assessor/hooks";
+
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December"
@@ -13,9 +15,30 @@ interface AssessorCalendarWidgetProps {
 }
 
 export const AssessorCalendarWidget: React.FC<AssessorCalendarWidgetProps> = ({
-  highlightedDays = [10, 13],
+  highlightedDays: propHighlightedDays,
 }) => {
-  const [currentDate, setCurrentDate] = useState(() => new Date(2026, 6, 1)); // Default July 2026
+  const [currentDate, setCurrentDate] = useState(() => new Date());
+  const { data: eventsData } = useGetAssessorEvents();
+
+  const highlightedDays = React.useMemo(() => {
+    if (propHighlightedDays !== undefined) return propHighlightedDays;
+    if (eventsData && eventsData.length > 0) {
+      const days: number[] = [];
+      eventsData.forEach((evt) => {
+        if (evt.createdAt) {
+          const d = new Date(evt.createdAt);
+          if (
+            d.getMonth() === currentDate.getMonth() &&
+            d.getFullYear() === currentDate.getFullYear()
+          ) {
+            days.push(d.getDate());
+          }
+        }
+      });
+      return days;
+    }
+    return [];
+  }, [propHighlightedDays, eventsData, currentDate]);
 
   const monthName = MONTH_NAMES[currentDate.getMonth()];
   const year = currentDate.getFullYear();
@@ -36,7 +59,7 @@ export const AssessorCalendarWidget: React.FC<AssessorCalendarWidgetProps> = ({
   const blanks = Array.from({ length: firstDayIndex }, (_, i) => i);
 
   return (
-    <div className="bg-[#1E1E1E] text-white rounded-3xl p-6 shadow-md flex flex-col gap-5 w-full select-none">
+    <div className="bg-text-dark text-white rounded-3xl p-6 shadow-md flex flex-col gap-5 w-full select-none">
       {/* Month Navigation */}
       <div className="flex items-center justify-between font-bold text-base">
         <button

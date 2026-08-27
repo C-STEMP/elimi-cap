@@ -252,18 +252,18 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F4F5F7] p-4 md:p-6 font-sans select-text">
-      <div className="max-w-360 mx-auto flex flex-col gap-6 sm:gap-8">
-        <AssessmentCentreHeader
-          activeTab={activeTab}
-          onSelectTab={setActiveTab}
-          onOpenNotifications={() => setIsNotificationsOpen(true)}
-          showStats={activeTab === "overview"}
-          userRole={activeRole}
-        >
-          {renderHeaderContent()}
-        </AssessmentCentreHeader>
+    <div className="min-h-screen bg-[#F4F5F7] flex flex-col font-sans select-text">
+      <AssessmentCentreHeader
+        activeTab={activeTab}
+        onSelectTab={setActiveTab}
+        onOpenNotifications={() => setIsNotificationsOpen(true)}
+        showStats={activeTab === "overview"}
+        userRole={activeRole}
+      >
+        {renderHeaderContent()}
+      </AssessmentCentreHeader>
 
+      <div className="max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1 flex flex-col gap-6 sm:gap-8">
         {activeTab === "overview" && (
           <motion.div
             initial={{ opacity: 0, y: 15 }}

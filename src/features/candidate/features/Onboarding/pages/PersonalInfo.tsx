@@ -26,6 +26,7 @@ import { useOnboarding } from "@/src/features/candidate/features/Onboarding/hook
 import {
   IMPAIRMENT_OPTIONS,
   GENDER_OPTIONS,
+  parseImpairmentString,
 } from "@/features/candidate/utils";
 
 export interface PersonalInfoProps {
@@ -64,21 +65,15 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
     impairment: savedPersonalInfo.impairment ?? "None / No impairment",
   });
 
-  const [selectedImpairments, setSelectedImpairments] = useState<string[]>(() => {
-    if (
-      !savedPersonalInfo.impairment ||
-      savedPersonalInfo.impairment === "No" ||
-      savedPersonalInfo.impairment === "None"
-    ) {
-      return ["None / No impairment"];
-    }
-    return savedPersonalInfo.impairment
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
-  });
-
-  const [otherImpairment, setOtherImpairment] = useState("");
+  const initialImpairmentState = parseImpairmentString(
+    savedPersonalInfo.impairment,
+  );
+  const [selectedImpairments, setSelectedImpairments] = useState<string[]>(
+    initialImpairmentState.list,
+  );
+  const [otherImpairment, setOtherImpairment] = useState(
+    initialImpairmentState.otherText,
+  );
 
   // Hydrate from getOnboarding API response
   useEffect(() => {
@@ -96,10 +91,7 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
 
       const rawImpairment =
         acc?.impairment || savedPersonalInfo.impairment || "None / No impairment";
-      const parsedImpairments =
-        rawImpairment === "No" || rawImpairment === "None" || !rawImpairment
-          ? ["None / No impairment"]
-          : rawImpairment.split(",").map((s: string) => s.trim()).filter(Boolean);
+      const parsed = parseImpairmentString(rawImpairment);
 
       const hydrated = {
         firstName: pd?.firstName || savedPersonalInfo.firstName || "",
@@ -115,11 +107,18 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
         state: ra?.state || savedPersonalInfo.state || "",
         lga: ra?.lga || savedPersonalInfo.lga || "",
         streetAddress: ra?.address || savedPersonalInfo.streetAddress || "",
-        impairment: parsedImpairments.join(", "),
+        impairment: parsed.list
+          .map((imp) =>
+            imp === "Other" && parsed.otherText
+              ? `Other: ${parsed.otherText}`
+              : imp,
+          )
+          .join(", "),
       };
 
       setForm(hydrated);
-      setSelectedImpairments(parsedImpairments);
+      setSelectedImpairments(parsed.list);
+      setOtherImpairment(parsed.otherText);
       dispatch(setPersonalInfo(hydrated));
 
       // Restore passport photo from API data
@@ -144,8 +143,14 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
   const [passportError, setPassportError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { countries, states, cities, resolvedCountryCode } =
-    useCountryStateCity(form.country, form.state);
+  const {
+    countries,
+    states,
+    cities,
+    resolvedCountryCode,
+    isLoadingStates,
+    isLoadingLgas,
+  } = useCountryStateCity(form.country, form.state);
 
   useEffect(() => {
     dispatch(setSidebarVariant("default"));
@@ -200,7 +205,23 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
       }
     }
     setSelectedImpairments(next);
-    const joined = next.join(", ");
+    const joined = next
+      .map((imp) =>
+        imp === "Other" && otherImpairment.trim()
+          ? `Other: ${otherImpairment.trim()}`
+          : imp,
+      )
+      .join(", ");
+    update("impairment", joined);
+  };
+
+  const handleOtherImpairmentChange = (val: string) => {
+    setOtherImpairment(val);
+    const joined = selectedImpairments
+      .map((imp) =>
+        imp === "Other" && val.trim() ? `Other: ${val.trim()}` : imp,
+      )
+      .join(", ");
     update("impairment", joined);
   };
 
@@ -323,7 +344,7 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
         personalDetails: {
           firstName: form.firstName,
           lastName: form.lastName,
-          middleName: form.middleName,
+          middleName: form.middleName?.trim() || undefined,
           dob: formatToIsoDate(form.dob),
           gender: form.gender,
           nationality: form.nationality,
@@ -593,12 +614,16 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
                 </span>
               }
               placeholder={
-                form.country ? "Select state" : "Select country first"
+                isLoadingStates
+                  ? "Loading states..."
+                  : form.country
+                    ? "Select state"
+                    : "Select country first"
               }
               options={states}
               value={form.state}
               error={errors.state}
-              disabled={!form.country}
+              disabled={isLoadingStates || !form.country || states.length === 0}
               onChange={(e) => update("state", e.target.value)}
             />
 
@@ -609,11 +634,17 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
                   <span className="text-primary-solid ml-0.5">*</span>
                 </span>
               }
-              placeholder={form.state ? "Select city" : "Select state first"}
+              placeholder={
+                isLoadingLgas
+                  ? "Loading LGAs..."
+                  : form.state
+                    ? "Select city / LGA"
+                    : "Select state first"
+              }
               options={cities}
               value={form.lga}
               error={errors.lga}
-              disabled={!form.state}
+              disabled={isLoadingLgas || !form.state || cities.length === 0}
               onChange={(e) => update("lga", e.target.value)}
             />
 
@@ -694,7 +725,7 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
                   value={otherImpairment}
                   error={errors.otherImpairment}
                   onChange={(e) => {
-                    setOtherImpairment(e.target.value);
+                    handleOtherImpairmentChange(e.target.value);
                     if (errors.otherImpairment) {
                       setErrors((prev) => ({ ...prev, otherImpairment: "" }));
                     }

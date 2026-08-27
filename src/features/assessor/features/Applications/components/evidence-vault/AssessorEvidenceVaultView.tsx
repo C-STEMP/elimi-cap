@@ -19,50 +19,10 @@ import {
 } from "../form";
 import { useToast } from "@/src/components/ui/toast";
 
-const DEFAULT_EVIDENCE_ITEMS: EvidenceItem[] = [
-  {
-    id: "ev-1",
-    name: "CV/Resume",
-    size: "60 kb / 5 mb",
-    status: "Pending",
-    feedback: [
-      "The file is corrupted",
-      "The CV does not show you have worked in the construction sector before",
-    ],
-  },
-  {
-    id: "ev-2",
-    name: "CV/Resume",
-    size: "60 kb / 5 mb",
-    status: "Pending",
-  },
-  {
-    id: "ev-3",
-    name: "CV/Resume",
-    size: "60 kb / 5 mb",
-    status: "Pending",
-  },
-  {
-    id: "ev-4",
-    name: "CV/Resume",
-    size: "60 kb / 5 mb",
-    status: "Approved",
-  },
-  {
-    id: "ev-5",
-    name: "CV/Resume",
-    size: "60 kb / 5 mb",
-    status: "Approved",
-  },
-  {
-    id: "ev-6",
-    name: "CV/Resume",
-    size: "60 kb / 5 mb",
-    status: "Approved",
-  },
-];
+import { useGetEvidenceVault, useGetSelfAssessment, useGetThirdPartyReport, useReviewApplication } from "@/src/features/shared/applications/hooks";
 
 interface AssessorEvidenceVaultViewProps {
+  applicationId?: string;
   candidateName?: string;
   onBack: () => void;
   onViewSelfAssessment?: () => void;
@@ -75,7 +35,8 @@ interface AssessorEvidenceVaultViewProps {
 export const AssessorEvidenceVaultView: React.FC<
   AssessorEvidenceVaultViewProps
 > = ({
-  candidateName = "Oguntade James",
+  applicationId,
+  candidateName = "Candidate",
   onBack,
   onViewSelfAssessment,
   onAllApprovedChange,
@@ -84,9 +45,34 @@ export const AssessorEvidenceVaultView: React.FC<
   onResetTriggerMarkComplete,
 }) => {
   const { toast } = useToast();
-  const [evidenceItems, setEvidenceItems] = useState<EvidenceItem[]>(
-    DEFAULT_EVIDENCE_ITEMS,
-  );
+
+  const { data: remoteEvidence } = useGetEvidenceVault(applicationId || "");
+  const { data: selfAssessmentData } = useGetSelfAssessment(applicationId || "");
+  const { data: thirdPartyReportData } = useGetThirdPartyReport(applicationId || "");
+  const reviewMutation = useReviewApplication();
+
+  const [evidenceItems, setEvidenceItems] = useState<EvidenceItem[]>([]);
+
+  useEffect(() => {
+    if (remoteEvidence && remoteEvidence.length > 0) {
+      const mapped = remoteEvidence.map((e: any, idx: number) => ({
+        id: e.id || `ev-${idx}`,
+        name:
+          e.documentName ||
+          (e.kind === "self_assessment"
+            ? "Self-Assessment Document"
+            : e.kind === "third_party_report"
+              ? "Third Party Report"
+              : `Evidence Item ${idx + 1}`),
+        size: "60 kb / 5 mb",
+        status:
+          e.status === "Approved" || e.status === "approved"
+            ? ("Approved" as const)
+            : ("Pending" as const),
+      }));
+      setEvidenceItems(mapped);
+    }
+  }, [remoteEvidence]);
 
   // Send Feedback Flow State
   const [selectedItemForFeedback, setSelectedItemForFeedback] =

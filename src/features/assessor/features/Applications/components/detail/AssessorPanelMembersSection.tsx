@@ -5,43 +5,29 @@ import Image from "next/image";
 import { ASSETS_URL } from "@/src/assets";
 import type { AssessorPanelMember } from "../../types/applications.types";
 
-export const DEFAULT_ASSESSOR_PANEL: AssessorPanelMember[] = [
-  {
-    id: "assessor-1",
-    name: "Ngozi Eze",
-    role: "Panel Member",
-    avatar: ASSETS_URL.userAvatar,
-    tags: ["Carpentry", "RPL Coordinator"],
-    isHighlighted: false,
-  },
-  {
-    id: "assessor-2",
-    name: "Ngozi Eze",
-    role: "Panel Member",
-    avatar: ASSETS_URL.userAvatar,
-    tags: ["Carpentry", "RPL Coordinator"],
-    isHighlighted: true,
-  },
-  {
-    id: "assessor-3",
-    name: "Ngozi Eze",
-    role: "Panel Member",
-    avatar: ASSETS_URL.userAvatar,
-    tags: ["Carpentry", "RPL Coordinator"],
-    isHighlighted: false,
-  },
-];
-
 interface AssessorPanelMembersSectionProps {
   assessors?: AssessorPanelMember[];
 }
 
 export const AssessorPanelMembersSection: React.FC<
   AssessorPanelMembersSectionProps
-> = ({ assessors = DEFAULT_ASSESSOR_PANEL }) => {
+> = ({ assessors = [] }) => {
   const [selectedId, setSelectedId] = useState<string>(
-    assessors.find((a) => a.isHighlighted)?.id || assessors[1]?.id || assessors[0]?.id,
+    assessors.find((a) => a.isHighlighted)?.id || assessors[0]?.id || "",
   );
+
+  if (assessors.length === 0) {
+    return (
+      <div className="flex flex-col gap-2 pt-3 border-t border-gray-100 w-full mt-2">
+        <span className="text-[11px] font-bold text-neutral-primary uppercase tracking-wider">
+          YOUR ASSESSORS
+        </span>
+        <p className="text-xs text-neutral-secondary font-medium">
+          No panel members assigned yet.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-3 pt-3 border-t border-gray-100 w-full mt-2">

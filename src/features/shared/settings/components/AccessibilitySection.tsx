@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { Input } from "@/src/components/ui/input";
 import { InfoIcon } from "@/src/components/ui/info-icon";
 import { ProfileFormData } from "../types/settings.types";
-import { IMPAIRMENT_OPTIONS } from "@/features/candidate/utils";
+import { IMPAIRMENT_OPTIONS, parseImpairmentString } from "@/features/candidate/utils";
 import { FiCheck } from "react-icons/fi";
 
 interface AccessibilitySectionProps {
@@ -16,29 +16,21 @@ export const AccessibilitySection: React.FC<AccessibilitySectionProps> = ({
   formData,
   onChange,
 }) => {
-  const currentImpairments = React.useMemo(() => {
-    if (
-      !formData.impairment ||
-      formData.impairment === "No" ||
-      formData.impairment === "None"
-    ) {
-      return ["None / No impairment"];
-    }
-    return formData.impairment
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
+  const parsedImpairments = React.useMemo(() => {
+    return parseImpairmentString(formData.impairment);
   }, [formData.impairment]);
 
+  const currentImpairments = parsedImpairments.list;
+
   const [otherImpairment, setOtherImpairment] = useState(() => {
-    const foundOther = currentImpairments.find((x) =>
-      x.toLowerCase().startsWith("other"),
-    );
-    if (foundOther && foundOther.includes(":")) {
-      return foundOther.split(":")[1]?.trim() || "";
-    }
-    return "";
+    return parsedImpairments.otherText;
   });
+
+  React.useEffect(() => {
+    if (parsedImpairments.otherText && parsedImpairments.otherText !== otherImpairment) {
+      setOtherImpairment(parsedImpairments.otherText);
+    }
+  }, [parsedImpairments.otherText]);
 
   const handleToggle = (option: string) => {
     let next: string[];

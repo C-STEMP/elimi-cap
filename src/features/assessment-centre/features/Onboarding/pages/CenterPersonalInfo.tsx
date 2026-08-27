@@ -44,10 +44,14 @@ export const CenterPersonalInfo: React.FC = () => {
     streetAddress: savedCentrePersonalInfo.streetAddress || "",
   });
 
-  const { countries, states, cities } = useCountryStateCity(
-    form.country,
-    form.state,
-  );
+  const {
+    countries,
+    states,
+    cities,
+    resolvedCountryCode,
+    isLoadingStates,
+    isLoadingLgas,
+  } = useCountryStateCity(form.country, form.state);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -177,7 +181,7 @@ export const CenterPersonalInfo: React.FC = () => {
           personalDetails: {
             firstName: form.firstName,
             lastName: form.lastName,
-            middleName: form.middleName,
+            middleName: form.middleName?.trim() || undefined,
             dob: formatToIsoDate(form.dob),
             gender: form.gender,
             nationality: form.nationality,
@@ -343,8 +347,9 @@ export const CenterPersonalInfo: React.FC = () => {
                 if (!form.nationality) update("nationality", cName);
               }}
               error={errors.phoneNumber}
-              defaultCountry="NG"
-              preferredCountries={["ng", "gh", "ke", "za"]}
+              country={
+                resolvedCountryCode ? resolvedCountryCode.toLowerCase() : "ng"
+              }
             />
           </div>
         </div>
@@ -377,12 +382,16 @@ export const CenterPersonalInfo: React.FC = () => {
                 </span>
               }
               placeholder={
-                form.country ? "Select state" : "Select country first"
+                isLoadingStates
+                  ? "Loading states..."
+                  : form.country
+                    ? "Select state"
+                    : "Select country first"
               }
               options={states}
               value={form.state}
               error={errors.state}
-              disabled={!form.country}
+              disabled={isLoadingStates || !form.country || states.length === 0}
               onChange={(e) => update("state", e.target.value)}
             />
 
@@ -393,11 +402,17 @@ export const CenterPersonalInfo: React.FC = () => {
                   <span className="text-primary-solid ml-0.5">*</span>
                 </span>
               }
-              placeholder={form.state ? "Select city" : "Select state first"}
+              placeholder={
+                isLoadingLgas
+                  ? "Loading LGAs..."
+                  : form.state
+                    ? "Select city / LGA"
+                    : "Select state first"
+              }
               options={cities}
               value={form.lga}
               error={errors.lga}
-              disabled={!form.state}
+              disabled={isLoadingLgas || !form.state || cities.length === 0}
               onChange={(e) => update("lga", e.target.value)}
             />
 
