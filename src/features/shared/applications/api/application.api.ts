@@ -54,6 +54,20 @@ export interface CreateApplicationPayload {
   centreId: string;
 }
 
+export interface ApplicationEvent {
+  id: string;
+  applicationId: string;
+  stageKey: string;
+  actorPersona: string;
+  actorUserId?: string;
+  action: string;
+  fromStatus?: string;
+  toStatus?: string;
+  comment?: string;
+  metadata?: Record<string, unknown>;
+  createdAt: string;
+}
+
 export interface ApplicationStage {
   stageKey: string;
   label: string;
@@ -479,9 +493,16 @@ export async function getInterviewScheduleApi(
   });
 }
 
+export interface EvaluateInterviewPayload {
+  feedback: string;
+  signatureAssetId: string;
+  decision?: "approve" | "reject";
+  outcome?: "unsuccessful" | "inconclusive";
+}
+
 export async function evaluateInterviewApi(
   id: string,
-  payload: { feedback: string; signatureAssetId: string },
+  payload: EvaluateInterviewPayload,
 ): Promise<void> {
   await capFetch<void>(`/applications/${id}/interview/evaluate`, {
     method: "POST",
@@ -492,9 +513,27 @@ export async function evaluateInterviewApi(
 export async function getInterviewFormsApi(
   id: string,
 ): Promise<InterviewForm[]> {
-  return capFetch<InterviewForm[]>(`/applications/${id}/interview/forms`, {
-    method: "GET",
-  });
+  const res = await capFetch<InterviewForm[] | { data: InterviewForm[] }>(
+    `/applications/${id}/interview/forms`,
+    {
+      method: "GET",
+    },
+  );
+  return Array.isArray(res) ? res : (res as any)?.data || [];
+}
+
+export async function updateInterviewFormApi(
+  id: string,
+  formType: "records" | "assessment_grid" | "practical_observation",
+  payload: { data: Record<string, unknown> },
+): Promise<InterviewForm> {
+  return capFetch<InterviewForm>(
+    `/applications/${id}/interview/forms/${formType}`,
+    {
+      method: "PUT",
+      data: payload,
+    },
+  );
 }
 
 export async function signoffInterviewFormApi(
@@ -513,6 +552,157 @@ export async function signoffInterviewFormApi(
       data: payload,
     },
   );
+}
+
+export async function getInterviewObserverCommentsApi(
+  id: string,
+): Promise<InterviewObserverComment[]> {
+  const res = await capFetch<
+    InterviewObserverComment[] | { data: InterviewObserverComment[] }
+  >(`/applications/${id}/interview/observer-comments`, {
+    method: "GET",
+  });
+  return Array.isArray(res) ? res : (res as any)?.data || [];
+}
+
+export async function postInterviewObserverCommentApi(
+  id: string,
+  content: string,
+): Promise<InterviewObserverComment> {
+  return capFetch<InterviewObserverComment>(
+    `/applications/${id}/interview/observer-comments`,
+    {
+      method: "POST",
+      data: { content },
+    },
+  );
+}
+
+export async function assignFacilitatorApi(
+  id: string,
+  assessorId: string,
+): Promise<Application> {
+  return capFetch<Application>(`/applications/${id}/facilitator`, {
+    method: "POST",
+    data: { assessorId },
+  });
+}
+
+export async function curateInterviewPanelApi(
+  id: string,
+  payload: {
+    assessorIds: string[];
+    leadAssessorId: string;
+    observerIvAssessorId?: string;
+  },
+): Promise<InterviewPanel> {
+  return capFetch<InterviewPanel>(`/applications/${id}/interview/panel`, {
+    method: "POST",
+    data: payload,
+  });
+}
+
+export async function scheduleInterviewApi(
+  id: string,
+  payload: {
+    scheduledAt: string;
+    mode: "physical" | "online";
+    location?: string;
+    useCentreAddress?: boolean;
+    link?: string;
+  },
+): Promise<InterviewSchedule> {
+  return capFetch<InterviewSchedule>(`/applications/${id}/interview/schedule`, {
+    method: "POST",
+    data: payload,
+  });
+}
+
+export async function assignIvApi(
+  id: string,
+  assessorId: string,
+): Promise<Application> {
+  return capFetch<Application>(`/applications/${id}/iv`, {
+    method: "POST",
+    data: { assessorId },
+  });
+}
+
+export async function reviewIvApi(
+  id: string,
+  payload: { decision: "approve" | "reject"; feedback?: string; stageKey?: string },
+): Promise<Application> {
+  return capFetch<Application>(`/applications/${id}/iv/review`, {
+    method: "POST",
+    data: payload,
+  });
+}
+
+export async function assignEvApi(
+  id: string,
+  assessorId: string,
+): Promise<Application> {
+  return capFetch<Application>(`/applications/${id}/ev`, {
+    method: "POST",
+    data: { assessorId },
+  });
+}
+
+export async function reviewEvApi(
+  id: string,
+  payload: { decision: "approve" | "reject"; feedback?: string; stageKey?: string },
+): Promise<Application> {
+  return capFetch<Application>(`/applications/${id}/ev/review`, {
+    method: "POST",
+    data: payload,
+  });
+}
+
+export async function forwardToAwardingBodyApi(
+  id: string,
+): Promise<Application> {
+  return capFetch<Application>(`/applications/${id}/forward-to-awarding-body`, {
+    method: "POST",
+  });
+}
+
+export async function scheduleDirectObservationApi(
+  id: string,
+  payload: { scheduledAt: string },
+): Promise<{ id: string; applicationId: string; scheduledAt: string; status: string }> {
+  return capFetch<{ id: string; applicationId: string; scheduledAt: string; status: string }>(
+    `/applications/${id}/direct-observation`,
+    {
+      method: "POST",
+      data: payload,
+    },
+  );
+}
+
+export async function assignUnitAssessorApi(
+  id: string,
+  unitId: string,
+  assessorId: string,
+): Promise<void> {
+  await capFetch<void>(`/applications/${id}/units/${unitId}/assessor`, {
+    method: "POST",
+    data: { assessorId },
+  });
+}
+
+export async function signoffUnitApi(
+  id: string,
+  unitId: string,
+  payload: {
+    role: "learner" | "unit_assessor" | "iqa" | "eqa";
+    signedAt: string;
+    signatureAssetId?: string;
+  },
+): Promise<void> {
+  await capFetch<void>(`/applications/${id}/units/${unitId}/signoff`, {
+    method: "POST",
+    data: payload,
+  });
 }
 
 export async function createAppealApi(

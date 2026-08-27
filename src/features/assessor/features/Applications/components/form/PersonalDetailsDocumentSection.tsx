@@ -37,25 +37,41 @@ export const PersonalDetailsDocumentSection: React.FC<
   const qualTitle = applicationDetail?.trade?.name || trade || "—";
 
   const evidenceItems = [
-    { key: "resume", label: "Resume / CV", checked: true },
-    { key: "workSamples", label: "Work Samples", checked: true },
+    {
+      key: "resume",
+      label: "Resume / CV",
+      checked: Boolean((evidence as any)?.resume ?? true),
+    },
+    {
+      key: "workSamples",
+      label: "Work Samples",
+      checked: Boolean((evidence as any)?.workSamples ?? true),
+    },
     {
       key: "certificates",
       label: "Certificates / Statements of Attainment",
-      checked: true,
+      checked: Boolean((evidence as any)?.certificates ?? true),
     },
     {
       key: "thirdPartyReports",
       label: "References / Third-Party Reports",
-      checked: true,
+      checked: Boolean((evidence as any)?.thirdPartyReports ?? true),
     },
-    { key: "jobDescriptions", label: "Job Descriptions", checked: true },
+    {
+      key: "jobDescriptions",
+      label: "Job Descriptions",
+      checked: Boolean((evidence as any)?.jobDescriptions ?? true),
+    },
     {
       key: "photosVideos",
       label: "Photos / Videos of Work",
-      checked: true,
+      checked: Boolean((evidence as any)?.photosVideos ?? true),
     },
-    { key: "other", label: "Other (please specify):", checked: false },
+    {
+      key: "other",
+      label: "Other (please specify):",
+      checked: Boolean((evidence as any)?.other ?? false),
+    },
   ];
 
   return (
@@ -142,16 +158,9 @@ export const PersonalDetailsDocumentSection: React.FC<
 
           <div className="flex items-baseline gap-2 border-b border-dashed border-gray-300 pb-1">
             <span className="font-semibold text-neutral-primary shrink-0 w-36">
-              Qualification Code:
-            </span>
-            <span className="text-neutral-secondary">-----</span>
-          </div>
-
-          <div className="flex items-baseline gap-2 border-b border-dashed border-gray-300 pb-1">
-            <span className="font-semibold text-neutral-primary shrink-0 w-36">
               Individual Units:
             </span>
-            <span className="text-neutral-secondary">-----</span>
+            <span className="text-neutral-secondary">All Mandatory & Elective Units</span>
           </div>
         </div>
       </div>
@@ -171,7 +180,7 @@ export const PersonalDetailsDocumentSection: React.FC<
                     : "border-gray-300 bg-white"
                 }`}
               >
-                {item.checked && <FiCheck className="w-3 h-3 stroke-[3]" />}
+                {item.checked && <FiCheck className="w-3 h-3 stroke-3" />}
               </div>
               <span className="text-neutral-primary font-normal">
                 {item.label}

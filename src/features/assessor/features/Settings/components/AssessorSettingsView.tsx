@@ -13,13 +13,23 @@ import {
 } from "react-icons/fi";
 import { Input } from "@/src/components/ui/input";
 import { Select } from "@/src/components/ui/select";
+import { PhoneInput } from "@/src/components/ui/phone-input";
 import { DatePicker } from "@/src/components/ui/date-picker";
 import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
 import { DeleteAccountModal } from "./DeleteAccountModal";
 import { ASSETS_URL } from "@/assets";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { useGetAssessorSectors, useUpdateAssessorSectors } from "../hooks";
+import {
+  useGetAssessorProfileSectors,
+  useUpdateAssessorProfileSectors,
+  useGetAssessorProfile,
+  usePatchAssessorProfile,
+} from "@/src/features/shared/assessor/hooks";
+import {
+  useGetMeProfile,
+  usePatchMeProfile,
+} from "@/src/features/shared/account/hooks";
 import { useAssessorOnboarding } from "@/src/features/assessor/features/Onboarding/hooks/useOnboarding";
 import { useCountryStateCity } from "@/src/lib/hooks/useCountryStateCity";
 import { formatToIsoDate } from "@/src/lib/validation";
@@ -28,6 +38,7 @@ import { updateUser } from "@/src/store/slices/authSlice";
 import { setAssessorPersonalInfo } from "@/src/store/slices/onboardingSlice";
 import { CameraCaptureModal } from "@/src/components/ui/camera-capture-modal";
 import { FiCamera } from "react-icons/fi";
+import { QUALIFICATION_OPTIONS } from "@/src/features/assessor/features/Onboarding/pages/AssessorInformation";
 
 export type AssessorSettingsSubTab =
   | "profile"
@@ -39,7 +50,11 @@ export const AssessorSettingsView: React.FC = () => {
   const { toast } = useToast();
   const dispatch = useAppDispatch();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { getOnboarding, saveOnboarding } = useAssessorOnboarding();
+  const { getOnboarding } = useAssessorOnboarding();
+  const { data: meProfile } = useGetMeProfile();
+  const patchMeProfileMutation = usePatchMeProfile();
+  const { data: assessorProfile } = useGetAssessorProfile();
+  const patchAssessorProfileMutation = usePatchAssessorProfile();
   const uploadFileMutation = useUploadFile();
   const [isCameraOpen, setIsCameraOpen] = useState(false);
 
@@ -50,8 +65,14 @@ export const AssessorSettingsView: React.FC = () => {
   const personalInfo = useAppSelector(
     (s) => s.onboarding.personalInfo,
   );
+  const savedAssessorDetails = useAppSelector(
+    (s) => s.onboarding.assessorDetails,
+  );
 
   const uploadedAvatar =
+    meProfile?.photo?.url ||
+    (meProfile as any)?.photoUrl ||
+    (meProfile as any)?.avatar ||
     (assessorPersonalInfo as any)?.passportUrl ||
     (assessorPersonalInfo as any)?.passportPreview ||
     personalInfo?.passportUrl ||
@@ -94,8 +115,8 @@ export const AssessorSettingsView: React.FC = () => {
   const [emailNotificationsToggle, setEmailNotificationsToggle] = useState(true);
   const [remindersToggle, setRemindersToggle] = useState(false);
 
-  const { data: sectorsData } = useGetAssessorSectors();
-  const updateSectorsMutation = useUpdateAssessorSectors();
+  const { data: sectorsData } = useGetAssessorProfileSectors();
+  const updateSectorsMutation = useUpdateAssessorProfileSectors();
   const [selectedSectorIds, setSelectedSectorIds] = useState<string[]>([]);
 
   const [assessorId, setAssessorId] = useState("");
@@ -112,36 +133,87 @@ export const AssessorSettingsView: React.FC = () => {
 
   // ── Hydrate from API ───────────────────────────────────────────────────────
   React.useEffect(() => {
+    // 1. Hydrate from /me/profile
+    if (meProfile) {
+      if (meProfile.personalDetails?.firstName)
+        setFirstName(meProfile.personalDetails.firstName);
+      if (meProfile.personalDetails?.lastName)
+        setLastName(meProfile.personalDetails.lastName);
+      if (meProfile.personalDetails?.middleName)
+        setMiddleName(meProfile.personalDetails.middleName);
+      if (meProfile.personalDetails?.dob)
+        setDob(meProfile.personalDetails.dob);
+      if (meProfile.personalDetails?.gender)
+        setGender(meProfile.personalDetails.gender);
+      if (meProfile.personalDetails?.nationality)
+        setNationality(meProfile.personalDetails.nationality);
+
+      if (meProfile.contactInformation?.emailAddress)
+        setEmailAddress(meProfile.contactInformation.emailAddress);
+      if (meProfile.contactInformation?.phoneNumber?.number)
+        setPhoneNumber(meProfile.contactInformation.phoneNumber.number);
+
+      if (meProfile.residentialAddress?.country)
+        setCountry(meProfile.residentialAddress.country);
+      if (meProfile.residentialAddress?.state)
+        setStateOfResidence(meProfile.residentialAddress.state);
+      if (meProfile.residentialAddress?.lga)
+        setLga(meProfile.residentialAddress.lga);
+      if (meProfile.residentialAddress?.address)
+        setStreetAddress(meProfile.residentialAddress.address);
+    }
+
+    // 2. Hydrate from /assessor/profile
+    if (assessorProfile) {
+      if (assessorProfile.assessorNo) setAssessorId(assessorProfile.assessorNo);
+      if (assessorProfile.sectors?.length) {
+        setSelectedSectorIds(assessorProfile.sectors.map((s) => s.id));
+      }
+      if (assessorProfile.qualifications?.length) {
+        setQualification(assessorProfile.qualifications[0]);
+      } else if (assessorProfile.certificates?.length) {
+        const firstCert = assessorProfile.certificates[0].kind?.toUpperCase();
+        if (firstCert && ["QAA", "IQM", "IV", "EV"].includes(firstCert)) {
+          setQualification(firstCert);
+        }
+      }
+    }
+
+    // 3. Fallback to onboarding record if meProfile/assessorProfile still loading
     if (getOnboarding.data?.data) {
       const d = getOnboarding.data.data as any;
 
-      // Personal details
       const pd = d?.personalDetails;
-      if (pd?.firstName) setFirstName(pd.firstName);
-      if (pd?.lastName) setLastName(pd.lastName);
-      if (pd?.middleName) setMiddleName(pd.middleName);
-      if (pd?.dob) setDob(pd.dob);
-      if (pd?.gender) setGender(pd.gender);
-      if (pd?.nationality) setNationality(pd.nationality);
+      if (pd?.firstName && !firstName) setFirstName(pd.firstName);
+      if (pd?.lastName && !lastName) setLastName(pd.lastName);
+      if (pd?.middleName && !middleName) setMiddleName(pd.middleName);
+      if (pd?.dob && !dob) setDob(pd.dob);
+      if (pd?.gender && !gender) setGender(pd.gender);
+      if (pd?.nationality && !nationality) setNationality(pd.nationality);
 
-      // Contact information
       const ci = d?.contactInformation;
-      if (ci?.emailAddress) setEmailAddress(ci.emailAddress);
-      if (ci?.phoneNumber?.number) setPhoneNumber(ci.phoneNumber.number);
+      if (ci?.emailAddress && !emailAddress) setEmailAddress(ci.emailAddress);
+      if (ci?.phoneNumber?.number && !phoneNumber) setPhoneNumber(ci.phoneNumber.number);
 
-      // Residential address
       const ra = d?.residentialAddress;
-      if (ra?.country) setCountry(ra.country);
-      if (ra?.state) setStateOfResidence(ra.state);
-      if (ra?.lga) setLga(ra.lga);
-      if (ra?.address) setStreetAddress(ra.address);
+      if (ra?.country && !country) setCountry(ra.country);
+      if (ra?.state && !stateOfResidence) setStateOfResidence(ra.state);
+      if (ra?.lga && !lga) setLga(ra.lga);
+      if (ra?.address && !streetAddress) setStreetAddress(ra.address);
 
-      // Assessor details
       const ad = d?.assessorDetails;
-      if (ad?.assessorNo) setAssessorId(ad.assessorNo);
-      if (ad?.sectorIds?.length) setSelectedSectorIds(ad.sectorIds);
+      if (ad?.assessorNo && !assessorId) setAssessorId(ad.assessorNo);
+      if (ad?.sectorIds?.length && selectedSectorIds.length === 0)
+        setSelectedSectorIds(ad.sectorIds);
+      if (ad?.qualification && !qualification) setQualification(ad.qualification);
+      if (ad?.certifications?.qaa && !qualification) setQualification("QAA");
+      else if (ad?.certifications?.iqm && !qualification) setQualification("IQM");
     }
-  }, [getOnboarding.data]);
+
+    if (savedAssessorDetails?.qualification && !qualification) {
+      setQualification(savedAssessorDetails.qualification);
+    }
+  }, [meProfile, assessorProfile, getOnboarding.data, savedAssessorDetails]);
 
   const processPicture = async (file: File) => {
     const localUrl = URL.createObjectURL(file);
@@ -170,6 +242,11 @@ export const AssessorSettingsView: React.FC = () => {
             passportPreview: asset.url,
           }),
         );
+        if (asset.assetId) {
+          patchMeProfileMutation.mutate({
+            photoAssetId: asset.assetId,
+          });
+        }
       }
     } catch {
       // Local preview remains
@@ -189,28 +266,66 @@ export const AssessorSettingsView: React.FC = () => {
   };
 
   const handleSaveProfile = () => {
-    saveOnboarding.mutate(
+    patchMeProfileMutation.mutate(
       {
-        personalDetails: { firstName, lastName, middleName, dob: formatToIsoDate(dob), gender, nationality },
-        contactInformation: { emailAddress, phoneNumber: { countryCode: "+234", number: phoneNumber } },
-        residentialAddress: { country, state: stateOfResidence, lga, address: streetAddress },
+        personalDetails: !isVerified
+          ? {
+              firstName,
+              lastName,
+              middleName: middleName?.trim() || undefined,
+              dob: formatToIsoDate(dob) || "2000-01-01",
+              gender,
+              nationality,
+            }
+          : undefined,
+        contactInformation: {
+          emailAddress,
+          phoneNumber: { countryCode: "+234", number: phoneNumber },
+        },
+        residentialAddress: {
+          country,
+          state: stateOfResidence,
+          lga,
+          address: streetAddress,
+        },
       },
       {
         onSuccess: () =>
-          toast({ type: "success", title: "Profile Saved", description: "Your profile information has been updated." }),
+          toast({
+            type: "success",
+            title: "Profile Saved",
+            description: "Your profile information has been updated.",
+          }),
         onError: () =>
-          toast({ type: "error", title: "Save Failed", description: "Could not save profile. Please try again." }),
+          toast({
+            type: "error",
+            title: "Save Failed",
+            description: "Could not save profile. Please try again.",
+          }),
       },
     );
   };
 
   const handleSaveAssessorDetails = () => {
-    saveOnboarding.mutate(
-      { assessorDetails: { assessorNo: assessorId, sectorIds: selectedSectorIds } },
+    patchAssessorProfileMutation.mutate(
       {
-        onSuccess: () => updateSectorsMutation.mutate(selectedSectorIds),
-        onError: () =>
-          toast({ type: "error", title: "Save Failed", description: "Could not save assessor details. Please try again." }),
+        qualifications: qualification ? [qualification as any] : undefined,
+        sectorIds: selectedSectorIds,
+      },
+      {
+        onSuccess: () =>
+          toast({
+            type: "success",
+            title: "Assessor Details Saved",
+            description: "Your assessor information and sectors have been updated.",
+          }),
+        onError: (err: any) =>
+          toast({
+            type: "error",
+            title: "Save Failed",
+            description:
+              err?.message || "Could not save assessor details. Please try again.",
+          }),
       },
     );
   };
@@ -426,29 +541,12 @@ export const AssessorSettingsView: React.FC = () => {
                     onChange={(e) => setEmailAddress(e.target.value)}
                   />
 
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-text-dark font-medium text-xs leading-[1.4] select-none">
-                      Phone Number
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <Select
-                        containerClassName="w-24"
-                        size="sm"
-                        showPlaceholderOption={false}
-                        value="NGN"
-                        options={["NGN", "USD"]}
-                      />
-                      <Input
-                        type="tel"
-                        inputMode="numeric"
-                        placeholder="0000000000"
-                        value={phoneNumber}
-                        onChange={(e) =>
-                          setPhoneNumber(e.target.value.replace(/[^0-9]/g, ""))
-                        }
-                      />
-                    </div>
-                  </div>
+                  <PhoneInput
+                    label="Phone Number"
+                    value={phoneNumber}
+                    country={country || "ng"}
+                    onChange={(val) => setPhoneNumber(val)}
+                  />
                 </div>
               </div>
 
@@ -607,20 +705,16 @@ export const AssessorSettingsView: React.FC = () => {
                 </h3>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Select
+                  <Input
                     label="Assessor ID"
-                    placeholder="Select"
-                    options={["ASS-2026-001", "ASS-2026-002"]}
+                    placeholder="Assessor ID"
                     value={assessorId}
                     onChange={(e) => setAssessorId(e.target.value)}
                   />
                   <Select
                     label="Qualification"
-                    placeholder="Multi-Select"
-                    options={[
-                      "NSQ Level 4 Carpentry",
-                      "Certified Trade Assessor",
-                    ]}
+                    placeholder="Select Qualification"
+                    options={QUALIFICATION_OPTIONS}
                     value={qualification}
                     onChange={(e) => setQualification(e.target.value)}
                   />
@@ -632,7 +726,7 @@ export const AssessorSettingsView: React.FC = () => {
                       Sectors of Experience
                     </label>
                     <div className="flex flex-wrap gap-2">
-                      {sectorsData.map((sector) => (
+                      {sectorsData.map((sector: any) => (
                         <button
                           key={sector.id}
                           type="button"
@@ -663,65 +757,118 @@ export const AssessorSettingsView: React.FC = () => {
                 </h3>
 
                 <div className="flex flex-col gap-3">
-                  <div className="bg-[#F8F9FA] p-4.5 rounded-2xl border border-gray-100 flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3.5">
-                      <div className="w-10 h-10 rounded-xl bg-pink-100 text-pink-700 flex items-center justify-center shrink-0 font-bold text-xs">
-                        <FiFileText className="w-5 h-5" />
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="font-extrabold text-sm text-neutral-primary">
-                          NSQ Level 4 Carpentry
-                        </span>
-                        <span className="text-xs text-gray-400 font-medium">
-                          National Board for Technical Education · 2020
-                        </span>
-                      </div>
-                    </div>
+                  {(() => {
+                    const certKindLabels: Record<
+                      string,
+                      { title: string; subtitle: string }
+                    > = {
+                      qaa: {
+                        title: "QAA Competency Assessor Certificate",
+                        subtitle: "Quality Assurance Assessor · Completed",
+                      },
+                      iqm: {
+                        title: "IQM Certificate",
+                        subtitle: "Internal Quality Manager · Completed",
+                      },
+                      iv: {
+                        title: "IV Certificate",
+                        subtitle: "Internal Verifier · Completed",
+                      },
+                      ev: {
+                        title: "EV Certificate",
+                        subtitle: "External Verifier · Completed",
+                      },
+                    };
 
-                    <button
-                      type="button"
-                      onClick={() =>
-                        toast({
-                          type: "info",
-                          title: "Certificate View",
-                          description: "Viewing NSQ Level 4 Carpentry certificate...",
-                        })
-                      }
-                      className="w-9 h-9 rounded-xl bg-gray-200/70 hover:bg-gray-300 text-gray-600 flex items-center justify-center transition-colors cursor-pointer shrink-0"
-                    >
-                      <FiEye className="w-4.5 h-4.5" />
-                    </button>
-                  </div>
+                    const certificatesList = assessorProfile?.certificates?.length
+                      ? assessorProfile.certificates
+                      : [
+                          ...(savedAssessorDetails?.qaaCertificateAssetId
+                            ? [
+                                {
+                                  kind: "qaa",
+                                  assetId: savedAssessorDetails.qaaCertificateAssetId,
+                                  name:
+                                    savedAssessorDetails.qaaCertificateName ||
+                                    "QAA Certificate",
+                                  url: "",
+                                },
+                              ]
+                            : []),
+                          ...(savedAssessorDetails?.iqmCertificateAssetId
+                            ? [
+                                {
+                                  kind: "iqm",
+                                  assetId: savedAssessorDetails.iqmCertificateAssetId,
+                                  name:
+                                    savedAssessorDetails.iqmCertificateName ||
+                                    "IQM Certificate",
+                                  url: "",
+                                },
+                              ]
+                            : []),
+                        ];
 
-                  <div className="bg-[#F8F9FA] p-4.5 rounded-2xl border border-gray-100 flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3.5">
-                      <div className="w-10 h-10 rounded-xl bg-pink-100 text-pink-700 flex items-center justify-center shrink-0 font-bold text-xs">
-                        <FiFileText className="w-5 h-5" />
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="font-extrabold text-sm text-neutral-primary">
-                          Certified Trade Assessor
-                        </span>
-                        <span className="text-xs text-gray-400 font-medium">
-                          Nigeria Skills Qualification Awarding Body · 2021
-                        </span>
-                      </div>
-                    </div>
+                    if (certificatesList.length === 0) {
+                      return (
+                        <div className="text-xs text-gray-400 font-medium p-4 text-center bg-[#F8F9FA] rounded-2xl border border-gray-100">
+                          No uploaded certificates found.
+                        </div>
+                      );
+                    }
 
-                    <button
-                      type="button"
-                      onClick={() =>
-                        toast({
-                          type: "info",
-                          title: "Certificate View",
-                          description: "Viewing Certified Trade Assessor certificate...",
-                        })
-                      }
-                      className="w-9 h-9 rounded-xl bg-gray-200/70 hover:bg-gray-300 text-gray-600 flex items-center justify-center transition-colors cursor-pointer shrink-0"
-                    >
-                      <FiEye className="w-4.5 h-4.5" />
-                    </button>
-                  </div>
+                    return certificatesList.map((cert: any, idx: number) => {
+                      const kindKey = (cert.kind || "").toLowerCase();
+                      const meta = certKindLabels[kindKey] || {
+                        title:
+                          cert.name ||
+                          `${cert.kind?.toUpperCase() || "Assessor"} Certificate`,
+                        subtitle: "Uploaded Certificate · Verified",
+                      };
+                      return (
+                        <div
+                          key={cert.assetId || idx}
+                          className="bg-[#F8F9FA] p-4.5 rounded-2xl border border-gray-100 flex items-center justify-between gap-4"
+                        >
+                          <div className="flex items-center gap-3.5">
+                            <div className="w-10 h-10 rounded-xl bg-pink-100 text-pink-700 flex items-center justify-center shrink-0 font-bold text-xs">
+                              <FiFileText className="w-5 h-5" />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="font-extrabold text-sm text-neutral-primary">
+                                {meta.title}
+                              </span>
+                              <span className="text-xs text-gray-400 font-medium">
+                                {meta.subtitle}
+                              </span>
+                            </div>
+                          </div>
+
+                          {cert.url ? (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                window.open(
+                                  cert.url,
+                                  "_blank",
+                                  "noopener,noreferrer",
+                                )
+                              }
+                              className="w-9 h-9 rounded-xl bg-gray-200/70 hover:bg-gray-300 text-gray-600 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                              title="View Certificate"
+                              aria-label="View Certificate"
+                            >
+                              <FiEye className="w-4.5 h-4.5" />
+                            </button>
+                          ) : (
+                            <span className="text-xs text-emerald-600 font-semibold flex items-center gap-1">
+                              <FiCheckCircle className="w-3.5 h-3.5" /> Completed
+                            </span>
+                          )}
+                        </div>
+                      );
+                    });
+                  })()}
                 </div>
               </div>
 

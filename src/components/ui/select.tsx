@@ -2,7 +2,7 @@
 
 import React, { useId, useState, useEffect } from "react";
 import { Select as AntSelect } from "antd";
-import { FiCheck, FiChevronDown } from "react-icons/fi";
+import { FiChevronDown, FiX } from "react-icons/fi";
 
 export interface SelectOption {
   label: string;
@@ -28,6 +28,10 @@ export interface SelectProps {
   popupMatchSelectWidth?: boolean | number;
   id?: string;
   name?: string;
+  loading?: boolean;
+  notFoundContent?: React.ReactNode;
+  maxTagCount?: number | "responsive";
+  maxTagTextLength?: number;
 }
 
 export const Select: React.FC<SelectProps> = ({
@@ -49,6 +53,10 @@ export const Select: React.FC<SelectProps> = ({
   required = false,
   size = "md",
   showPlaceholderOption,
+  loading = false,
+  notFoundContent,
+  maxTagCount,
+  maxTagTextLength = 22,
 }) => {
   const reactId = useId();
   const [mounted, setMounted] = useState(false);
@@ -103,8 +111,58 @@ export const Select: React.FC<SelectProps> = ({
         id={selectId}
         mode={multiple ? "multiple" : undefined}
         value={antValue}
-        placeholder={placeholder}
+        placeholder={loading ? (typeof placeholder === "string" && placeholder.includes("Loading") ? placeholder : "Loading...") : placeholder}
         disabled={disabled}
+        loading={loading}
+        maxTagCount={maxTagCount !== undefined ? maxTagCount : multiple ? "responsive" : undefined}
+        maxTagTextLength={maxTagTextLength}
+        maxTagPlaceholder={(omittedValues) => (
+          <span className="inline-flex items-center px-2 py-0.5 my-0.5 bg-[#a31d38]/10 text-[#a31d38] text-xs font-semibold rounded-md border border-[#a31d38]/20 select-none">
+            +{omittedValues.length} more
+          </span>
+        )}
+        tagRender={
+          multiple
+            ? (props) => {
+                const { label, closable, onClose } = props;
+                const onPreventMouseDown = (
+                  event: React.MouseEvent<HTMLSpanElement>,
+                ) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                };
+                return (
+                  <span
+                    onMouseDown={onPreventMouseDown}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-0.5 my-0.5 mr-1 bg-gray-100/90 text-text-dark text-xs font-medium rounded-lg border border-gray-200/90 max-w-[220px] truncate select-none shrink-0"
+                    title={typeof label === "string" ? label : undefined}
+                  >
+                    <span className="truncate">{label}</span>
+                    {closable && !disabled && (
+                      <span
+                        onClick={onClose}
+                        className="text-gray-400 hover:text-red-600 hover:bg-red-50 rounded p-0.5 cursor-pointer shrink-0 transition-colors"
+                      >
+                        <FiX className="w-3 h-3 stroke-[2.5]" />
+                      </span>
+                    )}
+                  </span>
+                );
+              }
+            : undefined
+        }
+        notFoundContent={
+          loading ? (
+            <div className="py-4 px-3 text-center text-xs xl:text-sm text-gray-500 font-medium flex items-center justify-center gap-2 select-none">
+              <span className="w-4 h-4 border-2 border-[#a31d38] border-t-transparent rounded-full animate-spin shrink-0" />
+              <span>{typeof placeholder === "string" && placeholder.includes("Loading") ? placeholder : "Loading units..."}</span>
+            </div>
+          ) : notFoundContent !== undefined ? (
+            <div className="py-4 px-3 text-center text-xs xl:text-sm text-gray-500 font-medium select-none">
+              {notFoundContent}
+            </div>
+          ) : undefined
+        }
         onChange={handleChange}
         options={normalizedOptions}
         className={`w-full ${className}`}
@@ -125,40 +183,11 @@ export const Select: React.FC<SelectProps> = ({
         }}
         status={error ? "error" : undefined}
         optionRender={(option) => {
-          const isSelected = multiple
-            ? Array.isArray(antValue) && antValue.includes(String(option.value))
-            : antValue === option.value;
-
           return (
             <div className="flex items-center justify-between gap-3 w-full py-0.5 min-w-0">
-              <span className="text-xs xl:text-sm font-medium text-text-dark whitespace-nowrap">
+              <span className="text-xs xl:text-sm font-medium text-text-dark truncate">
                 {option.label}
               </span>
-              {multiple ? (
-                <div
-                  className={`w-4.5 h-4.5 rounded-md border flex items-center justify-center transition-all shrink-0 ${
-                    isSelected
-                      ? "bg-neutral-900 border-neutral-900 text-white"
-                      : "bg-white border-neutral-400"
-                  }`}
-                >
-                  {isSelected && (
-                    <FiCheck className="w-3 h-3 stroke-3 text-white" />
-                  )}
-                </div>
-              ) : (
-                <div
-                  className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all shrink-0 ${
-                    isSelected
-                      ? "border-neutral-900 bg-neutral-900"
-                      : "border-neutral-400 bg-white"
-                  }`}
-                >
-                  {isSelected && (
-                    <div className="w-1.5 h-1.5 rounded-full bg-white" />
-                  )}
-                </div>
-              )}
             </div>
           );
         }}

@@ -42,17 +42,49 @@ export interface ResidentialAddress {
   address: string;
 }
 
+export interface Accessibility {
+  hasImpairment: boolean;
+  impairment?: string;
+}
+
+export interface EmploymentHistoryItem {
+  company: string;
+  jobTitle: string;
+  employmentType: string;
+  startDate: string;
+  endDate?: string;
+  keyResponsibilities: string;
+}
+
+export interface CurrentOccupation {
+  occupation: string;
+  yearsOfExperience: number;
+  employmentHistory: EmploymentHistoryItem[];
+}
+
+export interface ResolvedAsset {
+  assetId: string;
+  url?: string | null;
+}
+
 export interface MeProfile {
   identityVerified: boolean;
   personalDetails?: PersonalDetails;
   contactInformation?: ContactInformation;
   residentialAddress?: ResidentialAddress;
+  currentOccupation?: CurrentOccupation | null;
+  accessibility?: Accessibility | null;
+  photoAssetId?: string | null;
+  photo?: ResolvedAsset | null;
 }
 
 export interface MeProfilePatch {
   personalDetails?: Partial<PersonalDetails>;
   contactInformation?: Partial<ContactInformation>;
   residentialAddress?: Partial<ResidentialAddress>;
+  currentOccupation?: Partial<CurrentOccupation>;
+  accessibility?: Partial<Accessibility>;
+  photoAssetId?: string | null;
 }
 
 export interface DeletionEligibility {

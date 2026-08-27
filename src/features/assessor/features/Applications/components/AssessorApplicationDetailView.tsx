@@ -23,7 +23,11 @@ import type {
   AssessorApplicationRecord,
   ApplicationStageFormToSign,
 } from "../types/applications.types";
-import { useGetApplicationById } from "@/src/features/shared/applications/hooks";
+import {
+  useGetApplicationById,
+  useGetInterviewSchedule,
+  useGetInterviewForms,
+} from "@/src/features/shared/applications/hooks";
 import { useToast } from "@/src/components/ui/toast";
 
 export type AssessorDetailSubView =
@@ -32,23 +36,23 @@ export type AssessorDetailSubView =
   | "evidence_vault"
   | "assessment_form";
 
-const DEFAULT_FORMS_TO_SIGN: ApplicationStageFormToSign[] = [
+const BASE_FORMS_TO_SIGN: ApplicationStageFormToSign[] = [
   {
-    id: "form-1",
+    id: "records",
     title: "Skills Demonstration Records Form",
-    description: "Lorem ipsum dolor",
+    description: "Form recording interview questions and demonstration notes",
     signed: false,
   },
   {
-    id: "form-2",
+    id: "assessment_grid",
     title: "Assessment Grid/Mapping Form",
-    description: "Lorem ipsum dolor",
+    description: "Form mapping competency criteria and scores",
     signed: false,
   },
   {
-    id: "form-3",
+    id: "practical_observation",
     title: "Practical Observation Checklist Form",
-    description: "Lorem ipsum dolor",
+    description: "Form recording practical observation findings",
     signed: false,
   },
 ];
@@ -77,6 +81,9 @@ export const AssessorApplicationDetailView: React.FC<
   onResetTriggerMarkComplete,
 }) => {
   const { toast } = useToast();
+  const { data: interviewSchedule } = useGetInterviewSchedule(application.id);
+  const { data: remoteForms } = useGetInterviewForms(application.id);
+
   const [internalSubView, setInternalSubView] =
     useState<AssessorDetailSubView>("stages");
 
@@ -94,7 +101,29 @@ export const AssessorApplicationDetailView: React.FC<
   } | null>(null);
 
   const [formsToSign, setFormsToSign] =
-    useState<ApplicationStageFormToSign[]>(DEFAULT_FORMS_TO_SIGN);
+    useState<ApplicationStageFormToSign[]>(BASE_FORMS_TO_SIGN);
+
+  React.useEffect(() => {
+    if (remoteForms && remoteForms.length > 0) {
+      setFormsToSign((prev) =>
+        prev.map((f) => {
+          const matching = remoteForms.find(
+            (rf) =>
+              rf.formType === f.id ||
+              rf.id === f.id,
+          );
+          return matching
+            ? {
+                ...f,
+                signed: Boolean(
+                  matching.candidateSignedAt || matching.status === "completed",
+                ),
+              }
+            : f;
+        }),
+      );
+    }
+  }, [remoteForms]);
 
   // Internal Verifier Modals State
   const [isConfirmCompetentOpen, setIsConfirmCompetentOpen] = useState(false);
@@ -230,6 +259,7 @@ export const AssessorApplicationDetailView: React.FC<
   if (subView === "evidence_vault") {
     return (
       <AssessorEvidenceVaultView
+        applicationId={application.id}
         candidateName={application.candidateName}
         onBack={() => setSubView("stages")}
         onAllApprovedChange={onAllApprovedChange}
@@ -258,12 +288,19 @@ export const AssessorApplicationDetailView: React.FC<
   const upcomingEvent =
     interviewOutcome === "awaiting_signature" && scheduledObservationEvent
       ? scheduledObservationEvent
-      : interviewOutcome === "ongoing"
+      : interviewSchedule?.scheduledAt
         ? {
             title: "Panel Interview",
-            time: "12:00PM",
-            date: "22/03/2026",
-            address: "Cstemp Centre",
+            time: new Date(interviewSchedule.scheduledAt).toLocaleTimeString("en-US", {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+            date: new Date(interviewSchedule.scheduledAt).toLocaleDateString("en-GB"),
+            address:
+              interviewSchedule.location ||
+              (interviewSchedule.mode === "online"
+                ? `Online (${interviewSchedule.link || "Link will be shared"})`
+                : "Assessment Centre"),
           }
         : null;
 
@@ -293,7 +330,7 @@ export const AssessorApplicationDetailView: React.FC<
 
       {/* Right Column: Calendar, Events, and Assessment Forms Widgets */}
       <div className="lg:col-span-4 flex flex-col gap-6">
-        <AssessorCalendarWidget highlightedDays={[10, 13]} />
+        <AssessorCalendarWidget />
         <AssessorUpcomingEventsWidget event={upcomingEvent} />
         <AssessorAssessmentFormsWidget
           onViewForm={(form) => {

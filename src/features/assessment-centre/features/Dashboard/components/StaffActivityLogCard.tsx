@@ -1,7 +1,10 @@
 "use client";
 
 import React from "react";
-import { useGetCentreDashboard } from "@/src/features/shared/centre/hooks";
+import {
+  useGetCentreDashboard,
+  useGetCentreStaff,
+} from "@/src/features/shared/centre/hooks";
 
 function formatRelativeTime(dateStr: string): string {
   try {
@@ -23,7 +26,28 @@ function formatRelativeTime(dateStr: string): string {
 
 export const StaffActivityLogCard: React.FC = () => {
   const { data: dashboardData } = useGetCentreDashboard();
+  const { data: staffList = [] } = useGetCentreStaff();
   const logs = dashboardData?.staffActivity || [];
+
+  const resolveActorName = (log: any): string => {
+    if (
+      log.actorName &&
+      !/^[0-9a-f]{8}-[0-9a-f]{4}/i.test(log.actorName) &&
+      log.actorName.length < 30
+    ) {
+      return log.actorName;
+    }
+    const staffMatch = staffList.find(
+      (s) =>
+        s.id === log.staffId ||
+        s.id === log.actorId ||
+        s.id === log.actorName ||
+        s.email === log.actorName,
+    );
+    if (staffMatch?.name) return staffMatch.name;
+    if (log.actorName && !log.actorName.includes("-")) return log.actorName;
+    return "Staff Member";
+  };
 
   return (
     <div className="bg-white rounded-3xl p-6 shadow-2xs border border-gray-100/80 flex flex-col gap-4 select-none h-full">
@@ -47,7 +71,7 @@ export const StaffActivityLogCard: React.FC = () => {
               >
                 <div className="flex flex-col shrink-0 min-w-25">
                   <span className="text-xs sm:text-sm font-medium text-black truncate">
-                    {log.actorName || "Staff Member"}
+                    {resolveActorName(log)}
                   </span>
                   <span className="text-[10px] text-black/60 font-normal mt-0.5">
                     {roleLabel}

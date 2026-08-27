@@ -372,7 +372,7 @@ export const SignIn: React.FC = () => {
                     ? "Connecting to Google..."
                     : "Continue with Google"}
                 </Button>
-                <div className="absolute inset-0 opacity-0 overflow-hidden cursor-pointer [&>div]:!w-full [&>div>iframe]:!w-full [&>div>iframe]:!h-full [&>div>iframe]:!scale-150">
+                <div className="absolute inset-0 opacity-0 overflow-hidden cursor-pointer [&>div]:w-full! [&>div>iframe]:w-full! [&>div>iframe]:h-full! [&>div>iframe]:scale-150!">
                   <GoogleLogin
                     onSuccess={handleGoogleSuccess}
                     onError={handleGoogleError}

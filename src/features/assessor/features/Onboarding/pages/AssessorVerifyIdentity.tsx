@@ -102,7 +102,7 @@ export const AssessorVerifyIdentity: React.FC = () => {
     submitOnboarding.mutate(undefined, {
       onSuccess: () => {
         saveOnboardedStatus(true);
-        router.push(ASSESSOR_ROUTES.dashboard);
+        router.push("/onboarding/success?role=assessor");
       },
       onError: (err: any) => {
         toast({

@@ -1,7 +1,6 @@
-"use client";
-
-import React from "react";
+import React, { useMemo } from "react";
 import { FiCalendar } from "react-icons/fi";
+import { useGetAssessorEvents } from "@/src/features/shared/assessor/hooks";
 
 export interface AssessorUpcomingEvent {
   title: string;
@@ -16,7 +15,29 @@ interface AssessorUpcomingEventsWidgetProps {
 
 export const AssessorUpcomingEventsWidget: React.FC<
   AssessorUpcomingEventsWidgetProps
-> = ({ event }) => {
+> = ({ event: propEvent }) => {
+  const { data: eventsData } = useGetAssessorEvents();
+
+  const event = useMemo(() => {
+    if (propEvent !== undefined) return propEvent;
+    if (eventsData && eventsData.length > 0) {
+      const first = eventsData[0];
+      return {
+        title: first.action ? first.action.replace(/_/g, " ") : (first.stageKey ? first.stageKey.replace(/_/g, " ") : "Scheduled Event"),
+        time: first.createdAt
+          ? new Date(first.createdAt).toLocaleTimeString("en-US", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : "—",
+        date: first.createdAt
+          ? new Date(first.createdAt).toLocaleDateString("en-GB")
+          : "—",
+        address: "Assessment Centre",
+      };
+    }
+    return null;
+  }, [propEvent, eventsData]);
   return (
     <div className="bg-white rounded-3xl p-6 shadow-xs border border-gray-100 flex flex-col gap-4 w-full">
       <h4 className="text-base font-bold text-neutral-primary">
@@ -70,7 +91,7 @@ export const AssessorUpcomingEventsWidget: React.FC<
           <h5 className="text-sm font-bold text-neutral-primary">
             No upcoming events
           </h5>
-          <p className="text-xs text-neutral-secondary mt-1 max-w-[200px] leading-relaxed">
+          <p className="text-xs text-neutral-secondary mt-1 max-w-50 leading-relaxed">
             Your scheduled events will appear here
           </p>
         </div>

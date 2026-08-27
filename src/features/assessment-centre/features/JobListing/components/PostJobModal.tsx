@@ -186,6 +186,7 @@ export const PostJobModal: React.FC<PostJobModalProps> = ({
                     placeholder={
                       isLoadingSectors ? "Loading sectors..." : "Select Sector"
                     }
+                    loading={isLoadingSectors}
                     options={sectorOptions}
                     value={sector}
                     onChange={(e) => {
@@ -203,7 +204,8 @@ export const PostJobModal: React.FC<PostJobModalProps> = ({
                           ? "Select Trade"
                           : "Select Sector first"
                     }
-                    disabled={!sector || isLoadingTrades}
+                    loading={isLoadingTrades}
+                    disabled={!sector}
                     options={tradeOptions}
                     value={trade}
                     onChange={(e) => setTrade(e.target.value)}

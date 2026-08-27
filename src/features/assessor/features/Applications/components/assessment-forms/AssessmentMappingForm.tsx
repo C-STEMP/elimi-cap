@@ -13,21 +13,21 @@ interface UnitMappingItem {
   status: "Satisfied" | "Not Satisfied";
 }
 
-const DEFAULT_UNITS: UnitMappingItem[] = [
+const INITIAL_UNITS: UnitMappingItem[] = [
   {
     id: "unit-1",
-    occupationalUnit: "Carpentry & Joinery Preparation",
-    performanceCriteria: "Accurate measurement, cutting, and tooling per standard blueprints",
-    typeOfEvidence: "Direct Observation & Practical Portfolio",
-    description: "Evaluated joint fitment and bevel angles on physical wooden specimen.",
+    occupationalUnit: "Core Occupational Standards & Practical Execution",
+    performanceCriteria: "Accurate measurement, planning, tooling, and execution per standard trade requirements",
+    typeOfEvidence: "Direct Observation & Practical Evidence",
+    description: "",
     status: "Satisfied",
   },
   {
     id: "unit-2",
-    occupationalUnit: "Surface Finishing & Polish",
-    performanceCriteria: "Application of primer, POP coating, and protective varnish",
-    typeOfEvidence: "Third Party Report & Photo Log",
-    description: "Verified smooth finish with zero shrinkage cracks.",
+    occupationalUnit: "Workplace Safety & Standards Compliance",
+    performanceCriteria: "Compliance with health, safety, hazard mitigation and regulatory standards",
+    typeOfEvidence: "Third Party Report & Portfolio Evidence",
+    description: "",
     status: "Satisfied",
   },
 ];
@@ -42,7 +42,7 @@ export const AssessmentMappingForm: React.FC<
   AssessmentMappingFormProps
 > = ({ candidateName, onBack, onSubmit }) => {
   const { toast } = useToast();
-  const [units, setUnits] = useState<UnitMappingItem[]>(DEFAULT_UNITS);
+  const [units, setUnits] = useState<UnitMappingItem[]>(INITIAL_UNITS);
   const [assessorSigned, setAssessorSigned] = useState(false);
 
   const handleAddUnit = () => {

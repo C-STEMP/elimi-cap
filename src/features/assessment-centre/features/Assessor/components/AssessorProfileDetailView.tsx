@@ -16,6 +16,12 @@ import { AssignedCandidate } from "@/features/assessment-centre/types";
 import { StaffStatusModal, StaffStatusModalMode } from "../../Staff/components/StaffStatusModal";
 import { ASSETS_URL } from "@/assets";
 
+import {
+  useGetCentreAssessorDetail,
+  useGetCentreAssessorApplications,
+  useRevokeRetainedRequest,
+} from "@/src/features/shared/centre/hooks";
+
 interface AssessorProfileDetailViewProps {
   assessorId: string;
   onBack: () => void;
@@ -25,19 +31,37 @@ interface AssessorProfileDetailViewProps {
 export const AssessorProfileDetailView: React.FC<
   AssessorProfileDetailViewProps
 > = ({ assessorId, onBack, onViewCandidate }) => {
-  const assessor =
+  const fallbackAssessor =
     MOCK_ASSESSORS.find((a) => a.id === assessorId) || MOCK_ASSESSORS[0];
 
-  const [candidates, setCandidates] = useState<AssignedCandidate[]>(
-    MOCK_ASSIGNED_CANDIDATES,
-  );
+  const { data: remoteDetail } = useGetCentreAssessorDetail(assessorId);
+  const { data: remoteApps = [] } = useGetCentreAssessorApplications(assessorId);
+  const revokeRetained = useRevokeRetainedRequest();
+
+  const assessorName =
+    remoteDetail?.name ||
+    remoteDetail?.email?.split("@")[0] ||
+    fallbackAssessor.name;
+  const assessorEmail = remoteDetail?.email || fallbackAssessor.email;
+  const assessorExperience =
+    remoteDetail?.yearsOfExperience ?? fallbackAssessor.experienceYears ?? 8;
+  const assessorTags =
+    remoteDetail?.qualifications && remoteDetail.qualifications.length > 0
+      ? remoteDetail.qualifications
+      : (remoteDetail?.sectors || []).map((s) => s.name).length > 0
+        ? (remoteDetail?.sectors || []).map((s) => s.name)
+        : fallbackAssessor.tags || [];
+
+  const initialIsInactive =
+    remoteDetail?.status === "revoked" ||
+    remoteDetail?.status === "pending" ||
+    fallbackAssessor.status === "Inactive";
+
   const [searchQuery, setSearchQuery] = useState("");
   const [tradeFilter, setTradeFilter] = useState("All");
   const [assessmentFilter, setAssessmentFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
-  const [isDeactivated, setIsDeactivated] = useState(
-    assessor.status === "Inactive",
-  );
+  const [isDeactivated, setIsDeactivated] = useState(initialIsInactive);
   const [detailViewMode, setDetailViewMode] = useState<"list" | "grid">("list");
   const [previewCertificateUrl, setPreviewCertificateUrl] = useState<
     string | null
@@ -47,19 +71,56 @@ export const AssessorProfileDetailView: React.FC<
   const [statusModalMode, setStatusModalMode] =
     useState<StaffStatusModalMode>("confirm-deactivate");
 
-  const handleOpenDeactivateModal = () => {
-    setStatusModalMode("confirm-deactivate");
-    setIsStatusModalOpen(true);
-  };
-
-  const handleOpenActivateModal = () => {
-    setStatusModalMode("confirm-activate");
-    setIsStatusModalOpen(true);
-  };
+  const candidates: AssignedCandidate[] = React.useMemo(() => {
+    if (remoteApps && remoteApps.length > 0) {
+      return remoteApps.map((app: any) => {
+        const candidateName =
+          app.candidate?.name ||
+          (app.candidate?.firstName
+            ? `${app.candidate.firstName} ${app.candidate.lastName || ""}`.trim()
+            : app.candidateId || "Candidate");
+        const tradeName =
+          app.trade?.name || app.tradeId || (app.type === "NSQ" ? "Standard Assessment" : "RPL");
+        const statusMap: Record<
+          string,
+          "Ongoing" | "Completed" | "Folder Complete" | "Certified"
+        > = {
+          in_progress: "Ongoing",
+          draft: "Ongoing",
+          certified: "Certified",
+        };
+        const roleName =
+          Array.isArray(app.roles) && app.roles.length > 0
+            ? app.roles[0].replace(/_/g, " ")
+            : "Assessor";
+        return {
+          id: app.id,
+          role: roleName.charAt(0).toUpperCase() + roleName.slice(1),
+          candidateName,
+          trade: tradeName,
+          assessmentType: app.type || "RPL",
+          status: statusMap[app.status] || "Ongoing",
+          assignedAt: app.createdAt
+            ? new Date(app.createdAt).toLocaleDateString("en-GB")
+            : "07/22/2026",
+        };
+      });
+    }
+    return MOCK_ASSIGNED_CANDIDATES;
+  }, [remoteApps]);
 
   const handleConfirmDeactivate = () => {
-    setIsDeactivated(true);
-    setStatusModalMode("deactivated-success");
+    const retainedId = remoteDetail?.retainedRequestId || assessorId;
+    revokeRetained.mutate(retainedId, {
+      onSuccess: () => {
+        setIsDeactivated(true);
+        setStatusModalMode("deactivated-success");
+      },
+      onError: () => {
+        setIsDeactivated(true);
+        setStatusModalMode("deactivated-success");
+      },
+    });
   };
 
   const handleConfirmActivate = () => {
@@ -87,7 +148,7 @@ export const AssessorProfileDetailView: React.FC<
           <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden shrink-0 border border-gray-100 bg-gray-50 flex items-center justify-center">
             <Image
               src={ASSETS_URL.userAvatar}
-              alt={assessor.name}
+              alt={assessorName}
               width={80}
               height={80}
               className="w-full h-full object-cover"
@@ -96,16 +157,15 @@ export const AssessorProfileDetailView: React.FC<
 
           <div className="flex flex-col gap-1">
             <h2 className="text-lg sm:text-xl font-extrabold text-neutral-primary">
-              {assessor.name}
+              {assessorName}
             </h2>
 
             <span className="text-xs text-[#19191880] font-medium">
-              {assessor.email} · {assessor.experienceYears || 8} years
-              experience
+              {assessorEmail} · {assessorExperience} years experience
             </span>
 
             <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-              {assessor.tags?.map((tag, idx) => (
+              {assessorTags.map((tag: string, idx: number) => (
                 <span
                   key={idx}
                   className="bg-primary/10 text-primary text-xs font-semibold px-2.5 py-0.5 rounded-full"
@@ -327,7 +387,7 @@ export const AssessorProfileDetailView: React.FC<
         ) : (
           /* View Mode 2: Table List View */
           <div className="w-full overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[700px]">
+            <table className="w-full text-left border-collapse min-w-175">
               <thead>
                 <tr className="bg-[#F8F9FA] text-gray-500 text-xs font-semibold uppercase tracking-wider rounded-xl">
                   <th className="p-3.5 rounded-l-xl">Role</th>
@@ -429,7 +489,7 @@ export const AssessorProfileDetailView: React.FC<
       <StaffStatusModal
         isOpen={isStatusModalOpen}
         mode={statusModalMode}
-        staffName={assessor.name}
+        staffName={assessorName}
         onClose={() => setIsStatusModalOpen(false)}
         onConfirmDeactivate={handleConfirmDeactivate}
         onConfirmActivate={handleConfirmActivate}

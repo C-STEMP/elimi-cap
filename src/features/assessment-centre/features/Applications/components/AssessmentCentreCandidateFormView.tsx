@@ -126,19 +126,17 @@ export const AssessmentCentreCandidateFormView: React.FC<
                   <span className="font-semibold text-black shrink-0 w-36">
                     Qualification Title:
                   </span>
-                  <span className="text-gray-400">------</span>
-                </div>
-                <div className="flex items-center gap-2 border-b border-gray-200/70 pb-1.5">
-                  <span className="font-semibold text-black shrink-0 w-36">
-                    Qualification Code:
+                  <span className="text-gray-800 font-medium">
+                    General Construction / RPL
                   </span>
-                  <span className="text-gray-400">------</span>
                 </div>
                 <div className="flex items-center gap-2 border-b border-gray-200/70 pb-1.5">
                   <span className="font-semibold text-black shrink-0 w-36">
                     Individual Units:
                   </span>
-                  <span className="text-gray-400">------</span>
+                  <span className="text-gray-700 font-medium">
+                    All Mandatory and Elective Units
+                  </span>
                 </div>
               </div>
             </div>

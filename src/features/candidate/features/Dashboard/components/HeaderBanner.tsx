@@ -4,13 +4,22 @@ import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FiPlus, FiBell, FiLogOut, FiChevronLeft } from "react-icons/fi";
+import {
+  FiPlus,
+  FiBell,
+  FiLogOut,
+  FiChevronLeft,
+  FiMenu,
+  FiX,
+} from "react-icons/fi";
 import { ASSETS_URL } from "@/assets";
 import { Logo } from "@/src/components/ui/logo";
 import { LogoutModal } from "@/components/LogoutModal";
 import { NotificationDropdown } from "./NotificationDropdown";
 
 import { useAppSelector } from "@/store/hooks";
+
+import { useGetMeProfile } from "@/src/features/shared/account/hooks";
 
 interface HeaderBannerProps {
   userName?: string;
@@ -43,16 +52,25 @@ export const HeaderBanner: React.FC<HeaderBannerProps> = ({
 }) => {
   const pathname = usePathname();
   const authUser = useAppSelector((state) => state.auth.user);
+  const personalInfo = useAppSelector((state) => state.onboarding.personalInfo);
+  const { data: meProfile } = useGetMeProfile();
+
+  const rawFirstName =
+    meProfile?.personalDetails?.firstName ||
+    personalInfo?.firstName ||
+    (authUser as any)?.firstName ||
+    (authUser as any)?.name?.split(" ")[0] ||
+    authUser?.fullName?.split(" ")[0] ||
+    (authUser?.email ? authUser.email.split("@")[0] : userName);
+
   const displayName =
-    authUser?.fullName ||
-    authUser?.email?.split("@")[0] ||
-    userName;
+    rawFirstName.charAt(0).toUpperCase() + rawFirstName.slice(1);
 
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
-
-  const personalInfo = useAppSelector((state) => state.onboarding.personalInfo);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const userAvatarSrc =
+    meProfile?.photo?.url ||
     personalInfo.passportUrl ||
     authUser?.avatar ||
     (authUser as any)?.avatarUrl ||
@@ -126,40 +144,68 @@ export const HeaderBanner: React.FC<HeaderBannerProps> = ({
               />
             </Link>
 
-            {/* Logout Button */}
+            {/* Logout Button (Desktop) */}
             <button
               type="button"
               aria-label="Log out"
               onClick={() => setIsLogoutOpen(true)}
-              className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors cursor-pointer"
+              className="hidden md:flex w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 items-center justify-center text-white transition-colors cursor-pointer"
             >
               <FiLogOut className="w-4 h-4" />
+            </button>
+
+            {/* Mobile Hamburger Toggle */}
+            <button
+              type="button"
+              aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="flex md:hidden w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 items-center justify-center text-white transition-colors cursor-pointer"
+            >
+              {isMobileMenuOpen ? (
+                <FiX className="w-5 h-5" />
+              ) : (
+                <FiMenu className="w-5 h-5" />
+              )}
             </button>
           </div>
         </div>
 
-        {/* Mobile Nav Links Row */}
-        <div className="flex md:hidden items-center gap-2 overflow-x-auto pb-1 pt-3 border-t border-white/10 no-scrollbar">
-          {NAV_LINKS.map((link) => {
-            const isActive =
-              link.href === "/dashboard"
-                ? pathname === "/dashboard"
-                : pathname?.startsWith(link.href);
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-200 shrink-0 ${
-                  isActive
-                    ? "bg-[#b93852] text-white shadow-lg"
-                    : "text-white/80 hover:text-white bg-white/10"
-                }`}
-              >
-                {link.label}
-              </Link>
-            );
-          })}
-        </div>
+        {/* Mobile Dropdown Menu (Toggleable via Hamburger) */}
+        {isMobileMenuOpen && (
+          <div className="flex md:hidden flex-col gap-2 pt-3 pb-2 border-t border-white/15 animate-fadeIn">
+            {NAV_LINKS.map((link) => {
+              const isActive =
+                link.href === "/dashboard"
+                  ? pathname === "/dashboard"
+                  : pathname?.startsWith(link.href);
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center justify-between ${
+                    isActive
+                      ? "bg-white text-primary shadow-xs"
+                      : "text-white/90 hover:text-white hover:bg-white/10"
+                  }`}
+                >
+                  <span>{link.label}</span>
+                </Link>
+              );
+            })}
+            <button
+              type="button"
+              onClick={() => {
+                setIsMobileMenuOpen(false);
+                setIsLogoutOpen(true);
+              }}
+              className="px-4 py-2 rounded-xl text-sm font-semibold text-white/90 hover:text-white hover:bg-white/10 flex items-center gap-2 text-left mt-1 cursor-pointer"
+            >
+              <FiLogOut className="w-4 h-4" />
+              <span>Log out</span>
+            </button>
+          </div>
+        )}
 
         {/* Bottom Header Row */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pt-4 sm:pt-5 gap-3 sm:gap-4 w-full">
@@ -167,10 +213,10 @@ export const HeaderBanner: React.FC<HeaderBannerProps> = ({
             <div className="flex flex-col gap-1 min-w-0 max-w-full">
               <Link
                 href={backHref}
-                className="flex items-center gap-1.5 sm:gap-2 text-white font-bold text-lg sm:text-2xl lg:text-3xl tracking-tight hover:opacity-90 transition-opacity break-words"
+                className="flex items-center gap-1.5 sm:gap-2 text-white font-bold text-lg sm:text-2xl lg:text-3xl tracking-tight hover:opacity-90 transition-opacity wrap-break-word"
               >
                 <FiChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.5] shrink-0" />
-                <span className="break-words">{backTitle}</span>
+                <span className="wrap-break-word">{backTitle}</span>
               </Link>
               {breadcrumbs && breadcrumbs.length > 0 && (
                 <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs lg:text-sm text-white/90 font-normal flex-wrap">
@@ -185,7 +231,7 @@ export const HeaderBanner: React.FC<HeaderBannerProps> = ({
                           {crumb.label}
                         </Link>
                       ) : (
-                        <span className="text-white font-medium break-words">
+                        <span className="text-white font-medium wrap-break-word">
                           {crumb.label}
                         </span>
                       )}
@@ -195,7 +241,7 @@ export const HeaderBanner: React.FC<HeaderBannerProps> = ({
               )}
             </div>
           ) : (
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-white break-words">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-white wrap-break-word">
               {title || `Welcome Back, ${displayName}`}
             </h1>
           )}
@@ -206,7 +252,7 @@ export const HeaderBanner: React.FC<HeaderBannerProps> = ({
             showCreateButton && (
               <Link
                 href={createButtonHref}
-                className="bg-[#fbab2a] hover:bg-[#e89b1f] active:scale-95 text-white font-semibold text-xs sm:text-sm px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl flex items-center gap-2 shadow-lg transition-all cursor-pointer shrink-0 inline-flex no-underline select-none"
+                className="bg-[#fbab2a] hover:bg-[#e89b1f] active:scale-95 text-white font-semibold text-xs sm:text-sm px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl flex items-center gap-2 shadow-lg transition-all cursor-pointer shrink-0 no-underline select-none"
               >
                 <span>{createButtonText}</span>
                 <FiPlus className="w-4 h-4 stroke-[2.5]" />

@@ -212,6 +212,28 @@ input:-webkit-autofill:active,
   margin-bottom: 0 !important;
 }
 
+/* Antd Select Multiple - clean compact tag styling without dragging input down */
+.ant-select-multiple .ant-select-selector {
+  min-height: 48px !important;
+  padding: 4px 10px !important;
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  border-radius: 14px !important;
+}
+
+.ant-select-multiple .ant-select-selection-item {
+  border: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.ant-select-item-option-selected .ant-select-item-option-state {
+  color: #a31d38 !important;
+  font-size: 14px !important;
+}
+
 /* Password eye icon colour */
 .ant-input-password-icon {
   color: rgba(30, 30, 30, 0.6) !important;

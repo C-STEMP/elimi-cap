@@ -23,6 +23,10 @@ import { DeleteAccountModal } from "../components/DeleteAccountModal";
 import { SuccessModal } from "../components/SuccessModal";
 
 import { useCandidateProfile } from "@/src/features/shared/onboarding/hooks";
+import {
+  useGetMeProfile,
+  usePatchMeProfile,
+} from "@/src/features/shared/account/hooks";
 import { markVerified, updateUser } from "@/store/slices/authSlice";
 import { useUploadFile } from "@/src/features/shared/storage/hooks";
 
@@ -31,6 +35,8 @@ export const SettingsPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const { toast } = useToast();
   const uploadFileMutation = useUploadFile();
+  const { data: meProfile, isLoading: isMeProfileLoading } = useGetMeProfile();
+  const patchMeProfileMutation = usePatchMeProfile();
 
   const user = useAppSelector((state) => state.auth.user);
   const personalInfo = useAppSelector((state) => state.onboarding.personalInfo);
@@ -48,6 +54,7 @@ export const SettingsPage: React.FC = () => {
 
   const isVerified = Boolean(
     user?.isVerified ||
+    meProfile?.identityVerified ||
     candidateProfile?.identityVerified ||
     savedRPLIdentity?.isVerified ||
     savedCentreIdentity?.isVerified ||
@@ -72,6 +79,7 @@ export const SettingsPage: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
 
   const uploadedAvatar =
+    meProfile?.photo?.url ||
     personalInfo?.passportUrl ||
     personalInfo?.passportPreview ||
     (assessorPersonalInfo as any)?.passportUrl ||
@@ -95,36 +103,72 @@ export const SettingsPage: React.FC = () => {
 
   const nameParts = (user?.fullName || "").trim().split(/\s+/).filter(Boolean);
   const realFirstName =
+    meProfile?.personalDetails?.firstName ||
     personalInfo.firstName ||
     centrePersonalInfo.firstName ||
     (nameParts.length > 0 ? nameParts[0] : "");
   const realLastName =
+    meProfile?.personalDetails?.lastName ||
     personalInfo.lastName ||
     centrePersonalInfo.lastName ||
     (nameParts.length > 1 ? nameParts[nameParts.length - 1] : "");
   const realMiddleName =
+    meProfile?.personalDetails?.middleName ||
     personalInfo.middleName ||
     centrePersonalInfo.middleName ||
     (nameParts.length > 2 ? nameParts.slice(1, -1).join(" ") : "");
 
   const realEmail =
-    user?.email || personalInfo.email || centrePersonalInfo.email || "";
+    meProfile?.contactInformation?.emailAddress ||
+    user?.email ||
+    personalInfo.email ||
+    centrePersonalInfo.email ||
+    "";
   const realPhone =
+    meProfile?.contactInformation?.phoneNumber?.number ||
     user?.phoneNumber ||
     personalInfo.phoneNumber ||
     centrePersonalInfo.phoneNumber ||
     "";
-  const realDob = personalInfo.dob || centrePersonalInfo.dob || "";
-  const realGender = personalInfo.gender || centrePersonalInfo.gender || "";
+  const realDob =
+    meProfile?.personalDetails?.dob ||
+    personalInfo.dob ||
+    centrePersonalInfo.dob ||
+    "";
+  const realGender =
+    meProfile?.personalDetails?.gender ||
+    personalInfo.gender ||
+    centrePersonalInfo.gender ||
+    "";
   const realNationality =
-    personalInfo.nationality || centrePersonalInfo.nationality || "";
+    meProfile?.personalDetails?.nationality ||
+    personalInfo.nationality ||
+    centrePersonalInfo.nationality ||
+    "";
   const realCountry =
-    personalInfo.country || centrePersonalInfo.country || "Nigeria";
-  const realState = personalInfo.state || centrePersonalInfo.state || "";
-  const realLga = personalInfo.lga || centrePersonalInfo.lga || "";
+    meProfile?.residentialAddress?.country ||
+    personalInfo.country ||
+    centrePersonalInfo.country ||
+    "Nigeria";
+  const realState =
+    meProfile?.residentialAddress?.state ||
+    personalInfo.state ||
+    centrePersonalInfo.state ||
+    "";
+  const realLga =
+    meProfile?.residentialAddress?.lga ||
+    personalInfo.lga ||
+    centrePersonalInfo.lga ||
+    "";
   const realAddress =
-    personalInfo.streetAddress || centrePersonalInfo.streetAddress || "";
-  const realImpairment = personalInfo.impairment || "";
+    meProfile?.residentialAddress?.address ||
+    personalInfo.streetAddress ||
+    centrePersonalInfo.streetAddress ||
+    "";
+  const realImpairment =
+    meProfile?.accessibility?.impairment ||
+    personalInfo.impairment ||
+    "";
 
   const [profileForm, setProfileForm] = useState<ProfileFormData>({
     firstName: realFirstName,
@@ -162,6 +206,7 @@ export const SettingsPage: React.FC = () => {
       impairment: prev.impairment || realImpairment,
     }));
   }, [
+    meProfile,
     realFirstName,
     realLastName,
     realMiddleName,
@@ -221,6 +266,13 @@ export const SettingsPage: React.FC = () => {
           }),
         );
         dispatch(updateUser({ avatar: asset.url, passportUrl: asset.url }));
+
+        // Sync photoAssetId to profile
+        if (asset.assetId) {
+          patchMeProfileMutation.mutate({
+            photoAssetId: asset.assetId,
+          });
+        }
       }
     } catch {
       // Local preview remains
@@ -252,14 +304,47 @@ export const SettingsPage: React.FC = () => {
         impairment: profileForm.impairment,
       }),
     );
-    setTimeout(() => {
-      setIsSaving(false);
-      toast({
-        type: "success",
-        title: "Settings Saved",
-        description: "Your profile information has been saved successfully!",
-      });
-    }, 600);
+
+    const hasImpairment =
+      Boolean(profileForm.impairment) &&
+      profileForm.impairment !== "No, I do not have an impairment";
+
+    patchMeProfileMutation.mutate(
+      {
+        personalDetails: !isVerified
+          ? {
+              firstName: profileForm.firstName,
+              lastName: profileForm.lastName,
+              middleName: profileForm.middleName?.trim() || undefined,
+              dob: formatToIsoDate(profileForm.dateOfBirth) || "2000-01-01",
+              gender: profileForm.gender,
+              nationality: profileForm.nationality,
+            }
+          : undefined,
+        contactInformation: {
+          emailAddress: profileForm.email,
+          phoneNumber: {
+            countryCode: "+234",
+            number: profileForm.phone,
+          },
+        },
+        residentialAddress: {
+          country: profileForm.country,
+          state: profileForm.stateOfResidence,
+          lga: profileForm.lga,
+          address: profileForm.residentialAddress,
+        },
+        accessibility: {
+          hasImpairment,
+          impairment: hasImpairment ? profileForm.impairment : undefined,
+        },
+      },
+      {
+        onSettled: () => {
+          setIsSaving(false);
+        },
+      },
+    );
   };
 
   return (

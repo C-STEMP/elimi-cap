@@ -8,6 +8,7 @@ import { CalendarWidget } from "@/features/candidate/features/Dashboard/componen
 import { UpcomingCard } from "@/features/candidate/features/Dashboard/components/UpcomingCard";
 
 import { StatusModal } from "@/components/status-modal";
+import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
 import { ApplicationDetailsPageProps, ApplicationFormState } from "../types";
 import {
@@ -418,9 +419,17 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
 
   if (!application) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center text-center gap-3">
-        <p className="text-gray-500 text-lg font-semibold">Application not found</p>
-        <p className="text-gray-400 text-sm">This application may have been removed or the link is invalid.</p>
+      <div className="min-h-[60vh] flex flex-col items-center justify-center text-center gap-4 p-6">
+        <p className="text-gray-700 text-lg font-bold">Application Not Found</p>
+        <p className="text-gray-400 text-sm max-w-md">
+          This application could not be found or you do not have permission to view it.
+        </p>
+        <Button
+          onClick={() => router.push("/dashboard/applications")}
+          className="mt-2"
+        >
+          Back to My Applications
+        </Button>
       </div>
     );
   }

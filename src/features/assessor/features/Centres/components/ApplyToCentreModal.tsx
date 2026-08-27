@@ -45,11 +45,31 @@ export const ApplyToCentreModal: React.FC<ApplyToCentreModalProps> = ({
       return;
     }
 
-    requestMutation.mutate(centre, {
-      onSuccess: () => {
-        onSuccess();
+    const r = role.toLowerCase();
+    let preferredRole: "facilitator" | "panelist" | "lead_panelist" | "observer" | "iv" | "unit_assessor" = "facilitator";
+    if (r.includes("internal") || r.includes("verifier") || r.includes("iv")) {
+      preferredRole = "iv";
+    } else if (r.includes("lead")) {
+      preferredRole = "lead_panelist";
+    } else if (r.includes("panel")) {
+      preferredRole = "panelist";
+    } else if (r.includes("observer")) {
+      preferredRole = "observer";
+    } else if (r.includes("assessor") || r.includes("unit")) {
+      preferredRole = "unit_assessor";
+    }
+
+    requestMutation.mutate(
+      {
+        centreId: centre,
+        preferredRole,
       },
-    });
+      {
+        onSuccess: () => {
+          onSuccess();
+        },
+      },
+    );
   };
 
   if (!isOpen) return null;
@@ -105,6 +125,7 @@ export const ApplyToCentreModal: React.FC<ApplyToCentreModalProps> = ({
             placeholder={
               isLoadingCentres ? "Loading centres..." : "Select Centre"
             }
+            loading={isLoadingCentres}
             value={centre}
             onChange={(e) => {
               setCentre(e.target.value);

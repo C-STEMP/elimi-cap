@@ -114,6 +114,7 @@ export interface AssessorPersonalInfoState {
 
 export interface AssessorDetailsState {
   assessorId: string;
+  qualification?: string;
   qualifications: string[];
   qaaCertificateAssetId?: string;
   qaaCertificateName?: string;

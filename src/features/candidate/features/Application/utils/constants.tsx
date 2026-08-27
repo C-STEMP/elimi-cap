@@ -217,9 +217,9 @@ export const getStagesConfig = ({
   const appFormStage: StageConfig = {
     id: "app-form",
     title: "Application Form",
-    status: isDraft ? "Draft" : "Approved",
-    statusBg: isDraft ? "bg-[#FEF3C7]" : "bg-[#1E7F4C1A]",
-    statusText: isDraft ? "text-[#D97706]" : "text-[#1E7F4C]",
+    status: isDraft ? "Draft" : "Submitted",
+    statusBg: isDraft ? "bg-[#FEF3C7]" : "bg-[#E8F5E9]",
+    statusText: isDraft ? "text-[#D97706]" : "text-[#2E7D32]",
     subtext: isDraft ? "Saved as draft" : `Submitted on: ${formattedSubmittedDate}`,
     actionText: isDraft ? "Edit" : "View",
     actionVariant: isDraft ? "amber" : "outline",

@@ -7,6 +7,8 @@ import { useUploadFile } from "@/src/features/shared/storage/hooks";
 import type { StorageAsset } from "@/src/features/shared/storage/api";
 import { CameraCaptureModal } from "./camera-capture-modal";
 
+import { patchMeProfileApi } from "@/src/features/shared/account/api";
+
 export interface PassportUploadProps {
   onImageChange?: (file: File | null, asset?: StorageAsset | null) => void;
   defaultImage?: string;
@@ -73,6 +75,13 @@ export const PassportUpload: React.FC<PassportUploadProps> = ({
       const asset = await uploadFileMutation.mutateAsync({ file, purpose });
       if (asset?.url) {
         setPreview(asset.url);
+      }
+      if (asset?.assetId && purpose === "passport") {
+        try {
+          await patchMeProfileApi({ photoAssetId: asset.assetId });
+        } catch {
+          // Non-blocking if meProfile cannot be patched yet
+        }
       }
       onImageChange?.(file, asset);
     } catch {

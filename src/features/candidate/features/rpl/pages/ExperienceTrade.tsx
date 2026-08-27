@@ -21,6 +21,7 @@ import { useRplApplicationSubmission } from "../hooks/useRplApplicationSubmissio
 import {
   useGetTradeDetail,
   useGetTradesBySector,
+  useGetUnitsByTrade,
 } from "@/src/features/shared/reference/hooks";
 
 import {
@@ -80,6 +81,22 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
 
   const { data: tradeDetail } = useGetTradeDetail(savedTrade);
   const { data: remoteTrades = [] } = useGetTradesBySector(savedSector);
+  const {
+    data: remoteUnits = [],
+    isLoading: isLoadingUnits,
+    isFetching: isFetchingUnits,
+  } = useGetUnitsByTrade(savedTrade);
+  const isUnitsLoading = isLoadingUnits || isFetchingUnits;
+
+  const unitOptions =
+    remoteUnits && remoteUnits.length > 0
+      ? remoteUnits.map((u) => ({
+          label: u.referenceNumber
+            ? `${u.referenceNumber}: ${u.title}`
+            : u.title,
+          value: u.id,
+        }))
+      : [];
 
   const isLikelyId = (str?: string) => {
     if (!str) return false;
@@ -300,6 +317,7 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
 
   const [showConfirmDraftModal, setShowConfirmDraftModal] = useState(false);
   const [showDraftModal, setShowDraftModal] = useState(false);
+  const [showSavingDraftModal, setShowSavingDraftModal] = useState(false);
   const { saveDraft } = useRplApplicationSubmission();
 
   const handleSaveDraft = () => {
@@ -308,10 +326,41 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
 
   const handleConfirmSaveDraft = async () => {
     setShowConfirmDraftModal(false);
+    setShowSavingDraftModal(true);
     dispatch(setRPLExperienceTrade(form));
-    await saveDraft();
-    setShowDraftModal(true);
+    try {
+      await saveDraft();
+      setShowSavingDraftModal(false);
+      setShowDraftModal(true);
+    } catch {
+      setShowSavingDraftModal(false);
+    }
   };
+
+  // Sanitize individualUnit against remote trade units when loaded
+  useEffect(() => {
+    if (
+      remoteUnits.length > 0 &&
+      Array.isArray(form.individualUnit) &&
+      form.individualUnit.length > 0
+    ) {
+      const validIds = new Set(remoteUnits.map((u) => u.id));
+      const titleToId = new Map(
+        remoteUnits.map((u) => [u.title.toLowerCase(), u.id]),
+      );
+      const sanitized = form.individualUnit
+        .map((uVal) => {
+          if (validIds.has(uVal)) return uVal;
+          const mapped = titleToId.get(uVal.toLowerCase());
+          return mapped || null;
+        })
+        .filter((x): x is string => Boolean(x));
+
+      if (JSON.stringify(sanitized) !== JSON.stringify(form.individualUnit)) {
+        update("individualUnit", sanitized);
+      }
+    }
+  }, [remoteUnits]);
 
   const validateForm = () => {
     let valid = true;
@@ -321,6 +370,28 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
     if (!result.success) {
       Object.assign(newErrors, extractZodErrors(result));
       valid = false;
+    }
+
+    if (form.assessmentType === "Modular Assessment") {
+      if (remoteUnits.length === 0) {
+        newErrors.assessmentType =
+          "No modular units are available for this trade. Please select 'Full Qualification Assessment'.";
+        valid = false;
+      } else if (!form.individualUnit || form.individualUnit.length === 0) {
+        newErrors.individualUnit =
+          "Please select at least one unit for Modular Assessment.";
+        valid = false;
+      } else {
+        const validIds = new Set(remoteUnits.map((u) => u.id));
+        const invalidSelected = form.individualUnit.filter(
+          (id) => !validIds.has(id),
+        );
+        if (invalidSelected.length > 0) {
+          newErrors.individualUnit =
+            "One or more selected units are invalid for this trade. Please re-select valid units.";
+          valid = false;
+        }
+      }
     }
 
     // Validate start and end dates
@@ -405,28 +476,21 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input
-              label={
-                <span>
-                  Qualification Title
-                  <span className="text-primary-solid ml-0.5">*</span>
-                </span>
-              }
-              type="text"
-              placeholder="Enter qualification title"
-              value={form.qualificationTitle}
-              error={errors.qualificationTitle}
-              onChange={(e) => update("qualificationTitle", e.target.value)}
-            />
-
-            <Input
-              label="Qualification Code"
-              type="text"
-              value={form.qualificationCode}
-              onChange={() => {}}
-              disabled
-              className="bg-input-bg text-text-dark font-medium border-transparent cursor-not-allowed opacity-90"
-            />
+            <div className="sm:col-span-2">
+              <Input
+                label={
+                  <span>
+                    Qualification Title
+                    <span className="text-primary-solid ml-0.5">*</span>
+                  </span>
+                }
+                type="text"
+                placeholder="Enter qualification title"
+                value={form.qualificationTitle}
+                error={errors.qualificationTitle}
+                onChange={(e) => update("qualificationTitle", e.target.value)}
+              />
+            </div>
 
             <Select
               label={
@@ -491,15 +555,23 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
                   </span>
                 </span>
               }
-              placeholder="Select units"
+              placeholder={isUnitsLoading ? "Loading units..." : "Select units"}
+              loading={isUnitsLoading}
               multiple={true}
               disabled={form.assessmentType === "Full Qualification Assessment"}
-              options={[
-                "Unit 1: Health & Safety Practices",
-                "Unit 2: Trade Operations & Tools",
-                "Unit 3: Quality Control & Supervision",
-              ]}
+              options={unitOptions}
               value={form.individualUnit}
+              error={errors.individualUnit}
+              notFoundContent={
+                isUnitsLoading
+                  ? "Loading units..."
+                  : "No units for this assessment type"
+              }
+              helperText={
+                isUnitsLoading
+                  ? "Fetching available modular units for this trade..."
+                  : undefined
+              }
               onChange={(e) => update("individualUnit", e.target.value)}
             />
           </div>
@@ -512,41 +584,30 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Select
+            <Input
               label={
                 <span>
                   Occupation
                   <span className="text-primary-solid ml-0.5">*</span>
                 </span>
               }
-              placeholder="Select"
-              options={[
-                "Carpenter / Joiner",
-                "Electrician",
-                "Plumber",
-                "Welder / Fabricator",
-                "Mason / Bricklayer",
-                "Automotive Technician",
-              ]}
+              type="text"
+              placeholder="e.g. Carpenter, Electrician, Welder"
               value={form.occupation}
               error={errors.occupation}
               onChange={(e) => update("occupation", e.target.value)}
             />
 
-            <Select
+            <Input
               label={
                 <span>
                   Years Of Experience
                   <span className="text-primary-solid ml-0.5">*</span>
                 </span>
               }
-              placeholder="Select"
-              options={[
-                "1 - 2 years",
-                "3 - 5 years",
-                "6 - 10 years",
-                "10+ years",
-              ]}
+              type="number"
+              min={0}
+              placeholder="e.g. 5"
               value={form.yearsOfExperience}
               error={errors.yearsOfExperience}
               onChange={(e) => update("yearsOfExperience", e.target.value)}
@@ -792,6 +853,11 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
         variant="save-draft-confirm"
         onClose={() => setShowConfirmDraftModal(false)}
         onAction={handleConfirmSaveDraft}
+      />
+
+      <StatusModal
+        isOpen={showSavingDraftModal}
+        variant="saving-draft"
       />
 
       <StatusModal

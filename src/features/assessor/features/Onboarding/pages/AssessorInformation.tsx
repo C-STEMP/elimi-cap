@@ -13,14 +13,15 @@ import { useUploadFile } from "@/src/features/shared/storage/hooks";
 import { useAppDispatch, useAppSelector } from "@/src/store/hooks";
 import { setSidebarVariant } from "@/src/store/slices/authSlice";
 import { setAssessorDetails } from "@/src/store/slices/onboardingSlice";
+import { SelectOption } from "@/src/components/ui/select";
 import { ASSESSOR_ROUTES } from "@/src/features/assessor/utils/assessorRoutes";
 import { useAssessorOnboarding } from "../hooks/useOnboarding";
 
-const QUALIFICATION_OPTIONS = [
-  "NSQ Level 3 - Assessor Certificate",
-  "NSQ Level 4 - Internal Quality Manager (IQM)",
-  "QAA Competency Assessor Certificate",
-  "TVET Master Assessor",
+export const QUALIFICATION_OPTIONS: SelectOption[] = [
+  { value: "QAA", label: "QAA - Quality Assurance Assessor" },
+  { value: "IQM", label: "IQM - Internal Quality Manager" },
+  { value: "IV", label: "IV - Internal Verifier" },
+  { value: "EV", label: "EV - External Verifier" },
 ];
 
 export const AssessorInformation: React.FC = () => {
@@ -33,7 +34,10 @@ export const AssessorInformation: React.FC = () => {
 
   const [form, setForm] = useState({
     assessorId: saved.assessorId || "",
-    qualification: saved.qualifications?.[0] || "",
+    qualification:
+      saved.qualification ||
+      (Array.isArray(saved.qualifications) ? saved.qualifications[0] : "") ||
+      "QAA",
   });
 
   const [qaaFile, setQaaFile] = useState<{
@@ -80,7 +84,11 @@ export const AssessorInformation: React.FC = () => {
       const d = (getOnboarding.data.data as any)?.assessorDetails || {};
       const next = {
         assessorId: d.assessorNo || form.assessorId,
-        qualification: form.qualification,
+        qualification:
+          d.qualification ||
+          (Array.isArray(d.qualifications) ? d.qualifications[0] : "") ||
+          form.qualification ||
+          "QAA",
       };
       setForm(next);
       dispatch(setAssessorDetails(next));
@@ -92,6 +100,7 @@ export const AssessorInformation: React.FC = () => {
     dispatch(
       setAssessorDetails({
         [field]: value,
+        qualification: field === "qualification" ? value : form.qualification,
         qualifications: field === "qualification" ? [value] : [form.qualification],
       }),
     );
@@ -215,9 +224,12 @@ export const AssessorInformation: React.FC = () => {
         },
       },
       {
-        onSettled: () => {
+        onSuccess: () => {
           setIsSubmitting(false);
           router.push(ASSESSOR_ROUTES.onboarding.verifyIdentity);
+        },
+        onError: () => {
+          setIsSubmitting(false);
         },
       },
     );
@@ -259,7 +271,7 @@ export const AssessorInformation: React.FC = () => {
           />
           <Select
             label={<span>Qualification<span className="text-primary-solid ml-0.5">*</span></span>}
-            placeholder="Multi-Select"
+            placeholder="Select Qualification"
             value={form.qualification}
             onChange={(e) => update("qualification", e.target.value)}
             options={QUALIFICATION_OPTIONS}

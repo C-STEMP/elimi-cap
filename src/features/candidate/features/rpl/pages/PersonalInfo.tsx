@@ -30,6 +30,7 @@ import { useRplApplicationSubmission } from "../hooks/useRplApplicationSubmissio
 import {
   IMPAIRMENT_OPTIONS,
   GENDER_OPTIONS,
+  parseImpairmentString,
 } from "@/features/candidate/utils";
 
 export interface RPLPersonalInfoProps {
@@ -69,23 +70,16 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
     impairment: savedPersonalInfo.impairment ?? "None / No impairment",
   });
 
-  const [selectedImpairments, setSelectedImpairments] = useState<string[]>(() => {
-    if (
-      !savedPersonalInfo.impairment ||
-      savedPersonalInfo.impairment === "No" ||
-      savedPersonalInfo.impairment === "None"
-    ) {
-      return ["None / No impairment"];
-    }
-    return savedPersonalInfo.impairment
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
-  });
+  const initialImpairmentState = parseImpairmentString(
+    savedPersonalInfo.impairment,
+  );
+  const [selectedImpairments, setSelectedImpairments] = useState<string[]>(
+    initialImpairmentState.list,
+  );
+  const [otherImpairment, setOtherImpairment] = useState(
+    initialImpairmentState.otherText,
+  );
 
-  const [otherImpairment, setOtherImpairment] = useState("");
-
-  // Hydrate from getOnboarding API response if available
   useEffect(() => {
     if (getOnboarding.data?.data) {
       const apiData = getOnboarding.data.data as any;
@@ -100,11 +94,10 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
         ci?.emailAddress || savedPersonalInfo.email || authUser?.email || "";
 
       const rawImpairment =
-        acc?.impairment || savedPersonalInfo.impairment || "None / No impairment";
-      const parsedImpairments =
-        rawImpairment === "No" || rawImpairment === "None" || !rawImpairment
-          ? ["None / No impairment"]
-          : rawImpairment.split(",").map((s: string) => s.trim()).filter(Boolean);
+        acc?.impairment ||
+        savedPersonalInfo.impairment ||
+        "None / No impairment";
+      const parsed = parseImpairmentString(rawImpairment);
 
       const hydrated = {
         firstName: pd?.firstName || savedPersonalInfo.firstName || "",
@@ -120,13 +113,18 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
         state: ra?.state || savedPersonalInfo.state || "",
         lga: ra?.lga || savedPersonalInfo.lga || "",
         streetAddress: ra?.address || savedPersonalInfo.streetAddress || "",
-        completedBefore: "no",
-        learnerId: "",
-        impairment: parsedImpairments.join(", "),
+        impairment: parsed.list
+          .map((imp) =>
+            imp === "Other" && parsed.otherText
+              ? `Other: ${parsed.otherText}`
+              : imp,
+          )
+          .join(", "),
       };
 
-      setForm(hydrated);
-      setSelectedImpairments(parsedImpairments);
+      setForm((prev) => ({ ...prev, ...hydrated }));
+      setSelectedImpairments(parsed.list);
+      setOtherImpairment(parsed.otherText);
       dispatch(setPersonalInfo(hydrated));
 
       if (passportAssetId || passportUrl) {
@@ -150,8 +148,14 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
   const [passportError, setPassportError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { countries, states, cities, resolvedCountryCode } =
-    useCountryStateCity(form.country, form.state);
+  const {
+    countries,
+    states,
+    cities,
+    resolvedCountryCode,
+    isLoadingStates,
+    isLoadingLgas,
+  } = useCountryStateCity(form.country, form.state);
 
   useEffect(() => {
     dispatch(setSidebarVariant("rpl-form"));
@@ -178,7 +182,11 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
     dispatch(
-      setPersonalInfo({ [field]: value, state: nextState, lga: nextLga } as any),
+      setPersonalInfo({
+        [field]: value,
+        state: nextState,
+        lga: nextLga,
+      } as any),
     );
   };
 
@@ -218,7 +226,7 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
       passportFile ||
       passportDefaultImage ||
       savedPersonalInfo.passportUrl ||
-      savedPersonalInfo.passportAssetId
+      savedPersonalInfo.passportAssetId,
     );
 
     if (!hasPassport) {
@@ -365,14 +373,12 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
       className="w-full flex flex-col gap-6 select-text max-w-2xl mx-auto pb-10"
     >
       <form onSubmit={handleSubmit} className="w-full flex flex-col gap-4">
-        {/* Step Progress Bar */}
         <div className="w-full max-w-109.75 flex justify-start">
           <div className="w-46.5 h-2.5 bg-primary-solid/15 rounded-[10px] overflow-hidden">
             <div className="w-1/4 h-full bg-primary-solid rounded-[10px] transition-all duration-300" />
           </div>
         </div>
 
-        {/* Step indicator + Passport Upload */}
         <div className="flex flex-col sm:flex-row items-start justify-between gap-4 sm:gap-6">
           <div className="flex flex-col gap-2">
             <h1 className="text-2xl xl:text-[26px] font-extrabold tracking-tight text-primary">
@@ -380,7 +386,8 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
             </h1>
             <p className="text-xs xl:text-sm text-neutral-secondary font-normal leading-relaxed">
               Provide your personal details to help us identify you and maintain
-              your <br className="hidden sm:inline" /> official assessment records.
+              your <br className="hidden sm:inline" /> official assessment
+              records.
             </p>
           </div>
 
@@ -400,9 +407,7 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
                 dispatch(
                   setPersonalInfo({
                     passportAssetId:
-                      asset?.assetId ||
-                      savedPersonalInfo.passportAssetId ||
-                      "",
+                      asset?.assetId || savedPersonalInfo.passportAssetId || "",
                     passportUrl:
                       previewUrl || savedPersonalInfo.passportUrl || "",
                     passportFileName:
@@ -423,7 +428,6 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
           />
         </div>
 
-        {/* Section 1: Personal Information Fields */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-2">
           <Input
             label={
@@ -500,7 +504,6 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
           />
         </div>
 
-        {/* Section 2: Contact Information */}
         <div className="flex flex-col gap-4 mt-2">
           <h2 className="text-base sm:text-lg font-bold text-text-dark flex items-center gap-1.5">
             Contact Information <InfoIcon sectionName="Contact Information" />
@@ -545,7 +548,6 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
           </div>
         </div>
 
-        {/* Section 3: Residential Address */}
         <div className="flex flex-col gap-4 mt-2">
           <h2 className="text-base sm:text-lg font-bold text-text-dark flex items-center gap-1.5">
             Residential Address <InfoIcon sectionName="Residential Address" />
@@ -574,12 +576,16 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
                 </span>
               }
               placeholder={
-                form.country ? "Select state" : "Select country first"
+                isLoadingStates
+                  ? "Loading states..."
+                  : form.country
+                    ? "Select state"
+                    : "Select country first"
               }
               options={states}
               value={form.state}
               error={errors.state}
-              disabled={!form.country}
+              disabled={isLoadingStates || !form.country || states.length === 0}
               onChange={(e) => update("state", e.target.value)}
             />
 
@@ -590,11 +596,17 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
                   <span className="text-primary-solid ml-0.5">*</span>
                 </span>
               }
-              placeholder={form.state ? "Select city" : "Select state first"}
+              placeholder={
+                isLoadingLgas
+                  ? "Loading LGAs..."
+                  : form.state
+                    ? "Select city / LGA"
+                    : "Select state first"
+              }
               options={cities}
               value={form.lga}
               error={errors.lga}
-              disabled={!form.state}
+              disabled={isLoadingLgas || !form.state || cities.length === 0}
               onChange={(e) => update("lga", e.target.value)}
             />
 
@@ -614,7 +626,6 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
           </div>
         </div>
 
-        {/* Section 4: Have You Completed An Assessment Before */}
         <div className="flex flex-col gap-4 mt-2">
           <h2 className="text-base sm:text-lg font-bold text-text-dark flex items-center gap-1.5">
             Have You Completed An Assessment Before{" "}
@@ -696,7 +707,6 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
           </div>
         </div>
 
-        {/* Section 5: Accessibility / Impairment (Comprehensive Multi-select) */}
         <div className="flex flex-col gap-4 mt-2">
           <h2 className="text-base sm:text-lg font-bold text-text-dark flex items-center gap-1.5">
             Accessibility <InfoIcon sectionName="Accessibility" />
@@ -716,7 +726,7 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
                     key={opt}
                     type="button"
                     onClick={() => handleToggleImpairment(opt)}
-                    className={`px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-2 cursor-pointer border text-left leading-snug break-words ${
+                    className={`px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-2 cursor-pointer border text-left leading-snug wrap-break-word ${
                       isSelected
                         ? "bg-[#a31d38] text-white border-[#a31d38] shadow-xs"
                         : "bg-white text-neutral-primary border-gray-200 hover:border-gray-300 hover:bg-gray-50"
@@ -729,7 +739,7 @@ export const RPLPersonalInfo: React.FC<RPLPersonalInfoProps> = ({
                           : "border-gray-300 bg-white"
                       }`}
                     >
-                      {isSelected && <FiCheck className="w-3 h-3 stroke-[3]" />}
+                      {isSelected && <FiCheck className="w-3 h-3 stroke-3" />}
                     </div>
                     <span>{opt}</span>
                   </button>

@@ -84,6 +84,36 @@ export async function assignInternalVerifierApi(
   });
 }
 
+export async function curateInterviewPanelApi(
+  id: string,
+  payload: {
+    assessorIds: string[];
+    leadAssessorId: string;
+    observerIvAssessorId?: string;
+  },
+): Promise<any> {
+  return capFetch<any>(`/applications/${id}/interview/panel`, {
+    method: "POST",
+    data: payload,
+  });
+}
+
+export async function scheduleInterviewApi(
+  id: string,
+  payload: {
+    scheduledAt: string;
+    mode: "physical" | "online";
+    location?: string;
+    useCentreAddress?: boolean;
+    link?: string;
+  },
+): Promise<any> {
+  return capFetch<any>(`/applications/${id}/interview/schedule`, {
+    method: "POST",
+    data: payload,
+  });
+}
+
 export async function forwardToAwardingBodyApi(
   id: string,
 ): Promise<Application> {

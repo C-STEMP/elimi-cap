@@ -1,19 +1,31 @@
 import {
+  getAssessorCentresApi,
+  getAssessorCentreApplicationsApi,
   getAssessorRetainedRequestsApi,
   requestRetainedAssessorApi,
+  type AssessorCentreItem,
+  type RetainedAssessorRequest,
+  type RequestRetainedAssessorPayload,
+  type CentreAssessorApplication,
 } from "@/src/features/shared/assessor/api";
-import type { RetainedAssessorRequest } from "@/src/features/shared/centre/api";
 
-export type { RetainedAssessorRequest };
+export type {
+  AssessorCentreItem,
+  RetainedAssessorRequest,
+  RequestRetainedAssessorPayload,
+  CentreAssessorApplication,
+};
 
-export async function getAssessorCentresApi(): Promise<
-  RetainedAssessorRequest[]
-> {
-  return getAssessorRetainedRequestsApi();
-}
+export {
+  getAssessorCentresApi,
+  getAssessorCentreApplicationsApi,
+  getAssessorRetainedRequestsApi,
+  requestRetainedAssessorApi,
+};
 
 export async function requestToJoinCentreApi(
-  centreId: string,
+  payload: string | RequestRetainedAssessorPayload,
 ): Promise<RetainedAssessorRequest> {
-  return requestRetainedAssessorApi(centreId);
+  return requestRetainedAssessorApi(payload);
 }
+

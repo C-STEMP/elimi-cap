@@ -11,46 +11,40 @@ interface CriteriaItem {
   comments: string;
 }
 
-const DEFAULT_CRITERIA: CriteriaItem[] = [
+const INITIAL_CRITERIA: CriteriaItem[] = [
   {
     id: "crit-1",
-    title: "Demonstrated correct use of surface preparation tools and brushes",
+    title: "Demonstrated correct selection and safe handling of tools and equipment",
     demonstrated: true,
     comments: "",
   },
   {
     id: "crit-2",
-    title: "Followed safety procedures, dust protection, and PPE requirements",
+    title: "Followed health and safety procedures, hazard controls, and PPE requirements",
     demonstrated: true,
     comments: "",
   },
   {
     id: "crit-3",
-    title: "Performed tasks according to workplace coating thickness specifications",
+    title: "Performed practical tasks according to occupational standard specifications",
     demonstrated: true,
     comments: "",
   },
   {
     id: "crit-4",
-    title: "Demonstrated technical skills in POP mixing and feathering",
+    title: "Demonstrated technical proficiency and structured problem-solving",
     demonstrated: true,
     comments: "",
   },
   {
     id: "crit-5",
-    title: "Solved problems (repaired hairline plaster shrinkage crack)",
+    title: "Communicated effectively and maintained organized work area",
     demonstrated: true,
     comments: "",
   },
   {
     id: "crit-6",
-    title: "Communicated clearly and maintained clean working space",
-    demonstrated: true,
-    comments: "",
-  },
-  {
-    id: "crit-7",
-    title: "Completed task within designated 90-minute timeframe",
+    title: "Completed practical demonstration within designated timeframe",
     demonstrated: true,
     comments: "",
   },
@@ -66,7 +60,7 @@ export const SkillsDemonstrationForm: React.FC<
   SkillsDemonstrationFormProps
 > = ({ candidateName, onBack, onSubmit }) => {
   const { toast } = useToast();
-  const [criteria, setCriteria] = useState<CriteriaItem[]>(DEFAULT_CRITERIA);
+  const [criteria, setCriteria] = useState<CriteriaItem[]>(INITIAL_CRITERIA);
   const [verdict, setVerdict] = useState<"Competent" | "Not Competent">("Competent");
   const [assessorSigned, setAssessorSigned] = useState(false);
 

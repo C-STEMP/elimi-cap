@@ -87,6 +87,9 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
 
   const [showConfirmDraftModal, setShowConfirmDraftModal] = useState(false);
   const [showDraftModal, setShowDraftModal] = useState(false);
+  const [showSavingDraftModal, setShowSavingDraftModal] = useState(false);
+  const [showSubmittingModal, setShowSubmittingModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { saveDraft, submitApplication } = useRplApplicationSubmission();
 
   const handleSaveDraft = () => {
@@ -95,8 +98,28 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
 
   const handleConfirmSaveDraft = async () => {
     setShowConfirmDraftModal(false);
-    await saveDraft();
-    setShowDraftModal(true);
+    setShowSavingDraftModal(true);
+    try {
+      await saveDraft();
+      setShowSavingDraftModal(false);
+      setShowDraftModal(true);
+    } catch (err: any) {
+      setShowSavingDraftModal(false);
+      const errorMsg =
+        (err?.details &&
+          Array.isArray(err.details) &&
+          err.details
+            .map((d: any) => d.issue || d.message)
+            .filter(Boolean)
+            .join(". ")) ||
+        err?.message ||
+        "Failed to save draft application.";
+      toast({
+        type: "error",
+        title: "Draft Save Error",
+        description: errorMsg,
+      });
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -107,9 +130,32 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
 
   const handleConfirmSubmit = async () => {
     setShowConfirmSubmitModal(false);
-    await submitApplication(declarations);
-    saveOnboardedStatus(true);
-    setShowSubmitModal(true);
+    setShowSubmittingModal(true);
+    setIsSubmitting(true);
+    try {
+      await submitApplication(declarations);
+      saveOnboardedStatus(true);
+      setShowSubmittingModal(false);
+      setShowSubmitModal(true);
+    } catch (err: any) {
+      setShowSubmittingModal(false);
+      const errorMsg =
+        (err?.details &&
+          Array.isArray(err.details) &&
+          err.details
+            .map((d: any) => d.issue || d.message)
+            .filter(Boolean)
+            .join(". ")) ||
+        err?.message ||
+        "Failed to submit application. Please verify your selected units and try again.";
+      toast({
+        type: "error",
+        title: "Submission Error",
+        description: errorMsg,
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -377,6 +423,16 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
         variant="save-draft-confirm"
         onClose={() => setShowConfirmDraftModal(false)}
         onAction={handleConfirmSaveDraft}
+      />
+
+      <StatusModal
+        isOpen={showSavingDraftModal}
+        variant="saving-draft"
+      />
+
+      <StatusModal
+        isOpen={showSubmittingModal}
+        variant="submitting-application"
       />
 
       <StatusModal

@@ -16,7 +16,9 @@ export type StatusModalVariant =
   | "payment-successful"
   | "payment-cancelled"
   | "payment-unsuccessful"
-  | "processing-payment";
+  | "processing-payment"
+  | "submitting-application"
+  | "saving-draft";
 
 interface StatusModalProps {
   isOpen: boolean;
@@ -123,11 +125,21 @@ export const StatusModal: React.FC<StatusModalProps> = ({
         />
       );
     }
-    if (variant === "processing-payment") {
+    if (
+      variant === "processing-payment" ||
+      variant === "submitting-application" ||
+      variant === "saving-draft"
+    ) {
       return (
         <Image
           src={ASSETS_URL.loadingIcon}
-          alt="Processing Payment"
+          alt={
+            variant === "submitting-application"
+              ? "Submitting Application"
+              : variant === "saving-draft"
+                ? "Saving Draft"
+                : "Processing Payment"
+          }
           width={100}
           height={100}
           className="w-25 h-25 object-contain animate-spin my-2 shrink-0 mx-auto"
@@ -190,17 +202,21 @@ export const StatusModal: React.FC<StatusModalProps> = ({
         ? "Submit Application?"
         : variant === "draft-saved"
           ? "Progress Saved"
-          : variant === "application-submitted"
-            ? "Application Submit"
-            : variant === "payment-successful"
-              ? "Payment Successful"
-              : variant === "payment-cancelled"
-                ? "Payment Cancelled"
-                : variant === "payment-unsuccessful"
-                  ? "Payment Unsuccessful"
-                  : variant === "processing-payment"
-                    ? "Processing Payment"
-                    : "Success");
+          : variant === "saving-draft"
+            ? "Saving Draft"
+            : variant === "submitting-application"
+              ? "Submitting Application"
+              : variant === "application-submitted"
+                ? "Application Submitted"
+                : variant === "payment-successful"
+                  ? "Payment Successful"
+                  : variant === "payment-cancelled"
+                    ? "Payment Cancelled"
+                    : variant === "payment-unsuccessful"
+                      ? "Payment Unsuccessful"
+                      : variant === "processing-payment"
+                        ? "Processing Payment"
+                        : "Success");
 
   const modalDescription =
     description ||
@@ -210,17 +226,21 @@ export const StatusModal: React.FC<StatusModalProps> = ({
         ? "Are you sure you want to submit your Recognition of Prior Learning (RPL) application? Once submitted, your application will be locked for review by your selected Assessment Centre."
         : variant === "draft-saved"
           ? "Great! Your progress has been securely saved as a draft. You can return at any time to continue your application from where you left off. No information you've entered will be lost."
-          : variant === "application-submitted"
-            ? "Thank you for submitting your Recognition of Prior Learning (RPL) application. Your application has been successfully submitted and is now awaiting review by your selected Assessment Centre."
-            : variant === "payment-successful"
-              ? "Your payment was made successfully"
-              : variant === "payment-cancelled"
-                ? "Your payment was cancelled"
-                : variant === "payment-unsuccessful"
-                  ? "Your payment was not successful"
-                  : variant === "processing-payment"
-                    ? "Please wait while we process your payment"
-                    : "");
+          : variant === "saving-draft"
+            ? "Please wait while we save your application progress..."
+            : variant === "submitting-application"
+              ? "Please wait while we submit your application..."
+              : variant === "application-submitted"
+                ? "Thank you for submitting your Recognition of Prior Learning (RPL) application. Your application has been successfully submitted and is now awaiting review by your selected Assessment Centre."
+                : variant === "payment-successful"
+                  ? "Your payment was made successfully"
+                  : variant === "payment-cancelled"
+                    ? "Your payment was cancelled"
+                    : variant === "payment-unsuccessful"
+                      ? "Your payment was not successful"
+                      : variant === "processing-payment"
+                        ? "Please wait while we process your payment"
+                        : "");
 
   const modalActionLabel =
     actionLabel !== undefined
@@ -234,11 +254,17 @@ export const StatusModal: React.FC<StatusModalProps> = ({
             : variant === "payment-cancelled" ||
                 variant === "payment-unsuccessful"
               ? "Try again"
-              : variant === "processing-payment"
+              : variant === "processing-payment" ||
+                  variant === "submitting-application" ||
+                  variant === "saving-draft"
                 ? undefined
                 : "Go To Dashboard";
 
-  const isClosable = !!onClose && variant !== "processing-payment";
+  const isClosable =
+    !!onClose &&
+    variant !== "processing-payment" &&
+    variant !== "submitting-application" &&
+    variant !== "saving-draft";
 
   return (
     <Modal

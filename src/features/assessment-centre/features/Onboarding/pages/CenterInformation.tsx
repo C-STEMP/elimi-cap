@@ -18,6 +18,7 @@ import { ASSESSMENT_CENTRE_ROUTES } from "@/features/assessment-centre/utils/cen
 import { useOnboarding } from "@/src/features/assessment-centre/features/Onboarding/hooks";
 import { useUploadFile } from "@/src/features/shared/storage/hooks";
 import { useGetBanks } from "@/src/features/shared/reference/hooks";
+import { patchCentreProfileApi } from "@/src/features/shared/centre/api";
 import { useAppDispatch, useAppSelector } from "@/src/store/hooks";
 import { setCentreInformation } from "@/src/store/slices/onboardingSlice";
 import { SelectOption } from "@/src/components/ui/select";
@@ -161,6 +162,11 @@ export const CenterInformation: React.FC = () => {
         if (asset?.assetId) {
           setLogoAssetId(asset.assetId);
           dispatch(setCentreInformation({ logoAssetId: asset.assetId }));
+          try {
+            await patchCentreProfileApi({ logoAssetId: asset.assetId });
+          } catch {
+            // Non-blocking
+          }
         }
         if (asset?.url) {
           setLogoPreview(asset.url);

@@ -30,21 +30,29 @@ export interface ApplicationEventItem {
 }
 
 export interface NotificationListParams {
+  platform?: string;
+  page?: number;
   limit?: number;
   cursor?: string;
   read?: boolean;
+  unreadOnly?: boolean;
   category?: string;
   status?: string;
+  search?: string;
 }
 
 export async function getNotificationsApi(
   params?: NotificationListParams,
 ): Promise<NotificationItem[]> {
+  const queryParams = {
+    platform: "cap",
+    ...params,
+  };
   try {
     const res = await orchestratorClient.get<{ data: NotificationItem[] }>(
       "/notifications",
       {
-        params,
+        params: queryParams,
       },
     );
     return res.data?.data || [];
@@ -53,7 +61,7 @@ export async function getNotificationsApi(
     try {
       const capEvents = await capClient.get<{ data: ApplicationEventItem[] }>(
         "/candidate/events",
-        { params },
+        { params: queryParams },
       );
       return (capEvents.data?.data || []).map((ev) => ({
         id: ev.id,
@@ -78,10 +86,19 @@ export async function getNotificationsApi(
   }
 }
 
-export async function getUnreadCountApi(): Promise<number> {
+export async function getUnreadCountApi(params?: {
+  platform?: string;
+}): Promise<number> {
+  const queryParams = {
+    platform: "cap",
+    ...params,
+  };
   try {
     const res = await orchestratorClient.get<{ data: { unreadCount: number } }>(
       "/notifications/unread-count",
+      {
+        params: queryParams,
+      },
     );
     return res.data?.data?.unreadCount ?? 0;
   } catch {
@@ -89,25 +106,51 @@ export async function getUnreadCountApi(): Promise<number> {
   }
 }
 
-export async function markNotificationReadApi(id: string): Promise<void> {
+export async function markNotificationReadApi(
+  id: string,
+  params?: { platform?: string },
+): Promise<void> {
+  const queryParams = {
+    platform: "cap",
+    ...params,
+  };
   try {
-    await orchestratorClient.patch(`/notifications/${id}/read`);
+    await orchestratorClient.patch(`/notifications/${id}/read`, null, {
+      params: queryParams,
+    });
   } catch {
     // Graceful fallback
   }
 }
 
-export async function markAllNotificationsReadApi(): Promise<void> {
+export async function markAllNotificationsReadApi(params?: {
+  platform?: string;
+}): Promise<void> {
+  const queryParams = {
+    platform: "cap",
+    ...params,
+  };
   try {
-    await orchestratorClient.post("/notifications/mark-all-read");
+    await orchestratorClient.post("/notifications/mark-all-read", null, {
+      params: queryParams,
+    });
   } catch {
     // Graceful fallback
   }
 }
 
-export async function deleteNotificationApi(id: string): Promise<void> {
+export async function deleteNotificationApi(
+  id: string,
+  params?: { platform?: string },
+): Promise<void> {
+  const queryParams = {
+    platform: "cap",
+    ...params,
+  };
   try {
-    await orchestratorClient.delete(`/notifications/${id}`);
+    await orchestratorClient.delete(`/notifications/${id}`, {
+      params: queryParams,
+    });
   } catch {
     // Graceful fallback
   }

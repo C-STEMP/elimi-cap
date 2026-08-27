@@ -130,7 +130,7 @@ export const CenterVerifyIdentity: React.FC = () => {
           personalDetails: {
             firstName: centrePersonalInfo.firstName,
             lastName: centrePersonalInfo.lastName,
-            middleName: centrePersonalInfo.middleName,
+            middleName: centrePersonalInfo.middleName?.trim() || undefined,
             dob: formatToIsoDate(centrePersonalInfo.dob),
             gender: centrePersonalInfo.gender,
             nationality: centrePersonalInfo.nationality,

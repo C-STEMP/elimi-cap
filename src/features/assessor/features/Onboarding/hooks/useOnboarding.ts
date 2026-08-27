@@ -5,6 +5,7 @@ import {
   getOnboardingPersonaApi,
   saveOnboardingApi,
   submitOnboardingApi,
+  startOnboardingApi,
 } from "@/src/features/shared/onboarding/api";
 import { ONBOARDING_QUERY_KEYS } from "@/src/features/shared/onboarding/hooks";
 
@@ -12,6 +13,22 @@ export function useGetAssessorOnboarding() {
   return useQuery({
     queryKey: ONBOARDING_QUERY_KEYS.persona("assessor"),
     queryFn: () => getOnboardingPersonaApi("assessor"),
+    retry: 1,
+  });
+}
+
+export function useStartAssessorOnboarding() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => startOnboardingApi({ persona: "assessor" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ONBOARDING_QUERY_KEYS.persona("assessor"),
+      });
+      queryClient.invalidateQueries({
+        queryKey: ONBOARDING_QUERY_KEYS.mine,
+      });
+    },
   });
 }
 
@@ -89,6 +106,7 @@ export function useSubmitAssessorOnboarding() {
 export function useAssessorOnboarding() {
   return {
     getOnboarding: useGetAssessorOnboarding(),
+    startOnboarding: useStartAssessorOnboarding(),
     saveOnboarding: useSaveAssessorOnboarding(),
     submitOnboarding: useSubmitAssessorOnboarding(),
   };

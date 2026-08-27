@@ -9,6 +9,8 @@ import {
   FiFlag,
   FiUser,
   FiDollarSign,
+  FiMenu,
+  FiX,
 } from "react-icons/fi";
 import { BiSolidMessageRoundedDetail } from "react-icons/bi";
 import { Logo } from "@/src/components/ui/logo";
@@ -25,6 +27,7 @@ import {
   useGetCentreApplicationsSummary,
   useGetCentreStaffSummary,
   useGetCentreAssessorsSummary,
+  useGetCentreProfile,
 } from "@/src/features/shared/centre/hooks";
 import { useGetOnboarding } from "@/src/features/assessment-centre/features/Onboarding/hooks/useOnboarding";
 import { useAppSelector } from "@/src/store/hooks";
@@ -52,6 +55,7 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
 }) => {
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const { data: onboardingRecord } = useGetOnboarding();
   const user = useAppSelector((state) => state.auth.user);
@@ -75,6 +79,7 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
   const { data: assessors = [] } = useGetRetainedRequests();
   const { data: staff = [] } = useGetCentreStaff();
   const { data: wallet } = useGetCentreWallet();
+  const { data: centreProfile } = useGetCentreProfile();
 
   const totalAppsCount =
     dashboardData?.kpis?.applications ??
@@ -86,9 +91,7 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
     assessorSummary?.active ??
     assessors.length;
   const totalStaffCount =
-    dashboardData?.kpis?.staff ??
-    staffSummary?.total ??
-    staff.length;
+    dashboardData?.kpis?.staff ?? staffSummary?.total ?? staff.length;
 
   const rawRevenue = dashboardData?.kpis?.revenue || wallet?.balance;
   const formattedRevenue = rawRevenue?.amountMinorUnits
@@ -141,7 +144,9 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
     { id: "settings", label: "Settings" },
   ];
 
-  const navItems = allNavItems.filter((item) => permittedTabs.includes(item.id));
+  const navItems = allNavItems.filter((item) =>
+    permittedTabs.includes(item.id),
+  );
 
   const renderStatIcon = (iconName: string) => {
     switch (iconName) {
@@ -159,11 +164,12 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
   };
 
   return (
-    <div className="w-full bg-[#a31d38] text-white rounded-3xl p-6 sm:p-8 flex flex-col gap-6 shadow-md select-none transition-all relative">
-      <div className="flex items-center justify-between gap-4">
-        <div className="shrink-0 cursor-pointer">
-          <Logo theme="light" href="/" />
-        </div>
+    <header className="w-full bg-[#a31d38] text-white shadow-md select-none transition-all relative">
+      <div className="max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 flex flex-col gap-6">
+        <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-5">
+          <div className="shrink-0 cursor-pointer">
+            <Logo theme="light" href="/" />
+          </div>
 
         <div className="hidden xl:flex items-center gap-1">
           {navItems.map((item) => {
@@ -222,45 +228,77 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
 
           <div className="w-10 h-10 rounded-full overflow-hidden border border-white/30 bg-white flex items-center justify-center shrink-0 cursor-pointer">
             <Image
-              src={ASSETS_URL.faviconIcon}
-              alt="CSTEMP Logo Badge"
-              width={32}
-              height={32}
-              className="w-8 h-8 object-contain"
+              src={centreProfile?.logo?.url || centreData?.centre?.centreInformation?.logoUrl || ASSETS_URL.faviconIcon}
+              alt="Centre Logo"
+              width={36}
+              height={36}
+              className="w-full h-full object-cover"
             />
           </div>
 
+          {/* Desktop Logout Button */}
           <button
             type="button"
             onClick={() => setIsLogoutOpen(true)}
-            className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/90 transition-all cursor-pointer ml-1"
+            className="hidden sm:flex w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 items-center justify-center text-white/90 transition-all cursor-pointer ml-1"
             aria-label="Logout"
             title="Logout"
           >
             <FiLogOut className="w-5 h-5" />
           </button>
+
+          {/* Mobile Hamburger Toggle */}
+          <button
+            type="button"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="flex xl:hidden w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 items-center justify-center text-white/90 transition-all cursor-pointer ml-1"
+            aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+          >
+            {isMobileMenuOpen ? (
+              <FiX className="w-5 h-5" />
+            ) : (
+              <FiMenu className="w-5 h-5" />
+            )}
+          </button>
         </div>
       </div>
 
-      <div className="flex xl:hidden items-center gap-2 overflow-x-auto pb-2 scrollbar-none pt-2">
-        {navItems.map((item) => {
-          const isActive = activeTab === item.id;
-          return (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => onSelectTab(item.id)}
-              className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-                isActive
-                  ? "bg-white/25 text-white shadow-xs"
-                  : "bg-white/10 text-white/80 hover:text-white"
-              }`}
-            >
-              {item.label}
-            </button>
-          );
-        })}
-      </div>
+      {/* Mobile Navigation Tabs (Dropdown when hamburger open) */}
+      {isMobileMenuOpen && (
+        <div className="flex xl:hidden flex-col gap-2 pt-2 pb-2 border-b border-white/10 animate-fadeIn">
+          {navItems.map((item) => {
+            const isActive = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => {
+                  onSelectTab(item.id);
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all cursor-pointer text-left ${
+                  isActive
+                    ? "bg-white/25 text-white shadow-xs"
+                    : "text-white/80 hover:text-white hover:bg-white/10"
+                }`}
+              >
+                {item.label}
+              </button>
+            );
+          })}
+          <button
+            type="button"
+            onClick={() => {
+              setIsMobileMenuOpen(false);
+              setIsLogoutOpen(true);
+            }}
+            className="px-4 py-2 rounded-xl text-sm font-semibold text-white/80 hover:text-white hover:bg-white/10 flex items-center gap-2 text-left mt-1 cursor-pointer"
+          >
+            <FiLogOut className="w-4 h-4" />
+            <span>Log out</span>
+          </button>
+        </div>
+      )}
 
       {children ? (
         children
@@ -305,6 +343,7 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
         isOpen={isLogoutOpen}
         onClose={() => setIsLogoutOpen(false)}
       />
-    </div>
+      </div>
+    </header>
   );
 };

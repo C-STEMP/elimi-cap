@@ -8,7 +8,12 @@ import type {
   ApplicationStageFormToSign,
 } from "../../types/applications.types";
 
-import { DEFAULT_ASSESSOR_PANEL } from "./AssessorPanelMembersSection";
+import { ASSETS_URL } from "@/src/assets";
+import {
+  useGetInterviewPanel,
+  useGetApplicationStages,
+} from "@/src/features/shared/applications/hooks";
+import type { AssessorPanelMember } from "../../types/applications.types";
 
 interface AssessorApplicationStagesListProps {
   application: AssessorApplicationRecord;
@@ -50,6 +55,25 @@ export const AssessorApplicationStagesList: React.FC<
   interviewOutcome = "ongoing",
   interviewFeedback,
 }) => {
+  const { data: panelData } = useGetInterviewPanel(application.id);
+  const { data: stagesData } = useGetApplicationStages(application.id);
+
+  const panelMembers: AssessorPanelMember[] = React.useMemo(() => {
+    if (!panelData?.members || !Array.isArray(panelData.members)) return [];
+    return panelData.members.map((m) => ({
+      id: m.assessorId,
+      name: m.name || "Assessor",
+      role: m.isLead
+        ? "Lead Panelist"
+        : m.isObserver
+          ? "Observer / IV"
+          : "Panel Member",
+      avatar: ASSETS_URL.userAvatar,
+      tags: (m.sectors || []).map((s) => s.name),
+      isHighlighted: Boolean(m.isLead),
+    }));
+  }, [panelData]);
+
   const isCompleted = application.status === "Completed";
   const isInternalVerifierRole =
     application.role === "Internal Verifier" || isCompleted;
@@ -85,7 +109,7 @@ export const AssessorApplicationStagesList: React.FC<
       badgeText: "Approved",
       dateText: application.submittedAt
         ? `Submitted on: ${application.submittedAt}`
-        : "Submitted on: 7/21/2026",
+        : "—",
       actionButton: {
         label: "View",
         variant: "view",
@@ -98,15 +122,19 @@ export const AssessorApplicationStagesList: React.FC<
       status: "Successful",
       badgeType: "successful",
       badgeText: "Successful",
-      dateText: "Paid On: 7/22/2026",
+      dateText: application.submittedAt
+        ? `Paid on: ${application.submittedAt}`
+        : "—",
     },
     {
       id: "folder_arrangement",
       title: "Folder Arrangement",
-      status: isCompleted ? "Complete" : "14 Days Left",
-      badgeType: isCompleted ? "completed" : "days_left",
-      badgeText: isCompleted ? "Complete" : "14 Days Left",
-      dateText: "Started on: 7/23/2026",
+      status: isCompleted ? "Complete" : "In Progress",
+      badgeType: isCompleted ? "completed" : "ongoing",
+      badgeText: isCompleted ? "Complete" : "In Progress",
+      dateText: application.assignedAt
+        ? `Assigned on: ${application.assignedAt}`
+        : "—",
       actionButton: {
         label: "Evidence Vault",
         variant: "evidence_vault",
@@ -119,10 +147,10 @@ export const AssessorApplicationStagesList: React.FC<
       status: currentInterviewStatus,
       badgeType: currentInterviewBadgeType,
       badgeText: currentInterviewStatus,
-      dateText: "Scheduled for: 8/15/2026",
+      dateText: "—",
       isCollapsible: false,
       isCollapsed: false,
-      assessors: DEFAULT_ASSESSOR_PANEL,
+      assessors: panelMembers,
       formsToSign: interviewOutcome === "awaiting_signature" ? formsToSign : undefined,
       onAppendSignature: onAppendSignature,
       inconclusiveDetails: interviewFeedback || undefined,
