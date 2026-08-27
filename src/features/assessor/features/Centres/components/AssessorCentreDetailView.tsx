@@ -10,6 +10,7 @@ import {
 import { Select } from "@/src/components/ui/select";
 import type { AssessorCentreItem } from "./AssessorCentresView";
 import { useGetAssessorApplications } from "../../Applications/hooks";
+import { useGetAssessorCentreApplications } from "../hooks";
 import type { AssessorApplicationRecord } from "../../Applications/components/AssessorApplicationsView";
 import { Loader } from "@/src/components/ui/loader";
 
@@ -28,15 +29,23 @@ export const AssessorCentreDetailView: React.FC<
   const [statusFilter, setStatusFilter] = useState("All");
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
 
-  const { data: allApplications = [], isLoading } = useGetAssessorApplications();
-
   const targetCentreId = centre.centreId || centre.id;
 
+  const { data: directCentreApps, isLoading: isLoadingDirect } =
+    useGetAssessorCentreApplications(targetCentreId);
+  const { data: allApplications = [], isLoading: isLoadingAll } =
+    useGetAssessorApplications();
+
+  const isLoading = isLoadingDirect && isLoadingAll;
+
   const centreApplications = useMemo(() => {
+    if (directCentreApps && directCentreApps.length > 0) {
+      return directCentreApps;
+    }
     return allApplications.filter(
       (a) => a.centreId === targetCentreId || a.centreId === centre.id,
     );
-  }, [allApplications, targetCentreId, centre.id]);
+  }, [directCentreApps, allApplications, targetCentreId, centre.id]);
 
   const candidates = useMemo(() => {
     return centreApplications.map((app) => {

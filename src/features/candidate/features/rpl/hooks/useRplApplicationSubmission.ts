@@ -143,7 +143,14 @@ export function useRplApplicationSubmission() {
     customDeclarations?: Record<string, boolean>,
     includePersonalDetails = true,
   ) => {
-    const yearsNum = parseInt(rplExp.yearsOfExperience, 10) || 1;
+    const rawYears = rplExp.yearsOfExperience;
+    let yearsNum = 0;
+    if (typeof rawYears === "number") {
+      yearsNum = isNaN(rawYears) ? 0 : Math.max(0, Math.floor(rawYears));
+    } else if (typeof rawYears === "string") {
+      const match = rawYears.match(/\d+/);
+      yearsNum = match ? Math.max(0, parseInt(match[0], 10)) : 0;
+    }
 
     const isIdentityLocked = Boolean(
       authUser?.isVerified ||
@@ -184,10 +191,30 @@ export function useRplApplicationSubmission() {
       startApp.tradeName ||
       "Cosmetologist";
 
+    // Sanitize unitIds: if Full Assessment, send []; if Modular Assessment, only send valid ID strings
+    const isFullAssessment =
+      rplExp.assessmentType === "Full Qualification Assessment";
+    let validUnitIds: string[] = [];
+
+    if (!isFullAssessment && Array.isArray(rplExp.individualUnit)) {
+      validUnitIds = rplExp.individualUnit.filter((u) => {
+        if (!u || typeof u !== "string") return false;
+        const trimmed = u.trim();
+        if (
+          trimmed.includes(" ") ||
+          trimmed.includes(":") ||
+          trimmed.startsWith("Unit")
+        ) {
+          return false;
+        }
+        return trimmed.length >= 10;
+      });
+    }
+
     return {
       personalInformation,
       experienceAndTrade: {
-        unitIds: rplExp.individualUnit || [],
+        unitIds: validUnitIds,
         currentOccupation: {
           occupation: resolvedOccupation,
           yearsOfExperience: yearsNum,
@@ -218,34 +245,62 @@ export function useRplApplicationSubmission() {
         },
         reasonForSeekingRPL: rplExp.reasonRPL || "Certification of skills",
         evidenceCandidateCanProvide: {
-          resume: Boolean(rplExp.selectedEvidence?.includes("Resume / CV")),
+          resume: Boolean(
+            rplExp.selectedEvidence?.includes("Resume / CV") ||
+              rplExp.selectedEvidence?.includes("Resume"),
+          ),
           workSamples: Boolean(
-            rplExp.selectedEvidence?.includes("Work samples / Portfolio"),
+            rplExp.selectedEvidence?.includes("Work samples") ||
+              rplExp.selectedEvidence?.includes("Work Samples"),
           ),
           employmentLetter: Boolean(
-            rplExp.selectedEvidence?.includes("Employment Letter"),
+            rplExp.selectedEvidence?.includes("Employment Letter") ||
+              rplExp.selectedEvidence?.includes("Employment letter"),
           ),
           certificates: Boolean(
-            rplExp.selectedEvidence?.includes("Certificates / Licenses"),
+            rplExp.selectedEvidence?.includes("Certificates") ||
+              rplExp.selectedEvidence?.includes(
+                "Certificates / Statements of Attainment",
+              ),
           ),
-          statementsOfAttainment: false,
+          statementsOfAttainment: Boolean(
+            rplExp.selectedEvidence?.includes("Statements of Attainment") ||
+              rplExp.selectedEvidence?.includes("Statements of attainment"),
+          ),
           thirdPartyReportsOrReferences: Boolean(
-            rplExp.selectedEvidence?.includes("Reference letters"),
+            rplExp.selectedEvidence?.includes("Reference letters") ||
+              rplExp.selectedEvidence?.includes("References") ||
+              rplExp.selectedEvidence?.includes(
+                "References / Third-Party Reports",
+              ),
           ),
-          jobDescriptions: false,
+          jobDescriptions: Boolean(
+            rplExp.selectedEvidence?.includes("Job Descriptions") ||
+              rplExp.selectedEvidence?.includes("Job descriptions"),
+          ),
           photosOrVideosOfWork: Boolean(
-            rplExp.selectedEvidence?.includes("Photos / Videos of work"),
+            rplExp.selectedEvidence?.includes("Photos / Videos of work") ||
+              rplExp.selectedEvidence?.includes("Photos / Videos of Work") ||
+              rplExp.selectedEvidence?.includes("Photos / Videos"),
           ),
-          other: Boolean(rplExp.otherEvidenceText),
+          other: Boolean(
+            rplExp.selectedEvidence?.includes("Other") ||
+              Boolean(rplExp.otherEvidenceText?.trim()),
+          ),
         },
       },
       assessmentDeclaration: {
-        infoProvidedIsAccurate: customDeclarations?.trueAndAccurate ?? true,
-        understandsDoesNotGuaranteeCertification:
+        infoProvidedIsAccurate: Boolean(
+          customDeclarations?.trueAndAccurate ?? true,
+        ),
+        understandsDoesNotGuaranteeCertification: Boolean(
           customDeclarations?.noGuarantee ?? true,
+        ),
         understandsThatNeedsToProvideSufficientEvidenceToDemonstrateCompetence:
-          customDeclarations?.sufficientEvidence ?? true,
-        agreesToTermsAndPrivacyPolicy: customDeclarations?.agreeTerms ?? true,
+          Boolean(customDeclarations?.sufficientEvidence ?? true),
+        agreesToTermsAndPrivacyPolicy: Boolean(
+          customDeclarations?.agreeTerms ?? true,
+        ),
       },
     };
   };
@@ -267,6 +322,18 @@ export function useRplApplicationSubmission() {
       ) {
         const retryPayload = buildPatchPayload(undefined, false);
         await patchApplicationDraftApi(appId, retryPayload).catch(() => {});
+      } else {
+        const issues = err?.details
+          ?.map?.((d: any) => d.issue || d.message)
+          .filter(Boolean);
+        const combinedMsg =
+          (issues && issues.length > 0 ? issues.join(". ") : "") ||
+          err?.message ||
+          "Failed to update application draft";
+        const errorObj = new Error(combinedMsg);
+        (errorObj as any).code = err?.code;
+        (errorObj as any).details = err?.details;
+        throw errorObj;
       }
     }
 
@@ -293,6 +360,18 @@ export function useRplApplicationSubmission() {
       ) {
         const retryPayload = buildPatchPayload(declarations, false);
         await patchApplicationDraftApi(appId, retryPayload).catch(() => {});
+      } else {
+        const issues = err?.details
+          ?.map?.((d: any) => d.issue || d.message)
+          .filter(Boolean);
+        const combinedMsg =
+          (issues && issues.length > 0 ? issues.join(". ") : "") ||
+          err?.message ||
+          "Failed to update application draft";
+        const errorObj = new Error(combinedMsg);
+        (errorObj as any).code = err?.code;
+        (errorObj as any).details = err?.details;
+        throw errorObj;
       }
     }
 
@@ -300,6 +379,17 @@ export function useRplApplicationSubmission() {
       await submitApplicationApi(appId);
     } catch (err: any) {
       console.error("submitApplicationApi error:", err);
+      const issues = err?.details
+        ?.map?.((d: any) => d.issue || d.message)
+        .filter(Boolean);
+      const combinedMsg =
+        (issues && issues.length > 0 ? issues.join(". ") : "") ||
+        err?.message ||
+        "Failed to submit application";
+      const errorObj = new Error(combinedMsg);
+      (errorObj as any).code = err?.code;
+      (errorObj as any).details = err?.details;
+      throw errorObj;
     }
 
     dispatch(

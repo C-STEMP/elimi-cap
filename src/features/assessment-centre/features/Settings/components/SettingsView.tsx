@@ -12,6 +12,7 @@ import {
 } from "react-icons/fi";
 import { Input } from "@/src/components/ui/input";
 import { Select } from "@/src/components/ui/select";
+import { PhoneInput } from "@/src/components/ui/phone-input";
 import { DatePicker } from "@/src/components/ui/date-picker";
 import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
@@ -50,7 +51,9 @@ export type SettingsSubTab =
 export const SettingsView: React.FC = () => {
   const { toast } = useToast();
   const dispatch = useAppDispatch();
-  const { getOnboarding, saveOnboarding } = useOnboarding();
+  const { getOnboarding } = useOnboarding();
+  const { data: meProfile } = useGetMeProfile();
+  const { data: centreProfile } = useGetCentreProfile();
   const { data: pricingList = [] } = useGetCentrePricing();
   const setCentrePricingMutation = useSetCentrePricing();
   const uploadFileMutation = useUploadFile();
@@ -71,6 +74,8 @@ export const SettingsView: React.FC = () => {
   const savedPersonalInfo = useAppSelector((s) => s.onboarding.personalInfo);
 
   const uploadedAvatar =
+    meProfile?.photo?.url ||
+    centreProfile?.logo?.url ||
     (savedCentrePersonalInfo as any)?.passportUrl ||
     savedCentreInfo?.logoPreview ||
     savedPersonalInfo?.passportUrl ||
@@ -213,8 +218,59 @@ export const SettingsView: React.FC = () => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // Hydrate from backend API getOnboarding
+  // Hydrate from backend APIs (meProfile, centreProfile, getOnboarding)
   React.useEffect(() => {
+    // 1. Personal details from /me/profile
+    if (meProfile) {
+      if (meProfile.personalDetails?.firstName)
+        setFirstName(meProfile.personalDetails.firstName);
+      if (meProfile.personalDetails?.lastName)
+        setLastName(meProfile.personalDetails.lastName);
+      if (meProfile.personalDetails?.middleName)
+        setMiddleName(meProfile.personalDetails.middleName);
+      if (meProfile.personalDetails?.dob)
+        setDob(meProfile.personalDetails.dob);
+      if (meProfile.personalDetails?.gender)
+        setGender(meProfile.personalDetails.gender);
+      if (meProfile.personalDetails?.nationality)
+        setNationality(meProfile.personalDetails.nationality);
+
+      if (meProfile.contactInformation?.emailAddress)
+        setProfileEmail(meProfile.contactInformation.emailAddress);
+      if (meProfile.contactInformation?.phoneNumber?.number)
+        setProfilePhone(meProfile.contactInformation.phoneNumber.number);
+
+      if (meProfile.residentialAddress?.country)
+        setProfileCountry(meProfile.residentialAddress.country);
+      if (meProfile.residentialAddress?.state)
+        setProfileState(meProfile.residentialAddress.state);
+      if (meProfile.residentialAddress?.lga)
+        setProfileLga(meProfile.residentialAddress.lga);
+      if (meProfile.residentialAddress?.address)
+        setProfileStreet(meProfile.residentialAddress.address);
+    }
+
+    // 2. Centre details from /centre/profile
+    if (centreProfile) {
+      if (centreProfile.name) setCentreName(centreProfile.name);
+      if (centreProfile.registrationNo) setRegNo(centreProfile.registrationNo);
+      if (centreProfile.logo?.url) setLogoPreview(centreProfile.logo.url);
+      if (centreProfile.address?.country) setCentreCountry(centreProfile.address.country);
+      if (centreProfile.address?.state) setCentreState(centreProfile.address.state);
+      if (centreProfile.address?.lga) setCentreLga(centreProfile.address.lga);
+      if (centreProfile.address?.address) setCentreStreet(centreProfile.address.address);
+      if (centreProfile.supportContact?.emailAddress)
+        setSupportEmail(centreProfile.supportContact.emailAddress);
+      if (centreProfile.supportContact?.phoneNumber?.number)
+        setSupportPhone(centreProfile.supportContact.phoneNumber.number);
+      if (centreProfile.accountDetails?.bank) setBank(centreProfile.accountDetails.bank);
+      if (centreProfile.accountDetails?.accountNo)
+        setAccountNumber(centreProfile.accountDetails.accountNo);
+      if (centreProfile.accountDetails?.nameOfAccount)
+        setAccountName(centreProfile.accountDetails.nameOfAccount);
+    }
+
+    // 3. Fallback to onboarding record
     if (getOnboarding.data?.data) {
       const apiData = getOnboarding.data.data as any;
 
@@ -224,18 +280,18 @@ export const SettingsView: React.FC = () => {
       const cSupp = apiData?.centre?.centreSupportInformation;
       const cAcc = apiData?.centre?.centreAccountDetails;
 
-      if (cInfo?.name) setCentreName(cInfo.name);
-      if (cInfo?.registrationNo) setRegNo(cInfo.registrationNo);
-      if (cAddr?.country) setCentreCountry(cAddr.country);
-      if (cAddr?.state) setCentreState(cAddr.state);
-      if (cAddr?.lga) setCentreLga(cAddr.lga);
-      if (cAddr?.address) setCentreStreet(cAddr.address);
-      if (cSupp?.emailAddress) setSupportEmail(cSupp.emailAddress);
-      if (cSupp?.phoneNumber?.number)
+      if (cInfo?.name && !centreName) setCentreName(cInfo.name);
+      if (cInfo?.registrationNo && !regNo) setRegNo(cInfo.registrationNo);
+      if (cAddr?.country && !centreCountry) setCentreCountry(cAddr.country);
+      if (cAddr?.state && !centreState) setCentreState(cAddr.state);
+      if (cAddr?.lga && !centreLga) setCentreLga(cAddr.lga);
+      if (cAddr?.address && !centreStreet) setCentreStreet(cAddr.address);
+      if (cSupp?.emailAddress && !supportEmail) setSupportEmail(cSupp.emailAddress);
+      if (cSupp?.phoneNumber?.number && !supportPhone)
         setSupportPhone(cSupp.phoneNumber.number);
-      if (cAcc?.bank) setBank(cAcc.bank);
-      if (cAcc?.accountNo) setAccountNumber(cAcc.accountNo);
-      if (cAcc?.nameOfAccount) setAccountName(cAcc.nameOfAccount);
+      if (cAcc?.bank && !bank) setBank(cAcc.bank);
+      if (cAcc?.accountNo && !accountNumber) setAccountNumber(cAcc.accountNo);
+      if (cAcc?.nameOfAccount && !accountName) setAccountName(cAcc.nameOfAccount);
 
       // Owner profile details
       const owner = apiData?.owner;
@@ -243,20 +299,20 @@ export const SettingsView: React.FC = () => {
       const ci = owner?.contactInformation;
       const ra = owner?.residentialAddress;
 
-      if (pd?.firstName) setFirstName(pd.firstName);
-      if (pd?.lastName) setLastName(pd.lastName);
-      if (pd?.middleName) setMiddleName(pd.middleName);
-      if (pd?.dob) setDob(pd.dob);
-      if (pd?.gender) setGender(pd.gender);
-      if (pd?.nationality) setNationality(pd.nationality);
-      if (ci?.emailAddress) setProfileEmail(ci.emailAddress);
-      if (ci?.phoneNumber?.number) setProfilePhone(ci.phoneNumber.number);
-      if (ra?.country) setProfileCountry(ra.country);
-      if (ra?.state) setProfileState(ra.state);
-      if (ra?.lga) setProfileLga(ra.lga);
-      if (ra?.address) setProfileStreet(ra.address);
+      if (pd?.firstName && !firstName) setFirstName(pd.firstName);
+      if (pd?.lastName && !lastName) setLastName(pd.lastName);
+      if (pd?.middleName && !middleName) setMiddleName(pd.middleName);
+      if (pd?.dob && !dob) setDob(pd.dob);
+      if (pd?.gender && !gender) setGender(pd.gender);
+      if (pd?.nationality && !nationality) setNationality(pd.nationality);
+      if (ci?.emailAddress && !profileEmail) setProfileEmail(ci.emailAddress);
+      if (ci?.phoneNumber?.number && !profilePhone) setProfilePhone(ci.phoneNumber.number);
+      if (ra?.country && !profileCountry) setProfileCountry(ra.country);
+      if (ra?.state && !profileState) setProfileState(ra.state);
+      if (ra?.lga && !profileLga) setProfileLga(ra.lga);
+      if (ra?.address && !profileStreet) setProfileStreet(ra.address);
     }
-  }, [getOnboarding.data]);
+  }, [meProfile, centreProfile, getOnboarding.data]);
 
   // Hydrate Pricing list
   React.useEffect(() => {
@@ -281,54 +337,30 @@ export const SettingsView: React.FC = () => {
   }, [pricingList]);
 
   const handleSaveProfileSettings = () => {
-    patchMeProfileMutation.mutate({
-      personalDetails: {
-        firstName,
-        lastName,
-        middleName,
-        dob: formatToIsoDate(dob),
-        gender,
-        nationality,
-      },
-      contactInformation: {
-        emailAddress: profileEmail,
-        phoneNumber: {
-          countryCode: "+234",
-          number: profilePhone,
-        },
-      },
-      residentialAddress: {
-        country: profileCountry,
-        state: profileState,
-        lga: profileLga,
-        address: profileStreet,
-      },
-    });
-
-    saveOnboarding.mutate(
+    patchMeProfileMutation.mutate(
       {
-        owner: {
-          personalDetails: {
-            firstName,
-            lastName,
-            middleName,
-            dob: formatToIsoDate(dob),
-            gender,
-            nationality,
+        personalDetails: !(meProfile?.identityVerified || authUser?.isVerified)
+          ? {
+              firstName,
+              lastName,
+              middleName: middleName?.trim() || undefined,
+              dob: formatToIsoDate(dob) || "2000-01-01",
+              gender,
+              nationality,
+            }
+          : undefined,
+        contactInformation: {
+          emailAddress: profileEmail,
+          phoneNumber: {
+            countryCode: "+234",
+            number: profilePhone,
           },
-          contactInformation: {
-            emailAddress: profileEmail,
-            phoneNumber: {
-              countryCode: "+234",
-              number: profilePhone,
-            },
-          },
-          residentialAddress: {
-            country: profileCountry,
-            state: profileState,
-            lga: profileLga,
-            address: profileStreet,
-          },
+        },
+        residentialAddress: {
+          country: profileCountry,
+          state: profileState,
+          lga: profileLga,
+          address: profileStreet,
         },
       },
       {
@@ -355,53 +387,26 @@ export const SettingsView: React.FC = () => {
   };
 
   const handleSaveCentreSettings = () => {
-    patchCentreProfileMutation.mutate({
-      name: centreName,
-      address: {
-        country: centreCountry,
-        state: centreState,
-        lga: centreLga,
-        address: centreStreet,
-      },
-      supportContact: {
-        emailAddress: supportEmail,
-        phoneNumber: {
-          countryCode: "+234",
-          number: supportPhone,
-        },
-      },
-      accountDetails: {
-        bank,
-        accountNo: accountNumber,
-        nameOfAccount: accountName,
-      },
-    });
-
-    saveOnboarding.mutate(
+    patchCentreProfileMutation.mutate(
       {
-        centre: {
-          centreInformation: {
-            name: centreName,
-            registrationNo: regNo,
+        name: centreName,
+        address: {
+          country: centreCountry,
+          state: centreState,
+          lga: centreLga,
+          address: centreStreet,
+        },
+        supportContact: {
+          emailAddress: supportEmail,
+          phoneNumber: {
+            countryCode: "+234",
+            number: supportPhone,
           },
-          centreResidentialAddress: {
-            country: centreCountry,
-            state: centreState,
-            lga: centreLga,
-            address: centreStreet,
-          },
-          centreSupportInformation: {
-            emailAddress: supportEmail,
-            phoneNumber: {
-              countryCode: "+234",
-              number: supportPhone,
-            },
-          },
-          centreAccountDetails: {
-            bank,
-            accountNo: accountNumber,
-            nameOfAccount: accountName,
-          },
+        },
+        accountDetails: {
+          bank,
+          accountNo: accountNumber,
+          nameOfAccount: accountName,
         },
       },
       {
@@ -421,6 +426,18 @@ export const SettingsView: React.FC = () => {
               nameOnAccount: accountName,
             }),
           );
+          toast({
+            type: "success",
+            title: "Centre Details Saved",
+            description: "Your centre profile has been updated successfully.",
+          });
+        },
+        onError: () => {
+          toast({
+            type: "error",
+            title: "Save Failed",
+            description: "Could not save centre details. Please try again.",
+          });
         },
       },
     );
@@ -458,19 +475,19 @@ export const SettingsView: React.FC = () => {
       try {
         const asset = await uploadFileMutation.mutateAsync({
           file,
-          purpose: "logo",
+          purpose: activeSubTab === "centre" ? "logo" : "passport",
         });
         if (asset?.url) setLogoPreview(asset.url);
         if (asset?.assetId) {
-          saveOnboarding.mutate({
-            centre: {
-              centreInformation: {
-                name: centreName,
-                registrationNo: regNo,
-                logoAssetId: asset.assetId,
-              },
-            },
-          });
+          if (activeSubTab === "centre") {
+            patchCentreProfileMutation.mutate({
+              logoAssetId: asset.assetId,
+            });
+          } else {
+            patchMeProfileMutation.mutate({
+              photoAssetId: asset.assetId,
+            });
+          }
         }
       } catch {
         // Fallback to local preview
@@ -666,13 +683,11 @@ export const SettingsView: React.FC = () => {
                     value={profileEmail}
                     onChange={(e) => setProfileEmail(e.target.value)}
                   />
-                  <Input
+                  <PhoneInput
                     label="Phone Number"
-                    placeholder="Select"
                     value={profilePhone}
-                    onChange={(e) =>
-                      setProfilePhone(e.target.value.replace(/[^0-9]/g, ""))
-                    }
+                    country={profileCountry || "ng"}
+                    onChange={(val) => setProfilePhone(val)}
                   />
                 </div>
               </div>
@@ -794,7 +809,7 @@ export const SettingsView: React.FC = () => {
                 <Button
                   type="button"
                   onClick={handleSaveProfileSettings}
-                  loading={saveOnboarding.isPending}
+                  loading={patchMeProfileMutation.isPending}
                   variant="amber"
                   size="md"
                   rightIcon={<FiSave className="w-4 h-4" />}
@@ -891,31 +906,16 @@ export const SettingsView: React.FC = () => {
                     onChange={(e) => setSupportEmail(e.target.value)}
                   />
 
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-text-dark font-medium text-xs leading-[1.4] select-none">
-                      Phone Number*
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <Select
-                        containerClassName="w-20"
-                        size="sm"
-                        showPlaceholderOption={false}
-                        value="NGN"
-                        options={["NGN", "USD"]}
-                      />
-                      <input
-                        type="tel"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        placeholder="000000000"
-                        value={supportPhone}
-                        onChange={(e) =>
-                          setSupportPhone(e.target.value.replace(/[^0-9]/g, ""))
-                        }
-                        className="flex-1 bg-input-bg border border-transparent focus:border-primary rounded-xl px-3.5 py-2.5 text-xs text-neutral-primary outline-none font-medium"
-                      />
-                    </div>
-                  </div>
+                  <PhoneInput
+                    label={
+                      <span>
+                        Phone Number<span className="text-primary-solid ml-0.5">*</span>
+                      </span>
+                    }
+                    value={supportPhone}
+                    country={centreCountry || "ng"}
+                    onChange={(val) => setSupportPhone(val)}
+                  />
                 </div>
               </div>
 
@@ -957,7 +957,7 @@ export const SettingsView: React.FC = () => {
                 <Button
                   type="button"
                   onClick={handleSaveCentreSettings}
-                  loading={saveOnboarding.isPending}
+                  loading={patchCentreProfileMutation.isPending}
                   variant="amber"
                   size="md"
                   rightIcon={<FiSave className="w-4 h-4" />}

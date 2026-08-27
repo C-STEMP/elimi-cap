@@ -63,7 +63,7 @@ export const AssessorCentresView: React.FC<AssessorCentresViewProps> = ({
           <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
-            placeholder="Search candidates..."
+            placeholder="Search centres..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full bg-gray-50/70 border border-gray-200 rounded-xl pl-10 pr-4 py-2.5 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-2 focus:ring-primary-solid/20"
@@ -108,57 +108,69 @@ export const AssessorCentresView: React.FC<AssessorCentresViewProps> = ({
       </div>
 
       {/* Table Content */}
-      <div className="w-full overflow-x-auto max-w-full rounded-2xl border border-gray-100">
-        <table className="w-full text-left text-xs sm:text-sm border-collapse min-w-[650px]">
-          <thead>
-            <tr className="bg-gray-50/70 text-gray-500 font-semibold border-b border-gray-100">
-              <th className="p-3.5 rounded-l-xl">Centre Name</th>
-              <th className="p-3.5">Role</th>
-              <th className="p-3.5">Candidate Assigned</th>
-              <th className="p-3.5">Status</th>
-              <th className="p-3.5">Joined at</th>
-              <th className="p-3.5 rounded-r-xl text-right">Action</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {filteredCentres.map((c) => (
-              <tr
-                key={c.id}
-                className="hover:bg-gray-50/60 transition-colors"
-              >
-                <td className="p-3.5 font-medium text-neutral-primary">
-                  {c.name}
-                </td>
-                <td className="p-3.5 text-gray-600">{c.role}</td>
-                <td className="p-3.5 text-gray-600">{c.candidateAssigned}</td>
-                <td className="p-3.5">
-                  <span
-                    className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
-                      c.status === "Active"
-                        ? "bg-emerald-100 text-emerald-700"
-                        : c.status === "Pending"
-                        ? "bg-amber-100 text-amber-700"
-                        : "bg-gray-200 text-gray-700"
-                    }`}
-                  >
-                    {c.status}
-                  </span>
-                </td>
-                <td className="p-3.5 text-gray-500">{c.joinedAt}</td>
-                <td className="p-3.5 text-right">
-                  <button
-                    type="button"
-                    onClick={() => onSelectCentre(c)}
-                    className="font-bold text-xs text-neutral-primary hover:text-primary-solid underline cursor-pointer"
-                  >
-                    View
-                  </button>
-                </td>
+      {filteredCentres.length > 0 ? (
+        <div className="w-full overflow-x-auto max-w-full rounded-2xl border border-gray-100">
+          <table className="w-full text-left text-xs sm:text-sm border-collapse min-w-[650px]">
+            <thead>
+              <tr className="bg-gray-50/70 text-gray-500 font-semibold border-b border-gray-100">
+                <th className="p-3.5 rounded-l-xl">Centre Name</th>
+                <th className="p-3.5">Role</th>
+                <th className="p-3.5">Candidate Assigned</th>
+                <th className="p-3.5">Status</th>
+                <th className="p-3.5">Joined at</th>
+                <th className="p-3.5 rounded-r-xl text-right">Action</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {filteredCentres.map((c) => (
+                <tr
+                  key={c.id}
+                  className="hover:bg-gray-50/60 transition-colors"
+                >
+                  <td className="p-3.5 font-medium text-neutral-primary">
+                    {c.name}
+                  </td>
+                  <td className="p-3.5 text-gray-600">{c.role}</td>
+                  <td className="p-3.5 text-gray-600">{c.candidateAssigned}</td>
+                  <td className="p-3.5">
+                    <span
+                      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
+                        c.status === "Active"
+                          ? "bg-emerald-100 text-emerald-700"
+                          : c.status === "Pending"
+                          ? "bg-amber-100 text-amber-700"
+                          : "bg-gray-200 text-gray-700"
+                      }`}
+                    >
+                      {c.status}
+                    </span>
+                  </td>
+                  <td className="p-3.5 text-gray-500">{c.joinedAt}</td>
+                  <td className="p-3.5 text-right">
+                    <button
+                      type="button"
+                      onClick={() => onSelectCentre(c)}
+                      className="font-bold text-xs text-neutral-primary hover:text-primary-solid underline cursor-pointer"
+                    >
+                      View
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center text-center py-12">
+          <div className="w-14 h-14 rounded-full border border-rose-100 bg-[#FFF5F6] text-[#A31D38] flex items-center justify-center mb-3">
+            <FiList className="w-6 h-6 stroke-[1.75]" />
+          </div>
+          <h5 className="text-sm font-bold text-neutral-primary">No centres joined yet</h5>
+          <p className="text-xs text-neutral-secondary mt-1 max-w-[240px] leading-relaxed">
+            Apply to an assessment centre to start assessing candidates
+          </p>
+        </div>
+      )}
 
       <ApplyToCentreModal
         isOpen={isApplyModalOpen}

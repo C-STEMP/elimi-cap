@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useAppSelector } from "@/src/store/hooks";
 import { useGetAssessorCentres } from "../../Centres/hooks";
 import { useGetAssessorApplications } from "../../Applications/hooks";
+import { useGetAssessorSummary } from "@/src/features/shared/assessor/hooks";
 import type { Application } from "../../Applications/hooks";
 
 // Header & Overview components
@@ -26,7 +27,10 @@ import {
   AssessorApplicationsView,
   type AssessorApplicationRecord,
 } from "../../Applications/components/AssessorApplicationsView";
-import { AssessorApplicationDetailView } from "../../Applications/components/AssessorApplicationDetailView";
+import {
+  AssessorApplicationDetailView,
+  type AssessorDetailSubView,
+} from "../../Applications/components/AssessorApplicationDetailView";
 
 // JobBoard feature components
 import {
@@ -39,11 +43,14 @@ import { AssessorJobDetailView } from "../../JobBoard/components/AssessorJobDeta
 import { AssessorSettingsView } from "../../Settings/components/AssessorSettingsView";
 
 import { useGetCentres } from "@/src/features/shared/reference/hooks";
+import { useToast } from "@/src/components/ui/toast";
 
 export const AssessorDashboard: React.FC = () => {
+  const { toast } = useToast();
   const user = useAppSelector((state) => state.auth.user);
   const userName = user?.fullName || user?.email?.split("@")[0] || "Assessor";
 
+  const { data: summaryData } = useGetAssessorSummary();
   const { data: centresData } = useGetAssessorCentres();
   const { data: applicationsData = [] } = useGetAssessorApplications();
   const { data: remoteCentres = [] } = useGetCentres();
@@ -67,7 +74,7 @@ export const AssessorDashboard: React.FC = () => {
     Array.isArray(centresData) ? centresData : (centresData as any)?.data || []
   ).map((r: any) => {
     const rawCentreId = r.centreId || r.id;
-    const directName = r.centre?.name || r.centreName;
+    const directName = r.centreName || r.centre?.name;
     const resolvedName =
       directName ||
       centresMap.get(rawCentreId) ||
@@ -75,15 +82,25 @@ export const AssessorDashboard: React.FC = () => {
       centresMap.get(rawCentreId?.trim()?.toLowerCase()) ||
       rawCentreId;
 
-    const assignedCount = applicationsData.filter(
-      (a) => a.centreId === rawCentreId || a.centreId === r.id,
-    ).length;
+    const assignedCount =
+      r.assignedCount !== undefined
+        ? r.assignedCount
+        : applicationsData.filter(
+            (a) => a.centreId === rawCentreId || a.centreId === r.id,
+          ).length;
+
+    const roleTitle =
+      Array.isArray(r.roles) && r.roles.length > 0
+        ? r.roles.map((rl: string) => rl.replace(/_/g, " ")).join(", ")
+        : r.preferredRole
+          ? r.preferredRole.replace(/_/g, " ")
+          : "Assessor";
 
     return {
-      id: r.id,
+      id: r.retainedRequestId || r.id,
       centreId: rawCentreId,
       name: resolvedName,
-      role: "Assessor",
+      role: roleTitle.charAt(0).toUpperCase() + roleTitle.slice(1),
       candidateAssigned: assignedCount,
       status:
         r.status === "approved"
@@ -91,22 +108,27 @@ export const AssessorDashboard: React.FC = () => {
           : r.status === "pending"
             ? "Pending"
             : "Inactive",
-      joinedAt: r.respondedAt
-        ? new Date(r.respondedAt).toLocaleDateString("en-GB")
-        : r.requestedAt
-          ? new Date(r.requestedAt).toLocaleDateString("en-GB")
-          : "-",
+      joinedAt: r.joinedAt
+        ? new Date(r.joinedAt).toLocaleDateString("en-GB")
+        : r.respondedAt
+          ? new Date(r.respondedAt).toLocaleDateString("en-GB")
+          : r.requestedAt
+            ? new Date(r.requestedAt).toLocaleDateString("en-GB")
+            : "-",
     };
   });
 
-  // Derive real stat counts from API data
-  const totalApplications = applicationsData.length;
-  const pendingApplications = applicationsData.filter(
-    (a) => a.status === "in_progress" || a.status === "draft",
-  ).length;
-  const completedApplications = applicationsData.filter(
-    (a) => a.status === "certified",
-  ).length;
+  // Derive stat counts from API summary or calculate from applicationsData
+  const totalCentres = summaryData?.totalCentres ?? centres.length;
+  const totalApplications = summaryData?.totalApplications ?? applicationsData.length;
+  const pendingApplications =
+    summaryData?.pendingApplications ??
+    applicationsData.filter(
+      (a) => a.status === "in_progress" || a.status === "draft",
+    ).length;
+  const completedApplications =
+    summaryData?.completedApplications ??
+    applicationsData.filter((a) => a.status === "certified").length;
 
   const [activeTab, setActiveTab] = useState<AssessorNavTab>("Overview");
 
@@ -114,6 +136,10 @@ export const AssessorDashboard: React.FC = () => {
     useState<AssessorCentreItem | null>(null);
   const [selectedApplication, setSelectedApplication] =
     useState<AssessorApplicationRecord | null>(null);
+  const [applicationSubView, setApplicationSubView] =
+    useState<AssessorDetailSubView>("stages");
+  const [canMarkAsComplete, setCanMarkAsComplete] = useState(false);
+  const [triggerMarkComplete, setTriggerMarkComplete] = useState(false);
   const [selectedJob, setSelectedJob] = useState<AssessorJobRecord | null>(
     null,
   );
@@ -124,28 +150,56 @@ export const AssessorDashboard: React.FC = () => {
     setActiveTab(tab);
     setSelectedCentre(null);
     setSelectedApplication(null);
+    setApplicationSubView("stages");
+    setCanMarkAsComplete(false);
+    setTriggerMarkComplete(false);
     setSelectedJob(null);
   };
 
-  return (
-    <div className="min-h-screen w-full bg-[#f8f9fb] p-4 sm:p-6 select-text">
-      <div className="mx-auto flex flex-col gap-6">
-        {/* Header Banner */}
-        <AssessorHeaderBanner
-          userName={userName}
-          activeTab={activeTab}
-          onSelectTab={handleTabChange}
-          selectedCentreName={selectedCentre?.name}
-          onBackFromCentre={() => setSelectedCentre(null)}
-          selectedApplicationName={selectedApplication?.candidateName}
-          onBackFromApplication={() => setSelectedApplication(null)}
-          onApplyToCentre={() => setIsApplyModalOpen(true)}
-          totalCentresCount={centres.length}
-          totalApplicationsCount={totalApplications}
-          pendingApplicationsCount={pendingApplications}
-          completedApplicationsCount={completedApplications}
-        />
+  const handleBackFromApplication = () => {
+    if (applicationSubView !== "stages") {
+      setApplicationSubView("stages");
+    } else {
+      setSelectedApplication(null);
+      setCanMarkAsComplete(false);
+      setTriggerMarkComplete(false);
+    }
+  };
 
+  const handleTriggerMarkComplete = () => {
+    setTriggerMarkComplete(true);
+  };
+
+  const handleMarkAsCompleteFinished = () => {
+    toast({
+      type: "success",
+      title: "Folder Marked As Complete",
+      description: "You have successfully marked this folder as complete.",
+    });
+    setApplicationSubView("stages");
+  };
+
+  return (
+    <div className="min-h-screen w-full bg-[#f8f9fb] flex flex-col select-text">
+      {/* Header Banner */}
+      <AssessorHeaderBanner
+        userName={userName}
+        activeTab={activeTab}
+        onSelectTab={handleTabChange}
+        selectedCentreName={selectedCentre?.name}
+        onBackFromCentre={() => setSelectedCentre(null)}
+        selectedApplicationName={selectedApplication?.candidateName}
+        applicationSubView={applicationSubView}
+        canMarkAsComplete={canMarkAsComplete}
+        onMarkAsComplete={handleTriggerMarkComplete}
+        onBackFromApplication={handleBackFromApplication}
+        totalCentresCount={totalCentres}
+        totalApplicationsCount={totalApplications}
+        pendingApplicationsCount={pendingApplications}
+        completedApplicationsCount={completedApplications}
+      />
+
+      <div className="max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1 flex flex-col gap-6">
         {/* Tab Main Content */}
         {activeTab === "Overview" ? (
           <AssessorOverviewView
@@ -172,6 +226,9 @@ export const AssessorDashboard: React.FC = () => {
                       : "Pending",
                 submittedAt: app.createdAt,
               });
+              setApplicationSubView("stages");
+              setCanMarkAsComplete(false);
+              setTriggerMarkComplete(false);
             }}
             onApplyToCentre={() => setIsApplyModalOpen(true)}
           />
@@ -183,6 +240,9 @@ export const AssessorDashboard: React.FC = () => {
               onSelectApplication={(appRecord) => {
                 setActiveTab("Applications");
                 setSelectedApplication(appRecord);
+                setApplicationSubView("stages");
+                setCanMarkAsComplete(false);
+                setTriggerMarkComplete(false);
               }}
             />
           ) : (
@@ -196,11 +256,22 @@ export const AssessorDashboard: React.FC = () => {
           selectedApplication ? (
             <AssessorApplicationDetailView
               application={selectedApplication}
-              onBack={() => setSelectedApplication(null)}
+              subView={applicationSubView}
+              onSubViewChange={setApplicationSubView}
+              onAllApprovedChange={setCanMarkAsComplete}
+              onMarkAsComplete={handleMarkAsCompleteFinished}
+              triggerMarkComplete={triggerMarkComplete}
+              onResetTriggerMarkComplete={() => setTriggerMarkComplete(false)}
+              onBack={handleBackFromApplication}
             />
           ) : (
             <AssessorApplicationsView
-              onSelectApplication={(app) => setSelectedApplication(app)}
+              onSelectApplication={(app) => {
+                setSelectedApplication(app);
+                setApplicationSubView("stages");
+                setCanMarkAsComplete(false);
+                setTriggerMarkComplete(false);
+              }}
             />
           )
         ) : activeTab === "Job Board" ? (

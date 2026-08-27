@@ -145,14 +145,14 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
       {/* Staff Profile Card */}
       <div className="bg-white rounded-3xl p-6 shadow-2xs border border-gray-100/80 flex items-start justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden shrink-0 border border-gray-100 bg-gray-50 flex items-center justify-center">
-            <Image
-              src={ASSETS_URL.userAvatar}
-              alt={staffName}
-              width={80}
-              height={80}
-              className="w-full h-full object-cover"
-            />
+          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden shrink-0 border border-primary/20 bg-primary/10 flex items-center justify-center text-primary font-bold text-xl sm:text-2xl select-none">
+            {staffName
+              .split(" ")
+              .map((n) => n[0])
+              .filter(Boolean)
+              .slice(0, 2)
+              .join("")
+              .toUpperCase() || "S"}
           </div>
 
           <div className="flex flex-col gap-1">

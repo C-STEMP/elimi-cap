@@ -51,7 +51,14 @@ export const AssessorPersonalInfo: React.FC = () => {
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const { countries, states, cities } = useCountryStateCity(form.country, form.state);
+  const {
+    countries,
+    states,
+    cities,
+    resolvedCountryCode,
+    isLoadingStates,
+    isLoadingLgas,
+  } = useCountryStateCity(form.country, form.state);
 
   useEffect(() => {
     dispatch(setSidebarVariant("default"));
@@ -154,7 +161,7 @@ export const AssessorPersonalInfo: React.FC = () => {
         personalDetails: {
           firstName: form.firstName,
           lastName: form.lastName,
-          middleName: form.middleName,
+          middleName: form.middleName?.trim() || undefined,
           dob: formatToIsoDate(form.dob),
           gender: form.gender,
           nationality: form.nationality,
@@ -171,9 +178,12 @@ export const AssessorPersonalInfo: React.FC = () => {
         },
       },
       {
-        onSettled: () => {
+        onSuccess: () => {
           setIsSubmitting(false);
           router.push(ASSESSOR_ROUTES.onboarding.assessorInfo);
+        },
+        onError: () => {
+          setIsSubmitting(false);
         },
       },
     );
@@ -312,6 +322,11 @@ export const AssessorPersonalInfo: React.FC = () => {
               placeholder="0000000000"
               value={form.phoneNumber}
               onChange={(val) => update("phoneNumber", val)}
+              onCountryChange={(cName) => {
+                update("country", cName);
+                if (!form.nationality) update("nationality", cName);
+              }}
+              country={resolvedCountryCode ? resolvedCountryCode.toLowerCase() : "ng"}
               error={errors.phoneNumber}
             />
           </div>
@@ -325,7 +340,7 @@ export const AssessorPersonalInfo: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             <Select
               label={<span>Country<span className="text-primary-solid ml-0.5">*</span></span>}
-              placeholder="Select"
+              placeholder="Select country"
               value={form.country}
               onChange={(e) => update("country", e.target.value)}
               options={countries.map((c) => c.label)}
@@ -333,10 +348,17 @@ export const AssessorPersonalInfo: React.FC = () => {
             />
             <Select
               label={<span>State of Residence<span className="text-primary-solid ml-0.5">*</span></span>}
-              placeholder="Select"
+              placeholder={
+                isLoadingStates
+                  ? "Loading states..."
+                  : form.country
+                    ? "Select state"
+                    : "Select country first"
+              }
               value={form.state}
               onChange={(e) => update("state", e.target.value)}
               options={states.map((s) => s.label)}
+              disabled={isLoadingStates || !form.country || states.length === 0}
               error={errors.state}
             />
           </div>
@@ -344,10 +366,17 @@ export const AssessorPersonalInfo: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Select
               label={<span>Local Government Area (LGA)<span className="text-primary-solid ml-0.5">*</span></span>}
-              placeholder="Select"
+              placeholder={
+                isLoadingLgas
+                  ? "Loading LGAs..."
+                  : form.state
+                    ? "Select city / LGA"
+                    : "Select state first"
+              }
               value={form.lga}
               onChange={(e) => update("lga", e.target.value)}
-              options={cities.length ? cities.map((c) => c.label) : ["Main LGA"]}
+              options={cities.length ? cities.map((c) => c.label) : []}
+              disabled={isLoadingLgas || !form.state || cities.length === 0}
               error={errors.lga}
             />
             <Input

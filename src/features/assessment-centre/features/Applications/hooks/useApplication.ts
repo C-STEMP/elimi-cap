@@ -7,6 +7,8 @@ import {
   reviewCentreApplicationApi,
   assignFacilitatorApi,
   assignInternalVerifierApi,
+  curateInterviewPanelApi,
+  scheduleInterviewApi,
   forwardToAwardingBodyApi,
   getCentreStaffApi,
   addCentreStaffApi,
@@ -169,6 +171,108 @@ export function useAssignInternalVerifier() {
           type: "error",
           title: "Network Error",
           description: "Unable to assign IV. Please try again.",
+        });
+      }
+    },
+  });
+}
+
+export function useCurateInterviewPanel() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: {
+        assessorIds: string[];
+        leadAssessorId: string;
+        observerIvAssessorId?: string;
+      };
+    }) =>
+      curateInterviewPanelApi(id, payload),
+
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: CENTRE_APPLICATION_QUERY_KEYS.detail(variables.id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["applications", "interview-panel", variables.id],
+      });
+      toast({
+        type: "success",
+        title: "Panel Curated",
+        description: "Interview panel has been curated successfully.",
+      });
+    },
+
+    onError: (error: Error) => {
+      if (error instanceof ApiError) {
+        toast({
+          type: "error",
+          title: "Panel Curation Failed",
+          description: error.message,
+        });
+      } else {
+        toast({
+          type: "error",
+          title: "Network Error",
+          description: "Unable to curate panel. Please try again.",
+        });
+      }
+    },
+  });
+}
+
+export function useScheduleInterview() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: {
+        scheduledAt: string;
+        mode: "physical" | "online";
+        location?: string;
+        useCentreAddress?: boolean;
+        link?: string;
+      };
+    }) =>
+      scheduleInterviewApi(id, payload),
+
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: CENTRE_APPLICATION_QUERY_KEYS.detail(variables.id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["applications", "interview-schedule", variables.id],
+      });
+      toast({
+        type: "success",
+        title: "Interview Scheduled",
+        description: "Interview has been scheduled successfully.",
+      });
+    },
+
+    onError: (error: Error) => {
+      if (error instanceof ApiError) {
+        toast({
+          type: "error",
+          title: "Scheduling Failed",
+          description: error.message,
+        });
+      } else {
+        toast({
+          type: "error",
+          title: "Network Error",
+          description: "Unable to schedule interview. Please try again.",
         });
       }
     },

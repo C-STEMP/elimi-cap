@@ -318,12 +318,6 @@ export const CandidateApplicationFormView: React.FC<
               </div>
               <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 border-b border-gray-200/70 pb-1.5">
                 <span className="font-semibold text-black shrink-0 w-36">
-                  Qualification Code:
-                </span>
-                <span className="text-gray-700 font-medium">{tradeCode}</span>
-              </div>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 border-b border-gray-200/70 pb-1.5">
-                <span className="font-semibold text-black shrink-0 w-36">
                   Individual Units:
                 </span>
                 <span className="text-gray-700 font-medium">
@@ -368,46 +362,62 @@ export const CandidateApplicationFormView: React.FC<
               Evidence Summary
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs sm:text-sm text-gray-700">
-              <div className="flex items-center gap-2.5">
-                <div className="w-4 h-4 rounded bg-primary flex items-center justify-center text-white shrink-0">
-                  <FiCheck className="w-3 h-3 stroke-3" />
+              {[
+                {
+                  key: "resume",
+                  label: "Resume / CV",
+                  checked: Boolean(evidenceCandidateCanProvide?.resume ?? true),
+                },
+                {
+                  key: "workSamples",
+                  label: "Work Samples",
+                  checked: Boolean(evidenceCandidateCanProvide?.workSamples ?? true),
+                },
+                {
+                  key: "certificates",
+                  label: "Certificates / Statements of Attainment",
+                  checked: Boolean(evidenceCandidateCanProvide?.certificates ?? true),
+                },
+                {
+                  key: "thirdPartyReports",
+                  label: "References / Third-Party Reports",
+                  checked: Boolean(evidenceCandidateCanProvide?.thirdPartyReports ?? true),
+                },
+                {
+                  key: "jobDescriptions",
+                  label: "Job Descriptions",
+                  checked: Boolean(evidenceCandidateCanProvide?.jobDescriptions ?? true),
+                },
+                {
+                  key: "photosVideos",
+                  label: "Photos / Videos of Work",
+                  checked: Boolean(evidenceCandidateCanProvide?.photosVideos ?? true),
+                },
+                {
+                  key: "other",
+                  label: "Other Supporting Evidence",
+                  checked: Boolean(evidenceCandidateCanProvide?.other ?? false),
+                },
+              ].map((item) => (
+                <div key={item.key} className="flex items-center gap-2.5">
+                  <div
+                    className={`w-4 h-4 rounded flex items-center justify-center shrink-0 border ${
+                      item.checked
+                        ? "bg-primary border-primary text-white"
+                        : "bg-gray-100 border-gray-300 text-transparent"
+                    }`}
+                  >
+                    {item.checked && <FiCheck className="w-3 h-3 stroke-3" />}
+                  </div>
+                  <span
+                    className={`font-medium ${
+                      item.checked ? "text-gray-800" : "text-gray-400"
+                    }`}
+                  >
+                    {item.label}
+                  </span>
                 </div>
-                <span className="font-medium">Resume / CV</span>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <div className="w-4 h-4 rounded bg-primary flex items-center justify-center text-white shrink-0">
-                  <FiCheck className="w-3 h-3 stroke-3" />
-                </div>
-                <span className="font-medium">Work Samples</span>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <div className="w-4 h-4 rounded bg-primary flex items-center justify-center text-white shrink-0">
-                  <FiCheck className="w-3 h-3 stroke-3" />
-                </div>
-                <span className="font-medium">
-                  Certificates / Statements of Attainment
-                </span>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <div className="w-4 h-4 rounded bg-primary flex items-center justify-center text-white shrink-0">
-                  <FiCheck className="w-3 h-3 stroke-3" />
-                </div>
-                <span className="font-medium">
-                  References / Third-Party Reports
-                </span>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <div className="w-4 h-4 rounded bg-primary flex items-center justify-center text-white shrink-0">
-                  <FiCheck className="w-3 h-3 stroke-3" />
-                </div>
-                <span className="font-medium">Job Descriptions</span>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <div className="w-4 h-4 rounded bg-primary flex items-center justify-center text-white shrink-0">
-                  <FiCheck className="w-3 h-3 stroke-3" />
-                </div>
-                <span className="font-medium">Photos / Videos of Work</span>
-              </div>
+              ))}
             </div>
           </div>
         </div>
