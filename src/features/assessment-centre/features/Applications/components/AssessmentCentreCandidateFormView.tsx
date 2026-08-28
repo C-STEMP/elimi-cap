@@ -77,6 +77,7 @@ export const AssessmentCentreCandidateFormView: React.FC<
           id,
           payload: {
             decision: "approve",
+            stageKey: "application_form",
             feedback: commentText,
           },
         },
@@ -102,6 +103,7 @@ export const AssessmentCentreCandidateFormView: React.FC<
           id,
           payload: {
             decision: "approve",
+            stageKey: "application_form",
             feedback: "Application accepted by Assessment Centre",
           },
         },
@@ -129,6 +131,7 @@ export const AssessmentCentreCandidateFormView: React.FC<
           id,
           payload: {
             decision: "reject",
+            stageKey: "application_form",
             feedback: rejectReason || "Application was rejected by Assessment Centre",
           },
         },

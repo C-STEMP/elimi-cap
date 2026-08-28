@@ -203,6 +203,7 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
                 id: selectedApplicationId,
                 payload: {
                   decision: "approve",
+                  stageKey: "application_form",
                   feedback: "Application accepted by Assessment Centre",
                 },
               });
