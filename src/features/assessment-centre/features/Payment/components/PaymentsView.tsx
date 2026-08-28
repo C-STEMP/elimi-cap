@@ -164,7 +164,7 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
           </div>
         ) : (
           <div className="w-full overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[700px]">
+            <table className="w-full text-left border-collapse min-w-175">
               <thead>
                 <tr className="bg-[#F8F9FA] text-gray-500 text-xs font-semibold uppercase tracking-wider rounded-xl">
                   <th className="p-3.5 rounded-l-xl">Candidate Name</th>
