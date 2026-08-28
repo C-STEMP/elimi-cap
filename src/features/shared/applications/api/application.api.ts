@@ -391,9 +391,14 @@ export async function reviewApplicationApi(
   id: string,
   payload: ReviewDecisionPayload,
 ): Promise<Application> {
+  const safePayload = {
+    decision: payload.decision,
+    stageKey: payload.stageKey || "application_form",
+    ...(payload.feedback ? { feedback: payload.feedback } : {}),
+  };
   return capFetch<Application>(`/applications/${id}/review`, {
     method: "POST",
-    data: payload,
+    data: safePayload,
   });
 }
 

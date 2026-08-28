@@ -73,6 +73,7 @@ export const AssessmentCentreSelfAssessmentFormView: React.FC<
           id,
           payload: {
             decision: "approve",
+            stageKey: "application_form",
             feedback: commentText,
           },
         },
