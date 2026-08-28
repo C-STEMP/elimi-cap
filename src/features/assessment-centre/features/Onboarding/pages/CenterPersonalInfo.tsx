@@ -90,11 +90,11 @@ export const CenterPersonalInfo: React.FC = () => {
 
   const update = (field: keyof typeof form, value: string) => {
     const updatedValues: Partial<typeof form> = { [field]: value };
-    if (field === "country") {
+    if (field === "country" && form.country !== value) {
       updatedValues.state = "";
       updatedValues.lga = "";
     }
-    if (field === "state") {
+    if (field === "state" && form.state !== value) {
       updatedValues.lga = "";
     }
 

@@ -193,15 +193,31 @@ export function useReviewApplication() {
       payload: ReviewDecisionPayload;
     }) => reviewApplicationApi(id, payload),
 
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({
-        queryKey: APPLICATION_QUERY_KEYS.detail(data.id),
-      });
+    onSuccess: (data, variables) => {
+      const appId = variables.id || data?.id;
+      if (appId) {
+        queryClient.invalidateQueries({
+          queryKey: APPLICATION_QUERY_KEYS.detail(appId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: APPLICATION_QUERY_KEYS.stages(appId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: APPLICATION_QUERY_KEYS.history(appId),
+        });
+      }
       queryClient.invalidateQueries({ queryKey: APPLICATION_QUERY_KEYS.all });
+      queryClient.invalidateQueries({ queryKey: ["applications"] });
+      queryClient.invalidateQueries({ queryKey: ["centre"] });
+      queryClient.invalidateQueries({ queryKey: ["assessor"] });
+
+      const isApprove = variables.payload.decision === "approve";
       toast({
         type: "success",
-        title: "Review Decision Recorded",
-        description: `Application ${data.id} updated.`,
+        title: isApprove ? "Application Approved" : "Decision Recorded",
+        description: isApprove
+          ? "Application has been approved and moved to the next stage."
+          : "Application decision has been recorded.",
       });
     },
 

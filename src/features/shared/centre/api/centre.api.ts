@@ -199,6 +199,7 @@ export interface RetainedAssessorRequest {
   assessorId: string;
   centreId: string;
   status: RetainedRequestStatus;
+  preferredRole?: CentreAssessorAssignmentRole | string | null;
   requestedAt: string;
   respondedAt?: string | null;
   respondedBy?: string | null;

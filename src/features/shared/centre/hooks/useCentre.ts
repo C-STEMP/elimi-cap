@@ -76,6 +76,8 @@ export const CENTRE_QUERY_KEYS = {
   jobPostingDetail: (id: string) => ["centre", "job-posting-detail", id] as const,
   jobPostingApplications: (id: string, params?: unknown) =>
     ["centre", "job-posting-applications", id, params] as const,
+  jobPostingApplicationDetail: (id: string, applicationId: string) =>
+    ["centre", "job-posting-application-detail", id, applicationId] as const,
   pricing: ["centre", "pricing"] as const,
   paymentsSummary: ["centre", "payments-summary"] as const,
   payments: (params?: unknown) => ["centre", "payments", params] as const,
@@ -290,6 +292,17 @@ export function useGetRetainedRequests(params?: {
   });
 }
 
+export function useGetRetainedRequestDetail(
+  id: string,
+  options?: { enabled?: boolean },
+) {
+  return useQuery({
+    queryKey: CENTRE_QUERY_KEYS.retainedRequestDetail(id),
+    queryFn: () => getCentreRetainedRequestDetailApi(id),
+    enabled: options?.enabled ?? !!id,
+  });
+}
+
 export function useApproveRetainedRequest() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -297,8 +310,9 @@ export function useApproveRetainedRequest() {
   return useMutation({
     mutationFn: (id: string) => approveRetainedRequestApi(id),
 
-    onSuccess: () => {
+    onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: ["centre", "retained-requests"] });
+      queryClient.invalidateQueries({ queryKey: CENTRE_QUERY_KEYS.retainedRequestDetail(id) });
       queryClient.invalidateQueries({ queryKey: ["centre", "assessors"] });
       queryClient.invalidateQueries({ queryKey: CENTRE_QUERY_KEYS.assessorsSummary });
       toast({
@@ -325,8 +339,9 @@ export function useRejectRetainedRequest() {
   return useMutation({
     mutationFn: (id: string) => rejectRetainedRequestApi(id),
 
-    onSuccess: () => {
+    onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: ["centre", "retained-requests"] });
+      queryClient.invalidateQueries({ queryKey: CENTRE_QUERY_KEYS.retainedRequestDetail(id) });
       queryClient.invalidateQueries({ queryKey: ["centre", "assessors"] });
       toast({
         type: "success",
@@ -516,6 +531,18 @@ export function useGetJobPostingApplications(
     queryKey: CENTRE_QUERY_KEYS.jobPostingApplications(id, params),
     queryFn: () => getCentreJobPostingApplicationsApi(id, params),
     enabled: options?.enabled ?? !!id,
+  });
+}
+
+export function useGetJobPostingApplicationDetail(
+  id: string,
+  applicationId: string,
+  options?: { enabled?: boolean },
+) {
+  return useQuery({
+    queryKey: CENTRE_QUERY_KEYS.jobPostingApplicationDetail(id, applicationId),
+    queryFn: () => getCentreJobPostingApplicationDetailApi(id, applicationId),
+    enabled: options?.enabled ?? (!!id && !!applicationId),
   });
 }
 

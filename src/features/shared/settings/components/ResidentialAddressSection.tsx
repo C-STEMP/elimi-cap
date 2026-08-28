@@ -23,14 +23,18 @@ export const ResidentialAddressSection: React.FC<
   const handleCountryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newCountry = e.target.value;
     onChange("country", newCountry);
-    onChange("stateOfResidence", "");
-    onChange("lga", "");
+    if (formData.country !== newCountry) {
+      onChange("stateOfResidence", "");
+      onChange("lga", "");
+    }
   };
 
   const handleStateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newState = e.target.value;
     onChange("stateOfResidence", newState);
-    onChange("lga", "");
+    if (formData.stateOfResidence !== newState) {
+      onChange("lga", "");
+    }
   };
 
   return (

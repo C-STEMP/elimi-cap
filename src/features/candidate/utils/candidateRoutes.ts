@@ -45,8 +45,10 @@ export const CANDIDATE_ROUTES = {
    * Authentication Routes for Candidate Access
    */
   auth: {
-    signin: "/signin",
-    signup: "/signup",
+    login: "/login",
+    register: "/register",
+    signin: "/login",
+    signup: "/register",
     completeSignup: "/complete-signup",
     verifyEmail: "/verify",
     enterOtp: "/enter-otp",

@@ -180,11 +180,11 @@ export const CenterInformation: React.FC = () => {
 
   const update = (field: keyof typeof form, value: string) => {
     const updatedValues: Partial<typeof form> = { [field]: value };
-    if (field === "country") {
+    if (field === "country" && form.country !== value) {
       updatedValues.state = "";
       updatedValues.lga = "";
     }
-    if (field === "state") {
+    if (field === "state" && form.state !== value) {
       updatedValues.lga = "";
     }
 
@@ -197,10 +197,8 @@ export const CenterInformation: React.FC = () => {
 
 
   // ── Country / State / City cascading selects ────────────────────────────
-  const { countries, states, cities } = useCountryStateCity(
-    form.country,
-    form.state,
-  );
+  const { countries, states, cities, isLoadingStates, isLoadingLgas } =
+    useCountryStateCity(form.country, form.state);
 
   const validate = () => {
     let valid = true;
@@ -444,11 +442,17 @@ export const CenterInformation: React.FC = () => {
                 <span className="text-primary-solid ml-0.5">*</span>
               </span>
             }
-            placeholder={form.country ? "Select state" : "Select country first"}
+            placeholder={
+              isLoadingStates
+                ? "Loading states..."
+                : form.country
+                  ? "Select state"
+                  : "Select country first"
+            }
             options={states}
             value={form.state}
             error={errors.state}
-            disabled={!form.country}
+            disabled={isLoadingStates || !form.country || states.length === 0}
             onChange={(e) => update("state", e.target.value)}
           />
 
@@ -459,11 +463,17 @@ export const CenterInformation: React.FC = () => {
                 <span className="text-primary-solid ml-0.5">*</span>
               </span>
             }
-            placeholder={form.state ? "Select city" : "Select state first"}
+            placeholder={
+              isLoadingLgas
+                ? "Loading LGAs..."
+                : form.state
+                  ? "Select city / LGA"
+                  : "Select state first"
+            }
             options={cities}
             value={form.lga}
             error={errors.lga}
-            disabled={!form.state}
+            disabled={isLoadingLgas || !form.state || cities.length === 0}
             onChange={(e) => update("lga", e.target.value)}
           />
 

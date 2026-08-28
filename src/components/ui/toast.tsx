@@ -42,10 +42,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
   const toast = useCallback(
     ({ type, title, description, duration = 4000 }: Omit<Toast, "id">) => {
       const id = Math.random().toString(36).substring(2, 9);
-      setToasts((prev) => [
-        ...prev,
-        { id, type, title, description, duration },
-      ]);
+      setToasts([{ id, type, title, description, duration }]);
     },
     [],
   );

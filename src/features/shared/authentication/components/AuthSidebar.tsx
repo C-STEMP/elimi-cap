@@ -24,6 +24,7 @@ export const AuthSidebar: React.FC = () => {
   const rplStep = useAppSelector((state) => state.auth.rplStep);
 
   const nonRplRoutes = [
+    "/login",
     "/signin",
     "/signup",
     "/register",

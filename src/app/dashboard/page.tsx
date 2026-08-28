@@ -1,12 +1,11 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAppSelector } from "@/src/store/hooks";
 import { getPersona, savePersona } from "@/src/lib/auth-storage";
 import { Dashboard as CandidateDashboard } from "@/features/candidate/features/Dashboard/pages/Dashboard";
 import { AssessorDashboard } from "@/src/features/assessor/features/Dashboard/pages/AssessorDashboard";
-
 import { Loader } from "@/src/components/ui/loader";
 
 export default function DashboardPage() {
@@ -14,34 +13,54 @@ export default function DashboardPage() {
   const userRole = useAppSelector(
     (state) => state.auth.user?.role || state.onboarding.role,
   );
-  const storedPersona = typeof window !== "undefined" ? getPersona() : null;
-  const effectiveRole = userRole || storedPersona;
+  const [resolvedPersona, setResolvedPersona] = useState<string | null>(null);
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
+    const storedPersona = getPersona();
+    const effectiveRole = userRole || storedPersona;
+
     if (effectiveRole === "centre") {
+      setResolvedPersona("centre");
+      setIsReady(true);
       router.replace("/assessment-centre");
     } else if (
       effectiveRole === "assessor" ||
       effectiveRole === "quality-assurance" ||
-      effectiveRole === "quality_assurance"
+      effectiveRole === "quality_assurance" ||
+      effectiveRole === "qaa"
     ) {
       savePersona("assessor");
-    } else {
+      setResolvedPersona("assessor");
+      setIsReady(true);
+    } else if (effectiveRole === "candidate") {
       savePersona("candidate");
+      setResolvedPersona("candidate");
+      setIsReady(true);
+    } else if (storedPersona) {
+      setResolvedPersona(storedPersona);
+      setIsReady(true);
+    } else {
+      // Default to candidate only once state hydration has completed
+      setResolvedPersona("candidate");
+      setIsReady(true);
     }
-  }, [effectiveRole, router]);
+  }, [userRole, router]);
 
-  if (effectiveRole === "centre") {
+  if (!isReady || !resolvedPersona) {
+    return <Loader tip="Loading dashboard..." />;
+  }
+
+  if (resolvedPersona === "centre") {
     return <Loader tip="Redirecting to Assessment Centre..." />;
   }
 
-  const isAssessor =
-    effectiveRole === "assessor" ||
-    effectiveRole === "quality-assurance" ||
-    effectiveRole === "quality_assurance" ||
-    effectiveRole === "qaa";
-
-  if (isAssessor) {
+  if (
+    resolvedPersona === "assessor" ||
+    resolvedPersona === "quality-assurance" ||
+    resolvedPersona === "quality_assurance" ||
+    resolvedPersona === "qaa"
+  ) {
     return <AssessorDashboard />;
   }
 

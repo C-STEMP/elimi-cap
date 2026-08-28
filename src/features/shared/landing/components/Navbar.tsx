@@ -33,7 +33,7 @@ export function Navbar() {
     dispatch(logout());
     dispatch(resetOnboarding());
     setMobileMenuOpen(false);
-    router.push("/signup");
+    router.push("/register");
   };
 
   useEffect(() => {
@@ -103,13 +103,13 @@ export function Navbar() {
 
         <div className="hidden items-center gap-2 md:gap-3 lg:gap-6 xl:gap-10 md:flex">
           <Link
-            href="/signin"
+            href="/login"
             className="whitespace-nowrap text-xs lg:text-sm xl:text-base font-bold text-white transition-colors hover:text-secondary"
           >
             Login
           </Link>
           <Link
-            href="/signup"
+            href="/register"
             onClick={handleRegisterClick}
             className="whitespace-nowrap rounded-[10px] bg-secondary px-3 md:px-4 lg:px-6 xl:px-10 py-2 lg:py-2.5 text-xs lg:text-sm font-semibold text-white transition-all hover:bg-secondary-hover"
           >
@@ -172,14 +172,14 @@ export function Navbar() {
             })}
             <div className="mt-4 flex flex-col gap-2">
               <Link
-                href="/signin"
+                href="/login"
                 onClick={() => setMobileMenuOpen(false)}
                 className="text-center py-2 text-base font-medium text-white hover:text-secondary"
               >
                 Login
               </Link>
               <Link
-                href="/signup"
+                href="/register"
                 onClick={handleRegisterClick}
                 className="rounded-full bg-secondary py-2 text-center text-base font-semibold text-text-dark"
               >

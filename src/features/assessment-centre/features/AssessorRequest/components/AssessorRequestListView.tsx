@@ -21,12 +21,23 @@ export const AssessorRequestListView: React.FC<
 
   const items: AssessorItem[] = requests.map((req) => {
     const assessorSnap = req.assessor;
-    const sectorsStr = (assessorSnap?.sectors || []).map((s) => s.name).join(", ");
-    const primaryRole = (assessorSnap?.qualifications?.[0] as any) || "Assessor";
+    const sectorsStr = (assessorSnap?.sectors || [])
+      .map((s) => s.name)
+      .join(", ");
+    const primaryRole =
+      (assessorSnap?.qualifications?.[0] as any) || "Assessor";
     return {
       id: req.id,
-      name: assessorSnap?.name || (req.assessorId ? `Assessor (${req.assessorId.slice(0, 8)})` : "Assessor"),
-      email: assessorSnap?.email || (req.assessorId ? `${req.assessorId.slice(0, 8)}@assessor.ng` : "assessor@ng.org"),
+      name:
+        assessorSnap?.name ||
+        (req.assessorId
+          ? `Assessor (${req.assessorId.slice(0, 8)})`
+          : "Assessor"),
+      email:
+        assessorSnap?.email ||
+        (req.assessorId
+          ? `${req.assessorId.slice(0, 8)}@assessor.ng`
+          : "assessor@ng.org"),
       trade: sectorsStr || "Technical Trade",
       role: primaryRole,
       status: "Pending",
@@ -87,7 +98,7 @@ export const AssessorRequestListView: React.FC<
             />
           </div>
 
-          <div className="flex items-center justify-between sm:justify-end gap-3 flex-wrap">
+          <div className="flex items-center justify-end gap-3">
             <div className="flex items-center gap-1.5">
               <button
                 type="button"
@@ -119,7 +130,9 @@ export const AssessorRequestListView: React.FC<
 
         {filteredItems.length === 0 ? (
           <div className="py-16 flex flex-col items-center justify-center text-center">
-            <p className="text-gray-400 font-normal">No assessor requests found.</p>
+            <p className="text-gray-400 font-normal">
+              No assessor requests found.
+            </p>
           </div>
         ) : viewMode === "grid" ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

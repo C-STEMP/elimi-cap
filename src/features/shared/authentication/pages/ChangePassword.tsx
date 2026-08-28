@@ -172,10 +172,10 @@ export const ChangePassword: React.FC = () => {
         <div className="w-full text-center mt-3 text-sm select-none">
           <span className="text-neutral-secondary font-normal">Go to</span>
           <Link
-            href="/signin"
+            href="/login"
             className="text-primary-solid font-bold ml-1 hover:text-primary-hover transition-colors"
           >
-            Sign In
+            Login
           </Link>
         </div>
       </form>
@@ -185,8 +185,8 @@ export const ChangePassword: React.FC = () => {
         type="success"
         title="Congratulations"
         description="Your Password has been changed successfully"
-        actionLabel="Sign In"
-        onAction={() => router.push("/signin")}
+        actionLabel="Login"
+        onAction={() => router.push("/login")}
       />
     </motion.div>
   );

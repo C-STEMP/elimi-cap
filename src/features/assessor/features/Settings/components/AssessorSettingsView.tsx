@@ -289,20 +289,6 @@ export const AssessorSettingsView: React.FC = () => {
           address: streetAddress,
         },
       },
-      {
-        onSuccess: () =>
-          toast({
-            type: "success",
-            title: "Profile Saved",
-            description: "Your profile information has been updated.",
-          }),
-        onError: () =>
-          toast({
-            type: "error",
-            title: "Save Failed",
-            description: "Could not save profile. Please try again.",
-          }),
-      },
     );
   };
 
