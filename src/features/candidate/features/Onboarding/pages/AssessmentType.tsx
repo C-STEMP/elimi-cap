@@ -31,7 +31,6 @@ const ASSESSMENT_OPTIONS: AssessmentOption[] = [
     id: "nsq",
     title: "NSQ",
     description: "National Skills Qualification",
-    badge: "Coming Soon",
   },
 ];
 
@@ -58,12 +57,17 @@ export const AssessmentType: React.FC<AssessmentTypeProps> = ({
   );
 
   const handleSelectType = (id: string) => {
+    setSelectedType(id);
+    dispatch(setAssessmentType(id));
+    dispatch(setOnboardingAssessmentType(id));
+
+    if (onSelectType) {
+      onSelectType(id);
+      return;
+    }
+
     if (id === "nsq") {
-      toast({
-        type: "info",
-        title: "Coming Soon",
-        description: "National Skills Qualification (NSQ) assessment is coming soon.",
-      });
+      router.push("/nsq/centre-info");
       return;
     }
 
@@ -93,14 +97,8 @@ export const AssessmentType: React.FC<AssessmentTypeProps> = ({
         router.push("/rpl/personal-info");
         return;
       }
-    }
 
-    setSelectedType(id);
-    dispatch(setAssessmentType(id));
-    dispatch(setOnboardingAssessmentType(id));
-
-    if (onSelectType) {
-      onSelectType(id);
+      router.push("/rpl/personal-info");
       return;
     }
 

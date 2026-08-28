@@ -129,6 +129,33 @@ export interface AssessorIdentityState {
   isVerified: boolean;
 }
 
+export interface NsqApplicationState {
+  centreId: string;
+  centreName: string;
+  sectorId: string;
+  sectorName: string;
+  tradeId: string;
+  tradeName: string;
+  firstName: string;
+  lastName: string;
+  middleName: string;
+  registrationNo: string;
+  level: string;
+  assessmentType: string;
+  courseStartDate: string;
+  selectedUnitIds: string[];
+  highestQualification: string;
+  hasImpairment: boolean;
+  impairment: string;
+  learningStrengths: string[];
+  learningWeaknesses: string[];
+  signatureAssetId?: string;
+  signatureUrl?: string;
+  passportAssetId?: string;
+  passportUrl?: string;
+  passportPreview?: string;
+}
+
 export interface OnboardingState {
   role: string;
   assessmentType: string;
@@ -142,6 +169,7 @@ export interface OnboardingState {
   assessorPersonalInfo: AssessorPersonalInfoState;
   assessorDetails: AssessorDetailsState;
   assessorIdentity: AssessorIdentityState;
+  nsqApplication: NsqApplicationState;
 }
 
 const initialState: OnboardingState = {
@@ -262,6 +290,32 @@ const initialState: OnboardingState = {
     nin: "",
     isVerified: false,
   },
+  nsqApplication: {
+    centreId: "",
+    centreName: "",
+    sectorId: "",
+    sectorName: "",
+    tradeId: "",
+    tradeName: "",
+    firstName: "",
+    lastName: "",
+    middleName: "",
+    registrationNo: "",
+    level: "Level 1",
+    assessmentType: "Specialized",
+    courseStartDate: "",
+    selectedUnitIds: [],
+    highestQualification: "",
+    hasImpairment: false,
+    impairment: "",
+    learningStrengths: [],
+    learningWeaknesses: [],
+    signatureAssetId: "",
+    signatureUrl: "",
+    passportAssetId: "",
+    passportUrl: "",
+    passportPreview: "",
+  },
 };
 
 export const onboardingSlice = createSlice({
@@ -364,6 +418,15 @@ export const onboardingSlice = createSlice({
         ...action.payload,
       };
     },
+    setNsqApplication: (
+      state,
+      action: PayloadAction<Partial<NsqApplicationState>>
+    ) => {
+      state.nsqApplication = {
+        ...state.nsqApplication,
+        ...action.payload,
+      };
+    },
     resetOnboarding: () => initialState,
   },
 });
@@ -381,6 +444,7 @@ export const {
   setAssessorPersonalInfo,
   setAssessorDetails,
   setAssessorIdentity,
+  setNsqApplication,
   resetOnboarding,
 } = onboardingSlice.actions;
 

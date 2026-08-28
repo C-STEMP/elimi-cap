@@ -12,6 +12,8 @@ export interface ApplicationItem {
   title: string;
   subtitle: string;
   status: "Not Started" | "In Progress" | "Completed";
+  statusLabel?: string;
+  type?: string;
 }
 
 interface ApplicationsListProps {
@@ -75,7 +77,7 @@ export const ApplicationsList: React.FC<ApplicationsListProps> = ({
             <Link
               key={app.id}
               href={`/dashboard/applications/${app.id}`}
-              className="bg-input-bg rounded-xl p-4 flex items-center justify-between border-l-[5px] border-secondary hover:bg-[#f0f2f7] transition-all cursor-pointer group shadow-2xs"
+              className="bg-[#f8f9fa] rounded-xl p-4 flex items-center justify-between border-l-[5px] border-[#fbab2a] hover:bg-[#f0f2f7] transition-all cursor-pointer group shadow-2xs"
             >
               <div className="flex flex-col gap-1">
                 <div className="flex items-center gap-3">
@@ -83,15 +85,15 @@ export const ApplicationsList: React.FC<ApplicationsListProps> = ({
                     {app.title}
                   </span>
                   <span
-                    className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+                    className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${
                       app.status === "Completed"
-                        ? "bg-green-100 text-green-800"
+                        ? "bg-emerald-100 text-emerald-800"
                         : app.status === "Not Started"
                           ? "bg-gray-100 text-gray-600"
-                          : "bg-amber-100 text-amber-700"
+                          : "bg-amber-100 text-amber-800"
                     }`}
                   >
-                    {app.status}
+                    {app.statusLabel || app.status}
                   </span>
                 </div>
                 <span className="text-gray-400 text-xs lg:text-sm font-normal">
