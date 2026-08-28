@@ -93,9 +93,15 @@ export const Select: React.FC<SelectProps> = ({
     ? "!border-primary-solid !ring-2 !ring-border-secondary"
     : "";
 
+  const hasCustomWidth =
+    containerClassName.includes("w-") ||
+    containerClassName.includes("flex-1") ||
+    containerClassName.includes("min-w") ||
+    containerClassName.includes("max-w");
+
   return (
     <div
-      className={`flex flex-col gap-1.5 w-full relative ${containerClassName}`}
+      className={`flex flex-col gap-1.5 ${hasCustomWidth ? "" : "w-full"} relative ${containerClassName}`}
     >
       {label && (
         <label
