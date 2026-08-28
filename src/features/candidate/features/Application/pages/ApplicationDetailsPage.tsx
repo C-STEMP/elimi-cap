@@ -418,8 +418,17 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
     return <Loader fullscreen={false} tip="Loading application details..." className="min-h-[60vh]" />;
   }
 
-  if (apiApp?.type === "NSQ" || (reduxApp as any)?.type === "NSQ" || (application as any)?.type === "NSQ") {
-    return <NsqApplicationDetailView application={apiApp || reduxApp || application} />;
+  if (
+    apiApp?.type === "NSQ" ||
+    (reduxApp as any)?.type === "NSQ" ||
+    (application as any)?.type === "NSQ" ||
+    id === "nsq"
+  ) {
+    return (
+      <NsqApplicationDetailView
+        application={apiApp || reduxApp || application || { type: "NSQ" }}
+      />
+    );
   }
 
   if (!application) {

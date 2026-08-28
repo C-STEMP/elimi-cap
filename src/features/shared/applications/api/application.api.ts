@@ -666,45 +666,6 @@ export async function forwardToAwardingBodyApi(
   });
 }
 
-export async function scheduleDirectObservationApi(
-  id: string,
-  payload: { scheduledAt: string },
-): Promise<{ id: string; applicationId: string; scheduledAt: string; status: string }> {
-  return capFetch<{ id: string; applicationId: string; scheduledAt: string; status: string }>(
-    `/applications/${id}/direct-observation`,
-    {
-      method: "POST",
-      data: payload,
-    },
-  );
-}
-
-export async function assignUnitAssessorApi(
-  id: string,
-  unitId: string,
-  assessorId: string,
-): Promise<void> {
-  await capFetch<void>(`/applications/${id}/units/${unitId}/assessor`, {
-    method: "POST",
-    data: { assessorId },
-  });
-}
-
-export async function signoffUnitApi(
-  id: string,
-  unitId: string,
-  payload: {
-    role: "learner" | "unit_assessor" | "iqa" | "eqa";
-    signedAt: string;
-    signatureAssetId?: string;
-  },
-): Promise<void> {
-  await capFetch<void>(`/applications/${id}/units/${unitId}/signoff`, {
-    method: "POST",
-    data: payload,
-  });
-}
-
 export async function createAppealApi(
   id: string,
   comment: string,
@@ -788,3 +749,99 @@ export async function saveSelfAssessmentApi(
     },
   );
 }
+
+// ==========================================
+// NSQ-Specific Endpoints (OpenAPI Spec)
+// ==========================================
+
+export interface InductionForm {
+  applicationId: string;
+  data: Record<string, unknown>;
+  submittedAt?: string | null;
+}
+
+export async function submitInductionFormApi(
+  applicationId: string,
+  data: Record<string, unknown>,
+): Promise<InductionForm> {
+  return capFetch<InductionForm>(`/applications/${applicationId}/induction-form`, {
+    method: "POST",
+    data: { data },
+  });
+}
+
+export interface DirectObservationSession {
+  id: string;
+  applicationId: string;
+  scheduledAt: string;
+  status: "scheduled" | "completed" | "cancelled";
+}
+
+export async function scheduleDirectObservationApi(
+  applicationId: string,
+  scheduledAt: string,
+): Promise<DirectObservationSession> {
+  return capFetch<DirectObservationSession>(
+    `/applications/${applicationId}/direct-observation`,
+    {
+      method: "POST",
+      data: { scheduledAt },
+    },
+  );
+}
+
+export interface PostUnitEvidencePayload {
+  performanceCriteriaCode: string;
+  evidenceType: string;
+  evidenceAssetId: string;
+  evidenceRefPage?: string;
+}
+
+export async function submitUnitEvidenceApi(
+  applicationId: string,
+  unitId: string,
+  payload: PostUnitEvidencePayload,
+): Promise<{ message?: string }> {
+  return capFetch<{ message?: string }>(
+    `/applications/${applicationId}/units/${unitId}/evidence`,
+    {
+      method: "POST",
+      data: payload,
+    },
+  );
+}
+
+export interface PostUnitSignoffPayload {
+  role: "learner" | "unit_assessor" | "iqa" | "eqa";
+  signatureAssetId?: string;
+  signedAt: string;
+}
+
+export async function submitUnitSignoffApi(
+  applicationId: string,
+  unitId: string,
+  payload: PostUnitSignoffPayload,
+): Promise<{ message?: string }> {
+  return capFetch<{ message?: string }>(
+    `/applications/${applicationId}/units/${unitId}/signoff`,
+    {
+      method: "POST",
+      data: payload,
+    },
+  );
+}
+
+export async function assignUnitAssessorApi(
+  applicationId: string,
+  unitId: string,
+  assessorId: string,
+): Promise<{ message?: string }> {
+  return capFetch<{ message?: string }>(
+    `/applications/${applicationId}/units/${unitId}/assessor`,
+    {
+      method: "POST",
+      data: { assessorId },
+    },
+  );
+}
+

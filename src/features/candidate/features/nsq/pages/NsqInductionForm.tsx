@@ -30,6 +30,7 @@ import { useUploadFile } from "@/src/features/shared/storage/hooks";
 import {
   createApplicationApi,
   submitApplicationApi,
+  submitInductionFormApi,
 } from "@/src/features/shared/applications/api";
 import { NsqConfirmationModal } from "../components/NsqConfirmationModal";
 import { NsqSuccessModal } from "../components/NsqSuccessModal";
@@ -369,6 +370,26 @@ export const NsqInductionForm: React.FC = () => {
 
       if (app?.id) {
         setCreatedAppId(app.id);
+        try {
+          await submitInductionFormApi(app.id, {
+            firstName,
+            lastName,
+            middleName,
+            registrationNo,
+            level,
+            assessmentType,
+            courseStartDate,
+            selectedUnitIds,
+            highestQualification,
+            impairment,
+            learningStrengths,
+            learningWeaknesses,
+            passportAssetId,
+            signatureAssetId,
+          });
+        } catch {
+          // Continue gracefully
+        }
         try {
           await submitApplicationApi(app.id);
         } catch {

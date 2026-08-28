@@ -10,19 +10,29 @@ import {
   FiCheck,
   FiClock,
   FiUser,
+  FiPlus,
 } from "react-icons/fi";
 import { HeaderBanner } from "@/features/candidate/features/Dashboard/components/HeaderBanner";
 import { CalendarWidget } from "@/features/candidate/features/Dashboard/components/CalendarWidget";
 import { Button } from "@/src/components/ui/button";
 import { ASSETS_URL } from "@/assets";
+import { scheduleDirectObservationApi } from "@/src/features/shared/applications/api";
+import {
+  useGetTradeDetail,
+  useGetUnitsByTrade,
+  useGetEvidenceTypesByTrade,
+} from "@/src/features/shared/reference/hooks";
 import { NsqUnitDetailView } from "./NsqUnitDetailView";
 import { NsqRequestObservationModal } from "./NsqRequestObservationModal";
+import { NsqObservationRequestReviewModal } from "./NsqObservationRequestReviewModal";
+import { NsqObservationSuccessModal } from "./NsqObservationSuccessModal";
 
 interface NsqUnitItem {
   id: string;
   unitNo: string;
   title: string;
   status: "Not Started" | "In Progress" | "Completed";
+  structure?: Record<string, unknown>;
 }
 
 interface NsqApplicationDetailViewProps {
@@ -36,87 +46,204 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
 
   const [selectedUnit, setSelectedUnit] = useState<NsqUnitItem | null>(null);
   const [isObservationModalOpen, setIsObservationModalOpen] = useState(false);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [successModalInfo, setSuccessModalInfo] = useState({
+    title: "Direct Observation Request Sent",
+    subtitle: "You have successfully sent your direct observation request",
+  });
+
+  const isRawId = (str?: string) => {
+    if (!str) return false;
+    if (/^[0-9A-Z]{20,}$/.test(str) || /^[0-9a-f]{8}-[0-9a-f]{4}/i.test(str))
+      return true;
+    return false;
+  };
+
+  const tradeId =
+    application?.tradeId ||
+    (typeof application?.trade === "object" ? application?.trade?.id : null) ||
+    (typeof application?.trade === "string" && isRawId(application?.trade)
+      ? application?.trade
+      : "");
+
+  // Fetch dynamic Trade Detail, Units, and Evidence Types from Catalogue API
+  const { data: tradeDetail } = useGetTradeDetail(tradeId);
+  const { data: remoteUnits = [], isLoading: isUnitsLoading } =
+    useGetUnitsByTrade(tradeId);
+  const { data: remoteEvidenceTypes = [] } =
+    useGetEvidenceTypesByTrade(tradeId);
+
   const [scheduledObservation, setScheduledObservation] = useState<{
+    units?: string[];
     date: string;
     time: string;
-    mode: string;
-    notes: string;
-  } | null>(null);
+    country?: string;
+    state?: string;
+    lga?: string;
+    address?: string;
+    status?: "pending" | "attention_required" | "scheduled" | "completed";
+    isSigned?: boolean;
+  } | null>(
+    application?.directObservation
+      ? {
+          units: application.directObservation.units || ["UNIT 1"],
+          date:
+            application.directObservation.scheduledAt?.split("T")[0] ||
+            "22/03/2026",
+          time:
+            application.directObservation.scheduledAt
+              ?.split("T")[1]
+              ?.slice(0, 5) || "12:00PM",
+          status: application.directObservation.status || "pending",
+          isSigned: false,
+        }
+      : null,
+  );
 
-  const tradeName =
+  const resolvedTradeName =
+    tradeDetail?.name ||
     application?.trade?.name ||
-    (typeof application?.trade === "string" ? application?.trade : "") ||
-    "Masonry";
+    (typeof application?.trade === "string" && !isRawId(application?.trade)
+      ? application?.trade
+      : "") ||
+    "Cosmetology";
 
-  const sectorName =
+  const resolvedSectorName =
+    (tradeDetail as any)?.sector?.name ||
     application?.sector?.name ||
-    (typeof application?.sector === "string" ? application?.sector : "") ||
-    "Construction";
+    (typeof application?.sector === "string" && !isRawId(application?.sector)
+      ? application?.sector
+      : "") ||
+    "Personal Services";
 
   const levelName = application?.level || "Level 3";
 
-  // Units list
-  const unitsList: NsqUnitItem[] = [
-    {
-      id: "unit-01",
-      unitNo: "UNIT 1",
-      title: "Maintain personal health, hygiene, and safe workplace environments",
-      status: "Not Started",
-    },
-    {
-      id: "unit-02",
-      unitNo: "UNIT 2",
-      title: "Core trade fundamentals, material measurement, and mortar preparation",
-      status: "Not Started",
-    },
-    {
-      id: "unit-03",
-      unitNo: "UNIT 3",
-      title: "Structural block-laying, alignment checks, and joint finishing",
-      status: "Not Started",
-    },
-    {
-      id: "unit-04",
-      unitNo: "UNIT 4",
-      title: "Quality inspection, structural durability testing, and site clean-up",
-      status: "Not Started",
-    },
-  ];
+  // Dynamic Units list from Catalogue API
+  const unitsList: NsqUnitItem[] =
+    remoteUnits && remoteUnits.length > 0
+      ? remoteUnits.map((u, idx) => ({
+          id: u.id,
+          unitNo: u.referenceNumber || `UNIT ${idx + 1}`,
+          title: u.title,
+          status: "Not Started" as const,
+          structure: u.structure,
+        }))
+      : [
+          {
+            id: "unit-01",
+            unitNo: "UNIT 1",
+            title: `Maintain personal health, hygiene, and safe workplace environments`,
+            status: "Not Started" as const,
+          },
+          {
+            id: "unit-02",
+            unitNo: "UNIT 2",
+            title: `Core trade fundamentals, material measurement, and preparation in ${resolvedTradeName}`,
+            status: "Not Started" as const,
+          },
+          {
+            id: "unit-03",
+            unitNo: "UNIT 3",
+            title: `Specialized practical tools, equipment operation, and treatment standards in ${resolvedTradeName}`,
+            status: "Not Started" as const,
+          },
+          {
+            id: "unit-04",
+            unitNo: "UNIT 4",
+            title: `Quality inspection, structural durability testing, and site sanitation`,
+            status: "Not Started" as const,
+          },
+        ];
+
+  const qualificationCode =
+    remoteUnits[0]?.referenceNumber ||
+    (tradeDetail?.activeNosDocument as any)?.qualificationLevels?.[0]?.slug ||
+    (tradeDetail?.activeNosDocument as any)?.title ||
+    `CON/MS001/L1`;
+
+  const evidenceTypesText =
+    remoteEvidenceTypes && remoteEvidenceTypes.length > 0
+      ? remoteEvidenceTypes.join("/")
+      : "DO/QA/WT/WP/ASS";
 
   // If a unit is selected, show the Unit Detail View (Image 1)
   if (selectedUnit) {
     return (
       <NsqUnitDetailView
+        applicationId={application?.id}
+        unitId={selectedUnit.id}
         unitNumber={selectedUnit.unitNo}
         unitTitle={selectedUnit.title}
-        tradeName={tradeName}
+        tradeName={resolvedTradeName}
+        currentStageKey={application?.currentStageKey}
+        structure={selectedUnit.structure}
         onBack={() => setSelectedUnit(null)}
       />
     );
   }
 
+  const handleObservationRequestSubmitted = async (details: {
+    units: string[];
+    date: string;
+    time: string;
+    country: string;
+    state: string;
+    lga: string;
+    address: string;
+  }) => {
+    setScheduledObservation({
+      ...details,
+      status: "attention_required",
+      isSigned: false,
+    });
+    setSuccessModalInfo({
+      title: "Direct Observation Request Sent",
+      subtitle: "You have successfully sent your direct observation request",
+    });
+    setIsSuccessModalOpen(true);
+
+    if (application?.id && details.date) {
+      try {
+        const isoDate = `${details.date}T${details.time || "10:00"}:00Z`;
+        await scheduleDirectObservationApi(application.id, isoDate);
+      } catch {
+        // Continue with local UI state
+      }
+    }
+  };
+
+  const handleConfirmSchedule = (updated: any) => {
+    setScheduledObservation(updated);
+    setSuccessModalInfo({
+      title: "Schedule Confirmed",
+      subtitle: "You have successfully confirmed this schedule",
+    });
+    setIsSuccessModalOpen(true);
+  };
+
   return (
     <div className="w-full flex flex-col items-center bg-[#f8f9fa] min-h-screen pb-12">
       {/* Edge to edge header banner */}
       <HeaderBanner
-        title={tradeName}
-        backTitle={tradeName}
+        title={resolvedTradeName}
+        backTitle={resolvedTradeName}
         backHref="/dashboard/applications"
         rightAction={
           <Button
             type="button"
             variant="amber"
             size="md"
-            rightIcon={<FiCalendar className="w-4 h-4 ml-1" />}
+            rightIcon={<FiPlus className="w-4 h-4 ml-1" />}
             onClick={() => setIsObservationModalOpen(true)}
-            className="px-5 h-10 text-white font-bold text-xs sm:text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-md cursor-pointer shrink-0"
+            className="px-4 sm:px-5 h-10 text-white font-bold text-xs sm:text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-md cursor-pointer shrink-0 flex items-center gap-1"
           >
-            Request Observation
+            <span>Request Observation</span>
           </Button>
         }
         breadcrumbs={[
           { label: "My Applications", href: "/dashboard/applications" },
-          { label: tradeName },
+          { label: resolvedTradeName },
         ]}
       />
 
@@ -192,7 +319,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                     Mandatory
                   </span>
                   <h4 className="text-base font-extrabold text-neutral-primary tracking-tight">
-                    {tradeName} National Occupational Standard
+                    {resolvedTradeName} National Occupational Standard
                   </h4>
                 </div>
 
@@ -201,8 +328,8 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">
                       Qualification Code
                     </span>
-                    <span className="text-xs sm:text-sm font-extrabold text-neutral-primary">
-                      CON/MS001/L1
+                    <span className="text-xs sm:text-sm font-extrabold text-neutral-primary truncate">
+                      {qualificationCode}
                     </span>
                   </div>
 
@@ -210,8 +337,8 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">
                       Evidence Type
                     </span>
-                    <span className="text-xs sm:text-sm font-extrabold text-neutral-primary">
-                      DO/QA/WT/WP/ASS
+                    <span className="text-xs sm:text-sm font-extrabold text-neutral-primary truncate">
+                      {evidenceTypesText}
                     </span>
                   </div>
                 </div>
@@ -224,7 +351,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                     Sector
                   </span>
                   <span className="text-xs sm:text-sm font-extrabold text-neutral-primary truncate">
-                    {sectorName}
+                    {resolvedSectorName}
                   </span>
                 </div>
 
@@ -260,7 +387,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
             {/* Units List */}
             <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-4">
               <h3 className="text-base sm:text-lg font-extrabold text-neutral-primary tracking-tight">
-                {tradeName} {levelName}
+                {resolvedTradeName} {levelName}
               </h3>
 
               <div className="flex flex-col gap-3">
@@ -270,11 +397,11 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                     onClick={() => setSelectedUnit(unit)}
                     className="p-4 rounded-xl border border-gray-100 hover:border-gray-200 bg-[#f8f9fa] hover:bg-white flex items-center justify-between gap-4 cursor-pointer transition-all group shadow-2xs"
                   >
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 min-w-0">
                       <span className="font-extrabold text-xs sm:text-sm text-neutral-primary uppercase shrink-0">
                         {unit.unitNo}:
                       </span>
-                      <span className="text-xs sm:text-sm text-gray-700 font-medium">
+                      <span className="text-xs sm:text-sm text-gray-700 font-medium truncate">
                         {unit.title}
                       </span>
                     </div>
@@ -296,25 +423,99 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
             {/* Calendar */}
             <CalendarWidget />
 
-            {/* Observation Request Card */}
+            {/* Observation Request Card (Images 1 to 5) */}
             <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex flex-col gap-3">
               <h4 className="text-sm font-extrabold text-neutral-primary tracking-tight">
                 Observation Request
               </h4>
 
               {scheduledObservation ? (
-                <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-3.5 flex flex-col gap-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
-                      <FiCalendar className="w-3.5 h-3.5" /> {scheduledObservation.date}
-                    </span>
-                    <span className="px-2 py-0.5 rounded-full bg-amber-200/80 text-amber-900 text-[10px] font-bold">
-                      Requested
-                    </span>
+                <div className="flex flex-col gap-2">
+                  <div
+                    onClick={() => setIsReviewModalOpen(true)}
+                    className={`bg-[#f8f9fa] hover:bg-white border border-gray-100 hover:border-gray-200 rounded-xl p-4 flex items-center justify-between gap-3 cursor-pointer transition-all group shadow-2xs select-none border-l-[5px] ${
+                      scheduledObservation.status === "scheduled" ||
+                      scheduledObservation.status === "completed"
+                        ? "border-l-emerald-500"
+                        : "border-l-[#fbab2a]"
+                    }`}
+                  >
+                    <div className="flex flex-col gap-2">
+                      {/* Status Badge */}
+                      <span
+                        className={`self-start text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          scheduledObservation.status === "scheduled" ||
+                          scheduledObservation.status === "completed"
+                            ? "bg-emerald-100 text-emerald-800"
+                            : scheduledObservation.status === "pending"
+                              ? "bg-amber-100 text-amber-800"
+                              : "bg-pink-100 text-pink-700"
+                        }`}
+                      >
+                        {scheduledObservation.status === "scheduled"
+                          ? "Scheduled"
+                          : scheduledObservation.status === "completed"
+                            ? "Completed"
+                            : scheduledObservation.status === "pending"
+                              ? "Pending"
+                              : "Attention Required"}
+                      </span>
+
+                      <h5 className="font-extrabold text-xs sm:text-sm text-neutral-primary tracking-tight">
+                        Physically Observation
+                      </h5>
+
+                      {/* Time & Date Grid */}
+                      <div className="flex items-center gap-6 text-gray-600">
+                        <div className="flex flex-col">
+                          <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wide">
+                            Time
+                          </span>
+                          <span className="text-xs font-bold text-neutral-primary">
+                            {scheduledObservation.time || "12:00PM"}
+                          </span>
+                        </div>
+
+                        <div className="flex flex-col">
+                          <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wide">
+                            Date
+                          </span>
+                          <span className="text-xs font-bold text-neutral-primary">
+                            {scheduledObservation.date || "22/03/2026"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {scheduledObservation.status === "scheduled" ? (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsObservationModalOpen(true);
+                        }}
+                        className="p-2 text-gray-400 hover:text-neutral-900 transition-colors cursor-pointer"
+                        title="Reschedule observation"
+                      >
+                        <FiClock className="w-4 h-4" />
+                      </button>
+                    ) : scheduledObservation.status === "completed" ? null : (
+                      <FiChevronRight className="w-5 h-5 text-gray-400 group-hover:text-primary group-hover:translate-x-1 transition-all shrink-0" />
+                    )}
                   </div>
-                  <span className="text-[11px] text-amber-800 font-medium">
-                    Time: {scheduledObservation.time} · {scheduledObservation.mode}
-                  </span>
+
+                  {/* View Form Button for Completed status (Image 1) */}
+                  {scheduledObservation.status === "completed" && (
+                    <Button
+                      type="button"
+                      variant="amber"
+                      size="md"
+                      onClick={() => setIsReviewModalOpen(true)}
+                      className="w-full h-11 text-white font-bold text-xs sm:text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-md cursor-pointer mt-1 flex items-center justify-center"
+                    >
+                      View Form
+                    </Button>
+                  )}
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-6 text-center gap-2">
@@ -348,12 +549,12 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                   Ngozi Eze
                 </span>
                 <span className="text-[11px] text-gray-500 font-medium truncate">
-                  Assessor · {tradeName} ({levelName})
+                  Assessor · {resolvedTradeName} ({levelName})
                 </span>
 
                 <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
                   <span className="px-2 py-0.5 rounded-md bg-pink-50 text-pink-700 text-[10px] font-bold">
-                    {tradeName}
+                    {resolvedTradeName}
                   </span>
                   <span className="px-2 py-0.5 rounded-md bg-pink-50 text-pink-700 text-[10px] font-bold">
                     RPL Coordinator
@@ -365,12 +566,28 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
         </div>
       </div>
 
-      {/* Observation Request Modal */}
+      {/* Observation Request Creation Form Modal */}
       <NsqRequestObservationModal
         isOpen={isObservationModalOpen}
         onClose={() => setIsObservationModalOpen(false)}
-        tradeName={tradeName}
-        onRequestSubmitted={(details) => setScheduledObservation(details)}
+        tradeName={resolvedTradeName}
+        onRequestSubmitted={handleObservationRequestSubmitted}
+      />
+
+      {/* Observation Request Review & Signature Modal (Images 3 & 4) */}
+      <NsqObservationRequestReviewModal
+        isOpen={isReviewModalOpen}
+        onClose={() => setIsReviewModalOpen(false)}
+        details={scheduledObservation}
+        onConfirmSchedule={handleConfirmSchedule}
+      />
+
+      {/* Observation Success Confirmation Modal (Image 5 & Image 3) */}
+      <NsqObservationSuccessModal
+        isOpen={isSuccessModalOpen}
+        onClose={() => setIsSuccessModalOpen(false)}
+        title={successModalInfo.title}
+        subtitle={successModalInfo.subtitle}
       />
     </div>
   );
