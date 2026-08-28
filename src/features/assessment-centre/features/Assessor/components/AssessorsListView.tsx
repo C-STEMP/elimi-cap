@@ -161,7 +161,7 @@ export const AssessorsListView: React.FC<AssessorsListViewProps> = ({
             />
           </div>
 
-          <div className="flex items-center justify-between sm:justify-end gap-3 flex-wrap">
+          <div className="flex items-center justify-end gap-3">
             <Select
               size="sm"
               showPlaceholderOption={false}
