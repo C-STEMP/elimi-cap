@@ -166,10 +166,10 @@ export const CompleteSignUp: React.FC = () => {
             Already have an account?
           </span>
           <Link
-            href="/signin"
+            href="/login"
             className="text-primary-solid font-bold ml-1 hover:text-primary-hover transition-colors"
           >
-            Sign In
+            Login
           </Link>
         </div>
       </form>
@@ -179,8 +179,8 @@ export const CompleteSignUp: React.FC = () => {
         type="success"
         title="Congratulations"
         description="Your ELIMI account has been created successfully"
-        actionLabel="Sign In"
-        onAction={() => router.push("/signin")}
+        actionLabel="Login"
+        onAction={() => router.push("/login")}
       />
     </motion.div>
   );

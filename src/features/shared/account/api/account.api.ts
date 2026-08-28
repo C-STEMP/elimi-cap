@@ -25,6 +25,8 @@ export interface PersonalDetails {
   dob: string;
   gender: string;
   nationality: string;
+  passportUrl?: string;
+  passportPhotoAssetId?: string;
 }
 
 export interface ContactInformation {

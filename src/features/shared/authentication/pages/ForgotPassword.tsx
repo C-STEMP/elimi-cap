@@ -81,10 +81,10 @@ export const ForgotPassword: React.FC = () => {
         <div className="w-full text-center mt-3 text-sm select-none">
           <span className="text-neutral-secondary font-normal">Go to</span>
           <Link
-            href="/signin"
+            href="/login"
             className="text-primary-solid font-bold ml-1 hover:text-primary-hover transition-colors"
           >
-            Sign In
+            Login
           </Link>
         </div>
       </form>

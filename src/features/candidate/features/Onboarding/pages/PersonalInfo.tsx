@@ -157,15 +157,15 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
   }, [dispatch]);
 
   const update = (field: keyof typeof form, value: string) => {
-    let nextState = "";
-    let nextLga = "";
+    let nextState = form.state;
+    let nextLga = form.lga;
     setForm((prev) => {
       const next = { ...prev, [field]: value };
-      if (field === "country") {
+      if (field === "country" && prev.country !== value) {
         next.state = "";
         next.lga = "";
       }
-      if (field === "state") {
+      if (field === "state" && prev.state !== value) {
         next.lga = "";
       }
       nextState = next.state;

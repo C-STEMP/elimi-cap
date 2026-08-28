@@ -100,8 +100,12 @@ const processQueue = (error: unknown, token: string | null = null) => {
 
 function handleSessionExpired() {
   clearTokens();
-  if (typeof window !== "undefined" && window.location.pathname !== "/signin") {
-    window.location.href = "/signin";
+  if (
+    typeof window !== "undefined" &&
+    window.location.pathname !== "/login" &&
+    window.location.pathname !== "/signin"
+  ) {
+    window.location.href = "/login";
   }
 }
 

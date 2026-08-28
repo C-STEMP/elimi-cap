@@ -9,11 +9,16 @@ import {
   FiList,
   FiGrid,
   FiX,
+  FiExternalLink,
 } from "react-icons/fi";
 import { Select } from "@/src/components/ui/select";
-import { MOCK_ASSESSORS, MOCK_ASSIGNED_CANDIDATES } from "@/features/assessment-centre/utils/constants";
+import { Button } from "@/src/components/ui/button";
+import { Loader } from "@/src/components/ui/loader";
 import { AssignedCandidate } from "@/features/assessment-centre/types";
-import { StaffStatusModal, StaffStatusModalMode } from "../../Staff/components/StaffStatusModal";
+import {
+  StaffStatusModal,
+  StaffStatusModalMode,
+} from "../../Staff/components/StaffStatusModal";
 import { ASSETS_URL } from "@/assets";
 
 import {
@@ -28,34 +33,33 @@ interface AssessorProfileDetailViewProps {
   onViewCandidate?: (candidateId: string) => void;
 }
 
+const CERTIFICATE_KIND_LABELS: Record<string, string> = {
+  qaa: "Quality Assurance Assessor (QAA)",
+  iqm: "Internal Quality Management (IQM)",
+  ev: "External Verifier (EV)",
+  iv: "Internal Verifier (IV)",
+};
+
 export const AssessorProfileDetailView: React.FC<
   AssessorProfileDetailViewProps
 > = ({ assessorId, onBack, onViewCandidate }) => {
-  const fallbackAssessor =
-    MOCK_ASSESSORS.find((a) => a.id === assessorId) || MOCK_ASSESSORS[0];
-
-  const { data: remoteDetail } = useGetCentreAssessorDetail(assessorId);
-  const { data: remoteApps = [] } = useGetCentreAssessorApplications(assessorId);
+  const { data: remoteDetail, isLoading: isLoadingDetail } =
+    useGetCentreAssessorDetail(assessorId);
+  const { data: remoteApps = [], isLoading: isLoadingApps } =
+    useGetCentreAssessorApplications(assessorId);
   const revokeRetained = useRevokeRetainedRequest();
 
   const assessorName =
     remoteDetail?.name ||
-    remoteDetail?.email?.split("@")[0] ||
-    fallbackAssessor.name;
-  const assessorEmail = remoteDetail?.email || fallbackAssessor.email;
-  const assessorExperience =
-    remoteDetail?.yearsOfExperience ?? fallbackAssessor.experienceYears ?? 8;
-  const assessorTags =
-    remoteDetail?.qualifications && remoteDetail.qualifications.length > 0
-      ? remoteDetail.qualifications
-      : (remoteDetail?.sectors || []).map((s) => s.name).length > 0
-        ? (remoteDetail?.sectors || []).map((s) => s.name)
-        : fallbackAssessor.tags || [];
+    (remoteDetail?.id ? `Assessor (${remoteDetail.id.slice(0, 8)})` : "Assessor");
+  const assessorEmail = remoteDetail?.email || "No email provided";
+  const assessorExperience = remoteDetail?.yearsOfExperience ?? 0;
+  const qualifications = remoteDetail?.qualifications || [];
+  const sectors = (remoteDetail?.sectors || []).map((s) => s.name);
+  const certificates = remoteDetail?.certificates || [];
 
   const initialIsInactive =
-    remoteDetail?.status === "revoked" ||
-    remoteDetail?.status === "pending" ||
-    fallbackAssessor.status === "Inactive";
+    remoteDetail?.status === "revoked" || remoteDetail?.status === "pending";
 
   const [searchQuery, setSearchQuery] = useState("");
   const [tradeFilter, setTradeFilter] = useState("All");
@@ -63,50 +67,50 @@ export const AssessorProfileDetailView: React.FC<
   const [statusFilter, setStatusFilter] = useState("All");
   const [isDeactivated, setIsDeactivated] = useState(initialIsInactive);
   const [detailViewMode, setDetailViewMode] = useState<"list" | "grid">("list");
-  const [previewCertificateUrl, setPreviewCertificateUrl] = useState<
-    string | null
-  >(null);
+  const [previewCertificate, setPreviewCertificate] = useState<{
+    title: string;
+    url?: string | null;
+  } | null>(null);
 
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [statusModalMode, setStatusModalMode] =
     useState<StaffStatusModalMode>("confirm-deactivate");
 
   const candidates: AssignedCandidate[] = React.useMemo(() => {
-    if (remoteApps && remoteApps.length > 0) {
-      return remoteApps.map((app: any) => {
-        const candidateName =
-          app.candidate?.name ||
-          (app.candidate?.firstName
-            ? `${app.candidate.firstName} ${app.candidate.lastName || ""}`.trim()
-            : app.candidateId || "Candidate");
-        const tradeName =
-          app.trade?.name || app.tradeId || (app.type === "NSQ" ? "Standard Assessment" : "RPL");
-        const statusMap: Record<
-          string,
-          "Ongoing" | "Completed" | "Folder Complete" | "Certified"
-        > = {
-          in_progress: "Ongoing",
-          draft: "Ongoing",
-          certified: "Certified",
-        };
-        const roleName =
-          Array.isArray(app.roles) && app.roles.length > 0
-            ? app.roles[0].replace(/_/g, " ")
-            : "Assessor";
-        return {
-          id: app.id,
-          role: roleName.charAt(0).toUpperCase() + roleName.slice(1),
-          candidateName,
-          trade: tradeName,
-          assessmentType: app.type || "RPL",
-          status: statusMap[app.status] || "Ongoing",
-          assignedAt: app.createdAt
-            ? new Date(app.createdAt).toLocaleDateString("en-GB")
-            : "07/22/2026",
-        };
-      });
-    }
-    return MOCK_ASSIGNED_CANDIDATES;
+    return (remoteApps || []).map((app: any) => {
+      const candidateName =
+        app.candidate?.name ||
+        (app.candidate?.firstName
+          ? `${app.candidate.firstName} ${app.candidate.lastName || ""}`.trim()
+          : app.candidateId || "Candidate");
+      const tradeName =
+        app.trade?.name ||
+        app.tradeId ||
+        (app.type === "NSQ" ? "Standard Assessment" : "RPL");
+      const statusMap: Record<
+        string,
+        "Ongoing" | "Completed" | "Folder Complete" | "Certified"
+      > = {
+        in_progress: "Ongoing",
+        draft: "Ongoing",
+        certified: "Completed",
+      };
+      const roleName =
+        Array.isArray(app.roles) && app.roles.length > 0
+          ? app.roles[0].replace(/_/g, " ")
+          : "Assessor";
+      return {
+        id: app.id,
+        role: roleName.charAt(0).toUpperCase() + roleName.slice(1),
+        candidateName,
+        trade: tradeName,
+        assessmentType: app.type || "RPL",
+        status: statusMap[app.status] || "Ongoing",
+        assignedAt: app.createdAt
+          ? new Date(app.createdAt).toLocaleDateString("en-GB")
+          : "-",
+      };
+    });
   }, [remoteApps]);
 
   const handleConfirmDeactivate = () => {
@@ -140,6 +144,22 @@ export const AssessorProfileDetailView: React.FC<
     return matchesSearch && matchesTrade && matchesAssessment && matchesStatus;
   });
 
+  const availableTrades = Array.from(
+    new Set(candidates.map((c) => c.trade).filter(Boolean)),
+  );
+
+  if (isLoadingDetail) {
+    return (
+      <div className="w-full bg-white rounded-3xl p-16 flex items-center justify-center min-h-80 shadow-2xs border border-gray-100/80">
+        <Loader
+          fullscreen={false}
+          size="small"
+          tip="Loading assessor profile..."
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="w-full flex flex-col gap-6 select-text">
       {/* Assessor Profile Header Card */}
@@ -161,16 +181,24 @@ export const AssessorProfileDetailView: React.FC<
             </h2>
 
             <span className="text-xs text-[#19191880] font-medium">
-              {assessorEmail} · {assessorExperience} years experience
+              {assessorEmail} · {assessorExperience} {assessorExperience === 1 ? "year" : "years"} experience
             </span>
 
             <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-              {assessorTags.map((tag: string, idx: number) => (
+              {qualifications.map((tag: string, idx: number) => (
                 <span
-                  key={idx}
-                  className="bg-primary/10 text-primary text-xs font-semibold px-2.5 py-0.5 rounded-full"
+                  key={`qual-${idx}`}
+                  className="bg-[#FCE7F3] text-[#9D174D] text-[11px] font-semibold px-2.5 py-0.5 rounded-full"
                 >
                   {tag}
+                </span>
+              ))}
+              {sectors.map((sec: string, idx: number) => (
+                <span
+                  key={`sec-${idx}`}
+                  className="bg-[#EFF6FF] text-[#1D4ED8] text-[11px] font-semibold px-2.5 py-0.5 rounded-full"
+                >
+                  {sec}
                 </span>
               ))}
             </div>
@@ -196,57 +224,54 @@ export const AssessorProfileDetailView: React.FC<
           Certificates & Qualification
         </h3>
 
-        <div className="flex flex-col gap-3">
-          <div className="bg-[#F8F9FA] hover:bg-[#F3F4F6] p-4 rounded-2xl border border-gray-100 flex items-center justify-between gap-4 transition-colors">
-            <div className="flex items-center gap-3.5">
-              <div className="w-10 h-10 rounded-xl bg-red-100/80 text-red-500 flex items-center justify-center shrink-0">
-                <FiFileText className="w-5 h-5" />
-              </div>
-              <div className="flex flex-col">
-                <span className="font-extrabold text-sm sm:text-base text-[#191918]">
-                  NSQ Level 4 Carpentry
-                </span>
-                <span className="text-xs text-[#19191880] font-medium mt-0.5">
-                  National Board for Technical Education · 2020
-                </span>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setPreviewCertificateUrl("NSQ Level 4 Carpentry")}
-              className="w-9 h-9 rounded-xl bg-white border border-gray-200 text-[#19191880] hover:text-neutral-primary flex items-center justify-center transition-colors cursor-pointer shrink-0 shadow-2xs"
-              title="Preview Certificate"
-            >
-              <FiEye className="w-4.5 h-4.5" />
-            </button>
-          </div>
+        {certificates.length === 0 ? (
+          <p className="text-xs sm:text-sm text-gray-400 font-normal py-3">
+            No uploaded certificates available for this assessor.
+          </p>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {certificates.map((cert, idx) => {
+              const label =
+                CERTIFICATE_KIND_LABELS[cert.kind?.toLowerCase()] ||
+                `${cert.kind?.toUpperCase()} Certificate`;
 
-          <div className="bg-[#F8F9FA] hover:bg-[#F3F4F6] p-4 rounded-2xl border border-gray-100 flex items-center justify-between gap-4 transition-colors">
-            <div className="flex items-center gap-3.5">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                <FiFileText className="w-5 h-5" />
-              </div>
-              <div className="flex flex-col">
-                <span className="font-extrabold text-sm sm:text-base text-neutral-primary">
-                  Certified Trade Assessor
-                </span>
-                <span className="text-xs text-[#19191880] font-medium mt-0.5">
-                  Nigeria Skills Qualification Awarding Body · 2021
-                </span>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() =>
-                setPreviewCertificateUrl("Certified Trade Assessor")
-              }
-              className="w-9 h-9 rounded-xl bg-white border border-gray-200 text-[#19191880] hover:text-neutral-primary flex items-center justify-center transition-colors cursor-pointer shrink-0 shadow-2xs"
-              title="Preview Certificate"
-            >
-              <FiEye className="w-4.5 h-4.5" />
-            </button>
+              return (
+                <div
+                  key={cert.assetId || idx}
+                  className="bg-[#F8F9FA] hover:bg-[#F3F4F6] p-4 rounded-2xl border border-gray-100 flex items-center justify-between gap-4 transition-colors"
+                >
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-10 h-10 rounded-xl bg-red-100/80 text-red-500 flex items-center justify-center shrink-0">
+                      <FiFileText className="w-5 h-5" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="font-extrabold text-sm sm:text-base text-neutral-primary">
+                        {label}
+                      </span>
+                      <span className="text-xs text-[#19191880] font-medium mt-0.5">
+                        Verification Status: Verified
+                      </span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPreviewCertificate({
+                        title: label,
+                        url: cert.url || null,
+                      })
+                    }
+                    className="w-9 h-9 rounded-xl bg-white border border-gray-200 text-[#19191880] hover:text-neutral-primary flex items-center justify-center transition-colors cursor-pointer shrink-0 shadow-2xs"
+                    title="Preview Certificate"
+                  >
+                    <FiEye className="w-4.5 h-4.5" />
+                  </button>
+                </div>
+              );
+            })}
           </div>
-        </div>
+        )}
       </div>
 
       <div className="bg-white rounded-3xl p-6 shadow-2xs border border-gray-100/80 flex flex-col gap-6">
@@ -271,15 +296,12 @@ export const AssessorProfileDetailView: React.FC<
             <Select
               size="sm"
               showPlaceholderOption={false}
-              containerClassName="w-32"
+              containerClassName="w-36"
               value={tradeFilter}
               onChange={(e) => setTradeFilter(e.target.value)}
               options={[
                 { label: "Trade", value: "All" },
-                { label: "Masonry", value: "Masonry" },
-                { label: "Carpentry", value: "Carpentry" },
-                { label: "Plumbing", value: "Plumbing" },
-                { label: "Painting", value: "Painting" },
+                ...availableTrades.map((t) => ({ label: t, value: t })),
               ]}
             />
 
@@ -339,8 +361,14 @@ export const AssessorProfileDetailView: React.FC<
           </div>
         </div>
 
-        {/* View Mode 1: Grid Card View */}
-        {detailViewMode === "grid" ? (
+        {/* Candidates Listing */}
+        {filteredCandidates.length === 0 ? (
+          <div className="py-12 flex flex-col items-center justify-center text-center">
+            <p className="text-gray-400 font-normal">
+              No assigned candidates found.
+            </p>
+          </div>
+        ) : detailViewMode === "grid" ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredCandidates.map((cand) => (
               <div
@@ -385,7 +413,6 @@ export const AssessorProfileDetailView: React.FC<
             ))}
           </div>
         ) : (
-          /* View Mode 2: Table List View */
           <div className="w-full overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-175">
               <thead>
@@ -448,10 +475,10 @@ export const AssessorProfileDetailView: React.FC<
         )}
       </div>
 
-      {previewCertificateUrl && (
+      {previewCertificate && (
         <div
           className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 transition-opacity duration-300 select-none"
-          onClick={() => setPreviewCertificateUrl(null)}
+          onClick={() => setPreviewCertificate(null)}
         >
           <div
             className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl relative flex flex-col items-center text-center"
@@ -459,24 +486,36 @@ export const AssessorProfileDetailView: React.FC<
           >
             <button
               type="button"
-              onClick={() => setPreviewCertificateUrl(null)}
+              onClick={() => setPreviewCertificate(null)}
               className="absolute top-4 right-4 w-8 h-8 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 flex items-center justify-center transition-colors cursor-pointer"
             >
               <FiX className="w-5 h-5" />
             </button>
             <FiFileText className="w-16 h-16 text-red-400 mb-4" />
             <h3 className="text-lg font-extrabold text-neutral-primary mb-1">
-              {previewCertificateUrl}
+              {previewCertificate.title}
             </h3>
-            <p className="text-xs text-[#19191880] mb-6">Certificate Preview</p>
-            <div className="w-full bg-[#F8F9FA] rounded-2xl p-8 border border-gray-100 flex items-center justify-center min-h-48">
-              <span className="text-sm text-[#19191880] font-medium">
-                Certificate document preview
-              </span>
+            <p className="text-xs text-[#19191880] mb-6">Certificate Document</p>
+            <div className="w-full bg-[#F8F9FA] rounded-2xl p-6 border border-gray-100 flex flex-col items-center justify-center min-h-36 gap-3">
+              {previewCertificate.url ? (
+                <a
+                  href={previewCertificate.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-sm text-[#fbab2a] hover:underline font-bold"
+                >
+                  <span>Open Certificate File</span>
+                  <FiExternalLink className="w-4 h-4" />
+                </a>
+              ) : (
+                <span className="text-sm text-[#19191880] font-medium">
+                  Document asset stored securely on server
+                </span>
+              )}
             </div>
             <button
               type="button"
-              onClick={() => setPreviewCertificateUrl(null)}
+              onClick={() => setPreviewCertificate(null)}
               className="mt-6 w-full h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer transition-colors"
             >
               Close

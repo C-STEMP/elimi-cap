@@ -38,6 +38,7 @@ export interface AssessorSummary {
   totalApplications: number;
   completedApplications: number;
   pendingApplications: number;
+  archivedApplications?: number;
 }
 
 export interface AssessorCentreItem {

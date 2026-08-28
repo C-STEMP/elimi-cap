@@ -6,27 +6,98 @@ import { FiDownload, FiPrinter } from "react-icons/fi";
 import { ASSETS_URL } from "@/assets";
 import { Button } from "@/src/components/ui/button";
 import { PassportUpload } from "@/src/components/ui/passport-upload";
+import { Loader } from "@/src/components/ui/loader";
 import { MOCK_COMPETENCY_TASKS } from "@/features/assessment-centre/utils/constants";
+import {
+  useGetSelfAssessment,
+  useGetApplicationById,
+  useGetApplicationHistory,
+  useReviewApplication,
+} from "@/src/features/shared/applications/hooks";
 
 interface SelfAssessmentFormViewProps {
+  id?: string;
   candidateName?: string;
   onBack: () => void;
 }
 
 export const AssessmentCentreSelfAssessmentFormView: React.FC<
   SelfAssessmentFormViewProps
-> = ({ candidateName = "Oguntade James", onBack }) => {
+> = ({ id = "", candidateName = "Candidate", onBack }) => {
+  const { data: selfAssessment, isLoading: isLoadingSelfAssessment } =
+    useGetSelfAssessment(id);
+  const { data: appDetail } = useGetApplicationById(id);
+  const { data: appHistory = [] } = useGetApplicationHistory(id);
+  const reviewMutation = useReviewApplication();
+
   const [feedback, setFeedback] = useState("");
-  const [pastComments, setPastComments] = useState<string[]>([]);
+  const [localComments, setLocalComments] = useState<string[]>([]);
   const [isFeedbackSuccessOpen, setIsFeedbackSuccessOpen] = useState(false);
+
+  const personalDetails = appDetail?.personalInformation?.personalDetails;
+  const contactInfo = appDetail?.personalInformation?.contactInformation;
+  const residentialAddress = appDetail?.personalInformation?.residentialAddress;
+
+  const resolvedFullName =
+    personalDetails?.firstName
+      ? `${personalDetails.firstName} ${personalDetails.lastName || ""}`.trim()
+      : appDetail?.candidate?.name || candidateName;
+
+  const resolvedPassportUrl =
+    personalDetails?.passportUrl ||
+    (personalDetails as any)?.photoUrl ||
+    (personalDetails as any)?.photo ||
+    (appDetail as any)?.candidate?.passportUrl ||
+    (appDetail as any)?.candidate?.avatar ||
+    (appDetail as any)?.candidate?.photoUrl ||
+    (appDetail as any)?.passportUrl ||
+    (appDetail as any)?.photoUrl ||
+    (appDetail as any)?.frozenProfile?.passportUrl ||
+    (appDetail as any)?.frozenProfile?.personalDetails?.passportUrl ||
+    "";
+
+  const historyComments = (appHistory as any[])
+    .filter((h) => h.comment || h.feedback)
+    .map((h) => h.comment || h.feedback);
+
+  const allComments = [...localComments, ...historyComments];
 
   const handleSendFeedback = (e: React.FormEvent) => {
     e.preventDefault();
     if (!feedback.trim()) return;
-    setPastComments((prev) => [feedback.trim(), ...prev]);
-    setFeedback("");
-    setIsFeedbackSuccessOpen(true);
+    const commentText = feedback.trim();
+
+    if (id) {
+      reviewMutation.mutate(
+        {
+          id,
+          payload: {
+            decision: "approve",
+            feedback: commentText,
+          },
+        },
+        {
+          onSuccess: () => {
+            setLocalComments((prev) => [commentText, ...prev]);
+            setFeedback("");
+            setIsFeedbackSuccessOpen(true);
+          },
+        },
+      );
+    } else {
+      setLocalComments((prev) => [commentText, ...prev]);
+      setFeedback("");
+      setIsFeedbackSuccessOpen(true);
+    }
   };
+
+  if (isLoadingSelfAssessment && !selfAssessment) {
+    return (
+      <div className="w-full min-h-100 flex items-center justify-center">
+        <Loader tip="Loading self-assessment form..." />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full flex flex-col gap-6 select-text">
@@ -69,8 +140,25 @@ export const AssessmentCentreSelfAssessmentFormView: React.FC<
                 OF COMPETENCY FORM
               </h2>
 
-              <div className="absolute top-0 right-0 hidden sm:block">
-                <PassportUpload required={false} />
+              <div className="sm:absolute sm:top-0 sm:right-0 mt-4 sm:mt-0">
+                <div className="w-28 sm:w-32 h-28 sm:h-32 rounded-2xl border-2 border-dashed border-[#a31d38]/20 bg-[#fdf2f5] overflow-hidden flex flex-col items-center justify-center p-1 relative shadow-2xs">
+                  {resolvedPassportUrl ? (
+                    <img
+                      src={resolvedPassportUrl}
+                      alt="Candidate Passport"
+                      className="w-full h-full object-cover rounded-xl"
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center text-center p-2">
+                      <span className="text-[#a31d38] text-xs font-bold leading-tight">
+                        Passport Photo
+                      </span>
+                      <span className="text-[10px] text-gray-400 mt-0.5">
+                        Candidate Attached
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -84,32 +172,40 @@ export const AssessmentCentreSelfAssessmentFormView: React.FC<
                     Full Name:
                   </span>
                   <span className="text-gray-800 font-medium">
-                    {candidateName}
+                    {resolvedFullName}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 border-b border-gray-200/70 pb-1.5">
                   <span className="font-semibold text-black shrink-0 w-32">
                     Date of Birth:
                   </span>
-                  <span className="text-gray-400">------</span>
+                  <span className="text-gray-700">
+                    {personalDetails?.dob ? new Date(personalDetails.dob).toLocaleDateString("en-GB") : "------"}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2 border-b border-gray-200/70 pb-1.5">
                   <span className="font-semibold text-black shrink-0 w-32">
                     Address:
                   </span>
-                  <span className="text-gray-400">------</span>
+                  <span className="text-gray-700">
+                    {residentialAddress?.address || [residentialAddress?.lga, residentialAddress?.state, residentialAddress?.country].filter(Boolean).join(", ") || "------"}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2 border-b border-gray-200/70 pb-1.5">
                   <span className="font-semibold text-black shrink-0 w-32">
                     Phone Number:
                   </span>
-                  <span className="text-gray-400">------</span>
+                  <span className="text-gray-700">
+                    {contactInfo?.phoneNumber?.number ? `${contactInfo.phoneNumber.countryCode || "+234"} ${contactInfo.phoneNumber.number}` : "------"}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2 border-b border-gray-200/70 pb-1.5">
                   <span className="font-semibold text-black shrink-0 w-32">
                     Email Address:
                   </span>
-                  <span className="text-gray-400">------</span>
+                  <span className="text-gray-700">
+                    {contactInfo?.emailAddress || "------"}
+                  </span>
                 </div>
               </div>
             </div>
@@ -248,9 +344,10 @@ export const AssessmentCentreSelfAssessmentFormView: React.FC<
                 type="submit"
                 variant="amber"
                 fullWidth
+                disabled={reviewMutation.isPending}
                 className="bg-[#fbab2a] hover:bg-[#e89b1f] text-white font-bold text-sm py-3 rounded-xl shadow-md cursor-pointer mt-1"
               >
-                Send Feedback
+                {reviewMutation.isPending ? "Sending..." : "Send Feedback"}
               </Button>
             </form>
           </div>
@@ -259,9 +356,9 @@ export const AssessmentCentreSelfAssessmentFormView: React.FC<
             <h3 className="text-base font-extrabold text-black tracking-tight">
               Past Comments
             </h3>
-            {pastComments.length > 0 ? (
+            {allComments.length > 0 ? (
               <div className="flex flex-col gap-3 max-h-60 overflow-y-auto no-scrollbar">
-                {pastComments.map((comment, idx) => (
+                {allComments.map((comment, idx) => (
                   <div
                     key={idx}
                     className="bg-[#F8F9FA] border border-gray-200/80 rounded-2xl p-3.5 text-xs text-gray-700 leading-relaxed"

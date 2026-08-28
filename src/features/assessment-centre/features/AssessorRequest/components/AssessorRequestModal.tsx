@@ -18,6 +18,7 @@ interface AssessorRequestModalProps {
   onClose: () => void;
   onConfirmAccept?: () => void;
   onConfirmDecline?: () => void;
+  isLoading?: boolean;
 }
 
 export const AssessorRequestModal: React.FC<AssessorRequestModalProps> = ({
@@ -26,6 +27,7 @@ export const AssessorRequestModal: React.FC<AssessorRequestModalProps> = ({
   onClose,
   onConfirmAccept,
   onConfirmDecline,
+  isLoading = false,
 }) => {
   if (!isOpen) return null;
 
@@ -70,6 +72,8 @@ export const AssessorRequestModal: React.FC<AssessorRequestModalProps> = ({
                 <Button
                   type="button"
                   onClick={onConfirmAccept}
+                  loading={isLoading}
+                  disabled={isLoading}
                   variant="amber"
                   size="lg"
                   className="w-full h-12.5 text-white font-bold text-base bg-[#fbab2a] hover:bg-[#e89b1f] transition-all shadow-lg cursor-pointer rounded-xl"
@@ -80,7 +84,8 @@ export const AssessorRequestModal: React.FC<AssessorRequestModalProps> = ({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="w-full h-12.5 bg-white border border-[#fbab2a] text-[#fbab2a] hover:bg-amber-50 font-bold text-base rounded-xl transition-all shadow-lg cursor-pointer"
+                  disabled={isLoading}
+                  className="w-full h-12.5 bg-white border border-[#fbab2a] text-[#fbab2a] hover:bg-amber-50 font-bold text-base rounded-xl transition-all shadow-lg cursor-pointer disabled:opacity-50"
                 >
                   No
                 </button>
@@ -115,9 +120,11 @@ export const AssessorRequestModal: React.FC<AssessorRequestModalProps> = ({
                 <Button
                   type="button"
                   onClick={onConfirmDecline}
+                  loading={isLoading}
+                  disabled={isLoading}
                   variant="amber"
                   size="lg"
-                  className="w-full h-12.5 text-white font-bold text-base bg-[#fbab2a] hover:bg-[#e89b1f] transition-all shadow-lg cursor-pointer rounded-xl"
+                  className="w-full h-12.5 text-white font-bold text-base bg-[#C5221F] hover:bg-[#a81c19] transition-all shadow-lg cursor-pointer rounded-xl"
                 >
                   Yes, Decline Request
                 </Button>
@@ -125,7 +132,8 @@ export const AssessorRequestModal: React.FC<AssessorRequestModalProps> = ({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="w-full h-12.5 bg-white border border-[#fbab2a] text-[#fbab2a] hover:bg-amber-50 font-bold text-base rounded-xl transition-all shadow-lg cursor-pointer"
+                  disabled={isLoading}
+                  className="w-full h-12.5 bg-white border border-[#fbab2a] text-[#fbab2a] hover:bg-amber-50 font-bold text-base rounded-xl transition-all shadow-lg cursor-pointer disabled:opacity-50"
                 >
                   No
                 </button>

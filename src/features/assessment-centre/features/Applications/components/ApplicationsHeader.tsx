@@ -14,6 +14,7 @@ interface ApplicationsHeaderProps {
   onBackFromSelfAssessment: () => void;
   onBackFromEvidenceVault: () => void;
   onBackFromCandidateForm: () => void;
+  onAcceptApplication?: () => void;
 }
 
 export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = ({
@@ -25,6 +26,7 @@ export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = ({
   onBackFromSelfAssessment,
   onBackFromEvidenceVault,
   onBackFromCandidateForm,
+  onAcceptApplication,
 }) => {
   const { data: applications = [] } = useGetApplications();
   const { data: appSummary } = useGetCentreApplicationsSummary();
@@ -119,7 +121,7 @@ export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = ({
 
   if (selectedCandidateName && showCandidateForm) {
     return (
-      <div className="flex items-center justify-between gap-4 pt-2">
+      <div className="flex items-center justify-between gap-4 pt-2 flex-wrap">
         <div className="flex flex-col gap-1">
           <button
             type="button"
@@ -149,6 +151,17 @@ export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = ({
             </span>
           </div>
         </div>
+
+        {onAcceptApplication && (
+          <button
+            type="button"
+            onClick={onAcceptApplication}
+            className="bg-[#fbab2a] hover:bg-[#e89b1f] text-white font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-md shrink-0"
+          >
+            <span>Accept Application</span>
+            <span className="text-sm font-bold">✓</span>
+          </button>
+        )}
       </div>
     );
   }

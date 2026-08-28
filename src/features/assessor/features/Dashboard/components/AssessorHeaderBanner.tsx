@@ -53,6 +53,7 @@ interface AssessorHeaderBannerProps {
   totalApplicationsCount?: number;
   pendingApplicationsCount?: number;
   completedApplicationsCount?: number;
+  archivedApplicationsCount?: number;
 }
 
 export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
@@ -71,6 +72,7 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
   totalApplicationsCount = 0,
   pendingApplicationsCount = 0,
   completedApplicationsCount = 0,
+  archivedApplicationsCount = 0,
 }) => {
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -113,7 +115,7 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
 
   const handleLogout = () => {
     dispatch(logout());
-    router.push("/signin");
+    router.push("/login");
   };
 
   return (
@@ -423,10 +425,10 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
 
             <AssessorApplicationStatsCards
               stats={{
-                total: totalApplicationsCount || 1220,
-                pending: pendingApplicationsCount || 200,
-                completed: completedApplicationsCount || 1000,
-                archived: 20,
+                total: totalApplicationsCount,
+                pending: pendingApplicationsCount,
+                completed: completedApplicationsCount,
+                archived: archivedApplicationsCount,
               }}
             />
           </div>
