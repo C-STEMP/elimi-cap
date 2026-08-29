@@ -32,6 +32,11 @@ export interface SelectProps {
   notFoundContent?: React.ReactNode;
   maxTagCount?: number | "responsive";
   maxTagTextLength?: number;
+  showSearch?: boolean;
+  onSearch?: (value: string) => void;
+  searchValue?: string;
+  filterOption?: boolean | ((input: string, option?: any) => boolean);
+  allowClear?: boolean;
 }
 
 export const Select: React.FC<SelectProps> = ({
@@ -57,6 +62,11 @@ export const Select: React.FC<SelectProps> = ({
   notFoundContent,
   maxTagCount,
   maxTagTextLength = 22,
+  showSearch = true,
+  onSearch,
+  searchValue,
+  filterOption,
+  allowClear,
 }) => {
   const reactId = useId();
   const [mounted, setMounted] = useState(false);
@@ -120,6 +130,23 @@ export const Select: React.FC<SelectProps> = ({
         placeholder={loading ? (typeof placeholder === "string" && placeholder.includes("Loading") ? placeholder : "Loading...") : placeholder}
         disabled={disabled}
         loading={loading}
+        showSearch={showSearch}
+        onSearch={onSearch}
+        searchValue={searchValue}
+        allowClear={allowClear}
+        filterOption={
+          filterOption !== undefined
+            ? filterOption
+            : onSearch
+              ? false
+              : (input, option) =>
+                  (option?.label?.toString() || "")
+                    .toLowerCase()
+                    .includes(input.toLowerCase()) ||
+                  (option?.value?.toString() || "")
+                    .toLowerCase()
+                    .includes(input.toLowerCase())
+        }
         maxTagCount={maxTagCount !== undefined ? maxTagCount : multiple ? "responsive" : undefined}
         maxTagTextLength={maxTagTextLength}
         maxTagPlaceholder={(omittedValues) => (

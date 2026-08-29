@@ -38,9 +38,25 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const lastToastRef = React.useRef<{ key: string; time: number } | null>(null);
 
   const toast = useCallback(
     ({ type, title, description, duration = 4000 }: Omit<Toast, "id">) => {
+      const now = Date.now();
+      const normalizedTitle = (title || "").trim().toLowerCase();
+      const normalizedDesc = (description || "").trim().toLowerCase();
+      const toastKey = `${type}:${normalizedTitle}:${normalizedDesc}`;
+
+      // Prevent duplicate toast if the exact same toast was emitted within the last 3000ms
+      if (
+        lastToastRef.current &&
+        lastToastRef.current.key === toastKey &&
+        now - lastToastRef.current.time < 3000
+      ) {
+        return;
+      }
+
+      lastToastRef.current = { key: toastKey, time: now };
       const id = Math.random().toString(36).substring(2, 9);
       setToasts([{ id, type, title, description, duration }]);
     },

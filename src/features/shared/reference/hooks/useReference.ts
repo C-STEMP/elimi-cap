@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import {
   getSectorsApi,
   getTradesBySectorApi,
@@ -9,6 +9,7 @@ import {
   getAwardingBodiesApi,
   getThirdPartyReportTemplateApi,
   getBanksApi,
+  resolveBankAccountApi,
   getCountriesApi,
   getStatesApi,
   getLgasApi,
@@ -127,6 +128,13 @@ export function useGetLgas(country?: string, state?: string) {
   });
 }
 
+export function useResolveBankAccount() {
+  return useMutation({
+    mutationFn: (payload: { accountNumber: string; bankCode: string }) =>
+      resolveBankAccountApi(payload),
+  });
+}
+
 /**
  * Composite hook grouping Reference / Catalogue data operations
  */
@@ -137,6 +145,7 @@ export function useReference(country: string = "nigeria") {
   const thirdPartyTemplate = useGetThirdPartyReportTemplate();
   const banks = useGetBanks(country);
   const countries = useGetCountries();
+  const resolveBankAccount = useResolveBankAccount();
 
   return {
     sectors,
@@ -145,5 +154,6 @@ export function useReference(country: string = "nigeria") {
     thirdPartyTemplate,
     banks,
     countries,
+    resolveBankAccount,
   };
 }
