@@ -39,6 +39,10 @@ import { setAssessorPersonalInfo } from "@/src/store/slices/onboardingSlice";
 import { CameraCaptureModal } from "@/src/components/ui/camera-capture-modal";
 import { FiCamera } from "react-icons/fi";
 import { QUALIFICATION_OPTIONS } from "@/src/features/assessor/features/Onboarding/pages/AssessorInformation";
+import {
+  CertificatePreviewModal,
+  CertificatePreviewData,
+} from "@/src/features/shared/settings/components/CertificatePreviewModal";
 
 export type AssessorSettingsSubTab =
   | "profile"
@@ -57,6 +61,8 @@ export const AssessorSettingsView: React.FC = () => {
   const patchAssessorProfileMutation = usePatchAssessorProfile();
   const uploadFileMutation = useUploadFile();
   const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [previewCertificate, setPreviewCertificate] =
+    useState<CertificatePreviewData | null>(null);
 
   const authUser = useAppSelector((state) => state.auth.user);
   const assessorPersonalInfo = useAppSelector(
@@ -830,27 +836,22 @@ export const AssessorSettingsView: React.FC = () => {
                             </div>
                           </div>
 
-                          {cert.url ? (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                window.open(
-                                  cert.url,
-                                  "_blank",
-                                  "noopener,noreferrer",
-                                )
-                              }
-                              className="w-9 h-9 rounded-xl bg-gray-200/70 hover:bg-gray-300 text-gray-600 flex items-center justify-center transition-colors cursor-pointer shrink-0"
-                              title="View Certificate"
-                              aria-label="View Certificate"
-                            >
-                              <FiEye className="w-4.5 h-4.5" />
-                            </button>
-                          ) : (
-                            <span className="text-xs text-emerald-600 font-semibold flex items-center gap-1">
-                              <FiCheckCircle className="w-3.5 h-3.5" /> Completed
-                            </span>
-                          )}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setPreviewCertificate({
+                                title: meta.title,
+                                subtitle: meta.subtitle,
+                                url: cert.url || undefined,
+                                assetId: cert.assetId || undefined,
+                              })
+                            }
+                            className="w-9 h-9 rounded-xl bg-gray-200/70 hover:bg-[#FCE8EC] text-gray-600 hover:text-[#a31d38] flex items-center justify-center transition-colors cursor-pointer shrink-0 shadow-2xs"
+                            title="Preview Certificate"
+                            aria-label="Preview Certificate"
+                          >
+                            <FiEye className="w-4.5 h-4.5" />
+                          </button>
                         </div>
                       );
                     });
@@ -1096,6 +1097,13 @@ export const AssessorSettingsView: React.FC = () => {
           </motion.div>
         </div>
       )}
+
+      {/* In-App Certificate Preview Modal */}
+      <CertificatePreviewModal
+        isOpen={Boolean(previewCertificate)}
+        data={previewCertificate}
+        onClose={() => setPreviewCertificate(null)}
+      />
     </div>
   );
 };

@@ -21,6 +21,10 @@ import {
   AssessorRequestModal,
   AssessorRequestModalMode,
 } from "../../AssessorRequest/components/AssessorRequestModal";
+import {
+  CertificatePreviewModal,
+  CertificatePreviewData,
+} from "@/src/features/shared/settings/components/CertificatePreviewModal";
 
 interface AssessorApplicantProfileViewProps {
   applicantId: string;
@@ -62,10 +66,8 @@ export const AssessorApplicantProfileView: React.FC<
   const patchDecisionMutation = usePatchJobPostingApplicationDecision();
 
   // Modals state
-  const [previewCertificate, setPreviewCertificate] = useState<{
-    title: string;
-    url?: string | null;
-  } | null>(null);
+  const [previewCertificate, setPreviewCertificate] =
+    useState<CertificatePreviewData | null>(null);
 
   const [isDecisionModalOpen, setIsDecisionModalOpen] = useState(false);
   const [decisionModalMode, setDecisionModalMode] =
@@ -326,7 +328,8 @@ export const AssessorApplicantProfileView: React.FC<
                     onClick={() =>
                       setPreviewCertificate({
                         title: label,
-                        url: cert.url || null,
+                        url: cert.url || undefined,
+                        assetId: cert.assetId || undefined,
                       })
                     }
                     className="w-9 h-9 rounded-xl bg-white border border-gray-200 text-gray-400 hover:text-neutral-primary flex items-center justify-center transition-colors cursor-pointer shrink-0 shadow-2xs"
@@ -343,28 +346,38 @@ export const AssessorApplicantProfileView: React.FC<
 
       {/* Decision Section */}
       <div className="bg-white rounded-3xl p-6 shadow-2xs border border-gray-100/80 flex flex-col gap-4">
-        <h3 className="text-lg font-extrabold text-neutral-primary tracking-tight">
+        <h3 className="font-extrabold text-lg text-neutral-primary">
           Decision
         </h3>
+        <p className="text-xs text-gray-500 font-normal">
+          {isAssessorRequest
+            ? "Approve or decline this assessor's application to join your retained roster."
+            : "Review this applicant and record your hiring or shortlisting decision."}
+        </p>
 
-        {isPending ? (
-          <div className="flex items-center gap-3 flex-wrap">
-            {isAssessorRequest ? (
+        <div className="flex items-center gap-3 mt-2 flex-wrap">
+          {isPending ? (
+            isAssessorRequest ? (
               <>
                 <Button
                   type="button"
-                  onClick={handleOpenAcceptModal}
                   variant="amber"
                   size="md"
-                  className="px-8 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
+                  onClick={() => {
+                    setRequestModalMode("confirm-accept");
+                    setIsRequestModalOpen(true);
+                  }}
+                  className="px-6 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer"
                 >
-                  Accept
+                  Accept Request
                 </Button>
-
                 <button
                   type="button"
-                  onClick={handleOpenDeclineModal}
-                  className="px-8 h-11 text-white font-bold text-sm bg-[#C5221F] hover:bg-[#a81c19] rounded-xl shadow-lg cursor-pointer whitespace-nowrap transition-colors"
+                  onClick={() => {
+                    setRequestModalMode("confirm-decline");
+                    setIsRequestModalOpen(true);
+                  }}
+                  className="px-6 h-11 bg-white border border-red-200 text-red-700 hover:bg-red-50 font-bold text-sm rounded-xl shadow-xs transition-colors cursor-pointer"
                 >
                   Decline
                 </button>
@@ -373,36 +386,40 @@ export const AssessorApplicantProfileView: React.FC<
               <>
                 <Button
                   type="button"
-                  onClick={handleOpenShortlistModal}
                   variant="amber"
                   size="md"
-                  className="px-8 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
+                  onClick={() => {
+                    setDecisionModalMode("confirm-shortlist");
+                    setIsDecisionModalOpen(true);
+                  }}
+                  className="px-6 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer"
                 >
-                  Shortlist Candidate
+                  Shortlist Applicant
                 </Button>
-
                 <button
                   type="button"
-                  onClick={handleOpenRejectModal}
-                  className="px-8 h-11 text-white font-bold text-sm bg-[#C5221F] hover:bg-[#a81c19] rounded-xl shadow-lg cursor-pointer whitespace-nowrap transition-colors"
+                  onClick={() => {
+                    setDecisionModalMode("confirm-reject");
+                    setIsDecisionModalOpen(true);
+                  }}
+                  className="px-6 h-11 bg-white border border-red-200 text-red-700 hover:bg-red-50 font-bold text-sm rounded-xl shadow-xs transition-colors cursor-pointer"
                 >
                   Reject
                 </button>
               </>
-            )}
-          </div>
-        ) : (
-          <p className="text-xs sm:text-sm text-neutral-secondary font-medium">
-            This request has already been processed (
-            <span className="font-semibold capitalize text-neutral-primary">
-              {rawStatus}
-            </span>
-            ).
-          </p>
-        )}
+            )
+          ) : (
+            <div className="text-sm font-semibold text-neutral-secondary">
+              Decision already recorded:{" "}
+              <span className="font-extrabold capitalize text-neutral-primary">
+                {rawStatus}
+              </span>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Shortlist / Reject Decision Modal */}
+      {/* Decision / Request Modals */}
       <AssessorDecisionModal
         isOpen={isDecisionModalOpen}
         mode={decisionModalMode}
@@ -411,67 +428,23 @@ export const AssessorApplicantProfileView: React.FC<
         onConfirmReject={handleConfirmReject}
       />
 
-      {/* Accept / Decline Request Modal */}
       <AssessorRequestModal
         isOpen={isRequestModalOpen}
         mode={requestModalMode}
-        isLoading={
-          approveRetainedMutation.isPending || rejectRetainedMutation.isPending
-        }
         onClose={() => setIsRequestModalOpen(false)}
         onConfirmAccept={handleConfirmAccept}
         onConfirmDecline={handleConfirmDecline}
+        isLoading={
+          approveRetainedMutation.isPending || rejectRetainedMutation.isPending
+        }
       />
 
-      {/* Certificate Preview Modal */}
-      {previewCertificate && (
-        <div
-          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 transition-opacity duration-300 select-none"
-          onClick={() => setPreviewCertificate(null)}
-        >
-          <div
-            className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl relative flex flex-col items-center text-center"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              type="button"
-              onClick={() => setPreviewCertificate(null)}
-              className="absolute top-4 right-4 w-8 h-8 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 flex items-center justify-center transition-colors cursor-pointer"
-            >
-              <FiEye className="w-5 h-5" />
-            </button>
-            <FiFileText className="w-16 h-16 text-red-400 mb-4" />
-            <h3 className="text-lg font-extrabold text-neutral-primary mb-1">
-              {previewCertificate.title}
-            </h3>
-            <p className="text-xs text-gray-400 mb-6">Certificate Document</p>
-            <div className="w-full bg-[#F8F9FA] rounded-2xl p-6 border border-gray-100 flex flex-col items-center justify-center min-h-36 gap-3">
-              {previewCertificate.url ? (
-                <a
-                  href={previewCertificate.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-sm text-[#fbab2a] hover:underline font-bold"
-                >
-                  <span>Open Certificate File</span>
-                  <FiExternalLink className="w-4 h-4" />
-                </a>
-              ) : (
-                <span className="text-sm text-gray-400 font-medium">
-                  Document asset stored securely on server
-                </span>
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={() => setPreviewCertificate(null)}
-              className="mt-6 w-full h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer transition-colors"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
+      {/* In-App Certificate Preview Modal */}
+      <CertificatePreviewModal
+        isOpen={Boolean(previewCertificate)}
+        data={previewCertificate}
+        onClose={() => setPreviewCertificate(null)}
+      />
     </div>
   );
 };

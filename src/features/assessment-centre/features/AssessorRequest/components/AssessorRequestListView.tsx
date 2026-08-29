@@ -1,10 +1,18 @@
 "use client";
 
 import React, { useState } from "react";
-import { FiSearch, FiList, FiGrid } from "react-icons/fi";
+import { FiSearch, FiList, FiGrid, FiCheck, FiX } from "react-icons/fi";
 import { AssessorItem } from "@/features/assessment-centre/types";
-import { useGetRetainedRequests } from "@/src/features/shared/centre/hooks";
+import {
+  useGetRetainedRequests,
+  useApproveRetainedRequest,
+  useRejectRetainedRequest,
+} from "@/src/features/shared/centre/hooks";
 import { Loader } from "@/src/components/ui/loader";
+import {
+  AssessorRequestModal,
+  AssessorRequestModalMode,
+} from "./AssessorRequestModal";
 
 interface AssessorRequestListViewProps {
   onSelectAssessorRequest: (id: string) => void;
@@ -14,10 +22,23 @@ export const AssessorRequestListView: React.FC<
   AssessorRequestListViewProps
 > = ({ onSelectAssessorRequest }) => {
   const { data: requests = [], isLoading } = useGetRetainedRequests("pending");
+  const approveMutation = useApproveRetainedRequest();
+  const rejectMutation = useRejectRetainedRequest();
+
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [statusFilter, setStatusFilter] = useState<string>("All");
+
+  const [modalState, setModalState] = useState<{
+    isOpen: boolean;
+    mode: AssessorRequestModalMode;
+    targetId: string | null;
+  }>({
+    isOpen: false,
+    mode: "confirm-accept",
+    targetId: null,
+  });
 
   const items: AssessorItem[] = requests.map((req) => {
     const assessorSnap = req.assessor;
@@ -73,6 +94,40 @@ export const AssessorRequestListView: React.FC<
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
     );
+  };
+
+  const handleDirectAccept = (id: string) => {
+    setModalState({
+      isOpen: true,
+      mode: "confirm-accept",
+      targetId: id,
+    });
+  };
+
+  const handleDirectDecline = (id: string) => {
+    setModalState({
+      isOpen: true,
+      mode: "confirm-decline",
+      targetId: id,
+    });
+  };
+
+  const handleConfirmAccept = () => {
+    if (!modalState.targetId) return;
+    approveMutation.mutate(modalState.targetId, {
+      onSuccess: () => {
+        setModalState((prev) => ({ ...prev, mode: "accepted-success" }));
+      },
+    });
+  };
+
+  const handleConfirmDecline = () => {
+    if (!modalState.targetId) return;
+    rejectMutation.mutate(modalState.targetId, {
+      onSuccess: () => {
+        setModalState((prev) => ({ ...prev, mode: "declined-success" }));
+      },
+    });
   };
 
   if (isLoading) {
@@ -164,18 +219,35 @@ export const AssessorRequestListView: React.FC<
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between mt-4">
+                  <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100 flex-wrap gap-2">
                     <span className="bg-[#FEF3C7] text-[#D97706] font-semibold px-3 py-1 rounded-full text-xs inline-block">
                       Pending
                     </span>
 
-                    <button
-                      type="button"
-                      onClick={() => onSelectAssessorRequest(item.id)}
-                      className="text-xs lg:text-sm text-neutral-primary font-bold underline hover:text-[#a31d38] transition-colors cursor-pointer"
-                    >
-                      View
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => onSelectAssessorRequest(item.id)}
+                        className="text-xs text-neutral-primary font-bold underline hover:text-[#a31d38] transition-colors cursor-pointer"
+                      >
+                        View
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDirectAccept(item.id)}
+                        className="px-3 py-1.5 rounded-xl bg-[#fbab2a] hover:bg-[#e89b1f] text-white font-bold text-xs shadow-xs transition-all cursor-pointer flex items-center gap-1"
+                      >
+                        <FiCheck className="w-3.5 h-3.5" />
+                        <span>Accept</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDirectDecline(item.id)}
+                        className="px-2.5 py-1.5 rounded-xl border border-red-200 text-red-700 hover:bg-red-50 font-semibold text-xs transition-all cursor-pointer"
+                      >
+                        Decline
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
@@ -238,14 +310,31 @@ export const AssessorRequestListView: React.FC<
                         Pending
                       </span>
                     </td>
-                    <td className="p-3.5 text-right">
-                      <button
-                        type="button"
-                        onClick={() => onSelectAssessorRequest(item.id)}
-                        className="text-neutral-primary font-bold text-xs underline hover:text-[#a31d38] transition-colors cursor-pointer"
-                      >
-                        View
-                      </button>
+                    <td className="p-3.5 text-right whitespace-nowrap">
+                      <div className="flex items-center justify-end gap-2.5">
+                        <button
+                          type="button"
+                          onClick={() => onSelectAssessorRequest(item.id)}
+                          className="text-neutral-primary font-bold text-xs underline hover:text-[#a31d38] transition-colors cursor-pointer mr-1"
+                        >
+                          View
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDirectAccept(item.id)}
+                          className="px-3 py-1.5 rounded-xl bg-[#fbab2a] hover:bg-[#e89b1f] text-white font-bold text-xs shadow-xs transition-all cursor-pointer flex items-center gap-1"
+                        >
+                          <FiCheck className="w-3.5 h-3.5" />
+                          <span>Accept</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDirectDecline(item.id)}
+                          className="px-2.5 py-1.5 rounded-xl border border-red-200 text-red-700 hover:bg-red-50 font-semibold text-xs transition-all cursor-pointer"
+                        >
+                          Decline
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -254,6 +343,16 @@ export const AssessorRequestListView: React.FC<
           </div>
         )}
       </div>
+
+      {/* Decision Modal */}
+      <AssessorRequestModal
+        isOpen={modalState.isOpen}
+        mode={modalState.mode}
+        onClose={() => setModalState({ isOpen: false, mode: "confirm-accept", targetId: null })}
+        onConfirmAccept={handleConfirmAccept}
+        onConfirmDecline={handleConfirmDecline}
+        isLoading={approveMutation.isPending || rejectMutation.isPending}
+      />
     </div>
   );
 };

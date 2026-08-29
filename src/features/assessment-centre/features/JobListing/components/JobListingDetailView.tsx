@@ -17,6 +17,7 @@ import { useToast } from "@/src/components/ui/toast";
 import {
   useGetJobPostingDetail,
   useGetJobPostingApplications,
+  usePatchJobPostingApplicationDecision,
 } from "@/src/features/shared/centre/hooks";
 
 interface JobListingDetailViewProps {
@@ -34,6 +35,7 @@ export const JobListingDetailView: React.FC<JobListingDetailViewProps> = ({
   const { data: job, isLoading: isLoadingJob } = useGetJobPostingDetail(jobId);
   const { data: remoteApplicants = [], isLoading: isLoadingApps } =
     useGetJobPostingApplications(jobId);
+  const patchApplicantMutation = usePatchJobPostingApplicationDecision();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -275,14 +277,69 @@ export const JobListingDetailView: React.FC<JobListingDetailViewProps> = ({
                         </span>
                       )}
                     </td>
-                    <td className="p-3.5 text-right">
-                      <button
-                        type="button"
-                        onClick={() => onSelectApplicant(app.id)}
-                        className="text-neutral-primary font-bold text-xs underline hover:text-[#a31d38] transition-colors cursor-pointer"
-                      >
-                        View
-                      </button>
+                    <td className="p-3.5 text-right whitespace-nowrap">
+                      <div className="flex items-center justify-end gap-2.5">
+                        <button
+                          type="button"
+                          onClick={() => onSelectApplicant(app.id)}
+                          className="text-neutral-primary font-bold text-xs underline hover:text-[#a31d38] transition-colors cursor-pointer mr-1"
+                        >
+                          View
+                        </button>
+                        {app.status === "Pending" && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                patchApplicantMutation.mutate(
+                                  {
+                                    id: jobId,
+                                    applicationId: app.id,
+                                    decision: "shortlist",
+                                  },
+                                  {
+                                    onSuccess: () => {
+                                      toast({
+                                        type: "success",
+                                        title: "Applicant Shortlisted",
+                                        description: "Assessor has been shortlisted.",
+                                      });
+                                    },
+                                  },
+                                )
+                              }
+                              className="px-3 py-1.5 rounded-xl bg-[#fbab2a] hover:bg-[#e89b1f] text-white font-bold text-xs shadow-xs transition-all cursor-pointer flex items-center gap-1"
+                            >
+                              <FiCheck className="w-3.5 h-3.5" />
+                              <span>Accept</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                patchApplicantMutation.mutate(
+                                  {
+                                    id: jobId,
+                                    applicationId: app.id,
+                                    decision: "reject",
+                                  },
+                                  {
+                                    onSuccess: () => {
+                                      toast({
+                                        type: "success",
+                                        title: "Applicant Rejected",
+                                        description: "Applicant has been rejected.",
+                                      });
+                                    },
+                                  },
+                                )
+                              }
+                              className="px-2.5 py-1.5 rounded-xl border border-red-200 text-red-700 hover:bg-red-50 font-semibold text-xs transition-all cursor-pointer"
+                            >
+                              Reject
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}

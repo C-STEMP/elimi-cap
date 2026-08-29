@@ -19,6 +19,10 @@ import {
   StaffStatusModal,
   StaffStatusModalMode,
 } from "../../Staff/components/StaffStatusModal";
+import {
+  CertificatePreviewModal,
+  CertificatePreviewData,
+} from "@/src/features/shared/settings/components/CertificatePreviewModal";
 import { ASSETS_URL } from "@/assets";
 
 import {
@@ -67,10 +71,8 @@ export const AssessorProfileDetailView: React.FC<
   const [statusFilter, setStatusFilter] = useState("All");
   const [isDeactivated, setIsDeactivated] = useState(initialIsInactive);
   const [detailViewMode, setDetailViewMode] = useState<"list" | "grid">("list");
-  const [previewCertificate, setPreviewCertificate] = useState<{
-    title: string;
-    url?: string | null;
-  } | null>(null);
+  const [previewCertificate, setPreviewCertificate] =
+    useState<CertificatePreviewData | null>(null);
 
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [statusModalMode, setStatusModalMode] =
@@ -259,7 +261,8 @@ export const AssessorProfileDetailView: React.FC<
                     onClick={() =>
                       setPreviewCertificate({
                         title: label,
-                        url: cert.url || null,
+                        url: cert.url || undefined,
+                        assetId: cert.assetId || undefined,
                       })
                     }
                     className="w-9 h-9 rounded-xl bg-white border border-gray-200 text-[#19191880] hover:text-neutral-primary flex items-center justify-center transition-colors cursor-pointer shrink-0 shadow-2xs"
@@ -475,54 +478,12 @@ export const AssessorProfileDetailView: React.FC<
         )}
       </div>
 
-      {previewCertificate && (
-        <div
-          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 transition-opacity duration-300 select-none"
-          onClick={() => setPreviewCertificate(null)}
-        >
-          <div
-            className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl relative flex flex-col items-center text-center"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              type="button"
-              onClick={() => setPreviewCertificate(null)}
-              className="absolute top-4 right-4 w-8 h-8 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 flex items-center justify-center transition-colors cursor-pointer"
-            >
-              <FiX className="w-5 h-5" />
-            </button>
-            <FiFileText className="w-16 h-16 text-red-400 mb-4" />
-            <h3 className="text-lg font-extrabold text-neutral-primary mb-1">
-              {previewCertificate.title}
-            </h3>
-            <p className="text-xs text-[#19191880] mb-6">Certificate Document</p>
-            <div className="w-full bg-[#F8F9FA] rounded-2xl p-6 border border-gray-100 flex flex-col items-center justify-center min-h-36 gap-3">
-              {previewCertificate.url ? (
-                <a
-                  href={previewCertificate.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-sm text-[#fbab2a] hover:underline font-bold"
-                >
-                  <span>Open Certificate File</span>
-                  <FiExternalLink className="w-4 h-4" />
-                </a>
-              ) : (
-                <span className="text-sm text-[#19191880] font-medium">
-                  Document asset stored securely on server
-                </span>
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={() => setPreviewCertificate(null)}
-              className="mt-6 w-full h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer transition-colors"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
+      {/* In-App Certificate Preview Modal */}
+      <CertificatePreviewModal
+        isOpen={Boolean(previewCertificate)}
+        data={previewCertificate}
+        onClose={() => setPreviewCertificate(null)}
+      />
 
       {/* Staff / Assessor Status Modal */}
       <StaffStatusModal

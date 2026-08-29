@@ -78,7 +78,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
         <>
           {/* Overlay Click Detector */}
           <div
-            className="fixed inset-0 z-40"
+            className="fixed inset-0 z-40 bg-black/20 sm:bg-transparent"
             onClick={onClose}
             aria-hidden="true"
           />
@@ -89,7 +89,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: -8 }}
             transition={{ duration: 0.18, ease: "easeOut" }}
-            className="absolute right-0 top-12 z-50 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden text-[#1e1e1e] select-none"
+            className="fixed left-3 right-3 top-18 sm:absolute sm:left-auto sm:right-0 sm:top-12 z-50 w-auto sm:w-96 max-w-[calc(100vw-24px)] bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden text-[#1e1e1e] select-none"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 bg-[#a31d38] text-white">

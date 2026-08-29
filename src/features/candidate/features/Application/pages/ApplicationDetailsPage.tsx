@@ -157,6 +157,10 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
 
   const [activePaymentModal, setActivePaymentModal] =
     useState<PaymentModalType>(null);
+  const [paymentErrorInfo, setPaymentErrorInfo] = useState<{
+    title?: string;
+    description?: string;
+  }>({});
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [isCallRequestModalOpen, setIsCallRequestModalOpen] = useState(false);
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
@@ -181,7 +185,7 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
     } else if (paymentParam === "cancelled" || paymentParam === "failed") {
       setActivePaymentModal("unsuccessful");
     }
-  }, [searchParams, id, dispatch]);
+  }, [searchParams, id, dispatch, toast]);
 
   const formState: ApplicationFormState = application
     ? statusToFormState(
@@ -201,6 +205,7 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
   const handleMakePayment = () => {
     if (!application) return;
     setActivePaymentModal("processing");
+    setPaymentErrorInfo({});
     initiatePayment.mutate(application.id, {
       onSuccess: (data: any) => {
         const checkoutUrl = data?.checkoutUrl || data?.data?.checkoutUrl;
@@ -228,6 +233,25 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
           setActivePaymentModal(null);
           dispatch(markPaymentComplete(application.id));
         } else {
+          const isDeactivated =
+            err?.message?.toLowerCase()?.includes("integration has been deactivated") ||
+            err?.message?.toLowerCase()?.includes("deactivated") ||
+            err?.code === "orchestrator.invalid_argument";
+
+          if (isDeactivated) {
+            setPaymentErrorInfo({
+              title: "Payment Gateway Deactivated",
+              description:
+                "The payment provider (Paystack) integration on the Orchestrator service is currently deactivated or being configured. Please contact the platform administrator to reactivate payment processing.",
+            });
+          } else {
+            setPaymentErrorInfo({
+              title: "Payment Unsuccessful",
+              description:
+                err?.message || "Your payment was not successful. Please try again.",
+            });
+          }
+
           setActivePaymentModal("unsuccessful");
         }
       },
@@ -530,6 +554,8 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
       <PaymentModal
         isOpen={!!activePaymentModal}
         type={activePaymentModal}
+        title={paymentErrorInfo.title}
+        description={paymentErrorInfo.description}
         onClose={() => setActivePaymentModal(null)}
         onAction={
           activePaymentModal === "success"
