@@ -37,6 +37,7 @@ export interface SelectProps {
   searchValue?: string;
   filterOption?: boolean | ((input: string, option?: any) => boolean);
   allowClear?: boolean;
+  autoComplete?: string;
 }
 
 export const Select: React.FC<SelectProps> = ({
@@ -67,6 +68,7 @@ export const Select: React.FC<SelectProps> = ({
   searchValue,
   filterOption,
   allowClear,
+  autoComplete = "off",
 }) => {
   const reactId = useId();
   const [mounted, setMounted] = useState(false);
@@ -134,6 +136,7 @@ export const Select: React.FC<SelectProps> = ({
         onSearch={onSearch}
         searchValue={searchValue}
         allowClear={allowClear}
+        {...({ autoComplete: autoComplete || "off" } as any)}
         filterOption={
           filterOption !== undefined
             ? filterOption

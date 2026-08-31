@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { FiChevronRight, FiFolder, FiPlus } from "react-icons/fi";
 import { HeaderBanner } from "@/features/candidate/features/Dashboard/components/HeaderBanner";
@@ -70,6 +70,7 @@ const getStatusDisplay = (status: string) => {
 
 export const MyApplicationsPage: React.FC = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const dispatch = useAppDispatch();
   const [activeTab, setActiveTab] = useState<FilterTab>("All");
 
@@ -89,6 +90,47 @@ export const MyApplicationsPage: React.FC = () => {
       dispatch(markVerified());
     }
   }, [isVerified, authUser?.isVerified, dispatch]);
+
+  // Handle redirect from payment callback
+  React.useEffect(() => {
+    const paymentParam = searchParams.get("payment");
+    const referenceParam =
+      searchParams.get("reference") || searchParams.get("trxref");
+
+    if (paymentParam === "success" || referenceParam) {
+      let targetId =
+        searchParams.get("id") || searchParams.get("applicationId");
+
+      if (!targetId && typeof window !== "undefined") {
+        targetId =
+          sessionStorage.getItem("pending_payment_application_id") ||
+          localStorage.getItem("pending_payment_application_id") ||
+          "";
+      }
+
+      if (!targetId && applications.length > 0) {
+        const found =
+          applications.find(
+            (a) =>
+              a.status === "in_progress" ||
+              (a.status as string) === "submitted" ||
+              a.currentStageKey === "payment",
+          ) || applications[0];
+        if (found) targetId = found.id;
+      }
+
+      if (targetId) {
+        const params = new URLSearchParams();
+        if (paymentParam) params.set("payment", paymentParam);
+        else params.set("payment", "success");
+        if (referenceParam) params.set("reference", referenceParam);
+
+        router.replace(
+          `/dashboard/applications/${targetId}?${params.toString()}`,
+        );
+      }
+    }
+  }, [searchParams, applications, router]);
 
   const isRawId = (str?: string) => {
     if (!str) return false;
