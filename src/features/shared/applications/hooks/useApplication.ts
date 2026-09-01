@@ -243,9 +243,24 @@ export function useInitiateApplicationPayment() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: (id: string) => initiateApplicationPaymentApi(id),
+    mutationFn: (id: string) => {
+      try {
+        if (id && typeof window !== "undefined") {
+          sessionStorage.setItem("pending_payment_application_id", id);
+          localStorage.setItem("pending_payment_application_id", id);
+        }
+      } catch {}
+      return initiateApplicationPaymentApi(id);
+    },
 
-    onSuccess: (data) => {
+    onSuccess: (data, id) => {
+      try {
+        if (id && typeof window !== "undefined") {
+          sessionStorage.setItem("pending_payment_application_id", id);
+          localStorage.setItem("pending_payment_application_id", id);
+        }
+      } catch {}
+
       if (data?.checkoutUrl) {
         toast({
           type: "success",
@@ -313,7 +328,13 @@ export function useSaveSelfAssessment(applicationId: string) {
       queryClient.invalidateQueries({
         queryKey: APPLICATION_QUERY_KEYS.detail(applicationId),
       });
-      if (data.submittedAt) {
+      queryClient.invalidateQueries({
+        queryKey: APPLICATION_QUERY_KEYS.stages(applicationId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: APPLICATION_QUERY_KEYS.all,
+      });
+      if (data?.submittedAt) {
         toast({
           type: "success",
           title: "Self-Assessment Submitted",

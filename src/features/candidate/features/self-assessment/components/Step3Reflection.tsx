@@ -14,11 +14,16 @@ import { ASSETS_URL } from "@/assets";
 import { MOCK_EVIDENCE_OPTIONS } from "../utils/constants";
 
 interface Step3Props {
-  onNext: () => void;
+  onNext: (data?: any) => void;
   onBack: () => void;
+  initialData?: any;
 }
 
-export const Step3Reflection: React.FC<Step3Props> = ({ onNext, onBack }) => {
+export const Step3Reflection: React.FC<Step3Props> = ({
+  onNext,
+  onBack,
+  initialData,
+}) => {
   const router = useRouter();
   const { toast } = useToast();
   const [showConfirmDraftModal, setShowConfirmDraftModal] = useState(false);
@@ -26,11 +31,13 @@ export const Step3Reflection: React.FC<Step3Props> = ({ onNext, onBack }) => {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [formData, setFormData] = useState({
-    tasks: "",
-    skills: "",
-    otherEvidenceText: "",
+    tasks: initialData?.tasks || "",
+    skills: initialData?.skills || "",
+    otherEvidenceText: initialData?.otherEvidenceText || "",
   });
-  const [selectedEvidences, setSelectedEvidences] = useState<string[]>([]);
+  const [selectedEvidences, setSelectedEvidences] = useState<string[]>(
+    initialData?.selectedEvidences || [],
+  );
 
   const toggleEvidence = (option: string) => {
     if (selectedEvidences.includes(option)) {
@@ -84,7 +91,7 @@ export const Step3Reflection: React.FC<Step3Props> = ({ onNext, onBack }) => {
       });
       return;
     }
-    onNext();
+    onNext({ ...formData, selectedEvidences });
   };
 
   return (

@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { HeaderBanner } from "@/features/candidate/features/Dashboard/components/HeaderBanner";
 import { LearningPromoCard } from "@/features/candidate/features/Dashboard/components/LearningPromoCard";
@@ -16,6 +17,8 @@ import { markVerified } from "@/store/slices/authSlice";
 import { savePersona } from "@/src/lib/auth-storage";
 
 export const Dashboard: React.FC = () => {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const dispatch = useAppDispatch();
   const authUser = useAppSelector((state) => state.auth.user);
   const savedRPLIdentity = useAppSelector((s) => s.onboarding.rplIdentity);
@@ -35,6 +38,51 @@ export const Dashboard: React.FC = () => {
     }
   }, [isVerified, authUser?.isVerified, dispatch]);
 
+  const allApplications = React.useMemo(() => {
+    return applications || [];
+  }, [applications]);
+
+  // Handle redirect from payment callback
+  React.useEffect(() => {
+    const paymentParam = searchParams.get("payment");
+    const referenceParam =
+      searchParams.get("reference") || searchParams.get("trxref");
+
+    if (paymentParam === "success" || referenceParam) {
+      let targetId =
+        searchParams.get("id") || searchParams.get("applicationId");
+
+      if (!targetId && typeof window !== "undefined") {
+        targetId =
+          sessionStorage.getItem("pending_payment_application_id") ||
+          localStorage.getItem("pending_payment_application_id") ||
+          "";
+      }
+
+      if (!targetId && allApplications.length > 0) {
+        const found =
+          allApplications.find(
+            (a) =>
+              a.status === "in_progress" ||
+              (a.status as string) === "submitted" ||
+              a.currentStageKey === "payment",
+          ) || allApplications[0];
+        if (found) targetId = found.id;
+      }
+
+      if (targetId) {
+        const params = new URLSearchParams();
+        if (paymentParam) params.set("payment", paymentParam);
+        else params.set("payment", "success");
+        if (referenceParam) params.set("reference", referenceParam);
+
+        router.replace(
+          `/dashboard/applications/${targetId}?${params.toString()}`,
+        );
+      }
+    }
+  }, [searchParams, allApplications, router]);
+
   const firstName =
     authUser?.fullName?.split(" ")[0] ||
     authUser?.email?.split("@")[0] ||
@@ -46,10 +94,6 @@ export const Dashboard: React.FC = () => {
       return true;
     return false;
   };
-
-  const allApplications = React.useMemo(() => {
-    return applications || [];
-  }, [applications]);
 
   const activeCount =
     allApplications.filter(
