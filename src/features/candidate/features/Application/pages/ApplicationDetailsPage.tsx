@@ -21,6 +21,7 @@ import {
 import { ApplicationStageCard } from "../components/ApplicationStageCard";
 import { ApplicationFormModal } from "../components/ApplicationFormModal";
 import { UploadSignatureModal } from "../components/UploadSignatureModal";
+import { NsqApplicationDetailView } from "../components/nsq/NsqApplicationDetailView";
 import { TransactionReceiptModal } from "@/features/assessment-centre/features/Payment/components/TransactionReceiptModal";
 import { FacilitatorCard } from "@/features/candidate/features/Dashboard/components/FacilitatorCard";
 import { FiEdit2, FiLock, FiFileText } from "react-icons/fi";
@@ -486,6 +487,19 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
 
   if (isLoading) {
     return <Loader fullscreen={false} tip="Loading application details..." className="min-h-[60vh]" />;
+  }
+
+  if (
+    apiApp?.type === "NSQ" ||
+    (reduxApp as any)?.type === "NSQ" ||
+    (application as any)?.type === "NSQ" ||
+    id === "nsq"
+  ) {
+    return (
+      <NsqApplicationDetailView
+        application={apiApp || reduxApp || application || { type: "NSQ" }}
+      />
+    );
   }
 
   if (!application) {

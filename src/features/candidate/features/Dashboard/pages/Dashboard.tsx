@@ -118,32 +118,24 @@ export const Dashboard: React.FC = () => {
 
     const tradeTitle = rawTrade && !isRawId(rawTrade) ? rawTrade : "";
 
-    const title = tradeTitle
-      ? `${tradeTitle} (${typeLabel})`
-      : `${typeLabel} Application`;
+    const title = tradeTitle || (app.type === "NSQ" ? "NSQ Assessment" : "RPL Assessment");
+    const subtitle =
+      app.type === "NSQ" ? "NSQ Standard Assessment" : "Recognition of Prior Learning";
 
-    const rawSector =
-      (app as any).sector?.name ||
-      (typeof (app as any).sector === "string" ? (app as any).sector : "");
-
-    const sectorTitle = rawSector && !isRawId(rawSector) ? rawSector : "";
-
-    const statusText =
+    const statusLabel =
       app.status === "draft"
         ? "Draft"
-        : app.currentStageKey
-          ? app.currentStageKey.replace(/_/g, " ")
-          : app.status;
-
-    const subtitle = sectorTitle
-      ? `${sectorTitle} • Status: ${statusText}`
-      : `Status: ${statusText}`;
+        : app.status === "certified"
+          ? "Completed"
+          : "Awaiting Review";
 
     return {
       id: app.id,
       title,
       subtitle,
       status,
+      statusLabel,
+      type: app.type,
     };
   });
 

@@ -26,7 +26,8 @@ interface HeaderBannerProps {
   title?: string;
   backHref?: string;
   backTitle?: string;
-  breadcrumbs?: { label: string; href?: string }[];
+  onBackClick?: () => void;
+  breadcrumbs?: { label: string; href?: string; onClick?: () => void }[];
   showCreateButton?: boolean;
   createButtonText?: string;
   createButtonHref?: string;
@@ -44,6 +45,7 @@ export const HeaderBanner: React.FC<HeaderBannerProps> = ({
   title,
   backHref,
   backTitle,
+  onBackClick,
   breadcrumbs,
   showCreateButton = true,
   createButtonText = "Start Assessment",
@@ -209,21 +211,46 @@ export const HeaderBanner: React.FC<HeaderBannerProps> = ({
 
         {/* Bottom Header Row */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pt-4 sm:pt-5 gap-3 sm:gap-4 w-full">
-          {backHref && backTitle ? (
+          {backTitle ? (
             <div className="flex flex-col gap-1 min-w-0 max-w-full">
-              <Link
-                href={backHref}
-                className="flex items-center gap-1.5 sm:gap-2 text-white font-bold text-lg sm:text-2xl lg:text-3xl tracking-tight hover:opacity-90 transition-opacity wrap-break-word"
-              >
-                <FiChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.5] shrink-0" />
-                <span className="wrap-break-word">{backTitle}</span>
-              </Link>
+              {onBackClick ? (
+                <button
+                  type="button"
+                  onClick={onBackClick}
+                  className="flex items-center gap-1.5 sm:gap-2 text-white font-bold text-lg sm:text-2xl lg:text-3xl tracking-tight hover:opacity-90 transition-opacity wrap-break-word text-left cursor-pointer select-none"
+                >
+                  <FiChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.5] shrink-0" />
+                  <span className="wrap-break-word">{backTitle}</span>
+                </button>
+              ) : backHref ? (
+                <Link
+                  href={backHref}
+                  className="flex items-center gap-1.5 sm:gap-2 text-white font-bold text-lg sm:text-2xl lg:text-3xl tracking-tight hover:opacity-90 transition-opacity wrap-break-word"
+                >
+                  <FiChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.5] shrink-0" />
+                  <span className="wrap-break-word">{backTitle}</span>
+                </Link>
+              ) : (
+                <div className="flex items-center gap-1.5 sm:gap-2 text-white font-bold text-lg sm:text-2xl lg:text-3xl tracking-tight">
+                  <FiChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.5] shrink-0" />
+                  <span className="wrap-break-word">{backTitle}</span>
+                </div>
+              )}
+
               {breadcrumbs && breadcrumbs.length > 0 && (
                 <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs lg:text-sm text-white/90 font-normal flex-wrap">
                   {breadcrumbs.map((crumb, idx) => (
                     <React.Fragment key={crumb.label}>
                       {idx > 0 && <span className="text-white/60">&gt;</span>}
-                      {crumb.href ? (
+                      {crumb.onClick ? (
+                        <button
+                          type="button"
+                          onClick={crumb.onClick}
+                          className="hover:underline transition-colors text-white/90 cursor-pointer"
+                        >
+                          {crumb.label}
+                        </button>
+                      ) : crumb.href ? (
                         <Link
                           href={crumb.href}
                           className="hover:underline transition-colors text-white/90"
