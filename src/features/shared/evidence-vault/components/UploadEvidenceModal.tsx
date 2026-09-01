@@ -13,22 +13,37 @@ export interface SelectedFileType {
   completed: boolean;
 }
 
+const DEFAULT_EVIDENCE_TYPE_OPTIONS = [
+  { label: "Product / Work Sample (PS)", value: "PS" },
+  { label: "Portfolio / Recognition of Prior Learning (RPL)", value: "RPL" },
+  { label: "Witness Testimony (WT)", value: "WT" },
+  { label: "Direct Observation (DO)", value: "DO" },
+  { label: "Professional Discussion (PD)", value: "PD" },
+  { label: "Workplace Performance (WP)", value: "WP" },
+  { label: "Questioning / Assessment (QA)", value: "QA" },
+  { label: "Assignment (ASS)", value: "ASS" },
+];
+
 interface UploadEvidenceModalProps {
   isOpen: boolean;
   onClose: () => void;
   onUploadSubmit: (
     docName: string,
-    selectedFile: SelectedFileType | null,
-  ) => void;
+    evidenceType: string,
+    file: File | null,
+  ) => Promise<void> | void;
+  isUploading?: boolean;
 }
 
 export const UploadEvidenceModal: React.FC<UploadEvidenceModalProps> = ({
   isOpen,
   onClose,
   onUploadSubmit,
+  isUploading = false,
 }) => {
   const [docName, setDocName] = useState("");
-  const [evidenceType, setEvidenceType] = useState("");
+  const [evidenceType, setEvidenceType] = useState("PS");
+  const [realFile, setRealFile] = useState<File | null>(null);
   const [selectedFile, setSelectedFile] = useState<SelectedFileType | null>(
     null,
   );
@@ -61,6 +76,7 @@ export const UploadEvidenceModal: React.FC<UploadEvidenceModalProps> = ({
         file.size > 1024 * 1024
           ? `${sizeMb} mb`
           : `${Math.round(file.size / 1024)} kb`;
+      setRealFile(file);
       setSelectedFile({
         name: file.name,
         size: sizeStr,
@@ -74,10 +90,10 @@ export const UploadEvidenceModal: React.FC<UploadEvidenceModalProps> = ({
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const newErrors: { file?: string; docName?: string } = {};
 
-    if (!selectedFile) {
+    if (!realFile && !selectedFile) {
       newErrors.file = "Please select a file to upload";
     }
 
@@ -86,16 +102,19 @@ export const UploadEvidenceModal: React.FC<UploadEvidenceModalProps> = ({
       return;
     }
 
-    onUploadSubmit(docName, selectedFile);
+    await onUploadSubmit(docName, evidenceType, realFile);
     setDocName("");
-    setEvidenceType("");
+    setEvidenceType("PS");
+    setRealFile(null);
     setSelectedFile(null);
     setErrors({});
   };
 
   const handleCloseModal = () => {
+    if (isUploading) return;
     setDocName("");
-    setEvidenceType("");
+    setEvidenceType("PS");
+    setRealFile(null);
     setSelectedFile(null);
     setErrors({});
     onClose();
@@ -140,13 +159,7 @@ export const UploadEvidenceModal: React.FC<UploadEvidenceModalProps> = ({
               placeholder="Select"
               value={evidenceType}
               onChange={(e) => setEvidenceType(e.target.value)}
-              options={[
-                "Work Sample",
-                "Certificate / License",
-                "Reference Letter",
-                "Site Photo Evidence",
-                "Video Demonstration",
-              ]}
+              options={DEFAULT_EVIDENCE_TYPE_OPTIONS}
             />
 
             <input
@@ -211,7 +224,10 @@ export const UploadEvidenceModal: React.FC<UploadEvidenceModalProps> = ({
 
                 <button
                   type="button"
-                  onClick={() => setSelectedFile(null)}
+                  onClick={() => {
+                    setSelectedFile(null);
+                    setRealFile(null);
+                  }}
                   className="text-gray-400 hover:text-gray-700 p-1 cursor-pointer"
                 >
                   <FiTrash2 className="w-4 h-4" />
@@ -224,9 +240,10 @@ export const UploadEvidenceModal: React.FC<UploadEvidenceModalProps> = ({
               variant="secondary"
               size="md"
               onClick={handleSubmit}
+              disabled={isUploading}
               className="w-full bg-[#fbab2a] hover:bg-[#e89b1f] text-white font-bold text-sm sm:text-base h-12.5 rounded-xl mt-6 cursor-pointer"
             >
-              Upload
+              {isUploading ? "Uploading..." : "Upload"}
             </Button>
           </div>
         </motion.div>

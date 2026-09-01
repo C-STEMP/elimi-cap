@@ -41,7 +41,6 @@ export default function DashboardPage() {
       setResolvedPersona(storedPersona);
       setIsReady(true);
     } else {
-      // Default to candidate only once state hydration has completed
       setResolvedPersona("candidate");
       setIsReady(true);
     }

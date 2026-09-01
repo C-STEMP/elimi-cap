@@ -6,6 +6,11 @@ export interface EvidenceRecord {
   statusBg: string;
   statusText: string;
   issues?: string[];
+  url?: string;
+  assetId?: string;
+  evidenceType?: string;
+  mimeType?: string;
+  dataUrl?: string;
 }
 
 export interface ResourceRecord {

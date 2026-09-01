@@ -144,6 +144,16 @@ export interface ApplicationDetail extends Application {
     qualifications: string[];
     assignedAt: string;
   } | null;
+  facilitator?: {
+    assessorId?: string;
+    id?: string;
+    name: string;
+    avatar?: string;
+    role?: string;
+    tags?: string[];
+    trade?: string;
+    assignedAt?: string;
+  } | null;
 }
 
 export interface ApplicationVersion {

@@ -276,7 +276,7 @@ export const SignUpEmail: React.FC = () => {
               <GoogleLogin
                 onSuccess={handleGoogleSuccess}
                 onError={handleGoogleError}
-                width="100%"
+                width={400}
                 shape="rectangular"
                 size="large"
               />

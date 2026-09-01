@@ -22,7 +22,7 @@ export const SelfAssessmentSidebar: React.FC<SelfAssessmentSidebarProps> = ({
   return (
     <div
       suppressHydrationWarning
-      className="hidden lg:flex lg:w-[40%] h-screen sticky top-0 shrink-0 bg-primary-solid flex-col justify-between p-12 xl:p-16 overflow-hidden select-none"
+      className="hidden lg:flex lg:w-[40%] h-screen sticky top-0 shrink-0 bg-primary-solid flex-col justify-between py-6 px-12 xl:px-16 overflow-hidden select-none"
     >
       <FloatingCircles />
 
@@ -35,7 +35,7 @@ export const SelfAssessmentSidebar: React.FC<SelfAssessmentSidebarProps> = ({
             <Logo theme="light" />
           </div>
 
-          <div suppressHydrationWarning className="flex flex-col gap-4 mt-4">
+          <div suppressHydrationWarning className="flex flex-col gap-4">
             <h2 className="text-neutral-burgundy text-2xl xl:text-[34px] font-extrabold tracking-tight">
               Self-Assessment of Competency
             </h2>

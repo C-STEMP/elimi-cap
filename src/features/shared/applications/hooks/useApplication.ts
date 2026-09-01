@@ -16,6 +16,9 @@ import {
   getSelfAssessmentApi,
   saveSelfAssessmentApi,
   getEvidenceVaultApi,
+  createGeneralEvidenceApi,
+  deleteGeneralEvidenceApi,
+  getGeneralEvidenceByIdApi,
   getInterviewPanelApi,
   getInterviewScheduleApi,
   evaluateInterviewApi,
@@ -44,6 +47,8 @@ export const APPLICATION_QUERY_KEYS = {
   stages: (id: string) => ["applications", "stages", id] as const,
   receipt: (id: string) => ["applications", "receipt", id] as const,
   selfAssessment: (id: string) => ["applications", "self-assessment", id] as const,
+  evidence: (id: string, params?: { cursor?: string; limit?: number }) =>
+    ["applications", "evidence", id, params] as const,
 };
 
 export function useCreateApplication() {
@@ -372,9 +377,94 @@ export function useGetEvidenceVault(
   params?: { cursor?: string; limit?: number },
 ) {
   return useQuery({
-    queryKey: ["applications", "evidence", id, params],
+    queryKey: APPLICATION_QUERY_KEYS.evidence(id, params),
     queryFn: () => getEvidenceVaultApi(id, params),
     enabled: Boolean(id),
+  });
+}
+
+export function useCreateGeneralEvidence(applicationId: string) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (payload: {
+      documentName: string;
+      evidenceType: string;
+      assetId?: string;
+      formData?: Record<string, unknown>;
+      textValue?: string;
+    }) => createGeneralEvidenceApi(applicationId, payload),
+
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["applications", "evidence", applicationId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: APPLICATION_QUERY_KEYS.detail(applicationId),
+      });
+      toast({
+        type: "success",
+        title: "Evidence Uploaded",
+        description: "Your evidence has been uploaded successfully.",
+      });
+    },
+
+    onError: (error: Error) => {
+      if (error instanceof ApiError) {
+        toast({
+          type: "error",
+          title: "Upload Failed",
+          description: error.message,
+        });
+      } else {
+        toast({
+          type: "error",
+          title: "Network Error",
+          description: "Unable to upload evidence. Please try again.",
+        });
+      }
+    },
+  });
+}
+
+export function useDeleteGeneralEvidence(applicationId: string) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (evidenceId: string) =>
+      deleteGeneralEvidenceApi(applicationId, evidenceId),
+
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["applications", "evidence", applicationId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: APPLICATION_QUERY_KEYS.detail(applicationId),
+      });
+      toast({
+        type: "success",
+        title: "Evidence Deleted",
+        description: "Your evidence was deleted successfully.",
+      });
+    },
+
+    onError: (error: Error) => {
+      if (error instanceof ApiError) {
+        toast({
+          type: "error",
+          title: "Delete Failed",
+          description: error.message,
+        });
+      } else {
+        toast({
+          type: "error",
+          title: "Network Error",
+          description: "Unable to delete evidence. Please try again.",
+        });
+      }
+    },
   });
 }
 

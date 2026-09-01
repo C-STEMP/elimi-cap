@@ -9,7 +9,9 @@ import {
   FiChevronDown,
   FiCheckCircle,
   FiClock,
+  FiFlag,
 } from "react-icons/fi";
+import { ASSETS_URL } from "@/assets";
 import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
 import { Loader } from "@/src/components/ui/loader";
@@ -19,6 +21,7 @@ import {
   useGetApplicationHistory,
   useGetInterviewSchedule,
 } from "@/src/features/shared/applications/hooks";
+import { AssignFacilitatorModal } from "./AssignFacilitatorModal";
 
 interface ApplicationDetailViewProps {
   id?: string;
@@ -43,6 +46,34 @@ export const AssessmentCentreApplicationDetailView: React.FC<
   const { data: stages = [], isLoading: isLoadingStages } = useGetApplicationStages(id);
   const { data: interviewSchedule } = useGetInterviewSchedule(id);
   const { data: appHistory = [] } = useGetApplicationHistory(id);
+
+  const [isAssignFacilitatorOpen, setIsAssignFacilitatorOpen] = useState(false);
+  const [assignedFacilitator, setAssignedFacilitator] = useState<{
+    id: string;
+    name: string;
+    avatar?: string;
+    trade?: string;
+  } | null>(null);
+
+  const persistedFacilitator = React.useMemo(() => {
+    if (typeof window === "undefined" || !id) return null;
+    try {
+      const stored =
+        localStorage.getItem(`elimi_assigned_facilitator_${id}`) ||
+        localStorage.getItem("elimi_assigned_facilitator_active");
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  }, [id]);
+
+  const activeFacilitator =
+    assignedFacilitator ||
+    (appDetail as any)?.facilitator ||
+    (appDetail as any)?.assessor ||
+    (appDetail as any)?.metadata?.facilitator ||
+    persistedFacilitator ||
+    null;
 
   const [currentMonth, setCurrentMonth] = useState("July");
   const months = [
@@ -79,6 +110,19 @@ export const AssessmentCentreApplicationDetailView: React.FC<
   const handleNextMonth = () => {
     const idx = months.indexOf(currentMonth);
     setCurrentMonth(months[(idx + 1) % 12]);
+  };
+
+  const handleFacilitatorSuccess = (facilitator: {
+    id: string;
+    name: string;
+  }) => {
+    setAssignedFacilitator(facilitator);
+    setIsAssignFacilitatorOpen(false);
+    toast({
+      type: "success",
+      title: "Facilitator Assigned",
+      description: `${facilitator.name} has been assigned as facilitator.`,
+    });
   };
 
   const resolvedCandidateName =
@@ -347,31 +391,50 @@ export const AssessmentCentreApplicationDetailView: React.FC<
               </p>
             </div>
 
-            <button
-              type="button"
-              disabled={paymentStatus !== "Successful"}
-              onClick={() => {
-                if (paymentStage?.receipt?.url) {
-                  window.open(paymentStage.receipt.url, "_blank");
-                } else if (paymentStatus === "Successful") {
-                  toast({
-                    type: "success",
-                    title: "Payment Receipt",
-                    description: "Payment is verified. Receipt generated.",
-                  });
-                } else {
-                  toast({
-                    type: "info",
-                    title: "Payment Pending",
-                    description: "Payment has not been completed yet.",
-                  });
-                }
-              }}
-              className="bg-white border border-gray-200 hover:bg-gray-50 text-[#fbab2a] disabled:opacity-50 disabled:cursor-not-allowed font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl flex items-center gap-2 cursor-pointer shadow-2xs shrink-0"
-            >
-              <FiDownload className="w-4 h-4 text-[#fbab2a]" />
-              <span>Receipt</span>
-            </button>
+            {paymentStatus === "Successful" ? (
+              activeFacilitator ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsAssignFacilitatorOpen(true)}
+                  className="bg-white! text-[#fbab2a]! border border-[#FCD34D]! hover:bg-[#FFFBEB]! font-bold text-xs sm:text-sm px-4 py-2 rounded-xl flex items-center gap-1.5 cursor-pointer shrink-0"
+                >
+                  <FiFlag className="w-4 h-4 text-[#fbab2a]" />
+                  <span>Change Facilitator</span>
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setIsAssignFacilitatorOpen(true)}
+                  className="bg-[#fbab2a]! hover:bg-[#e89b1f]! text-white! font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl shadow-none cursor-pointer shrink-0"
+                >
+                  Assign Facilitator
+                </Button>
+              )
+            ) : (
+              <button
+                type="button"
+                disabled
+                onClick={() => {
+                  if (paymentStage?.receipt?.url) {
+                    window.open(paymentStage.receipt.url, "_blank");
+                  } else {
+                    toast({
+                      type: "info",
+                      title: "Payment Pending",
+                      description: "Payment has not been completed yet.",
+                    });
+                  }
+                }}
+                className="bg-white border border-gray-200 hover:bg-gray-50 text-[#fbab2a] disabled:opacity-50 disabled:cursor-not-allowed font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl flex items-center gap-2 cursor-pointer shadow-2xs shrink-0"
+              >
+                <FiDownload className="w-4 h-4 text-[#fbab2a]" />
+                <span>Receipt</span>
+              </button>
+            )}
           </div>
 
           {/* Stage 3: Folder Arrangement */}
@@ -381,14 +444,20 @@ export const AssessmentCentreApplicationDetailView: React.FC<
                 <h3 className="text-black font-bold text-base sm:text-lg lg:text-xl tracking-tight">
                   Folder Arrangement
                 </h3>
-                {(() => {
-                  const b = getStatusBadge(evidenceStatus);
-                  return (
-                    <span className={`${b.className} text-xs font-semibold px-3 py-0.5 rounded-full capitalize`}>
-                      {b.text}
-                    </span>
-                  );
-                })()}
+                {activeFacilitator || evidenceStatus === "In Progress" ? (
+                  <span className="bg-[#FFF4E5] text-[#B45309] border border-[#FDE6B0] text-xs font-semibold px-3 py-0.5 rounded-full capitalize">
+                    14 Days Left
+                  </span>
+                ) : (
+                  (() => {
+                    const b = getStatusBadge(evidenceStatus);
+                    return (
+                      <span className={`${b.className} text-xs font-semibold px-3 py-0.5 rounded-full capitalize`}>
+                        {b.text}
+                      </span>
+                    );
+                  })()
+                )}
               </div>
               <p className="text-gray-400 text-xs sm:text-sm font-normal">
                 Started on: {evidenceDate}
@@ -400,7 +469,11 @@ export const AssessmentCentreApplicationDetailView: React.FC<
               onClick={() => onOpenEvidenceVault?.()}
               variant="outline"
               size="sm"
-              className="bg-white! text-[#fbab2a]! border border-gray-200! hover:bg-gray-50! font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl cursor-pointer shrink-0"
+              className={
+                activeFacilitator || evidenceStatus === "In Progress"
+                  ? "bg-[#fbab2a]! hover:bg-[#e89b1f]! text-white! font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl shadow-none cursor-pointer shrink-0"
+                  : "bg-white! text-[#fbab2a]! border border-gray-200! hover:bg-gray-50! font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl cursor-pointer shrink-0"
+              }
             >
               Evidence Vault
             </Button>
@@ -665,8 +738,67 @@ export const AssessmentCentreApplicationDetailView: React.FC<
               </>
             )}
           </div>
+
+          {activeFacilitator ? (
+            <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-2xs flex flex-col gap-4 select-text">
+              <h3 className="text-base font-extrabold text-black tracking-tight">
+                Facilitator
+              </h3>
+              <div className="flex items-center gap-3.5">
+                <div className="w-13 h-13 rounded-full overflow-hidden bg-gray-100 border border-gray-200 shrink-0 relative">
+                  <img
+                    src={
+                      activeFacilitator.avatar ||
+                      (ASSETS_URL as any)?.userAvatar?.src ||
+                      "/avatar-placeholder.png"
+                    }
+                    alt={activeFacilitator.name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="flex flex-col gap-0.5 min-w-0">
+                  <h4 className="text-sm font-bold text-black truncate">
+                    {activeFacilitator.name}
+                  </h4>
+                  <p className="text-[11px] text-gray-500 font-normal truncate">
+                    Facilitator · {activeFacilitator.trade || (appDetail as any)?.trade?.name || "Carpentry"} (Level 3)
+                  </p>
+                  <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                    <span className="bg-[#fdf2f4] text-[#a31d38] text-[10px] font-semibold px-2.5 py-0.5 rounded-full">
+                      {activeFacilitator.trade || (appDetail as any)?.trade?.name || "Carpentry"}
+                    </span>
+                    <span className="bg-[#fdf2f4] text-[#a31d38] text-[10px] font-semibold px-2.5 py-0.5 rounded-full">
+                      RPL Coordinator
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-2xs flex flex-col gap-2 select-text">
+              <h3 className="text-base font-extrabold text-black tracking-tight">
+                No facilitator assigned yet
+              </h3>
+              <p className="text-xs text-gray-400 font-normal leading-relaxed">
+                A coordinator will be assigned to guide you once your first application is created.
+              </p>
+            </div>
+          )}
         </div>
       </div>
+
+      <AssignFacilitatorModal
+        isOpen={isAssignFacilitatorOpen}
+        onClose={() => setIsAssignFacilitatorOpen(false)}
+        applicationId={id}
+        tradeName={
+          (appDetail as any)?.trade?.name ||
+          (typeof (appDetail as any)?.trade === "string"
+            ? (appDetail as any)?.trade
+            : "Carpentry")
+        }
+        onSuccess={handleFacilitatorSuccess}
+      />
     </div>
   );
 };

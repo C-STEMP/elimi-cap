@@ -23,6 +23,7 @@ import { ApplicationFormModal } from "../components/ApplicationFormModal";
 import { UploadSignatureModal } from "../components/UploadSignatureModal";
 import { TransactionReceiptModal } from "@/features/assessment-centre/features/Payment/components/TransactionReceiptModal";
 import { FacilitatorCard } from "@/features/candidate/features/Dashboard/components/FacilitatorCard";
+import { userAvatar } from "@/assets";
 import { FiEdit2, FiLock, FiFileText } from "react-icons/fi";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import {
@@ -160,6 +161,45 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
           evidenceUploaded: reduxApp.evidenceUploaded,
         }
       : null;
+
+  const persistedFacilitator = React.useMemo(() => {
+    if (typeof window === "undefined" || !id) return null;
+    try {
+      const stored =
+        localStorage.getItem(`elimi_assigned_facilitator_${id}`) ||
+        localStorage.getItem("elimi_assigned_facilitator_active");
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  }, [id]);
+
+  const rawFacilitator =
+    (apiApp as any)?.facilitator ||
+    (apiApp as any)?.assessor ||
+    (apiApp as any)?.metadata?.facilitator ||
+    (reduxApp as any)?.facilitator ||
+    persistedFacilitator;
+
+  const facilitatorData = rawFacilitator
+    ? {
+        name:
+          rawFacilitator.name ||
+          `${rawFacilitator.firstName || ""} ${rawFacilitator.lastName || ""}`.trim() ||
+          "Assigned Facilitator",
+        avatar:
+          rawFacilitator.avatar ||
+          rawFacilitator.photoUrl ||
+          userAvatar,
+        role:
+          rawFacilitator.role ||
+          `Facilitator · ${rawFacilitator.trade || resolvedTrade || "Coordinator"}`,
+        tags:
+          Array.isArray(rawFacilitator.tags) && rawFacilitator.tags.length > 0
+            ? rawFacilitator.tags
+            : [rawFacilitator.trade || resolvedTrade || "RPL", "RPL Coordinator"],
+      }
+    : null;
 
   const [activePaymentModal, setActivePaymentModal] =
     useState<PaymentModalType>(null);
@@ -591,7 +631,7 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
             <CalendarWidget />
             <UpcomingCard interview={null} />
             <FacilitatorCard
-              facilitator={null}
+              facilitator={facilitatorData}
               onRequestCall={() => setIsCallRequestModalOpen(true)}
             />
           </div>

@@ -78,6 +78,17 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
               ) : (
                 notifications.map((item) => {
                   const isUnread = !item.read && item.isUnread !== false;
+                  const itemMessage =
+                    item.description ||
+                    (item as any).payload?.message ||
+                    (item as any).message ||
+                    item.title ||
+                    "Notification received";
+                  const itemTitle =
+                    item.title && item.title !== item.description
+                      ? item.title
+                      : (item as any).payload?.title || "Notification";
+
                   return (
                     <div
                       key={item.id}
@@ -97,16 +108,20 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
                       <div className="flex flex-col flex-1 pr-4">
                         <div className="flex items-center justify-between">
                           <span className="font-extrabold text-xs sm:text-sm text-neutral-primary">
-                            {item.title}
+                            {itemTitle}
                           </span>
                         </div>
 
                         <p className="text-xs text-gray-500 font-normal mt-1 leading-relaxed line-clamp-2">
-                          {item.description}
+                          {itemMessage}
                         </p>
 
                         <span className="text-[11px] text-gray-400 font-medium italic mt-2">
-                          {item.time || item.timestamp || (item.createdAt ? new Date(item.createdAt).toLocaleDateString() : "")}
+                          {item.time ||
+                            item.timestamp ||
+                            (item.createdAt
+                              ? new Date(item.createdAt).toLocaleDateString()
+                              : "")}
                         </span>
                       </div>
 

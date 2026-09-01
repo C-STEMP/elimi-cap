@@ -128,6 +128,17 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
               ) : (
                 previewNotifications.map((notif) => {
                   const isUnread = !notif.read && notif.isUnread !== false;
+                  const itemMessage =
+                    notif.description ||
+                    (notif as any).payload?.message ||
+                    (notif as any).message ||
+                    notif.title ||
+                    "Notification received";
+                  const itemTitle =
+                    notif.title && notif.title !== notif.description
+                      ? notif.title
+                      : (notif as any).payload?.title || "Notification";
+
                   return (
                     <div
                       key={notif.id}
@@ -145,14 +156,18 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
                           <h4 className="text-xs font-bold text-[#1e1e1e] truncate">
-                            {notif.title}
+                            {itemTitle}
                           </h4>
                           <span className="text-[10px] text-gray-400 font-medium shrink-0">
-                            {notif.timestamp || notif.time || (notif.createdAt ? new Date(notif.createdAt).toLocaleDateString() : "")}
+                            {notif.timestamp ||
+                              notif.time ||
+                              (notif.createdAt
+                                ? new Date(notif.createdAt).toLocaleDateString()
+                                : "")}
                           </span>
                         </div>
                         <p className="text-xs text-gray-600 line-clamp-2 mt-0.5 leading-snug">
-                          {notif.description}
+                          {itemMessage}
                         </p>
                       </div>
 

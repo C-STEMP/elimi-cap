@@ -171,6 +171,17 @@ export default function NotificationsPage() {
           <div className="flex flex-col gap-3">
             {filteredNotifications.map((notif) => {
               const isUnread = !notif.read && notif.isUnread !== false;
+              const itemMessage =
+                notif.description ||
+                (notif as any).payload?.message ||
+                (notif as any).message ||
+                notif.title ||
+                "Notification received";
+              const itemTitle =
+                notif.title && notif.title !== notif.description
+                  ? notif.title
+                  : (notif as any).payload?.title || "Notification";
+
               return (
                 <div
                   key={notif.id}
@@ -189,7 +200,7 @@ export default function NotificationsPage() {
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <h4 className="text-sm font-bold text-[#1e1e1e]">
-                          {notif.title}
+                          {itemTitle}
                         </h4>
                         {isUnread && (
                           <span className="bg-[#fbab2a] text-black text-[10px] font-extrabold px-2 py-0.5 rounded-full">
@@ -197,12 +208,17 @@ export default function NotificationsPage() {
                           </span>
                         )}
                         <span className="text-xs text-gray-400 font-medium">
-                          • {notif.timestamp || notif.time || (notif.createdAt ? new Date(notif.createdAt).toLocaleDateString() : "")}
+                          •{" "}
+                          {notif.timestamp ||
+                            notif.time ||
+                            (notif.createdAt
+                              ? new Date(notif.createdAt).toLocaleDateString()
+                              : "")}
                         </span>
                       </div>
 
                       <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
-                        {notif.description}
+                        {itemMessage}
                       </p>
                     </div>
                   </div>

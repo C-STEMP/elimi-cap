@@ -54,17 +54,64 @@ export const AssessorEvidenceVaultView: React.FC<
   const [evidenceItems, setEvidenceItems] = useState<EvidenceItem[]>([]);
 
   useEffect(() => {
-    if (remoteEvidence && remoteEvidence.length > 0) {
-      const mapped = remoteEvidence.map((e: any, idx: number) => ({
+    let localItems: any[] = [];
+    if (typeof window !== "undefined" && applicationId) {
+      try {
+        const stored = localStorage.getItem(
+          `elimi_evidence_vault_${applicationId}`,
+        );
+        localItems = stored ? JSON.parse(stored) : [];
+      } catch (e) {
+        console.error("Storage read error:", e);
+      }
+    }
+
+    const combined: any[] = [];
+    const seen = new Set<string>();
+
+    (remoteEvidence || []).forEach((e: any) => {
+      const docName =
+        e.documentName ||
+        e.name ||
+        e.title ||
+        e.filename ||
+        e.originalName;
+      const key = e.id || e.assetId || docName;
+      if (key && !seen.has(key)) {
+        seen.add(key);
+        combined.push({ ...e, documentName: docName });
+      }
+    });
+
+    localItems.forEach((e: any) => {
+      const docName =
+        e.documentName ||
+        e.name ||
+        e.title ||
+        e.filename ||
+        e.originalName;
+      const key = e.id || e.assetId || docName;
+      if (key && !seen.has(key)) {
+        seen.add(key);
+        combined.push({ ...e, documentName: docName });
+      }
+    });
+
+    if (combined.length > 0) {
+      const mapped = combined.map((e: any, idx: number) => ({
         id: e.id || `ev-${idx}`,
         name:
           e.documentName ||
+          e.name ||
+          e.title ||
+          e.filename ||
+          e.originalName ||
           (e.kind === "self_assessment"
             ? "Self-Assessment Document"
             : e.kind === "third_party_report"
               ? "Third Party Report"
               : `Evidence Item ${idx + 1}`),
-        size: "60 kb / 5 mb",
+        size: e.size || e.fileSize || "5 MB",
         status:
           e.status === "Approved" || e.status === "approved"
             ? ("Approved" as const)
@@ -72,7 +119,7 @@ export const AssessorEvidenceVaultView: React.FC<
       }));
       setEvidenceItems(mapped);
     }
-  }, [remoteEvidence]);
+  }, [remoteEvidence, applicationId]);
 
   // Send Feedback Flow State
   const [selectedItemForFeedback, setSelectedItemForFeedback] =
