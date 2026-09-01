@@ -17,7 +17,7 @@ import { ASSESSMENT_CENTRE_ROUTES } from "@/features/assessment-centre/utils/cen
 
 import { useOnboarding } from "@/src/features/assessment-centre/features/Onboarding/hooks";
 import { useUploadFile } from "@/src/features/shared/storage/hooks";
-import { useGetBanks } from "@/src/features/shared/reference/hooks";
+import { useGetBanks, useResolveBankAccount } from "@/src/features/shared/reference/hooks";
 import { patchCentreProfileApi } from "@/src/features/shared/centre/api";
 import { useAppDispatch, useAppSelector } from "@/src/store/hooks";
 import { setCentreInformation } from "@/src/store/slices/onboardingSlice";
@@ -28,6 +28,9 @@ export const CenterInformation: React.FC = () => {
   const dispatch = useAppDispatch();
   const { toast } = useToast();
   const { getOnboarding, saveOnboarding } = useOnboarding();
+  const resolveAccountMutation = useResolveBankAccount();
+  const [isResolvingAccount, setIsResolvingAccount] = useState(false);
+  const [accountResolveSuccess, setAccountResolveSuccess] = useState(false);
   const uploadFileMutation = useUploadFile();
   const savedCentreInfo = useAppSelector((s) => s.onboarding.centreInformation);
 
@@ -105,6 +108,126 @@ export const CenterInformation: React.FC = () => {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  const selectedBankCode = React.useMemo(() => {
+    if (!form.bank) return null;
+    const match = remoteBanks.find(
+      (b) =>
+        b.name.toLowerCase() === form.bank.toLowerCase() ||
+        b.code === form.bank ||
+        b.slug.toLowerCase() === form.bank.toLowerCase() ||
+        form.bank.toLowerCase().includes(b.name.toLowerCase()) ||
+        b.name.toLowerCase().includes(form.bank.toLowerCase()),
+    );
+    if (match?.code) return match.code;
+
+    const NIGERIAN_BANK_CODES: Record<string, string> = {
+      "access bank": "044",
+      "citibank": "023",
+      "ecobank": "050",
+      "fidelity bank": "070",
+      "first bank": "011",
+      "first city monument bank": "214",
+      "first city monument bank (fcmb)": "214",
+      "fcmb": "214",
+      "globus bank": "00103",
+      "gtbank": "058",
+      "guaranty trust bank": "058",
+      "heritage bank": "030",
+      "jaiz bank": "301",
+      "keystone bank": "082",
+      "kuda bank": "50211",
+      "moniepoint mfb": "50515",
+      "opay": "999992",
+      "optimus bank": "107",
+      "palmpay": "999991",
+      "parallex bank": "526",
+      "polaris bank": "076",
+      "premium trust bank": "105",
+      "providus bank": "101",
+      "rubies mfb": "125",
+      "signature bank": "106",
+      "stanbic ibtc bank": "221",
+      "stanbic ibtc": "221",
+      "standard chartered bank": "068",
+      "sterling bank": "232",
+      "suntrust bank": "100",
+      "taj bank": "302",
+      "titan trust bank": "102",
+      "union bank": "032",
+      "uba": "033",
+      "united bank for africa": "033",
+      "unity bank": "215",
+      "vfd microfinance bank": "566",
+      "wema bank": "035",
+      "zenith bank": "057",
+    };
+    return NIGERIAN_BANK_CODES[form.bank.toLowerCase().trim()] || null;
+  }, [form.bank, remoteBanks]);
+
+  // Auto-resolve account name with 500ms debounce
+  React.useEffect(() => {
+    const trimmedAcc = form.accountNumber.trim();
+    if (trimmedAcc.length === 10 && selectedBankCode) {
+      setIsResolvingAccount(true);
+      setAccountResolveSuccess(false);
+
+      const timer = setTimeout(() => {
+        resolveAccountMutation.mutate(
+          {
+            accountNumber: trimmedAcc,
+            bankCode: selectedBankCode,
+          },
+          {
+            onSuccess: (data) => {
+              setIsResolvingAccount(false);
+              if (data?.accountName) {
+                update("nameOnAccount", data.accountName);
+                setAccountResolveSuccess(true);
+                setErrors((prev) => {
+                  const updated = { ...prev };
+                  delete updated.nameOnAccount;
+                  delete updated.accountNumber;
+                  return updated;
+                });
+              }
+            },
+            onError: (err: any) => {
+              setIsResolvingAccount(false);
+              setAccountResolveSuccess(false);
+
+              let userFriendlyMsg =
+                "Could not verify account name. Please check your account number and selected bank.";
+              const rawMsg = err?.message || "";
+
+              if (
+                rawMsg.toLowerCase().includes("not found") ||
+                rawMsg.toLowerCase().includes("invalid account") ||
+                rawMsg.toLowerCase().includes("could not resolve")
+              ) {
+                userFriendlyMsg =
+                  "Account not found. Please double-check your 10-digit account number and bank.";
+              } else if (rawMsg.toLowerCase().includes("timeout")) {
+                userFriendlyMsg =
+                  "Network timeout while verifying account name. You can enter the name manually.";
+              }
+
+              toast({
+                type: "error",
+                title: "Account Verification Failed",
+                description: userFriendlyMsg,
+              });
+            },
+          },
+        );
+      }, 500);
+
+      return () => clearTimeout(timer);
+    } else {
+      setIsResolvingAccount(false);
+      setAccountResolveSuccess(false);
+    }
+  }, [form.accountNumber, selectedBankCode]);
+
   // Hydrate from API when getOnboarding completes
   React.useEffect(() => {
     if (getOnboarding.data?.data) {
@@ -180,11 +303,11 @@ export const CenterInformation: React.FC = () => {
 
   const update = (field: keyof typeof form, value: string) => {
     const updatedValues: Partial<typeof form> = { [field]: value };
-    if (field === "country") {
+    if (field === "country" && form.country !== value) {
       updatedValues.state = "";
       updatedValues.lga = "";
     }
-    if (field === "state") {
+    if (field === "state" && form.state !== value) {
       updatedValues.lga = "";
     }
 
@@ -197,10 +320,8 @@ export const CenterInformation: React.FC = () => {
 
 
   // ── Country / State / City cascading selects ────────────────────────────
-  const { countries, states, cities } = useCountryStateCity(
-    form.country,
-    form.state,
-  );
+  const { countries, states, cities, isLoadingStates, isLoadingLgas } =
+    useCountryStateCity(form.country, form.state);
 
   const validate = () => {
     let valid = true;
@@ -444,11 +565,17 @@ export const CenterInformation: React.FC = () => {
                 <span className="text-primary-solid ml-0.5">*</span>
               </span>
             }
-            placeholder={form.country ? "Select state" : "Select country first"}
+            placeholder={
+              isLoadingStates
+                ? "Loading states..."
+                : form.country
+                  ? "Select state"
+                  : "Select country first"
+            }
             options={states}
             value={form.state}
             error={errors.state}
-            disabled={!form.country}
+            disabled={isLoadingStates || !form.country || states.length === 0}
             onChange={(e) => update("state", e.target.value)}
           />
 
@@ -459,11 +586,17 @@ export const CenterInformation: React.FC = () => {
                 <span className="text-primary-solid ml-0.5">*</span>
               </span>
             }
-            placeholder={form.state ? "Select city" : "Select state first"}
+            placeholder={
+              isLoadingLgas
+                ? "Loading LGAs..."
+                : form.state
+                  ? "Select city / LGA"
+                  : "Select state first"
+            }
             options={cities}
             value={form.lga}
             error={errors.lga}
-            disabled={!form.state}
+            disabled={isLoadingLgas || !form.state || cities.length === 0}
             onChange={(e) => update("lga", e.target.value)}
           />
 
@@ -561,19 +694,33 @@ export const CenterInformation: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 gap-4">
-            <Input
-              label={
-                <span>
-                  Name On Account
-                  <span className="text-primary-solid ml-0.5">*</span>
+            <div className="flex flex-col gap-1">
+              <Input
+                label={
+                  <span>
+                    Name On Account
+                    <span className="text-primary-solid ml-0.5">*</span>
+                  </span>
+                }
+                type="text"
+                placeholder={
+                  isResolvingAccount ? "Resolving account name..." : "Type Here"
+                }
+                value={form.nameOnAccount}
+                error={errors.nameOnAccount}
+                onChange={(e) => update("nameOnAccount", e.target.value)}
+              />
+              {isResolvingAccount && (
+                <span className="text-xs text-amber-700 font-medium animate-pulse">
+                  Resolving account name from bank...
                 </span>
-              }
-              type="text"
-              placeholder="Type Here"
-              value={form.nameOnAccount}
-              error={errors.nameOnAccount}
-              onChange={(e) => update("nameOnAccount", e.target.value)}
-            />
+              )}
+              {accountResolveSuccess && !isResolvingAccount && form.nameOnAccount && (
+                <span className="text-xs text-emerald-700 font-semibold flex items-center gap-1">
+                  ✓ Verified account name
+                </span>
+              )}
+            </div>
           </div>
         </div>
 

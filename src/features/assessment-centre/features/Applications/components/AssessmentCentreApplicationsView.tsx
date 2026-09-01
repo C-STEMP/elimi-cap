@@ -11,7 +11,7 @@ import {
 } from "@/features/assessment-centre/features/Applications/hooks";
 
 interface ApplicationsViewProps {
-  onSelectCandidate: (candidateName: string) => void;
+  onSelectCandidate: (candidateName: string, id?: string) => void;
 }
 
 export const AssessmentCentreApplicationsView: React.FC<
@@ -245,7 +245,7 @@ export const AssessmentCentreApplicationsView: React.FC<
                         />
                       </td>
                       <td
-                        onClick={() => onSelectCandidate(app.candidateName)}
+                        onClick={() => onSelectCandidate(app.candidateName, app.id)}
                         className="p-4 font-semibold text-black cursor-pointer hover:text-primary transition-colors"
                       >
                         {app.candidateName}
@@ -271,7 +271,7 @@ export const AssessmentCentreApplicationsView: React.FC<
                       <td className="p-4 text-right">
                         <button
                           type="button"
-                          onClick={() => onSelectCandidate(app.candidateName)}
+                          onClick={() => onSelectCandidate(app.candidateName, app.id)}
                           className="font-semibold text-black underline underline-offset-2 hover:text-primary transition-colors cursor-pointer"
                         >
                           View
@@ -320,7 +320,7 @@ export const AssessmentCentreApplicationsView: React.FC<
 
                     <div className="flex flex-col gap-2">
                       <span
-                        onClick={() => onSelectCandidate(app.candidateName)}
+                        onClick={() => onSelectCandidate(app.candidateName, app.id)}
                         className="font-bold text-sm text-black cursor-pointer hover:text-primary transition-colors"
                       >
                         {app.candidateName}
@@ -338,7 +338,7 @@ export const AssessmentCentreApplicationsView: React.FC<
 
                     <button
                       type="button"
-                      onClick={() => onSelectCandidate(app.candidateName)}
+                      onClick={() => onSelectCandidate(app.candidateName, app.id)}
                       className="text-xs lg:text-sm text-black font-bold underline hover:text-[#a31d38] transition-colors cursor-pointer mt-auto self-start"
                     >
                       View

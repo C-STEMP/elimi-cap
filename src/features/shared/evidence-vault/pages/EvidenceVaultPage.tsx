@@ -161,7 +161,13 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         <div className="lg:col-span-8 xl:col-span-9 flex flex-col gap-6">
-          <ResourcesSection />
+          <ResourcesSection
+            applicationId={application.id}
+            isSelfAssessmentCompleted={Boolean(
+              reduxApp?.selfAssessmentCompleted ||
+                (apiApp as any)?.selfAssessmentCompleted,
+            )}
+          />
           <EvidenceSection
             evidences={evidences}
             onPreview={(item) => setPreviewItem(item)}

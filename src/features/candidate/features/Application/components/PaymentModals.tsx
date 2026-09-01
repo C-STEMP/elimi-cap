@@ -16,6 +16,8 @@ export type PaymentModalType =
 interface PaymentModalProps {
   isOpen: boolean;
   type: PaymentModalType;
+  title?: string;
+  description?: string;
   onClose: () => void;
   onAction?: () => void;
 }
@@ -23,6 +25,8 @@ interface PaymentModalProps {
 export const PaymentModal: React.FC<PaymentModalProps> = ({
   isOpen,
   type,
+  title,
+  description,
   onClose,
   onAction,
 }) => {
@@ -40,6 +44,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       variant={variantMap[type]}
+      title={title}
+      description={description}
       onAction={onAction}
     />
   );

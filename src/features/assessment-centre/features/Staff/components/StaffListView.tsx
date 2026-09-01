@@ -96,7 +96,9 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
     () =>
       staffMembers.filter((staff) => {
         const matchesSearch =
-          (staff.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (staff.name || "")
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase()) ||
           (staff.email || "").toLowerCase().includes(searchQuery.toLowerCase());
         const matchesStatus =
           statusFilter === "All" ||
@@ -181,11 +183,11 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
             />
           </div>
 
-          <div className="flex items-center sm:justify-end gap-3 flex-wrap">
+          <div className="flex items-center justify-end gap-3 shrink-0">
             <Select
               size="sm"
               showPlaceholderOption={false}
-              containerClassName="w-32"
+              containerClassName="w-32 shrink-0"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               options={[
@@ -341,10 +343,14 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
                           className="w-4 h-4 rounded border-gray-300 text-[#a31d38] focus:ring-0 cursor-pointer"
                         />
                       </td>
-                      <td className="p-3.5 font-bold text-black">{displayName}</td>
+                      <td className="p-3.5 font-bold text-black">
+                        {displayName}
+                      </td>
                       <td className="p-3.5 text-black">{staff.email}</td>
                       <td className="p-3.5">{renderRoleBadge(staff.role)}</td>
-                      <td className="p-3.5">{renderStatusBadge(staff.status)}</td>
+                      <td className="p-3.5">
+                        {renderStatusBadge(staff.status)}
+                      </td>
                       <td className="p-3.5 text-right">
                         {canViewDetail ? (
                           <button

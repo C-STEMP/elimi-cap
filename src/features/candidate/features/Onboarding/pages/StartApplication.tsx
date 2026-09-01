@@ -84,10 +84,27 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
   const { data: remoteTrades = [], isLoading: isLoadingTrades } =
     useGetTradesBySector(selectedSectorId);
 
-  const centreOptions: SelectOption[] = remoteCentres.map((c) => ({
-    label: c.name,
-    value: c.id,
-  }));
+  const centreOptions: SelectOption[] = React.useMemo(() => {
+    const list = Array.isArray(remoteCentres)
+      ? remoteCentres
+      : (remoteCentres as any)?.data || [];
+
+    const seen = new Set<string>();
+    const uniqueOptions: SelectOption[] = [];
+
+    for (const c of list) {
+      if (!c || !c.name) continue;
+      const normalized = c.name.trim().toLowerCase();
+      if (!seen.has(normalized)) {
+        seen.add(normalized);
+        uniqueOptions.push({
+          label: c.name.trim(),
+          value: c.id,
+        });
+      }
+    }
+    return uniqueOptions;
+  }, [remoteCentres]);
 
   const sectorOptions: SelectOption[] = remoteSectors.map((s) => ({
     label: s.name,
@@ -300,7 +317,7 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
     >
       <div className="mb-6 text-left w-full flex flex-col items-start">
         <h1 className="text-2xl xl:text-3xl font-extrabold tracking-tight text-primary">
-          Start Application
+          Start Assessment
         </h1>
         <p className="text-neutral-secondary text-sm font-normal mt-0.5">
           Your journey is about to start

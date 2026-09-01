@@ -14,6 +14,6 @@ export const handleLogout = () => {
   }
 
   if (typeof window !== "undefined") {
-    window.location.href = "/signin";
+    window.location.href = "/login";
   }
 };

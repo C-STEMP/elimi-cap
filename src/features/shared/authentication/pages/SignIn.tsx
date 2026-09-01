@@ -391,10 +391,10 @@ export const SignIn: React.FC = () => {
                   Don&apos;t have an account?
                 </span>
                 <Link
-                  href="/signup"
+                  href="/register"
                   className="text-primary-solid font-bold ml-1 hover:text-primary-hover transition-colors"
                 >
-                  Sign Up
+                  Register
                 </Link>
               </div>
             </form>

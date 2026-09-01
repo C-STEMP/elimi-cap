@@ -203,6 +203,7 @@ export const selfAssessmentStep1Schema = z.object({
   dob: dobSchema,
   email: emailSchema,
   phone: phoneSchema,
+  country: requiredSchema("Country"),
   state: requiredSchema("State of residence"),
   lga: requiredSchema("Local Government Area"),
   address: requiredSchema("Residential address"),

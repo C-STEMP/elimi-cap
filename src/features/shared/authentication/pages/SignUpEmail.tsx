@@ -307,10 +307,10 @@ export const SignUpEmail: React.FC = () => {
             Already have an account?
           </span>
           <Link
-            href="/signin"
+            href="/login"
             className="text-primary-solid font-bold ml-1 hover:text-primary-hover transition-colors"
           >
-            Sign In
+            Login
           </Link>
         </div>
       </form>

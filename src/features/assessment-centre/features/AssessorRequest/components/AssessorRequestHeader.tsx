@@ -1,8 +1,7 @@
 "use client";
 
 import React from "react";
-import { AssessorApplicant } from "@/features/assessment-centre/types";
-import { MOCK_ASSESSOR_APPLICANTS } from "@/features/assessment-centre/utils/constants";
+import { useGetRetainedRequestDetail } from "@/src/features/shared/centre/hooks";
 
 interface AssessorRequestHeaderProps {
   selectedAssessorRequestId: string | null;
@@ -13,11 +12,18 @@ export const AssessorRequestHeader: React.FC<AssessorRequestHeaderProps> = ({
   selectedAssessorRequestId,
   onBackToList,
 }) => {
+  const { data: requestDetail } = useGetRetainedRequestDetail(
+    selectedAssessorRequestId || "",
+    { enabled: !!selectedAssessorRequestId },
+  );
+
   if (selectedAssessorRequestId) {
-    const applicant =
-      MOCK_ASSESSOR_APPLICANTS.find(
-        (a) => a.id === selectedAssessorRequestId,
-      ) || MOCK_ASSESSOR_APPLICANTS[0];
+    const assessorName =
+      requestDetail?.assessor?.name ||
+      (requestDetail?.assessorId
+        ? `Assessor (${requestDetail.assessorId.slice(0, 8)})`
+        : "Assessor");
+
     return (
       <div className="flex flex-col gap-1 pt-2">
         <button
@@ -26,7 +32,7 @@ export const AssessorRequestHeader: React.FC<AssessorRequestHeaderProps> = ({
           className="flex items-center gap-2 text-white font-bold text-2xl lg:text-3xl tracking-tight hover:opacity-90 text-left cursor-pointer"
         >
           <span className="text-xl font-bold">&lt;</span>
-          <span>{applicant.name}</span>
+          <span>{assessorName}</span>
         </button>
         <div className="flex items-center gap-2 text-xs lg:text-sm text-white/90 font-normal">
           <span
@@ -38,7 +44,7 @@ export const AssessorRequestHeader: React.FC<AssessorRequestHeaderProps> = ({
           <span>&gt;</span>
           <span>Assessor</span>
           <span>&gt;</span>
-          <span className="font-semibold text-white">{applicant.name}</span>
+          <span className="font-semibold text-white">{assessorName}</span>
         </div>
       </div>
     );

@@ -60,14 +60,14 @@ export const ApplicationsList: React.FC<ApplicationsListProps> = ({
             No applications yet
           </h4>
           <p className="text-gray-400 text-xs leading-relaxed max-w-xs mb-6">
-            Click &quot;Create Application&quot; in the top header to get
+            Click &quot;Start Assessment&quot; in the top header to get
             started with your Recognition of Prior Learning journey.
           </p>
           <Link
             href="/onboarding/assessment-type"
             className="bg-secondary hover:bg-[#e89b1f] active:scale-95 text-white font-semibold text-sm px-6 py-2.5 rounded-xl shadow-lg transition-all cursor-pointer inline-flex items-center gap-1.5 no-underline select-none"
           >
-            <span>Create Application</span>
+            <span>Start Assessment</span>
             <FiPlus className="w-4 h-4 stroke-[2.5]" />
           </Link>
         </div>

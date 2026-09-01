@@ -231,6 +231,42 @@ export async function getBanksApi(country: string = "nigeria"): Promise<Bank[]> 
   }
 }
 
+export interface ResolvedBankAccount {
+  accountName: string;
+  accountNumber: string;
+  bankCode?: string;
+  bankId?: number | string;
+}
+
+/**
+ * Orchestrator: Resolve bank account name from account number and bank code
+ */
+export async function resolveBankAccountApi(payload: {
+  accountNumber: string;
+  bankCode: string;
+}): Promise<ResolvedBankAccount> {
+  const data = await orchestratorFetch<any>("/banks/resolve", {
+    method: "POST",
+    data: {
+      accountNumber: payload.accountNumber,
+      bankCode: payload.bankCode,
+    },
+  });
+
+  const accountName =
+    data?.accountName ||
+    data?.account_name ||
+    data?.name ||
+    (typeof data === "string" ? data : "");
+
+  return {
+    accountName,
+    accountNumber: data?.accountNumber || data?.account_number || payload.accountNumber,
+    bankCode: data?.bankCode || data?.bank_code || payload.bankCode,
+    bankId: data?.bankId || data?.bank_id,
+  };
+}
+
 /**
  * Orchestrator: List countries
  */

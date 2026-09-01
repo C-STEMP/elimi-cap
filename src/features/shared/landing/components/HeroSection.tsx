@@ -18,7 +18,7 @@ export function HeroSection() {
     clearTokens();
     dispatch(logout());
     dispatch(resetOnboarding());
-    router.push("/signup");
+    router.push("/register");
   };
   return (
     <section className="relative flex flex-col justify-between overflow-hidden bg-[#661126] text-white pt-4 lg:pt-10 pb-10">
@@ -60,7 +60,7 @@ export function HeroSection() {
             className="mt-4 lg:mt-6 flex flex-wrap items-center justify-center gap-3 lg:gap-5"
           >
             <Link
-              href="/signup"
+              href="/register"
               onClick={handleGetStarted}
               className="rounded-[10px] bg-secondary px-5 lg:px-16 py-2.5 text-sm font-semibold text-white transition-all hover:bg-secondary-hover"
             >

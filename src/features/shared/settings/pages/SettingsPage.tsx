@@ -418,7 +418,7 @@ export const SettingsPage: React.FC = () => {
             title: "Account Deleted",
             description: "Your account has been permanently deleted.",
           });
-          router.push("/signin");
+          router.push("/login");
         }}
       />
 

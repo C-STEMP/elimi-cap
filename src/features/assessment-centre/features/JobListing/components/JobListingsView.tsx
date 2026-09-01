@@ -32,14 +32,25 @@ export const JobListingsView: React.FC<JobListingsViewProps> = ({
     );
   };
 
-  const filteredJobs = useMemo(() => jobs.filter(
-    (job) =>
-      job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.tradeId.toLowerCase().includes(searchQuery.toLowerCase()),
-  ), [jobs, searchQuery]);
+  const filteredJobs = useMemo(
+    () =>
+      jobs.filter(
+        (job) =>
+          job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          job.tradeId.toLowerCase().includes(searchQuery.toLowerCase()),
+      ),
+    [jobs, searchQuery],
+  );
 
   if (isLoading) {
-    return <Loader fullscreen={false} size="small" tip="Loading job listings..." className="py-20" />;
+    return (
+      <Loader
+        fullscreen={false}
+        size="small"
+        tip="Loading job listings..."
+        className="py-20"
+      />
+    );
   }
 
   return (
@@ -57,7 +68,7 @@ export const JobListingsView: React.FC<JobListingsViewProps> = ({
             />
           </div>
 
-          <div className="flex items-center justify-between sm:justify-end gap-4 flex-wrap">
+          <div className="flex items-center justify-end gap-3">
             <div className="flex items-center gap-1.5">
               <button
                 type="button"

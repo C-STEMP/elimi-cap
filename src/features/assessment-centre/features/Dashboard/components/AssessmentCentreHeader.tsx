@@ -135,11 +135,11 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
 
   const allNavItems: { id: AssessmentCentreTab; label: string }[] = [
     { id: "overview", label: "Overview" },
-    { id: "staff", label: "Staff" },
     { id: "applications", label: "Applications" },
-    { id: "job-listing", label: "Job Listing" },
     { id: "assessor-request", label: "Assessor Request" },
     { id: "assessors", label: "Assessors" },
+    { id: "job-listing", label: "Job Listing" },
+    { id: "staff", label: "Staff" },
     { id: "payments", label: "Payments" },
     { id: "settings", label: "Settings" },
   ];

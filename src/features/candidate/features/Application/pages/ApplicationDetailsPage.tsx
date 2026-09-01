@@ -7,6 +7,7 @@ import { HeaderBanner } from "@/features/candidate/features/Dashboard/components
 import { CalendarWidget } from "@/features/candidate/features/Dashboard/components/CalendarWidget";
 import { UpcomingCard } from "@/features/candidate/features/Dashboard/components/UpcomingCard";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { StatusModal } from "@/components/status-modal";
 import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
@@ -21,6 +22,7 @@ import { ApplicationStageCard } from "../components/ApplicationStageCard";
 import { ApplicationFormModal } from "../components/ApplicationFormModal";
 import { UploadSignatureModal } from "../components/UploadSignatureModal";
 import { NsqApplicationDetailView } from "../components/nsq/NsqApplicationDetailView";
+import { TransactionReceiptModal } from "@/features/assessment-centre/features/Payment/components/TransactionReceiptModal";
 import { FacilitatorCard } from "@/features/candidate/features/Dashboard/components/FacilitatorCard";
 import { FiEdit2, FiLock, FiFileText } from "react-icons/fi";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
@@ -42,6 +44,7 @@ import {
   useGetPaymentQuote,
   useGetApplicationReceipt,
 } from "@/src/features/candidate/features/Application/hooks";
+import { APPLICATION_QUERY_KEYS } from "@/src/features/shared/applications/hooks/useApplication";
 import type { ApplicationDetail } from "@/src/features/shared/applications/api";
 import { Loader } from "@/src/components/ui/loader";
 
@@ -74,7 +77,9 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const dispatch = useAppDispatch();
+  const queryClient = useQueryClient();
   const { initiatePayment } = useApplication();
+  const [isPaymentConfirmed, setIsPaymentConfirmed] = useState(false);
 
   const isRawId = (str?: string) => {
     if (!str) return false;
@@ -121,6 +126,7 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
 
   const paymentStageFromApi = stagesData?.find((s) => s.stageKey === "payment");
   const isPaymentPaid =
+    isPaymentConfirmed ||
     paymentStageFromApi?.status === "successful" ||
     (reduxApp?.paymentCompleted ?? false);
 
@@ -158,10 +164,17 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
 
   const [activePaymentModal, setActivePaymentModal] =
     useState<PaymentModalType>(null);
+  const [paymentErrorInfo, setPaymentErrorInfo] = useState<{
+    title?: string;
+    description?: string;
+  }>({});
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [isCallRequestModalOpen, setIsCallRequestModalOpen] = useState(false);
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
+  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
   const [isInterviewCollapsed, setIsInterviewCollapsed] = useState(false);
+
+  const authUser = useAppSelector((state) => state.auth.user);
 
   // Check for redirect callback from Paystack
   useEffect(() => {
@@ -170,8 +183,26 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
       searchParams.get("reference") || searchParams.get("trxref");
 
     if (paymentParam === "success" || referenceParam) {
+      setIsPaymentConfirmed(true);
       if (id) {
         dispatch(markPaymentComplete(id));
+        try {
+          sessionStorage.removeItem("pending_payment_application_id");
+          localStorage.removeItem("pending_payment_application_id");
+        } catch {}
+
+        queryClient.invalidateQueries({
+          queryKey: APPLICATION_QUERY_KEYS.stages(id),
+        });
+        queryClient.invalidateQueries({
+          queryKey: APPLICATION_QUERY_KEYS.detail(id),
+        });
+        queryClient.invalidateQueries({
+          queryKey: APPLICATION_QUERY_KEYS.receipt(id),
+        });
+        queryClient.invalidateQueries({
+          queryKey: APPLICATION_QUERY_KEYS.all,
+        });
       }
       setActivePaymentModal("success");
       toast({
@@ -179,10 +210,18 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
         title: "Payment Confirmed",
         description: "Your payment was processed successfully via Paystack.",
       });
+
+      // Clean URL params cleanly
+      if (typeof window !== "undefined" && window.history?.replaceState) {
+        window.history.replaceState({}, "", window.location.pathname);
+      }
     } else if (paymentParam === "cancelled" || paymentParam === "failed") {
       setActivePaymentModal("unsuccessful");
+      if (typeof window !== "undefined" && window.history?.replaceState) {
+        window.history.replaceState({}, "", window.location.pathname);
+      }
     }
-  }, [searchParams, id, dispatch]);
+  }, [searchParams, id, dispatch, toast, queryClient]);
 
   const formState: ApplicationFormState = application
     ? statusToFormState(
@@ -202,6 +241,14 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
   const handleMakePayment = () => {
     if (!application) return;
     setActivePaymentModal("processing");
+    setPaymentErrorInfo({});
+    try {
+      if (application.id && typeof window !== "undefined") {
+        sessionStorage.setItem("pending_payment_application_id", application.id);
+        localStorage.setItem("pending_payment_application_id", application.id);
+      }
+    } catch {}
+
     initiatePayment.mutate(application.id, {
       onSuccess: (data: any) => {
         const checkoutUrl = data?.checkoutUrl || data?.data?.checkoutUrl;
@@ -209,8 +256,18 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
           window.location.href = checkoutUrl;
         } else {
           setTimeout(() => {
+            setIsPaymentConfirmed(true);
             setActivePaymentModal("success");
             dispatch(markPaymentComplete(application.id));
+            queryClient.invalidateQueries({
+              queryKey: APPLICATION_QUERY_KEYS.stages(application.id),
+            });
+            queryClient.invalidateQueries({
+              queryKey: APPLICATION_QUERY_KEYS.detail(application.id),
+            });
+            queryClient.invalidateQueries({
+              queryKey: APPLICATION_QUERY_KEYS.all,
+            });
           }, 800);
         }
       },
@@ -226,9 +283,32 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
             description:
               "A payment session for this application is already active or completed.",
           });
+          setIsPaymentConfirmed(true);
           setActivePaymentModal(null);
           dispatch(markPaymentComplete(application.id));
+          queryClient.invalidateQueries({
+            queryKey: APPLICATION_QUERY_KEYS.stages(application.id),
+          });
         } else {
+          const isDeactivated =
+            err?.message?.toLowerCase()?.includes("integration has been deactivated") ||
+            err?.message?.toLowerCase()?.includes("deactivated") ||
+            err?.code === "orchestrator.invalid_argument";
+
+          if (isDeactivated) {
+            setPaymentErrorInfo({
+              title: "Payment Gateway Deactivated",
+              description:
+                "The payment provider (Paystack) integration on the Orchestrator service is currently deactivated or being configured. Please contact the platform administrator to reactivate payment processing.",
+            });
+          } else {
+            setPaymentErrorInfo({
+              title: "Payment Unsuccessful",
+              description:
+                err?.message || "Your payment was not successful. Please try again.",
+            });
+          }
+
           setActivePaymentModal("unsuccessful");
         }
       },
@@ -239,6 +319,7 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
     if (!application) return;
     setActivePaymentModal(null);
     dispatch(markPaymentComplete(application.id));
+    router.push(`/dashboard/applications/${application.id}/evidence-vault`);
   };
 
   const handleConfirmCallModal = () => {
@@ -370,17 +451,7 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
         },
         onMakePayment: handleMakePayment,
         onDownloadReceipt: () => {
-          const receiptUrl =
-            receiptData?.url || paymentStageFromApi?.receipt?.url;
-          if (receiptUrl) {
-            window.open(receiptUrl, "_blank");
-          } else {
-            toast({
-              type: "success",
-              title: "Payment Receipt",
-              description: `Payment receipt completed for ${resolvedTrade}.`,
-            });
-          }
+          setIsReceiptModalOpen(true);
         },
         onNavigateToVault: () =>
           router.push(`/dashboard/applications/${application.id}/evidence-vault`),
@@ -544,6 +615,8 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
       <PaymentModal
         isOpen={!!activePaymentModal}
         type={activePaymentModal}
+        title={paymentErrorInfo.title}
+        description={paymentErrorInfo.description}
         onClose={() => setActivePaymentModal(null)}
         onAction={
           activePaymentModal === "success"
@@ -581,6 +654,40 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
             description: "Your signature has been attached successfully.",
           })
         }
+      />
+
+      <TransactionReceiptModal
+        isOpen={isReceiptModalOpen}
+        onClose={() => setIsReceiptModalOpen(false)}
+        transaction={{
+          id:
+            receiptData?.paymentId ||
+            (application?.id ? "TXN_" + application.id.slice(0, 8) : "TXN_12345_ABCDE"),
+          candidateName:
+            receiptData?.candidateName ||
+            authUser?.fullName ||
+            (apiApp as any)?.candidate?.name ||
+            "Tunde Bakare",
+          assessmentType: apiApp?.type || "RPL",
+          description: "Recognition of prior learning",
+          amountPaid: receiptData?.amount?.amountMinorUnits
+            ? `₦${(Number(receiptData.amount.amountMinorUnits) / 100).toLocaleString()}`
+            : paymentQuote?.amountMinorUnits
+              ? `₦${(Number(paymentQuote.amountMinorUnits) / 100).toLocaleString()}`
+              : "₦45,000",
+          date: receiptData?.paidAt
+            ? new Date(receiptData.paidAt).toISOString().split("T")[0]
+            : (application as any)?.submittedAt
+              ? new Date((application as any).submittedAt).toISOString().split("T")[0]
+              : new Date().toISOString().split("T")[0],
+          paymentMethod: receiptData?.provider || "Paystack",
+          status: "Paid" as const,
+          transactionId:
+            receiptData?.paymentId ||
+            (application?.id
+              ? "TXN_" + application.id.replace(/-/g, "").slice(0, 10).toUpperCase()
+              : "TXN_12345_ABCDE"),
+        }}
       />
     </motion.div>
   );

@@ -5,6 +5,51 @@ import {
   useGetCentreDashboard,
   useGetCentreStaff,
 } from "@/src/features/shared/centre/hooks";
+import { useAppSelector } from "@/src/store/hooks";
+
+function isIdLike(val: string): boolean {
+  if (!val) return false;
+  const trimmed = val.trim();
+  // ULID (26 uppercase alphanumeric characters)
+  if (/^[0-9A-Z]{26}$/i.test(trimmed)) return true;
+  // UUID (with hyphens)
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(trimmed)) return true;
+  // Generic opaque hex or Base32 IDs without spaces
+  if (!trimmed.includes(" ") && !trimmed.includes("@") && trimmed.length >= 18) return true;
+  return false;
+}
+
+function formatActionText(action: string): string {
+  if (!action) return "Activity logged";
+  const actionMap: Record<string, string> = {
+    "retained_request.decided": "Decided on assessor request",
+    "retained_request.approved": "Approved assessor request",
+    "retained_request.rejected": "Rejected assessor request",
+    "retained_request.submitted": "Submitted request to join centre",
+    "retained_request.created": "Created assessor request",
+    "application.reviewed": "Reviewed candidate application",
+    "application.approved": "Approved candidate application",
+    "application.accepted": "Accepted candidate application",
+    "application.rejected": "Rejected candidate application",
+    "application.submitted": "Submitted application",
+    "staff.invited": "Invited staff member",
+    "staff.added": "Added staff member",
+    "staff.role_updated": "Updated staff role",
+    "staff.deactivated": "Deactivated staff member",
+    "job_posting.created": "Created job posting",
+    "job_posting.closed": "Closed job posting",
+  };
+
+  if (actionMap[action.toLowerCase()]) {
+    return actionMap[action.toLowerCase()];
+  }
+
+  return action
+    .replace(/[._]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 function formatRelativeTime(dateStr: string): string {
   try {
@@ -25,27 +70,67 @@ function formatRelativeTime(dateStr: string): string {
 }
 
 export const StaffActivityLogCard: React.FC = () => {
+  const authUser = useAppSelector((state) => state.auth.user);
   const { data: dashboardData } = useGetCentreDashboard();
   const { data: staffList = [] } = useGetCentreStaff();
   const logs = dashboardData?.staffActivity || [];
 
   const resolveActorName = (log: any): string => {
-    if (
-      log.actorName &&
-      !/^[0-9a-f]{8}-[0-9a-f]{4}/i.test(log.actorName) &&
-      log.actorName.length < 30
-    ) {
+    // 1. If explicit human actor name is provided
+    if (log.actorName && !isIdLike(log.actorName)) {
       return log.actorName;
     }
-    const staffMatch = staffList.find(
-      (s) =>
-        s.id === log.staffId ||
-        s.id === log.actorId ||
-        s.id === log.actorName ||
-        s.email === log.actorName,
-    );
-    if (staffMatch?.name) return staffMatch.name;
-    if (log.actorName && !log.actorName.includes("-")) return log.actorName;
+
+    // 2. Check metadata
+    const metaName =
+      log.metadata?.actorName ||
+      log.metadata?.staffName ||
+      log.metadata?.userName ||
+      log.metadata?.name;
+    if (metaName && !isIdLike(metaName)) {
+      return metaName;
+    }
+
+    const rawId = log.staffId || log.actorId || log.actorName || log.userId;
+
+    // 3. Look up in centre staffList
+    if (rawId) {
+      const staffMatch = staffList.find(
+        (s) =>
+          s.id === rawId ||
+          s.email === rawId ||
+          (s as any).userId === rawId ||
+          (s as any).actorId === rawId ||
+          (s as any).user?.id === rawId,
+      );
+      if (staffMatch?.name && !isIdLike(staffMatch.name)) {
+        return staffMatch.name;
+      }
+      if (staffMatch?.email) {
+        return staffMatch.email.split("@")[0];
+      }
+    }
+
+    // 4. Check logged in user
+    if (
+      authUser &&
+      (rawId === authUser.id ||
+        (authUser as any).sub === rawId ||
+        !rawId ||
+        log.role === "super_admin")
+    ) {
+      const currentUserName =
+        authUser.fullName ||
+        (authUser as any).name ||
+        authUser.email?.split("@")[0];
+      if (currentUserName && !isIdLike(currentUserName)) {
+        return currentUserName;
+      }
+    }
+
+    // 5. Friendly role fallback
+    if (log.role === "super_admin") return "Centre Admin";
+    if (log.role === "regular_admin") return "Admin";
     return "Staff Member";
   };
 
@@ -79,7 +164,7 @@ export const StaffActivityLogCard: React.FC = () => {
                 </div>
 
                 <span className="text-xs lg:text-sm text-black/80 text-left flex-1 px-2 line-clamp-1">
-                  {log.action}
+                  {formatActionText(log.action)}
                 </span>
 
                 <span className="text-xs lg:text-sm text-gray-500 shrink-0">

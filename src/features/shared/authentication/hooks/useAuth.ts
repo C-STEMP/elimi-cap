@@ -500,7 +500,7 @@ export function useLogout() {
         title: "Signed Out",
         description: "You have been signed out.",
       });
-      router.push("/signin");
+      router.push("/login");
     },
   });
 }

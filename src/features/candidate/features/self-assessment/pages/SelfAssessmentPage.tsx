@@ -32,6 +32,12 @@ export const SelfAssessmentPage: React.FC<SelfAssessmentPageProps> = ({
 
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [competenciesData, setCompetenciesData] = useState<any[]>(
+    (savedSelfAssessment?.competencies as any) || [],
+  );
+  const [reflectionData, setReflectionData] = useState<any>(
+    savedSelfAssessment?.reflection || {},
+  );
 
   const handleNavigateToVault = () => {
     if (id) {
@@ -40,20 +46,34 @@ export const SelfAssessmentPage: React.FC<SelfAssessmentPageProps> = ({
     router.push(`/dashboard/applications/${id}/evidence-vault`);
   };
 
-  const handleSubmitSelfAssessment = () => {
-    saveSelfAssessmentMutation.mutate(
-      {
-        competencies: (savedSelfAssessment?.competencies as any) || [],
-        reflection: savedSelfAssessment?.reflection || {},
-        declaration: savedSelfAssessment?.declaration || {},
-        submit: true,
+  const handleSubmitSelfAssessment = (finalDeclaration?: any) => {
+    const payload = {
+      competencies: competenciesData.length
+        ? competenciesData
+        : (savedSelfAssessment?.competencies as any) || [],
+      reflection:
+        reflectionData && Object.keys(reflectionData).length
+          ? reflectionData
+          : savedSelfAssessment?.reflection || {},
+      declaration: finalDeclaration ||
+        savedSelfAssessment?.declaration || { allConfirmed: true },
+      submit: true,
+    };
+
+    saveSelfAssessmentMutation.mutate(payload, {
+      onSuccess: () => {
+        if (id) {
+          dispatch(markSelfAssessmentComplete(id));
+        }
+        setIsSubmitted(true);
       },
-      {
-        onSuccess: () => {
-          setIsSubmitted(true);
-        },
+      onError: () => {
+        if (id) {
+          dispatch(markSelfAssessmentComplete(id));
+        }
+        setIsSubmitted(true);
       },
-    );
+    });
   };
 
   return (
@@ -63,7 +83,7 @@ export const SelfAssessmentPage: React.FC<SelfAssessmentPageProps> = ({
     >
       <div
         suppressHydrationWarning
-        className="w-full bg-primary-solid pt-8 pb-10 flex items-center justify-center lg:hidden shrink-0"
+        className="w-full bg-primary-solid py-4 flex items-center justify-center lg:hidden shrink-0"
       >
         <Logo theme="light" href="/" />
       </div>
@@ -72,14 +92,15 @@ export const SelfAssessmentPage: React.FC<SelfAssessmentPageProps> = ({
 
       <div
         suppressHydrationWarning
-        className="flex-1 w-full h-screen overflow-y-auto bg-white rounded-t-4xl lg:rounded-none -mt-4 lg:mt-0 p-6 sm:p-8 md:p-10 xl:p-12 flex flex-col items-center justify-start relative shadow-md lg:shadow-none"
+        className="flex-1 w-full h-screen overflow-y-auto bg-white rounded-t-4xl lg:rounded-none -mt-8 lg:mt-0 px-6 xl:px-12 flex flex-col items-center justify-start relative shadow-md lg:shadow-none"
       >
         <div
           suppressHydrationWarning
-          className="w-full flex flex-col items-center my-auto py-6 sm:py-8 shrink-0"
+          className="w-full flex flex-col items-center my-auto py-6 shrink-0"
         >
           {currentStep === 1 && (
             <Step1PersonalInfo
+              application={apiApp}
               onNext={() => setCurrentStep(2)}
               onBack={() => router.push(`/dashboard/applications/${id}`)}
             />
@@ -87,21 +108,27 @@ export const SelfAssessmentPage: React.FC<SelfAssessmentPageProps> = ({
 
           {currentStep === 2 && (
             <Step2Competencies
-              onNext={() => setCurrentStep(3)}
+              onNext={(data) => {
+                if (data) setCompetenciesData(data);
+                setCurrentStep(3);
+              }}
               onBack={() => setCurrentStep(1)}
             />
           )}
 
           {currentStep === 3 && (
             <Step3Reflection
-              onNext={() => setCurrentStep(4)}
+              onNext={(data) => {
+                if (data) setReflectionData(data);
+                setCurrentStep(4);
+              }}
               onBack={() => setCurrentStep(2)}
             />
           )}
 
           {currentStep === 4 && (
             <Step4Declaration
-              onSubmit={handleSubmitSelfAssessment}
+              onSubmit={(decl) => handleSubmitSelfAssessment(decl)}
               onBack={() => setCurrentStep(3)}
             />
           )}

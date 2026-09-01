@@ -1,5 +1,5 @@
-import { SignIn } from "@/src/features/shared/authentication/pages/SignIn";
+import { redirect } from "next/navigation";
 
 export default function SignInPage() {
-  return <SignIn />;
+  redirect("/login");
 }

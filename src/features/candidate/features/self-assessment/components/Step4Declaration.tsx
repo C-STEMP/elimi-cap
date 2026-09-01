@@ -12,13 +12,15 @@ import { useToast } from "@/src/components/ui/toast";
 import { ASSETS_URL } from "@/assets";
 
 interface Step4Props {
-  onSubmit: () => void;
+  onSubmit: (data?: any) => void;
   onBack: () => void;
+  initialData?: any;
 }
 
 export const Step4Declaration: React.FC<Step4Props> = ({
   onSubmit,
   onBack,
+  initialData,
 }) => {
   const router = useRouter();
   const { toast } = useToast();
@@ -26,12 +28,14 @@ export const Step4Declaration: React.FC<Step4Props> = ({
   const [showDraftModal, setShowDraftModal] = useState(false);
   const [showErrorAlert, setShowErrorAlert] = useState(false);
 
-  const [checkedItems, setCheckedItems] = useState<Record<number, boolean>>({
-    1: false,
-    2: false,
-    3: false,
-    4: false,
-  });
+  const [checkedItems, setCheckedItems] = useState<Record<number, boolean>>(
+    initialData?.declarations || {
+      1: false,
+      2: false,
+      3: false,
+      4: false,
+    },
+  );
 
   const toggleCheck = (id: number) => {
     setCheckedItems((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -55,7 +59,11 @@ export const Step4Declaration: React.FC<Step4Props> = ({
       });
       return;
     }
-    onSubmit();
+    onSubmit({
+      declarations: checkedItems,
+      allConfirmed: true,
+      confirmedAt: new Date().toISOString(),
+    });
   };
 
   return (

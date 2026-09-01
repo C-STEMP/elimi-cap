@@ -14,6 +14,7 @@ interface ApplicationsHeaderProps {
   onBackFromSelfAssessment: () => void;
   onBackFromEvidenceVault: () => void;
   onBackFromCandidateForm: () => void;
+  onAcceptApplication?: () => void;
 }
 
 export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = ({
@@ -25,13 +26,15 @@ export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = ({
   onBackFromSelfAssessment,
   onBackFromEvidenceVault,
   onBackFromCandidateForm,
+  onAcceptApplication,
 }) => {
   const { data: applications = [] } = useGetApplications();
   const { data: appSummary } = useGetCentreApplicationsSummary();
 
   const totalCount = appSummary?.total ?? applications.length;
   const pendingCount =
-    appSummary?.pending ?? applications.filter((a) => a.status === "draft").length;
+    appSummary?.pending ??
+    applications.filter((a) => a.status === "draft").length;
   const ongoingCount =
     appSummary?.ongoing ??
     applications.filter((a) => a.status === "in_progress").length;
@@ -77,9 +80,7 @@ export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = ({
             Evidence Vault
           </span>
           <span>&gt;</span>
-          <span className="font-semibold text-white">
-            Self Assessment Form
-          </span>
+          <span className="font-semibold text-white">Self Assessment Form</span>
         </div>
       </div>
     );
@@ -119,7 +120,7 @@ export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = ({
 
   if (selectedCandidateName && showCandidateForm) {
     return (
-      <div className="flex items-center justify-between gap-4 pt-2">
+      <div className="flex items-center justify-between gap-4 pt-2 flex-wrap">
         <div className="flex flex-col gap-1">
           <button
             type="button"
@@ -144,11 +145,19 @@ export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = ({
               {selectedCandidateName}
             </span>
             <span>&gt;</span>
-            <span className="font-semibold text-white">
-              Application Form
-            </span>
+            <span className="font-semibold text-white">Application Form</span>
           </div>
         </div>
+
+        {onAcceptApplication && (
+          <button
+            type="button"
+            onClick={onAcceptApplication}
+            className="bg-secondary hover:bg-[#e89b1f] text-white font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-md shrink-0"
+          >
+            <span>Accept Application</span>
+          </button>
+        )}
       </div>
     );
   }
@@ -202,9 +211,7 @@ export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = ({
         </div>
 
         <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 flex flex-col gap-1 border border-white/15 transition-all shadow-xs">
-          <span className="text-xs font-semibold text-white/90">
-            Pending
-          </span>
+          <span className="text-xs font-semibold text-white/90">Pending</span>
           <div className="flex items-baseline gap-1 mt-0.5">
             <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
               {pendingCount.toLocaleString()}
@@ -216,9 +223,7 @@ export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = ({
         </div>
 
         <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 flex flex-col gap-1 border border-white/15 transition-all shadow-xs">
-          <span className="text-xs font-semibold text-white/90">
-            Ongoing
-          </span>
+          <span className="text-xs font-semibold text-white/90">Ongoing</span>
           <div className="flex items-baseline gap-1 mt-0.5">
             <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
               {ongoingCount.toLocaleString()}
@@ -230,9 +235,7 @@ export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = ({
         </div>
 
         <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 flex flex-col gap-1 border border-white/15 transition-all shadow-xs">
-          <span className="text-xs font-semibold text-white/90">
-            Completed
-          </span>
+          <span className="text-xs font-semibold text-white/90">Completed</span>
           <div className="flex items-baseline gap-1 mt-0.5">
             <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
               {completedCount.toLocaleString()}
@@ -244,9 +247,7 @@ export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = ({
         </div>
 
         <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 flex flex-col gap-1 border border-white/15 transition-all shadow-xs">
-          <span className="text-xs font-semibold text-white/90">
-            Archived
-          </span>
+          <span className="text-xs font-semibold text-white/90">Archived</span>
           <div className="flex items-baseline gap-1 mt-0.5">
             <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
               {archivedCount.toLocaleString()}

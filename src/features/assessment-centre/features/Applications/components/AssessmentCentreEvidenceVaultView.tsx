@@ -12,8 +12,14 @@ import {
 import { ASSETS_URL } from "@/assets";
 import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
+import { Loader } from "@/src/components/ui/loader";
+import {
+  useGetEvidenceVault,
+  useGetSelfAssessment,
+} from "@/src/features/shared/applications/hooks";
 
 interface EvidenceVaultViewProps {
+  id?: string;
   candidateName?: string;
   onBack: () => void;
   onOpenSelfAssessmentForm: () => void;
@@ -22,11 +28,16 @@ interface EvidenceVaultViewProps {
 export const AssessmentCentreEvidenceVaultView: React.FC<
   EvidenceVaultViewProps
 > = ({
-  candidateName = "Oguntade James",
+  id = "",
+  candidateName = "Candidate",
   onBack,
   onOpenSelfAssessmentForm,
 }) => {
   const { toast } = useToast();
+  const { data: evidenceItems = [], isLoading: isLoadingEvidence } =
+    useGetEvidenceVault(id);
+  const { data: selfAssessment } = useGetSelfAssessment(id);
+
   const [currentMonth, setCurrentMonth] = useState("July");
   const months = [
     "January",
@@ -59,7 +70,7 @@ export const AssessmentCentreEvidenceVaultView: React.FC<
     <div className="w-full flex flex-col gap-6 select-text">
       {/* Main Grid Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Column (col-span-8) */}
+        {/* Left Column */}
         <div className="lg:col-span-8 xl:col-span-9 flex flex-col gap-8">
           {/* Section 1: Resources */}
           <div className="flex flex-col gap-4">
@@ -75,10 +86,12 @@ export const AssessmentCentreEvidenceVaultView: React.FC<
                 </div>
                 <div className="flex flex-col gap-1 min-w-0">
                   <h3 className="text-base sm:text-lg font-bold text-black tracking-tight truncate">
-                    Self-Assessment Form Template
+                    Self-Assessment Form
                   </h3>
                   <span className="text-xs text-gray-400 font-normal">
-                    5 mb
+                    {selfAssessment?.submittedAt
+                      ? `Submitted on ${new Date(selfAssessment.submittedAt).toLocaleDateString("en-GB")}`
+                      : "Candidate Competency Self-Assessment"}
                   </span>
                 </div>
               </div>
@@ -105,7 +118,7 @@ export const AssessmentCentreEvidenceVaultView: React.FC<
                     Third Party Reports
                   </h3>
                   <span className="text-xs text-gray-400 font-normal">
-                    5 mb
+                    Employer & Supervisor References
                   </span>
                 </div>
               </div>
@@ -115,8 +128,8 @@ export const AssessmentCentreEvidenceVaultView: React.FC<
                 onClick={() =>
                   toast({
                     type: "info",
-                    title: "Download Started",
-                    description: "Downloading Third Party Reports PDF...",
+                    title: "Third Party Reports",
+                    description: "No third party report document attached.",
                   })
                 }
                 className="bg-[#F8F9FA] border border-gray-200 hover:bg-gray-100 text-gray-700 font-semibold text-xs sm:text-sm px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-2xs shrink-0"
@@ -130,135 +143,86 @@ export const AssessmentCentreEvidenceVaultView: React.FC<
           {/* Section 2: Evidence */}
           <div className="flex flex-col gap-4">
             <h2 className="text-lg font-extrabold text-black tracking-tight">
-              Evidence
+              Evidence Items ({evidenceItems.length})
             </h2>
 
-            {/* Evidence Item 1: Attention Required */}
-            <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-2xs flex flex-col gap-3 transition-all">
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-4 min-w-0">
-                  <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
-                    <FiFileText className="w-6 h-6 text-[#a31d38]" />
-                  </div>
-                  <div className="flex flex-col gap-1 min-w-0">
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <h3 className="text-base sm:text-lg font-bold text-black tracking-tight">
-                        CV/Resume
-                      </h3>
-                      <span className="bg-[#FCE8EB] text-[#A31D38] text-xs font-semibold px-3 py-0.5 rounded-full">
-                        Attention Required
-                      </span>
+            {isLoadingEvidence ? (
+              <div className="p-8 flex justify-center">
+                <Loader tip="Loading evidence items..." />
+              </div>
+            ) : evidenceItems.length > 0 ? (
+              evidenceItems.map((item, idx) => {
+                const isApproved = item.status === "approved" || item.status === "accepted";
+                const isAttention = item.status === "rejected" || item.status === "needs_attention";
+                const title = item.name || item.title || item.category || `Evidence Document #${idx + 1}`;
+                const fileFeedback = item.feedback || item.reviewComment;
+
+                return (
+                  <div
+                    key={item.id || idx}
+                    className="bg-white rounded-2xl p-5 border border-gray-100 shadow-2xs flex flex-col gap-3 transition-all"
+                  >
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-4 min-w-0">
+                        <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
+                          <FiFileText className="w-6 h-6 text-[#a31d38]" />
+                        </div>
+                        <div className="flex flex-col gap-1 min-w-0">
+                          <div className="flex items-center gap-3 flex-wrap">
+                            <h3 className="text-base sm:text-lg font-bold text-black tracking-tight truncate">
+                              {title}
+                            </h3>
+                            <span
+                              className={`text-xs font-semibold px-3 py-0.5 rounded-full capitalize ${
+                                isApproved
+                                  ? "bg-[#E6F4EA] text-[#1E7F4C]"
+                                  : isAttention
+                                    ? "bg-[#FCE8EB] text-[#A31D38]"
+                                    : "bg-[#FEF3C7] text-[#92400E]"
+                              }`}
+                            >
+                              {item.status ? item.status.replace(/_/g, " ") : "Submitted"}
+                            </span>
+                          </div>
+                          <span className="text-xs text-gray-400 font-normal">
+                            {item.size || "Uploaded document"}
+                          </span>
+                        </div>
+                      </div>
+
+                      {item.assetId && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            toast({
+                              type: "info",
+                              title: "Document Preview",
+                              description: `Opening ${title}...`,
+                            });
+                          }}
+                          className="bg-white border border-gray-200 hover:bg-gray-50 text-[#fbab2a] font-bold text-xs sm:text-sm px-4 py-2 rounded-xl cursor-pointer shrink-0"
+                        >
+                          View
+                        </button>
+                      )}
                     </div>
-                    <span className="text-xs text-gray-400 font-normal">
-                      60 kb / 5 mb
-                    </span>
-                  </div>
-                </div>
-              </div>
 
-              {/* Red Warning Alert Box (Images 2) */}
-              <div className="bg-[#FCE8EB] border border-[#F87171]/30 rounded-2xl p-4 flex flex-col gap-1 text-xs text-[#A31D38] font-medium leading-relaxed mt-1">
-                <div className="flex items-start gap-2">
-                  <span className="text-sm">•</span>
-                  <span>The file is corrupted</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-sm">•</span>
-                  <span>
-                    The CV does not show you have worked in the construction
-                    sector before
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Evidence Item 2: Approved */}
-            <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-2xs flex items-center justify-between gap-4 transition-all">
-              <div className="flex items-center gap-4 min-w-0">
-                <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
-                  <FiFileText className="w-6 h-6 text-[#a31d38]" />
-                </div>
-                <div className="flex flex-col gap-1 min-w-0">
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <h3 className="text-base sm:text-lg font-bold text-black tracking-tight">
-                      CV/Resume
-                    </h3>
-                    <span className="bg-[#E6F4EA] text-[#1E7F4C] text-xs font-semibold px-3 py-0.5 rounded-full">
-                      Approved
-                    </span>
+                    {fileFeedback && (
+                      <div className="bg-[#FCE8EB] border border-[#F87171]/30 rounded-2xl p-4 flex flex-col gap-1 text-xs text-[#A31D38] font-medium leading-relaxed mt-1">
+                        <div className="flex items-start gap-2">
+                          <span className="text-sm">•</span>
+                          <span>{fileFeedback}</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <span className="text-xs text-gray-400 font-normal">
-                    60 kb / 5 mb
-                  </span>
-                </div>
+                );
+              })
+            ) : (
+              <div className="bg-white rounded-2xl p-8 border border-gray-100 text-center text-gray-400 font-normal">
+                No uploaded evidence files found for this candidate.
               </div>
-            </div>
-
-            {/* Evidence Item 3: Approved */}
-            <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-2xs flex items-center justify-between gap-4 transition-all">
-              <div className="flex items-center gap-4 min-w-0">
-                <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
-                  <FiFileText className="w-6 h-6 text-[#a31d38]" />
-                </div>
-                <div className="flex flex-col gap-1 min-w-0">
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <h3 className="text-base sm:text-lg font-bold text-black tracking-tight">
-                      CV/Resume
-                    </h3>
-                    <span className="bg-[#E6F4EA] text-[#1E7F4C] text-xs font-semibold px-3 py-0.5 rounded-full">
-                      Approved
-                    </span>
-                  </div>
-                  <span className="text-xs text-gray-400 font-normal">
-                    60 kb / 5 mb
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Evidence Item 4: Approved */}
-            <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-2xs flex items-center justify-between gap-4 transition-all">
-              <div className="flex items-center gap-4 min-w-0">
-                <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
-                  <FiFileText className="w-6 h-6 text-[#a31d38]" />
-                </div>
-                <div className="flex flex-col gap-1 min-w-0">
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <h3 className="text-base sm:text-lg font-bold text-black tracking-tight">
-                      CV/Resume
-                    </h3>
-                    <span className="bg-[#E6F4EA] text-[#1E7F4C] text-xs font-semibold px-3 py-0.5 rounded-full">
-                      Approved
-                    </span>
-                  </div>
-                  <span className="text-xs text-gray-400 font-normal">
-                    60 kb / 5 mb
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Evidence Item 5: Approved */}
-            <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-2xs flex items-center justify-between gap-4 transition-all">
-              <div className="flex items-center gap-4 min-w-0">
-                <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
-                  <FiFileText className="w-6 h-6 text-[#a31d38]" />
-                </div>
-                <div className="flex flex-col gap-1 min-w-0">
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <h3 className="text-base sm:text-lg font-bold text-black tracking-tight">
-                      CV/Resume
-                    </h3>
-                    <span className="bg-[#E6F4EA] text-[#1E7F4C] text-xs font-semibold px-3 py-0.5 rounded-full">
-                      Approved
-                    </span>
-                  </div>
-                  <span className="text-xs text-gray-400 font-normal">
-                    60 kb / 5 mb
-                  </span>
-                </div>
-              </div>
-            </div>
+            )}
           </div>
         </div>
 

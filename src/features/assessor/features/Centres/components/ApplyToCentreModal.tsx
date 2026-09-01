@@ -14,7 +14,7 @@ interface ApplyToCentreModalProps {
   onSuccess: () => void;
 }
 
-const ROLES = ["Facilitator", "Panelist", "Assessor", "Internal Verifier"];
+const ROLES = ["QAA Assessor", "Internal Verifier"];
 
 export const ApplyToCentreModal: React.FC<ApplyToCentreModalProps> = ({
   isOpen,
@@ -29,10 +29,27 @@ export const ApplyToCentreModal: React.FC<ApplyToCentreModalProps> = ({
     useGetCentres();
   const requestMutation = useRequestToJoinCentre();
 
-  const centreOptions: SelectOption[] = remoteCentres.map((c) => ({
-    label: c.name,
-    value: c.id,
-  }));
+  const centreOptions: SelectOption[] = React.useMemo(() => {
+    const list = Array.isArray(remoteCentres)
+      ? remoteCentres
+      : (remoteCentres as any)?.data || [];
+
+    const seen = new Set<string>();
+    const uniqueOptions: SelectOption[] = [];
+
+    for (const c of list) {
+      if (!c || !c.name) continue;
+      const normalized = c.name.trim().toLowerCase();
+      if (!seen.has(normalized)) {
+        seen.add(normalized);
+        uniqueOptions.push({
+          label: c.name.trim(),
+          value: c.id,
+        });
+      }
+    }
+    return uniqueOptions;
+  }, [remoteCentres]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,16 +63,10 @@ export const ApplyToCentreModal: React.FC<ApplyToCentreModalProps> = ({
     }
 
     const r = role.toLowerCase();
-    let preferredRole: "facilitator" | "panelist" | "lead_panelist" | "observer" | "iv" | "unit_assessor" = "facilitator";
+    let preferredRole: "facilitator" | "panelist" | "lead_panelist" | "observer" | "iv" | "unit_assessor" = "unit_assessor";
     if (r.includes("internal") || r.includes("verifier") || r.includes("iv")) {
       preferredRole = "iv";
-    } else if (r.includes("lead")) {
-      preferredRole = "lead_panelist";
-    } else if (r.includes("panel")) {
-      preferredRole = "panelist";
-    } else if (r.includes("observer")) {
-      preferredRole = "observer";
-    } else if (r.includes("assessor") || r.includes("unit")) {
+    } else {
       preferredRole = "unit_assessor";
     }
 

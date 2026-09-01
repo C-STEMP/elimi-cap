@@ -90,11 +90,11 @@ export const CenterPersonalInfo: React.FC = () => {
 
   const update = (field: keyof typeof form, value: string) => {
     const updatedValues: Partial<typeof form> = { [field]: value };
-    if (field === "country") {
+    if (field === "country" && form.country !== value) {
       updatedValues.state = "";
       updatedValues.lga = "";
     }
-    if (field === "state") {
+    if (field === "state" && form.state !== value) {
       updatedValues.lga = "";
     }
 
@@ -166,9 +166,9 @@ export const CenterPersonalInfo: React.FC = () => {
     if (!validate()) {
       toast({
         type: "error",
-        title: "Input Required",
+        title: "Missing Required Fields",
         description:
-          "Please fill in all required fields for Personal Information.",
+          "Please fill in all required fields for Centre Owner Information.",
       });
       return;
     }
@@ -226,15 +226,15 @@ export const CenterPersonalInfo: React.FC = () => {
 
           <div className="flex flex-col gap-1 pt-1">
             <h1 className="text-2xl xl:text-3xl font-extrabold tracking-tight text-neutral-primary">
-              Personal Information
+              Centre Owner Info
             </h1>
             <p className="text-neutral-secondary text-xs sm:text-sm font-normal mt-1">
-              Collect only essential information.
+              Collect essential information about the centre owner/administrator.
             </p>
           </div>
         </div>
 
-        {/* Personal Details Fields */}
+        {/* Centre Owner Details Fields */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input
             label={

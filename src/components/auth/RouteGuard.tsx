@@ -56,7 +56,7 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({ children }) => {
         pathname?.startsWith("/onboarding/assessment-type");
       const isPreOnboardingRoute =
         pathname?.startsWith("/onboarding") && !isAllowedOnboardingRoute;
-      const isSignInRoute = pathname === "/signin";
+      const isSignInRoute = pathname === "/login" || pathname === "/signin";
 
       let currentPersona = getPersona();
 
@@ -96,7 +96,7 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({ children }) => {
       if (isDashboardRoute) {
         if (!isAuth) {
           if (isMounted) {
-            router.push(`/signin?redirect=${encodeURIComponent(pathname)}`);
+            router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
           }
           return;
         }
@@ -121,7 +121,7 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({ children }) => {
       if (isRplRoute) {
         if (!isAuth) {
           if (isMounted) {
-            router.push(`/signin?redirect=${encodeURIComponent(pathname)}`);
+            router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
           }
           return;
         }
@@ -131,7 +131,7 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({ children }) => {
       if (isAllowedOnboardingRoute) {
         if (!isAuth) {
           if (isMounted) {
-            router.push(`/signin?redirect=${encodeURIComponent(pathname)}`);
+            router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
           }
           return;
         }

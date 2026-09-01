@@ -33,7 +33,7 @@ import {
   useGetDeletionEligibility,
 } from "@/src/features/shared/account/hooks";
 import { useUploadFile } from "@/src/features/shared/storage/hooks";
-import { useGetBanks } from "@/src/features/shared/reference/hooks";
+import { useGetBanks, useResolveBankAccount } from "@/src/features/shared/reference/hooks";
 import { SelectOption } from "@/src/components/ui/select";
 import { useAppDispatch, useAppSelector } from "@/src/store/hooks";
 import {
@@ -155,10 +155,128 @@ export const SettingsView: React.FC = () => {
   const [accountName, setAccountName] = useState(
     savedCentreInfo.nameOnAccount || "",
   );
+  const [isResolvingAccount, setIsResolvingAccount] = useState(false);
+  const [accountResolveSuccess, setAccountResolveSuccess] = useState(false);
+
+  const resolveAccountMutation = useResolveBankAccount();
 
   const { data: remoteBanks = [], isLoading: isLoadingBanks } = useGetBanks(
     centreCountry ? centreCountry.toLowerCase() : "nigeria",
   );
+
+  const selectedBankCode = React.useMemo(() => {
+    if (!bank) return null;
+    const match = remoteBanks.find(
+      (b) =>
+        b.name.toLowerCase() === bank.toLowerCase() ||
+        b.code === bank ||
+        b.slug.toLowerCase() === bank.toLowerCase() ||
+        bank.toLowerCase().includes(b.name.toLowerCase()) ||
+        b.name.toLowerCase().includes(bank.toLowerCase()),
+    );
+    if (match?.code) return match.code;
+
+    const NIGERIAN_BANK_CODES: Record<string, string> = {
+      "access bank": "044",
+      "citibank": "023",
+      "ecobank": "050",
+      "fidelity bank": "070",
+      "first bank": "011",
+      "first city monument bank": "214",
+      "first city monument bank (fcmb)": "214",
+      "fcmb": "214",
+      "globus bank": "00103",
+      "gtbank": "058",
+      "guaranty trust bank": "058",
+      "heritage bank": "030",
+      "jaiz bank": "301",
+      "keystone bank": "082",
+      "kuda bank": "50211",
+      "moniepoint mfb": "50515",
+      "opay": "999992",
+      "optimus bank": "107",
+      "palmpay": "999991",
+      "parallex bank": "526",
+      "polaris bank": "076",
+      "premium trust bank": "105",
+      "providus bank": "101",
+      "rubies mfb": "125",
+      "signature bank": "106",
+      "stanbic ibtc bank": "221",
+      "stanbic ibtc": "221",
+      "standard chartered bank": "068",
+      "sterling bank": "232",
+      "suntrust bank": "100",
+      "taj bank": "302",
+      "titan trust bank": "102",
+      "union bank": "032",
+      "uba": "033",
+      "united bank for africa": "033",
+      "unity bank": "215",
+      "vfd microfinance bank": "566",
+      "wema bank": "035",
+      "zenith bank": "057",
+    };
+    return NIGERIAN_BANK_CODES[bank.toLowerCase().trim()] || null;
+  }, [bank, remoteBanks]);
+
+  // Auto-resolve account name with 500ms debounce
+  React.useEffect(() => {
+    const trimmedAcc = accountNumber.trim();
+    if (trimmedAcc.length === 10 && selectedBankCode) {
+      setIsResolvingAccount(true);
+      setAccountResolveSuccess(false);
+
+      const timer = setTimeout(() => {
+        resolveAccountMutation.mutate(
+          {
+            accountNumber: trimmedAcc,
+            bankCode: selectedBankCode,
+          },
+          {
+            onSuccess: (data) => {
+              setIsResolvingAccount(false);
+              if (data?.accountName) {
+                setAccountName(data.accountName);
+                setAccountResolveSuccess(true);
+              }
+            },
+            onError: (err: any) => {
+              setIsResolvingAccount(false);
+              setAccountResolveSuccess(false);
+
+              let userFriendlyMsg =
+                "Could not verify account name. Please check your account number and selected bank.";
+              const rawMsg = err?.message || "";
+
+              if (
+                rawMsg.toLowerCase().includes("not found") ||
+                rawMsg.toLowerCase().includes("invalid account") ||
+                rawMsg.toLowerCase().includes("could not resolve")
+              ) {
+                userFriendlyMsg =
+                  "Account not found. Please double-check your 10-digit account number and bank.";
+              } else if (rawMsg.toLowerCase().includes("timeout")) {
+                userFriendlyMsg =
+                  "Network timeout while verifying account name. You can enter the name manually.";
+              }
+
+              toast({
+                type: "error",
+                title: "Account Verification Failed",
+                description: userFriendlyMsg,
+              });
+            },
+          },
+        );
+      }, 500);
+
+      return () => clearTimeout(timer);
+    } else {
+      setIsResolvingAccount(false);
+      setAccountResolveSuccess(false);
+    }
+  }, [accountNumber, selectedBankCode]);
 
   const bankOptions: (string | SelectOption)[] = React.useMemo(() => {
     if (remoteBanks && remoteBanks.length > 0) {
@@ -945,12 +1063,26 @@ export const SettingsView: React.FC = () => {
                   />
                 </div>
 
-                <Input
-                  label="Name On Account*"
-                  placeholder="Type Here"
-                  value={accountName}
-                  onChange={(e) => setAccountName(e.target.value)}
-                />
+                <div className="flex flex-col gap-1">
+                  <Input
+                    label="Name On Account*"
+                    placeholder={
+                      isResolvingAccount ? "Resolving account name..." : "Type Here"
+                    }
+                    value={accountName}
+                    onChange={(e) => setAccountName(e.target.value)}
+                  />
+                  {isResolvingAccount && (
+                    <span className="text-xs text-amber-700 font-medium animate-pulse">
+                      Resolving account name from bank...
+                    </span>
+                  )}
+                  {accountResolveSuccess && !isResolvingAccount && accountName && (
+                    <span className="text-xs text-emerald-700 font-semibold flex items-center gap-1">
+                      ✓ Verified account name
+                    </span>
+                  )}
+                </div>
               </div>
 
               <div className="flex justify-end mt-2">
