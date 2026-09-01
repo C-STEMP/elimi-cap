@@ -2,11 +2,17 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
-import { FiChevronLeft, FiFileText, FiEye } from "react-icons/fi";
+import { FiFileText, FiEye, FiExternalLink } from "react-icons/fi";
 import { Button } from "@/src/components/ui/button";
-import { useToast } from "@/src/components/ui/toast";
-import { MOCK_ASSESSOR_APPLICANTS } from "@/features/assessment-centre/utils/constants";
+import { Loader } from "@/src/components/ui/loader";
 import { ASSETS_URL } from "@/assets";
+import {
+  useGetRetainedRequestDetail,
+  useApproveRetainedRequest,
+  useRejectRetainedRequest,
+  useGetJobPostingApplicationDetail,
+  usePatchJobPostingApplicationDecision,
+} from "@/src/features/shared/centre/hooks";
 import {
   AssessorDecisionModal,
   AssessorDecisionModalMode,
@@ -15,25 +21,53 @@ import {
   AssessorRequestModal,
   AssessorRequestModalMode,
 } from "../../AssessorRequest/components/AssessorRequestModal";
+import {
+  CertificatePreviewModal,
+  CertificatePreviewData,
+} from "@/src/features/shared/settings/components/CertificatePreviewModal";
 
 interface AssessorApplicantProfileViewProps {
   applicantId: string;
+  jobId?: string;
   onBack: () => void;
   isAssessorRequest?: boolean;
 }
 
+const CERTIFICATE_KIND_LABELS: Record<string, string> = {
+  qaa: "Quality Assurance Assessor (QAA)",
+  iqm: "Internal Quality Management (IQM)",
+  ev: "External Verifier (EV)",
+  iv: "Internal Verifier (IV)",
+};
+
 export const AssessorApplicantProfileView: React.FC<
   AssessorApplicantProfileViewProps
-> = ({ applicantId, onBack, isAssessorRequest = true }) => {
-  const { toast } = useToast();
-  const applicant =
-    MOCK_ASSESSOR_APPLICANTS.find((a) => a.id === applicantId) ||
-    MOCK_ASSESSOR_APPLICANTS[0];
+> = ({ applicantId, jobId, onBack, isAssessorRequest = true }) => {
+  // Query real data based on whether this is a retained assessor request or job applicant
+  const {
+    data: retainedRequest,
+    isLoading: isLoadingRetained,
+    isError: isErrorRetained,
+  } = useGetRetainedRequestDetail(applicantId, {
+    enabled: isAssessorRequest && !!applicantId,
+  });
 
-  const [status, setStatus] = useState(applicant.status);
-  const [previewCertificateUrl, setPreviewCertificateUrl] = useState<
-    string | null
-  >(null);
+  const {
+    data: jobApplication,
+    isLoading: isLoadingJobApp,
+    isError: isErrorJobApp,
+  } = useGetJobPostingApplicationDetail(jobId || "", applicantId, {
+    enabled: !isAssessorRequest && !!jobId && !!applicantId,
+  });
+
+  // Mutations
+  const approveRetainedMutation = useApproveRetainedRequest();
+  const rejectRetainedMutation = useRejectRetainedRequest();
+  const patchDecisionMutation = usePatchJobPostingApplicationDecision();
+
+  // Modals state
+  const [previewCertificate, setPreviewCertificate] =
+    useState<CertificatePreviewData | null>(null);
 
   const [isDecisionModalOpen, setIsDecisionModalOpen] = useState(false);
   const [decisionModalMode, setDecisionModalMode] =
@@ -43,6 +77,67 @@ export const AssessorApplicantProfileView: React.FC<
   const [requestModalMode, setRequestModalMode] =
     useState<AssessorRequestModalMode>("confirm-accept");
 
+  const isLoading = isAssessorRequest ? isLoadingRetained : isLoadingJobApp;
+  const isError = isAssessorRequest ? isErrorRetained : isErrorJobApp;
+
+  if (isLoading) {
+    return (
+      <div className="w-full bg-white rounded-3xl p-16 flex items-center justify-center min-h-80 shadow-2xs border border-gray-100/80">
+        <Loader
+          fullscreen={false}
+          size="small"
+          tip="Loading assessor profile..."
+        />
+      </div>
+    );
+  }
+
+  if (isError || (isAssessorRequest ? !retainedRequest : !jobApplication)) {
+    return (
+      <div className="w-full bg-white rounded-3xl p-12 flex flex-col items-center justify-center gap-4 text-center min-h-80 shadow-2xs border border-gray-100/80">
+        <p className="text-gray-500 font-medium text-sm">
+          Assessor profile details could not be found.
+        </p>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={onBack}
+          className="cursor-pointer"
+        >
+          Back
+        </Button>
+      </div>
+    );
+  }
+
+  // Extract snapshot from retained request or job application
+  const assessorSnapshot = isAssessorRequest
+    ? retainedRequest?.assessor
+    : jobApplication?.assessor;
+
+  const assessorName =
+    assessorSnapshot?.name ||
+    (isAssessorRequest && retainedRequest?.assessorId
+      ? `Assessor (${retainedRequest.assessorId.slice(0, 8)})`
+      : "Assessor");
+
+  const assessorEmail =
+    assessorSnapshot?.email ||
+    (isAssessorRequest && retainedRequest?.assessorId
+      ? `${retainedRequest.assessorId.slice(0, 8)}@assessor.ng`
+      : "No email provided");
+
+  const experienceYears = assessorSnapshot?.yearsOfExperience ?? 0;
+  const qualifications = assessorSnapshot?.qualifications || [];
+  const sectors = (assessorSnapshot?.sectors || []).map((s) => s.name);
+  const certificates = assessorSnapshot?.certificates || [];
+
+  const rawStatus = isAssessorRequest
+    ? retainedRequest?.status || "pending"
+    : jobApplication?.status || "applied";
+
+  // Handlers for Retained Request (Accept / Decline)
   const handleOpenAcceptModal = () => {
     setRequestModalMode("confirm-accept");
     setIsRequestModalOpen(true);
@@ -53,16 +148,23 @@ export const AssessorApplicantProfileView: React.FC<
     setIsRequestModalOpen(true);
   };
 
-  const handleConfirmDecline = () => {
-    setStatus("Rejected");
-    setRequestModalMode("declined-success");
-  };
-
   const handleConfirmAccept = () => {
-    setStatus("Shortlisted");
-    setRequestModalMode("accepted-success");
+    approveRetainedMutation.mutate(applicantId, {
+      onSuccess: () => {
+        setRequestModalMode("accepted-success");
+      },
+    });
   };
 
+  const handleConfirmDecline = () => {
+    rejectRetainedMutation.mutate(applicantId, {
+      onSuccess: () => {
+        setRequestModalMode("declined-success");
+      },
+    });
+  };
+
+  // Handlers for Job Posting Application (Shortlist / Reject)
   const handleOpenShortlistModal = () => {
     setDecisionModalMode("confirm-shortlist");
     setIsDecisionModalOpen(true);
@@ -74,14 +176,40 @@ export const AssessorApplicantProfileView: React.FC<
   };
 
   const handleConfirmShortlist = () => {
-    setStatus("Shortlisted");
-    setDecisionModalMode("shortlisted-success");
+    if (!jobId) return;
+    patchDecisionMutation.mutate(
+      {
+        id: jobId,
+        applicationId: applicantId,
+        decision: "shortlist",
+      },
+      {
+        onSuccess: () => {
+          setDecisionModalMode("shortlisted-success");
+        },
+      },
+    );
   };
 
   const handleConfirmReject = () => {
-    setStatus("Rejected");
-    setDecisionModalMode("rejected-success");
+    if (!jobId) return;
+    patchDecisionMutation.mutate(
+      {
+        id: jobId,
+        applicationId: applicantId,
+        decision: "reject",
+      },
+      {
+        onSuccess: () => {
+          setDecisionModalMode("rejected-success");
+        },
+      },
+    );
   };
+
+  const isPending = isAssessorRequest
+    ? rawStatus === "pending"
+    : rawStatus === "applied";
 
   return (
     <div className="w-full flex flex-col gap-6 select-text">
@@ -91,7 +219,7 @@ export const AssessorApplicantProfileView: React.FC<
           <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden shrink-0 border border-gray-100 bg-gray-50 flex items-center justify-center">
             <Image
               src={ASSETS_URL.userAvatar}
-              alt={applicant.name}
+              alt={assessorName}
               width={80}
               height={80}
               className="w-full h-full object-cover"
@@ -100,36 +228,55 @@ export const AssessorApplicantProfileView: React.FC<
 
           <div className="flex flex-col gap-1">
             <h2 className="text-lg sm:text-xl font-extrabold text-neutral-primary">
-              {applicant.name}
+              {assessorName}
             </h2>
 
             <span className="text-xs text-gray-400 font-medium">
-              {applicant.email} · {applicant.experienceYears} years experience
+              {assessorEmail} · {experienceYears} {experienceYears === 1 ? "year" : "years"} experience
             </span>
 
             {/* Tag Pills */}
             <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-              {applicant.tags?.map((tag, idx) => (
+              {qualifications.map((tag, idx) => (
                 <span
-                  key={idx}
+                  key={`qual-${idx}`}
                   className="bg-[#FCE7F3] text-[#9D174D] text-[11px] font-semibold px-2.5 py-0.5 rounded-full"
                 >
                   {tag}
                 </span>
               ))}
+
+              {sectors.map((sec, idx) => (
+                <span
+                  key={`sec-${idx}`}
+                  className="bg-[#EFF6FF] text-[#1D4ED8] text-[11px] font-semibold px-2.5 py-0.5 rounded-full"
+                >
+                  {sec}
+                </span>
+              ))}
+
+              {isAssessorRequest && retainedRequest?.preferredRole && (
+                <span className="bg-[#FEF3C7] text-[#92400E] text-[11px] font-semibold px-2.5 py-0.5 rounded-full">
+                  {retainedRequest.preferredRole.replace(/_/g, " ")}
+                </span>
+              )}
             </div>
           </div>
         </div>
 
         {/* Status Badge */}
         <div className="shrink-0">
-          {status === "Shortlisted" ? (
+          {rawStatus === "approved" || rawStatus === "accepted" ? (
             <span className="bg-[#D1FAE5] text-[#065F46] font-semibold px-4 py-1.5 rounded-full text-xs inline-block">
-              Shortlisted
+              {isAssessorRequest ? "Approved" : "Shortlisted"}
             </span>
-          ) : status === "Rejected" ? (
+          ) : rawStatus === "rejected" ? (
             <span className="bg-[#FEE2E2] text-[#991B1B] font-semibold px-4 py-1.5 rounded-full text-xs inline-block">
               Rejected
+            </span>
+          ) : rawStatus === "revoked" ? (
+            <span className="bg-gray-200 text-gray-700 font-semibold px-4 py-1.5 rounded-full text-xs inline-block">
+              Revoked
             </span>
           ) : (
             <span className="bg-[#FEF3C7] text-[#D97706] font-semibold px-4 py-1.5 rounded-full text-xs inline-block">
@@ -145,92 +292,134 @@ export const AssessorApplicantProfileView: React.FC<
           Certificates & Qualification
         </h3>
 
-        <div className="flex flex-col gap-3">
-          {applicant.certificates?.map((cert) => (
-            <div
-              key={cert.id}
-              className="bg-[#F8F9FA] hover:bg-[#F3F4F6] p-4 rounded-2xl border border-gray-100 flex items-center justify-between gap-4 transition-colors"
-            >
-              <div className="flex items-center gap-3.5">
-                <div className="w-10 h-10 rounded-xl bg-red-100/80 text-red-500 flex items-center justify-center shrink-0">
-                  <FiFileText className="w-5 h-5" />
-                </div>
+        {certificates.length === 0 ? (
+          <p className="text-xs sm:text-sm text-gray-400 font-normal py-3">
+            No uploaded certificates available for this assessor.
+          </p>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {certificates.map((cert, idx) => {
+              const label =
+                CERTIFICATE_KIND_LABELS[cert.kind?.toLowerCase()] ||
+                `${cert.kind?.toUpperCase()} Certificate`;
 
-                <div className="flex flex-col">
-                  <span className="font-extrabold text-sm sm:text-base text-neutral-primary">
-                    {cert.title}
-                  </span>
-                  <span className="text-xs text-gray-400 font-medium mt-0.5">
-                    {cert.issuer} · {cert.year}
-                  </span>
-                </div>
-              </div>
+              return (
+                <div
+                  key={cert.assetId || idx}
+                  className="bg-[#F8F9FA] hover:bg-[#F3F4F6] p-4 rounded-2xl border border-gray-100 flex items-center justify-between gap-4 transition-colors"
+                >
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-10 h-10 rounded-xl bg-red-100/80 text-red-500 flex items-center justify-center shrink-0">
+                      <FiFileText className="w-5 h-5" />
+                    </div>
 
-              <button
-                type="button"
-                onClick={() => setPreviewCertificateUrl(cert.title)}
-                className="w-9 h-9 rounded-xl bg-white border border-gray-200 text-gray-400 hover:text-neutral-primary flex items-center justify-center transition-colors cursor-pointer shrink-0 shadow-2xs"
-                title="Preview Certificate"
-              >
-                <FiEye className="w-4.5 h-4.5" />
-              </button>
-            </div>
-          ))}
-        </div>
+                    <div className="flex flex-col">
+                      <span className="font-extrabold text-sm sm:text-base text-neutral-primary">
+                        {label}
+                      </span>
+                      <span className="text-xs text-gray-400 font-medium mt-0.5">
+                        Verification Status: Verified
+                      </span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPreviewCertificate({
+                        title: label,
+                        url: cert.url || undefined,
+                        assetId: cert.assetId || undefined,
+                      })
+                    }
+                    className="w-9 h-9 rounded-xl bg-white border border-gray-200 text-gray-400 hover:text-neutral-primary flex items-center justify-center transition-colors cursor-pointer shrink-0 shadow-2xs"
+                    title="Preview Certificate"
+                  >
+                    <FiEye className="w-4.5 h-4.5" />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {/* Decision Section (Image 1 & 4 match) */}
+      {/* Decision Section */}
       <div className="bg-white rounded-3xl p-6 shadow-2xs border border-gray-100/80 flex flex-col gap-4">
-        <h3 className="text-lg font-extrabold text-neutral-primary tracking-tight">
+        <h3 className="font-extrabold text-lg text-neutral-primary">
           Decision
         </h3>
+        <p className="text-xs text-gray-500 font-normal">
+          {isAssessorRequest
+            ? "Approve or decline this assessor's application to join your retained roster."
+            : "Review this applicant and record your hiring or shortlisting decision."}
+        </p>
 
-        <div className="flex items-center gap-3 flex-wrap">
-          {isAssessorRequest ? (
-            <>
-              <Button
-                type="button"
-                onClick={handleOpenAcceptModal}
-                variant="amber"
-                size="md"
-                className="px-8 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
-              >
-                Accept
-              </Button>
-
-              <button
-                type="button"
-                onClick={handleOpenDeclineModal}
-                className="px-8 h-11 text-white font-bold text-sm bg-[#C5221F] hover:bg-[#a81c19] rounded-xl shadow-lg cursor-pointer whitespace-nowrap transition-colors"
-              >
-                Decline
-              </button>
-            </>
+        <div className="flex items-center gap-3 mt-2 flex-wrap">
+          {isPending ? (
+            isAssessorRequest ? (
+              <>
+                <Button
+                  type="button"
+                  variant="amber"
+                  size="md"
+                  onClick={() => {
+                    setRequestModalMode("confirm-accept");
+                    setIsRequestModalOpen(true);
+                  }}
+                  className="px-6 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer"
+                >
+                  Accept Request
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRequestModalMode("confirm-decline");
+                    setIsRequestModalOpen(true);
+                  }}
+                  className="px-6 h-11 bg-white border border-red-200 text-red-700 hover:bg-red-50 font-bold text-sm rounded-xl shadow-xs transition-colors cursor-pointer"
+                >
+                  Decline
+                </button>
+              </>
+            ) : (
+              <>
+                <Button
+                  type="button"
+                  variant="amber"
+                  size="md"
+                  onClick={() => {
+                    setDecisionModalMode("confirm-shortlist");
+                    setIsDecisionModalOpen(true);
+                  }}
+                  className="px-6 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer"
+                >
+                  Shortlist Applicant
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDecisionModalMode("confirm-reject");
+                    setIsDecisionModalOpen(true);
+                  }}
+                  className="px-6 h-11 bg-white border border-red-200 text-red-700 hover:bg-red-50 font-bold text-sm rounded-xl shadow-xs transition-colors cursor-pointer"
+                >
+                  Reject
+                </button>
+              </>
+            )
           ) : (
-            <>
-              <Button
-                type="button"
-                onClick={handleOpenShortlistModal}
-                variant="amber"
-                size="md"
-                className="px-8 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
-              >
-                Shortlist Candidate
-              </Button>
-
-              <button
-                type="button"
-                onClick={handleOpenRejectModal}
-                className="px-8 h-11 text-white font-bold text-sm bg-[#C5221F] hover:bg-[#a81c19] rounded-xl shadow-lg cursor-pointer whitespace-nowrap transition-colors"
-              >
-                Reject
-              </button>
-            </>
+            <div className="text-sm font-semibold text-neutral-secondary">
+              Decision already recorded:{" "}
+              <span className="font-extrabold capitalize text-neutral-primary">
+                {rawStatus}
+              </span>
+            </div>
           )}
         </div>
       </div>
 
-      {/* Shortlist / Reject Decision Modal */}
+      {/* Decision / Request Modals */}
       <AssessorDecisionModal
         isOpen={isDecisionModalOpen}
         mode={decisionModalMode}
@@ -239,51 +428,23 @@ export const AssessorApplicantProfileView: React.FC<
         onConfirmReject={handleConfirmReject}
       />
 
-      {/* Accept / Decline Request Modal */}
       <AssessorRequestModal
         isOpen={isRequestModalOpen}
         mode={requestModalMode}
         onClose={() => setIsRequestModalOpen(false)}
         onConfirmAccept={handleConfirmAccept}
         onConfirmDecline={handleConfirmDecline}
+        isLoading={
+          approveRetainedMutation.isPending || rejectRetainedMutation.isPending
+        }
       />
 
-      {previewCertificateUrl && (
-        <div
-          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 transition-opacity duration-300 select-none"
-          onClick={() => setPreviewCertificateUrl(null)}
-        >
-          <div
-            className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl relative flex flex-col items-center text-center"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              type="button"
-              onClick={() => setPreviewCertificateUrl(null)}
-              className="absolute top-4 right-4 w-8 h-8 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 flex items-center justify-center transition-colors cursor-pointer"
-            >
-              <FiEye className="w-5 h-5" />
-            </button>
-            <FiFileText className="w-16 h-16 text-red-400 mb-4" />
-            <h3 className="text-lg font-extrabold text-neutral-primary mb-1">
-              {previewCertificateUrl}
-            </h3>
-            <p className="text-xs text-gray-400 mb-6">Certificate Preview</p>
-            <div className="w-full bg-[#F8F9FA] rounded-2xl p-8 border border-gray-100 flex items-center justify-center min-h-48">
-              <span className="text-sm text-gray-400 font-medium">
-                Certificate document preview
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={() => setPreviewCertificateUrl(null)}
-              className="mt-6 w-full h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer transition-colors"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
+      {/* In-App Certificate Preview Modal */}
+      <CertificatePreviewModal
+        isOpen={Boolean(previewCertificate)}
+        data={previewCertificate}
+        onClose={() => setPreviewCertificate(null)}
+      />
     </div>
   );
 };

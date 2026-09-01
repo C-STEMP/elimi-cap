@@ -9,7 +9,6 @@ import {
 import { Button } from "@/src/components/ui/button";
 import { AssessorItem } from "@/features/assessment-centre/types";
 import { StaffStatusModalMode } from "@/features/assessment-centre/features/Staff/components/StaffStatusModal";
-import { MOCK_ASSESSORS } from "@/features/assessment-centre/utils/constants";
 import {
   useGetRetainedRequests,
   useGetCentreAssessorsSummary,
@@ -33,11 +32,9 @@ export const AssessorsHeader: React.FC<AssessorsHeaderProps> = ({
   userRole,
 }) => {
   if (selectedAssessorId) {
-    const mockAssessor = MOCK_ASSESSORS.find((a) => a.id === selectedAssessorId);
     return (
       <AssessorDetailHeader
         assessorId={selectedAssessorId}
-        fallbackAssessor={mockAssessor}
         onBack={onBackToList}
         onDeactivate={onDeactivate}
         userRole={userRole}
@@ -50,7 +47,6 @@ export const AssessorsHeader: React.FC<AssessorsHeaderProps> = ({
 
 interface AssessorDetailHeaderProps {
   assessorId: string;
-  fallbackAssessor?: AssessorItem;
   onBack: () => void;
   onDeactivate: (mode: StaffStatusModalMode) => void;
   userRole?: string;
@@ -58,7 +54,6 @@ interface AssessorDetailHeaderProps {
 
 const AssessorDetailHeader: React.FC<AssessorDetailHeaderProps> = ({
   assessorId,
-  fallbackAssessor,
   onBack,
   onDeactivate,
   userRole,
@@ -69,26 +64,17 @@ const AssessorDetailHeader: React.FC<AssessorDetailHeaderProps> = ({
 
   const assessorName =
     assessorDetail?.name ||
-    assessorDetail?.email?.split("@")[0] ||
-    fallbackAssessor?.name ||
-    "Assessor";
+    (assessorDetail?.id ? `Assessor (${assessorDetail.id.slice(0, 8)})` : "Assessor");
 
   const assessorStatus = assessorDetail?.status
     ? assessorDetail.status === "revoked" || assessorDetail.status === "pending"
       ? "Inactive"
       : "Active"
-    : fallbackAssessor?.status || "Active";
+    : "Active";
 
-  const assignedCount =
-    assessorDetail?.workload?.assigned ??
-    fallbackAssessor?.assignedCandidatesCount ??
-    0;
-  const ongoingCount =
-    assessorDetail?.workload?.ongoing ?? fallbackAssessor?.ongoingCount ?? 0;
-  const completedCount =
-    assessorDetail?.workload?.completed ??
-    fallbackAssessor?.completedCount ??
-    0;
+  const assignedCount = assessorDetail?.workload?.assigned ?? 0;
+  const ongoingCount = assessorDetail?.workload?.ongoing ?? 0;
+  const completedCount = assessorDetail?.workload?.completed ?? 0;
 
   return (
     <div className="flex flex-col gap-6 pt-2">

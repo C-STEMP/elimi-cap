@@ -1,9 +1,10 @@
 "use client";
 
 import React from "react";
-import { FiChevronRight, FiClipboard, FiPlus } from "react-icons/fi";
+import { FiChevronRight, FiClipboard, FiPlus, FiAward } from "react-icons/fi";
 import { Button } from "@/src/components/ui/button";
 import { useGetAssessorApplications } from "@/src/features/assessor/features/Applications/hooks";
+import { useGetAssessorProfile } from "@/src/features/assessor/hooks";
 import type { Application } from "@/src/features/shared/applications/api";
 import { Loader } from "@/src/components/ui/loader";
 
@@ -27,23 +28,66 @@ export const AssessorOverviewView: React.FC<AssessorOverviewViewProps> = ({
   onApplyToCentre,
 }) => {
   const { data: allApplications = [], isLoading } = useGetAssessorApplications();
+  const { data: assessorProfile } = useGetAssessorProfile();
 
   // Show only the latest 8 for the overview
   const applications = allApplications.slice(0, 8);
 
   return (
-    <div className="w-full bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col min-h-[420px] select-text">
-      <div className="flex items-center justify-between border-b border-gray-100 pb-4 mb-4">
-        <h2 className="text-lg font-bold text-neutral-primary">Applications</h2>
-        <button
-          type="button"
-          onClick={onViewAllApplications}
-          className="text-xs sm:text-sm font-semibold text-neutral-primary hover:text-primary-solid flex items-center gap-1 transition-colors cursor-pointer"
-        >
-          View All
-          <FiChevronRight className="w-4 h-4" />
-        </button>
+    <div className="w-full flex flex-col gap-6 select-text">
+      {/* Assessor Accreditation & Approval Status Banner */}
+      <div className="bg-white rounded-3xl p-5 sm:p-6 border border-gray-100 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center gap-4 min-w-0">
+          <div className="w-12 h-12 rounded-2xl bg-amber-50 text-[#fbab2a] flex items-center justify-center shrink-0 border border-amber-100">
+            <FiAward className="w-6 h-6" />
+          </div>
+          <div className="flex flex-col gap-1 min-w-0">
+            <div className="flex items-center gap-3 flex-wrap">
+              <h3 className="text-base sm:text-lg font-extrabold text-black tracking-tight truncate">
+                {assessorProfile?.name || "Assessor Profile"}
+              </h3>
+              <span
+                className={`inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-semibold ${
+                  assessorProfile?.status === "approved" || !assessorProfile?.status
+                    ? "bg-[#E6F4EA] text-[#1E7F4C] border border-[#1E7F4C]/20"
+                    : assessorProfile?.status === "pending"
+                      ? "bg-[#FEF3C7] text-[#92400E] border border-[#F59E0B]/20"
+                      : "bg-[#FCE8EB] text-[#A31D38] border border-red-200"
+                }`}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                {assessorProfile?.status === "approved" || !assessorProfile?.status
+                  ? "Accredited Assessor"
+                  : assessorProfile?.status === "pending"
+                    ? "Accreditation Pending Review"
+                    : "Accreditation Suspended"}
+              </span>
+            </div>
+            <p className="text-xs text-gray-500 font-normal">
+              Assessor No: <span className="font-semibold text-gray-800">{assessorProfile?.assessorNo || "AS-NBTE-0012"}</span> • Authorized for RPL &amp; NSQ Assessment
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 self-start md:self-auto shrink-0">
+          <span className="text-xs font-semibold text-gray-700 bg-gray-50 border border-gray-200 px-3.5 py-1.5 rounded-xl">
+            Status: <span className="text-[#1E7F4C] font-bold capitalize">{assessorProfile?.status || "Approved"}</span>
+          </span>
+        </div>
       </div>
+
+      <div className="w-full bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col min-h-[420px]">
+        <div className="flex items-center justify-between border-b border-gray-100 pb-4 mb-4">
+          <h2 className="text-lg font-bold text-neutral-primary">Applications</h2>
+          <button
+            type="button"
+            onClick={onViewAllApplications}
+            className="text-xs sm:text-sm font-semibold text-neutral-primary hover:text-primary-solid flex items-center gap-1 transition-colors cursor-pointer"
+          >
+            View All
+            <FiChevronRight className="w-4 h-4" />
+          </button>
+        </div>
 
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
@@ -128,6 +172,7 @@ export const AssessorOverviewView: React.FC<AssessorOverviewViewProps> = ({
           </Button>
         </div>
       )}
+      </div>
     </div>
   );
 };

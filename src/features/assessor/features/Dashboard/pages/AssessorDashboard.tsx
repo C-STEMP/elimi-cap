@@ -129,6 +129,11 @@ export const AssessorDashboard: React.FC = () => {
   const completedApplications =
     summaryData?.completedApplications ??
     applicationsData.filter((a) => a.status === "certified").length;
+  const archivedApplications =
+    summaryData?.archivedApplications ??
+    applicationsData.filter(
+      (a) => a.status === "rejected" || a.status === "withdrawn",
+    ).length;
 
   const [activeTab, setActiveTab] = useState<AssessorNavTab>("Overview");
 
@@ -197,6 +202,8 @@ export const AssessorDashboard: React.FC = () => {
         totalApplicationsCount={totalApplications}
         pendingApplicationsCount={pendingApplications}
         completedApplicationsCount={completedApplications}
+        archivedApplicationsCount={archivedApplications}
+        onApplyToCentre={() => setIsApplyModalOpen(true)}
       />
 
       <div className="max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1 flex flex-col gap-6">

@@ -120,6 +120,7 @@ export interface AssessmentDeclaration {
   infoProvidedIsAccurate?: boolean;
   understandsDoesNotGuaranteeCertification?: boolean;
   understandsThatNeedsToProvideSufficientEvidenceToDemonstrateCompetence?: boolean;
+  mustProvideSufficientEvidence?: boolean;
   agreesToTermsAndPrivacyPolicy?: boolean;
 }
 
@@ -196,6 +197,13 @@ export interface EvidenceVaultItem {
   documentName?: string;
   evidenceType?: string;
   status?: string;
+  name?: string;
+  title?: string;
+  category?: string;
+  feedback?: string;
+  reviewComment?: string;
+  size?: string;
+  assetId?: string;
   createdAt: string;
 }
 
@@ -325,8 +333,10 @@ export async function getApplicationsApi(params?: {
   });
 }
 
-export async function getApplicationByIdApi(id: string): Promise<Application> {
-  return capFetch<Application>(`/applications/${id}`, {
+export async function getApplicationByIdApi(
+  id: string,
+): Promise<ApplicationDetail> {
+  return capFetch<ApplicationDetail>(`/applications/${id}`, {
     method: "GET",
   });
 }
@@ -381,9 +391,14 @@ export async function reviewApplicationApi(
   id: string,
   payload: ReviewDecisionPayload,
 ): Promise<Application> {
+  const safePayload = {
+    decision: payload.decision,
+    stageKey: payload.stageKey || "application_form",
+    ...(payload.feedback ? { feedback: payload.feedback } : {}),
+  };
   return capFetch<Application>(`/applications/${id}/review`, {
     method: "POST",
-    data: payload,
+    data: safePayload,
   });
 }
 

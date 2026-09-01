@@ -45,8 +45,10 @@ export const CANDIDATE_ROUTES = {
    * Authentication Routes for Candidate Access
    */
   auth: {
-    signin: "/signin",
-    signup: "/signup",
+    login: "/login",
+    register: "/register",
+    signin: "/login",
+    signup: "/register",
     completeSignup: "/complete-signup",
     verifyEmail: "/verify",
     enterOtp: "/enter-otp",
@@ -195,7 +197,7 @@ export const CANDIDATE_ROUTE_LIST: CandidateRouteMeta[] = [
   },
   {
     id: "onboarding-start-application",
-    feature: "Onboarding: Start Application",
+    feature: "Onboarding: Start Assessment",
     routePath: CANDIDATE_ROUTES.onboarding.startApplication,
     appRouterFile: "src/app/rpl/personal-info/page.tsx",
     description: "Initial application launch pad for candidate onboarding.",

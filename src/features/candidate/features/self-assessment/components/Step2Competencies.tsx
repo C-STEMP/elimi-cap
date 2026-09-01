@@ -14,8 +14,9 @@ import { ASSETS_URL } from "@/assets";
 import { MOCK_COMPETENCIES } from "../utils/constants";
 
 interface Step2Props {
-  onNext: () => void;
+  onNext: (data?: any) => void;
   onBack: () => void;
+  initialData?: any;
 }
 
 const CONFIDENCE_OPTIONS = [
@@ -29,7 +30,11 @@ const EVIDENCE_OPTIONS = [
   { label: "No", value: "no" },
 ];
 
-export const Step2Competencies: React.FC<Step2Props> = ({ onNext, onBack }) => {
+export const Step2Competencies: React.FC<Step2Props> = ({
+  onNext,
+  onBack,
+  initialData,
+}) => {
   const router = useRouter();
   const { toast } = useToast();
   const [showConfirmDraftModal, setShowConfirmDraftModal] = useState(false);
@@ -38,7 +43,7 @@ export const Step2Competencies: React.FC<Step2Props> = ({ onNext, onBack }) => {
 
   const [competencyAnswers, setCompetencyAnswers] = useState<
     Record<number, { confidence: string; evidence: string; experience: string }>
-  >({});
+  >(initialData || {});
 
   const handleConfidenceChange = (idx: number, val: string) => {
     setCompetencyAnswers((prev) => ({
@@ -118,7 +123,13 @@ export const Step2Competencies: React.FC<Step2Props> = ({ onNext, onBack }) => {
       });
       return;
     }
-    onNext();
+    onNext(
+      Object.entries(competencyAnswers).map(([idx, ans]) => ({
+        index: Number(idx),
+        title: MOCK_COMPETENCIES[Number(idx)] || "",
+        ...ans,
+      })),
+    );
   };
 
   return (
@@ -162,6 +173,8 @@ export const Step2Competencies: React.FC<Step2Props> = ({ onNext, onBack }) => {
               }
               options={CONFIDENCE_OPTIONS}
               placeholder="Select"
+              showSearch={false}
+              autoComplete="off"
               value={competencyAnswers[idx]?.confidence || ""}
               error={errors[`confidence_${idx}`]}
               onChange={(e) => handleConfidenceChange(idx, e.target.value)}
@@ -176,6 +189,8 @@ export const Step2Competencies: React.FC<Step2Props> = ({ onNext, onBack }) => {
               }
               options={EVIDENCE_OPTIONS}
               placeholder="Select"
+              showSearch={false}
+              autoComplete="off"
               value={competencyAnswers[idx]?.evidence || ""}
               error={errors[`evidence_${idx}`]}
               onChange={(e) => handleEvidenceChange(idx, e.target.value)}

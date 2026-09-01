@@ -12,12 +12,13 @@ import {
 } from "react-icons/fi";
 import { Button } from "@/src/components/ui/button";
 import { Select } from "@/src/components/ui/select";
+import { Loader } from "@/src/components/ui/loader";
 import { useToast } from "@/src/components/ui/toast";
 import {
-  MOCK_JOB_LISTINGS,
-  MOCK_ASSESSOR_APPLICANTS,
-} from "@/features/assessment-centre/utils/constants";
-import { AssessorApplicant } from "@/features/assessment-centre/types";
+  useGetJobPostingDetail,
+  useGetJobPostingApplications,
+  usePatchJobPostingApplicationDecision,
+} from "@/src/features/shared/centre/hooks";
 
 interface JobListingDetailViewProps {
   jobId: string;
@@ -31,15 +32,13 @@ export const JobListingDetailView: React.FC<JobListingDetailViewProps> = ({
   onSelectApplicant,
 }) => {
   const { toast } = useToast();
-  const job =
-    MOCK_JOB_LISTINGS.find((j) => j.id === jobId) || MOCK_JOB_LISTINGS[0];
+  const { data: job, isLoading: isLoadingJob } = useGetJobPostingDetail(jobId);
+  const { data: remoteApplicants = [], isLoading: isLoadingApps } =
+    useGetJobPostingApplications(jobId);
+  const patchApplicantMutation = usePatchJobPostingApplicationDecision();
 
-  const [applicants, setApplicants] = useState<AssessorApplicant[]>(
-    MOCK_ASSESSOR_APPLICANTS,
-  );
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
-  const [isFilled, setIsFilled] = useState(job.status === "Filled");
   const [selectedApplicantIds, setSelectedApplicantIds] = useState<string[]>(
     [],
   );
@@ -47,14 +46,31 @@ export const JobListingDetailView: React.FC<JobListingDetailViewProps> = ({
     "list",
   );
 
-  const handleToggleFilled = () => {
-    setIsFilled((prev) => !prev);
-    toast({
-      type: "info",
-      title: isFilled ? "Marked as Open" : "Marked as Filled",
-      description: `Job listing status has been updated.`,
+  const applicants = React.useMemo(() => {
+    return (remoteApplicants || []).map((app: any) => {
+      const assessorName =
+        app.assessor?.name ||
+        (app.id ? `Applicant (${app.id.slice(0, 8)})` : "Applicant");
+      const tradeName = app.trade?.name || job?.trade?.name || "General";
+      const experience = app.assessor?.yearsOfExperience ?? 0;
+      const certificatesCount = app.assessor?.certificates?.length ?? 0;
+      const statusLabel =
+        app.status === "accepted"
+          ? "Shortlisted"
+          : app.status === "rejected"
+          ? "Rejected"
+          : "Pending";
+
+      return {
+        id: app.id,
+        name: assessorName,
+        trade: tradeName,
+        experienceYears: experience,
+        certificatesCount,
+        status: statusLabel,
+      };
     });
-  };
+  }, [remoteApplicants, job]);
 
   const toggleSelectApplicant = (id: string) => {
     setSelectedApplicantIds((prev) =>
@@ -69,6 +85,37 @@ export const JobListingDetailView: React.FC<JobListingDetailViewProps> = ({
     const matchesStatus = statusFilter === "All" || app.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  if (isLoadingJob) {
+    return (
+      <div className="w-full bg-white rounded-3xl p-16 flex items-center justify-center min-h-80 shadow-2xs border border-gray-100/80">
+        <Loader
+          fullscreen={false}
+          size="small"
+          tip="Loading job details..."
+        />
+      </div>
+    );
+  }
+
+  if (!job) {
+    return (
+      <div className="w-full bg-white rounded-3xl p-12 flex flex-col items-center justify-center gap-4 text-center min-h-80 shadow-2xs border border-gray-100/80">
+        <p className="text-gray-500 font-medium text-sm">
+          Job posting details could not be found.
+        </p>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={onBack}
+          className="cursor-pointer"
+        >
+          Back
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full flex flex-col gap-6 select-text">
@@ -114,18 +161,18 @@ export const JobListingDetailView: React.FC<JobListingDetailViewProps> = ({
             <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search candidates..."
+              placeholder="Search applicants..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-[#F8F9FA] border border-gray-200/80 focus:border-gray-400 rounded-xl pl-10 pr-3.5 py-2.5 text-xs sm:text-sm text-neutral-primary outline-none transition-all"
             />
           </div>
 
-          <div className="flex items-center justify-end gap-3">
+          <div className="flex items-center justify-end gap-3 shrink-0">
             <Select
               size="sm"
               showPlaceholderOption={false}
-              containerClassName="w-36"
+              containerClassName="w-36 shrink-0"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               options={[
@@ -166,77 +213,140 @@ export const JobListingDetailView: React.FC<JobListingDetailViewProps> = ({
         </div>
 
         {/* Applicants Table */}
-        <div className="w-full overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[700px]">
-            <thead>
-              <tr className="bg-[#F8F9FA] text-gray-500 text-xs font-semibold uppercase tracking-wider rounded-xl">
-                <th className="p-3.5 rounded-l-xl w-10">
-                  <input
-                    type="checkbox"
-                    className="w-4 h-4 rounded border-gray-300 text-[#a31d38] focus:ring-0 cursor-pointer"
-                  />
-                </th>
-                <th className="p-3.5">Assessor Name</th>
-                <th className="p-3.5">Trade</th>
-                <th className="p-3.5">Experience</th>
-                <th className="p-3.5">Certificates</th>
-                <th className="p-3.5">Status</th>
-                <th className="p-3.5 text-right rounded-r-xl">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 text-xs sm:text-sm font-medium text-neutral-primary">
-              {filteredApplicants.map((app) => (
-                <tr
-                  key={app.id}
-                  className="hover:bg-gray-50/50 transition-colors"
-                >
-                  <td className="p-3.5">
+        {filteredApplicants.length === 0 ? (
+          <div className="py-12 flex flex-col items-center justify-center text-center">
+            <p className="text-gray-400 font-normal">
+              No applicants found for this job posting.
+            </p>
+          </div>
+        ) : (
+          <div className="w-full overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-[700px]">
+              <thead>
+                <tr className="bg-[#F8F9FA] text-gray-500 text-xs font-semibold uppercase tracking-wider rounded-xl">
+                  <th className="p-3.5 rounded-l-xl w-10">
                     <input
                       type="checkbox"
-                      checked={selectedApplicantIds.includes(app.id)}
-                      onChange={() => toggleSelectApplicant(app.id)}
                       className="w-4 h-4 rounded border-gray-300 text-[#a31d38] focus:ring-0 cursor-pointer"
                     />
-                  </td>
-                  <td className="p-3.5 font-bold text-neutral-primary">
-                    {app.name}
-                  </td>
-                  <td className="p-3.5 text-neutral-secondary">{app.trade}</td>
-                  <td className="p-3.5 text-neutral-secondary">
-                    {app.experienceYears} Years
-                  </td>
-                  <td className="p-3.5 text-neutral-secondary">
-                    {app.certificatesCount} Uploaded
-                  </td>
-                  <td className="p-3.5">
-                    {app.status === "Shortlisted" ? (
-                      <span className="bg-[#D1FAE5] text-[#065F46] font-semibold px-3 py-1 rounded-full text-xs inline-block">
-                        Shortlisted
-                      </span>
-                    ) : app.status === "Rejected" ? (
-                      <span className="bg-[#FEE2E2] text-[#991B1B] font-semibold px-3 py-1 rounded-full text-xs inline-block">
-                        Rejected
-                      </span>
-                    ) : (
-                      <span className="bg-[#FEF3C7] text-[#D97706] font-semibold px-3 py-1 rounded-full text-xs inline-block">
-                        Pending
-                      </span>
-                    )}
-                  </td>
-                  <td className="p-3.5 text-right">
-                    <button
-                      type="button"
-                      onClick={() => onSelectApplicant(app.id)}
-                      className="text-neutral-primary font-bold text-xs underline hover:text-[#a31d38] transition-colors cursor-pointer"
-                    >
-                      View
-                    </button>
-                  </td>
+                  </th>
+                  <th className="p-3.5">Assessor Name</th>
+                  <th className="p-3.5">Trade</th>
+                  <th className="p-3.5">Experience</th>
+                  <th className="p-3.5">Certificates</th>
+                  <th className="p-3.5">Status</th>
+                  <th className="p-3.5 text-right rounded-r-xl">Action</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-gray-100 text-xs sm:text-sm font-medium text-neutral-primary">
+                {filteredApplicants.map((app) => (
+                  <tr
+                    key={app.id}
+                    className="hover:bg-gray-50/50 transition-colors"
+                  >
+                    <td className="p-3.5">
+                      <input
+                        type="checkbox"
+                        checked={selectedApplicantIds.includes(app.id)}
+                        onChange={() => toggleSelectApplicant(app.id)}
+                        className="w-4 h-4 rounded border-gray-300 text-[#a31d38] focus:ring-0 cursor-pointer"
+                      />
+                    </td>
+                    <td className="p-3.5 font-bold text-neutral-primary">
+                      {app.name}
+                    </td>
+                    <td className="p-3.5 text-neutral-secondary">{app.trade}</td>
+                    <td className="p-3.5 text-neutral-secondary">
+                      {app.experienceYears} Years
+                    </td>
+                    <td className="p-3.5 text-neutral-secondary">
+                      {app.certificatesCount} Uploaded
+                    </td>
+                    <td className="p-3.5">
+                      {app.status === "Shortlisted" ? (
+                        <span className="bg-[#D1FAE5] text-[#065F46] font-semibold px-3 py-1 rounded-full text-xs inline-block">
+                          Shortlisted
+                        </span>
+                      ) : app.status === "Rejected" ? (
+                        <span className="bg-[#FEE2E2] text-[#991B1B] font-semibold px-3 py-1 rounded-full text-xs inline-block">
+                          Rejected
+                        </span>
+                      ) : (
+                        <span className="bg-[#FEF3C7] text-[#D97706] font-semibold px-3 py-1 rounded-full text-xs inline-block">
+                          Pending
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-3.5 text-right whitespace-nowrap">
+                      <div className="flex items-center justify-end gap-2.5">
+                        <button
+                          type="button"
+                          onClick={() => onSelectApplicant(app.id)}
+                          className="text-neutral-primary font-bold text-xs underline hover:text-[#a31d38] transition-colors cursor-pointer mr-1"
+                        >
+                          View
+                        </button>
+                        {app.status === "Pending" && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                patchApplicantMutation.mutate(
+                                  {
+                                    id: jobId,
+                                    applicationId: app.id,
+                                    decision: "shortlist",
+                                  },
+                                  {
+                                    onSuccess: () => {
+                                      toast({
+                                        type: "success",
+                                        title: "Applicant Shortlisted",
+                                        description: "Assessor has been shortlisted.",
+                                      });
+                                    },
+                                  },
+                                )
+                              }
+                              className="px-3 py-1.5 rounded-xl bg-[#fbab2a] hover:bg-[#e89b1f] text-white font-bold text-xs shadow-xs transition-all cursor-pointer flex items-center gap-1"
+                            >
+                              <FiCheck className="w-3.5 h-3.5" />
+                              <span>Accept</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                patchApplicantMutation.mutate(
+                                  {
+                                    id: jobId,
+                                    applicationId: app.id,
+                                    decision: "reject",
+                                  },
+                                  {
+                                    onSuccess: () => {
+                                      toast({
+                                        type: "success",
+                                        title: "Applicant Rejected",
+                                        description: "Applicant has been rejected.",
+                                      });
+                                    },
+                                  },
+                                )
+                              }
+                              className="px-2.5 py-1.5 rounded-xl border border-red-200 text-red-700 hover:bg-red-50 font-semibold text-xs transition-all cursor-pointer"
+                            >
+                              Reject
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -206,11 +206,11 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
             />
           </div>
 
-          <div className="flex items-center justify-end gap-3">
+          <div className="flex items-center flex-wrap sm:flex-nowrap sm:justify-end gap-3 shrink-0">
             <Select
               size="sm"
               showPlaceholderOption={false}
-              containerClassName="w-32"
+              containerClassName="w-32 shrink-0"
               value={tradeFilter}
               onChange={(e) => setTradeFilter(e.target.value)}
               options={[
@@ -225,7 +225,7 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
             <Select
               size="sm"
               showPlaceholderOption={false}
-              containerClassName="w-40"
+              containerClassName="w-38 shrink-0"
               value={assessmentFilter}
               onChange={(e) => setAssessmentFilter(e.target.value)}
               options={[
@@ -238,7 +238,7 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
             <Select
               size="sm"
               showPlaceholderOption={false}
-              containerClassName="w-36"
+              containerClassName="w-32 shrink-0"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               options={[
@@ -250,7 +250,7 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
               ]}
             />
 
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 shrink-0">
               <button
                 type="button"
                 onClick={() => setDetailViewMode("list")}

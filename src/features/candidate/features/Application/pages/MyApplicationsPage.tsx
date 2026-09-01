@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { FiChevronRight, FiFolder, FiPlus } from "react-icons/fi";
 import { HeaderBanner } from "@/features/candidate/features/Dashboard/components/HeaderBanner";
@@ -70,6 +70,7 @@ const getStatusDisplay = (status: string) => {
 
 export const MyApplicationsPage: React.FC = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const dispatch = useAppDispatch();
   const [activeTab, setActiveTab] = useState<FilterTab>("All");
 
@@ -89,6 +90,47 @@ export const MyApplicationsPage: React.FC = () => {
       dispatch(markVerified());
     }
   }, [isVerified, authUser?.isVerified, dispatch]);
+
+  // Handle redirect from payment callback
+  React.useEffect(() => {
+    const paymentParam = searchParams.get("payment");
+    const referenceParam =
+      searchParams.get("reference") || searchParams.get("trxref");
+
+    if (paymentParam === "success" || referenceParam) {
+      let targetId =
+        searchParams.get("id") || searchParams.get("applicationId");
+
+      if (!targetId && typeof window !== "undefined") {
+        targetId =
+          sessionStorage.getItem("pending_payment_application_id") ||
+          localStorage.getItem("pending_payment_application_id") ||
+          "";
+      }
+
+      if (!targetId && applications.length > 0) {
+        const found =
+          applications.find(
+            (a) =>
+              a.status === "in_progress" ||
+              (a.status as string) === "submitted" ||
+              a.currentStageKey === "payment",
+          ) || applications[0];
+        if (found) targetId = found.id;
+      }
+
+      if (targetId) {
+        const params = new URLSearchParams();
+        if (paymentParam) params.set("payment", paymentParam);
+        else params.set("payment", "success");
+        if (referenceParam) params.set("reference", referenceParam);
+
+        router.replace(
+          `/dashboard/applications/${targetId}?${params.toString()}`,
+        );
+      }
+    }
+  }, [searchParams, applications, router]);
 
   const isRawId = (str?: string) => {
     if (!str) return false;
@@ -155,7 +197,7 @@ export const MyApplicationsPage: React.FC = () => {
       <HeaderBanner
         title="My Applications"
         showCreateButton={true}
-        createButtonText="Create Application"
+        createButtonText="Start Assessment"
       />
 
       <div className="max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1">
@@ -204,7 +246,7 @@ export const MyApplicationsPage: React.FC = () => {
                     No applications yet
                   </h3>
                   <p className="text-gray-400 text-xs leading-relaxed max-w-xs mb-6">
-                    Click &quot;Create Application&quot; in the top header to get
+                    Click &quot;Start Assessment&quot; in the top header to get
                     started with your Recognition of Prior Learning journey.
                   </p>
 
@@ -212,7 +254,7 @@ export const MyApplicationsPage: React.FC = () => {
                     href="/onboarding/assessment-type"
                     className="bg-secondary hover:bg-[#e89b1f] active:scale-95 text-white font-semibold text-sm px-6 py-2.5 rounded-xl shadow-lg transition-all cursor-pointer inline-flex items-center gap-1.5 no-underline select-none"
                   >
-                    <span>Create Application</span>
+                    <span>Start Assessment</span>
                     <FiPlus className="w-4 h-4 stroke-[2.5]" />
                   </Link>
                 </div>

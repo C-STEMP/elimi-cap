@@ -51,14 +51,19 @@ import { PaymentsHeader } from "../features/Payment/components/PaymentsHeader";
 import { SettingsView } from "../features/Settings/components/SettingsView";
 import { SettingsHeader } from "../features/Settings/components/SettingsHeader";
 
+import { FiAward } from "react-icons/fi";
 import { AssessmentCentreTab, PaymentTransaction } from "../types";
 import { useAppSelector } from "@/src/store/hooks";
 import {
   useGetCentreDashboard,
   useGetCentreStaff,
   useGetRetainedRequests,
+  useGetCentreProfile,
 } from "@/src/features/shared/centre/hooks";
-import { useGetApplications } from "@/src/features/shared/applications/hooks";
+import {
+  useGetApplications,
+  useReviewApplication,
+} from "@/src/features/shared/applications/hooks";
 import { useGetMe } from "@/src/features/shared/account/hooks";
 import {
   saveCentreId,
@@ -101,6 +106,8 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
   const { data: staff = [] } = useGetCentreStaff();
   const { data: assessors = [] } = useGetRetainedRequests();
 
+  const { data: centreProfile } = useGetCentreProfile();
+
   const hasActivity =
     (dashboardData?.kpis?.applications ?? 0) > 0 ||
     (dashboardData?.kpis?.staff ?? 0) > 0 ||
@@ -121,6 +128,9 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
   const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useState(false);
 
   const [selectedCandidateName, setSelectedCandidateName] = useState<
+    string | null
+  >(null);
+  const [selectedApplicationId, setSelectedApplicationId] = useState<
     string | null
   >(null);
   const [showCandidateForm, setShowCandidateForm] = useState(false);
@@ -154,6 +164,8 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
   const [assessorDeactivateModalMode, setAssessorDeactivateModalMode] =
     useState<StaffStatusModalMode>("confirm-deactivate");
 
+  const reviewMutation = useReviewApplication();
+
   const renderHeaderContent = () => {
     if (activeTab === "overview") return null;
 
@@ -178,10 +190,25 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
           showSelfAssessmentForm={showSelfAssessmentForm}
           showEvidenceVault={showEvidenceVault}
           showCandidateForm={showCandidateForm}
-          onBackToList={() => setSelectedCandidateName(null)}
+          onBackToList={() => {
+            setSelectedCandidateName(null);
+            setSelectedApplicationId(null);
+          }}
           onBackFromSelfAssessment={() => setShowSelfAssessmentForm(false)}
           onBackFromEvidenceVault={() => setShowEvidenceVault(false)}
           onBackFromCandidateForm={() => setShowCandidateForm(false)}
+          onAcceptApplication={() => {
+            if (selectedApplicationId) {
+              reviewMutation.mutate({
+                id: selectedApplicationId,
+                payload: {
+                  decision: "approve",
+                  stageKey: "application_form",
+                  feedback: "Application accepted by Assessment Centre",
+                },
+              });
+            }
+          }}
         />
       );
     }
@@ -271,6 +298,47 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
             transition={{ duration: 0.4, ease: "easeOut" }}
             className="flex flex-col gap-6"
           >
+            {/* Centre Accreditation & Approval Status Banner */}
+            <div className="bg-white rounded-3xl p-5 sm:p-6 border border-gray-100 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex items-center gap-4 min-w-0">
+                <div className="w-12 h-12 rounded-2xl bg-amber-50 text-[#fbab2a] flex items-center justify-center shrink-0 border border-amber-100">
+                  <FiAward className="w-6 h-6" />
+                </div>
+                <div className="flex flex-col gap-1 min-w-0">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <h3 className="text-base sm:text-lg font-extrabold text-black tracking-tight truncate">
+                      {centreProfile?.name || "Assessment Centre"}
+                    </h3>
+                    <span
+                      className={`inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-semibold ${
+                        centreProfile?.status === "approved" || !centreProfile?.status
+                          ? "bg-[#E6F4EA] text-[#1E7F4C] border border-[#1E7F4C]/20"
+                          : centreProfile?.status === "pending"
+                            ? "bg-[#FEF3C7] text-[#92400E] border border-[#F59E0B]/20"
+                            : "bg-[#FCE8EB] text-[#A31D38] border border-red-200"
+                      }`}
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                      {centreProfile?.status === "approved" || !centreProfile?.status
+                        ? "Accredited & Approved Centre"
+                        : centreProfile?.status === "pending"
+                          ? "Accreditation Pending Review"
+                          : "Accreditation Suspended"}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 font-normal">
+                    Centre ID: <span className="font-semibold text-gray-800">{centreProfile?.registrationNo || "AC-NBTE-0042"}</span> • Recognized by NBTE &amp; Sector Skills Council
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 self-start md:self-auto shrink-0">
+                <span className="text-xs font-semibold text-gray-700 bg-gray-50 border border-gray-200 px-3.5 py-1.5 rounded-xl">
+                  Accreditation: <span className="text-[#1E7F4C] font-bold capitalize">{centreProfile?.status || "Approved"}</span>
+                </span>
+              </div>
+            </div>
+
             {hasActivity ? (
               <>
                 <div
@@ -292,9 +360,10 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
 
                 <PendingApplicationsTable
                   onViewAll={() => setActiveTab("applications")}
-                  onViewApplication={() => {
+                  onViewApplication={(appId) => {
                     setActiveTab("applications");
-                    setSelectedCandidateName("Oguntade James");
+                    setSelectedApplicationId(appId);
+                    setSelectedCandidateName("Candidate");
                   }}
                 />
               </>
@@ -343,30 +412,40 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
           >
             {selectedCandidateName && showSelfAssessmentForm ? (
               <AssessmentCentreSelfAssessmentFormView
+                id={selectedApplicationId || undefined}
                 candidateName={selectedCandidateName}
                 onBack={() => setShowSelfAssessmentForm(false)}
               />
             ) : selectedCandidateName && showEvidenceVault ? (
               <AssessmentCentreEvidenceVaultView
+                id={selectedApplicationId || undefined}
                 candidateName={selectedCandidateName}
                 onBack={() => setShowEvidenceVault(false)}
                 onOpenSelfAssessmentForm={() => setShowSelfAssessmentForm(true)}
               />
             ) : selectedCandidateName && showCandidateForm ? (
               <AssessmentCentreCandidateFormView
+                id={selectedApplicationId || undefined}
                 candidateName={selectedCandidateName}
                 onBack={() => setShowCandidateForm(false)}
               />
             ) : selectedCandidateName ? (
               <AssessmentCentreApplicationDetailView
+                id={selectedApplicationId || undefined}
                 candidateName={selectedCandidateName}
-                onBack={() => setSelectedCandidateName(null)}
+                onBack={() => {
+                  setSelectedCandidateName(null);
+                  setSelectedApplicationId(null);
+                }}
                 onOpenCandidateForm={() => setShowCandidateForm(true)}
                 onOpenEvidenceVault={() => setShowEvidenceVault(true)}
               />
             ) : (
               <AssessmentCentreApplicationsView
-                onSelectCandidate={(name) => setSelectedCandidateName(name)}
+                onSelectCandidate={(name, id) => {
+                  setSelectedCandidateName(name);
+                  setSelectedApplicationId(id || null);
+                }}
               />
             )}
           </motion.div>
@@ -430,6 +509,10 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
               <AssessorProfileDetailView
                 assessorId={selectedAssessorId}
                 onBack={() => setSelectedAssessorId(null)}
+                onViewCandidate={(candidateId) => {
+                  setActiveTab("applications");
+                  setSelectedCandidateName(candidateId);
+                }}
               />
             ) : (
               <AssessorsListView

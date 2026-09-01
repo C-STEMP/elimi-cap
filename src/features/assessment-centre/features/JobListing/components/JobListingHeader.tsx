@@ -8,9 +8,11 @@ import {
   FiClipboard,
 } from "react-icons/fi";
 import { Button } from "@/src/components/ui/button";
-import { JobListing, AssessorApplicant } from "@/features/assessment-centre/types";
-import { MOCK_JOB_LISTINGS, MOCK_ASSESSOR_APPLICANTS } from "@/features/assessment-centre/utils/constants";
-import { useGetJobPostings } from "@/src/features/shared/centre/hooks";
+import {
+  useGetJobPostings,
+  useGetJobPostingDetail,
+  useGetJobPostingApplicationDetail,
+} from "@/src/features/shared/centre/hooks";
 
 interface JobListingHeaderProps {
   selectedJobId: string | null;
@@ -32,12 +34,10 @@ export const JobListingHeader: React.FC<JobListingHeaderProps> = ({
   onMarkAsFilled,
 }) => {
   if (selectedApplicantId) {
-    const applicant =
-      MOCK_ASSESSOR_APPLICANTS.find((a) => a.id === selectedApplicantId) ||
-      MOCK_ASSESSOR_APPLICANTS[0];
     return (
       <ApplicantDetailHeader
-        applicant={applicant}
+        jobId={selectedJobId || ""}
+        applicantId={selectedApplicantId}
         onBack={onBackFromApplicant}
         onBackToRequests={() => {
           onBackFromApplicant();
@@ -48,12 +48,9 @@ export const JobListingHeader: React.FC<JobListingHeaderProps> = ({
   }
 
   if (selectedJobId) {
-    const job =
-      MOCK_JOB_LISTINGS.find((j) => j.id === selectedJobId) ||
-      MOCK_JOB_LISTINGS[0];
     return (
       <JobDetailHeader
-        job={job}
+        jobId={selectedJobId}
         onBack={onBackFromJob}
         onMarkAsFilled={onMarkAsFilled}
       />
@@ -64,16 +61,28 @@ export const JobListingHeader: React.FC<JobListingHeaderProps> = ({
 };
 
 interface ApplicantDetailHeaderProps {
-  applicant: AssessorApplicant;
+  jobId: string;
+  applicantId: string;
   onBack: () => void;
   onBackToRequests: () => void;
 }
 
 const ApplicantDetailHeader: React.FC<ApplicantDetailHeaderProps> = ({
-  applicant,
+  jobId,
+  applicantId,
   onBack,
   onBackToRequests,
 }) => {
+  const { data: applicantDetail } = useGetJobPostingApplicationDetail(
+    jobId,
+    applicantId,
+    { enabled: !!jobId && !!applicantId },
+  );
+
+  const applicantName =
+    applicantDetail?.assessor?.name ||
+    (applicantDetail?.id ? `Applicant (${applicantDetail.id.slice(0, 8)})` : "Applicant");
+
   return (
     <div className="flex flex-col gap-1 pt-2">
       <button
@@ -82,7 +91,7 @@ const ApplicantDetailHeader: React.FC<ApplicantDetailHeaderProps> = ({
         className="flex items-center gap-2 text-white font-bold text-2xl lg:text-3xl tracking-tight hover:opacity-90 text-left cursor-pointer"
       >
         <span className="text-xl font-bold">&lt;</span>
-        <span>{applicant.name}</span>
+        <span>{applicantName}</span>
       </button>
       <div className="flex items-center gap-2 text-xs lg:text-sm text-white/90 font-normal">
         <span
@@ -99,23 +108,30 @@ const ApplicantDetailHeader: React.FC<ApplicantDetailHeaderProps> = ({
           Assessor
         </span>
         <span>&gt;</span>
-        <span className="font-semibold text-white">{applicant.name}</span>
+        <span className="font-semibold text-white">{applicantName}</span>
       </div>
     </div>
   );
 };
 
 interface JobDetailHeaderProps {
-  job: JobListing;
+  jobId: string;
   onBack: () => void;
   onMarkAsFilled: () => void;
 }
 
 const JobDetailHeader: React.FC<JobDetailHeaderProps> = ({
-  job,
+  jobId,
   onBack,
   onMarkAsFilled,
 }) => {
+  const { data: job } = useGetJobPostingDetail(jobId);
+  const totalSlots = job?.slot || 0;
+  const slotsOccupied = job?.slotsOccupied || 0;
+  const availableSlots = Math.max(0, totalSlots - slotsOccupied);
+  const totalApplicants = job?.applicantCount || 0;
+  const isFilled = job?.status === "filled";
+
   return (
     <div className="flex flex-col gap-6 pt-2">
       <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -140,16 +156,18 @@ const JobDetailHeader: React.FC<JobDetailHeaderProps> = ({
           </div>
         </div>
 
-        <Button
-          type="button"
-          onClick={onMarkAsFilled}
-          variant="amber"
-          size="md"
-          rightIcon={<FiCheck className="w-4.5 h-4.5" />}
-          className="px-6 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
-        >
-          Mark As Filled
-        </Button>
+        {!isFilled && (
+          <Button
+            type="button"
+            onClick={onMarkAsFilled}
+            variant="amber"
+            size="md"
+            rightIcon={<FiCheck className="w-4.5 h-4.5" />}
+            className="px-6 h-11 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
+          >
+            Mark As Filled
+          </Button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -160,11 +178,9 @@ const JobDetailHeader: React.FC<JobDetailHeaderProps> = ({
             </span>
             <div className="flex items-baseline gap-1.5 mt-1">
               <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                {job.slotsTotal - job.slotsFilled}/{job.slotsTotal}
+                {availableSlots}
               </span>
-              <span className="text-xs font-normal text-white/70">
-                available
-              </span>
+              <span className="text-xs font-normal text-white/70">slots</span>
             </div>
           </div>
           <div className="w-9 h-9 flex items-center justify-center shrink-0">
@@ -179,7 +195,7 @@ const JobDetailHeader: React.FC<JobDetailHeaderProps> = ({
             </span>
             <div className="flex items-baseline gap-1.5 mt-1">
               <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                {job.applicantsCount}
+                {totalApplicants}
               </span>
               <span className="text-xs font-normal text-white/70">
                 applicants
@@ -198,7 +214,7 @@ const JobDetailHeader: React.FC<JobDetailHeaderProps> = ({
             </span>
             <div className="flex items-baseline gap-1.5 mt-1">
               <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                0
+                {slotsOccupied}
               </span>
               <span className="text-xs font-normal text-white/70">
                 applicants

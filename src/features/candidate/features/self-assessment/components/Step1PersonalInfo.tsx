@@ -21,37 +21,148 @@ import {
 } from "@/src/lib/validation";
 
 import { useAppSelector } from "@/store/hooks";
+import { useGetMeProfile } from "@/src/features/shared/account/hooks";
+import { useCandidateProfile } from "@/src/features/shared/onboarding/hooks";
+import { useCountryStateCity } from "@/src/lib/hooks/useCountryStateCity";
 
 interface Step1Props {
   onNext: () => void;
   onBack: () => void;
+  application?: any;
 }
 
-export const Step1PersonalInfo: React.FC<Step1Props> = ({ onNext, onBack }) => {
+export const Step1PersonalInfo: React.FC<Step1Props> = ({
+  onNext,
+  onBack,
+  application,
+}) => {
   const router = useRouter();
   const { toast } = useToast();
   const savedPersonalInfo = useAppSelector((state) => state.onboarding.personalInfo);
   const user = useAppSelector((state) => state.auth.user);
 
+  const { data: meProfile } = useGetMeProfile();
+  const { data: candidateProfile } = useCandidateProfile(true);
+
+  const profileAvatar =
+    savedPersonalInfo.passportUrl ||
+    savedPersonalInfo.passportPreview ||
+    application?.personalInformation?.passportAsset?.url ||
+    (application as any)?.personalInformation?.passportUrl ||
+    (application as any)?.candidate?.avatar ||
+    (application as any)?.candidate?.photoUrl ||
+    meProfile?.photo?.url ||
+    (candidateProfile as any)?.passportPhoto?.url ||
+    (candidateProfile as any)?.photo?.url ||
+    (candidateProfile as any)?.avatar ||
+    user?.avatar ||
+    user?.avatarUrl ||
+    user?.passportUrl ||
+    null;
+
   const [showConfirmDraftModal, setShowConfirmDraftModal] = useState(false);
   const [showDraftModal, setShowDraftModal] = useState(false);
   const [passportFile, setPassportFile] = useState<File | null>(null);
   const [passportPreview, setPassportPreview] = useState<string | null>(
-    savedPersonalInfo.passportUrl || null,
+    profileAvatar || null,
   );
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [formData, setFormData] = useState({
-    firstName: savedPersonalInfo.firstName || "",
-    lastName: savedPersonalInfo.lastName || "",
-    middleName: savedPersonalInfo.middleName || "",
-    dob: savedPersonalInfo.dob || "",
-    email: savedPersonalInfo.email || user?.email || "",
-    phone: savedPersonalInfo.phoneNumber || user?.phoneNumber || "",
-    state: savedPersonalInfo.state || "",
-    lga: savedPersonalInfo.lga || "",
-    address: savedPersonalInfo.streetAddress || "",
+    firstName:
+      savedPersonalInfo.firstName ||
+      application?.personalInformation?.personalDetails?.firstName ||
+      meProfile?.personalDetails?.firstName ||
+      user?.fullName?.split(" ")[0] ||
+      "",
+    lastName:
+      savedPersonalInfo.lastName ||
+      application?.personalInformation?.personalDetails?.lastName ||
+      meProfile?.personalDetails?.lastName ||
+      (user?.fullName?.split(" ")?.length && user.fullName.split(" ").length > 1
+        ? user.fullName.split(" ").slice(1).join(" ")
+        : "") ||
+      "",
+    middleName:
+      savedPersonalInfo.middleName ||
+      application?.personalInformation?.personalDetails?.middleName ||
+      meProfile?.personalDetails?.middleName ||
+      "",
+    dob:
+      savedPersonalInfo.dob ||
+      application?.personalInformation?.personalDetails?.dob ||
+      meProfile?.personalDetails?.dob ||
+      "",
+    email:
+      savedPersonalInfo.email ||
+      application?.personalInformation?.contactInformation?.emailAddress ||
+      meProfile?.contactInformation?.emailAddress ||
+      user?.email ||
+      "",
+    phone:
+      savedPersonalInfo.phoneNumber ||
+      application?.personalInformation?.contactInformation?.phoneNumber?.number ||
+      meProfile?.contactInformation?.phoneNumber?.number ||
+      user?.phoneNumber ||
+      "",
+    country:
+      savedPersonalInfo.country ||
+      application?.personalInformation?.residentialAddress?.country ||
+      meProfile?.residentialAddress?.country ||
+      "Nigeria",
+    state:
+      savedPersonalInfo.state ||
+      application?.personalInformation?.residentialAddress?.state ||
+      meProfile?.residentialAddress?.state ||
+      "",
+    lga:
+      savedPersonalInfo.lga ||
+      application?.personalInformation?.residentialAddress?.lga ||
+      meProfile?.residentialAddress?.lga ||
+      "",
+    address:
+      savedPersonalInfo.streetAddress ||
+      application?.personalInformation?.residentialAddress?.address ||
+      meProfile?.residentialAddress?.address ||
+      "",
   });
+
+  const {
+    countries,
+    states,
+    cities,
+    isLoadingStates,
+    isLoadingLgas,
+  } = useCountryStateCity(formData.country, formData.state);
+
+  React.useEffect(() => {
+    const details =
+      application?.personalInformation?.personalDetails ||
+      meProfile?.personalDetails;
+    const contact =
+      application?.personalInformation?.contactInformation ||
+      meProfile?.contactInformation;
+    const address =
+      application?.personalInformation?.residentialAddress ||
+      meProfile?.residentialAddress;
+
+    setFormData((prev) => ({
+      firstName: prev.firstName || details?.firstName || "",
+      lastName: prev.lastName || details?.lastName || "",
+      middleName: prev.middleName || details?.middleName || "",
+      dob: prev.dob || details?.dob || "",
+      email: prev.email || contact?.emailAddress || "",
+      phone: prev.phone || contact?.phoneNumber?.number || "",
+      country: prev.country || address?.country || "Nigeria",
+      state: prev.state || address?.state || "",
+      lga: prev.lga || address?.lga || "",
+      address: prev.address || address?.address || "",
+    }));
+
+    if (!passportPreview && profileAvatar) {
+      setPassportPreview(profileAvatar);
+    }
+  }, [application, meProfile, profileAvatar, passportPreview]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -75,12 +186,16 @@ export const Step1PersonalInfo: React.FC<Step1Props> = ({ onNext, onBack }) => {
     let valid = true;
     const newErrors: Record<string, string> = {};
 
-    if (
-      !passportFile &&
-      !passportPreview &&
-      !savedPersonalInfo.passportUrl &&
-      !savedPersonalInfo.passportAssetId
-    ) {
+    const hasPassport = Boolean(
+      passportFile ||
+      passportPreview ||
+      profileAvatar ||
+      savedPersonalInfo.passportUrl ||
+      savedPersonalInfo.passportAssetId ||
+      application?.personalInformation?.passportAsset?.url
+    );
+
+    if (!hasPassport) {
       newErrors.passport = "Passport photograph is required";
       valid = false;
     }
@@ -92,11 +207,6 @@ export const Step1PersonalInfo: React.FC<Step1Props> = ({ onNext, onBack }) => {
     }
 
     setErrors(newErrors);
-    const hasPassport = Boolean(
-      passportPreview ||
-      savedPersonalInfo.passportUrl ||
-      savedPersonalInfo.passportAssetId
-    );
     return {
       valid: valid && Object.keys(newErrors).length === 0,
       hasPassport,
@@ -296,6 +406,26 @@ export const Step1PersonalInfo: React.FC<Step1Props> = ({ onNext, onBack }) => {
             <Select
               label={
                 <span>
+                  Country
+                  <span className="text-primary-solid ml-0.5">*</span>
+                </span>
+              }
+              name="country"
+              value={formData.country}
+              error={errors.country}
+              onChange={(e) => {
+                const val = e.target.value;
+                setFormData((prev) => ({ ...prev, country: val, state: "", lga: "" }));
+                if (errors.country) setErrors((prev) => ({ ...prev, country: "" }));
+              }}
+              options={countries}
+              placeholder="Select country"
+              autoComplete="off"
+            />
+
+            <Select
+              label={
+                <span>
                   State of Residence
                   <span className="text-primary-solid ml-0.5">*</span>
                 </span>
@@ -303,11 +433,25 @@ export const Step1PersonalInfo: React.FC<Step1Props> = ({ onNext, onBack }) => {
               name="state"
               value={formData.state}
               error={errors.state}
-              onChange={handleSelectChange}
-              options={["Lagos", "Abuja", "Oyo"]}
-              placeholder="Select"
+              onChange={(e) => {
+                const val = e.target.value;
+                setFormData((prev) => ({ ...prev, state: val, lga: "" }));
+                if (errors.state) setErrors((prev) => ({ ...prev, state: "" }));
+              }}
+              options={states}
+              placeholder={
+                isLoadingStates
+                  ? "Loading states..."
+                  : formData.country
+                    ? "Select state"
+                    : "Select country first"
+              }
+              disabled={isLoadingStates || !formData.country || states.length === 0}
+              autoComplete="off"
             />
+          </div>
 
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Select
               label={
                 <span>
@@ -318,25 +462,37 @@ export const Step1PersonalInfo: React.FC<Step1Props> = ({ onNext, onBack }) => {
               name="lga"
               value={formData.lga}
               error={errors.lga}
-              onChange={handleSelectChange}
-              options={["Ikeja", "Eti-Osa", "Surulere"]}
-              placeholder="Select"
+              onChange={(e) => {
+                const val = e.target.value;
+                setFormData((prev) => ({ ...prev, lga: val }));
+                if (errors.lga) setErrors((prev) => ({ ...prev, lga: "" }));
+              }}
+              options={cities}
+              placeholder={
+                isLoadingLgas
+                  ? "Loading LGAs..."
+                  : formData.state
+                    ? "Select city / LGA"
+                    : "Select state first"
+              }
+              disabled={isLoadingLgas || !formData.state || cities.length === 0}
+              autoComplete="off"
+            />
+
+            <Input
+              label={
+                <span>
+                  Residential Address
+                  <span className="text-primary-solid ml-0.5">*</span>
+                </span>
+              }
+              name="address"
+              placeholder="Street Address"
+              value={formData.address}
+              error={errors.address}
+              onChange={handleChange}
             />
           </div>
-
-          <Input
-            label={
-              <span>
-                Residential Address
-                <span className="text-primary-solid ml-0.5">*</span>
-              </span>
-            }
-            name="address"
-            placeholder="Street Address"
-            value={formData.address}
-            error={errors.address}
-            onChange={handleChange}
-          />
         </div>
 
         <div className="flex items-center justify-between mt-8 pt-4 border-t border-gray-100 gap-4">

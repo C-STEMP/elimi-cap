@@ -1,24 +1,24 @@
 "use client";
 
 import React, { useState } from "react";
-import Image from "next/image";
 import {
   FiChevronLeft,
   FiChevronRight,
   FiCalendar,
-  FiX,
-  FiClock,
   FiDownload,
   FiChevronDown,
+  FiCheckCircle,
+  FiClock,
 } from "react-icons/fi";
-import { ASSETS_URL } from "@/assets";
 import { Button } from "@/src/components/ui/button";
-import { Select } from "@/src/components/ui/select";
-import { Input } from "@/src/components/ui/input";
 import { useToast } from "@/src/components/ui/toast";
-import { MOCK_AWARDING_BODY_INFO } from "@/features/assessment-centre/utils/constants";
-
-import { useApplication } from "@/features/assessment-centre/features/Applications/hooks";
+import { Loader } from "@/src/components/ui/loader";
+import {
+  useGetApplicationById,
+  useGetApplicationStages,
+  useGetApplicationHistory,
+  useGetInterviewSchedule,
+} from "@/src/features/shared/applications/hooks";
 
 interface ApplicationDetailViewProps {
   id?: string;
@@ -31,13 +31,19 @@ interface ApplicationDetailViewProps {
 export const AssessmentCentreApplicationDetailView: React.FC<
   ApplicationDetailViewProps
 > = ({
-  id = "app-1",
-  candidateName = "Oguntade James",
+  id = "",
+  candidateName = "Candidate",
   onBack,
   onOpenCandidateForm,
   onOpenEvidenceVault,
 }) => {
   const { toast } = useToast();
+
+  const { data: appDetail, isLoading: isLoadingDetail } = useGetApplicationById(id);
+  const { data: stages = [], isLoading: isLoadingStages } = useGetApplicationStages(id);
+  const { data: interviewSchedule } = useGetInterviewSchedule(id);
+  const { data: appHistory = [] } = useGetApplicationHistory(id);
+
   const [currentMonth, setCurrentMonth] = useState("July");
   const months = [
     "January",
@@ -75,22 +81,237 @@ export const AssessmentCentreApplicationDetailView: React.FC<
     setCurrentMonth(months[(idx + 1) % 12]);
   };
 
+  const resolvedCandidateName =
+    appDetail?.candidate?.name ||
+    `${appDetail?.personalInformation?.personalDetails?.firstName || ""} ${appDetail?.personalInformation?.personalDetails?.lastName || ""}`.trim() ||
+    candidateName;
+
+  // Format dates
+  const submittedDate = appDetail?.submittedAt
+    ? new Date(appDetail.submittedAt).toLocaleDateString("en-US")
+    : appDetail?.createdAt
+      ? new Date(appDetail.createdAt).toLocaleDateString("en-US")
+      : "Pending";
+
+  const isCompleted = appDetail?.status === "certified";
+
+  const getStatusBadge = (statusText: string) => {
+    const s = statusText.toLowerCase();
+    if (
+      s === "approved" ||
+      s === "successful" ||
+      s === "marked as complete" ||
+      s === "completed" ||
+      s === "competent" ||
+      s === "certified"
+    ) {
+      return {
+        text: statusText,
+        className: "bg-[#E6F4EA] text-[#1E7F4C]",
+      };
+    }
+    if (
+      s === "in progress" ||
+      s === "under review" ||
+      s === "scheduled" ||
+      s === "pending review" ||
+      s === "awaiting payment"
+    ) {
+      return {
+        text: statusText,
+        className: "bg-[#FEF3C7] text-[#92400E]",
+      };
+    }
+    if (s === "rejected" || s === "needs attention" || s === "corrupted") {
+      return {
+        text: statusText,
+        className: "bg-[#FCE8EB] text-[#A31D38]",
+      };
+    }
+    return {
+      text: statusText,
+      className: "bg-gray-100 text-gray-600",
+    };
+  };
+
+  // Stage 1: Application Form
+  const appFormStage = stages.find(
+    (s) =>
+      s.stageKey === "application_form" ||
+      s.stageKey === "application_review" ||
+      s.stageKey === "application",
+  );
+  const appFormStatus =
+    appFormStage?.status === "successful"
+      ? "Approved"
+      : appFormStage?.status === "rejected"
+        ? "Rejected"
+        : appDetail?.status === "draft"
+          ? "Draft"
+          : appDetail?.status === "in_progress" || isCompleted
+            ? "Approved"
+            : appFormStage?.status
+              ? appFormStage.status.replace(/_/g, " ")
+              : "Approved";
+
+  // Stage 2: Payment
+  const paymentStage = stages.find(
+    (s) => s.stageKey === "payment" || s.stageKey === "payment_quote",
+  );
+  const paymentStatus =
+    paymentStage?.status === "successful"
+      ? "Successful"
+      : paymentStage?.status === "awaiting_payment"
+        ? "Awaiting Payment"
+        : paymentStage?.status === "in_progress"
+          ? "In Progress"
+          : isCompleted
+            ? "Successful"
+            : "Pending";
+
+  const paymentDate = paymentStage?.enteredAt
+    ? new Date(paymentStage.enteredAt).toLocaleDateString("en-US")
+    : paymentStatus === "Successful"
+      ? submittedDate
+      : "—";
+
+  // Stage 3: Folder Arrangement
+  const evidenceStage = stages.find(
+    (s) =>
+      s.stageKey === "evidence_vault" ||
+      s.stageKey === "folder_arrangement" ||
+      s.stageKey === "evidence",
+  );
+  const evidenceStatus =
+    evidenceStage?.status === "successful" || isCompleted
+      ? "Marked as complete"
+      : evidenceStage?.status === "under_review"
+        ? "Under Review"
+        : evidenceStage?.status === "in_progress"
+          ? "In Progress"
+          : "Pending";
+
+  const evidenceDate = evidenceStage?.enteredAt
+    ? new Date(evidenceStage.enteredAt).toLocaleDateString("en-US")
+    : evidenceStatus === "Marked as complete"
+      ? submittedDate
+      : "—";
+
+  // Stage 4: Interview Stage
+  const interviewStage = stages.find(
+    (s) =>
+      s.stageKey === "interview" ||
+      s.stageKey === "direct_observation" ||
+      s.stageKey === "observation",
+  );
+  const interviewStatus =
+    interviewSchedule?.status === "completed" ||
+    interviewStage?.status === "successful" ||
+    isCompleted
+      ? "Completed"
+      : interviewSchedule?.status === "scheduled" ||
+          interviewStage?.status === "scheduled"
+        ? "Scheduled"
+        : interviewStage?.status === "in_progress"
+          ? "In Progress"
+          : "Pending";
+
+  const interviewDate = interviewSchedule?.scheduledAt
+    ? new Date(interviewSchedule.scheduledAt).toLocaleDateString("en-US")
+    : interviewStage?.enteredAt
+      ? new Date(interviewStage.enteredAt).toLocaleDateString("en-US")
+      : interviewStatus === "Completed"
+        ? submittedDate
+        : "—";
+
+  // Stage 5: Internal Verifier
+  const ivStage = stages.find(
+    (s) =>
+      s.stageKey === "internal_verifier" ||
+      s.stageKey === "iv_review" ||
+      s.stageKey === "iv",
+  );
+  const ivStatus =
+    ivStage?.status === "successful" || isCompleted
+      ? "Completed"
+      : ivStage?.status === "in_progress" || appDetail?.internalVerifier
+        ? "In Progress"
+        : "Pending";
+
+  const ivDate = appDetail?.internalVerifier?.assignedAt
+    ? new Date(appDetail.internalVerifier.assignedAt).toLocaleDateString("en-US")
+    : ivStage?.enteredAt
+      ? new Date(ivStage.enteredAt).toLocaleDateString("en-US")
+      : ivStatus === "Completed"
+        ? submittedDate
+        : "—";
+
+  // Stage 6: Awarding Body
+  const awardingBodyStage = stages.find(
+    (s) =>
+      s.stageKey === "awarding_body" ||
+      s.stageKey === "notify_awarding_body",
+  );
+  const awardingBodyStatus =
+    awardingBodyStage?.status === "successful" || isCompleted
+      ? "Completed"
+      : awardingBodyStage?.status === "in_progress"
+        ? "In Progress"
+        : "Pending";
+
+  // Stage 7: External Verifier
+  const evStage = stages.find(
+    (s) =>
+      s.stageKey === "external_verifier" ||
+      s.stageKey === "eqa" ||
+      s.stageKey === "ev",
+  );
+  const evStatus =
+    evStage?.status === "successful" || isCompleted
+      ? "Completed"
+      : evStage?.status === "in_progress"
+        ? "In Progress"
+        : "Pending";
+
+  // Stage 8: Certification
+  const certStage = stages.find((s) => s.stageKey === "certification");
+  const certStatus =
+    isCompleted || certStage?.status === "successful"
+      ? "Competent"
+      : certStage?.status === "in_progress"
+        ? "In Progress"
+        : "Pending";
+
+  if (isLoadingDetail && !appDetail) {
+    return (
+      <div className="w-full min-h-[400px] flex items-center justify-center">
+        <Loader tip="Loading application details..." />
+      </div>
+    );
+  }
+
   return (
     <div className="w-full flex flex-col gap-6 select-text">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         <div className="lg:col-span-8 xl:col-span-9 flex flex-col gap-4">
+          {/* Stage 1: Application Form */}
           <div className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-100 shadow-2xs flex items-center justify-between gap-4">
             <div className="flex flex-col gap-1.5 min-w-0">
               <div className="flex items-center gap-3 flex-wrap">
                 <h3 className="text-black font-bold text-base sm:text-lg lg:text-xl tracking-tight">
                   Application Form
                 </h3>
-                <span className="bg-[#E6F4EA] text-[#1E7F4C] text-xs font-semibold px-3 py-0.5 rounded-full">
-                  Approved
-                </span>
+                {(() => {
+                  const b = getStatusBadge(appFormStatus);
+                  return (
+                    <span className={`${b.className} text-xs font-semibold px-3 py-0.5 rounded-full capitalize`}>
+                      {b.text}
+                    </span>
+                  );
+                })()}
               </div>
               <p className="text-gray-400 text-xs sm:text-sm font-normal">
-                Submitted on: 7/21/2026
+                Submitted on: {submittedDate}
               </p>
             </div>
 
@@ -105,49 +326,72 @@ export const AssessmentCentreApplicationDetailView: React.FC<
             </Button>
           </div>
 
+          {/* Stage 2: Payment */}
           <div className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-100 shadow-2xs flex items-center justify-between gap-4">
             <div className="flex flex-col gap-1.5 min-w-0">
               <div className="flex items-center gap-3 flex-wrap">
                 <h3 className="text-black font-bold text-base sm:text-lg lg:text-xl tracking-tight">
                   Payment
                 </h3>
-                <span className="bg-[#E6F4EA] text-[#1E7F4C] text-xs font-semibold px-3 py-0.5 rounded-full">
-                  Successful
-                </span>
+                {(() => {
+                  const b = getStatusBadge(paymentStatus);
+                  return (
+                    <span className={`${b.className} text-xs font-semibold px-3 py-0.5 rounded-full capitalize`}>
+                      {b.text}
+                    </span>
+                  );
+                })()}
               </div>
               <p className="text-gray-400 text-xs sm:text-sm font-normal">
-                Paid On: 7/22/2026
+                Paid On: {paymentDate}
               </p>
             </div>
 
             <button
               type="button"
-              onClick={() =>
-                toast({
-                  type: "info",
-                  title: "Receipt Downloaded",
-                  description: "Payment receipt downloaded successfully.",
-                })
-              }
-              className="bg-white border border-gray-200 hover:bg-gray-50 text-[#fbab2a] font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl flex items-center gap-2 cursor-pointer shadow-2xs shrink-0"
+              disabled={paymentStatus !== "Successful"}
+              onClick={() => {
+                if (paymentStage?.receipt?.url) {
+                  window.open(paymentStage.receipt.url, "_blank");
+                } else if (paymentStatus === "Successful") {
+                  toast({
+                    type: "success",
+                    title: "Payment Receipt",
+                    description: "Payment is verified. Receipt generated.",
+                  });
+                } else {
+                  toast({
+                    type: "info",
+                    title: "Payment Pending",
+                    description: "Payment has not been completed yet.",
+                  });
+                }
+              }}
+              className="bg-white border border-gray-200 hover:bg-gray-50 text-[#fbab2a] disabled:opacity-50 disabled:cursor-not-allowed font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl flex items-center gap-2 cursor-pointer shadow-2xs shrink-0"
             >
               <FiDownload className="w-4 h-4 text-[#fbab2a]" />
               <span>Receipt</span>
             </button>
           </div>
 
+          {/* Stage 3: Folder Arrangement */}
           <div className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-100 shadow-2xs flex items-center justify-between gap-4">
             <div className="flex flex-col gap-1.5 min-w-0">
               <div className="flex items-center gap-3 flex-wrap">
                 <h3 className="text-black font-bold text-base sm:text-lg lg:text-xl tracking-tight">
                   Folder Arrangement
                 </h3>
-                <span className="bg-[#E6F4EA] text-[#1E7F4C] text-xs font-semibold px-3 py-0.5 rounded-full">
-                  Marked as complete
-                </span>
+                {(() => {
+                  const b = getStatusBadge(evidenceStatus);
+                  return (
+                    <span className={`${b.className} text-xs font-semibold px-3 py-0.5 rounded-full capitalize`}>
+                      {b.text}
+                    </span>
+                  );
+                })()}
               </div>
               <p className="text-gray-400 text-xs sm:text-sm font-normal">
-                Started on: 7/23/2026
+                Started on: {evidenceDate}
               </p>
             </div>
 
@@ -162,123 +406,189 @@ export const AssessmentCentreApplicationDetailView: React.FC<
             </Button>
           </div>
 
-          <div className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-100 shadow-2xs flex items-center justify-between gap-4">
-            <div className="flex flex-col gap-1.5 min-w-0">
-              <div className="flex items-center gap-3 flex-wrap">
-                <h3 className="text-black font-bold text-base sm:text-lg lg:text-xl tracking-tight">
-                  Interview Stage
-                </h3>
-                <span className="bg-[#E6F4EA] text-[#1E7F4C] text-xs font-semibold px-3 py-0.5 rounded-full">
-                  Completed
-                </span>
+          {/* Stage 4: Interview Stage */}
+          <div className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-100 shadow-2xs flex flex-col gap-3">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex flex-col gap-1.5 min-w-0">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <h3 className="text-black font-bold text-base sm:text-lg lg:text-xl tracking-tight">
+                    Interview Stage
+                  </h3>
+                  {(() => {
+                    const b = getStatusBadge(interviewStatus);
+                    return (
+                      <span className={`${b.className} text-xs font-semibold px-3 py-0.5 rounded-full capitalize`}>
+                        {b.text}
+                      </span>
+                    );
+                  })()}
+                </div>
+                <p className="text-gray-400 text-xs sm:text-sm font-normal">
+                  Scheduled for: {interviewDate}
+                </p>
               </div>
-              <p className="text-gray-400 text-xs sm:text-sm font-normal">
-                Scheduled for: 8/15/2026
-              </p>
+
+              <button
+                type="button"
+                onClick={() => toggleCard("interview")}
+                className="p-2 text-gray-400 hover:text-black cursor-pointer"
+              >
+                <FiChevronDown
+                  className={`w-5 h-5 transition-transform ${
+                    expandedCards.interview ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
             </div>
 
-            <button
-              type="button"
-              onClick={() => toggleCard("interview")}
-              className="p-2 text-gray-400 hover:text-black cursor-pointer"
-            >
-              <FiChevronDown
-                className={`w-5 h-5 transition-transform ${
-                  expandedCards.interview ? "rotate-180" : ""
-                }`}
-              />
-            </button>
+            {expandedCards.interview && (
+              <div className="pt-3 border-t border-gray-100 text-xs text-gray-600 flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-gray-700">Interview Mode:</span>
+                  <span className="capitalize">{interviewSchedule?.mode || "Physical Assessment"}</span>
+                </div>
+                {interviewSchedule?.location && (
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-gray-700">Location:</span>
+                    <span>{interviewSchedule.location}</span>
+                  </div>
+                )}
+                {interviewSchedule?.link && (
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-gray-700">Meeting Link:</span>
+                    <a
+                      href={interviewSchedule.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary underline"
+                    >
+                      Join Meeting
+                    </a>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
-          {expandedCards.interview && (
-            <div className="mt-3 pt-3 border-t border-gray-100 text-xs text-gray-500">
-              Interview stage details and notes will appear here.
-            </div>
-          )}
-
-          <div className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-100 shadow-2xs flex items-center justify-between gap-4">
-            <div className="flex flex-col gap-1.5 min-w-0">
-              <div className="flex items-center gap-3 flex-wrap">
-                <h3 className="text-black font-bold text-base sm:text-lg lg:text-xl tracking-tight">
-                  Internal Verifier
-                </h3>
-                <span className="bg-[#E6F4EA] text-[#1E7F4C] text-xs font-semibold px-3 py-0.5 rounded-full">
-                  Completed
-                </span>
+          {/* Stage 5: Internal Verifier */}
+          <div className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-100 shadow-2xs flex flex-col gap-3">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex flex-col gap-1.5 min-w-0">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <h3 className="text-black font-bold text-base sm:text-lg lg:text-xl tracking-tight">
+                    Internal Verifier
+                  </h3>
+                  {(() => {
+                    const b = getStatusBadge(ivStatus);
+                    return (
+                      <span className={`${b.className} text-xs font-semibold px-3 py-0.5 rounded-full capitalize`}>
+                        {b.text}
+                      </span>
+                    );
+                  })()}
+                </div>
+                <p className="text-gray-400 text-xs sm:text-sm font-normal">
+                  Started on: {ivDate}
+                </p>
               </div>
-              <p className="text-gray-400 text-xs sm:text-sm font-normal">
-                Started on: 7/23/2026
-              </p>
+
+              <button
+                type="button"
+                onClick={() => toggleCard("verifier")}
+                className="p-2 text-gray-400 hover:text-black cursor-pointer"
+              >
+                <FiChevronDown
+                  className={`w-5 h-5 transition-transform ${
+                    expandedCards.verifier ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
             </div>
 
-            <button
-              type="button"
-              onClick={() => toggleCard("verifier")}
-              className="p-2 text-gray-400 hover:text-black cursor-pointer"
-            >
-              <FiChevronDown
-                className={`w-5 h-5 transition-transform ${
-                  expandedCards.verifier ? "rotate-180" : ""
-                }`}
-              />
-            </button>
+            {expandedCards.verifier && (
+              <div className="pt-3 border-t border-gray-100 text-xs text-gray-600 flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-gray-700">Assigned IV:</span>
+                  <span>{appDetail?.internalVerifier?.name || "Internal Verifier Assessor"}</span>
+                </div>
+                {appDetail?.internalVerifier?.qualifications && (
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-gray-700">Qualifications:</span>
+                    <span>{appDetail.internalVerifier.qualifications.join(", ")}</span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
-          {expandedCards.verifier && (
-            <div className="mt-3 pt-3 border-t border-gray-100 text-xs text-gray-500">
-              Internal verifier details and notes will appear here.
-            </div>
-          )}
-
+          {/* Stage 6: Notify Awarding Body */}
           <div className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-100 shadow-2xs flex items-center justify-between gap-4">
             <div className="flex flex-col gap-1.5 min-w-0">
               <div className="flex items-center gap-3 flex-wrap">
                 <h3 className="text-black font-bold text-base sm:text-lg lg:text-xl tracking-tight">
                   Notify Awarding Body
                 </h3>
-                <span className="bg-[#E6F4EA] text-[#1E7F4C] text-xs font-semibold px-3 py-0.5 rounded-full">
-                  Completed
-                </span>
+                {(() => {
+                  const b = getStatusBadge(awardingBodyStatus);
+                  return (
+                    <span className={`${b.className} text-xs font-semibold px-3 py-0.5 rounded-full capitalize`}>
+                      {b.text}
+                    </span>
+                  );
+                })()}
               </div>
               <p className="text-gray-400 text-xs sm:text-sm font-normal">
-                Started on: 7/23/2026
+                {awardingBodyStatus === "Pending" ? "Not started yet" : `Started on: ${submittedDate}`}
               </p>
             </div>
           </div>
 
+          {/* Stage 7: External Verifier */}
           <div className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-100 shadow-2xs flex items-center justify-between gap-4">
             <div className="flex flex-col gap-1.5 min-w-0">
               <div className="flex items-center gap-3 flex-wrap">
                 <h3 className="text-black font-bold text-base sm:text-lg lg:text-xl tracking-tight">
                   External Verifier
                 </h3>
-                <span className="bg-[#E6F4EA] text-[#1E7F4C] text-xs font-semibold px-3 py-0.5 rounded-full">
-                  Completed
-                </span>
+                {(() => {
+                  const b = getStatusBadge(evStatus);
+                  return (
+                    <span className={`${b.className} text-xs font-semibold px-3 py-0.5 rounded-full capitalize`}>
+                      {b.text}
+                    </span>
+                  );
+                })()}
               </div>
               <p className="text-gray-400 text-xs sm:text-sm font-normal">
-                Started on: 7/23/2026
+                {evStatus === "Pending" ? "Not started yet" : `Started on: ${submittedDate}`}
               </p>
             </div>
           </div>
 
+          {/* Stage 8: Certification */}
           <div className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-100 shadow-2xs flex items-center justify-between gap-4">
             <div className="flex flex-col gap-1.5 min-w-0">
               <div className="flex items-center gap-3 flex-wrap">
                 <h3 className="text-black font-bold text-base sm:text-lg lg:text-xl tracking-tight">
                   Certification
                 </h3>
-                <span className="bg-[#E6F4EA] text-[#1E7F4C] text-xs font-semibold px-3 py-0.5 rounded-full">
-                  Competent
-                </span>
+                {(() => {
+                  const b = getStatusBadge(certStatus);
+                  return (
+                    <span className={`${b.className} text-xs font-semibold px-3 py-0.5 rounded-full capitalize`}>
+                      {b.text}
+                    </span>
+                  );
+                })()}
               </div>
               <p className="text-gray-400 text-xs sm:text-sm font-normal">
-                ---
+                {certStatus === "Competent" ? "Certified" : "In Progress / Pending"}
               </p>
             </div>
           </div>
         </div>
 
+        {/* Right Sidebar Calendar & Events */}
         <div className="lg:col-span-4 xl:col-span-3 flex flex-col gap-6">
           <div className="bg-[#18181b] text-white rounded-3xl p-5 sm:p-6 shadow-md flex flex-col gap-4 select-none">
             <div className="flex items-center justify-between text-white px-1">
@@ -324,18 +634,36 @@ export const AssessmentCentreApplicationDetailView: React.FC<
               Upcoming Events
             </h3>
 
-            <div className="w-12 h-12 rounded-full bg-[#fde8ec] text-border-secondary flex items-center justify-center">
-              <FiCalendar className="w-6 h-6 stroke-2" />
-            </div>
+            {interviewSchedule?.scheduledAt ? (
+              <div className="w-full flex items-start gap-3 p-3.5 rounded-2xl bg-amber-50/70 border border-amber-100 text-left">
+                <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+                  <FiClock className="w-5 h-5" />
+                </div>
+                <div className="flex flex-col gap-0.5 min-w-0">
+                  <span className="text-xs font-bold text-gray-900 truncate">
+                    Interview / Observation
+                  </span>
+                  <span className="text-[11px] text-gray-600">
+                    {new Date(interviewSchedule.scheduledAt).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="w-12 h-12 rounded-full bg-[#fde8ec] text-border-secondary flex items-center justify-center">
+                  <FiCalendar className="w-6 h-6 stroke-2" />
+                </div>
 
-            <div className="flex flex-col gap-1 mt-1">
-              <span className="text-xs sm:text-sm font-bold text-black">
-                No upcoming events
-              </span>
-              <span className="text-xs text-gray-400 font-normal">
-                Your scheduled events will appear here
-              </span>
-            </div>
+                <div className="flex flex-col gap-1 mt-1">
+                  <span className="text-xs sm:text-sm font-bold text-black">
+                    No upcoming events
+                  </span>
+                  <span className="text-xs text-gray-400 font-normal">
+                    Your scheduled events will appear here
+                  </span>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>

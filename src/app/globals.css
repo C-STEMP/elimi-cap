@@ -290,3 +290,13 @@ input:-webkit-autofill:active,
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Primary theme checkboxes */
+input[type="checkbox"] {
+  accent-color: #a31d38 !important;
+  cursor: pointer;
+}
+
+input[type="checkbox"]:checked {
+  accent-color: #a31d38 !important;
+}

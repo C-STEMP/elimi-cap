@@ -60,9 +60,7 @@ export const PostJobModal: React.FC<PostJobModalProps> = ({
   const [deadline, setDeadline] = useState("");
   const [description, setDescription] = useState("");
   const [reqInput, setReqInput] = useState("");
-  const [requirements, setRequirements] = useState<string[]>([
-    "Minimum 5 years industry experience",
-  ]);
+  const [requirements, setRequirements] = useState<string[]>([]);
   const [step, setStep] = useState<"form" | "success">("form");
 
   if (!isOpen) return null;
@@ -126,7 +124,7 @@ export const PostJobModal: React.FC<PostJobModalProps> = ({
     setTitle("");
     setTrade("");
     setDescription("");
-    setRequirements(["Minimum 5 years industry experience"]);
+    setRequirements([]);
     setStep("form");
     onClose();
   };
@@ -273,6 +271,12 @@ export const PostJobModal: React.FC<PostJobModalProps> = ({
                       placeholder="Type Here"
                       value={reqInput}
                       onChange={(e) => setReqInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleAddRequirement();
+                        }
+                      }}
                       containerClassName="flex-1"
                     />
                     <button

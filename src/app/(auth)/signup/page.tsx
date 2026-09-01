@@ -1,5 +1,5 @@
-import { SignUpEmail } from "@/src/features/shared/authentication/pages/SignUpEmail";
+import { redirect } from "next/navigation";
 
 export default function SignUpPage() {
-  return <SignUpEmail />;
+  redirect("/register");
 }

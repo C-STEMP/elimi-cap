@@ -154,18 +154,18 @@ export const AssessorsListView: React.FC<AssessorsListViewProps> = ({
             <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search candidates..."
+              placeholder="Search assessors..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-[#F8F9FA] border border-gray-200/80 focus:border-gray-400 rounded-xl pl-10 pr-3.5 py-2.5 text-xs sm:text-sm text-neutral-primary outline-none transition-all"
             />
           </div>
 
-          <div className="flex items-center justify-between sm:justify-end gap-3 flex-wrap">
+          <div className="flex items-center justify-end gap-3 shrink-0">
             <Select
               size="sm"
               showPlaceholderOption={false}
-              containerClassName="w-32"
+              containerClassName="w-32 shrink-0"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               options={[
