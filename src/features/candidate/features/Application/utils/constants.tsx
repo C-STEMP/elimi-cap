@@ -88,60 +88,6 @@ export const getFormStatus = (formState: ApplicationFormState) => {
   );
 };
 
-export const MOCK_ASSESSORS: Assessor[] = [
-  {
-    id: "assessor-1",
-    name: "Ngozi Eze",
-    avatar: ASSETS_URL.userAvatar,
-    role: "Panel Member",
-    tags: ["Carpentry", "RPL Coordinator"],
-    isHighlighted: false,
-  },
-  {
-    id: "assessor-2",
-    name: "Ngozi Eze",
-    avatar: ASSETS_URL.userAvatar,
-    role: "Panel Member",
-    tags: ["Carpentry", "RPL Coordinator"],
-    isHighlighted: true,
-  },
-  {
-    id: "assessor-3",
-    name: "Ngozi Eze",
-    avatar: ASSETS_URL.userAvatar,
-    role: "Panel Member",
-    tags: ["Carpentry", "RPL Coordinator"],
-    isHighlighted: false,
-  },
-];
-
-export const MOCK_ASSESSORS_LEAD: Assessor[] = [
-  {
-    id: "assessor-1",
-    name: "Ngozi Eze",
-    avatar: ASSETS_URL.userAvatar,
-    role: "Lead Panelist",
-    tags: ["Carpentry", "RPL Coordinator"],
-    isHighlighted: false,
-  },
-  {
-    id: "assessor-2",
-    name: "Ngozi Eze",
-    avatar: ASSETS_URL.userAvatar,
-    role: "Lead Panelist",
-    tags: ["Carpentry", "RPL Coordinator"],
-    isHighlighted: false,
-  },
-  {
-    id: "assessor-3",
-    name: "Ngozi Eze",
-    avatar: ASSETS_URL.userAvatar,
-    role: "Lead Panelist",
-    tags: ["Carpentry", "RPL Coordinator"],
-    isHighlighted: false,
-  },
-];
-
 export const MOCK_FORMS_TO_SIGN: FormItem[] = [
   {
     id: "form-1",
@@ -159,6 +105,8 @@ export const MOCK_FORMS_TO_SIGN: FormItem[] = [
     description: "Lorem ipsum dolor",
   },
 ];
+
+import { ApplicationStage } from "@/src/features/shared/applications/api";
 
 export interface GetStagesConfigParams {
   formState: ApplicationFormState;
@@ -178,6 +126,9 @@ export interface GetStagesConfigParams {
   onProceedToCertification?: () => void;
   submittedDate?: string;
   isDraft?: boolean;
+  isPaymentUnlocked?: boolean;
+  isAppFormApproved?: boolean;
+  isAppFormUnderReview?: boolean;
   tradeName?: string;
   paymentAmountText?: string;
   paymentCompleted?: boolean;
@@ -185,6 +136,9 @@ export interface GetStagesConfigParams {
   interviewCompleted?: boolean;
   internalVerifierCompleted?: boolean;
   externalVerifierCompleted?: boolean;
+  stagesData?: ApplicationStage[];
+  currentStageKey?: string;
+  assessors?: Assessor[];
 }
 
 export const getStagesConfig = ({
@@ -201,6 +155,9 @@ export const getStagesConfig = ({
   onProceedToCertification,
   submittedDate,
   isDraft = false,
+  isPaymentUnlocked = false,
+  isAppFormApproved = false,
+  isAppFormUnderReview = false,
   tradeName,
   paymentAmountText,
   paymentCompleted = false,
@@ -208,19 +165,86 @@ export const getStagesConfig = ({
   interviewCompleted = false,
   internalVerifierCompleted = false,
   externalVerifierCompleted = false,
+  stagesData,
+  currentStageKey,
+  assessors,
 }: GetStagesConfigParams): StageConfig[] => {
   const formattedSubmittedDate = submittedDate
     ? new Date(submittedDate).toLocaleDateString()
     : new Date().toLocaleDateString();
 
+  // Find backend stage rows
+  const appFormStageRow = stagesData?.find(
+    (s) =>
+      s.stageKey === "application_form" ||
+      s.stageKey === "application_review" ||
+      s.stageKey === "application",
+  );
+  const paymentStageRow = stagesData?.find(
+    (s) => s.stageKey === "payment" || s.stageKey === "payment_quote",
+  );
+  const folderStageRow = stagesData?.find(
+    (s) =>
+      s.stageKey === "folder_arrangement" ||
+      s.stageKey === "evidence_vault" ||
+      s.stageKey === "evidence",
+  );
+  const interviewStageRow = stagesData?.find(
+    (s) => s.stageKey === "interview",
+  );
+  const ivStageRow = stagesData?.find(
+    (s) => s.stageKey === "internal_verification",
+  );
+  const evStageRow = stagesData?.find(
+    (s) => s.stageKey === "external_verification",
+  );
+  const certStageRow = stagesData?.find(
+    (s) => s.stageKey === "certification",
+  );
+
   // ─── Stage 1: Application Form ──────────────────────────────────────────────
+  const isAppFormExplicitlyApproved =
+    isAppFormApproved ||
+    appFormStageRow?.status === "successful" ||
+    (appFormStageRow?.status as string) === "approved";
+
+  const appFormStatusText = isDraft
+    ? "Draft"
+    : isAppFormExplicitlyApproved
+      ? "Approved"
+      : appFormStageRow?.status === "rejected"
+        ? "Rejected"
+        : "Under Review";
+
+  const appFormStatusBg = isDraft
+    ? "bg-[#FEF3C7]"
+    : isAppFormExplicitlyApproved
+      ? "bg-[#E8F5E9]"
+      : appFormStageRow?.status === "rejected"
+        ? "bg-[#FEE2E2]"
+        : "bg-[#FEF3C7]";
+
+  const appFormStatusTextColor = isDraft
+    ? "text-[#D97706]"
+    : isAppFormExplicitlyApproved
+      ? "text-[#2E7D32]"
+      : appFormStageRow?.status === "rejected"
+        ? "text-[#B91C1C]"
+        : "text-[#D97706]";
+
+  const appFormSubtext = isDraft
+    ? "Saved as draft"
+    : isAppFormExplicitlyApproved
+      ? `Approved • Submitted on: ${formattedSubmittedDate}`
+      : `Under review by centre • Submitted on: ${formattedSubmittedDate}`;
+
   const appFormStage: StageConfig = {
     id: "app-form",
     title: "Application Form",
-    status: isDraft ? "Draft" : "Submitted",
-    statusBg: isDraft ? "bg-[#FEF3C7]" : "bg-[#E8F5E9]",
-    statusText: isDraft ? "text-[#D97706]" : "text-[#2E7D32]",
-    subtext: isDraft ? "Saved as draft" : `Submitted on: ${formattedSubmittedDate}`,
+    status: appFormStatusText,
+    statusBg: appFormStatusBg,
+    statusText: appFormStatusTextColor,
+    subtext: appFormSubtext,
     actionText: isDraft ? "Edit" : "View",
     actionVariant: isDraft ? "amber" : "outline",
     actionSize: "sm",
@@ -228,32 +252,47 @@ export const getStagesConfig = ({
   };
 
   // ─── Stage 2: Payment ───────────────────────────────────────────────────────
-  const isPaymentActive = !isDraft;
-  const isPaymentPaid = paymentCompleted;
+  const isPaymentPaid =
+    paymentCompleted ||
+    paymentStageRow?.status === "successful" ||
+    (paymentStageRow?.status as string) === "completed";
+  const isPaymentActive = !isDraft && isPaymentUnlocked;
+
+  const paymentStatus = !isPaymentUnlocked
+    ? isDraft
+      ? "Not Started"
+      : "Awaiting Centre Approval"
+    : isPaymentPaid
+      ? "Successful"
+      : "Pending";
+
+  const paymentStatusBg = !isPaymentUnlocked
+    ? "bg-[#F3F4F6]"
+    : isPaymentPaid
+      ? "bg-[#1E7F4C1A]"
+      : "bg-[#FEF3C7]";
+
+  const paymentStatusTextColor = !isPaymentUnlocked
+    ? "text-[#6B7280]"
+    : isPaymentPaid
+      ? "text-[#1E7F4C]"
+      : "text-[#D97706]";
+
+  const paymentSubtext = !isPaymentUnlocked
+    ? isDraft
+      ? "---"
+      : "Centre must approve application form first"
+    : isPaymentPaid
+      ? `Paid on: ${paymentStageRow?.enteredAt ? new Date(paymentStageRow.enteredAt).toLocaleDateString() : formattedSubmittedDate}`
+      : "Application approved — Ready for payment";
 
   const paymentStage: StageConfig = {
     id: "payment",
     title: "Payment",
-    status: !isPaymentActive
-      ? "Not Started"
-      : isPaymentPaid
-        ? "Successful"
-        : "Pending",
-    statusBg: !isPaymentActive
-      ? "bg-[#E5E7EB]"
-      : isPaymentPaid
-        ? "bg-[#1E7F4C1A]"
-        : "bg-[#FEF3C7]",
-    statusText: !isPaymentActive
-      ? "text-[#6B7280]"
-      : isPaymentPaid
-        ? "text-[#1E7F4C]"
-        : "text-[#D97706]",
-    subtext: !isPaymentActive
-      ? "---"
-      : isPaymentPaid
-        ? `Paid on: ${formattedSubmittedDate}`
-        : "--",
+    status: paymentStatus,
+    statusBg: paymentStatusBg,
+    statusText: paymentStatusTextColor,
+    subtext: paymentSubtext,
     showPaymentDetails: isPaymentActive && !isPaymentPaid,
     paymentDetailsText: `RPL Assessment Fee — ${tradeName || "Trade"} (Level 3)`,
     paymentAmountText: paymentAmountText || "₦45,000",
@@ -279,90 +318,154 @@ export const getStagesConfig = ({
   };
 
   // ─── Stage 3: Folder Arrangement ───────────────────────────────────────────
-  const isFolderActive = isPaymentPaid;
-  const isFolderComplete = isFolderActive && evidenceUploaded;
+  const isFolderDone = Boolean(
+    folderStageRow?.status === "successful" ||
+    (folderStageRow?.status as string) === "completed" ||
+    (folderStageRow?.status as string) === "approved" ||
+    (currentStageKey &&
+      ["interview", "internal_verification", "external_verification", "certification"].includes(
+        currentStageKey,
+      )),
+  );
+
+  const isFolderActive = Boolean(
+    isFolderDone ||
+    folderStageRow?.status === "in_progress" ||
+    folderStageRow?.status === "under_review" ||
+    isPaymentPaid ||
+    currentStageKey === "folder_arrangement",
+  );
 
   const folderStage: StageConfig = {
     id: "folder-arrangement",
     title: "Folder Arrangement",
-    status: !isFolderActive
-      ? "Not Started"
-      : isFolderComplete
-        ? "Marked as complete"
-        : "Ongoing",
-    statusBg: !isFolderActive
-      ? "bg-[#E5E7EB]"
-      : isFolderComplete
-        ? "bg-[#1E7F4C1A]"
-        : "bg-[#FEF3C7]",
-    statusText: !isFolderActive
-      ? "text-[#6B7280]"
-      : isFolderComplete
-        ? "text-[#1E7F4C]"
-        : "text-[#D97706]",
-    subtext: !isFolderActive
-      ? "---"
-      : `Started on: ${formattedSubmittedDate}`,
-    actionText: isFolderActive ? "Evidence Vault" : undefined,
-    actionVariant: isFolderComplete ? "outline" : "amber",
+    status: isFolderDone
+      ? "Marked as complete"
+      : isFolderActive
+        ? "Ongoing"
+        : folderStageRow?.status === "rejected"
+          ? "Attention Required"
+          : "Not Started",
+    statusBg: isFolderDone
+      ? "bg-[#1E7F4C1A]"
+      : isFolderActive
+        ? "bg-[#FEF3C7]"
+        : folderStageRow?.status === "rejected"
+          ? "bg-[#B3261E1A]"
+          : "bg-[#E5E7EB]",
+    statusText: isFolderDone
+      ? "text-[#1E7F4C]"
+      : isFolderActive
+        ? "text-[#D97706]"
+        : folderStageRow?.status === "rejected"
+          ? "text-[#B3261E]"
+          : "text-[#6B7280]",
+    subtext: isFolderActive || isFolderDone
+      ? `Started on: ${folderStageRow?.enteredAt ? new Date(folderStageRow.enteredAt).toLocaleDateString() : formattedSubmittedDate}`
+      : "---",
+    actionText: isFolderActive || isFolderDone ? "Evidence Vault" : undefined,
+    actionVariant: isFolderDone ? "outline" : "amber",
     actionSize: "sm",
     onActionClick: onNavigateToVault,
   };
 
   // ─── Stage 4: Interview Stage ──────────────────────────────────────────────
-  const isInterviewActive = isFolderComplete;
-  const isInterviewDone = isInterviewActive && interviewCompleted;
+  const isInterviewDone = Boolean(
+    interviewStageRow?.status === "successful" ||
+    (interviewStageRow?.status as string) === "completed" ||
+    (interviewStageRow?.status as string) === "approved" ||
+    interviewCompleted ||
+    (currentStageKey &&
+      ["internal_verification", "external_verification", "certification"].includes(
+        currentStageKey,
+      )),
+  );
+
+  const isInterviewActive = Boolean(
+    isInterviewDone ||
+    interviewStageRow?.status === "in_progress" ||
+    interviewStageRow?.status === "scheduled" ||
+    interviewStageRow?.status === "under_review" ||
+    currentStageKey === "interview" ||
+    isFolderDone,
+  );
 
   const interviewStage: StageConfig = {
     id: "interview-stage",
     title: "Interview Stage",
-    status: !isInterviewActive
-      ? "Not Started"
-      : isInterviewDone
-        ? "Completed"
-        : "Scheduled",
-    statusBg: !isInterviewActive
-      ? "bg-[#E5E7EB]"
-      : isInterviewDone
-        ? "bg-[#1E7F4C1A]"
-        : "bg-[#FEF3C7]",
-    statusText: !isInterviewActive
-      ? "text-[#6B7280]"
-      : isInterviewDone
-        ? "text-[#1E7F4C]"
-        : "text-[#D97706]",
-    subtext: !isInterviewActive
-      ? "---"
-      : `Scheduled for: ${formattedSubmittedDate}`,
+    status: isInterviewDone
+      ? "Completed"
+      : isInterviewActive
+        ? interviewStageRow?.status === "in_progress" || currentStageKey === "interview"
+          ? "In Progress"
+          : "Scheduled"
+        : interviewStageRow?.status === "rejected"
+          ? "Unsuccessful"
+          : "Not Started",
+    statusBg: isInterviewDone
+      ? "bg-[#1E7F4C1A]"
+      : isInterviewActive
+        ? "bg-[#FEF3C7]"
+        : interviewStageRow?.status === "rejected"
+          ? "bg-[#B3261E1A]"
+          : "bg-[#E5E7EB]",
+    statusText: isInterviewDone
+      ? "text-[#1E7F4C]"
+      : isInterviewActive
+        ? "text-[#D97706]"
+        : interviewStageRow?.status === "rejected"
+          ? "text-[#B3261E]"
+          : "text-[#6B7280]",
+    subtext: isInterviewActive || isInterviewDone
+      ? interviewStageRow?.enteredAt
+        ? `Scheduled for: ${new Date(interviewStageRow.enteredAt).toLocaleDateString()}`
+        : "In progress • Interview panel active"
+      : "---",
     isCollapsible: isInterviewActive,
     isCollapsed: isInterviewCollapsed,
     onToggleCollapse: onToggleInterviewCollapse,
-    assessors: isInterviewActive ? MOCK_ASSESSORS : undefined,
+    assessors: isInterviewActive && assessors && assessors.length > 0 ? assessors : undefined,
   };
 
   // ─── Stage 5: Internal Verifier ────────────────────────────────────────────
-  const isIvActive = isInterviewDone;
-  const isIvDone = isIvActive && internalVerifierCompleted;
+  const isIvDone = Boolean(
+    ivStageRow?.status === "successful" ||
+    (ivStageRow?.status as string) === "completed" ||
+    (ivStageRow?.status as string) === "approved" ||
+    internalVerifierCompleted ||
+    (currentStageKey &&
+      ["external_verification", "certification"].includes(currentStageKey)),
+  );
+
+  const isIvActive = Boolean(
+    isIvDone ||
+    ivStageRow?.status === "in_progress" ||
+    ivStageRow?.status === "under_review" ||
+    currentStageKey === "internal_verification" ||
+    isInterviewDone,
+  );
 
   const internalVerifierStage: StageConfig = {
     id: "internal-verifier",
     title: "Internal Verifier",
-    status: !isIvActive
-      ? "Not Started"
-      : isIvDone
-        ? "Completed"
-        : "Under Review",
-    statusBg: !isIvActive
-      ? "bg-[#E5E7EB]"
-      : isIvDone
-        ? "bg-[#1E7F4C1A]"
-        : "bg-[#FEF3C7]",
-    statusText: !isIvActive
-      ? "text-[#6B7280]"
-      : isIvDone
-        ? "text-[#1E7F4C]"
-        : "text-[#D97706]",
-    subtext: !isIvActive ? "---" : `Started on: ${formattedSubmittedDate}`,
+    status: isIvDone
+      ? "Completed"
+      : isIvActive
+        ? "Under Review"
+        : "Not Started",
+    statusBg: isIvDone
+      ? "bg-[#1E7F4C1A]"
+      : isIvActive
+        ? "bg-[#FEF3C7]"
+        : "bg-[#E5E7EB]",
+    statusText: isIvDone
+      ? "text-[#1E7F4C]"
+      : isIvActive
+        ? "text-[#D97706]"
+        : "text-[#6B7280]",
+    subtext: isIvActive || isIvDone
+      ? `Started on: ${ivStageRow?.enteredAt ? new Date(ivStageRow.enteredAt).toLocaleDateString() : formattedSubmittedDate}`
+      : "---",
     isCollapsible: isIvActive,
     isCollapsed: true,
     onToggleCollapse: onToggleInterviewCollapse,
@@ -373,28 +476,43 @@ export const getStagesConfig = ({
   };
 
   // ─── Stage 6: External Verifier ────────────────────────────────────────────
-  const isEvActive = isIvDone;
-  const isEvDone = isEvActive && externalVerifierCompleted;
+  const isEvDone = Boolean(
+    evStageRow?.status === "successful" ||
+    (evStageRow?.status as string) === "completed" ||
+    (evStageRow?.status as string) === "approved" ||
+    externalVerifierCompleted ||
+    currentStageKey === "certification",
+  );
+
+  const isEvActive = Boolean(
+    isEvDone ||
+    evStageRow?.status === "in_progress" ||
+    evStageRow?.status === "under_review" ||
+    currentStageKey === "external_verification" ||
+    isIvDone,
+  );
 
   const externalVerifierStage: StageConfig = {
     id: "external-verifier",
     title: "External Verifier",
-    status: !isEvActive
-      ? "Not Started"
-      : isEvDone
-        ? "Completed"
-        : "Under Review",
-    statusBg: !isEvActive
-      ? "bg-[#E5E7EB]"
-      : isEvDone
-        ? "bg-[#1E7F4C1A]"
-        : "bg-[#FEF3C7]",
-    statusText: !isEvActive
-      ? "text-[#6B7280]"
-      : isEvDone
-        ? "text-[#1E7F4C]"
-        : "text-[#D97706]",
-    subtext: !isEvActive ? "---" : `Started on: ${formattedSubmittedDate}`,
+    status: isEvDone
+      ? "Completed"
+      : isEvActive
+        ? "Under Review"
+        : "Not Started",
+    statusBg: isEvDone
+      ? "bg-[#1E7F4C1A]"
+      : isEvActive
+        ? "bg-[#FEF3C7]"
+        : "bg-[#E5E7EB]",
+    statusText: isEvDone
+      ? "text-[#1E7F4C]"
+      : isEvActive
+        ? "text-[#D97706]"
+        : "text-[#6B7280]",
+    subtext: isEvActive || isEvDone
+      ? `Started on: ${evStageRow?.enteredAt ? new Date(evStageRow.enteredAt).toLocaleDateString() : formattedSubmittedDate}`
+      : "---",
     actionText: isEvActive && !isEvDone ? "Proceed to Certification" : undefined,
     actionVariant: "amber",
     actionSize: "sm",
@@ -402,15 +520,36 @@ export const getStagesConfig = ({
   };
 
   // ─── Stage 7: Certification ────────────────────────────────────────────────
-  const isCertActive = isEvDone;
+  const isCertDone = Boolean(
+    certStageRow?.status === "successful" ||
+    (certStageRow?.status as string) === "completed" ||
+    (certStageRow?.status as string) === "certified",
+  );
+
+  const isCertActive = Boolean(
+    isCertDone ||
+    certStageRow?.status === "in_progress" ||
+    currentStageKey === "certification" ||
+    isEvDone,
+  );
 
   const certificationStage: StageConfig = {
     id: "certification",
     title: "Certification",
-    status: !isCertActive ? "Not Started" : "Competent",
-    statusBg: !isCertActive ? "bg-[#E5E7EB]" : "bg-[#1E7F4C1A]",
-    statusText: !isCertActive ? "text-[#6B7280]" : "text-[#1E7F4C]",
-    subtext: !isCertActive ? "---" : `Completed on: ${formattedSubmittedDate}`,
+    status: isCertDone ? "Competent" : isCertActive ? "In Progress" : "Not Started",
+    statusBg: isCertDone
+      ? "bg-[#1E7F4C1A]"
+      : isCertActive
+        ? "bg-[#FEF3C7]"
+        : "bg-[#E5E7EB]",
+    statusText: isCertDone
+      ? "text-[#1E7F4C]"
+      : isCertActive
+        ? "text-[#D97706]"
+        : "text-[#6B7280]",
+    subtext: isCertActive || isCertDone
+      ? `Completed on: ${certStageRow?.enteredAt ? new Date(certStageRow.enteredAt).toLocaleDateString() : formattedSubmittedDate}`
+      : "---",
     isCollapsible: isCertActive,
     isCollapsed: !isCertActive,
     onToggleCollapse: onToggleInterviewCollapse,

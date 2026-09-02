@@ -185,39 +185,50 @@ export const AssessmentCentreApplicationDetailView: React.FC<
       s.stageKey === "application_review" ||
       s.stageKey === "application",
   );
-  const appFormStatus =
-    appFormStage?.status === "successful"
-      ? "Approved"
-      : appFormStage?.status === "rejected"
-        ? "Rejected"
-        : appDetail?.status === "draft"
-          ? "Draft"
-          : appDetail?.status === "in_progress" || isCompleted
-            ? "Approved"
-            : appFormStage?.status
-              ? appFormStage.status.replace(/_/g, " ")
-              : "Approved";
+
+  const isAppFormExplicitlyApproved = Boolean(
+    appFormStage?.status === "successful" ||
+    (appFormStage?.status as string) === "approved" ||
+    (appDetail?.currentStageKey &&
+      appDetail.currentStageKey !== "application_form" &&
+      appDetail.currentStageKey !== "application_review" &&
+      appDetail.currentStageKey !== "draft" &&
+      appDetail.currentStageKey !== "submitted"),
+  );
+
+  const appFormStatus = isAppFormExplicitlyApproved || isCompleted
+    ? "Approved"
+    : appFormStage?.status === "rejected" || appDetail?.status === "rejected"
+      ? "Rejected"
+      : appDetail?.status === "draft"
+        ? "Draft"
+        : "Under Review";
 
   // Stage 2: Payment
   const paymentStage = stages.find(
     (s) => s.stageKey === "payment" || s.stageKey === "payment_quote",
   );
-  const paymentStatus =
-    paymentStage?.status === "successful"
-      ? "Successful"
-      : paymentStage?.status === "awaiting_payment"
-        ? "Awaiting Payment"
-        : paymentStage?.status === "in_progress"
-          ? "In Progress"
-          : isCompleted
-            ? "Successful"
-            : "Pending";
+  const isPaymentPaid = Boolean(
+    paymentStage?.status === "successful" ||
+    (appDetail as any)?.paymentCompleted ||
+    isCompleted,
+  );
 
-  const paymentDate = paymentStage?.enteredAt
-    ? new Date(paymentStage.enteredAt).toLocaleDateString("en-US")
-    : paymentStatus === "Successful"
-      ? submittedDate
-      : "—";
+  const paymentStatus = isPaymentPaid
+    ? "Successful"
+    : paymentStage?.status === "awaiting_payment"
+      ? "Awaiting Payment"
+      : paymentStage?.status === "in_progress"
+        ? "In Progress"
+        : isAppFormExplicitlyApproved
+          ? "Awaiting Payment"
+          : "Pending";
+
+  const paymentDate = isPaymentPaid
+    ? paymentStage?.enteredAt
+      ? new Date(paymentStage.enteredAt).toLocaleDateString("en-US")
+      : submittedDate
+    : "—";
 
   // Stage 3: Folder Arrangement
   const evidenceStage = stages.find(
@@ -271,6 +282,7 @@ export const AssessmentCentreApplicationDetailView: React.FC<
   // Stage 5: Internal Verifier
   const ivStage = stages.find(
     (s) =>
+      s.stageKey === "internal_verification" ||
       s.stageKey === "internal_verifier" ||
       s.stageKey === "iv_review" ||
       s.stageKey === "iv",
@@ -306,6 +318,7 @@ export const AssessmentCentreApplicationDetailView: React.FC<
   // Stage 7: External Verifier
   const evStage = stages.find(
     (s) =>
+      s.stageKey === "external_verification" ||
       s.stageKey === "external_verifier" ||
       s.stageKey === "eqa" ||
       s.stageKey === "ev",
@@ -387,7 +400,11 @@ export const AssessmentCentreApplicationDetailView: React.FC<
                 })()}
               </div>
               <p className="text-gray-400 text-xs sm:text-sm font-normal">
-                Paid On: {paymentDate}
+                {isPaymentPaid
+                  ? `Paid On: ${paymentDate}`
+                  : isAppFormExplicitlyApproved
+                    ? "Awaiting candidate payment"
+                    : "Awaiting centre approval"}
               </p>
             </div>
 
@@ -414,27 +431,18 @@ export const AssessmentCentreApplicationDetailView: React.FC<
                   Assign Facilitator
                 </Button>
               )
-            ) : (
+            ) : paymentStage?.receipt?.url ? (
               <button
                 type="button"
-                disabled
                 onClick={() => {
-                  if (paymentStage?.receipt?.url) {
-                    window.open(paymentStage.receipt.url, "_blank");
-                  } else {
-                    toast({
-                      type: "info",
-                      title: "Payment Pending",
-                      description: "Payment has not been completed yet.",
-                    });
-                  }
+                  window.open(paymentStage.receipt?.url || "", "_blank");
                 }}
-                className="bg-white border border-gray-200 hover:bg-gray-50 text-[#fbab2a] disabled:opacity-50 disabled:cursor-not-allowed font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl flex items-center gap-2 cursor-pointer shadow-2xs shrink-0"
+                className="bg-white border border-gray-200 hover:bg-gray-50 text-[#fbab2a] font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl flex items-center gap-2 cursor-pointer shadow-2xs shrink-0"
               >
                 <FiDownload className="w-4 h-4 text-[#fbab2a]" />
                 <span>Receipt</span>
               </button>
-            )}
+            ) : null}
           </div>
 
           {/* Stage 3: Folder Arrangement */}

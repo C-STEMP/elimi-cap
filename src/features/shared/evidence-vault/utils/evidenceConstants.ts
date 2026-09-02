@@ -19,6 +19,19 @@ export interface ResourceRecord {
   size: string;
 }
 
+export const EVIDENCE_TYPE_LABELS: Record<string, string> = {
+  PS: "Product / Work Sample (PS)",
+  WT: "Witness Testimony (WT)",
+  DO: "Direct Observation (DO)",
+  PD: "Professional Discussion (PD)",
+  WP: "Workplace Performance (WP)",
+  QA: "Questioning / Assessment (QA)",
+  ASS: "Assignment (ASS)",
+  PE: "Portfolio Evidence (PE)",
+  TPR: "Third Party Report (TPR)",
+  SIM: "Simulation (SIM)",
+};
+
 export const RESOURCES_LIST: ResourceRecord[] = [
   {
     id: "res-1",
@@ -31,3 +44,4 @@ export const RESOURCES_LIST: ResourceRecord[] = [
     size: "5 mb",
   },
 ];
+

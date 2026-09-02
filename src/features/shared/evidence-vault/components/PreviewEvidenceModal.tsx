@@ -12,11 +12,13 @@ import {
 } from "react-icons/fi";
 import { Button } from "@/src/components/ui/button";
 import { EvidenceRecord } from "../utils/evidenceConstants";
+import { getGeneralEvidenceByIdApi } from "@/src/features/shared/applications/api";
 import { resolveAssetsApi } from "@/src/features/shared/storage/api/storage.api";
 import { getAccessToken } from "@/src/lib/auth-storage";
 
 interface PreviewEvidenceModalProps {
   item: EvidenceRecord | null;
+  applicationId?: string;
   onClose: () => void;
   onApprove?: (item: EvidenceRecord) => void;
   isApproving?: boolean;
@@ -24,6 +26,7 @@ interface PreviewEvidenceModalProps {
 
 export const PreviewEvidenceModal: React.FC<PreviewEvidenceModalProps> = ({
   item,
+  applicationId = "",
   onClose,
   onApprove,
   isApproving = false,
@@ -39,13 +42,41 @@ export const PreviewEvidenceModal: React.FC<PreviewEvidenceModalProps> = ({
     async function loadDocument() {
       if (!item) return;
 
+      setIsResolving(true);
+
       const initialUrl = item.url || item.dataUrl;
       let targetUrl = initialUrl || "";
+      let targetAssetId = item.assetId || "";
 
-      if (!targetUrl && item.assetId) {
-        setIsResolving(true);
+      // 1. If we don't have url or assetId on list item, fetch individual evidence item detail from CAP backend
+      if (
+        !targetUrl &&
+        !targetAssetId &&
+        applicationId &&
+        item.id &&
+        !item.id.startsWith("ev-local-")
+      ) {
         try {
-          const res: any = await resolveAssetsApi([item.assetId]);
+          const detail = await getGeneralEvidenceByIdApi(
+            applicationId,
+            item.id,
+          );
+          if (!isMounted) return;
+          if (detail?.assetId) {
+            targetAssetId = detail.assetId;
+          }
+          if ((detail as any)?.url) {
+            targetUrl = (detail as any).url;
+          }
+        } catch (detailErr) {
+          console.warn("Could not fetch evidence item detail:", detailErr);
+        }
+      }
+
+      // 2. Resolve assetId using Orchestrator Storage service
+      if (!targetUrl && targetAssetId) {
+        try {
+          const res: any = await resolveAssetsApi([targetAssetId]);
           if (!isMounted) return;
           const assets: { assetId: string; url: string }[] =
             Array.isArray(res)
@@ -54,7 +85,7 @@ export const PreviewEvidenceModal: React.FC<PreviewEvidenceModalProps> = ({
                 ? res.assets
                 : [];
           const match =
-            assets.find((a) => a.assetId === item.assetId) || assets[0];
+            assets.find((a) => a.assetId === targetAssetId) || assets[0];
           if (match?.url) {
             targetUrl = match.url;
           }
@@ -80,31 +111,7 @@ export const PreviewEvidenceModal: React.FC<PreviewEvidenceModalProps> = ({
         return;
       }
 
-      // Attempt to fetch file with authentication token to create a same-origin blob URL
-      try {
-        const token = getAccessToken();
-        const headers: Record<string, string> = {};
-        if (token) {
-          headers["Authorization"] = `Bearer ${token}`;
-        }
-        const response = await fetch(targetUrl, {
-          headers,
-          credentials: "omit",
-        });
-        if (response.ok) {
-          const blob = await response.blob();
-          if (isMounted) {
-            currentCreatedBlob = URL.createObjectURL(blob);
-            setBlobUrl(currentCreatedBlob);
-            setResolvedUrl(currentCreatedBlob);
-            setIsResolving(false);
-            return;
-          }
-        }
-      } catch (err) {
-        console.warn("Direct auth fetch failed (likely CORS), using resolved target URL directly:", err);
-      }
-
+      // Set targetUrl directly (presigned or resolved URL)
       if (isMounted) {
         setResolvedUrl(targetUrl);
         setIsResolving(false);
@@ -119,26 +126,30 @@ export const PreviewEvidenceModal: React.FC<PreviewEvidenceModalProps> = ({
         URL.revokeObjectURL(currentCreatedBlob);
       }
     };
-  }, [item]);
+  }, [item, applicationId]);
+
+  const [hasImageError, setHasImageError] = useState(false);
+
+  useEffect(() => {
+    setHasImageError(false);
+  }, [item?.id, item?.url, resolvedUrl]);
 
   if (!item) return null;
 
   const fileUrl = resolvedUrl || item.url || item.dataUrl;
-  const isImage =
-    fileUrl?.startsWith("data:image/") ||
-    fileUrl?.match(/\.(jpeg|jpg|png|webp|gif|svg)($|\?)/i) ||
-    item.name?.match(/\.(jpeg|jpg|png|webp|gif|svg)$/i) ||
-    item.mimeType?.startsWith("image/");
+
   const isPdf =
+    fileUrl?.toLowerCase().endsWith(".pdf") ||
+    fileUrl?.includes(".pdf?") ||
     fileUrl?.startsWith("data:application/pdf") ||
-    fileUrl?.match(/\.pdf($|\?)/i) ||
-    item.name?.match(/\.pdf$/i) ||
+    item.name?.toLowerCase().endsWith(".pdf") ||
     item.mimeType === "application/pdf";
 
   const isApproved =
     item.status === "Approved" ||
     (item.status as string)?.toLowerCase() === "approved" ||
-    (item.status as string)?.toLowerCase() === "accepted";
+    (item.status as string)?.toLowerCase() === "accepted" ||
+    (item.status as string)?.toLowerCase() === "successful";
 
   return (
     <AnimatePresence>
@@ -198,21 +209,25 @@ export const PreviewEvidenceModal: React.FC<PreviewEvidenceModalProps> = ({
                   Loading document preview...
                 </span>
               </div>
-            ) : fileUrl && isImage ? (
-              <img
-                src={fileUrl}
-                alt={item.name}
-                className="max-h-[55vh] w-auto max-w-full object-contain rounded-xl shadow-xs"
-              />
+            ) : fileUrl && !hasImageError && !isPdf ? (
+              <div className="relative w-full flex items-center justify-center rounded-2xl overflow-hidden bg-white p-2 border border-gray-200 shadow-xs">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={fileUrl}
+                  alt={item.name}
+                  onError={() => setHasImageError(true)}
+                  className="max-h-[52vh] max-w-full object-contain rounded-xl"
+                />
+              </div>
             ) : fileUrl && isPdf ? (
               <iframe
-                src={fileUrl}
-                className="w-full h-[55vh] rounded-xl border border-gray-200 bg-white"
+                src={`${fileUrl}#toolbar=1`}
+                className="w-full h-[55vh] rounded-2xl border border-gray-200 bg-white shadow-xs"
                 title={item.name}
               />
             ) : fileUrl ? (
-              <div className="flex flex-col items-center justify-center gap-3 py-10">
-                <div className="w-16 h-16 rounded-3xl bg-red-50 text-[#a31d38] flex items-center justify-center shadow-2xs">
+              <div className="w-full bg-white rounded-2xl p-8 border border-gray-200 shadow-xs flex flex-col items-center justify-center text-center gap-3">
+                <div className="w-16 h-16 rounded-2xl bg-red-50 text-[#a31d38] flex items-center justify-center shadow-2xs">
                   <FiFileText className="w-8 h-8" />
                 </div>
                 <h5 className="font-bold text-sm text-gray-800">{item.name}</h5>
@@ -230,7 +245,7 @@ export const PreviewEvidenceModal: React.FC<PreviewEvidenceModalProps> = ({
                 </a>
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center gap-3 py-10">
+              <div className="flex flex-col items-center justify-center gap-3 py-10 text-center">
                 <div className="w-16 h-16 rounded-3xl bg-red-50 text-[#a31d38] flex items-center justify-center shadow-2xs">
                   <FiFileText className="w-8 h-8" />
                 </div>

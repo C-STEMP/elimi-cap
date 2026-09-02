@@ -42,11 +42,15 @@ export const AssessmentCentreApplicationsView: React.FC<
       status:
         app.status === "certified"
           ? "Completed"
-          : app.status === "in_progress"
-            ? "Ongoing"
-            : app.status === "rejected" || app.status === "withdrawn"
-              ? "Archived"
-              : "Pending",
+          : (app as any).currentStageKey === "application_form" ||
+              (app as any).currentStageKey === "application_review" ||
+              app.status === "draft"
+            ? "Pending"
+            : app.status === "in_progress"
+              ? "Ongoing"
+              : app.status === "rejected" || app.status === "withdrawn"
+                ? "Archived"
+                : "Pending",
       submittedAt: rawApp.submittedAt
         ? new Date(rawApp.submittedAt).toLocaleDateString("en-GB")
         : new Date(app.createdAt).toLocaleDateString("en-GB"),
