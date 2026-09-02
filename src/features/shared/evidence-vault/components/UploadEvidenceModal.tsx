@@ -7,15 +7,29 @@ import { Input } from "@/src/components/ui/input";
 import { Select } from "@/src/components/ui/select";
 import { Button } from "@/src/components/ui/button";
 
+import { useGetEvidenceTypesByTrade } from "@/src/features/shared/reference/hooks";
+
 export interface SelectedFileType {
   name: string;
   size: string;
   completed: boolean;
 }
 
+const EVIDENCE_TYPE_LABELS: Record<string, string> = {
+  PS: "Product / Work Sample (PS)",
+  WT: "Witness Testimony (WT)",
+  DO: "Direct Observation (DO)",
+  PD: "Professional Discussion (PD)",
+  WP: "Workplace Performance (WP)",
+  QA: "Questioning / Assessment (QA)",
+  ASS: "Assignment (ASS)",
+  PE: "Portfolio Evidence (PE)",
+  TPR: "Third Party Report (TPR)",
+  SIM: "Simulation (SIM)",
+};
+
 const DEFAULT_EVIDENCE_TYPE_OPTIONS = [
   { label: "Product / Work Sample (PS)", value: "PS" },
-  { label: "Portfolio / Recognition of Prior Learning (RPL)", value: "RPL" },
   { label: "Witness Testimony (WT)", value: "WT" },
   { label: "Direct Observation (DO)", value: "DO" },
   { label: "Professional Discussion (PD)", value: "PD" },
@@ -33,6 +47,8 @@ interface UploadEvidenceModalProps {
     file: File | null,
   ) => Promise<void> | void;
   isUploading?: boolean;
+  tradeId?: string;
+  evidenceTypes?: string[];
 }
 
 export const UploadEvidenceModal: React.FC<UploadEvidenceModalProps> = ({
@@ -40,9 +56,33 @@ export const UploadEvidenceModal: React.FC<UploadEvidenceModalProps> = ({
   onClose,
   onUploadSubmit,
   isUploading = false,
+  tradeId = "",
+  evidenceTypes,
 }) => {
+  const { data: tradeEvidenceTypes } = useGetEvidenceTypesByTrade(tradeId);
+
+  const evidenceTypeOptions = React.useMemo(() => {
+    const types = evidenceTypes || tradeEvidenceTypes;
+    if (Array.isArray(types) && types.length > 0) {
+      const filtered = types.filter(
+        (t) => t && typeof t === "string" && t.trim().toUpperCase() !== "RPL",
+      );
+      if (filtered.length > 0) {
+        return filtered.map((type) => {
+          const code = type.trim().toUpperCase();
+          return {
+            label: EVIDENCE_TYPE_LABELS[code] || type,
+            value: code,
+          };
+        });
+      }
+    }
+    return DEFAULT_EVIDENCE_TYPE_OPTIONS;
+  }, [evidenceTypes, tradeEvidenceTypes]);
+
+  const defaultType = evidenceTypeOptions[0]?.value || "PS";
   const [docName, setDocName] = useState("");
-  const [evidenceType, setEvidenceType] = useState("PS");
+  const [evidenceType, setEvidenceType] = useState(defaultType);
   const [realFile, setRealFile] = useState<File | null>(null);
   const [selectedFile, setSelectedFile] = useState<SelectedFileType | null>(
     null,
@@ -51,6 +91,15 @@ export const UploadEvidenceModal: React.FC<UploadEvidenceModalProps> = ({
     file?: string;
     docName?: string;
   }>({});
+
+  React.useEffect(() => {
+    if (
+      evidenceTypeOptions.length > 0 &&
+      !evidenceTypeOptions.some((opt) => opt.value === evidenceType)
+    ) {
+      setEvidenceType(evidenceTypeOptions[0].value);
+    }
+  }, [evidenceTypeOptions, evidenceType]);
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -104,7 +153,7 @@ export const UploadEvidenceModal: React.FC<UploadEvidenceModalProps> = ({
 
     await onUploadSubmit(docName, evidenceType, realFile);
     setDocName("");
-    setEvidenceType("PS");
+    setEvidenceType(defaultType);
     setRealFile(null);
     setSelectedFile(null);
     setErrors({});
@@ -113,7 +162,7 @@ export const UploadEvidenceModal: React.FC<UploadEvidenceModalProps> = ({
   const handleCloseModal = () => {
     if (isUploading) return;
     setDocName("");
-    setEvidenceType("PS");
+    setEvidenceType(defaultType);
     setRealFile(null);
     setSelectedFile(null);
     setErrors({});
@@ -159,7 +208,7 @@ export const UploadEvidenceModal: React.FC<UploadEvidenceModalProps> = ({
               placeholder="Select"
               value={evidenceType}
               onChange={(e) => setEvidenceType(e.target.value)}
-              options={DEFAULT_EVIDENCE_TYPE_OPTIONS}
+              options={evidenceTypeOptions}
             />
 
             <input

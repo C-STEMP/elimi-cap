@@ -19,9 +19,6 @@ export const CandidateApplicationFormView: React.FC<
 > = ({ applicationId }) => {
   const router = useRouter();
   const { data: apiApp, isLoading } = useGetApplicationById(applicationId);
-  const reduxApp = useAppSelector((state) =>
-    state.application.applications.find((a) => a.id === applicationId),
-  );
   const savedPersonalInfo = useAppSelector(
     (state) => state.onboarding.personalInfo,
   );

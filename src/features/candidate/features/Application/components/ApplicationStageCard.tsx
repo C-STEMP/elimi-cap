@@ -166,10 +166,18 @@ export const ApplicationStageCard: React.FC<ApplicationStageCardProps> = ({
       {!isCollapsed && stage.assessors && stage.assessors.length > 0 && (
         <div className="mt-5 pt-3 border-t border-gray-200/40">
           <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-3">
-            YOUR ASSESSORS
+            {stage.assessors.length === 1
+              ? "YOUR ASSIGNED ASSESSOR / FACILITATOR"
+              : "YOUR ASSESSORS"}
           </span>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+          <div
+            className={`grid gap-3.5 ${
+              stage.assessors.length === 1
+                ? "grid-cols-1 sm:max-w-md"
+                : "grid-cols-1 md:grid-cols-3"
+            }`}
+          >
             {stage.assessors.map((assessor) => (
               <div
                 key={assessor.id}

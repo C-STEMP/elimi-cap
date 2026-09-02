@@ -142,9 +142,28 @@ export async function getUnitsByTradeApi(
 export async function getEvidenceTypesByTradeApi(
   tradeId: string,
 ): Promise<string[]> {
-  return capFetch<string[]>(`/trades/${tradeId}/evidence-types`, {
-    method: "GET",
-  });
+  if (!tradeId) return [];
+  try {
+    const res = await capFetch<string[] | { data: string[] }>(
+      `/trades/${tradeId}/evidence-types`,
+      {
+        method: "GET",
+      },
+    );
+    if (Array.isArray(res)) return res;
+    if (res && Array.isArray((res as any).data)) return (res as any).data;
+    return [];
+  } catch (error: any) {
+    if (
+      error?.status === 404 ||
+      error?.code === "http.not_found" ||
+      error?.message?.toLowerCase().includes("not found")
+    ) {
+      return [];
+    }
+    console.error("Failed to fetch evidence types for trade:", error);
+    return [];
+  }
 }
 
 /**

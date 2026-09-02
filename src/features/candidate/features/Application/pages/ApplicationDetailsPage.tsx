@@ -26,12 +26,7 @@ import { FacilitatorCard } from "@/features/candidate/features/Dashboard/compone
 import { userAvatar } from "@/assets";
 import { FiEdit2, FiLock, FiFileText } from "react-icons/fi";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
-import {
-  setCurrentApplication,
-  markPaymentComplete,
-  markInternalVerifierCompleted,
-  markExternalVerifierCompleted,
-} from "@/store/slices/applicationSlice";
+import { setCurrentApplication } from "@/store/slices/applicationSlice";
 import {
   setPersonalInfo,
   setRPLExperienceTrade,
@@ -94,41 +89,68 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
   const { data: paymentQuote } = useGetPaymentQuote(id || "");
   const { data: receiptData } = useGetApplicationReceipt(id || "");
 
-  // Redux cached data as secondary source
-  const reduxApp = useAppSelector((state) =>
-    state.application.applications.find((a) => a.id === id),
-  );
-  const savedStartApp = useAppSelector((s) => s.onboarding.startApplication);
-  const savedRplExp = useAppSelector((s) => s.onboarding.rplExperienceTrade);
-
   const rawTrade =
     (apiApp as any)?.trade?.name ||
-    (typeof (apiApp as any)?.trade === "string" ? (apiApp as any).trade : "") ||
-    reduxApp?.title ||
-    savedStartApp?.tradeName ||
-    savedRplExp?.qualificationTitle;
+    (typeof (apiApp as any)?.trade === "string" ? (apiApp as any).trade : "");
 
   const resolvedTrade =
     rawTrade && !isRawId(rawTrade)
       ? rawTrade
-      : savedStartApp?.tradeName ||
-        savedRplExp?.qualificationTitle ||
-        "RPL";
+      : "RPL";
 
   const rawSector =
     (apiApp as any)?.sector?.name ||
-    (typeof (apiApp as any)?.sector === "string" ? (apiApp as any).sector : "") ||
-    reduxApp?.subtitle ||
-    savedStartApp?.sectorName;
+    (typeof (apiApp as any)?.sector === "string" ? (apiApp as any).sector : "");
 
   const resolvedSector =
-    rawSector && !isRawId(rawSector) ? rawSector : savedStartApp?.sectorName || "";
+    rawSector && !isRawId(rawSector) ? rawSector : "";
 
-  const paymentStageFromApi = stagesData?.find((s) => s.stageKey === "payment");
+  const appFormStageFromApi = stagesData?.find(
+    (s) =>
+      s.stageKey === "application_form" ||
+      s.stageKey === "application_review" ||
+      s.stageKey === "application",
+  );
+  const paymentStageFromApi = stagesData?.find(
+    (s) => s.stageKey === "payment" || s.stageKey === "payment_quote",
+  );
+
   const isPaymentPaid =
     isPaymentConfirmed ||
     paymentStageFromApi?.status === "successful" ||
-    (reduxApp?.paymentCompleted ?? false);
+    Boolean((apiApp as any)?.paymentCompleted);
+
+  const isDraftApplication =
+    apiApp?.status === "draft" &&
+    !(apiApp as any)?.submittedAt;
+
+  const isAppFormApproved = Boolean(
+    appFormStageFromApi?.status === "successful" ||
+    (appFormStageFromApi?.status as string) === "approved" ||
+    (apiApp?.currentStageKey &&
+      apiApp.currentStageKey !== "application_form" &&
+      apiApp.currentStageKey !== "application_review" &&
+      apiApp.currentStageKey !== "draft"),
+  );
+
+  const isAppFormUnderReview = Boolean(
+    !isDraftApplication &&
+    !isAppFormApproved &&
+    (appFormStageFromApi?.status === "under_review" ||
+      appFormStageFromApi?.status === "in_progress" ||
+      apiApp?.currentStageKey === "application_form" ||
+      apiApp?.currentStageKey === "application_review" ||
+      (apiApp as any)?.submittedAt),
+  );
+
+  const isPaymentUnlocked = Boolean(
+    !isDraftApplication &&
+    (isPaymentPaid ||
+      paymentStageFromApi?.status === "awaiting_payment" ||
+      paymentStageFromApi?.status === "in_progress" ||
+      paymentStageFromApi?.status === "successful" ||
+      isAppFormApproved),
+  );
 
   const application = apiApp
     ? {
@@ -138,29 +160,16 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
           ? `${resolvedSector} • Status: ${apiApp.currentStageKey || apiApp.status}`
           : `Status: ${apiApp.currentStageKey || apiApp.status}`,
         status:
-          apiApp.status === "draft" &&
-          ((apiApp as any)?.submittedAt || reduxApp?.status === "submitted")
+          apiApp.status === "draft" && (apiApp as any)?.submittedAt
             ? "submitted"
             : (apiApp.status as string),
         createdAt: apiApp.createdAt,
         updatedAt: apiApp.updatedAt ?? apiApp.createdAt,
-        selfAssessmentCompleted: reduxApp?.selfAssessmentCompleted ?? false,
+        selfAssessmentCompleted: Boolean((apiApp as any)?.selfAssessmentCompleted),
         paymentCompleted: isPaymentPaid,
-        evidenceUploaded: reduxApp?.evidenceUploaded ?? false,
+        evidenceUploaded: Boolean((apiApp as any)?.evidenceUploaded),
       }
-    : reduxApp
-      ? {
-          id: reduxApp.id,
-          title: reduxApp.title && !isRawId(reduxApp.title) ? reduxApp.title : resolvedTrade,
-          subtitle: `Status: ${reduxApp.status}`,
-          status: reduxApp.status,
-          createdAt: reduxApp.createdAt,
-          updatedAt: reduxApp.updatedAt,
-          selfAssessmentCompleted: reduxApp.selfAssessmentCompleted,
-          paymentCompleted: isPaymentPaid,
-          evidenceUploaded: reduxApp.evidenceUploaded,
-        }
-      : null;
+    : null;
 
   const persistedFacilitator = React.useMemo(() => {
     if (typeof window === "undefined" || !id) return null;
@@ -178,7 +187,6 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
     (apiApp as any)?.facilitator ||
     (apiApp as any)?.assessor ||
     (apiApp as any)?.metadata?.facilitator ||
-    (reduxApp as any)?.facilitator ||
     persistedFacilitator;
 
   const facilitatorData = rawFacilitator
@@ -224,7 +232,6 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
     if (paymentParam === "success" || referenceParam) {
       setIsPaymentConfirmed(true);
       if (id) {
-        dispatch(markPaymentComplete(id));
         try {
           sessionStorage.removeItem("pending_payment_application_id");
           localStorage.removeItem("pending_payment_application_id");
@@ -279,6 +286,15 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
 
   const handleMakePayment = () => {
     if (!application) return;
+    if (!isPaymentUnlocked && !isPaymentPaid) {
+      toast({
+        type: "error",
+        title: "Centre Approval Required",
+        description:
+          "Your assessment centre must review and approve your application form before payment can be initiated.",
+      });
+      return;
+    }
     setActivePaymentModal("processing");
     setPaymentErrorInfo({});
     try {
@@ -297,7 +313,6 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
           setTimeout(() => {
             setIsPaymentConfirmed(true);
             setActivePaymentModal("success");
-            dispatch(markPaymentComplete(application.id));
             queryClient.invalidateQueries({
               queryKey: APPLICATION_QUERY_KEYS.stages(application.id),
             });
@@ -324,17 +339,27 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
           });
           setIsPaymentConfirmed(true);
           setActivePaymentModal(null);
-          dispatch(markPaymentComplete(application.id));
           queryClient.invalidateQueries({
             queryKey: APPLICATION_QUERY_KEYS.stages(application.id),
           });
         } else {
+          const isCentreReviewRequired =
+            err?.code === "payment.centre_review_required" ||
+            err?.message?.toLowerCase()?.includes("centre must approve") ||
+            err?.message?.toLowerCase()?.includes("centre review required");
+
           const isDeactivated =
             err?.message?.toLowerCase()?.includes("integration has been deactivated") ||
             err?.message?.toLowerCase()?.includes("deactivated") ||
             err?.code === "orchestrator.invalid_argument";
 
-          if (isDeactivated) {
+          if (isCentreReviewRequired) {
+            setPaymentErrorInfo({
+              title: "Centre Review Required",
+              description:
+                "Your assessment centre must review and approve your application form before payment can be initiated. Please await review from your centre.",
+            });
+          } else if (isDeactivated) {
             setPaymentErrorInfo({
               title: "Payment Gateway Deactivated",
               description:
@@ -357,7 +382,6 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
   const handleStartFolderArrangement = () => {
     if (!application) return;
     setActivePaymentModal(null);
-    dispatch(markPaymentComplete(application.id));
     router.push(`/dashboard/applications/${application.id}/evidence-vault`);
   };
 
@@ -372,7 +396,9 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
 
   const handleProceedToExternalVerifier = () => {
     if (!application) return;
-    dispatch(markInternalVerifierCompleted(application.id));
+    queryClient.invalidateQueries({
+      queryKey: APPLICATION_QUERY_KEYS.stages(application.id),
+    });
     toast({
       type: "success",
       title: "Internal Verification Complete",
@@ -382,7 +408,9 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
 
   const handleProceedToCertification = () => {
     if (!application) return;
-    dispatch(markExternalVerifierCompleted(application.id));
+    queryClient.invalidateQueries({
+      queryKey: APPLICATION_QUERY_KEYS.stages(application.id),
+    });
     toast({
       type: "success",
       title: "External Verification Complete",
@@ -390,11 +418,7 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
     });
   };
 
-  const isDraft =
-    application?.status === "draft" &&
-    reduxApp?.status !== "submitted" &&
-    !(apiApp as any)?.submittedAt &&
-    !(application as any)?.submittedAt;
+  const isDraft = isDraftApplication;
 
   const handleEditApplication = () => {
     if (!application) return;
@@ -470,6 +494,43 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
     router.push("/rpl/personal-info");
   };
 
+  const interviewAssessors = React.useMemo(() => {
+    if (
+      Array.isArray((apiApp as any)?.assessors) &&
+      (apiApp as any).assessors.length > 0
+    ) {
+      return (apiApp as any).assessors.map((a: any, i: number) => ({
+        id: a.id || a.assessorId || `assessor-${i}`,
+        name:
+          a.name ||
+          `${a.firstName || ""} ${a.lastName || ""}`.trim() ||
+          "Assessor",
+        avatar: a.avatar || a.photoUrl || userAvatar,
+        role: a.role || "Assessor / Panel Member",
+        tags: a.tags || a.qualifications || [resolvedTrade || "RPL"],
+        isHighlighted: false,
+      }));
+    }
+
+    if (facilitatorData) {
+      return [
+        {
+          id:
+            (rawFacilitator as any)?.id ||
+            (rawFacilitator as any)?.assessorId ||
+            "assigned-facilitator",
+          name: facilitatorData.name,
+          avatar: facilitatorData.avatar,
+          role: facilitatorData.role || "Assessor / Facilitator",
+          tags: facilitatorData.tags || [resolvedTrade || "RPL", "RPL Assessor"],
+          isHighlighted: true,
+        },
+      ];
+    }
+
+    return undefined;
+  }, [apiApp, facilitatorData, rawFacilitator, resolvedTrade]);
+
   const stages = application
     ? getStagesConfig({
         formState,
@@ -511,6 +572,9 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
         onProceedToCertification: handleProceedToCertification,
         submittedDate: (application as any).submittedAt || application.createdAt,
         isDraft,
+        isPaymentUnlocked,
+        isAppFormApproved,
+        isAppFormUnderReview,
         tradeName: resolvedTrade,
         paymentAmountText: paymentQuote?.amountMinorUnits
           ? `₦${(Number(paymentQuote.amountMinorUnits) / 100).toLocaleString()}`
@@ -519,8 +583,11 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
             : "₦45,000",
         paymentCompleted: application.paymentCompleted,
         evidenceUploaded: application.evidenceUploaded || application.selfAssessmentCompleted,
-        internalVerifierCompleted: (reduxApp as any)?.internalVerifierCompleted ?? false,
-        externalVerifierCompleted: (reduxApp as any)?.externalVerifierCompleted ?? false,
+        internalVerifierCompleted: stagesData?.find(s => s.stageKey === "internal_verification" || s.stageKey === "internal_verifier")?.status === "successful",
+        externalVerifierCompleted: stagesData?.find(s => s.stageKey === "external_verification" || s.stageKey === "external_verifier")?.status === "successful",
+        stagesData,
+        currentStageKey: apiApp?.currentStageKey,
+        assessors: interviewAssessors,
       })
     : [];
 

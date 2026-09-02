@@ -10,6 +10,7 @@ import { Loader } from "@/src/components/ui/loader";
 import {
   useGetApplicationById,
   useGetApplicationHistory,
+  useGetApplicationStages,
   useReviewApplication,
 } from "@/src/features/shared/applications/hooks";
 
@@ -24,6 +25,7 @@ export const AssessmentCentreCandidateFormView: React.FC<
   CandidateFormViewProps
 > = ({ id = "", candidateName = "Candidate", onBack, onAcceptApplication }) => {
   const { data: appDetail, isLoading: isLoadingDetail } = useGetApplicationById(id);
+  const { data: stages = [] } = useGetApplicationStages(id);
   const { data: appHistory = [] } = useGetApplicationHistory(id);
   const reviewMutation = useReviewApplication();
 
@@ -533,44 +535,86 @@ export const AssessmentCentreCandidateFormView: React.FC<
             <h3 className="text-base font-extrabold text-black tracking-tight">
               Application Decision
             </h3>
-            {appDetail?.status === "in_progress" || appDetail?.status === "certified" ? (
-              <div className="bg-[#E6F4EA] border border-[#1E7F4C]/20 rounded-2xl p-4 flex flex-col gap-1.5 text-center">
-                <span className="text-xs font-bold text-[#1E7F4C]">
-                  ✓ Application Approved
-                </span>
-                <span className="text-[11px] text-gray-600">
-                  This application has been verified and is active in the assessment pipeline.
-                </span>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-3">
-                <p className="text-xs text-gray-500 font-normal">
-                  Review the details submitted by the candidate and record your decision.
-                </p>
-                <div className="flex flex-col gap-2.5">
-                  <Button
-                    type="button"
-                    onClick={() => setIsConfirmAcceptOpen(true)}
-                    variant="amber"
-                    fullWidth
-                    disabled={reviewMutation.isPending}
-                    className="bg-[#1E7F4C] hover:bg-[#18663D] text-white font-bold text-sm py-3 rounded-xl shadow-md cursor-pointer"
-                  >
-                    Approve Application
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={() => setIsConfirmRejectOpen(true)}
-                    variant="outline"
-                    fullWidth
-                    disabled={reviewMutation.isPending}
-                    className="border-red-200 text-red-600 hover:bg-red-50 font-bold text-sm py-3 rounded-xl cursor-pointer"
-                  >
-                    Reject Application
-                  </Button>
+            {(() => {
+              const appFormStage = stages.find(
+                (s) =>
+                  s.stageKey === "application_form" ||
+                  s.stageKey === "application_review" ||
+                  s.stageKey === "application",
+              );
+
+              const isApproved = Boolean(
+                isAccepted ||
+                appFormStage?.status === "successful" ||
+                (appFormStage?.status as string) === "approved" ||
+                (appDetail?.currentStageKey &&
+                  appDetail.currentStageKey !== "application_form" &&
+                  appDetail.currentStageKey !== "application_review" &&
+                  appDetail.currentStageKey !== "draft" &&
+                  appDetail.currentStageKey !== "submitted"),
+              );
+
+              const isRejected = Boolean(
+                appFormStage?.status === "rejected" ||
+                appDetail?.status === "rejected",
+              );
+
+              if (isApproved) {
+                return (
+                  <div className="bg-[#E6F4EA] border border-[#1E7F4C]/20 rounded-2xl p-4 flex flex-col gap-1.5 text-center">
+                    <span className="text-xs font-bold text-[#1E7F4C]">
+                      ✓ Application Approved
+                    </span>
+                    <span className="text-[11px] text-gray-600">
+                      This application has been approved by the centre and is active in the assessment pipeline.
+                    </span>
+                  </div>
+                );
+              }
+
+              if (isRejected) {
+                return (
+                  <div className="bg-[#FCE8EB] border border-[#A31D38]/20 rounded-2xl p-4 flex flex-col gap-1.5 text-center">
+                    <span className="text-xs font-bold text-[#A31D38]">
+                      ✕ Application Rejected
+                    </span>
+                    <span className="text-[11px] text-gray-600">
+                      This application has been rejected by the assessment centre.
+                    </span>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="flex flex-col gap-3">
+                  <p className="text-xs text-gray-500 font-normal">
+                    Review the details submitted by the candidate and record your decision.
+                  </p>
+                  <div className="flex flex-col gap-2.5">
+                    <Button
+                      type="button"
+                      onClick={() => setIsConfirmAcceptOpen(true)}
+                      variant="amber"
+                      fullWidth
+                      disabled={reviewMutation.isPending}
+                      className="bg-[#1E7F4C] hover:bg-[#18663D] text-white font-bold text-sm py-3 rounded-xl shadow-md cursor-pointer"
+                    >
+                      Approve Application
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={() => setIsConfirmRejectOpen(true)}
+                      variant="outline"
+                      fullWidth
+                      disabled={reviewMutation.isPending}
+                      className="border-red-200 text-red-600 hover:bg-red-50 font-bold text-sm py-3 rounded-xl cursor-pointer"
+                    >
+                      Reject Application
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
 
           <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-xs flex flex-col gap-4">

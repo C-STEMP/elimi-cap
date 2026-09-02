@@ -44,9 +44,10 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
   const createGeneralEvidenceMutation = useCreateGeneralEvidence(applicationId);
   const deleteGeneralEvidenceMutation = useDeleteGeneralEvidence(applicationId);
 
-  const reduxApp = useAppSelector((state) =>
-    state.application.applications.find((a) => a.id === applicationId),
-  );
+  const resolvedTradeId =
+    apiApp?.tradeId ||
+    apiApp?.trade?.id ||
+    "";
 
   const rawTrade =
     (apiApp as any)?.trade?.name ||
@@ -66,7 +67,7 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
         createdAt: apiApp.createdAt,
         updatedAt: apiApp.updatedAt ?? apiApp.createdAt,
       }
-    : reduxApp || {
+    : {
         id: applicationId || "",
         title: "Application Evidence Vault",
         subtitle: "Evidence Vault",
@@ -77,13 +78,12 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
 
   const isSelfAssessmentCompleted = Boolean(
     selfAssessment?.submittedAt ||
-      remoteVault.some(
-        (item) =>
-          item.kind === "self_assessment" &&
-          (item.status === "completed" || item.status === "submitted"),
-      ) ||
-      reduxApp?.selfAssessmentCompleted ||
-      (apiApp as any)?.selfAssessmentCompleted,
+    remoteVault.some(
+      (item) =>
+        item.kind === "self_assessment" &&
+        (item.status === "completed" || item.status === "submitted"),
+    ) ||
+    (apiApp as any)?.selfAssessmentCompleted,
   );
 
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -92,7 +92,6 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
   const [previewItem, setPreviewItem] = useState<EvidenceRecord | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
-  // Read persisted evidence items from localStorage as robust fallback across refreshes
   const persistedEvidence: any[] = React.useMemo(() => {
     if (typeof window === "undefined" || !applicationId) return [];
     try {
@@ -105,10 +104,10 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
     }
   }, [applicationId, isUploadModalOpen, isDeleteModalOpen]);
 
-  // Combine remote general evidence with persisted items, filtering out self_assessment & third_party_report
   const combinedEvidenceList = React.useMemo(() => {
     const list: any[] = [];
-    const seen = new Set<string>();
+    const seenNames = new Set<string>();
+    const seenIds = new Set<string>();
 
     // 1. Process remote items
     (remoteVault || [])
@@ -118,18 +117,20 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
           (!item.kind && (item.documentName || item.name || item.assetId)),
       )
       .forEach((item: any) => {
-        const docName =
+        const docName = (
           item.documentName ||
           item.name ||
           item.title ||
           item.filename ||
-          item.originalName;
+          item.originalName ||
+          ""
+        ).trim();
         if (!docName) return;
-        const key = item.id || item.assetId || docName;
-        if (key && !seen.has(key)) {
-          seen.add(key);
-          list.push({ ...item, documentName: docName });
-        }
+        const norm = docName.toLowerCase();
+        seenNames.add(norm);
+        if (item.id) seenIds.add(item.id);
+        if (item.assetId) seenIds.add(item.assetId);
+        list.push({ ...item, documentName: docName });
       });
 
     // 2. Process persisted local items
@@ -139,38 +140,53 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
           item.kind === "general" || (!item.kind && item.documentName),
       )
       .forEach((item: any) => {
-        const docName =
+        const docName = (
           item.documentName ||
           item.name ||
           item.title ||
           item.filename ||
-          item.originalName;
+          item.originalName ||
+          ""
+        ).trim();
         if (!docName) return;
-        const key = item.id || item.assetId || docName;
-        if (key && !seen.has(key)) {
-          seen.add(key);
-          list.push({ ...item, documentName: docName });
+        const norm = docName.toLowerCase();
+        if (
+          seenNames.has(norm) ||
+          (item.id && seenIds.has(item.id)) ||
+          (item.assetId && seenIds.has(item.assetId))
+        ) {
+          return;
         }
+        seenNames.add(norm);
+        if (item.id) seenIds.add(item.id);
+        if (item.assetId) seenIds.add(item.assetId);
+        list.push({ ...item, documentName: docName });
       });
 
     return list;
   }, [remoteVault, persistedEvidence]);
 
   const evidences: EvidenceRecord[] = combinedEvidenceList.map((item, idx) => {
+    const statusStr = (item.status as string)?.toLowerCase() || "";
     const isApproved =
-      item.status === "Approved" ||
-      item.status === "approved" ||
-      item.status === "successful";
+      statusStr === "approved" ||
+      statusStr === "accepted" ||
+      statusStr === "successful";
     const isAttention =
-      item.status === "Attention Required" ||
-      item.status === "attention_required" ||
-      item.status === "rejected";
+      statusStr === "attention required" ||
+      statusStr === "attention_required" ||
+      statusStr === "rejected" ||
+      statusStr === "needs_attention";
+    const isSubmitted = statusStr === "submitted";
 
     const statusLabel = isApproved
       ? "Approved"
       : isAttention
         ? "Attention Required"
-        : "Pending";
+        : isSubmitted
+          ? "Submitted"
+          : item.status || "Pending";
+
     const statusBg = isApproved
       ? "bg-[#D1FAE5]"
       : isAttention
@@ -223,8 +239,7 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
     try {
       setIsUploading(true);
 
-      const finalDocName =
-        docName.trim() || file.name.replace(/\.[^/.]+$/, "");
+      const finalDocName = docName.trim() || file.name.replace(/\.[^/.]+$/, "");
       const normalizedType = evidenceType || "PS";
       const formattedSize = `${(file.size / (1024 * 1024)).toFixed(1)} MB`;
 
@@ -357,7 +372,7 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
 
   const declaredEvidence =
     (apiApp as any)?.evidenceCandidateCanProvide ||
-    (reduxApp as any)?.evidenceCandidateCanProvide;
+    (apiApp as any)?.data?.evidenceCandidateCanProvide;
   const declaredCount = declaredEvidence
     ? Object.entries(declaredEvidence).filter(
         ([k, v]) => v === true && k !== "other" && k !== "otherText",
@@ -400,51 +415,51 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
       />
 
       <div className="max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1 flex flex-col gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          <div className="lg:col-span-8 xl:col-span-9 flex flex-col gap-6">
+            <ResourcesSection
+              applicationId={application.id}
+              isSelfAssessmentCompleted={isSelfAssessmentCompleted}
+            />
+            <EvidenceSection
+              evidences={evidences}
+              onPreview={(item) => setPreviewItem(item)}
+              onDelete={(item) => {
+                setItemToDelete(item);
+                setIsDeleteModalOpen(true);
+              }}
+              onOpenUploadModal={() => setIsUploadModalOpen(true)}
+            />
+            <div className="flex flex-col items-end gap-2">
+              <Button
+                variant="secondary"
+                size="lg"
+                className="w-55! cursor-pointer place-self-end disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={handleSubmit}
+                disabled={!isAllUploaded}
+              >
+                Submit Evidence ({evidences.length}/{expectedCount})
+              </Button>
+              {!isAllUploaded && (
+                <p className="text-xs text-[#b3261e] font-medium text-right">
+                  Please upload all remaining evidence files ({evidences.length}
+                  /{expectedCount} uploaded) before submitting.
+                </p>
+              )}
+            </div>
+          </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        <div className="lg:col-span-8 xl:col-span-9 flex flex-col gap-6">
-          <ResourcesSection
-            applicationId={application.id}
-            isSelfAssessmentCompleted={isSelfAssessmentCompleted}
-          />
-          <EvidenceSection
-            evidences={evidences}
-            onPreview={(item) => setPreviewItem(item)}
-            onDelete={(item) => {
-              setItemToDelete(item);
-              setIsDeleteModalOpen(true);
-            }}
-            onOpenUploadModal={() => setIsUploadModalOpen(true)}
-          />
-          <div className="flex flex-col items-end gap-2">
-            <Button
-              variant="secondary"
-              size="lg"
-              className="w-55! cursor-pointer place-self-end disabled:opacity-50 disabled:cursor-not-allowed"
-              onClick={handleSubmit}
-              disabled={!isAllUploaded}
-            >
-              Submit Evidence ({evidences.length}/{expectedCount})
-            </Button>
-            {!isAllUploaded && (
-              <p className="text-xs text-[#b3261e] font-medium text-right">
-                Please upload all remaining evidence files ({evidences.length}/{expectedCount} uploaded) before submitting.
-              </p>
-            )}
+          <div className="lg:col-span-4 xl:col-span-3 flex flex-col gap-6">
+            <CalendarWidget />
+            <UpcomingCard
+              interview={{
+                title: "Panel Interview",
+                date: "22-07-2026",
+                time: "12:00PM",
+              }}
+            />
           </div>
         </div>
-
-        <div className="lg:col-span-4 xl:col-span-3 flex flex-col gap-6">
-          <CalendarWidget />
-          <UpcomingCard
-            interview={{
-              title: "Panel Interview",
-              date: "22-07-2026",
-              time: "12:00PM",
-            }}
-          />
-        </div>
-      </div>
       </div>
 
       <UploadEvidenceModal
@@ -452,6 +467,7 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
         onClose={() => setIsUploadModalOpen(false)}
         onUploadSubmit={handleUploadSubmit}
         isUploading={isUploading}
+        tradeId={resolvedTradeId}
       />
 
       <DeleteEvidenceModal
@@ -462,6 +478,7 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
 
       <PreviewEvidenceModal
         item={previewItem}
+        applicationId={applicationId}
         onClose={() => setPreviewItem(null)}
       />
     </motion.div>
