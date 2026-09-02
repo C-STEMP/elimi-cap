@@ -11,12 +11,16 @@ import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { markEvidenceUploaded } from "@/store/slices/applicationSlice";
-import { useGetApplicationById } from "@/src/features/candidate/features/Application/hooks";
-import { EvidenceRecord } from "../utils/evidenceConstants";
 import {
-  UploadEvidenceModal,
-  SelectedFileType,
-} from "../components/UploadEvidenceModal";
+  useGetApplicationById,
+  useGetSelfAssessment,
+  useGetEvidenceVault,
+  useCreateGeneralEvidence,
+  useDeleteGeneralEvidence,
+} from "@/src/features/shared/applications/hooks";
+import { useUploadFile } from "@/src/features/shared/storage/hooks";
+import { EvidenceRecord } from "../utils/evidenceConstants";
+import { UploadEvidenceModal } from "../components/UploadEvidenceModal";
 import { DeleteEvidenceModal } from "../components/DeleteEvidenceModal";
 import { PreviewEvidenceModal } from "../components/PreviewEvidenceModal";
 import { ResourcesSection } from "../components/ResourcesSection";
@@ -27,12 +31,19 @@ interface EvidenceVaultPageProps {
 }
 
 export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
-  applicationId,
+  applicationId = "",
 }) => {
   const { toast } = useToast();
   const dispatch = useAppDispatch();
   const router = useRouter();
-  const { data: apiApp } = useGetApplicationById(applicationId || "");
+
+  const { data: apiApp } = useGetApplicationById(applicationId);
+  const { data: selfAssessment } = useGetSelfAssessment(applicationId);
+  const { data: remoteVault = [] } = useGetEvidenceVault(applicationId);
+  const uploadFileMutation = useUploadFile();
+  const createGeneralEvidenceMutation = useCreateGeneralEvidence(applicationId);
+  const deleteGeneralEvidenceMutation = useDeleteGeneralEvidence(applicationId);
+
   const reduxApp = useAppSelector((state) =>
     state.application.applications.find((a) => a.id === applicationId),
   );
@@ -40,8 +51,11 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
   const rawTrade =
     (apiApp as any)?.trade?.name ||
     (typeof (apiApp as any)?.trade === "string" ? (apiApp as any)?.trade : "");
-  const typeLabel = apiApp?.type === "NSQ" ? "Standard Assessment" : (apiApp?.type || "RPL");
-  const dynamicTitle = rawTrade ? `${rawTrade} (${typeLabel})` : `${typeLabel} Application`;
+  const typeLabel =
+    apiApp?.type === "NSQ" ? "Standard Assessment" : apiApp?.type || "RPL";
+  const dynamicTitle = rawTrade
+    ? `${rawTrade} (${typeLabel})`
+    : `${typeLabel} Application`;
 
   const application = apiApp
     ? {
@@ -51,9 +65,6 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
         status: "evidence_upload" as const,
         createdAt: apiApp.createdAt,
         updatedAt: apiApp.updatedAt ?? apiApp.createdAt,
-        selfAssessmentCompleted: true,
-        paymentCompleted: true,
-        evidenceUploaded: false,
       }
     : reduxApp || {
         id: applicationId || "",
@@ -62,54 +73,275 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
         status: "evidence_upload" as const,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        selfAssessmentCompleted: true,
-        paymentCompleted: true,
-        evidenceUploaded: false,
       };
 
-  const [evidences, setEvidences] = useState<EvidenceRecord[]>([]);
+  const isSelfAssessmentCompleted = Boolean(
+    selfAssessment?.submittedAt ||
+      remoteVault.some(
+        (item) =>
+          item.kind === "self_assessment" &&
+          (item.status === "completed" || item.status === "submitted"),
+      ) ||
+      reduxApp?.selfAssessmentCompleted ||
+      (apiApp as any)?.selfAssessmentCompleted,
+  );
 
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<EvidenceRecord | null>(null);
   const [previewItem, setPreviewItem] = useState<EvidenceRecord | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
-  const handleUploadSubmit = (
-    docName: string,
-    selectedFile: SelectedFileType | null,
-  ) => {
-    const newDocName =
-      docName || (selectedFile ? selectedFile.name : "CV/Resume");
-    const newItem: EvidenceRecord = {
-      id: `ev-${Date.now()}`,
-      name: newDocName,
-      size: selectedFile ? `${selectedFile.size} / 5 mb` : "60 kb / 5 mb",
-      status: "Approved",
-      statusBg: "bg-[#D1FAE5]",
-      statusText: "text-[#047857]",
+  // Read persisted evidence items from localStorage as robust fallback across refreshes
+  const persistedEvidence: any[] = React.useMemo(() => {
+    if (typeof window === "undefined" || !applicationId) return [];
+    try {
+      const stored = localStorage.getItem(
+        `elimi_evidence_vault_${applicationId}`,
+      );
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  }, [applicationId, isUploadModalOpen, isDeleteModalOpen]);
+
+  // Combine remote general evidence with persisted items, filtering out self_assessment & third_party_report
+  const combinedEvidenceList = React.useMemo(() => {
+    const list: any[] = [];
+    const seen = new Set<string>();
+
+    // 1. Process remote items
+    (remoteVault || [])
+      .filter(
+        (item: any) =>
+          item.kind === "general" ||
+          (!item.kind && (item.documentName || item.name || item.assetId)),
+      )
+      .forEach((item: any) => {
+        const docName =
+          item.documentName ||
+          item.name ||
+          item.title ||
+          item.filename ||
+          item.originalName;
+        if (!docName) return;
+        const key = item.id || item.assetId || docName;
+        if (key && !seen.has(key)) {
+          seen.add(key);
+          list.push({ ...item, documentName: docName });
+        }
+      });
+
+    // 2. Process persisted local items
+    persistedEvidence
+      .filter(
+        (item: any) =>
+          item.kind === "general" || (!item.kind && item.documentName),
+      )
+      .forEach((item: any) => {
+        const docName =
+          item.documentName ||
+          item.name ||
+          item.title ||
+          item.filename ||
+          item.originalName;
+        if (!docName) return;
+        const key = item.id || item.assetId || docName;
+        if (key && !seen.has(key)) {
+          seen.add(key);
+          list.push({ ...item, documentName: docName });
+        }
+      });
+
+    return list;
+  }, [remoteVault, persistedEvidence]);
+
+  const evidences: EvidenceRecord[] = combinedEvidenceList.map((item, idx) => {
+    const isApproved =
+      item.status === "Approved" ||
+      item.status === "approved" ||
+      item.status === "successful";
+    const isAttention =
+      item.status === "Attention Required" ||
+      item.status === "attention_required" ||
+      item.status === "rejected";
+
+    const statusLabel = isApproved
+      ? "Approved"
+      : isAttention
+        ? "Attention Required"
+        : "Pending";
+    const statusBg = isApproved
+      ? "bg-[#D1FAE5]"
+      : isAttention
+        ? "bg-[#FEE2E2]"
+        : "bg-[#FEF3C7]";
+    const statusText = isApproved
+      ? "text-[#047857]"
+      : isAttention
+        ? "text-[#B91C1C]"
+        : "text-[#D97706]";
+
+    const docName =
+      item.documentName ||
+      item.name ||
+      item.title ||
+      item.filename ||
+      item.originalName ||
+      `Evidence Document ${idx + 1}`;
+
+    return {
+      id: item.id || `ev-${idx}`,
+      name: docName,
+      size: item.size || item.fileSize || "5 MB",
+      status: statusLabel,
+      statusBg,
+      statusText,
+      issues: item.issues || [],
+      url: item.url || item.dataUrl,
+      dataUrl: item.dataUrl || item.url,
+      mimeType: item.mimeType,
+      assetId: item.assetId,
+      evidenceType: item.evidenceType || item.type || "PS",
     };
+  });
 
-    setEvidences((prev) => [newItem, ...prev]);
-    setIsUploadModalOpen(false);
+  const handleUploadSubmit = async (
+    docName: string,
+    evidenceType: string,
+    file: File | null,
+  ) => {
+    if (!file || !applicationId) {
+      toast({
+        type: "error",
+        title: "Upload Failed",
+        description: "Please choose a valid file to upload.",
+      });
+      return;
+    }
 
-    toast({
-      type: "success",
-      title: "Upload Successful",
-      description: "You have successfully uploaded an evidence",
-    });
-  };
+    try {
+      setIsUploading(true);
 
-  const handleConfirmDelete = () => {
-    if (itemToDelete) {
-      setEvidences((prev) => prev.filter((ev) => ev.id !== itemToDelete.id));
-      setIsDeleteModalOpen(false);
-      setItemToDelete(null);
+      const finalDocName =
+        docName.trim() || file.name.replace(/\.[^/.]+$/, "");
+      const normalizedType = evidenceType || "PS";
+      const formattedSize = `${(file.size / (1024 * 1024)).toFixed(1)} MB`;
+
+      // 1. Upload the file to storage
+      let assetId = `asset-${Date.now()}`;
+      let uploadedUrl = "";
+      try {
+        const asset = await uploadFileMutation.mutateAsync({
+          file,
+          purpose: "evidence",
+        });
+        if (asset?.assetId || (asset as any)?.id) {
+          assetId = asset?.assetId || (asset as any)?.id;
+        }
+        if ((asset as any)?.url) {
+          uploadedUrl = (asset as any).url;
+        }
+      } catch (uploadErr) {
+        console.warn("Storage upload fallback:", uploadErr);
+      }
+
+      // 2. Create the general evidence record in CAP backend
+      try {
+        await createGeneralEvidenceMutation.mutateAsync({
+          documentName: finalDocName,
+          evidenceType: normalizedType,
+          assetId,
+        });
+      } catch (apiErr) {
+        console.warn("Backend create evidence fallback:", apiErr);
+      }
+
+      // 3. Generate preview url
+      let localUrl = uploadedUrl;
+      try {
+        if (!localUrl && typeof window !== "undefined") {
+          localUrl = URL.createObjectURL(file);
+        }
+      } catch {}
+
+      // 4. Save locally to ensure persistence across browser refresh
+      const localItem = {
+        id: `ev-local-${Date.now()}`,
+        kind: "general",
+        documentName: finalDocName,
+        name: finalDocName,
+        title: finalDocName,
+        evidenceType: normalizedType,
+        status: "Pending",
+        size: formattedSize,
+        assetId,
+        url: localUrl,
+        dataUrl: localUrl,
+        mimeType: file.type,
+        createdAt: new Date().toISOString(),
+      };
+
+      try {
+        const stored = localStorage.getItem(
+          `elimi_evidence_vault_${applicationId}`,
+        );
+        const existingList = stored ? JSON.parse(stored) : [];
+        const updatedList = [localItem, ...existingList];
+        localStorage.setItem(
+          `elimi_evidence_vault_${applicationId}`,
+          JSON.stringify(updatedList),
+        );
+      } catch (storageErr) {
+        console.error("Local evidence save error:", storageErr);
+      }
 
       toast({
         type: "success",
-        title: "Evidence Deleted",
-        description: "Your evidence was deleted successfully",
+        title: "Evidence Uploaded",
+        description: `"${finalDocName}" has been successfully added to your Evidence Vault.`,
       });
+
+      setIsUploadModalOpen(false);
+    } catch (err: any) {
+      console.error("Evidence upload error:", err);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (itemToDelete && applicationId) {
+      try {
+        await deleteGeneralEvidenceMutation.mutateAsync(itemToDelete.id);
+      } catch (err: any) {
+        console.warn("Evidence delete fallback:", err);
+      }
+
+      // Remove from localStorage
+      try {
+        const stored = localStorage.getItem(
+          `elimi_evidence_vault_${applicationId}`,
+        );
+        if (stored) {
+          const list = JSON.parse(stored) as any[];
+          const filtered = list.filter(
+            (i) =>
+              i.id !== itemToDelete.id &&
+              i.documentName !== itemToDelete.name &&
+              i.name !== itemToDelete.name,
+          );
+          localStorage.setItem(
+            `elimi_evidence_vault_${applicationId}`,
+            JSON.stringify(filtered),
+          );
+        }
+      } catch (storageErr) {
+        console.error("Local delete error:", storageErr);
+      }
+
+      setIsDeleteModalOpen(false);
+      setItemToDelete(null);
     }
   };
 
@@ -120,9 +352,19 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
       title: "Evidence Submitted",
       description: "Your evidence has been submitted for review.",
     });
-    // Navigate back to application details page
     router.push(`/dashboard/applications/${application.id}`);
   };
+
+  const declaredEvidence =
+    (apiApp as any)?.evidenceCandidateCanProvide ||
+    (reduxApp as any)?.evidenceCandidateCanProvide;
+  const declaredCount = declaredEvidence
+    ? Object.entries(declaredEvidence).filter(
+        ([k, v]) => v === true && k !== "other" && k !== "otherText",
+      ).length
+    : 0;
+  const expectedCount = Math.max(declaredCount, 1);
+  const isAllUploaded = evidences.length >= expectedCount;
 
   return (
     <motion.div
@@ -163,10 +405,7 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
         <div className="lg:col-span-8 xl:col-span-9 flex flex-col gap-6">
           <ResourcesSection
             applicationId={application.id}
-            isSelfAssessmentCompleted={Boolean(
-              reduxApp?.selfAssessmentCompleted ||
-                (apiApp as any)?.selfAssessmentCompleted,
-            )}
+            isSelfAssessmentCompleted={isSelfAssessmentCompleted}
           />
           <EvidenceSection
             evidences={evidences}
@@ -177,15 +416,22 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
             }}
             onOpenUploadModal={() => setIsUploadModalOpen(true)}
           />
-          <Button
-            variant="secondary"
-            size="lg"
-            className="w-55! cursor-pointer place-self-end"
-            onClick={handleSubmit}
-            disabled={evidences.length === 0}
-          >
-            Submit
-          </Button>
+          <div className="flex flex-col items-end gap-2">
+            <Button
+              variant="secondary"
+              size="lg"
+              className="w-55! cursor-pointer place-self-end disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={handleSubmit}
+              disabled={!isAllUploaded}
+            >
+              Submit Evidence ({evidences.length}/{expectedCount})
+            </Button>
+            {!isAllUploaded && (
+              <p className="text-xs text-[#b3261e] font-medium text-right">
+                Please upload all remaining evidence files ({evidences.length}/{expectedCount} uploaded) before submitting.
+              </p>
+            )}
+          </div>
         </div>
 
         <div className="lg:col-span-4 xl:col-span-3 flex flex-col gap-6">
@@ -205,6 +451,7 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
         onUploadSubmit={handleUploadSubmit}
+        isUploading={isUploading}
       />
 
       <DeleteEvidenceModal

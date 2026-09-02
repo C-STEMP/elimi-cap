@@ -41,6 +41,96 @@ export interface NotificationListParams {
   search?: string;
 }
 
+function deriveTitle(raw: any, message: string): string {
+  if (raw.title) return raw.title;
+  if (raw.payload?.title) return raw.payload.title;
+  if (raw.payload?.subject) return raw.payload.subject;
+  if (raw.type) {
+    return raw.type
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (c: string) => c.toUpperCase());
+  }
+  const lower = message.toLowerCase();
+  if (lower.includes("payment")) return "Payment Received";
+  if (lower.includes("submitted")) return "Application Submitted";
+  if (lower.includes("facilitator")) return "Facilitator Update";
+  if (lower.includes("awarding body")) return "Awarding Body Update";
+  if (lower.includes("approved")) return "Application Approved";
+  if (lower.includes("rejected")) return "Application Update";
+  if (lower.includes("review")) return "Under Review";
+  return "Notification";
+}
+
+function deriveCategory(
+  raw: any,
+  message: string,
+): "application" | "assessment" | "system" | "security" {
+  if (
+    raw.category &&
+    ["application", "assessment", "system", "security"].includes(raw.category)
+  ) {
+    return raw.category;
+  }
+  const lower = message.toLowerCase();
+  if (
+    lower.includes("payment") ||
+    lower.includes("assessment") ||
+    lower.includes("interview")
+  ) {
+    return "assessment";
+  }
+  if (
+    lower.includes("security") ||
+    lower.includes("password") ||
+    lower.includes("login")
+  ) {
+    return "security";
+  }
+  return "application";
+}
+
+export function mapRawNotification(raw: any): NotificationItem {
+  const message =
+    raw.payload?.message ||
+    raw.payload?.description ||
+    raw.description ||
+    raw.message ||
+    raw.body ||
+    "";
+
+  const title = deriveTitle(raw, message);
+  const description = message || title;
+  const category = deriveCategory(raw, message);
+  const isRead = Boolean(raw.readAt || raw.read || raw.isRead);
+  const dateStr =
+    raw.sentAt || raw.createdAt || raw.occurredAt || new Date().toISOString();
+  const dateObj = new Date(dateStr);
+
+  return {
+    id: raw.id || String(Math.random()),
+    title,
+    description,
+    category,
+    type: raw.type || raw.channel,
+    read: isRead,
+    isUnread: !isRead,
+    createdAt: dateStr,
+    timestamp: isNaN(dateObj.getTime())
+      ? ""
+      : dateObj.toLocaleDateString("en-US"),
+    time: isNaN(dateObj.getTime())
+      ? ""
+      : dateObj.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+    link: raw.payload?.applicationId
+      ? `/dashboard/applications/${raw.payload.applicationId}`
+      : raw.link || raw.actionUrl || undefined,
+    metadata: raw.payload || raw.metadata,
+  };
+}
+
 export async function getNotificationsApi(
   params?: NotificationListParams,
 ): Promise<NotificationItem[]> {
@@ -49,13 +139,18 @@ export async function getNotificationsApi(
     ...params,
   };
   try {
-    const res = await orchestratorClient.get<{ data: NotificationItem[] }>(
+    const res = await orchestratorClient.get<{ data: any[] }>(
       "/notifications",
       {
         params: queryParams,
       },
     );
-    return res.data?.data || [];
+    const list = Array.isArray(res.data?.data)
+      ? res.data.data
+      : Array.isArray(res.data)
+        ? res.data
+        : [];
+    return list.map(mapRawNotification);
   } catch {
     // If orchestrator notification endpoint is unavailable, query candidate events
     try {
@@ -70,7 +165,7 @@ export async function getNotificationsApi(
         category: "application" as const,
         read: false,
         isUnread: true,
-        timestamp: new Date(ev.occurredAt).toLocaleDateString("en-GB"),
+        timestamp: new Date(ev.occurredAt).toLocaleDateString("en-US"),
         time: new Date(ev.occurredAt).toLocaleTimeString([], {
           hour: "2-digit",
           minute: "2-digit",

@@ -21,10 +21,28 @@ export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
   onOpenUploadModal,
 }) => {
   return (
-    <div className="border border-[#F7F4EF] p-4 rounded-2xl bg-white">
-      <h2 className="text-xl sm:text-2xl font-extrabold text-neutral-primary tracking-tight mb-4">
-        Evidence
-      </h2>
+    <div className="border border-[#F7F4EF] p-4 sm:p-6 rounded-2xl bg-white flex flex-col gap-4">
+      <div className="flex flex-col gap-1">
+        <h2 className="text-xl sm:text-2xl font-extrabold text-neutral-primary tracking-tight">
+          Evidence Items ({evidences.length})
+        </h2>
+        <p className="text-xs sm:text-sm text-gray-500">
+          Upload all relevant documents, certificates, and work samples.
+        </p>
+      </div>
+
+      <div className="bg-[#FEF3C7]/40 border border-[#F59E0B]/30 rounded-2xl p-4 flex items-start gap-3">
+        <div className="w-5 h-5 rounded-full bg-[#F59E0B]/20 text-[#D97706] flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
+          i
+        </div>
+        <div className="flex flex-col gap-0.5 text-xs sm:text-sm text-[#92400E]">
+          <span className="font-bold">Important: Upload all required evidence before submitting</span>
+          <span className="text-xs text-[#B45309]">
+            Please ensure you have uploaded all your evidence files before clicking <strong>Submit</strong>. Once submitted, the Assessment Centre will review and approve all your documents at once.
+          </span>
+        </div>
+      </div>
+
       {evidences.length > 0 ? (
         <div className="flex flex-col gap-4">
           {evidences.map((item) => (
@@ -48,8 +66,12 @@ export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
                       <h4 className="text-[#191918] font-medium text-lg sm:text-2xl leading-snug">
                         {item.name}
                       </h4>
-                      <div className="bg-[#1E7F4C]/10 text-[#1E7F4C] text-xs font-medium lg:text-sm px-4 py-1 rounded-full">
-                        Approved
+                      <div
+                        className={`${item.statusBg || "bg-[#FEF3C7]"} ${
+                          item.statusText || "text-[#D97706]"
+                        } text-xs font-semibold lg:text-sm px-4 py-1 rounded-full capitalize`}
+                      >
+                        {item.status || "Pending"}
                       </div>
                     </div>
 

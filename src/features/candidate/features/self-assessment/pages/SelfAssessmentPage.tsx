@@ -76,6 +76,21 @@ export const SelfAssessmentPage: React.FC<SelfAssessmentPageProps> = ({
     });
   };
 
+  const initialCompetencies = React.useMemo(() => {
+    if (!savedSelfAssessment?.competencies || !Array.isArray(savedSelfAssessment.competencies)) {
+      return undefined;
+    }
+    return savedSelfAssessment.competencies.reduce((acc: any, item: any, idx: number) => {
+      const index = item.index !== undefined ? item.index : idx;
+      acc[index] = {
+        confidence: item.confidence || "",
+        evidence: item.evidence || "",
+        experience: item.experience || "",
+      };
+      return acc;
+    }, {});
+  }, [savedSelfAssessment?.competencies]);
+
   return (
     <div
       suppressHydrationWarning
@@ -108,6 +123,7 @@ export const SelfAssessmentPage: React.FC<SelfAssessmentPageProps> = ({
 
           {currentStep === 2 && (
             <Step2Competencies
+              initialData={initialCompetencies}
               onNext={(data) => {
                 if (data) setCompetenciesData(data);
                 setCurrentStep(3);
@@ -118,6 +134,7 @@ export const SelfAssessmentPage: React.FC<SelfAssessmentPageProps> = ({
 
           {currentStep === 3 && (
             <Step3Reflection
+              initialData={savedSelfAssessment?.reflection}
               onNext={(data) => {
                 if (data) setReflectionData(data);
                 setCurrentStep(4);
@@ -128,6 +145,7 @@ export const SelfAssessmentPage: React.FC<SelfAssessmentPageProps> = ({
 
           {currentStep === 4 && (
             <Step4Declaration
+              initialData={savedSelfAssessment?.declaration}
               onSubmit={(decl) => handleSubmitSelfAssessment(decl)}
               onBack={() => setCurrentStep(3)}
             />

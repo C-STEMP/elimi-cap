@@ -34,9 +34,19 @@ export const AssessmentCentreSelfAssessmentFormView: React.FC<
   const [localComments, setLocalComments] = useState<string[]>([]);
   const [isFeedbackSuccessOpen, setIsFeedbackSuccessOpen] = useState(false);
 
-  const personalDetails = appDetail?.personalInformation?.personalDetails;
-  const contactInfo = appDetail?.personalInformation?.contactInformation;
-  const residentialAddress = appDetail?.personalInformation?.residentialAddress;
+  const personalDetails =
+    (selfAssessment as any)?.frozenPersonalInformation?.personalDetails ||
+    (selfAssessment as any)?.personalInformation ||
+    appDetail?.personalInformation?.personalDetails;
+
+  const contactInfo =
+    (selfAssessment as any)?.frozenPersonalInformation?.contactInformation ||
+    (selfAssessment as any)?.personalInformation?.contactInformation ||
+    appDetail?.personalInformation?.contactInformation;
+
+  const residentialAddress =
+    (selfAssessment as any)?.frozenPersonalInformation?.residentialAddress ||
+    appDetail?.personalInformation?.residentialAddress;
 
   const resolvedFullName =
     personalDetails?.firstName
@@ -55,6 +65,21 @@ export const AssessmentCentreSelfAssessmentFormView: React.FC<
     (appDetail as any)?.frozenProfile?.passportUrl ||
     (appDetail as any)?.frozenProfile?.personalDetails?.passportUrl ||
     "";
+
+  const rawCompetencies =
+    Array.isArray(selfAssessment?.competencies) &&
+    selfAssessment.competencies.length > 0
+      ? selfAssessment.competencies
+      : MOCK_COMPETENCY_TASKS.map((task, idx) => ({
+          index: idx,
+          title: task,
+          confidence: "high",
+          evidence: "yes",
+          experience: "",
+        }));
+
+  const reflectionData = (selfAssessment?.reflection as any) || {};
+  const declarationData = (selfAssessment?.declaration as any) || {};
 
   const historyComments = (appHistory as any[])
     .filter((h) => h.comment || h.feedback)
@@ -181,7 +206,9 @@ export const AssessmentCentreSelfAssessmentFormView: React.FC<
                     Date of Birth:
                   </span>
                   <span className="text-gray-700">
-                    {personalDetails?.dob ? new Date(personalDetails.dob).toLocaleDateString("en-GB") : "------"}
+                    {personalDetails?.dob
+                      ? new Date(personalDetails.dob).toLocaleDateString("en-GB")
+                      : "------"}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 border-b border-gray-200/70 pb-1.5">
@@ -189,7 +216,15 @@ export const AssessmentCentreSelfAssessmentFormView: React.FC<
                     Address:
                   </span>
                   <span className="text-gray-700">
-                    {residentialAddress?.address || [residentialAddress?.lga, residentialAddress?.state, residentialAddress?.country].filter(Boolean).join(", ") || "------"}
+                    {residentialAddress?.address ||
+                      [
+                        residentialAddress?.lga,
+                        residentialAddress?.state,
+                        residentialAddress?.country,
+                      ]
+                        .filter(Boolean)
+                        .join(", ") ||
+                      "------"}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 border-b border-gray-200/70 pb-1.5">
@@ -197,7 +232,9 @@ export const AssessmentCentreSelfAssessmentFormView: React.FC<
                     Phone Number:
                   </span>
                   <span className="text-gray-700">
-                    {contactInfo?.phoneNumber?.number ? `${contactInfo.phoneNumber.countryCode || "+234"} ${contactInfo.phoneNumber.number}` : "------"}
+                    {contactInfo?.phoneNumber?.number
+                      ? `${contactInfo.phoneNumber.countryCode || "+234"} ${contactInfo.phoneNumber.number}`
+                      : "------"}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 border-b border-gray-200/70 pb-1.5">
@@ -224,30 +261,55 @@ export const AssessmentCentreSelfAssessmentFormView: React.FC<
               </div>
 
               <div className="flex flex-col gap-5">
-                {MOCK_COMPETENCY_TASKS.map((task, idx) => (
-                  <div
-                    key={idx}
-                    className="flex flex-col gap-2 border-b border-gray-100 pb-4"
-                  >
-                    <span className="text-xs sm:text-sm font-bold text-black">
-                      {task}
-                    </span>
-                    <label className="flex items-center gap-2 cursor-pointer text-xs sm:text-sm text-gray-700">
-                      <input
-                        type="checkbox"
-                        defaultChecked
-                        className="w-4 h-4 accent-primary rounded cursor-pointer"
-                      />
-                      <span className="font-medium">I Can Do This Well</span>
-                    </label>
-                    <div className="flex items-center gap-2 pt-1">
-                      <span className="text-xs text-gray-400 font-semibold shrink-0">
-                        Comment
+                {rawCompetencies.map((comp: any, idx: number) => {
+                  const isChecked =
+                    comp.confidence === "high" ||
+                    comp.evidence === "yes" ||
+                    Boolean(comp.confidence);
+                  const label =
+                    comp.confidence === "high"
+                      ? "I Can Do This Well"
+                      : comp.confidence === "moderate"
+                        ? "Moderately Confident"
+                        : "Developing Skill";
+
+                  return (
+                    <div
+                      key={idx}
+                      className="flex flex-col gap-2 border-b border-gray-100 pb-4"
+                    >
+                      <span className="text-xs sm:text-sm font-bold text-black">
+                        {comp.title || comp.name || `Competency ${idx + 1}`}
                       </span>
-                      <div className="flex-1 border-b border-dashed border-gray-300 py-1" />
+                      <label className="flex items-center gap-2 cursor-pointer text-xs sm:text-sm text-gray-700">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(isChecked)}
+                          readOnly
+                          className="w-4 h-4 accent-primary rounded cursor-pointer"
+                        />
+                        <span className="font-medium">{label}</span>
+                      </label>
+                      {comp.experience ? (
+                        <div className="flex flex-col gap-1 pt-1">
+                          <span className="text-xs text-gray-400 font-semibold shrink-0">
+                            Comment
+                          </span>
+                          <p className="text-xs sm:text-sm text-gray-800 bg-[#F9FAFB] p-2.5 rounded-xl border border-gray-100">
+                            {comp.experience}
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 pt-1">
+                          <span className="text-xs text-gray-400 font-semibold shrink-0">
+                            Comment
+                          </span>
+                          <div className="flex-1 border-b border-dashed border-gray-300 py-1" />
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
@@ -255,27 +317,57 @@ export const AssessmentCentreSelfAssessmentFormView: React.FC<
               <h3 className="text-sm font-extrabold text-black uppercase tracking-wide">
                 Reflection Questions
               </h3>
-              <div className="flex flex-col gap-3 text-xs sm:text-sm">
+              <div className="flex flex-col gap-2 text-xs sm:text-sm">
                 <span className="font-semibold text-black">
                   A. What tasks am I most confident performing?
                 </span>
-                <div className="border-b border-dashed border-gray-300 py-1" />
-                <div className="border-b border-dashed border-gray-300 py-1" />
+                {reflectionData.tasks ? (
+                  <p className="text-gray-800 bg-[#F9FAFB] p-2.5 rounded-xl border border-gray-100">
+                    {reflectionData.tasks}
+                  </p>
+                ) : (
+                  <div className="border-b border-dashed border-gray-300 py-1" />
+                )}
               </div>
-              <div className="flex flex-col gap-3 text-xs sm:text-sm">
+              <div className="flex flex-col gap-2 text-xs sm:text-sm">
                 <span className="font-semibold text-black">
                   B. Which tasks would I like to improve on?
                 </span>
-                <div className="border-b border-dashed border-gray-300 py-1" />
-                <div className="border-b border-dashed border-gray-300 py-1" />
+                {reflectionData.skills ? (
+                  <p className="text-gray-800 bg-[#F9FAFB] p-2.5 rounded-xl border border-gray-100">
+                    {reflectionData.skills}
+                  </p>
+                ) : (
+                  <div className="border-b border-dashed border-gray-300 py-1" />
+                )}
               </div>
-              <div className="flex flex-col gap-3 text-xs sm:text-sm">
+              <div className="flex flex-col gap-2 text-xs sm:text-sm">
                 <span className="font-semibold text-black">
                   C. What evidence can I provide to support my experience and
                   skills?
                 </span>
-                <div className="border-b border-dashed border-gray-300 py-1" />
-                <div className="border-b border-dashed border-gray-300 py-1" />
+                {reflectionData.selectedEvidences &&
+                reflectionData.selectedEvidences.length > 0 ? (
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {reflectionData.selectedEvidences.map(
+                      (ev: string, i: number) => (
+                        <span
+                          key={i}
+                          className="bg-[#FFF4E5] text-[#B45309] text-xs font-semibold px-3 py-1 rounded-full border border-[#FDE6B0]"
+                        >
+                          {ev}
+                        </span>
+                      ),
+                    )}
+                    {reflectionData.otherEvidenceText && (
+                      <span className="bg-gray-100 text-gray-700 text-xs font-semibold px-3 py-1 rounded-full">
+                        {reflectionData.otherEvidenceText}
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <div className="border-b border-dashed border-gray-300 py-1" />
+                )}
               </div>
             </div>
 
@@ -284,33 +376,64 @@ export const AssessmentCentreSelfAssessmentFormView: React.FC<
                 Assessment Declaration
               </h3>
               <div className="grid grid-cols-1 gap-2 text-xs sm:text-sm text-gray-700">
-                <label className="flex items-center gap-2.5 cursor-pointer">
+                <label className="flex items-center gap-2.5">
                   <input
                     type="checkbox"
-                    defaultChecked
-                    className="w-4 h-4 accent-primary rounded cursor-pointer"
+                    checked={Boolean(
+                      declarationData.declarations?.["1"] ??
+                        declarationData.allConfirmed ??
+                        true,
+                    )}
+                    readOnly
+                    className="w-4 h-4 accent-primary rounded"
                   />
                   <span className="font-medium">
                     I confirm that the information provided is true and
                     accurate.
                   </span>
                 </label>
-                <label className="flex items-center gap-2.5 cursor-pointer">
+                <label className="flex items-center gap-2.5">
                   <input
                     type="checkbox"
-                    defaultChecked
-                    className="w-4 h-4 accent-primary rounded cursor-pointer"
+                    checked={Boolean(
+                      declarationData.declarations?.["2"] ??
+                        declarationData.allConfirmed ??
+                        true,
+                    )}
+                    readOnly
+                    className="w-4 h-4 accent-primary rounded"
                   />
                   <span className="font-medium">
                     I understand that submitting this application does not
                     guarantee certification.
                   </span>
                 </label>
-                <label className="flex items-center gap-2.5 cursor-pointer">
+                <label className="flex items-center gap-2.5">
                   <input
                     type="checkbox"
-                    defaultChecked
-                    className="w-4 h-4 accent-primary rounded cursor-pointer"
+                    checked={Boolean(
+                      declarationData.declarations?.["3"] ??
+                        declarationData.allConfirmed ??
+                        true,
+                    )}
+                    readOnly
+                    className="w-4 h-4 accent-primary rounded"
+                  />
+                  <span className="font-medium">
+                    I understand that I must provide sufficient evidence to
+                    demonstrate my competence.
+                  </span>
+                </label>
+                <label className="flex items-center gap-2.5">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(
+                      declarationData.declarations?.["4"] ??
+                        declarationData.allConfirmed ??
+                        true,
+                    )}
+                    readOnly
+                    className="w-4 h-4 accent-primary rounded"
                   />
                   <span className="font-medium">
                     I agree to the ELIMI Terms &amp; Conditions and Privacy

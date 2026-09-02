@@ -19,7 +19,7 @@ export const AssessmentCentreApplicationsView: React.FC<
 > = ({ onSelectCandidate }) => {
   const { toast } = useToast();
   const { forwardToAwardingBody } = useApplication();
-  const { data: remoteApps } = useGetApplications();
+  const { data: remoteApps, isLoading } = useGetApplications();
 
   const [activeFilterTab, setActiveFilterTab] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState("");
@@ -195,13 +195,6 @@ export const AssessmentCentreApplicationsView: React.FC<
           >
             Select All
           </button>
-          <button
-            type="button"
-            onClick={handleNotifyAwardingBody}
-            className="hover:underline cursor-pointer transition-colors"
-          >
-            Notify Awarding Body
-          </button>
         </div>
 
         {viewMode === "list" ? (
@@ -230,7 +223,19 @@ export const AssessmentCentreApplicationsView: React.FC<
               </thead>
 
               <tbody className="divide-y divide-gray-100">
-                {filteredApplications.length > 0 ? (
+                {isLoading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <tr key={i} className="animate-pulse">
+                      <td className="p-4"><div className="w-4 h-4 bg-gray-200 rounded" /></td>
+                      <td className="p-4"><div className="h-3.5 bg-gray-200 rounded w-32" /></td>
+                      <td className="p-4"><div className="h-3.5 bg-gray-200 rounded w-24" /></td>
+                      <td className="p-4"><div className="h-3.5 bg-gray-200 rounded w-16" /></td>
+                      <td className="p-4"><div className="h-5 bg-gray-200 rounded-full w-20" /></td>
+                      <td className="p-4"><div className="h-3.5 bg-gray-200 rounded w-20" /></td>
+                      <td className="p-4 text-right"><div className="h-3.5 bg-gray-200 rounded w-10 ml-auto" /></td>
+                    </tr>
+                  ))
+                ) : filteredApplications.length > 0 ? (
                   filteredApplications.map((app) => (
                     <tr
                       key={app.id}
@@ -294,7 +299,23 @@ export const AssessmentCentreApplicationsView: React.FC<
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredApplications.length > 0 ? (
+            {isLoading ? (
+              Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="bg-white rounded-2xl p-5 border border-black/20 shadow-2xs flex flex-col gap-3 animate-pulse">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="w-4 h-4 bg-gray-200 rounded mt-1" />
+                    <div className="h-5 bg-gray-200 rounded-full w-20" />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <div className="h-3.5 bg-gray-200 rounded w-36" />
+                    <div className="h-3 bg-gray-100 rounded w-28" />
+                    <div className="h-3 bg-gray-100 rounded w-24" />
+                    <div className="h-3 bg-gray-100 rounded w-20" />
+                  </div>
+                  <div className="h-3.5 bg-gray-200 rounded w-12 mt-auto" />
+                </div>
+              ))
+            ) : filteredApplications.length > 0 ? (
               filteredApplications.map((app) => {
                 const isSelected = selectedIds.includes(app.id);
                 return (

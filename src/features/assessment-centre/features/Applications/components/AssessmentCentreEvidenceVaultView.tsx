@@ -16,7 +16,10 @@ import { Loader } from "@/src/components/ui/loader";
 import {
   useGetEvidenceVault,
   useGetSelfAssessment,
+  useGetApplicationById,
 } from "@/src/features/shared/applications/hooks";
+import { PreviewEvidenceModal } from "@/src/features/shared/evidence-vault/components/PreviewEvidenceModal";
+import type { EvidenceRecord } from "@/src/features/shared/evidence-vault/utils/evidenceConstants";
 
 interface EvidenceVaultViewProps {
   id?: string;
@@ -34,9 +37,204 @@ export const AssessmentCentreEvidenceVaultView: React.FC<
   onOpenSelfAssessmentForm,
 }) => {
   const { toast } = useToast();
-  const { data: evidenceItems = [], isLoading: isLoadingEvidence } =
+  const { data: remoteEvidenceItems = [], isLoading: isLoadingEvidence } =
     useGetEvidenceVault(id);
   const { data: selfAssessment } = useGetSelfAssessment(id);
+  const { data: appDetail } = useGetApplicationById(id);
+
+  const [previewItem, setPreviewItem] = useState<EvidenceRecord | null>(null);
+  const [approvedItemIds, setApprovedItemIds] = useState<Record<string, boolean>>({});
+  const [isApproving, setIsApproving] = useState<boolean>(false);
+
+  // Read persisted facilitator
+  const persistedFacilitator = React.useMemo(() => {
+    if (typeof window === "undefined" || !id) return null;
+    try {
+      const stored =
+        localStorage.getItem(`elimi_assigned_facilitator_${id}`) ||
+        localStorage.getItem("elimi_assigned_facilitator_active");
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  }, [id]);
+
+  const activeFacilitator =
+    (appDetail as any)?.facilitator ||
+    (appDetail as any)?.assessor ||
+    (appDetail as any)?.metadata?.facilitator ||
+    persistedFacilitator ||
+    null;
+
+  // Calculate required/expected count from declared candidate evidence
+  const declaredEvidence = (appDetail as any)?.evidenceCandidateCanProvide;
+  const declaredCount = declaredEvidence
+    ? Object.entries(declaredEvidence).filter(
+        ([k, v]) => v === true && k !== "other" && k !== "otherText",
+      ).length
+    : 0;
+  const expectedCount = Math.max(declaredCount, 1);
+
+  // Read persisted evidence items from localStorage as fallback
+  const persistedEvidence: any[] = React.useMemo(() => {
+    if (typeof window === "undefined" || !id) return [];
+    try {
+      const stored = localStorage.getItem(`elimi_evidence_vault_${id}`);
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  }, [id]);
+
+  // Combine remote general evidence with persisted items, giving priority to remote backend status
+  const evidenceItems = React.useMemo(() => {
+    const list: any[] = [];
+    const seen = new Set<string>();
+
+    (remoteEvidenceItems || [])
+      .filter(
+        (item: any) =>
+          item.kind === "general" ||
+          (!item.kind && (item.documentName || item.name || item.assetId)),
+      )
+      .forEach((item: any) => {
+        const docName =
+          item.documentName ||
+          item.name ||
+          item.title ||
+          item.filename ||
+          item.originalName;
+        if (!docName) return;
+        const key = item.id || item.assetId || docName;
+        if (key && !seen.has(key)) {
+          seen.add(key);
+          list.push({ ...item, documentName: docName });
+        }
+      });
+
+    persistedEvidence
+      .filter(
+        (item: any) =>
+          item.kind === "general" || (!item.kind && item.documentName),
+      )
+      .forEach((item: any) => {
+        const docName =
+          item.documentName ||
+          item.name ||
+          item.title ||
+          item.filename ||
+          item.originalName;
+        if (!docName) return;
+        const key = item.id || item.assetId || docName;
+        if (key && !seen.has(key)) {
+          seen.add(key);
+          list.push({ ...item, documentName: docName });
+        }
+      });
+
+    return list;
+  }, [remoteEvidenceItems, persistedEvidence]);
+
+  const isAllUploaded = evidenceItems.length >= expectedCount;
+  const hasUnapprovedItems = evidenceItems.some((item) => {
+    const isApprovedBackend =
+      item.status === "approved" || item.status === "accepted";
+    const isApprovedLocal =
+      Boolean(approvedItemIds[item.id]) ||
+      Boolean(approvedItemIds[item.assetId]) ||
+      Boolean(approvedItemIds[item.documentName]);
+    return !isApprovedBackend && !isApprovedLocal;
+  });
+
+  const handleApproveEvidence = async (record: EvidenceRecord | any) => {
+    const targetKey = record.id || record.assetId || record.name || record.documentName;
+    setIsApproving(true);
+    try {
+      // 1. Mark in component state
+      if (targetKey) {
+        setApprovedItemIds((prev) => ({ ...prev, [targetKey]: true }));
+      }
+
+      // 2. Persist approval in localStorage
+      if (typeof window !== "undefined" && id) {
+        try {
+          const stored = localStorage.getItem(`elimi_evidence_vault_${id}`);
+          const items = stored ? JSON.parse(stored) : [];
+          const updated = items.map((it: any) => {
+            const itKey = it.id || it.assetId || it.name || it.documentName;
+            if (itKey === targetKey || it.name === record.name) {
+              return { ...it, status: "Approved" };
+            }
+            return it;
+          });
+          localStorage.setItem(`elimi_evidence_vault_${id}`, JSON.stringify(updated));
+        } catch (e) {
+          console.error("Failed to update localStorage:", e);
+        }
+      }
+
+      // 3. Update previewItem status if open
+      if (previewItem) {
+        setPreviewItem((prev) =>
+          prev
+            ? {
+                ...prev,
+                status: "Approved",
+                statusBg: "bg-[#E6F4EA]",
+                statusText: "text-[#1E7F4C]",
+              }
+            : null,
+        );
+      }
+
+      toast({
+        type: "success",
+        title: "Evidence Approved",
+        description: `Successfully approved "${record.name || record.documentName || "Evidence document"}".`,
+      });
+    } catch (err: any) {
+      toast({
+        type: "error",
+        title: "Approval Failed",
+        description: err.message || "Could not approve document.",
+      });
+    } finally {
+      setIsApproving(false);
+    }
+  };
+
+  const handleApproveAllEvidence = () => {
+    if (evidenceItems.length === 0) return;
+    setIsApproving(true);
+    try {
+      const newApprovedMap: Record<string, boolean> = {};
+      evidenceItems.forEach((item: any) => {
+        const key = item.id || item.assetId || item.documentName || item.name;
+        if (key) newApprovedMap[key] = true;
+      });
+      setApprovedItemIds((prev) => ({ ...prev, ...newApprovedMap }));
+
+      // Persist all in localStorage
+      if (typeof window !== "undefined" && id) {
+        try {
+          const stored = localStorage.getItem(`elimi_evidence_vault_${id}`);
+          const items = stored ? JSON.parse(stored) : [];
+          const updated = items.map((it: any) => ({ ...it, status: "Approved" }));
+          localStorage.setItem(`elimi_evidence_vault_${id}`, JSON.stringify(updated));
+        } catch (e) {
+          console.error("Failed to update localStorage:", e);
+        }
+      }
+
+      toast({
+        type: "success",
+        title: "All Evidence Approved",
+        description: `Successfully approved all ${evidenceItems.length} evidence document(s).`,
+      });
+    } finally {
+      setIsApproving(false);
+    }
+  };
 
   const [currentMonth, setCurrentMonth] = useState("July");
   const months = [
@@ -152,17 +350,41 @@ export const AssessmentCentreEvidenceVaultView: React.FC<
               </div>
             ) : evidenceItems.length > 0 ? (
               evidenceItems.map((item, idx) => {
-                const isApproved = item.status === "approved" || item.status === "accepted";
-                const isAttention = item.status === "rejected" || item.status === "needs_attention";
-                const title = item.name || item.title || item.category || `Evidence Document #${idx + 1}`;
+                const isApproved =
+                  (item.status as string)?.toLowerCase() === "approved" ||
+                  (item.status as string)?.toLowerCase() === "accepted";
+                const isAttention =
+                  (item.status as string)?.toLowerCase() === "rejected" ||
+                  (item.status as string)?.toLowerCase() === "needs_attention";
+                const title =
+                  item.documentName ||
+                  item.name ||
+                  item.title ||
+                  item.filename ||
+                  item.originalName ||
+                  `Evidence Document #${idx + 1}`;
                 const fileFeedback = item.feedback || item.reviewComment;
+                const displaySize =
+                  item.size || item.fileSize || "Uploaded document";
+
+                const isItemApproved =
+                  isApproved ||
+                  Boolean(approvedItemIds[item.id]) ||
+                  Boolean(approvedItemIds[item.assetId]) ||
+                  Boolean(approvedItemIds[title]);
+
+                const displayStatus = isItemApproved
+                  ? "Approved"
+                  : item.status
+                    ? item.status.replace(/_/g, " ")
+                    : "Pending";
 
                 return (
                   <div
                     key={item.id || idx}
                     className="bg-white rounded-2xl p-5 border border-gray-100 shadow-2xs flex flex-col gap-3 transition-all"
                   >
-                    <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center justify-between gap-4 flex-wrap">
                       <div className="flex items-center gap-4 min-w-0">
                         <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
                           <FiFileText className="w-6 h-6 text-[#a31d38]" />
@@ -174,37 +396,49 @@ export const AssessmentCentreEvidenceVaultView: React.FC<
                             </h3>
                             <span
                               className={`text-xs font-semibold px-3 py-0.5 rounded-full capitalize ${
-                                isApproved
+                                isItemApproved
                                   ? "bg-[#E6F4EA] text-[#1E7F4C]"
                                   : isAttention
                                     ? "bg-[#FCE8EB] text-[#A31D38]"
                                     : "bg-[#FEF3C7] text-[#92400E]"
                               }`}
                             >
-                              {item.status ? item.status.replace(/_/g, " ") : "Submitted"}
+                              {displayStatus}
                             </span>
                           </div>
                           <span className="text-xs text-gray-400 font-normal">
-                            {item.size || "Uploaded document"}
+                            {displaySize}
                           </span>
                         </div>
                       </div>
 
-                      {item.assetId && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            toast({
-                              type: "info",
-                              title: "Document Preview",
-                              description: `Opening ${title}...`,
-                            });
-                          }}
-                          className="bg-white border border-gray-200 hover:bg-gray-50 text-[#fbab2a] font-bold text-xs sm:text-sm px-4 py-2 rounded-xl cursor-pointer shrink-0"
-                        >
-                          View
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const record: EvidenceRecord = {
+                            id: item.id || `ev-${idx}`,
+                            name: title,
+                            size: displaySize,
+                            status: isItemApproved ? "Approved" : "Pending",
+                            statusBg: isItemApproved
+                              ? "bg-[#E6F4EA]"
+                              : "bg-[#FEF3C7]",
+                            statusText: isItemApproved
+                              ? "text-[#1E7F4C]"
+                              : "text-[#92400E]",
+                            assetId: item.assetId,
+                            url: item.url,
+                            dataUrl: item.dataUrl,
+                            mimeType: item.mimeType,
+                            evidenceType:
+                              item.evidenceType || "General Evidence",
+                          };
+                          setPreviewItem(record);
+                        }}
+                        className="bg-white border border-gray-200 hover:bg-gray-50 text-[#fbab2a] font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl cursor-pointer shrink-0 transition-colors shadow-none"
+                      >
+                        View
+                      </button>
                     </div>
 
                     {fileFeedback && (
@@ -293,41 +527,59 @@ export const AssessmentCentreEvidenceVaultView: React.FC<
           </div>
 
           {/* 3. Facilitator Card */}
-          <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-2xs flex flex-col gap-4">
-            <h3 className="text-sm sm:text-base font-extrabold text-black tracking-tight">
-              Facilitator
-            </h3>
+          {activeFacilitator ? (
+            <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-2xs flex flex-col gap-4">
+              <h3 className="text-sm sm:text-base font-extrabold text-black tracking-tight">
+                Facilitator
+              </h3>
 
-            <div className="flex items-center gap-3 bg-[#F8F9FA] rounded-2xl p-3 border border-gray-100">
-              <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 border border-gray-200">
-                <Image
-                  src={ASSETS_URL.userAvatar}
-                  alt="Facilitator Avatar"
-                  width={48}
-                  height={48}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="flex flex-col gap-1 min-w-0">
-                <span className="text-xs sm:text-sm font-extrabold text-black truncate">
-                  Ngozi Eze
-                </span>
-                <span className="text-[10px] sm:text-xs text-gray-500 font-medium truncate">
-                  Facilitator · Carpentry (Level 3)
-                </span>
-                <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
-                  <span className="bg-[#FCE8EB] text-[#A31D38] text-[9px] font-bold px-2 py-0.5 rounded-full">
-                    Carpentry
+              <div className="flex items-center gap-3 bg-[#F8F9FA] rounded-2xl p-3 border border-gray-100">
+                <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 border border-gray-200">
+                  <Image
+                    src={activeFacilitator.avatar || ASSETS_URL.userAvatar}
+                    alt="Facilitator Avatar"
+                    width={48}
+                    height={48}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="flex flex-col gap-1 min-w-0">
+                  <span className="text-xs sm:text-sm font-extrabold text-black truncate">
+                    {activeFacilitator.name || "Assigned Facilitator"}
                   </span>
-                  <span className="bg-[#FCE8EB] text-[#A31D38] text-[9px] font-bold px-2 py-0.5 rounded-full">
-                    RPL Coordinator
+                  <span className="text-[10px] sm:text-xs text-gray-500 font-medium truncate">
+                    Facilitator · {activeFacilitator.trade || (appDetail as any)?.trade?.name || "RPL"} (Level 3)
                   </span>
+                  <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                    <span className="bg-[#FCE8EB] text-[#A31D38] text-[9px] font-bold px-2 py-0.5 rounded-full">
+                      {activeFacilitator.trade || (appDetail as any)?.trade?.name || "RPL"}
+                    </span>
+                    <span className="bg-[#FCE8EB] text-[#A31D38] text-[9px] font-bold px-2 py-0.5 rounded-full">
+                      RPL Coordinator
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-2xs flex flex-col gap-2">
+              <h3 className="text-sm sm:text-base font-extrabold text-black tracking-tight">
+                Facilitator
+              </h3>
+              <p className="text-xs text-gray-400 font-normal leading-relaxed">
+                No facilitator assigned to this candidate yet.
+              </p>
+            </div>
+          )}
         </div>
       </div>
+
+      <PreviewEvidenceModal
+        item={previewItem}
+        onClose={() => setPreviewItem(null)}
+        onApprove={handleApproveEvidence}
+        isApproving={isApproving}
+      />
     </div>
   );
 };

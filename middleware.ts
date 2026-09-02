@@ -35,6 +35,10 @@ export function middleware(request: NextRequest) {
     pathname.startsWith("/applications") ||
     pathname.startsWith("/evidence-vault");
 
+  const personaCookie = request.cookies.get("elimi_persona")?.value;
+  const isNotificationRoute = pathname.startsWith("/dashboard/notifications");
+  const isAssessmentCentreRoute = pathname.startsWith("/assessment-centre");
+
   if (
     !isAuthenticated &&
     (isDashboardRoute || isPreOnboardingRoute || isAllowedOnboardingRoute || isRplRoute)
@@ -44,18 +48,27 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(signinUrl);
   }
 
-  if (isAuthenticated && isDashboardRoute && !isOnboarded) {
+  if (
+    isAuthenticated &&
+    isDashboardRoute &&
+    !isOnboarded &&
+    !isNotificationRoute &&
+    !isAssessmentCentreRoute &&
+    !personaCookie
+  ) {
     const onboardingUrl = new URL("/onboarding/welcome", request.url);
     return NextResponse.redirect(onboardingUrl);
   }
 
-  if (isAuthenticated && isPreOnboardingRoute && isOnboarded) {
-    const dashboardUrl = new URL("/dashboard", request.url);
+  if (isAuthenticated && isPreOnboardingRoute && (isOnboarded || Boolean(personaCookie))) {
+    const destination = personaCookie === "centre" ? "/assessment-centre/dashboard" : "/dashboard";
+    const dashboardUrl = new URL(destination, request.url);
     return NextResponse.redirect(dashboardUrl);
   }
 
-  if (isAuthenticated && pathname.startsWith("/signin") && isOnboarded) {
-    const dashboardUrl = new URL("/dashboard", request.url);
+  if (isAuthenticated && pathname.startsWith("/signin") && (isOnboarded || Boolean(personaCookie))) {
+    const destination = personaCookie === "centre" ? "/assessment-centre/dashboard" : "/dashboard";
+    const dashboardUrl = new URL(destination, request.url);
     return NextResponse.redirect(dashboardUrl);
   }
 

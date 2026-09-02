@@ -63,7 +63,7 @@ export const Select: React.FC<SelectProps> = ({
   notFoundContent,
   maxTagCount,
   maxTagTextLength = 22,
-  showSearch = true,
+  showSearch = false,
   onSearch,
   searchValue,
   filterOption,
@@ -136,7 +136,13 @@ export const Select: React.FC<SelectProps> = ({
         onSearch={onSearch}
         searchValue={searchValue}
         allowClear={allowClear}
-        {...({ autoComplete: autoComplete || "off" } as any)}
+        {...({
+          autoComplete: autoComplete || "off",
+          "data-lpignore": "true",
+          "data-1p-ignore": "true",
+          "data-form-type": "other",
+          "aria-autocomplete": "none",
+        } as any)}
         filterOption={
           filterOption !== undefined
             ? filterOption

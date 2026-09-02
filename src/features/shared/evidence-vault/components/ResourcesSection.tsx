@@ -7,6 +7,8 @@ import { Button } from "@/src/components/ui/button";
 import Image from "next/image";
 import { ASSETS_URL } from "@/assets";
 
+import { useGetThirdPartyReportTemplate } from "@/src/features/shared/reference/hooks";
+
 interface ResourcesSectionProps {
   applicationId?: string;
   isSelfAssessmentCompleted?: boolean;
@@ -18,6 +20,7 @@ export const ResourcesSection: React.FC<ResourcesSectionProps> = ({
 }) => {
   const router = useRouter();
   const { toast } = useToast();
+  const { data: templateData } = useGetThirdPartyReportTemplate();
 
   const handleOpenSelfAssessment = () => {
     if (applicationId) {
@@ -28,11 +31,20 @@ export const ResourcesSection: React.FC<ResourcesSectionProps> = ({
   };
 
   const handleDownloadThirdParty = () => {
-    toast({
-      type: "success",
-      title: "Download Started",
-      description: "Downloading Third Party Reports template...",
-    });
+    if (templateData?.url) {
+      window.open(templateData.url, "_blank");
+      toast({
+        type: "success",
+        title: "Download Started",
+        description: "Downloading Third Party Reports template...",
+      });
+    } else {
+      toast({
+        type: "info",
+        title: "Download Started",
+        description: "Downloading Third Party Reports template...",
+      });
+    }
   };
 
   return (
@@ -62,7 +74,7 @@ export const ResourcesSection: React.FC<ResourcesSectionProps> = ({
                   className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
                     isSelfAssessmentCompleted
                       ? "bg-[#E8F5E9] text-[#2E7D32]"
-                      : "bg-[#F3F4F6] text-[#6B7280]"
+                      : "bg-black/10 text-black"
                   }`}
                 >
                   {isSelfAssessmentCompleted ? "Completed" : "Not Started"}
@@ -74,8 +86,9 @@ export const ResourcesSection: React.FC<ResourcesSectionProps> = ({
 
           <Button
             type="button"
+            variant="secondary"
             onClick={handleOpenSelfAssessment}
-            className="bg-[#fbab2a] hover:bg-[#e89b1f] text-white font-bold text-xs sm:text-sm px-5 sm:px-6 py-2.5 rounded-xl shadow-none cursor-pointer shrink-0"
+            // className="bg-secondary hover:bg-[#e89b1f] text-white font-bold text-xs sm:text-sm px-5 sm:px-6 py-2.5 rounded-xl shadow-none cursor-pointer shrink-0"
           >
             {isSelfAssessmentCompleted ? "View Form" : "Fill Form"}
           </Button>
