@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   FiChevronLeft,
   FiChevronRight,
@@ -20,8 +20,11 @@ import {
   useGetApplicationStages,
   useGetApplicationHistory,
   useGetInterviewSchedule,
+  useGetInterviewPanel,
 } from "@/src/features/shared/applications/hooks";
 import { AssignFacilitatorModal } from "./AssignFacilitatorModal";
+import { AssignPanelistModal, ScheduledPanelistInfo } from "./AssignPanelistModal";
+import { RescheduleInterviewModal } from "./RescheduleInterviewModal";
 
 interface ApplicationDetailViewProps {
   id?: string;
@@ -55,12 +58,40 @@ export const AssessmentCentreApplicationDetailView: React.FC<
     trade?: string;
   } | null>(null);
 
+  const [isAssignPanelistOpen, setIsAssignPanelistOpen] = useState(false);
+  const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
+  const [isRescheduledLocally, setIsRescheduledLocally] = useState(false);
+  const [scheduledPanelistData, setScheduledPanelistData] =
+    useState<ScheduledPanelistInfo | null>(null);
+
+  const { data: interviewPanelFromApi } = useGetInterviewPanel(id);
+
   const persistedFacilitator = React.useMemo(() => {
     if (typeof window === "undefined" || !id) return null;
     try {
       const stored =
         localStorage.getItem(`elimi_assigned_facilitator_${id}`) ||
         localStorage.getItem("elimi_assigned_facilitator_active");
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  }, [id]);
+
+  const persistedSchedule = React.useMemo(() => {
+    if (typeof window === "undefined" || !id) return null;
+    try {
+      const stored = localStorage.getItem(`elimi_interview_schedule_${id}`);
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  }, [id]);
+
+  const persistedPanel = React.useMemo(() => {
+    if (typeof window === "undefined" || !id) return null;
+    try {
+      const stored = localStorage.getItem(`elimi_interview_panel_${id}`);
       return stored ? JSON.parse(stored) : null;
     } catch {
       return null;
@@ -74,6 +105,90 @@ export const AssessmentCentreApplicationDetailView: React.FC<
     (appDetail as any)?.metadata?.facilitator ||
     persistedFacilitator ||
     null;
+
+  const activeInterviewSchedule =
+    scheduledPanelistData
+      ? {
+          scheduledAt: `${scheduledPanelistData.date}T${scheduledPanelistData.time}:00`,
+          mode: scheduledPanelistData.mode === "virtual" ? "online" : "physical",
+          location: scheduledPanelistData.location,
+          link: scheduledPanelistData.meetingLink,
+          status: "scheduled",
+        }
+      : interviewSchedule || persistedSchedule;
+
+  const isInterviewScheduled = Boolean(activeInterviewSchedule?.scheduledAt);
+
+  const interviewDateFormatted = activeInterviewSchedule?.scheduledAt
+    ? new Date(activeInterviewSchedule.scheduledAt).toLocaleDateString("en-US", {
+        month: "numeric",
+        day: "numeric",
+        year: "numeric",
+      })
+    : "8/15/2026";
+
+  const interviewTimeFormatted = activeInterviewSchedule?.scheduledAt
+    ? new Date(activeInterviewSchedule.scheduledAt).toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      })
+    : "12:00PM";
+
+  const interviewEventDateFormatted = activeInterviewSchedule?.scheduledAt
+    ? new Date(activeInterviewSchedule.scheduledAt).toLocaleDateString("en-GB")
+    : "22/03/2026";
+
+  const interviewAssessorsList = useMemo(() => {
+    if (scheduledPanelistData) {
+      return [
+        scheduledPanelistData.leadAssessor,
+        ...scheduledPanelistData.panelMembers,
+      ];
+    }
+    if (persistedPanel?.leadAssessor) {
+      return [
+        persistedPanel.leadAssessor,
+        ...(persistedPanel.panelMembers || []),
+      ];
+    }
+    if (interviewPanelFromApi?.members && interviewPanelFromApi.members.length > 0) {
+      return interviewPanelFromApi.members.map((m, i) => ({
+        id: m.assessorId || `panelist-${i}`,
+        name: m.name || "Ngozi Eze",
+        avatar: "/images/facilitator_ngozi.jpg",
+        role: m.isLead ? "Panel Member" : "Panel Member",
+        tags: m.sectors?.map((s) => s.name) || [
+          (appDetail as any)?.trade?.name || "Carpentry",
+          "RPL Coordinator",
+        ],
+      }));
+    }
+    return [
+      {
+        id: "ngozi-1",
+        name: "Ngozi Eze",
+        avatar: "/images/facilitator_ngozi.jpg",
+        role: "Panel Member",
+        tags: ["Carpentry", "RPL Coordinator"],
+      },
+      {
+        id: "ngozi-2",
+        name: "Ngozi Eze",
+        avatar: "/images/facilitator_ngozi.jpg",
+        role: "Panel Member",
+        tags: ["Carpentry", "RPL Coordinator"],
+        isHighlighted: true,
+      },
+      {
+        id: "ngozi-3",
+        name: "Ngozi Eze",
+        avatar: "/images/facilitator_ngozi.jpg",
+        role: "Panel Member",
+        tags: ["Carpentry", "RPL Coordinator"],
+      },
+    ];
+  }, [scheduledPanelistData, persistedPanel, interviewPanelFromApi, appDetail]);
 
   const [currentMonth, setCurrentMonth] = useState("July");
   const months = [
@@ -124,6 +239,39 @@ export const AssessmentCentreApplicationDetailView: React.FC<
       description: `${facilitator.name} has been assigned as facilitator.`,
     });
   };
+
+  const handlePanelistSuccess = (panelistData: ScheduledPanelistInfo) => {
+    setScheduledPanelistData(panelistData);
+    setIsAssignPanelistOpen(false);
+  };
+
+  const handleRescheduleSuccess = (rescheduleData: {
+    date: string;
+    time: string;
+    meetingLink?: string;
+    location?: string;
+    isRescheduled: boolean;
+  }) => {
+    setIsRescheduledLocally(true);
+    setIsRescheduleModalOpen(false);
+    if (scheduledPanelistData) {
+      setScheduledPanelistData({
+        ...scheduledPanelistData,
+        date: rescheduleData.date,
+        time: rescheduleData.time,
+        meetingLink: rescheduleData.meetingLink,
+        location: rescheduleData.location,
+      });
+    }
+    toast({
+      type: "success",
+      title: "Interview Rescheduled",
+      description: `Interview has been rescheduled to ${rescheduleData.date} at ${rescheduleData.time}.`,
+    });
+  };
+
+  const isRescheduled =
+    isRescheduledLocally || Boolean((activeInterviewSchedule as any)?.isRescheduled);
 
   const resolvedCandidateName =
     appDetail?.candidate?.name ||
@@ -495,111 +643,108 @@ export const AssessmentCentreApplicationDetailView: React.FC<
                   <h3 className="text-black font-bold text-base sm:text-lg lg:text-xl tracking-tight">
                     Interview Stage
                   </h3>
-                  {(() => {
-                    const b = getStatusBadge(interviewStatus);
-                    return (
-                      <span className={`${b.className} text-xs font-semibold px-3 py-0.5 rounded-full capitalize`}>
-                        {b.text}
-                      </span>
-                    );
-                  })()}
+                  <span className="bg-[#FEF3C7] text-[#92400E] text-xs font-semibold px-3 py-0.5 rounded-full capitalize">
+                    Awaiting Interview
+                  </span>
                 </div>
                 <p className="text-gray-400 text-xs sm:text-sm font-normal">
-                  Scheduled for: {interviewDate}
+                  Scheduled for: {interviewDateFormatted}
                 </p>
               </div>
 
-              <button
-                type="button"
-                onClick={() => toggleCard("interview")}
-                className="p-2 text-gray-400 hover:text-black cursor-pointer"
-              >
-                <FiChevronDown
-                  className={`w-5 h-5 transition-transform ${
-                    expandedCards.interview ? "rotate-180" : ""
-                  }`}
-                />
-              </button>
+              {isInterviewScheduled ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsRescheduleModalOpen(true)}
+                  className="bg-white! text-[#fbab2a]! border border-[#fbab2a]! hover:bg-[#FFFBEB]! font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl cursor-pointer shrink-0 shadow-none!"
+                >
+                  Reschedule Interview
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setIsAssignPanelistOpen(true)}
+                  className="bg-[#fbab2a]! hover:bg-[#e89b1f]! text-white! font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl shadow-none! cursor-pointer shrink-0"
+                >
+                  Schedule Interview
+                </Button>
+              )}
             </div>
 
-            {expandedCards.interview && (
-              <div className="pt-3 border-t border-gray-100 text-xs text-gray-600 flex flex-col gap-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-gray-700">Interview Mode:</span>
-                  <span className="capitalize">{interviewSchedule?.mode || "Physical Assessment"}</span>
+            {/* When Scheduled, Render YOUR ASSESORS (Image 1) */}
+            {isInterviewScheduled && (
+              <div className="mt-2 pt-3 border-t border-gray-100">
+                <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-3">
+                  YOUR ASSESORS
+                </span>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                  {interviewAssessorsList.slice(0, 3).map((assessor, idx) => {
+                    const isMiddleOrHighlighted = idx === 1 || assessor.isHighlighted;
+                    return (
+                      <div
+                        key={assessor.id || idx}
+                        className={`bg-white rounded-2xl p-4 flex items-center gap-3.5 border transition-all ${
+                          isMiddleOrHighlighted
+                            ? "border-2 border-[#FBAB2A] shadow-xs"
+                            : "border-gray-100 shadow-2xs"
+                        }`}
+                      >
+                        <div className="relative w-12 h-12 rounded-full overflow-hidden shrink-0 border border-gray-100 bg-gray-50">
+                          <img
+                            src={assessor.avatar || "/images/facilitator_ngozi.jpg"}
+                            alt={assessor.name}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+
+                        <div className="flex flex-col min-w-0">
+                          <h4 className="text-black font-bold text-sm leading-snug truncate">
+                            {assessor.name}
+                          </h4>
+                          <p className="text-gray-400 text-xs font-normal truncate mt-0.5">
+                            {assessor.role || "Panel Member"}
+                          </p>
+
+                          <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                            {(assessor.tags || ["Carpentry", "RPL Coordinator"]).map((tag: string) => (
+                              <span
+                                key={tag}
+                                className="bg-[#FDF2F4] text-[#A31D38] text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-                {interviewSchedule?.location && (
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-gray-700">Location:</span>
-                    <span>{interviewSchedule.location}</span>
-                  </div>
-                )}
-                {interviewSchedule?.link && (
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-gray-700">Meeting Link:</span>
-                    <a
-                      href={interviewSchedule.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary underline"
-                    >
-                      Join Meeting
-                    </a>
-                  </div>
-                )}
               </div>
             )}
           </div>
 
           {/* Stage 5: Internal Verifier */}
-          <div className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-100 shadow-2xs flex flex-col gap-3">
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex flex-col gap-1.5 min-w-0">
-                <div className="flex items-center gap-3 flex-wrap">
-                  <h3 className="text-black font-bold text-base sm:text-lg lg:text-xl tracking-tight">
-                    Internal Verifier
-                  </h3>
-                  {(() => {
-                    const b = getStatusBadge(ivStatus);
-                    return (
-                      <span className={`${b.className} text-xs font-semibold px-3 py-0.5 rounded-full capitalize`}>
-                        {b.text}
-                      </span>
-                    );
-                  })()}
-                </div>
-                <p className="text-gray-400 text-xs sm:text-sm font-normal">
-                  Started on: {ivDate}
-                </p>
+          <div className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-100 shadow-2xs flex items-center justify-between gap-4">
+            <div className="flex flex-col gap-1.5 min-w-0">
+              <div className="flex items-center gap-3 flex-wrap">
+                <h3 className="text-black font-bold text-base sm:text-lg lg:text-xl tracking-tight">
+                  Internal Verifier
+                </h3>
+                <span className="bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-0.5 rounded-full capitalize">
+                  Not Started
+                </span>
               </div>
-
-              <button
-                type="button"
-                onClick={() => toggleCard("verifier")}
-                className="p-2 text-gray-400 hover:text-black cursor-pointer"
-              >
-                <FiChevronDown
-                  className={`w-5 h-5 transition-transform ${
-                    expandedCards.verifier ? "rotate-180" : ""
-                  }`}
-                />
-              </button>
+              <p className="text-gray-400 text-xs sm:text-sm font-normal">
+                ---
+              </p>
             </div>
-
-            {expandedCards.verifier && (
-              <div className="pt-3 border-t border-gray-100 text-xs text-gray-600 flex flex-col gap-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-gray-700">Assigned IV:</span>
-                  <span>{appDetail?.internalVerifier?.name || "Internal Verifier Assessor"}</span>
-                </div>
-                {appDetail?.internalVerifier?.qualifications && (
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-gray-700">Qualifications:</span>
-                    <span>{appDetail.internalVerifier.qualifications.join(", ")}</span>
-                  </div>
-                )}
-              </div>
-            )}
+            <span className="text-gray-400 font-bold text-sm shrink-0">---</span>
           </div>
 
           {/* Stage 6: Notify Awarding Body */}
@@ -609,19 +754,15 @@ export const AssessmentCentreApplicationDetailView: React.FC<
                 <h3 className="text-black font-bold text-base sm:text-lg lg:text-xl tracking-tight">
                   Notify Awarding Body
                 </h3>
-                {(() => {
-                  const b = getStatusBadge(awardingBodyStatus);
-                  return (
-                    <span className={`${b.className} text-xs font-semibold px-3 py-0.5 rounded-full capitalize`}>
-                      {b.text}
-                    </span>
-                  );
-                })()}
+                <span className="bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-0.5 rounded-full capitalize">
+                  Not Started
+                </span>
               </div>
               <p className="text-gray-400 text-xs sm:text-sm font-normal">
-                {awardingBodyStatus === "Pending" ? "Not started yet" : `Started on: ${submittedDate}`}
+                ---
               </p>
             </div>
+            <span className="text-gray-400 font-bold text-sm shrink-0">---</span>
           </div>
 
           {/* Stage 7: External Verifier */}
@@ -631,19 +772,15 @@ export const AssessmentCentreApplicationDetailView: React.FC<
                 <h3 className="text-black font-bold text-base sm:text-lg lg:text-xl tracking-tight">
                   External Verifier
                 </h3>
-                {(() => {
-                  const b = getStatusBadge(evStatus);
-                  return (
-                    <span className={`${b.className} text-xs font-semibold px-3 py-0.5 rounded-full capitalize`}>
-                      {b.text}
-                    </span>
-                  );
-                })()}
+                <span className="bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-0.5 rounded-full capitalize">
+                  Not Started
+                </span>
               </div>
               <p className="text-gray-400 text-xs sm:text-sm font-normal">
-                {evStatus === "Pending" ? "Not started yet" : `Started on: ${submittedDate}`}
+                ---
               </p>
             </div>
+            <span className="text-gray-400 font-bold text-sm shrink-0">---</span>
           </div>
 
           {/* Stage 8: Certification */}
@@ -653,19 +790,15 @@ export const AssessmentCentreApplicationDetailView: React.FC<
                 <h3 className="text-black font-bold text-base sm:text-lg lg:text-xl tracking-tight">
                   Certification
                 </h3>
-                {(() => {
-                  const b = getStatusBadge(certStatus);
-                  return (
-                    <span className={`${b.className} text-xs font-semibold px-3 py-0.5 rounded-full capitalize`}>
-                      {b.text}
-                    </span>
-                  );
-                })()}
+                <span className="bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-0.5 rounded-full capitalize">
+                  Not Started
+                </span>
               </div>
               <p className="text-gray-400 text-xs sm:text-sm font-normal">
-                {certStatus === "Competent" ? "Certified" : "In Progress / Pending"}
+                ---
               </p>
             </div>
+            <span className="text-gray-400 font-bold text-sm shrink-0">---</span>
           </div>
         </div>
 
@@ -699,39 +832,89 @@ export const AssessmentCentreApplicationDetailView: React.FC<
             </div>
 
             <div className="grid grid-cols-7 text-center gap-y-2 text-xs font-semibold text-gray-200">
-              {daysInMonth.map((day) => (
-                <span
-                  key={day}
-                  className="p-1 rounded-full hover:bg-white/15 cursor-pointer transition-colors"
-                >
-                  {day}
-                </span>
-              ))}
+              {daysInMonth.map((day) => {
+                const targetDayNumber = activeInterviewSchedule?.scheduledAt
+                  ? new Date(activeInterviewSchedule.scheduledAt).getDate()
+                  : 22;
+                const isCircled =
+                  day === 10 ||
+                  day === 13 ||
+                  (isInterviewScheduled && day === targetDayNumber);
+
+                return (
+                  <span
+                    key={day}
+                    className={`w-6.5 h-6.5 mx-auto rounded-full flex items-center justify-center transition-colors cursor-pointer ${
+                      isCircled
+                        ? "border-2 border-[#fbab2a] text-white font-bold"
+                        : "hover:bg-white/15 text-gray-300"
+                    }`}
+                  >
+                    {day}
+                  </span>
+                );
+              })}
             </div>
           </div>
 
-          <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-2xs flex flex-col items-center justify-center text-center gap-3 py-8">
-            <h3 className="text-base font-extrabold text-black self-start tracking-tight mb-2">
+          <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-2xs flex flex-col items-center justify-center text-center gap-3 py-6">
+            <h3 className="text-base font-extrabold text-black self-start tracking-tight mb-1">
               Upcoming Events
             </h3>
 
-            {interviewSchedule?.scheduledAt ? (
-              <div className="w-full flex items-start gap-3 p-3.5 rounded-2xl bg-amber-50/70 border border-amber-100 text-left">
-                <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
-                  <FiClock className="w-5 h-5" />
+            {isInterviewScheduled ? (
+              <div className="w-full bg-[#F9FAFB] rounded-xl p-4 border border-gray-100 text-left border-l-4 border-l-[#A31D38] flex flex-col gap-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <h4 className="text-sm font-bold text-gray-900">
+                    Panel Interview
+                  </h4>
+                  {isRescheduled && (
+                    <span className="bg-[#FCE8EB] text-[#A31D38] text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0">
+                      Rescheduled
+                    </span>
+                  )}
                 </div>
-                <div className="flex flex-col gap-0.5 min-w-0">
-                  <span className="text-xs font-bold text-gray-900 truncate">
-                    Interview / Observation
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                      TIME
+                    </span>
+                    <span className="text-xs font-bold text-gray-900 mt-0.5">
+                      {interviewTimeFormatted}
+                    </span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                      DATE
+                    </span>
+                    <span className="text-xs font-bold text-gray-900 mt-0.5">
+                      {interviewEventDateFormatted}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex flex-col pt-0.5">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                    {activeInterviewSchedule.mode === "online" ? "Meeting Link" : "Address"}
                   </span>
-                  <span className="text-[11px] text-gray-600">
-                    {new Date(interviewSchedule.scheduledAt).toLocaleString()}
-                  </span>
+                  {activeInterviewSchedule.mode === "online" && activeInterviewSchedule.link ? (
+                    <a
+                      href={activeInterviewSchedule.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-medium text-primary hover:underline truncate mt-0.5"
+                    >
+                      {activeInterviewSchedule.link}
+                    </a>
+                  ) : (
+                    <span className="text-xs font-bold text-gray-900 mt-0.5 truncate">
+                      {activeInterviewSchedule.location || "Cstemp Centre"}
+                    </span>
+                  )}
                 </div>
               </div>
             ) : (
               <>
-                <div className="w-12 h-12 rounded-full bg-[#fde8ec] text-border-secondary flex items-center justify-center">
+                <div className="w-12 h-12 rounded-full bg-[#fde8ec] text-[#a31d38] flex items-center justify-center mt-2">
                   <FiCalendar className="w-6 h-6 stroke-2" />
                 </div>
 
@@ -806,6 +989,37 @@ export const AssessmentCentreApplicationDetailView: React.FC<
             : "Carpentry")
         }
         onSuccess={handleFacilitatorSuccess}
+      />
+
+      <AssignPanelistModal
+        isOpen={isAssignPanelistOpen}
+        onClose={() => setIsAssignPanelistOpen(false)}
+        applicationId={id}
+        tradeName={
+          (appDetail as any)?.trade?.name ||
+          (typeof (appDetail as any)?.trade === "string"
+            ? (appDetail as any)?.trade
+            : "Carpentry")
+        }
+        initialSchedule={activeInterviewSchedule}
+        initialPanel={persistedPanel || interviewPanelFromApi}
+        onSuccess={handlePanelistSuccess}
+      />
+
+      <RescheduleInterviewModal
+        isOpen={isRescheduleModalOpen}
+        onClose={() => setIsRescheduleModalOpen(false)}
+        applicationId={id}
+        currentDate={
+          activeInterviewSchedule?.scheduledAt
+            ? new Date(activeInterviewSchedule.scheduledAt).toISOString().split("T")[0]
+            : ""
+        }
+        currentTime={interviewTimeFormatted}
+        currentMeetingLink={activeInterviewSchedule?.link || "www.meet.google.com"}
+        currentLocation={activeInterviewSchedule?.location || "Cstemp Centre"}
+        currentMode={activeInterviewSchedule?.mode === "online" ? "virtual" : "physical"}
+        onSuccess={handleRescheduleSuccess}
       />
     </div>
   );

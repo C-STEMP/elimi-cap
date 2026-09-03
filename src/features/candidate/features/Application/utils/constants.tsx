@@ -139,6 +139,7 @@ export interface GetStagesConfigParams {
   stagesData?: ApplicationStage[];
   currentStageKey?: string;
   assessors?: Assessor[];
+  interviewDateText?: string;
 }
 
 export const getStagesConfig = ({
@@ -168,6 +169,7 @@ export const getStagesConfig = ({
   stagesData,
   currentStageKey,
   assessors,
+  interviewDateText,
 }: GetStagesConfigParams): StageConfig[] => {
   const formattedSubmittedDate = submittedDate
     ? new Date(submittedDate).toLocaleDateString()
@@ -398,7 +400,7 @@ export const getStagesConfig = ({
       : isInterviewActive
         ? interviewStageRow?.status === "in_progress" || currentStageKey === "interview"
           ? "In Progress"
-          : "Scheduled"
+          : "Awaiting Interview"
         : interviewStageRow?.status === "rejected"
           ? "Unsuccessful"
           : "Not Started",
@@ -412,14 +414,16 @@ export const getStagesConfig = ({
     statusText: isInterviewDone
       ? "text-[#1E7F4C]"
       : isInterviewActive
-        ? "text-[#D97706]"
+        ? "text-[#92400E]"
         : interviewStageRow?.status === "rejected"
           ? "text-[#B3261E]"
           : "text-[#6B7280]",
     subtext: isInterviewActive || isInterviewDone
-      ? interviewStageRow?.enteredAt
-        ? `Scheduled for: ${new Date(interviewStageRow.enteredAt).toLocaleDateString()}`
-        : "In progress • Interview panel active"
+      ? interviewDateText
+        ? `Scheduled for: ${interviewDateText}`
+        : interviewStageRow?.enteredAt
+          ? `Scheduled for: ${new Date(interviewStageRow.enteredAt).toLocaleDateString()}`
+          : "Scheduled for: 8/15/2026"
       : "---",
     isCollapsible: isInterviewActive,
     isCollapsed: isInterviewCollapsed,
