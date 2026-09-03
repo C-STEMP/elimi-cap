@@ -168,10 +168,13 @@ export const Dashboard: React.FC = () => {
           minute: "2-digit",
           hour12: true,
         }),
+        mode: scheduledInterviewInfo.mode,
         liveUrl:
-          scheduledInterviewInfo.mode === "online"
+          scheduledInterviewInfo.mode === "online" || scheduledInterviewInfo.mode === "virtual"
             ? scheduledInterviewInfo.link
             : undefined,
+        location: scheduledInterviewInfo.location || "Cstemp Centre",
+        isRescheduled: Boolean(scheduledInterviewInfo.isRescheduled),
       }
     : null;
 
