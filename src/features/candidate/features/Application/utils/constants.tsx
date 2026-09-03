@@ -324,8 +324,11 @@ export const getStagesConfig = ({
     folderStageRow?.status === "successful" ||
     (folderStageRow?.status as string) === "completed" ||
     (folderStageRow?.status as string) === "approved" ||
+    interviewDateText ||
+    interviewStageRow?.status === "scheduled" ||
+    interviewStageRow?.status === "in_progress" ||
     (currentStageKey &&
-      ["interview", "internal_verification", "external_verification", "certification"].includes(
+      ["interview", "direct_observation", "internal_verification", "external_verification", "certification"].includes(
         currentStageKey,
       )),
   );

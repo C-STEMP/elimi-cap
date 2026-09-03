@@ -17,8 +17,8 @@ import { useCountryStateCity } from "@/src/lib/hooks/useCountryStateCity";
 
 export interface ScheduledPanelistInfo {
   trade: string;
-  leadAssessor: { id: string; name: string; avatar?: string; role?: string; tags?: string[] };
-  panelMembers: { id: string; name: string; avatar?: string; role?: string; tags?: string[] }[];
+  leadAssessor: { id: string; name: string; avatar?: string; role?: string; tags?: string[]; isHighlighted?: boolean };
+  panelMembers: { id: string; name: string; avatar?: string; role?: string; tags?: string[]; isHighlighted?: boolean }[];
   internalVerifier: { id: string; name: string; avatar?: string; role?: string; tags?: string[] };
   date: string;
   time: string;
@@ -66,7 +66,7 @@ export const AssignPanelistModal: React.FC<AssignPanelistModalProps> = ({
 
   const { data: centreProfile } = useGetCentreProfile();
   const { data: centreAssessors = [], isLoading: isLoadingAssessors } =
-    useGetCentreAssessors({ status: "approved" });
+    useGetCentreAssessors({ status: "all" });
 
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -103,35 +103,40 @@ export const AssignPanelistModal: React.FC<AssignPanelistModalProps> = ({
         value: a.id || (a as any).assessorId || (a as any).userId,
         sectors: a.sectors || [],
         qualifications: a.qualifications || [],
+        avatar: (a as any).avatar || (a as any).photoUrl || "/images/facilitator_ngozi.jpg",
       }));
     }
     return [
       {
-        label: "Ngozi Eze",
-        value: "assessor-ngozi",
-        sectors: [{ id: "sec-1", name: "Carpentry" }],
+        label: "RUQOYAT BABALOLA",
+        value: "assessor-ruqoyat",
+        sectors: [{ id: "sec-1", name: tradeName || "Cosmetology" }],
         qualifications: ["QAA", "IV"],
+        avatar: "/images/facilitator_ngozi.jpg",
       },
       {
-        label: "Chidi Okonkwo",
-        value: "assessor-chidi",
-        sectors: [{ id: "sec-1", name: "Carpentry" }],
+        label: "Angela Jones",
+        value: "assessor-angela",
+        sectors: [{ id: "sec-1", name: tradeName || "Cosmetology" }],
         qualifications: ["QAA"],
+        avatar: "/images/facilitator_ngozi.jpg",
       },
       {
         label: "Amina Bello",
         value: "assessor-amina",
-        sectors: [{ id: "sec-1", name: "Carpentry" }],
+        sectors: [{ id: "sec-1", name: tradeName || "Cosmetology" }],
         qualifications: ["IV"],
+        avatar: "/images/facilitator_ngozi.jpg",
       },
       {
         label: "David Adeleke",
         value: "assessor-david",
-        sectors: [{ id: "sec-1", name: "Carpentry" }],
+        sectors: [{ id: "sec-1", name: tradeName || "Cosmetology" }],
         qualifications: ["IQM"],
+        avatar: "/images/facilitator_ngozi.jpg",
       },
     ];
-  }, [centreAssessors]);
+  }, [centreAssessors, tradeName]);
 
   // Pre-fill on initial load or modal open
   useEffect(() => {
@@ -297,7 +302,7 @@ export const AssignPanelistModal: React.FC<AssignPanelistModalProps> = ({
       leadAssessor: {
         id: leadAssessor.value,
         name: leadAssessor.label,
-        avatar: "/images/facilitator_ngozi.jpg",
+        avatar: (leadAssessor as any).avatar || "/images/facilitator_ngozi.jpg",
         role: "Lead Panelist",
         tags: [selectedTrade || tradeName, "RPL Coordinator"],
       },
@@ -305,16 +310,18 @@ export const AssignPanelistModal: React.FC<AssignPanelistModalProps> = ({
         {
           id: panelMemberAssessor.value,
           name: panelMemberAssessor.label,
-          avatar: "/images/facilitator_ngozi.jpg",
+          avatar: (panelMemberAssessor as any).avatar || "/images/facilitator_ngozi.jpg",
           role: "Panel Member",
           tags: [selectedTrade || tradeName, "RPL Coordinator"],
+          isHighlighted: true,
         },
         {
           id: thirdAssessor.value,
           name: thirdAssessor.label,
-          avatar: "/images/facilitator_ngozi.jpg",
+          avatar: (thirdAssessor as any).avatar || "/images/facilitator_ngozi.jpg",
           role: "Panel Member",
           tags: [selectedTrade || tradeName, "RPL Coordinator"],
+          isHighlighted: false,
         },
       ],
       internalVerifier: {
