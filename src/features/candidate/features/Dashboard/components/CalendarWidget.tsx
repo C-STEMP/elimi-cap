@@ -160,7 +160,7 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({
                   type="button"
                   onClick={() => setSelectedDate(dateNum)}
                   title="Panel Interview Date"
-                  className="w-6 h-6 rounded-full bg-[#fbab2a] text-white font-bold text-xs flex items-center justify-center shadow-md cursor-pointer hover:scale-110 transition-transform ring-2 ring-[#fbab2a]/40"
+                  className="w-6.5 h-6.5 rounded-full border-2 border-[#fbab2a] text-white font-bold text-xs flex items-center justify-center cursor-pointer hover:scale-110 transition-transform"
                 >
                   {dateNum}
                 </button>
@@ -168,7 +168,7 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({
                 <button
                   type="button"
                   onClick={() => setSelectedDate(dateNum)}
-                  className="w-6 h-6 rounded-full bg-white/20 text-white font-bold text-xs flex items-center justify-center shadow-xs cursor-pointer hover:scale-105 transition-transform"
+                  className="w-6 h-6 rounded-full bg-white/10 text-white font-medium text-xs flex items-center justify-center shadow-xs cursor-pointer hover:scale-105 transition-transform"
                 >
                   {dateNum}
                 </button>

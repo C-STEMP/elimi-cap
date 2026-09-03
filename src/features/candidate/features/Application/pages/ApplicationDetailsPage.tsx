@@ -44,6 +44,7 @@ import {
   useGetInterviewSchedule,
   useGetInterviewPanel,
 } from "@/src/features/shared/applications/hooks";
+import { useGetCentreAssessors } from "@/src/features/shared/centre/hooks";
 import { APPLICATION_QUERY_KEYS } from "@/src/features/shared/applications/hooks/useApplication";
 import type { ApplicationDetail } from "@/src/features/shared/applications/api";
 import { Loader } from "@/src/components/ui/loader";
@@ -95,6 +96,7 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
   const { data: receiptData } = useGetApplicationReceipt(id || "");
   const { data: interviewScheduleFromApi } = useGetInterviewSchedule(id || "");
   const { data: interviewPanelFromApi } = useGetInterviewPanel(id || "");
+  const { data: centreAssessors = [] } = useGetCentreAssessors({ status: "all" });
 
   const persistedSchedule = React.useMemo(() => {
     if (typeof window === "undefined" || !id) return null;
@@ -322,6 +324,19 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
   const folderStatus = getFolderArrangementStatus(isVaultActive, formState);
   const formStatus = getFormStatus(formState);
 
+  const isAtInterviewStage = Boolean(
+    isInterviewScheduled ||
+    activeInterviewSchedule?.scheduledAt ||
+    stagesData?.some(
+      (s) =>
+        (s.stageKey === "interview" || s.stageKey === "observation" || s.stageKey === "direct_observation") &&
+        (s.status === "scheduled" || s.status === "in_progress" || s.status === "successful"),
+    ) ||
+    apiApp?.currentStageKey === "interview" ||
+    apiApp?.currentStageKey === "direct_observation" ||
+    folderStatus?.text?.toLowerCase() === "marked as complete",
+  );
+
   const handleMakePayment = () => {
     if (!application) return;
     if (!isPaymentUnlocked && !isPaymentPaid) {
@@ -533,62 +548,136 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
   };
 
   const interviewAssessors = React.useMemo(() => {
+    // 1. From real backend interview panel
+    if (interviewPanelFromApi?.members && interviewPanelFromApi.members.length > 0) {
+      const nonObserverMembers = interviewPanelFromApi.members.filter((m) => !m.isObserver);
+      const membersToUse =
+        nonObserverMembers.length >= 3
+          ? nonObserverMembers.slice(0, 3)
+          : interviewPanelFromApi.members.slice(0, 3);
+
+      return membersToUse.map((m, i) => {
+        const matched = centreAssessors.find(
+          (a) =>
+            a.id === m.assessorId ||
+            (a as any).assessorId === m.assessorId ||
+            (a as any).userId === m.assessorId,
+        );
+        const name =
+          matched?.name ||
+          m.name ||
+          (m.isLead ? "Lead Assessor" : `Panelist ${i + 1}`);
+        const avatar =
+          (matched as any)?.avatar ||
+          (matched as any)?.photoUrl ||
+          "/images/facilitator_ngozi.jpg";
+        const role = m.isLead || i === 0 ? "Lead Panelist" : "Panel Member";
+        const tags = m.sectors?.length
+          ? m.sectors.map((s: any) => s.name)
+          : matched?.sectors?.length
+            ? matched.sectors.map((s: any) => s.name)
+            : [resolvedTrade || "Cosmetology", "RPL Coordinator"];
+
+        return {
+          id: m.assessorId || `assessor-${i}`,
+          name,
+          avatar,
+          role,
+          tags,
+          isHighlighted: i === 1,
+        };
+      });
+    }
+
+    // 2. From persisted panel in session
     if (persistedPanel?.leadAssessor) {
       return [
         {
           id: persistedPanel.leadAssessor.id || "lead",
-          name: persistedPanel.leadAssessor.name || "Ngozi Eze",
+          name: persistedPanel.leadAssessor.name || "RUQOYAT BABALOLA",
           avatar: persistedPanel.leadAssessor.avatar || "/images/facilitator_ngozi.jpg",
-          role: "Panel Member",
-          tags: persistedPanel.leadAssessor.tags || [resolvedTrade || "Carpentry", "RPL Coordinator"],
+          role: "Lead Panelist",
+          tags: persistedPanel.leadAssessor.tags || [resolvedTrade || "Cosmetology", "RPL Coordinator"],
           isHighlighted: false,
         },
         ...(persistedPanel.panelMembers || []).map((m: any, idx: number) => ({
           id: m.id || `member-${idx}`,
-          name: m.name || "Ngozi Eze",
+          name: m.name || (idx === 0 ? "Angela Jones" : "Amina Bello"),
           avatar: m.avatar || "/images/facilitator_ngozi.jpg",
           role: "Panel Member",
-          tags: m.tags || [resolvedTrade || "Carpentry", "RPL Coordinator"],
+          tags: m.tags || [resolvedTrade || "Cosmetology", "RPL Coordinator"],
           isHighlighted: idx === 0,
         })),
       ];
     }
 
-    if (interviewPanelFromApi?.members && interviewPanelFromApi.members.length > 0) {
-      return interviewPanelFromApi.members.map((m: any, i: number) => ({
-        id: m.assessorId || `assessor-${i}`,
-        name: m.name || "Ngozi Eze",
-        avatar: "/images/facilitator_ngozi.jpg",
-        role: "Panel Member",
-        tags: m.sectors?.map((s: any) => s.name) || [resolvedTrade || "Carpentry", "RPL Coordinator"],
-        isHighlighted: i === 1,
-      }));
+    // 3. From real centre assessors in backend
+    if (centreAssessors && centreAssessors.length > 0) {
+      const lead = centreAssessors[0];
+      const member1 = centreAssessors[1] || centreAssessors[0];
+      const member2 = centreAssessors[2] || centreAssessors[1] || centreAssessors[0];
+
+      return [
+        {
+          id: lead.id,
+          name: lead.name,
+          avatar:
+            (lead as any).avatar ||
+            (lead as any).photoUrl ||
+            "/images/facilitator_ngozi.jpg",
+          role: "Lead Panelist",
+          tags: [resolvedTrade || "Cosmetology", "RPL Coordinator"],
+          isHighlighted: false,
+        },
+        {
+          id: member1.id,
+          name: member1.name,
+          avatar:
+            (member1 as any).avatar ||
+            (member1 as any).photoUrl ||
+            "/images/facilitator_ngozi.jpg",
+          role: "Panel Member",
+          tags: [resolvedTrade || "Cosmetology", "RPL Coordinator"],
+          isHighlighted: true,
+        },
+        {
+          id: member2.id,
+          name: member2.name,
+          avatar:
+            (member2 as any).avatar ||
+            (member2 as any).photoUrl ||
+            "/images/facilitator_ngozi.jpg",
+          role: "Panel Member",
+          tags: [resolvedTrade || "Cosmetology", "RPL Coordinator"],
+          isHighlighted: false,
+        },
+      ];
     }
 
     if (isInterviewScheduled) {
       return [
         {
-          id: "ngozi-1",
-          name: "Ngozi Eze",
+          id: "assessor-lead",
+          name: "RUQOYAT BABALOLA",
           avatar: "/images/facilitator_ngozi.jpg",
-          role: "Panel Member",
-          tags: [resolvedTrade || "Carpentry", "RPL Coordinator"],
+          role: "Lead Panelist",
+          tags: [resolvedTrade || "Cosmetology", "RPL Coordinator"],
           isHighlighted: false,
         },
         {
-          id: "ngozi-2",
-          name: "Ngozi Eze",
+          id: "assessor-member-1",
+          name: "Angela Jones",
           avatar: "/images/facilitator_ngozi.jpg",
           role: "Panel Member",
-          tags: [resolvedTrade || "Carpentry", "RPL Coordinator"],
+          tags: [resolvedTrade || "Cosmetology", "RPL Coordinator"],
           isHighlighted: true,
         },
         {
-          id: "ngozi-3",
-          name: "Ngozi Eze",
+          id: "assessor-member-2",
+          name: "Amina Bello",
           avatar: "/images/facilitator_ngozi.jpg",
           role: "Panel Member",
-          tags: [resolvedTrade || "Carpentry", "RPL Coordinator"],
+          tags: [resolvedTrade || "Cosmetology", "RPL Coordinator"],
           isHighlighted: false,
         },
       ];
@@ -829,10 +918,12 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
                   : null
               }
             />
-            <FacilitatorCard
-              facilitator={facilitatorData}
-              onRequestCall={() => setIsCallRequestModalOpen(true)}
-            />
+            {!isAtInterviewStage && (
+              <FacilitatorCard
+                facilitator={facilitatorData}
+                onRequestCall={() => setIsCallRequestModalOpen(true)}
+              />
+            )}
           </div>
         </div>
       </div>

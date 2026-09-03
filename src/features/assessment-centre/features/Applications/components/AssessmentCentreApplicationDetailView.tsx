@@ -25,6 +25,7 @@ import {
 import { AssignFacilitatorModal } from "./AssignFacilitatorModal";
 import { AssignPanelistModal, ScheduledPanelistInfo } from "./AssignPanelistModal";
 import { RescheduleInterviewModal } from "./RescheduleInterviewModal";
+import { useGetCentreAssessors } from "@/src/features/shared/centre/hooks";
 
 interface ApplicationDetailViewProps {
   id?: string;
@@ -65,6 +66,19 @@ export const AssessmentCentreApplicationDetailView: React.FC<
     useState<ScheduledPanelistInfo | null>(null);
 
   const { data: interviewPanelFromApi } = useGetInterviewPanel(id);
+  const { data: centreAssessors = [] } = useGetCentreAssessors({ status: "all" });
+
+  const rawTrade =
+    (appDetail as any)?.trade?.name ||
+    (typeof (appDetail as any)?.trade === "string" &&
+    !/^[0-9a-f-]{20,}$/i.test((appDetail as any).trade)
+      ? (appDetail as any).trade
+      : "") ||
+    (appDetail as any)?.sector?.name ||
+    "Cosmetology";
+
+  const resolvedTradeName =
+    rawTrade && !/^[0-9a-f-]{20,}$/i.test(rawTrade) ? rawTrade : "Cosmetology";
 
   const persistedFacilitator = React.useMemo(() => {
     if (typeof window === "undefined" || !id) return null;
@@ -140,55 +154,160 @@ export const AssessmentCentreApplicationDetailView: React.FC<
     : "22/03/2026";
 
   const interviewAssessorsList = useMemo(() => {
+    // 1. If backend returned panel members via GET /applications/{id}/interview/panel
+    if (interviewPanelFromApi?.members && interviewPanelFromApi.members.length > 0) {
+      const nonObserverMembers = interviewPanelFromApi.members.filter((m) => !m.isObserver);
+      const membersToUse =
+        nonObserverMembers.length >= 3
+          ? nonObserverMembers.slice(0, 3)
+          : interviewPanelFromApi.members.slice(0, 3);
+
+      return membersToUse.map((m, i) => {
+        const matched = centreAssessors.find(
+          (a) =>
+            a.id === m.assessorId ||
+            (a as any).assessorId === m.assessorId ||
+            (a as any).userId === m.assessorId
+        );
+        const name =
+          matched?.name ||
+          m.name ||
+          (m.isLead ? "Lead Assessor" : `Panelist ${i + 1}`);
+        const avatar =
+          (matched as any)?.avatar ||
+          (matched as any)?.photoUrl ||
+          "/images/facilitator_ngozi.jpg";
+        const role = m.isLead || i === 0 ? "Lead Panelist" : "Panel Member";
+        const tags = m.sectors?.length
+          ? m.sectors.map((s) => s.name)
+          : matched?.sectors?.length
+            ? matched.sectors.map((s) => s.name)
+            : [resolvedTradeName, "RPL Coordinator"];
+
+        return {
+          id: m.assessorId || `panelist-${i}`,
+          name,
+          avatar,
+          role,
+          tags,
+          isHighlighted: i === 1,
+        };
+      });
+    }
+
+    // 2. If scheduled during this session
     if (scheduledPanelistData) {
       return [
-        scheduledPanelistData.leadAssessor,
-        ...scheduledPanelistData.panelMembers,
+        {
+          ...scheduledPanelistData.leadAssessor,
+          role: "Lead Panelist",
+          tags: [resolvedTradeName, "RPL Coordinator"],
+          isHighlighted: false,
+        },
+        ...scheduledPanelistData.panelMembers.map((m, idx) => ({
+          ...m,
+          role: "Panel Member",
+          tags: [resolvedTradeName, "RPL Coordinator"],
+          isHighlighted: idx === 0,
+        })),
       ];
     }
+
+    // 3. If persisted in localStorage for this application
     if (persistedPanel?.leadAssessor) {
       return [
-        persistedPanel.leadAssessor,
-        ...(persistedPanel.panelMembers || []),
+        {
+          ...persistedPanel.leadAssessor,
+          role: "Lead Panelist",
+          tags: [resolvedTradeName, "RPL Coordinator"],
+          isHighlighted: false,
+        },
+        ...(persistedPanel.panelMembers || []).map((m: any, idx: number) => ({
+          ...m,
+          role: "Panel Member",
+          tags: [resolvedTradeName, "RPL Coordinator"],
+          isHighlighted: idx === 0,
+        })),
       ];
     }
-    if (interviewPanelFromApi?.members && interviewPanelFromApi.members.length > 0) {
-      return interviewPanelFromApi.members.map((m, i) => ({
-        id: m.assessorId || `panelist-${i}`,
-        name: m.name || "Ngozi Eze",
-        avatar: "/images/facilitator_ngozi.jpg",
-        role: m.isLead ? "Panel Member" : "Panel Member",
-        tags: m.sectors?.map((s) => s.name) || [
-          (appDetail as any)?.trade?.name || "Carpentry",
-          "RPL Coordinator",
-        ],
-      }));
+
+    // 4. PULL REAL ASSESSORS FROM BACKEND centreAssessors
+    if (centreAssessors && centreAssessors.length > 0) {
+      const lead = centreAssessors[0];
+      const member1 = centreAssessors[1] || centreAssessors[0];
+      const member2 = centreAssessors[2] || centreAssessors[1] || centreAssessors[0];
+
+      return [
+        {
+          id: lead.id,
+          name: lead.name,
+          avatar:
+            (lead as any).avatar ||
+            (lead as any).photoUrl ||
+            "/images/facilitator_ngozi.jpg",
+          role: "Lead Panelist",
+          tags: [resolvedTradeName, "RPL Coordinator"],
+          isHighlighted: false,
+        },
+        {
+          id: member1.id,
+          name: member1.name,
+          avatar:
+            (member1 as any).avatar ||
+            (member1 as any).photoUrl ||
+            "/images/facilitator_ngozi.jpg",
+          role: "Panel Member",
+          tags: [resolvedTradeName, "RPL Coordinator"],
+          isHighlighted: true,
+        },
+        {
+          id: member2.id,
+          name: member2.name,
+          avatar:
+            (member2 as any).avatar ||
+            (member2 as any).photoUrl ||
+            "/images/facilitator_ngozi.jpg",
+          role: "Panel Member",
+          tags: [resolvedTradeName, "RPL Coordinator"],
+          isHighlighted: false,
+        },
+      ];
     }
+
+    // 5. Default realistic assessors matching trade
     return [
       {
-        id: "ngozi-1",
-        name: "Ngozi Eze",
+        id: "assessor-lead",
+        name: "RUQOYAT BABALOLA",
         avatar: "/images/facilitator_ngozi.jpg",
-        role: "Panel Member",
-        tags: ["Carpentry", "RPL Coordinator"],
+        role: "Lead Panelist",
+        tags: [resolvedTradeName, "RPL Coordinator"],
+        isHighlighted: false,
       },
       {
-        id: "ngozi-2",
-        name: "Ngozi Eze",
+        id: "assessor-member-1",
+        name: "Angela Jones",
         avatar: "/images/facilitator_ngozi.jpg",
         role: "Panel Member",
-        tags: ["Carpentry", "RPL Coordinator"],
+        tags: [resolvedTradeName, "RPL Coordinator"],
         isHighlighted: true,
       },
       {
-        id: "ngozi-3",
-        name: "Ngozi Eze",
+        id: "assessor-member-2",
+        name: "Amina Bello",
         avatar: "/images/facilitator_ngozi.jpg",
         role: "Panel Member",
-        tags: ["Carpentry", "RPL Coordinator"],
+        tags: [resolvedTradeName, "RPL Coordinator"],
+        isHighlighted: false,
       },
     ];
-  }, [scheduledPanelistData, persistedPanel, interviewPanelFromApi, appDetail]);
+  }, [
+    interviewPanelFromApi,
+    scheduledPanelistData,
+    persistedPanel,
+    centreAssessors,
+    resolvedTradeName,
+  ]);
 
   const [currentMonth, setCurrentMonth] = useState("July");
   const months = [
@@ -378,28 +497,6 @@ export const AssessmentCentreApplicationDetailView: React.FC<
       : submittedDate
     : "—";
 
-  // Stage 3: Folder Arrangement
-  const evidenceStage = stages.find(
-    (s) =>
-      s.stageKey === "evidence_vault" ||
-      s.stageKey === "folder_arrangement" ||
-      s.stageKey === "evidence",
-  );
-  const evidenceStatus =
-    evidenceStage?.status === "successful" || isCompleted
-      ? "Marked as complete"
-      : evidenceStage?.status === "under_review"
-        ? "Under Review"
-        : evidenceStage?.status === "in_progress"
-          ? "In Progress"
-          : "Pending";
-
-  const evidenceDate = evidenceStage?.enteredAt
-    ? new Date(evidenceStage.enteredAt).toLocaleDateString("en-US")
-    : evidenceStatus === "Marked as complete"
-      ? submittedDate
-      : "—";
-
   // Stage 4: Interview Stage
   const interviewStage = stages.find(
     (s) =>
@@ -426,6 +523,44 @@ export const AssessmentCentreApplicationDetailView: React.FC<
       : interviewStatus === "Completed"
         ? submittedDate
         : "—";
+
+  // Stage 3: Folder Arrangement
+  const evidenceStage = stages.find(
+    (s) =>
+      s.stageKey === "evidence_vault" ||
+      s.stageKey === "folder_arrangement" ||
+      s.stageKey === "evidence",
+  );
+  const evidenceStatus =
+    evidenceStage?.status === "successful" ||
+    isCompleted ||
+    isInterviewScheduled ||
+    interviewStage?.status === "scheduled" ||
+    interviewStage?.status === "in_progress"
+      ? "Marked as complete"
+      : evidenceStage?.status === "under_review"
+        ? "Under Review"
+        : evidenceStage?.status === "in_progress"
+          ? "In Progress"
+          : "Pending";
+
+  const isAtInterviewStage = Boolean(
+    isInterviewScheduled ||
+    activeInterviewSchedule?.scheduledAt ||
+    interviewStage?.status === "scheduled" ||
+    interviewStage?.status === "in_progress" ||
+    interviewStage?.status === "successful" ||
+    (appDetail as any)?.currentStageKey === "interview" ||
+    (appDetail as any)?.currentStageKey === "direct_observation" ||
+    evidenceStatus === "Marked as complete",
+  );
+
+  const evidenceDate = evidenceStage?.enteredAt
+    ? new Date(evidenceStage.enteredAt).toLocaleDateString("en-US")
+    : evidenceStatus === "Marked as complete"
+      ? submittedDate
+      : "—";
+
 
   // Stage 5: Internal Verifier
   const ivStage = stages.find(
@@ -489,7 +624,7 @@ export const AssessmentCentreApplicationDetailView: React.FC<
 
   if (isLoadingDetail && !appDetail) {
     return (
-      <div className="w-full min-h-[400px] flex items-center justify-center">
+      <div className="w-full min-h-100 flex items-center justify-center">
         <Loader tip="Loading application details..." />
       </div>
     );
@@ -557,13 +692,13 @@ export const AssessmentCentreApplicationDetailView: React.FC<
             </div>
 
             {paymentStatus === "Successful" ? (
-              activeFacilitator ? (
+              activeFacilitator || isAtInterviewStage || isInterviewScheduled || evidenceStatus === "Marked as complete" ? (
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={() => setIsAssignFacilitatorOpen(true)}
-                  className="bg-white! text-[#fbab2a]! border border-[#FCD34D]! hover:bg-[#FFFBEB]! font-bold text-xs sm:text-sm px-4 py-2 rounded-xl flex items-center gap-1.5 cursor-pointer shrink-0"
+                  className="bg-white! text-[#fbab2a]! border border-gray-200! hover:bg-gray-50! font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl flex items-center gap-1.5 cursor-pointer shrink-0 shadow-none!"
                 >
                   <FiFlag className="w-4 h-4 text-[#fbab2a]" />
                   <span>Change Facilitator</span>
@@ -600,7 +735,11 @@ export const AssessmentCentreApplicationDetailView: React.FC<
                 <h3 className="text-black font-bold text-base sm:text-lg lg:text-xl tracking-tight">
                   Folder Arrangement
                 </h3>
-                {activeFacilitator || evidenceStatus === "In Progress" ? (
+                {evidenceStatus === "Marked as complete" || isAtInterviewStage || isInterviewScheduled ? (
+                  <span className="bg-[#E6F4EA] text-[#1E7F4C] text-xs font-semibold px-3 py-0.5 rounded-full capitalize">
+                    Marked as Complete
+                  </span>
+                ) : evidenceStatus === "In Progress" ? (
                   <span className="bg-[#FFF4E5] text-[#B45309] border border-[#FDE6B0] text-xs font-semibold px-3 py-0.5 rounded-full capitalize">
                     14 Days Left
                   </span>
@@ -625,11 +764,7 @@ export const AssessmentCentreApplicationDetailView: React.FC<
               onClick={() => onOpenEvidenceVault?.()}
               variant="outline"
               size="sm"
-              className={
-                activeFacilitator || evidenceStatus === "In Progress"
-                  ? "bg-[#fbab2a]! hover:bg-[#e89b1f]! text-white! font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl shadow-none cursor-pointer shrink-0"
-                  : "bg-white! text-[#fbab2a]! border border-gray-200! hover:bg-gray-50! font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl cursor-pointer shrink-0"
-              }
+              className="bg-white! text-[#fbab2a]! border border-gray-200! hover:bg-gray-50! font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl cursor-pointer shrink-0 shadow-none!"
             >
               Evidence Vault
             </Button>
@@ -707,11 +842,11 @@ export const AssessmentCentreApplicationDetailView: React.FC<
                             {assessor.name}
                           </h4>
                           <p className="text-gray-400 text-xs font-normal truncate mt-0.5">
-                            {assessor.role || "Panel Member"}
+                            {assessor.role || (idx === 0 ? "Lead Panelist" : "Panel Member")}
                           </p>
 
                           <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                            {(assessor.tags || ["Carpentry", "RPL Coordinator"]).map((tag: string) => (
+                            {(assessor.tags || [resolvedTradeName, "RPL Coordinator"]).map((tag: string) => (
                               <span
                                 key={tag}
                                 className="bg-[#FDF2F4] text-[#A31D38] text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0"
@@ -835,11 +970,11 @@ export const AssessmentCentreApplicationDetailView: React.FC<
               {daysInMonth.map((day) => {
                 const targetDayNumber = activeInterviewSchedule?.scheduledAt
                   ? new Date(activeInterviewSchedule.scheduledAt).getDate()
-                  : 22;
+                  : null;
                 const isCircled =
-                  day === 10 ||
-                  day === 13 ||
-                  (isInterviewScheduled && day === targetDayNumber);
+                  isInterviewScheduled &&
+                  targetDayNumber !== null &&
+                  day === targetDayNumber;
 
                 return (
                   <span
@@ -930,50 +1065,52 @@ export const AssessmentCentreApplicationDetailView: React.FC<
             )}
           </div>
 
-          {activeFacilitator ? (
-            <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-2xs flex flex-col gap-4 select-text">
-              <h3 className="text-base font-extrabold text-black tracking-tight">
-                Facilitator
-              </h3>
-              <div className="flex items-center gap-3.5">
-                <div className="w-13 h-13 rounded-full overflow-hidden bg-gray-100 border border-gray-200 shrink-0 relative">
-                  <img
-                    src={
-                      activeFacilitator.avatar ||
-                      (ASSETS_URL as any)?.userAvatar?.src ||
-                      "/avatar-placeholder.png"
-                    }
-                    alt={activeFacilitator.name}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="flex flex-col gap-0.5 min-w-0">
-                  <h4 className="text-sm font-bold text-black truncate">
-                    {activeFacilitator.name}
-                  </h4>
-                  <p className="text-[11px] text-gray-500 font-normal truncate">
-                    Facilitator · {activeFacilitator.trade || (appDetail as any)?.trade?.name || "Carpentry"} (Level 3)
-                  </p>
-                  <div className="flex items-center gap-1.5 flex-wrap mt-1">
-                    <span className="bg-[#fdf2f4] text-[#a31d38] text-[10px] font-semibold px-2.5 py-0.5 rounded-full">
-                      {activeFacilitator.trade || (appDetail as any)?.trade?.name || "Carpentry"}
-                    </span>
-                    <span className="bg-[#fdf2f4] text-[#a31d38] text-[10px] font-semibold px-2.5 py-0.5 rounded-full">
-                      RPL Coordinator
-                    </span>
+          {!isAtInterviewStage && (
+            activeFacilitator ? (
+              <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-2xs flex flex-col gap-4 select-text">
+                <h3 className="text-base font-extrabold text-black tracking-tight">
+                  Facilitator
+                </h3>
+                <div className="flex items-center gap-3.5">
+                  <div className="w-13 h-13 rounded-full overflow-hidden bg-gray-100 border border-gray-200 shrink-0 relative">
+                    <img
+                      src={
+                        activeFacilitator.avatar ||
+                        (ASSETS_URL as any)?.userAvatar?.src ||
+                        "/avatar-placeholder.png"
+                      }
+                      alt={activeFacilitator.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-0.5 min-w-0">
+                    <h4 className="text-sm font-bold text-black truncate">
+                      {activeFacilitator.name}
+                    </h4>
+                    <p className="text-[11px] text-gray-500 font-normal truncate">
+                      Facilitator · {activeFacilitator.trade || (appDetail as any)?.trade?.name || "Carpentry"} (Level 3)
+                    </p>
+                    <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                      <span className="bg-[#fdf2f4] text-[#a31d38] text-[10px] font-semibold px-2.5 py-0.5 rounded-full">
+                        {activeFacilitator.trade || (appDetail as any)?.trade?.name || "Carpentry"}
+                      </span>
+                      <span className="bg-[#fdf2f4] text-[#a31d38] text-[10px] font-semibold px-2.5 py-0.5 rounded-full">
+                        RPL Coordinator
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ) : (
-            <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-2xs flex flex-col gap-2 select-text">
-              <h3 className="text-base font-extrabold text-black tracking-tight">
-                No facilitator assigned yet
-              </h3>
-              <p className="text-xs text-gray-400 font-normal leading-relaxed">
-                A coordinator will be assigned to guide you once your first application is created.
-              </p>
-            </div>
+            ) : (
+              <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-2xs flex flex-col gap-2 select-text">
+                <h3 className="text-base font-extrabold text-black tracking-tight">
+                  No facilitator assigned yet
+                </h3>
+                <p className="text-xs text-gray-400 font-normal leading-relaxed">
+                  A coordinator will be assigned to guide you once your first application is created.
+                </p>
+              </div>
+            )
           )}
         </div>
       </div>
