@@ -4,6 +4,7 @@ import React from "react";
 import Image from "next/image";
 import { FiCheck, FiUpload } from "react-icons/fi";
 import { ASSETS_URL } from "@/src/assets";
+import { Avatar } from "@/src/components/ui/avatar";
 import type { ApplicationDetail } from "@/src/features/shared/applications/api";
 
 interface PersonalDetailsDocumentSectionProps {
@@ -35,6 +36,13 @@ export const PersonalDetailsDocumentSection: React.FC<
     : "—";
   const email = cInfo?.emailAddress || "—";
   const qualTitle = applicationDetail?.trade?.name || trade || "—";
+
+  const passportUrl =
+    (pDetails as any)?.passportUrl ||
+    (applicationDetail as any)?.candidate?.passportUrl ||
+    (applicationDetail as any)?.passportUrl ||
+    (applicationDetail as any)?.frozenProfile?.passportUrl ||
+    (applicationDetail as any)?.frozenProfile?.personalDetails?.passportUrl;
 
   const evidenceItems = [
     {
@@ -92,11 +100,15 @@ export const PersonalDetailsDocumentSection: React.FC<
           NBTE/RPL/ 01 NSQ/RPL/QCF ASSESSMENT CENTRE CANDIDATE APPLICATION FORM
         </h2>
 
-        {/* Upload Logo Box */}
-        <div className="hidden sm:flex absolute right-0 top-0 w-24 h-24 rounded-2xl border-2 border-dashed border-rose-200 bg-[#FFF5F6] flex-col items-center justify-center p-2 text-center text-[#A31D38]">
-          <FiUpload className="w-4 h-4 mb-1" />
-          <span className="text-[10px] font-bold leading-tight">Upload Logo</span>
-          <span className="text-[8px] text-gray-400 mt-0.5">5mb image max size</span>
+        {/* Candidate Passport / Avatar */}
+        <div className="hidden sm:flex absolute right-0 top-0">
+          <Avatar
+            src={passportUrl}
+            name={fullName}
+            shape="rounded"
+            className="w-24 h-24 border-2 border-dashed border-rose-200 bg-[#FFF5F6] p-1 shadow-2xs"
+            alt={fullName}
+          />
         </div>
       </div>
 

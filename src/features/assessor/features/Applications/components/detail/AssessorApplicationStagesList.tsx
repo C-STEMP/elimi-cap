@@ -21,6 +21,7 @@ interface AssessorApplicationStagesListProps {
   onViewApplicationForm: () => void;
   onOpenEvidenceVault?: () => void;
   onMarkCompetent?: () => void;
+  onMarkEvCompetent?: () => void;
   onMarkCandidateCompetent?: () => void;
   onMarkCandidateIncompetent?: () => void;
   onMarkCandidateInconclusive?: () => void;
@@ -47,6 +48,7 @@ export const AssessorApplicationStagesList: React.FC<
   onViewApplicationForm,
   onOpenEvidenceVault,
   onMarkCompetent,
+  onMarkEvCompetent,
   onMarkCandidateCompetent,
   onMarkCandidateIncompetent,
   onMarkCandidateInconclusive,
@@ -123,8 +125,37 @@ export const AssessorApplicationStagesList: React.FC<
     isCompleted,
   );
 
+  const ivStageRow = stagesData?.find(
+    (s) =>
+      s.stageKey === "internal_verification" ||
+      s.stageKey === "internal_verifier" ||
+      s.stageKey === "iv_review" ||
+      s.stageKey === "iv",
+  );
+  const isIvDone = Boolean(
+    ivStageRow?.status === "successful" ||
+    (ivStageRow?.status as string) === "completed" ||
+    isCompleted,
+  );
+
+  const evStageRow = stagesData?.find(
+    (s) =>
+      s.stageKey === "external_verification" ||
+      s.stageKey === "external_verifier" ||
+      s.stageKey === "eqa" ||
+      s.stageKey === "ev",
+  );
+  const isEvDone = Boolean(
+    evStageRow?.status === "successful" ||
+    (evStageRow?.status as string) === "completed" ||
+    isCompleted,
+  );
+
   const isInternalVerifierRole =
     application.role === "Internal Verifier" || isInterviewDone || isCompleted;
+
+  const isExternalVerifierRole =
+    application.role === "External Verifier" || isIvDone || isCompleted;
 
   const currentInterviewStatus = isInterviewDone
     ? "Competent"
@@ -222,12 +253,16 @@ export const AssessorApplicationStagesList: React.FC<
     {
       id: "internal_verifier",
       title: "Internal Verifier",
-      status: isInternalVerifierRole ? "Under Review" : "Not Started",
-      badgeType: isInternalVerifierRole ? "under_review" : "not_started",
-      badgeText: isInternalVerifierRole ? "Under Review" : "Not Started",
-      dateText: isInternalVerifierRole ? "Started on: 7/23/2026" : "---",
+      status: isIvDone ? "Completed" : isInternalVerifierRole ? "Under Review" : "Not Started",
+      badgeType: isIvDone ? "completed" : isInternalVerifierRole ? "under_review" : "not_started",
+      badgeText: isIvDone ? "Completed" : isInternalVerifierRole ? "Under Review" : "Not Started",
+      dateText: isIvDone
+        ? (ivStageRow?.enteredAt ? `Completed on: ${new Date(ivStageRow.enteredAt).toLocaleDateString()}` : `Started on: ${application.submittedAt || "7/23/2026"}`)
+        : isInternalVerifierRole
+          ? `Started on: ${application.submittedAt || "7/23/2026"}`
+          : "---",
       actionButton:
-        isInternalVerifierRole && onMarkCompetent
+        !isIvDone && (application.role === "Internal Verifier" || isInternalVerifierRole) && onMarkCompetent
           ? {
               label: "Mark as Competent",
               variant: "amber",
@@ -236,28 +271,32 @@ export const AssessorApplicationStagesList: React.FC<
           : undefined,
     },
     {
-      id: "notify_awarding_body",
-      title: "Notify Awarding Body",
-      status: "Not Started",
-      badgeType: "not_started",
-      badgeText: "Not Started",
-      dateText: "---",
-    },
-    {
       id: "external_verifier",
       title: "External Verifier",
-      status: "Not Started",
-      badgeType: "not_started",
-      badgeText: "Not Started",
-      dateText: "---",
+      status: isEvDone ? "Completed" : (isExternalVerifierRole && isIvDone) ? "Under Review" : "Not Started",
+      badgeType: isEvDone ? "completed" : (isExternalVerifierRole && isIvDone) ? "under_review" : "not_started",
+      badgeText: isEvDone ? "Completed" : (isExternalVerifierRole && isIvDone) ? "Under Review" : "Not Started",
+      dateText: isEvDone
+        ? (evStageRow?.enteredAt ? `Completed on: ${new Date(evStageRow.enteredAt).toLocaleDateString()}` : `Started on: ${application.submittedAt || "8/15/2026"}`)
+        : (isExternalVerifierRole && isIvDone)
+          ? `Started on: ${application.submittedAt || "8/15/2026"}`
+          : "---",
+      actionButton:
+        !isEvDone && (application.role === "External Verifier" || isExternalVerifierRole) && isIvDone && onMarkEvCompetent
+          ? {
+              label: "Mark as Competent",
+              variant: "amber",
+              onClick: onMarkEvCompetent,
+            }
+          : undefined,
     },
     {
       id: "certification",
       title: "Certification",
-      status: "Not Started",
-      badgeType: "not_started",
-      badgeText: "Not Started",
-      dateText: "---",
+      status: isCompleted || isEvDone ? "Competent" : "Not Started",
+      badgeType: isCompleted || isEvDone ? "competent" : "not_started",
+      badgeText: isCompleted || isEvDone ? "Competent" : "Not Started",
+      dateText: isCompleted || isEvDone ? (application.submittedAt ? `Completed on: ${application.submittedAt}` : "—") : "---",
     },
   ];
 

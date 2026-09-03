@@ -71,37 +71,6 @@ export const AssessmentType: React.FC<AssessmentTypeProps> = ({
       return;
     }
 
-    if (id === "rpl") {
-      const existingRpl = applications.find(
-        (a) => a.type === "RPL" || !a.type,
-      );
-
-      if (existingRpl) {
-        if (existingRpl.status !== "draft") {
-          toast({
-            type: "info",
-            title: "RPL Application Already Submitted",
-            description:
-              "You have already submitted an RPL application. You can only have one RPL application.",
-          });
-          router.push(`/dashboard/applications/${existingRpl.id}`);
-          return;
-        }
-
-        toast({
-          type: "info",
-          title: "Draft Application Found",
-          description:
-            "You have a saved draft application. You can continue and edit your application.",
-        });
-        router.push("/rpl/personal-info");
-        return;
-      }
-
-      router.push("/rpl/personal-info");
-      return;
-    }
-
     router.push("/onboarding/start-application");
   };
 

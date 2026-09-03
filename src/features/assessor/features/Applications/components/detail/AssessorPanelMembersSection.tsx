@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import { ASSETS_URL } from "@/src/assets";
+import { Avatar } from "@/src/components/ui/avatar";
 import type { AssessorPanelMember } from "../../types/applications.types";
 
 interface AssessorPanelMembersSectionProps {
@@ -48,15 +49,12 @@ export const AssessorPanelMembersSection: React.FC<
                   : "border-gray-100 shadow-2xs hover:border-gray-200"
               }`}
             >
-              <div className="relative w-12 h-12 rounded-full overflow-hidden shrink-0 border border-gray-100">
-                <Image
-                  src={assessor.avatar || ASSETS_URL.userAvatar}
-                  alt={assessor.name}
-                  fill
-                  sizes="48px"
-                  className="object-cover"
-                />
-              </div>
+              <Avatar
+                src={assessor.avatar}
+                name={assessor.name}
+                className="w-12 h-12 border border-gray-100 shrink-0"
+                alt={assessor.name}
+              />
 
               <div className="flex flex-col min-w-0">
                 <h5 className="text-neutral-primary font-bold text-sm leading-snug truncate">

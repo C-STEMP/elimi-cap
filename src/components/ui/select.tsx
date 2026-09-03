@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useId, useState, useEffect } from "react";
+import React, { useId, useState, useEffect, useRef } from "react";
 import { Select as AntSelect } from "antd";
-import { FiChevronDown, FiX } from "react-icons/fi";
+import { FiChevronDown, FiX, FiSearch } from "react-icons/fi";
 
 export interface SelectOption {
   label: string;
@@ -15,6 +15,7 @@ export interface SelectProps {
   onChange?: (e: any) => void;
   options?: (string | SelectOption)[];
   placeholder?: string;
+  searchPlaceholder?: string;
   error?: string;
   helperText?: React.ReactNode;
   required?: boolean;
@@ -50,6 +51,7 @@ export const Select: React.FC<SelectProps> = ({
   helperText,
   options = [],
   placeholder = "Select",
+  searchPlaceholder,
   id,
   name,
   value,
@@ -72,6 +74,8 @@ export const Select: React.FC<SelectProps> = ({
 }) => {
   const reactId = useId();
   const [mounted, setMounted] = useState(false);
+  const [dropdownSearch, setDropdownSearch] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -83,6 +87,20 @@ export const Select: React.FC<SelectProps> = ({
     typeof opt === "string" ? { label: opt, value: opt } : opt,
   );
 
+  const shouldShowSearch =
+    showSearch === true ||
+    (showSearch !== false && normalizedOptions.length >= 4);
+
+  const filteredOptions: SelectOption[] = React.useMemo(() => {
+    if (!shouldShowSearch || !dropdownSearch.trim()) return normalizedOptions;
+    const q = dropdownSearch.trim().toLowerCase();
+    return normalizedOptions.filter((opt) => {
+      const labelStr = opt.label?.toString().toLowerCase() || "";
+      const valStr = opt.value?.toString().toLowerCase() || "";
+      return labelStr.includes(q) || valStr.includes(q);
+    });
+  }, [normalizedOptions, dropdownSearch, shouldShowSearch]);
+
   const handleChange = (newVal: string | string[]) => {
     if (!onChange) return;
     const event = {
@@ -91,15 +109,32 @@ export const Select: React.FC<SelectProps> = ({
     onChange(event);
   };
 
-  const antValue: string | string[] | undefined = multiple
-    ? Array.isArray(value)
-      ? value
+  const isRawId = (val?: string) => {
+    if (!val || typeof val !== "string") return false;
+    return (
+      /^[0-9A-Z]{20,}$/i.test(val) ||
+      /^[0-9a-f]{8}-[0-9a-f]{4}/i.test(val)
+    );
+  };
+
+  const matchesAnyOption = (val?: string) => {
+    if (!val) return false;
+    return normalizedOptions.some((o) => o.value === val || o.label === val);
+  };
+
+  const antValue: string | string[] | undefined = loading
+    ? undefined
+    : multiple
+      ? Array.isArray(value)
+        ? value
+        : typeof value === "string" && value
+          ? value.split(", ").filter(Boolean)
+          : []
       : typeof value === "string" && value
-        ? value.split(", ").filter(Boolean)
-        : []
-    : typeof value === "string" && value
-      ? value
-      : undefined;
+        ? isRawId(value) && !matchesAnyOption(value)
+          ? undefined
+          : value
+        : undefined;
 
   const errorClass = error
     ? "!border-primary-solid !ring-2 !ring-border-secondary"
@@ -132,10 +167,64 @@ export const Select: React.FC<SelectProps> = ({
         placeholder={loading ? (typeof placeholder === "string" && placeholder.includes("Loading") ? placeholder : "Loading...") : placeholder}
         disabled={disabled}
         loading={loading}
-        showSearch={showSearch}
-        onSearch={onSearch}
-        searchValue={searchValue}
+        showSearch={false}
         allowClear={allowClear}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDropdownSearch("");
+          } else if (shouldShowSearch) {
+            setTimeout(() => {
+              searchInputRef.current?.focus();
+            }, 60);
+          }
+        }}
+        popupRender={(menu) => (
+          <div className="flex flex-col min-w-0">
+            {shouldShowSearch && (
+              <div
+                className="p-2 pb-2.5 border-b border-gray-100 sticky top-0 bg-white z-10 rounded-t-xl"
+                onMouseDown={(e) => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="relative flex items-center w-full">
+                  <FiSearch className="w-4 h-4 text-gray-400 absolute left-3 pointer-events-none" />
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    value={dropdownSearch}
+                    onChange={(e) => {
+                      setDropdownSearch(e.target.value);
+                      onSearch?.(e.target.value);
+                    }}
+                    onKeyDown={(e) => e.stopPropagation()}
+                    placeholder={
+                      searchPlaceholder ||
+                      (typeof placeholder === "string" &&
+                      !placeholder.includes("Select") &&
+                      !placeholder.includes("Loading")
+                        ? `Search ${placeholder.toLowerCase()}...`
+                        : "Search...")
+                    }
+                    className="w-full h-9 pl-9 pr-7 text-xs xl:text-sm bg-[#F9FAFB] border border-gray-200 rounded-xl outline-none focus:border-[#fbab2a] focus:ring-1 focus:ring-[#fbab2a]/30 text-gray-800 placeholder:text-gray-400 font-medium transition-all"
+                  />
+                  {dropdownSearch && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDropdownSearch("");
+                        onSearch?.("");
+                      }}
+                      className="absolute right-2.5 text-gray-400 hover:text-gray-600 p-0.5 rounded cursor-pointer"
+                    >
+                      <FiX className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+            {menu}
+          </div>
+        )}
         {...({
           autoComplete: autoComplete || "off",
           "data-lpignore": "true",
@@ -197,16 +286,24 @@ export const Select: React.FC<SelectProps> = ({
           loading ? (
             <div className="py-4 px-3 text-center text-xs xl:text-sm text-gray-500 font-medium flex items-center justify-center gap-2 select-none">
               <span className="w-4 h-4 border-2 border-[#a31d38] border-t-transparent rounded-full animate-spin shrink-0" />
-              <span>{typeof placeholder === "string" && placeholder.includes("Loading") ? placeholder : "Loading units..."}</span>
+              <span>
+                {typeof placeholder === "string" && placeholder.includes("Loading")
+                  ? placeholder
+                  : "Loading..."}
+              </span>
             </div>
           ) : notFoundContent !== undefined ? (
             <div className="py-4 px-3 text-center text-xs xl:text-sm text-gray-500 font-medium select-none">
               {notFoundContent}
             </div>
-          ) : undefined
+          ) : (
+            <div className="py-4 px-3 text-center text-xs xl:text-sm text-gray-400 font-normal select-none">
+              No options found
+            </div>
+          )
         }
         onChange={handleChange}
-        options={normalizedOptions}
+        options={filteredOptions}
         className={`w-full ${className}`}
         popupMatchSelectWidth={
           popupMatchSelectWidth !== undefined

@@ -23,6 +23,7 @@ import {
   useGetTradesBySector,
   useGetUnitsByTrade,
 } from "@/src/features/shared/reference/hooks";
+import { useGetApplications } from "@/src/features/candidate/features/Application/hooks";
 
 import {
   rplExperienceTradeSchema,
@@ -78,14 +79,29 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
   const savedRPLExperienceTrade = useAppSelector(
     (s) => s.onboarding.rplExperienceTrade,
   );
+  const currentAppId = useAppSelector(
+    (s) => s.application.currentApplicationId,
+  );
 
-  const { data: tradeDetail } = useGetTradeDetail(savedTrade);
-  const { data: remoteTrades = [] } = useGetTradesBySector(savedSector);
+  const { data: existingApps = [] } = useGetApplications();
+  const activeApp =
+    existingApps.find((a) => a.id === currentAppId) ||
+    existingApps.find((a) => (a.type || "RPL").toUpperCase() === "RPL") ||
+    existingApps[0];
+
+  const appTradeName =
+    activeApp?.trade?.name || (activeApp as any)?.tradeName || "";
+
+  const effectiveTradeId = savedTrade || activeApp?.tradeId || "";
+  const effectiveSectorId = savedSector || activeApp?.sectorId || "";
+
+  const { data: tradeDetail } = useGetTradeDetail(effectiveTradeId);
+  const { data: remoteTrades = [] } = useGetTradesBySector(effectiveSectorId);
   const {
     data: remoteUnits = [],
     isLoading: isLoadingUnits,
     isFetching: isFetchingUnits,
-  } = useGetUnitsByTrade(savedTrade);
+  } = useGetUnitsByTrade(effectiveTradeId);
   const isUnitsLoading = isLoadingUnits || isFetchingUnits;
 
   const unitOptions =
@@ -114,6 +130,8 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
     (!isLikelyId(savedRPLExperienceTrade.qualificationTitle) &&
       savedRPLExperienceTrade.qualificationTitle) ||
     savedTradeName ||
+    appTradeName ||
+    tradeDetail?.name ||
     (!isLikelyId(savedTrade) ? savedTrade : "") ||
     "";
 
@@ -163,8 +181,9 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
   useEffect(() => {
     const resolvedName =
       savedTradeName ||
+      appTradeName ||
       tradeDetail?.name ||
-      remoteTrades.find((t) => t.id === savedTrade)?.name;
+      remoteTrades.find((t) => t.id === savedTrade || t.id === effectiveTradeId)?.name;
 
     if (resolvedName) {
       setForm((prev) => {
@@ -176,8 +195,13 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
         }
         return prev;
       });
+      dispatch(
+        setRPLExperienceTrade({
+          qualificationTitle: resolvedName,
+        }),
+      );
     }
-  }, [savedTradeName, tradeDetail, remoteTrades, savedTrade]);
+  }, [savedTradeName, appTradeName, tradeDetail, remoteTrades, savedTrade, effectiveTradeId, dispatch]);
 
   // Hydrate from getOnboarding API response if available
   useEffect(() => {

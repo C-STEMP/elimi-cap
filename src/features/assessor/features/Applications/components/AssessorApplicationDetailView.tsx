@@ -29,6 +29,11 @@ import {
   useGetInterviewForms,
   useEvaluateInterview,
 } from "@/src/features/shared/applications/hooks";
+import {
+  reviewIvApi,
+  reviewEvApi,
+} from "@/src/features/shared/applications/api/application.api";
+import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/src/components/ui/toast";
 
 export type AssessorDetailSubView =
@@ -127,9 +132,15 @@ export const AssessorApplicationDetailView: React.FC<
     }
   }, [remoteForms]);
 
+  const queryClient = useQueryClient();
+
   // Internal Verifier Modals State
   const [isConfirmCompetentOpen, setIsConfirmCompetentOpen] = useState(false);
   const [isCompetentSuccessOpen, setIsCompetentSuccessOpen] = useState(false);
+
+  // External Verifier Modals State
+  const [isConfirmEvCompetentOpen, setIsConfirmEvCompetentOpen] = useState(false);
+  const [isEvCompetentSuccessOpen, setIsEvCompetentSuccessOpen] = useState(false);
 
   // Lead Panelist / Interview Stage Competent Modals State
   const [isConfirmCandidateCompetentOpen, setIsConfirmCandidateCompetentOpen] =
@@ -174,9 +185,48 @@ export const AssessorApplicationDetailView: React.FC<
 
   const { data: appDetail } = useGetApplicationById(application.id);
 
-  const handleConfirmCompetent = () => {
+  const handleConfirmCompetent = async () => {
     setIsConfirmCompetentOpen(false);
+    try {
+      await reviewIvApi(application.id, {
+        decision: "approve",
+        feedback: "Candidate verified and confirmed competent by Internal Verifier.",
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["applications", application.id],
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["applications", "stages", application.id],
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["applications"],
+      });
+    } catch (err) {
+      console.warn("reviewIvApi error:", err);
+    }
     setIsCompetentSuccessOpen(true);
+  };
+
+  const handleConfirmEvCompetent = async () => {
+    setIsConfirmEvCompetentOpen(false);
+    try {
+      await reviewEvApi(application.id, {
+        decision: "approve",
+        feedback: "Candidate verified and confirmed competent by External Verifier.",
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["applications", application.id],
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["applications", "stages", application.id],
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["applications"],
+      });
+    } catch (err) {
+      console.warn("reviewEvApi error:", err);
+    }
+    setIsEvCompetentSuccessOpen(true);
   };
 
   const handleConfirmCandidateCompetent = () => {
@@ -330,6 +380,7 @@ export const AssessorApplicationDetailView: React.FC<
           onViewApplicationForm={() => setSubView("application_form")}
           onOpenEvidenceVault={() => setSubView("evidence_vault")}
           onMarkCompetent={() => setIsConfirmCompetentOpen(true)}
+          onMarkEvCompetent={() => setIsConfirmEvCompetentOpen(true)}
           onMarkCandidateCompetent={() =>
             setIsConfirmCandidateCompetentOpen(true)
           }
@@ -365,6 +416,20 @@ export const AssessorApplicationDetailView: React.FC<
       <MarkCompetentSuccessModal
         isOpen={isCompetentSuccessOpen}
         onClose={() => setIsCompetentSuccessOpen(false)}
+      />
+
+      {/* External Verifier Modals */}
+      <ConfirmMarkCompetentModal
+        isOpen={isConfirmEvCompetentOpen}
+        onClose={() => setIsConfirmEvCompetentOpen(false)}
+        onConfirm={handleConfirmEvCompetent}
+        title="Confirm External Verification"
+        description="Confirm you want to approve and mark external verification competent"
+      />
+
+      <MarkCompetentSuccessModal
+        isOpen={isEvCompetentSuccessOpen}
+        onClose={() => setIsEvCompetentSuccessOpen(false)}
       />
 
       {/* Lead Panelist / Interview Stage Competent Modals */}

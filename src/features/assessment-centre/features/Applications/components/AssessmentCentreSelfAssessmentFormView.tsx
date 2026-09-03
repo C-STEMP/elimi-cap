@@ -8,6 +8,7 @@ import { Button } from "@/src/components/ui/button";
 import { PassportUpload } from "@/src/components/ui/passport-upload";
 import { Loader } from "@/src/components/ui/loader";
 import { downloadFormElement, printFormElement } from "@/src/lib/formPrintDownload";
+import { Avatar } from "@/src/components/ui/avatar";
 import { MOCK_COMPETENCY_TASKS } from "@/features/assessment-centre/utils/constants";
 import {
   useGetSelfAssessment,
@@ -176,24 +177,13 @@ export const AssessmentCentreSelfAssessmentFormView: React.FC<
               </h2>
 
               <div className="sm:absolute sm:top-0 sm:right-0 mt-4 sm:mt-0">
-                <div className="w-28 sm:w-32 h-28 sm:h-32 rounded-2xl border-2 border-dashed border-[#a31d38]/20 bg-[#fdf2f5] overflow-hidden flex flex-col items-center justify-center p-1 relative shadow-2xs">
-                  {resolvedPassportUrl ? (
-                    <img
-                      src={resolvedPassportUrl}
-                      alt="Candidate Passport"
-                      className="w-full h-full object-cover rounded-xl"
-                    />
-                  ) : (
-                    <div className="flex flex-col items-center text-center p-2">
-                      <span className="text-[#a31d38] text-xs font-bold leading-tight">
-                        Passport Photo
-                      </span>
-                      <span className="text-[10px] text-gray-400 mt-0.5">
-                        Candidate Attached
-                      </span>
-                    </div>
-                  )}
-                </div>
+                <Avatar
+                  src={resolvedPassportUrl}
+                  name={formCandidateName}
+                  shape="rounded"
+                  className="w-28 sm:w-32 h-28 sm:h-32 border-2 border-dashed border-[#a31d38]/20 bg-[#fdf2f5] p-1 shadow-2xs"
+                  alt="Candidate Passport"
+                />
               </div>
             </div>
 
