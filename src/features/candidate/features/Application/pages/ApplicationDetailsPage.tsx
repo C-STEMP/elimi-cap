@@ -786,13 +786,12 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
 
   if (
     apiApp?.type === "NSQ" ||
-    (reduxApp as any)?.type === "NSQ" ||
     (application as any)?.type === "NSQ" ||
     id === "nsq"
   ) {
     return (
       <NsqApplicationDetailView
-        application={apiApp || reduxApp || application || { type: "NSQ" }}
+        application={apiApp || application || { type: "NSQ" }}
       />
     );
   }
@@ -909,10 +908,12 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
                         minute: "2-digit",
                         hour12: true,
                       }),
+                      mode: activeInterviewSchedule.mode,
                       liveUrl:
-                        activeInterviewSchedule.mode === "online"
+                        activeInterviewSchedule.mode === "online" || activeInterviewSchedule.mode === "virtual"
                           ? activeInterviewSchedule.link
                           : undefined,
+                      location: activeInterviewSchedule.location || "Cstemp Centre",
                       isRescheduled: Boolean(activeInterviewSchedule.isRescheduled),
                     }
                   : null

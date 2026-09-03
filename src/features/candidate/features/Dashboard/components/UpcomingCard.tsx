@@ -1,101 +1,109 @@
 "use client";
 
 import React from "react";
-import { FiCalendar, FiExternalLink } from "react-icons/fi";
+import { FiCalendar } from "react-icons/fi";
 
 export interface InterviewData {
   title?: string;
   date?: string;
   time?: string;
+  mode?: "online" | "physical" | "virtual" | string;
   liveUrl?: string;
+  location?: string;
   isRescheduled?: boolean;
   countdownTimer?: string;
 }
 
 interface UpcomingCardProps {
   interview?: InterviewData | null;
+  className?: string;
 }
 
-export const UpcomingCard: React.FC<UpcomingCardProps> = ({ interview }) => {
-  const showEvents = interview !== null && interview !== undefined;
-
-  const handleJoinNow = () => {
-    if (interview?.liveUrl) {
-      window.open(interview.liveUrl, "_blank", "noopener,noreferrer");
-    }
-  };
+export const UpcomingCard: React.FC<UpcomingCardProps> = ({
+  interview,
+  className = "",
+}) => {
+  const showEvents = Boolean(interview && (interview.date || interview.time));
+  const isOnline =
+    interview?.mode === "online" ||
+    interview?.mode === "virtual" ||
+    Boolean(interview?.liveUrl && !interview?.location);
 
   return (
-    <div className="bg-white rounded-[22px] p-5 sm:p-6 shadow-lg border border-gray-100/80 flex flex-col justify-between h-full">
-      <h3 className="text-[#1A1A1A] font-bold text-lg tracking-tight mb-4">
+    <div
+      className={`bg-white rounded-3xl p-6 border border-gray-100 shadow-2xs flex flex-col items-center justify-center text-center gap-3 py-6 w-full ${className}`}
+    >
+      <h3 className="text-base font-extrabold text-black self-start tracking-tight mb-1">
         Upcoming Events
       </h3>
 
-      {!showEvents ? (
-        <div className="flex-1 flex flex-col items-center justify-center text-center py-6">
-          <div className="w-12 h-12 rounded-full bg-[#fdf2f5] text-[#8a1538] flex items-center justify-center mb-3 shrink-0">
-            <FiCalendar className="w-6 h-6 stroke-[1.8]" />
+      {showEvents && interview ? (
+        <div className="w-full bg-[#F9FAFB] rounded-xl p-4 border border-gray-100 text-left border-l-4 border-l-[#A31D38] flex flex-col gap-2.5">
+          <div className="flex items-center justify-between gap-2">
+            <h4 className="text-sm font-bold text-gray-900">
+              {interview.title || "Panel Interview"}
+            </h4>
+            {interview.isRescheduled && (
+              <span className="bg-[#FCE8EB] text-[#A31D38] text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0">
+                Rescheduled
+              </span>
+            )}
           </div>
-          <h4 className="text-sm lg:text-base font-bold text-[#1A1A1A] mb-1">
-            No upcoming events
-          </h4>
-          <p className="text-[#757575] text-xs lg:text-[13px] font-normal max-w-50">
-            Your scheduled events will appear here
-          </p>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-3.5 w-full">
-          {/* Event 1: Interview/Event */}
-          <div className="bg-[#F3F5F9] rounded-2xl p-4 flex items-stretch gap-3.5 w-full">
-            {/* Inside Vertical Line Bar */}
-            <span className="w-1.5 bg-[#FBAB2A] rounded-full shrink-0 my-0.5" />
 
-            <div className="flex flex-col flex-1 w-full justify-between gap-2">
-              {/* Top Row: Title + Optional Rescheduled Badge */}
-              <div className="flex items-center gap-2 flex-wrap">
-                <h4 className="text-sm sm:text-base font-bold text-[#1A1A1A] leading-tight">
-                  {interview?.title || "Panel Interview"}
-                </h4>
-                {interview?.isRescheduled && (
-                  <span className="bg-[#FEE2E2] text-[#DC2626] text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0">
-                    Rescheduled
-                  </span>
-                )}
-              </div>
-
-              {/* Bottom Row: Date/Time on Left, Join Now or Countdown Button on Right */}
-              <div className="flex items-end justify-between w-full mt-0.5">
-                <div className="flex flex-col">
-                  <span className="text-[11px] font-medium text-[#757575]">
-                    {interview?.date || "TBD"}
-                  </span>
-                  <span className="text-xs sm:text-sm font-extrabold text-[#1A1A1A] mt-0.5">
-                    {interview?.time || "TBD"}
-                  </span>
-                </div>
-
-                {interview?.countdownTimer ? (
-                  <div className="bg-[#FFF8EB] border border-[#FDE68A] text-[#FBAB2A] font-extrabold text-xs px-4 py-2 rounded-xl shrink-0 select-none">
-                    {interview.countdownTimer}
-                  </div>
-                ) : interview?.liveUrl ? (
-                  <button
-                    type="button"
-                    onClick={handleJoinNow}
-                    className="bg-[#FBAB2A] hover:bg-[#E89B1F] active:scale-95 text-white font-bold text-xs sm:text-sm px-4 sm:px-5 py-2 rounded-xl transition-all shadow-xs cursor-pointer shrink-0 flex items-center gap-1.5"
-                  >
-                    Join Now
-                    <FiExternalLink className="w-3.5 h-3.5" />
-                  </button>
-                ) : (
-                  <div className="bg-[#F3F4F6] text-[#6B7280] font-bold text-xs sm:text-sm px-4 sm:px-5 py-2 rounded-xl shrink-0 select-none">
-                    Scheduled
-                  </div>
-                )}
-              </div>
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="flex flex-col">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                TIME
+              </span>
+              <span className="text-xs font-bold text-gray-900 mt-0.5">
+                {interview.time || "12:00PM"}
+              </span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                DATE
+              </span>
+              <span className="text-xs font-bold text-gray-900 mt-0.5">
+                {interview.date || "22/03/2026"}
+              </span>
             </div>
           </div>
+
+          <div className="flex flex-col pt-0.5">
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+              {isOnline ? "Meeting Link" : "Address"}
+            </span>
+            {isOnline && interview.liveUrl ? (
+              <a
+                href={interview.liveUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs font-medium text-primary hover:underline truncate mt-0.5"
+              >
+                {interview.liveUrl}
+              </a>
+            ) : (
+              <span className="text-xs font-bold text-gray-900 mt-0.5 truncate">
+                {interview.location || "Cstemp Centre"}
+              </span>
+            )}
+          </div>
         </div>
+      ) : (
+        <>
+          <div className="w-12 h-12 rounded-full bg-[#fde8ec] text-[#a31d38] flex items-center justify-center mt-2">
+            <FiCalendar className="w-6 h-6 stroke-2" />
+          </div>
+
+          <div className="flex flex-col gap-1 mt-1">
+            <span className="text-xs sm:text-sm font-bold text-black">
+              No upcoming events
+            </span>
+            <span className="text-xs text-gray-400 font-normal">
+              Your scheduled events will appear here
+            </span>
+          </div>
+        </>
       )}
     </div>
   );
