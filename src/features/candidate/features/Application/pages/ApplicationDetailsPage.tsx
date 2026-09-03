@@ -40,6 +40,10 @@ import {
   useGetPaymentQuote,
   useGetApplicationReceipt,
 } from "@/src/features/candidate/features/Application/hooks";
+import {
+  useGetInterviewSchedule,
+  useGetInterviewPanel,
+} from "@/src/features/shared/applications/hooks";
 import { APPLICATION_QUERY_KEYS } from "@/src/features/shared/applications/hooks/useApplication";
 import type { ApplicationDetail } from "@/src/features/shared/applications/api";
 import { Loader } from "@/src/components/ui/loader";
@@ -89,6 +93,39 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
   const { data: stagesData } = useGetApplicationStages(id || "");
   const { data: paymentQuote } = useGetPaymentQuote(id || "");
   const { data: receiptData } = useGetApplicationReceipt(id || "");
+  const { data: interviewScheduleFromApi } = useGetInterviewSchedule(id || "");
+  const { data: interviewPanelFromApi } = useGetInterviewPanel(id || "");
+
+  const persistedSchedule = React.useMemo(() => {
+    if (typeof window === "undefined" || !id) return null;
+    try {
+      const stored = localStorage.getItem(`elimi_interview_schedule_${id}`);
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  }, [id]);
+
+  const persistedPanel = React.useMemo(() => {
+    if (typeof window === "undefined" || !id) return null;
+    try {
+      const stored = localStorage.getItem(`elimi_interview_panel_${id}`);
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  }, [id]);
+
+  const activeInterviewSchedule = interviewScheduleFromApi || persistedSchedule;
+  const isInterviewScheduled = Boolean(activeInterviewSchedule?.scheduledAt);
+
+  const formattedInterviewDate = activeInterviewSchedule?.scheduledAt
+    ? new Date(activeInterviewSchedule.scheduledAt).toLocaleDateString("en-US", {
+        month: "numeric",
+        day: "numeric",
+        year: "numeric",
+      })
+    : "8/15/2026";
 
   const rawTrade =
     (apiApp as any)?.trade?.name ||
@@ -496,6 +533,67 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
   };
 
   const interviewAssessors = React.useMemo(() => {
+    if (persistedPanel?.leadAssessor) {
+      return [
+        {
+          id: persistedPanel.leadAssessor.id || "lead",
+          name: persistedPanel.leadAssessor.name || "Ngozi Eze",
+          avatar: persistedPanel.leadAssessor.avatar || "/images/facilitator_ngozi.jpg",
+          role: "Panel Member",
+          tags: persistedPanel.leadAssessor.tags || [resolvedTrade || "Carpentry", "RPL Coordinator"],
+          isHighlighted: false,
+        },
+        ...(persistedPanel.panelMembers || []).map((m: any, idx: number) => ({
+          id: m.id || `member-${idx}`,
+          name: m.name || "Ngozi Eze",
+          avatar: m.avatar || "/images/facilitator_ngozi.jpg",
+          role: "Panel Member",
+          tags: m.tags || [resolvedTrade || "Carpentry", "RPL Coordinator"],
+          isHighlighted: idx === 0,
+        })),
+      ];
+    }
+
+    if (interviewPanelFromApi?.members && interviewPanelFromApi.members.length > 0) {
+      return interviewPanelFromApi.members.map((m: any, i: number) => ({
+        id: m.assessorId || `assessor-${i}`,
+        name: m.name || "Ngozi Eze",
+        avatar: "/images/facilitator_ngozi.jpg",
+        role: "Panel Member",
+        tags: m.sectors?.map((s: any) => s.name) || [resolvedTrade || "Carpentry", "RPL Coordinator"],
+        isHighlighted: i === 1,
+      }));
+    }
+
+    if (isInterviewScheduled) {
+      return [
+        {
+          id: "ngozi-1",
+          name: "Ngozi Eze",
+          avatar: "/images/facilitator_ngozi.jpg",
+          role: "Panel Member",
+          tags: [resolvedTrade || "Carpentry", "RPL Coordinator"],
+          isHighlighted: false,
+        },
+        {
+          id: "ngozi-2",
+          name: "Ngozi Eze",
+          avatar: "/images/facilitator_ngozi.jpg",
+          role: "Panel Member",
+          tags: [resolvedTrade || "Carpentry", "RPL Coordinator"],
+          isHighlighted: true,
+        },
+        {
+          id: "ngozi-3",
+          name: "Ngozi Eze",
+          avatar: "/images/facilitator_ngozi.jpg",
+          role: "Panel Member",
+          tags: [resolvedTrade || "Carpentry", "RPL Coordinator"],
+          isHighlighted: false,
+        },
+      ];
+    }
+
     if (
       Array.isArray((apiApp as any)?.assessors) &&
       (apiApp as any).assessors.length > 0
@@ -530,7 +628,7 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
     }
 
     return undefined;
-  }, [apiApp, facilitatorData, rawFacilitator, resolvedTrade]);
+  }, [persistedPanel, interviewPanelFromApi, isInterviewScheduled, apiApp, facilitatorData, rawFacilitator, resolvedTrade]);
 
   const stages = application
     ? getStagesConfig({
@@ -589,6 +687,7 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
         stagesData,
         currentStageKey: apiApp?.currentStageKey,
         assessors: interviewAssessors,
+        interviewDateText: isInterviewScheduled ? formattedInterviewDate : undefined,
       })
     : [];
 
@@ -709,8 +808,27 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
           </div>
 
           <div className="lg:col-span-4 xl:col-span-3 flex flex-col gap-6">
-            <CalendarWidget />
-            <UpcomingCard interview={null} />
+            <CalendarWidget panelInterviewDate={activeInterviewSchedule?.scheduledAt || undefined} />
+            <UpcomingCard
+              interview={
+                isInterviewScheduled && activeInterviewSchedule?.scheduledAt
+                  ? {
+                      title: "Panel Interview",
+                      date: new Date(activeInterviewSchedule.scheduledAt).toLocaleDateString("en-GB"),
+                      time: new Date(activeInterviewSchedule.scheduledAt).toLocaleTimeString("en-US", {
+                        hour: "numeric",
+                        minute: "2-digit",
+                        hour12: true,
+                      }),
+                      liveUrl:
+                        activeInterviewSchedule.mode === "online"
+                          ? activeInterviewSchedule.link
+                          : undefined,
+                      isRescheduled: Boolean(activeInterviewSchedule.isRescheduled),
+                    }
+                  : null
+              }
+            />
             <FacilitatorCard
               facilitator={facilitatorData}
               onRequestCall={() => setIsCallRequestModalOpen(true)}

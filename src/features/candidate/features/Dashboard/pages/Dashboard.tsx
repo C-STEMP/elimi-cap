@@ -139,8 +139,43 @@ export const Dashboard: React.FC = () => {
     };
   });
 
-  const upcomingInterview = null;
-  const interviewDate = undefined;
+  const scheduledInterviewInfo = React.useMemo(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      for (const app of allApplications) {
+        const stored = localStorage.getItem(`elimi_interview_schedule_${app.id}`);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed?.scheduledAt) {
+            return {
+              appId: app.id,
+              trade: (app as any).trade?.name || "Panel Interview",
+              ...parsed,
+            };
+          }
+        }
+      }
+    } catch {}
+    return null;
+  }, [allApplications]);
+
+  const upcomingInterview = scheduledInterviewInfo
+    ? {
+        title: "Panel Interview",
+        date: new Date(scheduledInterviewInfo.scheduledAt).toLocaleDateString("en-GB"),
+        time: new Date(scheduledInterviewInfo.scheduledAt).toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        }),
+        liveUrl:
+          scheduledInterviewInfo.mode === "online"
+            ? scheduledInterviewInfo.link
+            : undefined,
+      }
+    : null;
+
+  const interviewDate = scheduledInterviewInfo?.scheduledAt || undefined;
 
   const isLoading = appsLoading;
 
