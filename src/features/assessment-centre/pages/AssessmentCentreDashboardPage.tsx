@@ -51,7 +51,7 @@ import { PaymentsHeader } from "../features/Payment/components/PaymentsHeader";
 import { SettingsView } from "../features/Settings/components/SettingsView";
 import { SettingsHeader } from "../features/Settings/components/SettingsHeader";
 
-import { FiAward } from "react-icons/fi";
+import { FiAward, FiX } from "react-icons/fi";
 import { AssessmentCentreTab, PaymentTransaction } from "../types";
 import { useAppSelector } from "@/src/store/hooks";
 import {
@@ -126,6 +126,23 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
   const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState(false);
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
   const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useState(false);
+  const [isApprovalDismissed, setIsApprovalDismissed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      return localStorage.getItem("elimi_centre_approval_dismissed") === "true";
+    } catch {
+      return false;
+    }
+  });
+
+  const handleDismissApproval = () => {
+    setIsApprovalDismissed(true);
+    try {
+      localStorage.setItem("elimi_centre_approval_dismissed", "true");
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const [selectedCandidateName, setSelectedCandidateName] = useState<
     string | null
@@ -299,45 +316,72 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
             className="flex flex-col gap-6"
           >
             {/* Centre Accreditation & Approval Status Banner */}
-            <div className="bg-white rounded-3xl p-5 sm:p-6 border border-gray-100 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div className="flex items-center gap-4 min-w-0">
-                <div className="w-12 h-12 rounded-2xl bg-amber-50 text-[#fbab2a] flex items-center justify-center shrink-0 border border-amber-100">
-                  <FiAward className="w-6 h-6" />
-                </div>
-                <div className="flex flex-col gap-1 min-w-0">
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <h3 className="text-base sm:text-lg font-extrabold text-black tracking-tight truncate">
-                      {centreProfile?.name || "Assessment Centre"}
-                    </h3>
-                    <span
-                      className={`inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-semibold ${
-                        centreProfile?.status === "approved" || !centreProfile?.status
-                          ? "bg-[#E6F4EA] text-[#1E7F4C] border border-[#1E7F4C]/20"
-                          : centreProfile?.status === "pending"
-                            ? "bg-[#FEF3C7] text-[#92400E] border border-[#F59E0B]/20"
-                            : "bg-[#FCE8EB] text-[#A31D38] border border-red-200"
-                      }`}
-                    >
-                      <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                      {centreProfile?.status === "approved" || !centreProfile?.status
-                        ? "Accredited & Approved Centre"
-                        : centreProfile?.status === "pending"
-                          ? "Accreditation Pending Review"
-                          : "Accreditation Suspended"}
-                    </span>
+            {centreProfile?.status === "pending" ? (
+              <div className="bg-[#FEF3C7] rounded-3xl p-5 sm:p-6 border border-[#F59E0B]/30 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex items-center gap-4 min-w-0">
+                  <div className="w-12 h-12 rounded-2xl bg-[#FDE68A] text-[#92400E] flex items-center justify-center shrink-0 border border-amber-300">
+                    <FiAward className="w-6 h-6" />
                   </div>
-                  <p className="text-xs text-gray-500 font-normal">
-                    Centre ID: <span className="font-semibold text-gray-800">{centreProfile?.registrationNo || "AC-NBTE-0042"}</span> • Recognized by NBTE &amp; Sector Skills Council
-                  </p>
+                  <div className="flex flex-col gap-1 min-w-0">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <h3 className="text-base sm:text-lg font-extrabold text-[#92400E] tracking-tight truncate">
+                        {centreProfile?.name || "Assessment Centre"}
+                      </h3>
+                      <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-semibold bg-white text-[#92400E] border border-[#F59E0B]/30">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#D97706] animate-pulse" />
+                        Accreditation Pending Review
+                      </span>
+                    </div>
+                    <p className="text-xs text-[#B45309] font-normal">
+                      Centre ID: <span className="font-semibold">{centreProfile?.registrationNo || "AC-NBTE-0042"}</span> • Your centre credentials are under review by NBTE &amp; Sector Skills Council.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 self-start md:self-auto shrink-0">
+                  <span className="text-xs font-semibold text-[#92400E] bg-white/80 border border-[#F59E0B]/30 px-3.5 py-1.5 rounded-xl">
+                    Status: <span className="font-bold capitalize">Pending Approval</span>
+                  </span>
                 </div>
               </div>
+            ) : !isApprovalDismissed ? (
+              <div className="bg-white rounded-3xl p-5 sm:p-6 border border-[#1E7F4C]/20 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4 relative">
+                <div className="flex items-center gap-4 min-w-0">
+                  <div className="w-12 h-12 rounded-2xl bg-[#E6F4EA] text-[#1E7F4C] flex items-center justify-center shrink-0 border border-[#1E7F4C]/20">
+                    <FiAward className="w-6 h-6" />
+                  </div>
+                  <div className="flex flex-col gap-1 min-w-0">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <h3 className="text-base sm:text-lg font-extrabold text-black tracking-tight truncate">
+                        {centreProfile?.name || "Assessment Centre"}
+                      </h3>
+                      <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-semibold bg-[#E6F4EA] text-[#1E7F4C] border border-[#1E7F4C]/20">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#1E7F4C]" />
+                        Accredited &amp; Approved Centre
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500 font-normal">
+                      Centre ID: <span className="font-semibold text-gray-800">{centreProfile?.registrationNo || "AC-NBTE-0042"}</span> • Recognized by NBTE &amp; Sector Skills Council
+                    </p>
+                  </div>
+                </div>
 
-              <div className="flex items-center gap-2 self-start md:self-auto shrink-0">
-                <span className="text-xs font-semibold text-gray-700 bg-gray-50 border border-gray-200 px-3.5 py-1.5 rounded-xl">
-                  Accreditation: <span className="text-[#1E7F4C] font-bold capitalize">{centreProfile?.status || "Approved"}</span>
-                </span>
+                <div className="flex items-center gap-3 self-start md:self-auto shrink-0">
+                  <span className="text-xs font-semibold text-gray-700 bg-gray-50 border border-gray-200 px-3.5 py-1.5 rounded-xl">
+                    Accreditation: <span className="text-[#1E7F4C] font-bold capitalize">{centreProfile?.status || "Approved"}</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleDismissApproval}
+                    aria-label="Dismiss approval banner"
+                    className="p-1.5 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
+                    title="Dismiss"
+                  >
+                    <FiX className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
-            </div>
+            ) : null}
 
             {hasActivity ? (
               <>

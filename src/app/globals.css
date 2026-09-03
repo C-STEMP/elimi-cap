@@ -300,3 +300,58 @@ input[type="checkbox"] {
 input[type="checkbox"]:checked {
   accent-color: #a31d38 !important;
 }
+
+/* ── Print Media Optimization ────────────────────────────────────────────── */
+@media print {
+  @page {
+    size: auto;
+    margin: 12mm 15mm 15mm 15mm;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Hide entire page structure by default when printing */
+  body * {
+    visibility: hidden !important;
+  }
+
+  /* Make only the application card content visible */
+  #printable-application-card,
+  #printable-application-card *,
+  .printable-application-card,
+  .printable-application-card * {
+    visibility: visible !important;
+  }
+
+  /* Position printable application card at the top left cleanly */
+  #printable-application-card,
+  .printable-application-card {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+  }
+
+  /* Explicitly hide navigation, header banners, action buttons, sidebars, modals */
+  header,
+  nav,
+  footer,
+  aside,
+  button,
+  .no-print,
+  .print-hidden,
+  [data-no-print="true"] {
+    display: none !important;
+  }
+}

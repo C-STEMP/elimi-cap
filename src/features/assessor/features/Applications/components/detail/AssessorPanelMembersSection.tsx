@@ -70,7 +70,7 @@ export const AssessorPanelMembersSection: React.FC<
                   {assessor.tags.map((tag) => (
                     <span
                       key={tag}
-                      className="bg-[#FFF0F3] text-[#A31D38] text-[10px] font-semibold px-2 py-0.5 rounded-md shrink-0"
+                      className="bg-[#FCE8EB] text-[#A31D38] text-[9px] font-medium px-2 py-0.5 rounded-full shrink-0"
                     >
                       {tag}
                     </span>

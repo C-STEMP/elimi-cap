@@ -7,6 +7,7 @@ import { ASSETS_URL } from "@/assets";
 import { Button } from "@/src/components/ui/button";
 import { PassportUpload } from "@/src/components/ui/passport-upload";
 import { Loader } from "@/src/components/ui/loader";
+import { downloadFormElement, printFormElement } from "@/src/lib/formPrintDownload";
 import { MOCK_COMPETENCY_TASKS } from "@/features/assessment-centre/utils/constants";
 import {
   useGetSelfAssessment,
@@ -125,21 +126,29 @@ export const AssessmentCentreSelfAssessmentFormView: React.FC<
     );
   }
 
+  const formCandidateName = candidateName || "Candidate";
+  const formDownloadName = `Self_Assessment_Form_${formCandidateName.replace(/\s+/g, "_")}`;
+  const formTitle = `Candidate Self Assessment Form - ${formCandidateName}`;
+
   return (
     <div className="w-full flex flex-col gap-6 select-text">
-      <div className="flex items-center justify-end gap-3">
-        <button
-          type="button"
-          onClick={() => window.print()}
+      <div className="flex items-center justify-end gap-3 no-print">
+        <a
+          href="#"
+          download={formDownloadName}
+          onClick={(e) => {
+            e.preventDefault();
+            downloadFormElement("printable-application-card", formDownloadName);
+          }}
           className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold text-xs sm:text-sm px-4 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-2xs"
         >
           <span>Download</span>
           <FiDownload className="w-4 h-4 text-gray-500" />
-        </button>
+        </a>
 
         <button
           type="button"
-          onClick={() => window.print()}
+          onClick={() => printFormElement("printable-application-card", formTitle)}
           className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold text-xs sm:text-sm px-4 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-2xs"
         >
           <span>Print</span>
@@ -148,7 +157,7 @@ export const AssessmentCentreSelfAssessmentFormView: React.FC<
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        <div className="lg:col-span-8 xl:col-span-9 flex flex-col gap-6">
+        <div id="printable-application-card" className="lg:col-span-8 xl:col-span-9 flex flex-col gap-6 printable-application-card">
           <div className="bg-white rounded-3xl p-6 sm:p-10 border border-gray-100 shadow-sm flex flex-col gap-8">
             <div className="flex flex-col items-center text-center gap-3 border-b border-gray-100 pb-6 relative">
               <div className="flex justify-center mb-1">
@@ -445,7 +454,7 @@ export const AssessmentCentreSelfAssessmentFormView: React.FC<
           </div>
         </div>
 
-        <div className="lg:col-span-4 xl:col-span-3 flex flex-col gap-6">
+        <div className="lg:col-span-4 xl:col-span-3 flex flex-col gap-6 no-print">
           <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-xs flex flex-col gap-4">
             <h3 className="text-base font-extrabold text-black tracking-tight">
               Send Feedback

@@ -9,6 +9,7 @@ import { HeaderBanner } from "@/features/candidate/features/Dashboard/components
 import { useGetApplicationById } from "@/src/features/candidate/features/Application/hooks";
 import { useAppSelector } from "@/src/store/hooks";
 import { Loader } from "@/src/components/ui/loader";
+import { downloadFormElement, printFormElement } from "@/src/lib/formPrintDownload";
 
 interface CandidateApplicationFormViewProps {
   applicationId: string;
@@ -160,6 +161,10 @@ export const CandidateApplicationFormView: React.FC<
     savedCentreInfo.streetAddress ||
     "Plot 12 Commercial Avenue, Ikeja, Lagos State";
 
+  const applicantName = candidateFullName;
+  const formDownloadName = `Application_Form_${applicantName.replace(/\s+/g, "_")}`;
+  const formTitle = `Candidate Application Form - ${applicantName}`;
+
   return (
     <div className="w-full flex flex-col min-h-screen bg-[#F8F9FA] select-text">
       {/* Header Banner */}
@@ -179,7 +184,7 @@ export const CandidateApplicationFormView: React.FC<
 
       <div className="max-w-4xl xl:max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex flex-col gap-6">
         {/* Action Buttons (Download & Print) */}
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center justify-between gap-3 no-print">
           <button
             type="button"
             onClick={() => router.push(`/dashboard/applications/${applicationId}`)}
@@ -190,18 +195,22 @@ export const CandidateApplicationFormView: React.FC<
           </button>
 
           <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => window.print()}
+            <a
+              href="#"
+              download={formDownloadName}
+              onClick={(e) => {
+                e.preventDefault();
+                downloadFormElement("printable-application-card", formDownloadName);
+              }}
               className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold text-xs sm:text-sm px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-2xs"
             >
               <span>Download</span>
               <FiDownload className="w-4 h-4 text-gray-500" />
-            </button>
+            </a>
 
             <button
               type="button"
-              onClick={() => window.print()}
+              onClick={() => printFormElement("printable-application-card", formTitle)}
               className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold text-xs sm:text-sm px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-2xs"
             >
               <span>Print</span>
@@ -210,19 +219,21 @@ export const CandidateApplicationFormView: React.FC<
           </div>
         </div>
 
-        {/* Card 1: Main Application Header & Personal Details */}
-        <div className="bg-white rounded-3xl p-6 sm:p-10 lg:p-12 border border-gray-200/80 shadow-xs flex flex-col gap-8">
-          {/* Header with Logo & Passport */}
-          <div className="flex flex-col items-center text-center gap-3 border-b border-gray-100 pb-8 relative">
-            <div className="flex justify-center mb-1">
-              <Image
-                src={ASSETS_URL.logoIcon2}
-                alt="ELIMI Logo"
-                width={100}
-                height={40}
-                className="w-auto h-8 object-contain"
-              />
-            </div>
+        {/* Printable Application Card Wrapper */}
+        <div id="printable-application-card" className="printable-application-card flex flex-col gap-6 w-full">
+          {/* Card 1: Main Application Header & Personal Details */}
+          <div className="bg-white rounded-3xl p-6 sm:p-10 lg:p-12 border border-gray-200/80 shadow-xs flex flex-col gap-8">
+            {/* Header with Logo & Passport */}
+            <div className="flex flex-col items-center text-center gap-3 border-b border-gray-100 pb-8 relative">
+              <div className="flex justify-center mb-1">
+                <Image
+                  src={ASSETS_URL.logoIcon2}
+                  alt="ELIMI Logo"
+                  width={100}
+                  height={40}
+                  className="w-auto h-8 object-contain"
+                />
+              </div>
 
             <h1 className="text-base sm:text-lg font-extrabold text-black tracking-tight max-w-lg leading-tight uppercase">
               NBTE/RPL/ 01 NSQ/RPL/QCF ASSESSMENT CENTRE CANDIDATE APPLICATION
@@ -542,6 +553,8 @@ export const CandidateApplicationFormView: React.FC<
               </div>
             </div>
           </div>
+        </div>
+        {/* End Printable Application Card Wrapper */}
         </div>
       </div>
     </div>

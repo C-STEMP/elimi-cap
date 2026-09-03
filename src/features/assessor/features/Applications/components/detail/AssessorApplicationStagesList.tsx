@@ -13,6 +13,7 @@ import {
   useGetInterviewPanel,
   useGetApplicationStages,
 } from "@/src/features/shared/applications/hooks";
+import { useGetCentreAssessors } from "@/src/features/shared/centre/hooks";
 import type { AssessorPanelMember } from "../../types/applications.types";
 
 interface AssessorApplicationStagesListProps {
@@ -57,48 +58,93 @@ export const AssessorApplicationStagesList: React.FC<
 }) => {
   const { data: panelData } = useGetInterviewPanel(application.id);
   const { data: stagesData } = useGetApplicationStages(application.id);
+  const { data: centreAssessors = [] } = useGetCentreAssessors({ status: "all" });
 
   const panelMembers: AssessorPanelMember[] = React.useMemo(() => {
     if (!panelData?.members || !Array.isArray(panelData.members)) return [];
-    return panelData.members.map((m) => ({
-      id: m.assessorId,
-      name: m.name || "Assessor",
-      role: m.isLead
-        ? "Lead Panelist"
-        : m.isObserver
-          ? "Observer / IV"
-          : "Panel Member",
-      avatar: ASSETS_URL.userAvatar,
-      tags: (m.sectors || []).map((s) => s.name),
-      isHighlighted: Boolean(m.isLead),
-    }));
-  }, [panelData]);
+    return panelData.members.map((m, idx) => {
+      const match = centreAssessors.find(
+        (a) =>
+          a.id === m.assessorId ||
+          (a as any).assessorId === m.assessorId ||
+          (a as any).userId === m.assessorId,
+      );
+      const name =
+        match?.name ||
+        m.name ||
+        (idx === 0 ? "Lead Assessor" : `Panelist ${idx + 1}`);
+      const avatar =
+        (match as any)?.avatar ||
+        (match as any)?.photoUrl ||
+        ASSETS_URL.userAvatar;
+      const tags = m.sectors?.length
+        ? m.sectors.map((s) => s.name)
+        : match?.sectors?.length
+          ? match.sectors.map((s) => s.name)
+          : [application.trade || "Carpentry", "RPL Coordinator"];
+      return {
+        id: m.assessorId,
+        name,
+        role: idx === 0 ? "Lead Panelist" : "Panel Member",
+        avatar,
+        tags,
+        isHighlighted: idx === 1,
+      };
+    });
+  }, [panelData, centreAssessors, application.trade]);
 
   const isCompleted = application.status === "Completed";
+  const folderStageRow = stagesData?.find(
+    (s) =>
+      s.stageKey === "folder_arrangement" ||
+      s.stageKey === "evidence_vault" ||
+      s.stageKey === "evidence",
+  );
+  const isFolderDone = Boolean(
+    folderStageRow?.status === "successful" ||
+    (folderStageRow?.status as string) === "completed" ||
+    stagesData?.some(
+      (s) =>
+        (s.stageKey === "interview" || s.stageKey === "direct_observation") &&
+        (s.status === "scheduled" || s.status === "in_progress" || s.status === "successful")
+    ) ||
+    isCompleted,
+  );
+
+  const interviewStageRow = stagesData?.find(
+    (s) =>
+      s.stageKey === "interview" ||
+      s.stageKey === "direct_observation" ||
+      s.stageKey === "observation",
+  );
+  const isInterviewDone = Boolean(
+    interviewStageRow?.status === "successful" ||
+    interviewOutcome === "competent" ||
+    isCompleted,
+  );
+
   const isInternalVerifierRole =
-    application.role === "Internal Verifier" || isCompleted;
+    application.role === "Internal Verifier" || isInterviewDone || isCompleted;
 
-  const currentInterviewStatus =
-    interviewOutcome === "competent" || isCompleted
-      ? "Competent"
-      : interviewOutcome === "incompetent"
-        ? "Incompetent"
-        : interviewOutcome === "inconclusive"
-          ? "Inconclusive"
-          : interviewOutcome === "awaiting_signature"
-            ? "Awaiting Signature"
-            : "Ongoing";
+  const currentInterviewStatus = isInterviewDone
+    ? "Competent"
+    : interviewOutcome === "incompetent"
+      ? "Incompetent"
+      : interviewOutcome === "inconclusive"
+        ? "Inconclusive"
+        : interviewOutcome === "awaiting_signature"
+          ? "Awaiting Signature"
+          : "Ongoing";
 
-  const currentInterviewBadgeType =
-    interviewOutcome === "competent" || isCompleted
-      ? "competent"
-      : interviewOutcome === "incompetent"
-        ? "incompetent"
-        : interviewOutcome === "inconclusive"
-          ? "inconclusive"
-          : interviewOutcome === "awaiting_signature"
-            ? "awaiting_signature"
-            : "ongoing";
+  const currentInterviewBadgeType = isInterviewDone
+    ? "competent"
+    : interviewOutcome === "incompetent"
+      ? "incompetent"
+      : interviewOutcome === "inconclusive"
+        ? "inconclusive"
+        : interviewOutcome === "awaiting_signature"
+          ? "awaiting_signature"
+          : "ongoing";
 
   const stages: ApplicationStageItem[] = [
     {
@@ -129,11 +175,11 @@ export const AssessorApplicationStagesList: React.FC<
     {
       id: "folder_arrangement",
       title: "Folder Arrangement",
-      status: isCompleted ? "Complete" : "In Progress",
-      badgeType: isCompleted ? "completed" : "ongoing",
-      badgeText: isCompleted ? "Complete" : "In Progress",
+      status: isFolderDone ? "Marked as complete" : "In Progress",
+      badgeType: isFolderDone ? "completed" : "ongoing",
+      badgeText: isFolderDone ? "Marked as complete" : "In Progress",
       dateText: application.assignedAt
-        ? `Assigned on: ${application.assignedAt}`
+        ? `Started on: ${application.assignedAt}`
         : "—",
       actionButton: {
         label: "Evidence Vault",
@@ -154,7 +200,7 @@ export const AssessorApplicationStagesList: React.FC<
       formsToSign: interviewOutcome === "awaiting_signature" ? formsToSign : undefined,
       onAppendSignature: onAppendSignature,
       inconclusiveDetails: interviewFeedback || undefined,
-      menuActions: [
+      menuActions: isInterviewDone ? [] : [
         {
           label: "Competent",
           onClick: onMarkCandidateCompetent || (() => {}),

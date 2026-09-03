@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   FiBell,
   FiLogOut,
@@ -60,6 +61,17 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
   const { data: onboardingRecord } = useGetOnboarding();
   const user = useAppSelector((state) => state.auth.user);
   const effectiveRole = userRole || user?.centreRole || user?.role || "centre";
+
+  React.useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isMobileMenuOpen]);
 
   const centreData = onboardingRecord?.data as any;
   const centreName =
@@ -189,6 +201,14 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
               </button>
             );
           })}
+          <button
+            type="button"
+            onClick={() => setIsLogoutOpen(true)}
+            className="px-3 py-1.5 rounded-full text-xs lg:text-base font-semibold text-white/80 hover:text-white hover:bg-white/10 transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ml-1"
+          >
+            <FiLogOut className="w-3.5 h-3.5" />
+            <span>Log out</span>
+          </button>
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
@@ -236,17 +256,6 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
             />
           </div>
 
-          {/* Desktop Logout Button */}
-          <button
-            type="button"
-            onClick={() => setIsLogoutOpen(true)}
-            className="hidden sm:flex w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 items-center justify-center text-white/90 transition-all cursor-pointer ml-1"
-            aria-label="Logout"
-            title="Logout"
-          >
-            <FiLogOut className="w-5 h-5" />
-          </button>
-
           {/* Mobile Hamburger Toggle */}
           <button
             type="button"
@@ -263,42 +272,105 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* Mobile Navigation Tabs (Dropdown when hamburger open) */}
-      {isMobileMenuOpen && (
-        <div className="flex xl:hidden flex-col gap-2 pt-2 pb-2 border-b border-white/10 animate-fadeIn">
-          {navItems.map((item) => {
-            const isActive = activeTab === item.id;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => {
-                  onSelectTab(item.id);
-                  setIsMobileMenuOpen(false);
-                }}
-                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all cursor-pointer text-left ${
-                  isActive
-                    ? "bg-white/25 text-white shadow-xs"
-                    : "text-white/80 hover:text-white hover:bg-white/10"
-                }`}
-              >
-                {item.label}
-              </button>
-            );
-          })}
-          <button
-            type="button"
-            onClick={() => {
-              setIsMobileMenuOpen(false);
-              setIsLogoutOpen(true);
-            }}
-            className="px-4 py-2 rounded-xl text-sm font-semibold text-white/80 hover:text-white hover:bg-white/10 flex items-center gap-2 text-left mt-1 cursor-pointer"
-          >
-            <FiLogOut className="w-4 h-4" />
-            <span>Log out</span>
-          </button>
-        </div>
-      )}
+      {/* Mobile Navigation Drawer Overlay (Does not drag down menu) */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <div className="fixed inset-0 z-50 flex justify-end xl:hidden">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-xs"
+            />
+
+            {/* Drawer Panel */}
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 28, stiffness: 300 }}
+              className="relative w-full max-w-[290px] bg-[#8c1830] border-l border-white/10 text-white h-full shadow-2xl flex flex-col z-10 p-5 overflow-y-auto"
+            >
+              <div className="flex items-center justify-between pb-4 border-b border-white/15">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-full overflow-hidden border border-white/30 bg-white flex items-center justify-center shrink-0">
+                    <Image
+                      src={centreProfile?.logo?.url || centreData?.centre?.centreInformation?.logoUrl || ASSETS_URL.faviconIcon}
+                      alt="Centre Logo"
+                      width={36}
+                      height={36}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-sm font-bold text-white truncate">{centreName}</span>
+                    <span className="text-[11px] text-white/70 capitalize">{effectiveRole.replace(/_/g, " ")}</span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  aria-label="Close menu"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white cursor-pointer transition-colors"
+                >
+                  <FiX className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="flex flex-col gap-1.5 pt-4">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-white/50 px-3 mb-1">
+                  Menu & Tabs
+                </span>
+                {navItems.map((item, i) => {
+                  const isActive = activeTab === item.id;
+                  return (
+                    <motion.div
+                      key={item.id}
+                      initial={{ opacity: 0, x: 15 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.03 }}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onSelectTab(item.id);
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className={`w-full px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all cursor-pointer text-left flex items-center justify-between ${
+                          isActive
+                            ? "bg-white text-[#a31d38] font-bold shadow-sm"
+                            : "text-white/85 hover:text-white hover:bg-white/10"
+                        }`}
+                      >
+                        <span>{item.label}</span>
+                      </button>
+                    </motion.div>
+                  );
+                })}
+              </div>
+
+              {/* Remaining Tabs / Logout in Drawer */}
+              <div className="mt-auto pt-4 border-t border-white/15 flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    setIsLogoutOpen(true);
+                  }}
+                  className="px-3.5 py-2.5 rounded-xl text-sm font-semibold text-red-200 hover:text-white hover:bg-red-500/20 flex items-center gap-2.5 text-left transition-all cursor-pointer"
+                >
+                  <FiLogOut className="w-4 h-4" />
+                  <span>Log out</span>
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {children ? (
         children

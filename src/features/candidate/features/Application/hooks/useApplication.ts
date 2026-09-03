@@ -39,12 +39,12 @@ export function useInitiateApplicationPayment() {
   return useSharedInitiateApplicationPayment();
 }
 
-export function useGetPaymentQuote(id: string) {
-  return useSharedGetPaymentQuote(id);
+export function useGetPaymentQuote(id: string, options?: { enabled?: boolean }) {
+  return useSharedGetPaymentQuote(id, options);
 }
 
-export function useGetApplicationReceipt(id: string) {
-  return useSharedGetApplicationReceipt(id);
+export function useGetApplicationReceipt(id: string, options?: { enabled?: boolean }) {
+  return useSharedGetApplicationReceipt(id, options);
 }
 
 /**

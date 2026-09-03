@@ -11,17 +11,34 @@ const MONTH_NAMES = [
 ];
 
 interface AssessorCalendarWidgetProps {
+  panelInterviewDate?: string | Date;
   highlightedDays?: number[];
 }
 
 export const AssessorCalendarWidget: React.FC<AssessorCalendarWidgetProps> = ({
+  panelInterviewDate,
   highlightedDays: propHighlightedDays,
 }) => {
-  const [currentDate, setCurrentDate] = useState(() => new Date());
+  const parsedInterviewDate = React.useMemo(() => {
+    if (!panelInterviewDate) return null;
+    const d = new Date(panelInterviewDate);
+    return isNaN(d.getTime()) ? null : d;
+  }, [panelInterviewDate]);
+
+  const [currentDate, setCurrentDate] = useState(() => parsedInterviewDate || new Date());
   const { data: eventsData } = useGetAssessorEvents();
 
   const highlightedDays = React.useMemo(() => {
     if (propHighlightedDays !== undefined) return propHighlightedDays;
+    if (parsedInterviewDate) {
+      if (
+        parsedInterviewDate.getMonth() === currentDate.getMonth() &&
+        parsedInterviewDate.getFullYear() === currentDate.getFullYear()
+      ) {
+        return [parsedInterviewDate.getDate()];
+      }
+      return [];
+    }
     if (eventsData && eventsData.length > 0) {
       const days: number[] = [];
       eventsData.forEach((evt) => {
@@ -38,7 +55,7 @@ export const AssessorCalendarWidget: React.FC<AssessorCalendarWidgetProps> = ({
       return days;
     }
     return [];
-  }, [propHighlightedDays, eventsData, currentDate]);
+  }, [propHighlightedDays, parsedInterviewDate, eventsData, currentDate]);
 
   const monthName = MONTH_NAMES[currentDate.getMonth()];
   const year = currentDate.getFullYear();

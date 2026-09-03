@@ -301,19 +301,19 @@ export function useInitiateApplicationPayment() {
   });
 }
 
-export function useGetPaymentQuote(id: string) {
+export function useGetPaymentQuote(id: string, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["applications", "payment-quote", id],
     queryFn: () => getPaymentQuoteApi(id),
-    enabled: Boolean(id),
+    enabled: Boolean(id) && (options?.enabled ?? true),
   });
 }
 
-export function useGetApplicationReceipt(id: string) {
+export function useGetApplicationReceipt(id: string, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: APPLICATION_QUERY_KEYS.receipt(id),
     queryFn: () => getApplicationReceiptApi(id),
-    enabled: Boolean(id),
+    enabled: Boolean(id) && (options?.enabled ?? true),
   });
 }
 
@@ -475,19 +475,19 @@ export function useDeleteGeneralEvidence(applicationId: string) {
   });
 }
 
-export function useGetInterviewPanel(id: string) {
+export function useGetInterviewPanel(id: string, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["applications", "interview-panel", id],
     queryFn: () => getInterviewPanelApi(id),
-    enabled: Boolean(id),
+    enabled: Boolean(id) && (options?.enabled ?? true),
   });
 }
 
-export function useGetInterviewSchedule(id: string) {
+export function useGetInterviewSchedule(id: string, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["applications", "interview-schedule", id],
     queryFn: () => getInterviewScheduleApi(id),
-    enabled: Boolean(id),
+    enabled: Boolean(id) && (options?.enabled ?? true),
   });
 }
 

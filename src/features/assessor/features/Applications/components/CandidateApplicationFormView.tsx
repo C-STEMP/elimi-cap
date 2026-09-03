@@ -49,12 +49,15 @@ export const CandidateApplicationFormView: React.FC<
   return (
     <div className="w-full flex flex-col gap-6 select-text">
       {/* Top Header Download & Print Actions */}
-      <FormHeaderActions />
+      <FormHeaderActions
+        formName={`Application_Form_${(candidateName || "Candidate").replace(/\s+/g, "_")}`}
+        elementId="printable-application-card"
+      />
 
       {/* Main Grid: Document on Left, Feedback Panels on Right */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Document Column */}
-        <div className="lg:col-span-8 flex flex-col gap-6">
+        <div id="printable-application-card" className="lg:col-span-8 flex flex-col gap-6 printable-application-card">
           <CandidateApplicationFormDocument
             candidateName={candidateName}
             trade={trade}
@@ -63,7 +66,7 @@ export const CandidateApplicationFormView: React.FC<
         </div>
 
         {/* Feedback Sidebar Column */}
-        <div className="lg:col-span-4 flex flex-col gap-6">
+        <div className="lg:col-span-4 flex flex-col gap-6 no-print">
           <SendFeedbackPanel
             comment={feedbackComment}
             onCommentChange={setFeedbackComment}

@@ -1,12 +1,21 @@
+"use client";
+
 import React, { useMemo } from "react";
-import { FiCalendar } from "react-icons/fi";
+import {
+  UpcomingCard,
+  InterviewData,
+} from "@/features/candidate/features/Dashboard/components/UpcomingCard";
 import { useGetAssessorEvents } from "@/src/features/shared/assessor/hooks";
 
 export interface AssessorUpcomingEvent {
-  title: string;
-  time: string;
-  date: string;
-  address: string;
+  title?: string;
+  time?: string;
+  date?: string;
+  address?: string;
+  location?: string;
+  mode?: string;
+  liveUrl?: string;
+  isRescheduled?: boolean;
 }
 
 interface AssessorUpcomingEventsWidgetProps {
@@ -18,84 +27,42 @@ export const AssessorUpcomingEventsWidget: React.FC<
 > = ({ event: propEvent }) => {
   const { data: eventsData } = useGetAssessorEvents();
 
-  const event = useMemo(() => {
-    if (propEvent !== undefined) return propEvent;
+  const interview: InterviewData | null = useMemo(() => {
+    if (propEvent !== undefined) {
+      if (!propEvent) return null;
+      return {
+        title: propEvent.title || "Panel Interview",
+        time: propEvent.time,
+        date: propEvent.date,
+        location: propEvent.location || propEvent.address || "Cstemp Centre",
+        mode: propEvent.mode,
+        liveUrl: propEvent.liveUrl,
+        isRescheduled: propEvent.isRescheduled,
+      };
+    }
     if (eventsData && eventsData.length > 0) {
       const first = eventsData[0];
       return {
-        title: first.action ? first.action.replace(/_/g, " ") : (first.stageKey ? first.stageKey.replace(/_/g, " ") : "Scheduled Event"),
+        title: first.action
+          ? first.action.replace(/_/g, " ")
+          : first.stageKey
+            ? first.stageKey.replace(/_/g, " ")
+            : "Scheduled Event",
         time: first.createdAt
           ? new Date(first.createdAt).toLocaleTimeString("en-US", {
-              hour: "2-digit",
+              hour: "numeric",
               minute: "2-digit",
+              hour12: true,
             })
           : "—",
         date: first.createdAt
           ? new Date(first.createdAt).toLocaleDateString("en-GB")
           : "—",
-        address: "Assessment Centre",
+        location: "Cstemp Centre",
       };
     }
     return null;
   }, [propEvent, eventsData]);
-  return (
-    <div className="bg-white rounded-3xl p-6 shadow-xs border border-gray-100 flex flex-col gap-4 w-full">
-      <h4 className="text-base font-bold text-neutral-primary">
-        Upcoming Events
-      </h4>
 
-      {event ? (
-        <div className="bg-[#F8F9FA] rounded-2xl p-4 flex items-stretch gap-3.5 border border-gray-100 w-full">
-          {/* Inside Vertical Maroon Line Bar */}
-          <span className="w-1 bg-[#A31D38] rounded-full shrink-0 my-0.5" />
-
-          <div className="flex flex-col flex-1 w-full gap-2.5">
-            <h5 className="text-sm sm:text-base font-bold text-neutral-primary leading-tight">
-              {event.title}
-            </h5>
-
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="flex flex-col">
-                <span className="text-[10px] font-bold text-neutral-secondary uppercase tracking-wider">
-                  TIME
-                </span>
-                <span className="font-bold text-neutral-primary mt-0.5">
-                  {event.time}
-                </span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[10px] font-bold text-neutral-secondary uppercase tracking-wider">
-                  DATE
-                </span>
-                <span className="font-bold text-neutral-primary mt-0.5">
-                  {event.date}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex flex-col text-xs pt-0.5">
-              <span className="text-[10px] font-medium text-neutral-secondary">
-                Address
-              </span>
-              <span className="font-bold text-neutral-primary mt-0.5">
-                {event.address}
-              </span>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center text-center py-6">
-          <div className="w-14 h-14 rounded-full border border-rose-100 bg-[#FFF5F6] text-[#A31D38] flex items-center justify-center mb-3">
-            <FiCalendar className="w-6 h-6 stroke-[1.75]" />
-          </div>
-          <h5 className="text-sm font-bold text-neutral-primary">
-            No upcoming events
-          </h5>
-          <p className="text-xs text-neutral-secondary mt-1 max-w-50 leading-relaxed">
-            Your scheduled events will appear here
-          </p>
-        </div>
-      )}
-    </div>
-  );
+  return <UpcomingCard interview={interview} />;
 };

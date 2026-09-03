@@ -90,7 +90,7 @@ export const AssessorApplicationStageCard: React.FC<
                 <button
                   type="button"
                   onClick={stage.actionButton.onClick || onViewApplicationForm}
-                  className="bg-white border border-gray-200 hover:bg-gray-50 text-neutral-primary font-semibold text-xs sm:text-sm px-6 py-2 rounded-xl transition-all cursor-pointer shadow-2xs"
+                  className="bg-white border border-gray-200 hover:bg-gray-50 text-[#FBAB2A] font-bold text-xs sm:text-sm px-6 py-2 rounded-xl transition-all cursor-pointer shadow-none"
                 >
                   {stage.actionButton.label}
                 </button>
@@ -98,7 +98,7 @@ export const AssessorApplicationStageCard: React.FC<
                 <button
                   type="button"
                   onClick={stage.actionButton.onClick || onOpenEvidenceVault}
-                  className="bg-[#FBAB2A] hover:bg-[#E89B1F] text-white font-bold text-xs sm:text-sm px-5 py-2 rounded-xl transition-all cursor-pointer shadow-md"
+                  className="bg-white border border-gray-200 hover:bg-gray-50 text-[#FBAB2A] font-bold text-xs sm:text-sm px-6 py-2 rounded-xl transition-all cursor-pointer shadow-none"
                 >
                   {stage.actionButton.label}
                 </button>
