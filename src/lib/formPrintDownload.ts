@@ -65,7 +65,7 @@ export const downloadFormElement = (elementId: string, formName: string) => {
 </head>
 <body>
   <div class="printable-container">
-    ${el.innerHTML}
+    ${el.outerHTML}
   </div>
 </body>
 </html>`;
@@ -83,82 +83,25 @@ export const downloadFormElement = (elementId: string, formName: string) => {
 };
 
 /**
- * Prints only the specified form card element, isolating it from the rest of the page.
+ * Prints the application form directly on the current page.
+ * Uses print-media CSS to isolate the application card while omitting all headers, sidebars, and buttons.
  */
-export const printFormElement = (elementId: string, formTitle?: string) => {
+export const printFormElement = (elementId?: string, formTitle?: string) => {
   if (typeof window === "undefined") return;
 
-  const el = document.getElementById(elementId);
-  if (!el) {
-    window.print();
-    return;
+  const originalTitle = document.title;
+  if (formTitle) {
+    document.title = formTitle;
   }
 
-  const iframe = document.createElement("iframe");
-  iframe.style.position = "fixed";
-  iframe.style.right = "0";
-  iframe.style.bottom = "0";
-  iframe.style.width = "0";
-  iframe.style.height = "0";
-  iframe.style.border = "none";
-  iframe.style.visibility = "hidden";
-  document.body.appendChild(iframe);
+  // Ensure scroll is at top so print starts from the top of the card
+  window.scrollTo(0, 0);
 
-  const iframeDoc = iframe.contentWindow?.document;
-  if (!iframeDoc) {
-    window.print();
-    return;
-  }
+  // Trigger browser's native print
+  window.print();
 
-  const styles = Array.from(
-    document.querySelectorAll("style, link[rel='stylesheet']")
-  )
-    .map((s) => s.outerHTML)
-    .join("\n");
-
-  iframeDoc.open();
-  iframeDoc.write(`<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>${formTitle || "Application Form"}</title>
-  ${styles}
-  <style>
-    @page {
-      size: auto;
-      margin: 12mm 15mm 15mm 15mm;
-    }
-    html, body {
-      background: #ffffff !important;
-      margin: 0 !important;
-      padding: 0 !important;
-    }
-    .no-print, button {
-      display: none !important;
-    }
-    .print-card-wrapper {
-      width: 100% !important;
-      max-width: 100% !important;
-      margin: 0 !important;
-      padding: 0 !important;
-    }
-  </style>
-</head>
-<body>
-  <div class="print-card-wrapper">
-    ${el.innerHTML}
-  </div>
-</body>
-</html>`);
-  iframeDoc.close();
-
-  iframe.contentWindow?.focus();
+  // Restore title after print dialog closes
   setTimeout(() => {
-    iframe.contentWindow?.print();
-    setTimeout(() => {
-      if (document.body.contains(iframe)) {
-        document.body.removeChild(iframe);
-      }
-    }, 1500);
-  }, 400);
+    document.title = originalTitle;
+  }, 1000);
 };
