@@ -55,9 +55,10 @@ export const AssessmentCentreEvidenceVaultView: React.FC<
   const persistedFacilitator = React.useMemo(() => {
     if (typeof window === "undefined" || !id) return null;
     try {
-      const stored =
-        localStorage.getItem(`elimi_assigned_facilitator_${id}`) ||
-        localStorage.getItem("elimi_assigned_facilitator_active");
+      if (localStorage.getItem("elimi_assigned_facilitator_active")) {
+        localStorage.removeItem("elimi_assigned_facilitator_active");
+      }
+      const stored = localStorage.getItem(`elimi_assigned_facilitator_${id}`);
       return stored ? JSON.parse(stored) : null;
     } catch {
       return null;

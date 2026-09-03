@@ -79,10 +79,7 @@ export const AssignFacilitatorModal: React.FC<AssignFacilitatorModalProps> = ({
           `elimi_assigned_facilitator_${applicationId}`,
           JSON.stringify(facilitatorPayload),
         );
-        localStorage.setItem(
-          `elimi_assigned_facilitator_active`,
-          JSON.stringify(facilitatorPayload),
-        );
+        localStorage.removeItem(`elimi_assigned_facilitator_active`);
       } catch (e) {
         console.error("Storage error:", e);
       }

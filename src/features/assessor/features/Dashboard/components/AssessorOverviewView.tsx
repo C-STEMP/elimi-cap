@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { FiChevronRight, FiClipboard, FiPlus, FiAward } from "react-icons/fi";
+import { FiChevronRight, FiClipboard, FiPlus, FiAward, FiX } from "react-icons/fi";
 import { Button } from "@/src/components/ui/button";
 import { useGetAssessorApplications } from "@/src/features/assessor/features/Applications/hooks";
 import { useGetAssessorProfile } from "@/src/features/assessor/hooks";
@@ -30,51 +30,96 @@ export const AssessorOverviewView: React.FC<AssessorOverviewViewProps> = ({
   const { data: allApplications = [], isLoading } = useGetAssessorApplications();
   const { data: assessorProfile } = useGetAssessorProfile();
 
+  const [isApprovalDismissed, setIsApprovalDismissed] = React.useState(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      return localStorage.getItem("elimi_assessor_approval_dismissed") === "true";
+    } catch {
+      return false;
+    }
+  });
+
+  const handleDismissApproval = () => {
+    setIsApprovalDismissed(true);
+    try {
+      localStorage.setItem("elimi_assessor_approval_dismissed", "true");
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   // Show only the latest 8 for the overview
   const applications = allApplications.slice(0, 8);
 
   return (
     <div className="w-full flex flex-col gap-6 select-text">
       {/* Assessor Accreditation & Approval Status Banner */}
-      <div className="bg-white rounded-3xl p-5 sm:p-6 border border-gray-100 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-4 min-w-0">
-          <div className="w-12 h-12 rounded-2xl bg-amber-50 text-[#fbab2a] flex items-center justify-center shrink-0 border border-amber-100">
-            <FiAward className="w-6 h-6" />
-          </div>
-          <div className="flex flex-col gap-1 min-w-0">
-            <div className="flex items-center gap-3 flex-wrap">
-              <h3 className="text-base sm:text-lg font-extrabold text-black tracking-tight truncate">
-                {assessorProfile?.name || "Assessor Profile"}
-              </h3>
-              <span
-                className={`inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-semibold ${
-                  assessorProfile?.status === "approved" || !assessorProfile?.status
-                    ? "bg-[#E6F4EA] text-[#1E7F4C] border border-[#1E7F4C]/20"
-                    : assessorProfile?.status === "pending"
-                      ? "bg-[#FEF3C7] text-[#92400E] border border-[#F59E0B]/20"
-                      : "bg-[#FCE8EB] text-[#A31D38] border border-red-200"
-                }`}
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                {assessorProfile?.status === "approved" || !assessorProfile?.status
-                  ? "Accredited Assessor"
-                  : assessorProfile?.status === "pending"
-                    ? "Accreditation Pending Review"
-                    : "Accreditation Suspended"}
-              </span>
+      {assessorProfile?.status === "pending" ? (
+        <div className="bg-[#FEF3C7] rounded-3xl p-5 sm:p-6 border border-[#F59E0B]/30 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="w-12 h-12 rounded-2xl bg-[#FDE68A] text-[#92400E] flex items-center justify-center shrink-0 border border-amber-300">
+              <FiAward className="w-6 h-6" />
             </div>
-            <p className="text-xs text-gray-500 font-normal">
-              Assessor No: <span className="font-semibold text-gray-800">{assessorProfile?.assessorNo || "AS-NBTE-0012"}</span> • Authorized for RPL &amp; NSQ Assessment
-            </p>
+            <div className="flex flex-col gap-1 min-w-0">
+              <div className="flex items-center gap-3 flex-wrap">
+                <h3 className="text-base sm:text-lg font-extrabold text-[#92400E] tracking-tight truncate">
+                  {assessorProfile?.name || "Assessor Profile"}
+                </h3>
+                <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-semibold bg-white text-[#92400E] border border-[#F59E0B]/30">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#D97706] animate-pulse" />
+                  Accreditation Pending Review
+                </span>
+              </div>
+              <p className="text-xs text-[#B45309] font-normal">
+                Assessor No: <span className="font-semibold">{assessorProfile?.assessorNo || "AS-NBTE-0012"}</span> • Your assessor accreditation is currently under review by NBTE.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 self-start md:self-auto shrink-0">
+            <span className="text-xs font-semibold text-[#92400E] bg-white/80 border border-[#F59E0B]/30 px-3.5 py-1.5 rounded-xl">
+              Status: <span className="font-bold capitalize">Pending Approval</span>
+            </span>
           </div>
         </div>
+      ) : !isApprovalDismissed ? (
+        <div className="bg-white rounded-3xl p-5 sm:p-6 border border-[#1E7F4C]/20 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4 relative">
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="w-12 h-12 rounded-2xl bg-[#E6F4EA] text-[#1E7F4C] flex items-center justify-center shrink-0 border border-[#1E7F4C]/20">
+              <FiAward className="w-6 h-6" />
+            </div>
+            <div className="flex flex-col gap-1 min-w-0">
+              <div className="flex items-center gap-3 flex-wrap">
+                <h3 className="text-base sm:text-lg font-extrabold text-black tracking-tight truncate">
+                  {assessorProfile?.name || "Assessor Profile"}
+                </h3>
+                <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-semibold bg-[#E6F4EA] text-[#1E7F4C] border border-[#1E7F4C]/20">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#1E7F4C]" />
+                  Accredited Assessor
+                </span>
+              </div>
+              <p className="text-xs text-gray-500 font-normal">
+                Assessor No: <span className="font-semibold text-gray-800">{assessorProfile?.assessorNo || "AS-NBTE-0012"}</span> • Authorized for RPL &amp; NSQ Assessment
+              </p>
+            </div>
+          </div>
 
-        <div className="flex items-center gap-2 self-start md:self-auto shrink-0">
-          <span className="text-xs font-semibold text-gray-700 bg-gray-50 border border-gray-200 px-3.5 py-1.5 rounded-xl">
-            Status: <span className="text-[#1E7F4C] font-bold capitalize">{assessorProfile?.status || "Approved"}</span>
-          </span>
+          <div className="flex items-center gap-3 self-start md:self-auto shrink-0">
+            <span className="text-xs font-semibold text-gray-700 bg-gray-50 border border-gray-200 px-3.5 py-1.5 rounded-xl">
+              Status: <span className="text-[#1E7F4C] font-bold capitalize">{assessorProfile?.status || "Approved"}</span>
+            </span>
+            <button
+              type="button"
+              onClick={handleDismissApproval}
+              aria-label="Dismiss approval banner"
+              className="p-1.5 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
+              title="Dismiss"
+            >
+              <FiX className="w-4 h-4" />
+            </button>
+          </div>
         </div>
-      </div>
+      ) : null}
 
       <div className="w-full bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col min-h-[420px]">
         <div className="flex items-center justify-between border-b border-gray-100 pb-4 mb-4">

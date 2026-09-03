@@ -44,7 +44,6 @@ import {
   useGetInterviewSchedule,
   useGetInterviewPanel,
 } from "@/src/features/shared/applications/hooks";
-import { useGetCentreAssessors } from "@/src/features/shared/centre/hooks";
 import { APPLICATION_QUERY_KEYS } from "@/src/features/shared/applications/hooks/useApplication";
 import type { ApplicationDetail } from "@/src/features/shared/applications/api";
 import { Loader } from "@/src/components/ui/loader";
@@ -92,11 +91,29 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
   // Real API data
   const { data: apiApp, isLoading } = useGetApplicationById(id || "");
   const { data: stagesData } = useGetApplicationStages(id || "");
-  const { data: paymentQuote } = useGetPaymentQuote(id || "");
-  const { data: receiptData } = useGetApplicationReceipt(id || "");
-  const { data: interviewScheduleFromApi } = useGetInterviewSchedule(id || "");
-  const { data: interviewPanelFromApi } = useGetInterviewPanel(id || "");
-  const { data: centreAssessors = [] } = useGetCentreAssessors({ status: "all" });
+
+  const paymentStageFromApi = stagesData?.find(
+    (s) => s.stageKey === "payment" || s.stageKey === "payment_quote",
+  );
+
+  const isPaymentPaid =
+    isPaymentConfirmed ||
+    paymentStageFromApi?.status === "successful" ||
+    Boolean((apiApp as any)?.paymentCompleted);
+
+  const isDraftApplication =
+    apiApp?.status === "draft" &&
+    !(apiApp as any)?.submittedAt;
+
+  // Persona-scoped query gating: candidates only fetch endpoints appropriate for their current stage
+  const shouldFetchPaymentQuote = Boolean(id && !isDraftApplication && !isPaymentPaid);
+  const shouldFetchReceipt = Boolean(id && isPaymentPaid);
+  const shouldFetchInterview = Boolean(id && !isDraftApplication && isPaymentPaid);
+
+  const { data: paymentQuote } = useGetPaymentQuote(id || "", { enabled: shouldFetchPaymentQuote });
+  const { data: receiptData } = useGetApplicationReceipt(id || "", { enabled: shouldFetchReceipt });
+  const { data: interviewScheduleFromApi } = useGetInterviewSchedule(id || "", { enabled: shouldFetchInterview });
+  const { data: interviewPanelFromApi } = useGetInterviewPanel(id || "", { enabled: shouldFetchInterview });
 
   const persistedSchedule = React.useMemo(() => {
     if (typeof window === "undefined" || !id) return null;
@@ -151,18 +168,6 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
       s.stageKey === "application_review" ||
       s.stageKey === "application",
   );
-  const paymentStageFromApi = stagesData?.find(
-    (s) => s.stageKey === "payment" || s.stageKey === "payment_quote",
-  );
-
-  const isPaymentPaid =
-    isPaymentConfirmed ||
-    paymentStageFromApi?.status === "successful" ||
-    Boolean((apiApp as any)?.paymentCompleted);
-
-  const isDraftApplication =
-    apiApp?.status === "draft" &&
-    !(apiApp as any)?.submittedAt;
 
   const isAppFormApproved = Boolean(
     appFormStageFromApi?.status === "successful" ||
@@ -214,20 +219,42 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
   const persistedFacilitator = React.useMemo(() => {
     if (typeof window === "undefined" || !id) return null;
     try {
-      const stored =
-        localStorage.getItem(`elimi_assigned_facilitator_${id}`) ||
-        localStorage.getItem("elimi_assigned_facilitator_active");
+      if (localStorage.getItem("elimi_assigned_facilitator_active")) {
+        localStorage.removeItem("elimi_assigned_facilitator_active");
+      }
+      const stored = localStorage.getItem(`elimi_assigned_facilitator_${id}`);
       return stored ? JSON.parse(stored) : null;
     } catch {
       return null;
     }
   }, [id]);
 
+  const hasReachedFolderStage = Boolean(
+    !isDraftApplication &&
+    (isPaymentPaid ||
+      stagesData?.some(
+        (s) =>
+          (s.stageKey === "folder_arrangement" ||
+            s.stageKey === "evidence_vault" ||
+            s.stageKey === "evidence") &&
+          (s.status === "in_progress" ||
+            s.status === "successful" ||
+            (s.status as string) === "completed"),
+      ) ||
+      (apiApp?.currentStageKey &&
+        apiApp.currentStageKey !== "draft" &&
+        apiApp.currentStageKey !== "application_form" &&
+        apiApp.currentStageKey !== "application_review" &&
+        apiApp.currentStageKey !== "payment" &&
+        apiApp.currentStageKey !== "payment_quote")),
+  );
+
   const rawFacilitator =
-    (apiApp as any)?.facilitator ||
-    (apiApp as any)?.assessor ||
-    (apiApp as any)?.metadata?.facilitator ||
-    persistedFacilitator;
+    hasReachedFolderStage
+      ? (apiApp as any)?.assignedFacilitator ||
+        (apiApp as any)?.facilitator ||
+        persistedFacilitator
+      : null;
 
   const facilitatorData = rawFacilitator
     ? {
@@ -548,6 +575,11 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
   };
 
   const interviewAssessors = React.useMemo(() => {
+    // Only show interview assessors if at interview stage or scheduled
+    if (!isAtInterviewStage && !isInterviewScheduled) {
+      return undefined;
+    }
+
     // 1. From real backend interview panel
     if (interviewPanelFromApi?.members && interviewPanelFromApi.members.length > 0) {
       const nonObserverMembers = interviewPanelFromApi.members.filter((m) => !m.isObserver);
@@ -557,26 +589,17 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
           : interviewPanelFromApi.members.slice(0, 3);
 
       return membersToUse.map((m, i) => {
-        const matched = centreAssessors.find(
-          (a) =>
-            a.id === m.assessorId ||
-            (a as any).assessorId === m.assessorId ||
-            (a as any).userId === m.assessorId,
-        );
         const name =
-          matched?.name ||
           m.name ||
           (m.isLead ? "Lead Assessor" : `Panelist ${i + 1}`);
         const avatar =
-          (matched as any)?.avatar ||
-          (matched as any)?.photoUrl ||
+          (m as any)?.avatar ||
+          (m as any)?.photoUrl ||
           "/images/facilitator_ngozi.jpg";
         const role = m.isLead || i === 0 ? "Lead Panelist" : "Panel Member";
         const tags = m.sectors?.length
           ? m.sectors.map((s: any) => s.name)
-          : matched?.sectors?.length
-            ? matched.sectors.map((s: any) => s.name)
-            : [resolvedTrade || "Cosmetology", "RPL Coordinator"];
+          : [resolvedTrade || "Cosmetology", "RPL Coordinator"];
 
         return {
           id: m.assessorId || `assessor-${i}`,
@@ -594,7 +617,7 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
       return [
         {
           id: persistedPanel.leadAssessor.id || "lead",
-          name: persistedPanel.leadAssessor.name || "RUQOYAT BABALOLA",
+          name: persistedPanel.leadAssessor.name || "Lead Assessor",
           avatar: persistedPanel.leadAssessor.avatar || "/images/facilitator_ngozi.jpg",
           role: "Lead Panelist",
           tags: persistedPanel.leadAssessor.tags || [resolvedTrade || "Cosmetology", "RPL Coordinator"],
@@ -602,7 +625,7 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
         },
         ...(persistedPanel.panelMembers || []).map((m: any, idx: number) => ({
           id: m.id || `member-${idx}`,
-          name: m.name || (idx === 0 ? "Angela Jones" : "Amina Bello"),
+          name: m.name || `Panel Member ${idx + 1}`,
           avatar: m.avatar || "/images/facilitator_ngozi.jpg",
           role: "Panel Member",
           tags: m.tags || [resolvedTrade || "Cosmetology", "RPL Coordinator"],
@@ -611,113 +634,8 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
       ];
     }
 
-    // 3. From real centre assessors in backend
-    if (centreAssessors && centreAssessors.length > 0) {
-      const lead = centreAssessors[0];
-      const member1 = centreAssessors[1] || centreAssessors[0];
-      const member2 = centreAssessors[2] || centreAssessors[1] || centreAssessors[0];
-
-      return [
-        {
-          id: lead.id,
-          name: lead.name,
-          avatar:
-            (lead as any).avatar ||
-            (lead as any).photoUrl ||
-            "/images/facilitator_ngozi.jpg",
-          role: "Lead Panelist",
-          tags: [resolvedTrade || "Cosmetology", "RPL Coordinator"],
-          isHighlighted: false,
-        },
-        {
-          id: member1.id,
-          name: member1.name,
-          avatar:
-            (member1 as any).avatar ||
-            (member1 as any).photoUrl ||
-            "/images/facilitator_ngozi.jpg",
-          role: "Panel Member",
-          tags: [resolvedTrade || "Cosmetology", "RPL Coordinator"],
-          isHighlighted: true,
-        },
-        {
-          id: member2.id,
-          name: member2.name,
-          avatar:
-            (member2 as any).avatar ||
-            (member2 as any).photoUrl ||
-            "/images/facilitator_ngozi.jpg",
-          role: "Panel Member",
-          tags: [resolvedTrade || "Cosmetology", "RPL Coordinator"],
-          isHighlighted: false,
-        },
-      ];
-    }
-
-    if (isInterviewScheduled) {
-      return [
-        {
-          id: "assessor-lead",
-          name: "RUQOYAT BABALOLA",
-          avatar: "/images/facilitator_ngozi.jpg",
-          role: "Lead Panelist",
-          tags: [resolvedTrade || "Cosmetology", "RPL Coordinator"],
-          isHighlighted: false,
-        },
-        {
-          id: "assessor-member-1",
-          name: "Angela Jones",
-          avatar: "/images/facilitator_ngozi.jpg",
-          role: "Panel Member",
-          tags: [resolvedTrade || "Cosmetology", "RPL Coordinator"],
-          isHighlighted: true,
-        },
-        {
-          id: "assessor-member-2",
-          name: "Amina Bello",
-          avatar: "/images/facilitator_ngozi.jpg",
-          role: "Panel Member",
-          tags: [resolvedTrade || "Cosmetology", "RPL Coordinator"],
-          isHighlighted: false,
-        },
-      ];
-    }
-
-    if (
-      Array.isArray((apiApp as any)?.assessors) &&
-      (apiApp as any).assessors.length > 0
-    ) {
-      return (apiApp as any).assessors.map((a: any, i: number) => ({
-        id: a.id || a.assessorId || `assessor-${i}`,
-        name:
-          a.name ||
-          `${a.firstName || ""} ${a.lastName || ""}`.trim() ||
-          "Assessor",
-        avatar: a.avatar || a.photoUrl || userAvatar,
-        role: a.role || "Assessor / Panel Member",
-        tags: a.tags || a.qualifications || [resolvedTrade || "RPL"],
-        isHighlighted: false,
-      }));
-    }
-
-    if (facilitatorData) {
-      return [
-        {
-          id:
-            (rawFacilitator as any)?.id ||
-            (rawFacilitator as any)?.assessorId ||
-            "assigned-facilitator",
-          name: facilitatorData.name,
-          avatar: facilitatorData.avatar,
-          role: facilitatorData.role || "Assessor / Facilitator",
-          tags: facilitatorData.tags || [resolvedTrade || "RPL", "RPL Assessor"],
-          isHighlighted: true,
-        },
-      ];
-    }
-
     return undefined;
-  }, [persistedPanel, interviewPanelFromApi, isInterviewScheduled, apiApp, facilitatorData, rawFacilitator, resolvedTrade]);
+  }, [persistedPanel, interviewPanelFromApi, isInterviewScheduled, isAtInterviewStage, resolvedTrade]);
 
   const stages = application
     ? getStagesConfig({
@@ -874,7 +792,7 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
                   Edit Application
                 </button>
               </div>
-            ) : (
+            ) : !isPaymentPaid ? (
               <div className="p-4 rounded-xl bg-green-50 border border-green-200 flex items-center gap-3">
                 <div className="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center text-green-700 shrink-0">
                   <FiLock className="w-5 h-5" />
@@ -888,7 +806,7 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
                   </span>
                 </div>
               </div>
-            )}
+            ) : null}
 
             {stages.map((stage) => (
               <ApplicationStageCard key={stage.id} stage={stage} />

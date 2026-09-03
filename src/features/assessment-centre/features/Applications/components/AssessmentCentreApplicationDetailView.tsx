@@ -84,9 +84,10 @@ export const AssessmentCentreApplicationDetailView: React.FC<
   const persistedFacilitator = React.useMemo(() => {
     if (typeof window === "undefined" || !id) return null;
     try {
-      const stored =
-        localStorage.getItem(`elimi_assigned_facilitator_${id}`) ||
-        localStorage.getItem("elimi_assigned_facilitator_active");
+      if (localStorage.getItem("elimi_assigned_facilitator_active")) {
+        localStorage.removeItem("elimi_assigned_facilitator_active");
+      }
+      const stored = localStorage.getItem(`elimi_assigned_facilitator_${id}`);
       return stored ? JSON.parse(stored) : null;
     } catch {
       return null;
@@ -779,16 +780,33 @@ export const AssessmentCentreApplicationDetailView: React.FC<
                   <h3 className="text-black font-bold text-base sm:text-lg lg:text-xl tracking-tight">
                     Interview Stage
                   </h3>
-                  <span className="bg-[#FEF3C7] text-[#92400E] text-xs font-semibold px-3 py-0.5 rounded-full capitalize">
-                    Awaiting Interview
-                  </span>
+                  {interviewStatus === "Completed" ? (
+                    <span className="bg-[#E6F4EA] text-[#1E7F4C] text-xs font-semibold px-3 py-0.5 rounded-full capitalize">
+                      Completed
+                    </span>
+                  ) : (
+                    <span className="bg-[#FEF3C7] text-[#92400E] text-xs font-semibold px-3 py-0.5 rounded-full capitalize">
+                      Awaiting Interview
+                    </span>
+                  )}
                 </div>
                 <p className="text-gray-400 text-xs sm:text-sm font-normal">
-                  Scheduled for: {interviewDateFormatted}
+                  {interviewStatus === "Completed"
+                    ? `Completed on: ${interviewDate}`
+                    : `Scheduled for: ${interviewDateFormatted}`}
                 </p>
               </div>
 
-              {isInterviewScheduled ? (
+              {interviewStatus === "Completed" ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="bg-white! text-[#fbab2a]! border border-gray-200! hover:bg-gray-50! font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl cursor-pointer shrink-0 shadow-none!"
+                >
+                  View
+                </Button>
+              ) : isInterviewScheduled ? (
                 <Button
                   type="button"
                   variant="outline"

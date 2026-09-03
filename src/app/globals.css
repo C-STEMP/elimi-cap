@@ -300,3 +300,70 @@ input[type="checkbox"] {
 input[type="checkbox"]:checked {
   accent-color: #a31d38 !important;
 }
+
+/* ── Print Media Optimization ────────────────────────────────────────────── */
+@media print {
+  @page {
+    size: auto;
+    margin: 10mm 15mm 15mm 15mm;
+  }
+
+  html,
+  body {
+    overflow: visible !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide all non-printable chrome */
+  header,
+  nav,
+  footer,
+  aside,
+  button,
+  .no-print,
+  .print-hidden,
+  [data-no-print="true"] {
+    display: none !important;
+  }
+
+  /* Remove max-width and margins from parent wrappers */
+  main,
+  div:has(> #printable-application-card),
+  div:has(> .printable-application-card) {
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+
+  /* Turn grid containing the application card into a single full-width block */
+  .grid {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  /* Application Card: span full width, clean styling for print */
+  #printable-application-card,
+  .printable-application-card {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+  }
+
+  /* Hide any siblings of the application card (like sidebars) */
+  #printable-application-card ~ *,
+  .printable-application-card ~ * {
+    display: none !important;
+  }
+}

@@ -27,6 +27,7 @@ import {
   useGetApplicationById,
   useGetInterviewSchedule,
   useGetInterviewForms,
+  useEvaluateInterview,
 } from "@/src/features/shared/applications/hooks";
 import { useToast } from "@/src/components/ui/toast";
 
@@ -83,6 +84,7 @@ export const AssessorApplicationDetailView: React.FC<
   const { toast } = useToast();
   const { data: interviewSchedule } = useGetInterviewSchedule(application.id);
   const { data: remoteForms } = useGetInterviewForms(application.id);
+  const evaluateInterview = useEvaluateInterview(application.id);
 
   const [internalSubView, setInternalSubView] =
     useState<AssessorDetailSubView>("stages");
@@ -185,6 +187,11 @@ export const AssessorApplicationDetailView: React.FC<
   const handleCandidateCompetentSuccessContinue = () => {
     setIsCandidateCompetentSuccessOpen(false);
     setInterviewOutcome("competent");
+    evaluateInterview.mutate({
+      decision: "approve",
+      feedback: "Candidate demonstrated all required competencies.",
+      signatureAssetId: "default",
+    });
   };
 
   const handleConfirmCandidateIncompetent = (data: {
@@ -203,6 +210,12 @@ export const AssessorApplicationDetailView: React.FC<
   const handleCandidateIncompetentSuccessContinue = () => {
     setIsCandidateIncompetentSuccessOpen(false);
     setInterviewOutcome("inconclusive");
+    evaluateInterview.mutate({
+      decision: "reject",
+      outcome: "inconclusive",
+      feedback: interviewFeedback?.reason || "Candidate evaluation inconclusive.",
+      signatureAssetId: "default",
+    });
   };
 
   const handleConfirmCandidateInconclusive = () => {
@@ -292,15 +305,15 @@ export const AssessorApplicationDetailView: React.FC<
         ? {
             title: "Panel Interview",
             time: new Date(interviewSchedule.scheduledAt).toLocaleTimeString("en-US", {
-              hour: "2-digit",
+              hour: "numeric",
               minute: "2-digit",
+              hour12: true,
             }),
             date: new Date(interviewSchedule.scheduledAt).toLocaleDateString("en-GB"),
-            address:
-              interviewSchedule.location ||
-              (interviewSchedule.mode === "online"
-                ? `Online (${interviewSchedule.link || "Link will be shared"})`
-                : "Assessment Centre"),
+            location: interviewSchedule.location || "Cstemp Centre",
+            mode: interviewSchedule.mode,
+            liveUrl: interviewSchedule.mode === "online" ? interviewSchedule.link : undefined,
+            isRescheduled: Boolean((interviewSchedule as any)?.isRescheduled),
           }
         : null;
 
@@ -330,7 +343,9 @@ export const AssessorApplicationDetailView: React.FC<
 
       {/* Right Column: Calendar, Events, and Assessment Forms Widgets */}
       <div className="lg:col-span-4 flex flex-col gap-6">
-        <AssessorCalendarWidget />
+        <AssessorCalendarWidget
+          panelInterviewDate={interviewSchedule?.scheduledAt || undefined}
+        />
         <AssessorUpcomingEventsWidget event={upcomingEvent} />
         <AssessorAssessmentFormsWidget
           onViewForm={(form) => {
