@@ -74,7 +74,6 @@ export const AssessorFilterModal: React.FC<AssessorFilterModalProps> = ({
               "Folder Arrangement",
               "Interview Stage",
               "Internal Verifier",
-              "Notify Awarding Body",
               "External Verifier",
               "Certification",
             ]}

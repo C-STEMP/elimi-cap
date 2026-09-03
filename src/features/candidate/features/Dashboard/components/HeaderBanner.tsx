@@ -15,6 +15,7 @@ import {
 } from "react-icons/fi";
 import { ASSETS_URL } from "@/assets";
 import { Logo } from "@/src/components/ui/logo";
+import { Avatar } from "@/src/components/ui/avatar";
 import { LogoutModal } from "@/components/LogoutModal";
 import { NotificationDropdown } from "./NotificationDropdown";
 
@@ -78,7 +79,7 @@ export const HeaderBanner: React.FC<HeaderBannerProps> = ({
     authUser?.avatar ||
     (authUser as any)?.avatarUrl ||
     (authUser as any)?.passportUrl ||
-    ASSETS_URL.userAvatar;
+    null;
 
   React.useEffect(() => {
     if (isMobileMenuOpen) {
@@ -118,14 +119,6 @@ export const HeaderBanner: React.FC<HeaderBannerProps> = ({
                 </Link>
               );
             })}
-            <button
-              type="button"
-              onClick={() => setIsLogoutOpen(true)}
-              className="text-sm font-semibold px-3.5 py-1.5 rounded-full text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200 cursor-pointer flex items-center gap-1.5 ml-1"
-            >
-              <FiLogOut className="w-3.5 h-3.5" />
-              <span>Log out</span>
-            </button>
           </nav>
 
           {/* Right User & Utility Controls */}
@@ -153,18 +146,26 @@ export const HeaderBanner: React.FC<HeaderBannerProps> = ({
             <Link
               href="/dashboard/settings"
               aria-label="Profile Settings"
-              className="relative w-9 h-9 rounded-full overflow-hidden border-2 border-white/30 shrink-0 cursor-pointer hover:opacity-85 transition-opacity"
+              className="relative shrink-0 cursor-pointer hover:opacity-85 transition-opacity"
             >
-              <Image
+              <Avatar
                 src={userAvatarSrc}
+                name={userName}
+                className="w-9 h-9 border-2 border-white/30"
                 alt={userName}
-                fill
-                sizes="36px"
-                className="object-cover"
-                priority
-                loading="eager"
               />
             </Link>
+
+            {/* Logout Icon Button */}
+            <button
+              type="button"
+              aria-label="Log out"
+              title="Log out"
+              onClick={() => setIsLogoutOpen(true)}
+              className="hidden md:flex w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 items-center justify-center text-white transition-colors cursor-pointer"
+            >
+              <FiLogOut className="w-4 h-4" />
+            </button>
 
             {/* Mobile Hamburger Toggle */}
             <button
@@ -206,15 +207,12 @@ export const HeaderBanner: React.FC<HeaderBannerProps> = ({
               >
                 <div className="flex items-center justify-between pb-4 border-b border-white/15">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="relative w-9 h-9 rounded-full overflow-hidden border border-white/30 shrink-0">
-                      <Image
-                        src={userAvatarSrc}
-                        alt={userName}
-                        fill
-                        sizes="36px"
-                        className="object-cover"
-                      />
-                    </div>
+                    <Avatar
+                      src={userAvatarSrc}
+                      name={userName}
+                      className="w-9 h-9 border border-white/30 shrink-0"
+                      alt={userName}
+                    />
                     <div className="flex flex-col min-w-0">
                       <span className="text-sm font-bold text-white truncate">{displayName}</span>
                       <span className="text-[11px] text-white/70">Candidate</span>

@@ -10,6 +10,7 @@ import { useGetApplicationById } from "@/src/features/candidate/features/Applica
 import { useAppSelector } from "@/src/store/hooks";
 import { Loader } from "@/src/components/ui/loader";
 import { downloadFormElement, printFormElement } from "@/src/lib/formPrintDownload";
+import { Avatar } from "@/src/components/ui/avatar";
 
 interface CandidateApplicationFormViewProps {
   applicationId: string;
@@ -242,24 +243,13 @@ export const CandidateApplicationFormView: React.FC<
 
             {/* Passport Photograph */}
             <div className="sm:absolute sm:top-0 sm:right-0 mt-4 sm:mt-0">
-              <div className="w-28 sm:w-32 h-28 sm:h-32 rounded-2xl border-2 border-dashed border-primary/20 bg-[#fdf2f5] overflow-hidden flex flex-col items-center justify-center p-1 relative shadow-2xs">
-                {passportUrl ? (
-                  <img
-                    src={passportUrl}
-                    alt="Passport"
-                    className="w-full h-full object-cover rounded-xl"
-                  />
-                ) : (
-                  <div className="flex flex-col items-center text-center p-2">
-                    <span className="text-primary text-xs font-bold leading-tight">
-                      Passport
-                    </span>
-                    <span className="text-[10px] text-gray-400 mt-0.5">
-                      Attached
-                    </span>
-                  </div>
-                )}
-              </div>
+              <Avatar
+                src={passportUrl}
+                name={applicantName}
+                shape="rounded"
+                className="w-28 sm:w-32 h-28 sm:h-32 border-2 border-dashed border-primary/20 bg-[#fdf2f5] p-1 shadow-2xs"
+                alt="Passport"
+              />
             </div>
           </div>
 

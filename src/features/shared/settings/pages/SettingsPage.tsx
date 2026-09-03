@@ -92,7 +92,7 @@ export const SettingsPage: React.FC = () => {
     user?.passportUrl;
 
   const [avatarSrc, setAvatarSrc] = useState<any>(
-    uploadedAvatar || ASSETS_URL.userAvatar,
+    uploadedAvatar || null,
   );
 
   React.useEffect(() => {

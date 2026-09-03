@@ -16,6 +16,7 @@ import { Select } from "@/src/components/ui/select";
 import { PhoneInput } from "@/src/components/ui/phone-input";
 import { DatePicker } from "@/src/components/ui/date-picker";
 import { Button } from "@/src/components/ui/button";
+import { Avatar } from "@/src/components/ui/avatar";
 import { useToast } from "@/src/components/ui/toast";
 import { DeleteAccountModal } from "./DeleteAccountModal";
 import { ASSETS_URL } from "@/assets";
@@ -357,16 +358,13 @@ export const AssessorSettingsView: React.FC = () => {
         {/* Left Sidebar matching Images 1-5 */}
         <div className="lg:col-span-4 xl:col-span-3 bg-white rounded-3xl p-6 shadow-2xs border border-gray-100/80 flex flex-col gap-6 w-full">
           <div className="flex items-center gap-3.5">
-            <div className="relative w-24 h-24 flex items-center justify-center rounded-2xl overflow-hidden shrink-0 bg-gray-100 border border-gray-200 shadow-xs">
-              <Image
-                src={profileImagePreview || ASSETS_URL.userAvatar}
-                alt="User Avatar"
-                fill
-                sizes="96px"
-                className="object-cover"
-                priority
-              />
-            </div>
+            <Avatar
+              src={profileImagePreview}
+              name={[firstName, lastName].filter(Boolean).join(" ") || authUser?.fullName || "Assessor"}
+              shape="rounded"
+              className="w-24 h-24 border border-gray-200 shadow-xs shrink-0"
+              alt="User Avatar"
+            />
 
             <div className="flex flex-col items-start justify-center">
               <input
