@@ -5,6 +5,7 @@ import Image, { StaticImageData } from "next/image";
 import { FiShield, FiCheckCircle, FiCamera, FiUpload } from "react-icons/fi";
 import { SettingsTab, VerificationStatus } from "../types/settings.types";
 import { CameraCaptureModal } from "@/src/components/ui/camera-capture-modal";
+import { Avatar } from "@/src/components/ui/avatar";
 
 interface SettingsSidebarProps {
   userAvatarSrc: StaticImageData | string;
@@ -52,17 +53,12 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
         />
 
         <div className="flex items-center gap-3.5">
-          <div className="relative w-20 h-20 rounded-xl overflow-hidden shrink-0 border border-gray-100 shadow-xs">
-            <Image
-              src={userAvatarSrc}
-              alt="User Avatar"
-              fill
-              sizes="80px"
-              className="object-cover"
-              priority
-              loading="eager"
-            />
-          </div>
+          <Avatar
+            src={userAvatarSrc}
+            shape="rounded"
+            className="w-20 h-20 border border-gray-100 shadow-xs shrink-0"
+            alt="User Avatar"
+          />
 
           <div className="flex flex-col items-start justify-center gap-1">
             <div className="flex items-center gap-1.5">

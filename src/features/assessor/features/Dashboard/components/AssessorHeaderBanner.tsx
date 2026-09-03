@@ -18,6 +18,7 @@ import {
 import { BiSolidMessageRoundedDetail } from "react-icons/bi";
 import { Logo } from "@/src/components/ui/logo";
 import { Button } from "@/src/components/ui/button";
+import { Avatar } from "@/src/components/ui/avatar";
 import { LogoutModal } from "@/components/LogoutModal";
 import { NotificationDropdown } from "@/features/candidate/features/Dashboard/components/NotificationDropdown";
 import { useAppDispatch, useAppSelector } from "@/src/store/hooks";
@@ -161,14 +162,6 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
               </button>
             );
           })}
-          <button
-            type="button"
-            onClick={() => setIsLogoutOpen(true)}
-            className="px-3 py-1.5 rounded-full text-xs lg:text-base font-semibold text-white/80 hover:text-white hover:bg-white/10 transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ml-1"
-          >
-            <FiLogOut className="w-3.5 h-3.5" />
-            <span>Log out</span>
-          </button>
         </div>
 
         {/* Right Action Controls */}
@@ -204,20 +197,26 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
 
           <div
             onClick={() => onSelectTab("Settings")}
-            className="w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden border border-white/30 bg-white/20 flex items-center justify-center text-xs sm:text-sm font-bold text-white shrink-0 cursor-pointer relative"
+            className="shrink-0 cursor-pointer"
           >
-            {uploadedAvatar ? (
-              <Image
-                src={uploadedAvatar}
-                alt={effectiveUserName}
-                fill
-                sizes="40px"
-                className="object-cover"
-              />
-            ) : (
-              effectiveUserName.charAt(0).toUpperCase()
-            )}
+            <Avatar
+              src={uploadedAvatar}
+              name={effectiveUserName}
+              className="w-8 h-8 sm:w-10 sm:h-10 border border-white/30"
+              alt={effectiveUserName}
+            />
           </div>
+
+          {/* Logout Icon Button on desktop */}
+          <button
+            type="button"
+            aria-label="Log out"
+            title="Log out"
+            onClick={() => setIsLogoutOpen(true)}
+            className="hidden xl:flex w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/10 hover:bg-white/20 items-center justify-center text-white/90 transition-all cursor-pointer"
+          >
+            <FiLogOut className="w-4 h-4 sm:w-5 sm:h-5" />
+          </button>
 
           {/* Mobile Hamburger Toggle */}
           <button
@@ -255,23 +254,16 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 28, stiffness: 300 }}
-              className="relative w-full max-w-[280px] bg-[#8c1830] border-l border-white/10 text-white h-full shadow-2xl flex flex-col z-10 p-5 overflow-y-auto"
+              className="relative w-full max-w-70 bg-[#8c1830] border-l border-white/10 text-white h-full shadow-2xl flex flex-col z-10 p-5 overflow-y-auto"
             >
               <div className="flex items-center justify-between pb-4 border-b border-white/15">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden border border-white/30 bg-white/20 flex items-center justify-center text-xs sm:text-sm font-bold text-white shrink-0 relative">
-                    {uploadedAvatar ? (
-                      <Image
-                        src={uploadedAvatar}
-                        alt={effectiveUserName}
-                        fill
-                        sizes="40px"
-                        className="object-cover"
-                      />
-                    ) : (
-                      effectiveUserName.charAt(0).toUpperCase()
-                    )}
-                  </div>
+                  <Avatar
+                    src={uploadedAvatar}
+                    name={effectiveUserName}
+                    className="w-9 h-9 sm:w-10 sm:h-10 border border-white/30 shrink-0"
+                    alt={effectiveUserName}
+                  />
                   <div className="flex flex-col min-w-0">
                     <span className="text-sm font-bold text-white truncate">{effectiveUserName}</span>
                     <span className="text-[11px] text-white/70">Assessor</span>
@@ -488,7 +480,7 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
                 className="bg-[#FBAB2A] hover:bg-[#E89B1F] text-white font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl shadow-lg flex items-center gap-2 cursor-pointer transition-all self-start sm:self-center shrink-0"
               >
                 <span>Mark As Complete</span>
-                <FiCheck className="w-4 h-4 stroke-[3]" />
+                <FiCheck className="w-4 h-4 stroke-3" />
               </Button>
             )}
           </div>

@@ -15,6 +15,7 @@ import {
 } from "react-icons/fi";
 import { BiSolidMessageRoundedDetail } from "react-icons/bi";
 import { Logo } from "@/src/components/ui/logo";
+import { Avatar } from "@/src/components/ui/avatar";
 import { ASSETS_URL } from "@/assets";
 import { LogoutModal } from "@/components/LogoutModal";
 import { NotificationDropdown } from "@/features/candidate/features/Dashboard/components/NotificationDropdown";
@@ -201,14 +202,6 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
               </button>
             );
           })}
-          <button
-            type="button"
-            onClick={() => setIsLogoutOpen(true)}
-            className="px-3 py-1.5 rounded-full text-xs lg:text-base font-semibold text-white/80 hover:text-white hover:bg-white/10 transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ml-1"
-          >
-            <FiLogOut className="w-3.5 h-3.5" />
-            <span>Log out</span>
-          </button>
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
@@ -246,15 +239,29 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
             />
           </div>
 
-          <div className="w-10 h-10 rounded-full overflow-hidden border border-white/30 bg-white flex items-center justify-center shrink-0 cursor-pointer">
-            <Image
-              src={centreProfile?.logo?.url || centreData?.centre?.centreInformation?.logoUrl || ASSETS_URL.faviconIcon}
-              alt="Centre Logo"
-              width={36}
-              height={36}
-              className="w-full h-full object-cover"
+          <div
+            onClick={() => onSelectTab("settings")}
+            className="shrink-0 cursor-pointer"
+            title="Settings"
+          >
+            <Avatar
+              src={centreProfile?.logo?.url || centreData?.centre?.centreInformation?.logoUrl}
+              name={centreName}
+              className="w-10 h-10 border border-white/30 shrink-0 hover:opacity-90 transition-opacity"
+              alt={centreName}
             />
           </div>
+
+          {/* Logout Icon Button on desktop */}
+          <button
+            type="button"
+            aria-label="Log out"
+            title="Log out"
+            onClick={() => setIsLogoutOpen(true)}
+            className="hidden xl:flex w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 items-center justify-center text-white/90 transition-all cursor-pointer"
+          >
+            <FiLogOut className="w-4 h-4" />
+          </button>
 
           {/* Mobile Hamburger Toggle */}
           <button
@@ -296,15 +303,12 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
             >
               <div className="flex items-center justify-between pb-4 border-b border-white/15">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-full overflow-hidden border border-white/30 bg-white flex items-center justify-center shrink-0">
-                    <Image
-                      src={centreProfile?.logo?.url || centreData?.centre?.centreInformation?.logoUrl || ASSETS_URL.faviconIcon}
-                      alt="Centre Logo"
-                      width={36}
-                      height={36}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
+                  <Avatar
+                    src={centreProfile?.logo?.url || centreData?.centre?.centreInformation?.logoUrl}
+                    name={centreName}
+                    className="w-10 h-10 border border-white/30 shrink-0"
+                    alt={centreName}
+                  />
                   <div className="flex flex-col min-w-0">
                     <span className="text-sm font-bold text-white truncate">{centreName}</span>
                     <span className="text-[11px] text-white/70 capitalize">{effectiveRole.replace(/_/g, " ")}</span>

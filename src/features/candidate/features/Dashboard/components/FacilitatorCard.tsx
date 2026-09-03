@@ -5,6 +5,7 @@ import Image from "next/image";
 import type { StaticImageData } from "next/image";
 import { FiUser } from "react-icons/fi";
 import { Button } from "@/src/components/ui/button";
+import { Avatar } from "@/src/components/ui/avatar";
 
 export interface FacilitatorData {
   name: string;
@@ -55,15 +56,12 @@ export const FacilitatorCard: React.FC<FacilitatorCardProps> = ({
       ) : (
         <div className="flex flex-col items-center justify-between h-full w-full">
           <div className="flex flex-col items-center my-auto">
-            <div className="relative w-16 h-16 rounded-full overflow-hidden mb-3 border-2 border-white shadow-lg shrink-0">
-              <Image
-                src={facilitator.avatar}
-                alt={facilitator.name}
-                fill
-                sizes="64px"
-                className="object-cover"
-              />
-            </div>
+            <Avatar
+              src={facilitator.avatar}
+              name={facilitator.name}
+              className="w-16 h-16 mb-3 border-2 border-white shadow-lg shrink-0"
+              alt={facilitator.name}
+            />
 
             <h4 className="text-black font-bold text-base mb-0.5">
               {facilitator.name}

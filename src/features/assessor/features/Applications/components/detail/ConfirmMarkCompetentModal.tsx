@@ -9,11 +9,19 @@ interface ConfirmMarkCompetentModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
+  title?: string;
+  description?: string;
 }
 
 export const ConfirmMarkCompetentModal: React.FC<
   ConfirmMarkCompetentModalProps
-> = ({ isOpen, onClose, onConfirm }) => {
+> = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  title = "Are You sure?",
+  description = "Confirm you want to mark candidate as competent",
+}) => {
   if (!isOpen) return null;
 
   return (
@@ -30,10 +38,10 @@ export const ConfirmMarkCompetentModal: React.FC<
         </div>
 
         <h3 className="text-xl sm:text-2xl font-extrabold text-neutral-primary tracking-tight mb-1">
-          Are You sure?
+          {title}
         </h3>
         <p className="text-xs sm:text-sm text-neutral-secondary font-normal mb-6">
-          Confirm you want to mark candidate as competent
+          {description}
         </p>
 
         <div className="flex flex-col gap-3 w-full">

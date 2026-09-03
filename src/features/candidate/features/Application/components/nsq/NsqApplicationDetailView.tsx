@@ -15,6 +15,7 @@ import {
 import { HeaderBanner } from "@/features/candidate/features/Dashboard/components/HeaderBanner";
 import { CalendarWidget } from "@/features/candidate/features/Dashboard/components/CalendarWidget";
 import { Button } from "@/src/components/ui/button";
+import { Avatar } from "@/src/components/ui/avatar";
 import { ASSETS_URL } from "@/assets";
 import { scheduleDirectObservationApi } from "@/src/features/shared/applications/api";
 import {
@@ -534,15 +535,12 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
 
             {/* Assessor Profile Card */}
             <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center gap-3.5">
-              <div className="w-12 h-12 rounded-full bg-pink-100 text-pink-700 flex items-center justify-center overflow-hidden shrink-0 font-bold text-sm">
-                <Image
-                  src={ASSETS_URL.userAvatar}
-                  alt="Assessor"
-                  width={48}
-                  height={48}
-                  className="w-full h-full object-cover"
-                />
-              </div>
+              <Avatar
+                src={null}
+                name="Ngozi Eze"
+                className="w-12 h-12 shrink-0"
+                alt="Assessor"
+              />
 
               <div className="flex flex-col gap-1 min-w-0">
                 <span className="font-extrabold text-sm text-neutral-primary truncate">

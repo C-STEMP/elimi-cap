@@ -10,7 +10,10 @@ import { FiArrowLeft, FiArrowRight } from "react-icons/fi";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { setStartApplication } from "@/store/slices/onboardingSlice";
+import {
+  setStartApplication,
+  setRPLExperienceTrade,
+} from "@/store/slices/onboardingSlice";
 import { startApplicationSchema } from "@/src/lib/validation";
 
 import { useGetApplications, useApplication } from "@/src/features/candidate/features/Application/hooks";
@@ -38,6 +41,7 @@ interface ControlledSelectProps {
   placeholder?: string;
   options: (string | SelectOption)[];
   disabled?: boolean;
+  loading?: boolean;
   error?: string;
   help?: string;
 }
@@ -47,10 +51,12 @@ const FormSelect: React.FC<ControlledSelectProps> = ({
   onChange,
   error,
   help,
+  loading,
   ...rest
 }) => (
   <Select
     {...rest}
+    loading={loading}
     value={value}
     onChange={(e) => onChange?.(e.target.value)}
   />
@@ -128,17 +134,38 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
       savedStartApplication.sector ||
       savedStartApplication.assessmentCenter
     ) {
-      form.setFieldsValue(savedStartApplication);
-    } else if (existingApps.length > 0) {
-      const activeApp =
-        existingApps.find(
-          (a) => a.status === "draft" || a.status === "in_progress",
-        ) || existingApps[0];
-      if (activeApp?.centreId) {
-        form.setFieldValue("assessmentCenter", activeApp.centreId);
+      const isRawId = (val?: string) => {
+        if (!val) return false;
+        return (
+          /^[0-9A-Z]{20,}$/i.test(val) ||
+          /^[0-9a-f]{8}-[0-9a-f]{4}/i.test(val)
+        );
+      };
+
+      const valuesToSet: Record<string, string> = {};
+      if (
+        savedStartApplication.assessmentCenter &&
+        !isRawId(savedStartApplication.assessmentCenter)
+      ) {
+        valuesToSet.assessmentCenter = savedStartApplication.assessmentCenter;
+      }
+      if (
+        savedStartApplication.sector &&
+        !isRawId(savedStartApplication.sector)
+      ) {
+        valuesToSet.sector = savedStartApplication.sector;
+      }
+      if (
+        savedStartApplication.trade &&
+        !isRawId(savedStartApplication.trade)
+      ) {
+        valuesToSet.trade = savedStartApplication.trade;
+      }
+      if (Object.keys(valuesToSet).length > 0) {
+        form.setFieldsValue(valuesToSet);
       }
     }
-  }, [form, savedStartApplication, existingApps]);
+  }, [form, savedStartApplication]);
 
   const handleValuesChange = (changedValues: Record<string, string>) => {
     if ("sector" in changedValues) {
@@ -151,14 +178,24 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
       (c) => c.id === currentValues.assessmentCenter,
     );
 
+    const resolvedTradeName = tradeObj?.name || currentValues.trade || "";
+
     dispatch(
       setStartApplication({
         ...currentValues,
-        tradeName: tradeObj?.name || currentValues.trade,
+        tradeName: resolvedTradeName,
         sectorName: sectorObj?.name || currentValues.sector,
         centreName: centreObj?.name || currentValues.assessmentCenter,
       }),
     );
+
+    if (resolvedTradeName) {
+      dispatch(
+        setRPLExperienceTrade({
+          qualificationTitle: resolvedTradeName,
+        }),
+      );
+    }
   };
 
   const handleFinish = (values: {
@@ -191,6 +228,11 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
         tradeName,
         sectorName,
         centreName,
+      }),
+    );
+    dispatch(
+      setRPLExperienceTrade({
+        qualificationTitle: tradeName,
       }),
     );
 
@@ -317,7 +359,7 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
     >
       <div className="mb-6 text-left w-full flex flex-col items-start">
         <h1 className="text-2xl xl:text-3xl font-extrabold tracking-tight text-primary">
-          Start Assessment
+          Start Application
         </h1>
         <p className="text-neutral-secondary text-sm font-normal mt-0.5">
           Your journey is about to start
@@ -343,6 +385,8 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
                 <span className="text-primary-solid ml-0.5">*</span>
               </span>
             }
+            loading={isLoadingCentres}
+            disabled={isLoadingCentres}
             placeholder={
               isLoadingCentres ? "Loading centres..." : "Select"
             }
@@ -357,6 +401,8 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
                 Sector<span className="text-primary-solid ml-0.5">*</span>
               </span>
             }
+            loading={isLoadingSectors}
+            disabled={isLoadingSectors}
             placeholder={
               isLoadingSectors ? "Loading sectors..." : "Select"
             }
@@ -371,6 +417,7 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
                 Trade<span className="text-primary-solid ml-0.5">*</span>
               </span>
             }
+            loading={isLoadingTrades}
             placeholder={
               isLoadingTrades
                 ? "Loading trades..."

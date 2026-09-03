@@ -13,6 +13,7 @@ import {
 } from "react-icons/fi";
 import { Select } from "@/src/components/ui/select";
 import { Button } from "@/src/components/ui/button";
+import { Avatar } from "@/src/components/ui/avatar";
 import { Loader } from "@/src/components/ui/loader";
 import { AssignedCandidate } from "@/features/assessment-centre/types";
 import {
@@ -167,15 +168,12 @@ export const AssessorProfileDetailView: React.FC<
       {/* Assessor Profile Header Card */}
       <div className="bg-white rounded-3xl p-6 shadow-2xs border border-gray-100/80 flex items-start justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden shrink-0 border border-gray-100 bg-gray-50 flex items-center justify-center">
-            <Image
-              src={ASSETS_URL.userAvatar}
-              alt={assessorName}
-              width={80}
-              height={80}
-              className="w-full h-full object-cover"
-            />
-          </div>
+          <Avatar
+            src={(remoteDetail as any)?.avatar || (remoteDetail as any)?.photo?.url}
+            name={assessorName}
+            className="w-16 h-16 sm:w-20 sm:h-20 shrink-0 border border-gray-100"
+            alt={assessorName}
+          />
 
           <div className="flex flex-col gap-1">
             <h2 className="text-lg sm:text-xl font-extrabold text-neutral-primary">

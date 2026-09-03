@@ -13,6 +13,7 @@ import {
 } from "react-icons/fi";
 import { ASSETS_URL } from "@/assets";
 import { Button } from "@/src/components/ui/button";
+import { Avatar } from "@/src/components/ui/avatar";
 import { useToast } from "@/src/components/ui/toast";
 import { Loader } from "@/src/components/ui/loader";
 import {
@@ -25,6 +26,8 @@ import {
 import { AssignFacilitatorModal } from "./AssignFacilitatorModal";
 import { AssignPanelistModal, ScheduledPanelistInfo } from "./AssignPanelistModal";
 import { RescheduleInterviewModal } from "./RescheduleInterviewModal";
+import { AssignVerifierModal } from "./AssignVerifierModal";
+import { ReviewVerifierModal } from "./ReviewVerifierModal";
 import { useGetCentreAssessors } from "@/src/features/shared/centre/hooks";
 import { UpcomingCard } from "@/features/candidate/features/Dashboard/components/UpcomingCard";
 
@@ -65,6 +68,10 @@ export const AssessmentCentreApplicationDetailView: React.FC<
   const [isRescheduledLocally, setIsRescheduledLocally] = useState(false);
   const [scheduledPanelistData, setScheduledPanelistData] =
     useState<ScheduledPanelistInfo | null>(null);
+
+  const [isAssignVerifierOpen, setIsAssignVerifierOpen] = useState(false);
+  const [isReviewVerifierOpen, setIsReviewVerifierOpen] = useState(false);
+  const [activeVerifierType, setActiveVerifierType] = useState<"internal" | "external">("internal");
 
   const { data: interviewPanelFromApi } = useGetInterviewPanel(id);
   const { data: centreAssessors = [] } = useGetCentreAssessors({ status: "all" });
@@ -565,6 +572,11 @@ export const AssessmentCentreApplicationDetailView: React.FC<
 
 
   // Stage 5: Internal Verifier
+  const activeIv =
+    appDetail?.internalVerifier ||
+    (appDetail as any)?.frozenProfile?.internalVerifier ||
+    null;
+
   const ivStage = stages.find(
     (s) =>
       s.stageKey === "internal_verification" ||
@@ -575,32 +587,24 @@ export const AssessmentCentreApplicationDetailView: React.FC<
   const ivStatus =
     ivStage?.status === "successful" || isCompleted
       ? "Completed"
-      : ivStage?.status === "in_progress" || appDetail?.internalVerifier
+      : ivStage?.status === "in_progress" || ivStage?.status === "under_review" || activeIv
         ? "In Progress"
         : "Pending";
 
-  const ivDate = appDetail?.internalVerifier?.assignedAt
-    ? new Date(appDetail.internalVerifier.assignedAt).toLocaleDateString("en-US")
+  const ivDate = activeIv?.assignedAt
+    ? new Date(activeIv.assignedAt).toLocaleDateString("en-US")
     : ivStage?.enteredAt
       ? new Date(ivStage.enteredAt).toLocaleDateString("en-US")
       : ivStatus === "Completed"
         ? submittedDate
         : "—";
 
-  // Stage 6: Awarding Body
-  const awardingBodyStage = stages.find(
-    (s) =>
-      s.stageKey === "awarding_body" ||
-      s.stageKey === "notify_awarding_body",
-  );
-  const awardingBodyStatus =
-    awardingBodyStage?.status === "successful" || isCompleted
-      ? "Completed"
-      : awardingBodyStage?.status === "in_progress"
-        ? "In Progress"
-        : "Pending";
+  // Stage 6: External Verifier
+  const activeEv =
+    (appDetail as any)?.externalVerifier ||
+    (appDetail as any)?.frozenProfile?.externalVerifier ||
+    null;
 
-  // Stage 7: External Verifier
   const evStage = stages.find(
     (s) =>
       s.stageKey === "external_verification" ||
@@ -611,11 +615,19 @@ export const AssessmentCentreApplicationDetailView: React.FC<
   const evStatus =
     evStage?.status === "successful" || isCompleted
       ? "Completed"
-      : evStage?.status === "in_progress"
+      : evStage?.status === "in_progress" || evStage?.status === "under_review" || activeEv
         ? "In Progress"
         : "Pending";
 
-  // Stage 8: Certification
+  const evDate = activeEv?.assignedAt
+    ? new Date(activeEv.assignedAt).toLocaleDateString("en-US")
+    : evStage?.enteredAt
+      ? new Date(evStage.enteredAt).toLocaleDateString("en-US")
+      : evStatus === "Completed"
+        ? submittedDate
+        : "—";
+
+  // Stage 7: Certification
   const certStage = stages.find((s) => s.stageKey === "certification");
   const certStatus =
     isCompleted || certStage?.status === "successful"
@@ -890,69 +902,148 @@ export const AssessmentCentreApplicationDetailView: React.FC<
                 <h3 className="text-black font-bold text-base sm:text-lg lg:text-xl tracking-tight">
                   Internal Verifier
                 </h3>
-                <span className="bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-0.5 rounded-full capitalize">
-                  Not Started
-                </span>
+                {(() => {
+                  const b = getStatusBadge(ivStatus);
+                  return (
+                    <span className={`${b.className} text-xs font-semibold px-3 py-0.5 rounded-full capitalize`}>
+                      {b.text}
+                    </span>
+                  );
+                })()}
               </div>
               <p className="text-gray-400 text-xs sm:text-sm font-normal">
-                ---
+                {activeIv
+                  ? `Assigned to: ${activeIv.name || "Assigned IV"}`
+                  : ivStatus === "In Progress"
+                    ? "Under review by Internal Verifier"
+                    : ivStatus === "Completed"
+                      ? "Internal verification completed"
+                      : "---"}
               </p>
             </div>
-            <span className="text-gray-400 font-bold text-sm shrink-0">---</span>
-          </div>
-
-          {/* Stage 6: Notify Awarding Body */}
-          <div className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-100 shadow-2xs flex items-center justify-between gap-4">
-            <div className="flex flex-col gap-1.5 min-w-0">
-              <div className="flex items-center gap-3 flex-wrap">
-                <h3 className="text-black font-bold text-base sm:text-lg lg:text-xl tracking-tight">
-                  Notify Awarding Body
-                </h3>
-                <span className="bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-0.5 rounded-full capitalize">
-                  Not Started
-                </span>
-              </div>
-              <p className="text-gray-400 text-xs sm:text-sm font-normal">
-                ---
-              </p>
+            <div className="flex items-center gap-3 shrink-0">
+              <span className="text-gray-400 font-bold text-sm hidden sm:inline">
+                {ivDate}
+              </span>
+              {!activeIv && (interviewStatus === "Completed" || isAtInterviewStage) && ivStatus !== "Completed" && (
+                <Button
+                  type="button"
+                  variant="amber"
+                  size="sm"
+                  onClick={() => {
+                    setActiveVerifierType("internal");
+                    setIsAssignVerifierOpen(true);
+                  }}
+                  className="cursor-pointer text-xs"
+                >
+                  Assign IV
+                </Button>
+              )}
+              {activeIv && ivStatus !== "Completed" && (
+                <Button
+                  type="button"
+                  variant="amber"
+                  size="sm"
+                  onClick={() => {
+                    setActiveVerifierType("internal");
+                    setIsReviewVerifierOpen(true);
+                  }}
+                  className="cursor-pointer text-xs"
+                >
+                  Mark Competent
+                </Button>
+              )}
             </div>
-            <span className="text-gray-400 font-bold text-sm shrink-0">---</span>
           </div>
 
-          {/* Stage 7: External Verifier */}
+          {/* Stage 6: External Verifier */}
           <div className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-100 shadow-2xs flex items-center justify-between gap-4">
             <div className="flex flex-col gap-1.5 min-w-0">
               <div className="flex items-center gap-3 flex-wrap">
                 <h3 className="text-black font-bold text-base sm:text-lg lg:text-xl tracking-tight">
                   External Verifier
                 </h3>
-                <span className="bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-0.5 rounded-full capitalize">
-                  Not Started
-                </span>
+                {(() => {
+                  const b = getStatusBadge(evStatus);
+                  return (
+                    <span className={`${b.className} text-xs font-semibold px-3 py-0.5 rounded-full capitalize`}>
+                      {b.text}
+                    </span>
+                  );
+                })()}
               </div>
               <p className="text-gray-400 text-xs sm:text-sm font-normal">
-                ---
+                {activeEv
+                  ? `Assigned to: ${activeEv.name || "Assigned EV"}`
+                  : evStatus === "In Progress"
+                    ? "Under review by External Verifier"
+                    : evStatus === "Completed"
+                      ? "External verification completed"
+                      : "---"}
               </p>
             </div>
-            <span className="text-gray-400 font-bold text-sm shrink-0">---</span>
+            <div className="flex items-center gap-3 shrink-0">
+              <span className="text-gray-400 font-bold text-sm hidden sm:inline">
+                {evDate}
+              </span>
+              {!activeEv && (ivStatus === "Completed" || interviewStatus === "Completed") && evStatus !== "Completed" && (
+                <Button
+                  type="button"
+                  variant="amber"
+                  size="sm"
+                  onClick={() => {
+                    setActiveVerifierType("external");
+                    setIsAssignVerifierOpen(true);
+                  }}
+                  className="cursor-pointer text-xs"
+                >
+                  Assign EV
+                </Button>
+              )}
+              {activeEv && evStatus !== "Completed" && (
+                <Button
+                  type="button"
+                  variant="amber"
+                  size="sm"
+                  onClick={() => {
+                    setActiveVerifierType("external");
+                    setIsReviewVerifierOpen(true);
+                  }}
+                  className="cursor-pointer text-xs"
+                >
+                  Mark Competent
+                </Button>
+              )}
+            </div>
           </div>
 
-          {/* Stage 8: Certification */}
+          {/* Stage 7: Certification */}
           <div className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-100 shadow-2xs flex items-center justify-between gap-4">
             <div className="flex flex-col gap-1.5 min-w-0">
               <div className="flex items-center gap-3 flex-wrap">
                 <h3 className="text-black font-bold text-base sm:text-lg lg:text-xl tracking-tight">
                   Certification
                 </h3>
-                <span className="bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-0.5 rounded-full capitalize">
-                  Not Started
-                </span>
+                {(() => {
+                  const b = getStatusBadge(certStatus);
+                  return (
+                    <span className={`${b.className} text-xs font-semibold px-3 py-0.5 rounded-full capitalize`}>
+                      {b.text}
+                    </span>
+                  );
+                })()}
               </div>
               <p className="text-gray-400 text-xs sm:text-sm font-normal">
-                ---
+                {certStatus === "Competent"
+                  ? "All requirements completed. Candidate qualification certified."
+                  : certStatus === "In Progress"
+                    ? "Certification pending awarding body signoff"
+                    : "---"}
               </p>
             </div>
-            <span className="text-gray-400 font-bold text-sm shrink-0">---</span>
+            <span className="text-gray-400 font-bold text-sm shrink-0">
+              {certStatus === "Competent" ? submittedDate : "---"}
+            </span>
           </div>
         </div>
 
@@ -1034,17 +1125,12 @@ export const AssessmentCentreApplicationDetailView: React.FC<
                   Facilitator
                 </h3>
                 <div className="flex items-center gap-3.5">
-                  <div className="w-13 h-13 rounded-full overflow-hidden bg-gray-100 border border-gray-200 shrink-0 relative">
-                    <img
-                      src={
-                        activeFacilitator.avatar ||
-                        (ASSETS_URL as any)?.userAvatar?.src ||
-                        "/avatar-placeholder.png"
-                      }
-                      alt={activeFacilitator.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
+                  <Avatar
+                    src={activeFacilitator.avatar}
+                    name={activeFacilitator.name}
+                    className="w-13 h-13 border border-gray-200 shrink-0"
+                    alt={activeFacilitator.name}
+                  />
                   <div className="flex flex-col gap-0.5 min-w-0">
                     <h4 className="text-sm font-bold text-black truncate">
                       {activeFacilitator.name}
@@ -1119,6 +1205,26 @@ export const AssessmentCentreApplicationDetailView: React.FC<
         currentLocation={activeInterviewSchedule?.location || "Cstemp Centre"}
         currentMode={activeInterviewSchedule?.mode === "online" ? "virtual" : "physical"}
         onSuccess={handleRescheduleSuccess}
+      />
+
+      <AssignVerifierModal
+        isOpen={isAssignVerifierOpen}
+        onClose={() => setIsAssignVerifierOpen(false)}
+        applicationId={id}
+        verifierType={activeVerifierType}
+        tradeName={resolvedTradeName}
+      />
+
+      <ReviewVerifierModal
+        isOpen={isReviewVerifierOpen}
+        onClose={() => setIsReviewVerifierOpen(false)}
+        applicationId={id}
+        verifierType={activeVerifierType}
+        verifierName={
+          activeVerifierType === "internal"
+            ? activeIv?.name || "Internal Verifier"
+            : activeEv?.name || "External Verifier"
+        }
       />
     </div>
   );

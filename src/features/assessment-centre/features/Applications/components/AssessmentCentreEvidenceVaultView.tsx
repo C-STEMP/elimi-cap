@@ -11,6 +11,7 @@ import {
 } from "react-icons/fi";
 import { ASSETS_URL } from "@/assets";
 import { Button } from "@/src/components/ui/button";
+import { Avatar } from "@/src/components/ui/avatar";
 import { useToast } from "@/src/components/ui/toast";
 import { Loader } from "@/src/components/ui/loader";
 import { useQueryClient } from "@tanstack/react-query";
@@ -599,15 +600,12 @@ export const AssessmentCentreEvidenceVaultView: React.FC<
               </h3>
 
               <div className="flex items-center gap-3 bg-[#F8F9FA] rounded-2xl p-3 border border-gray-100">
-                <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 border border-gray-200">
-                  <Image
-                    src={activeFacilitator.avatar || ASSETS_URL.userAvatar}
-                    alt="Facilitator Avatar"
-                    width={48}
-                    height={48}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
+                <Avatar
+                  src={activeFacilitator.avatar}
+                  name={activeFacilitator.name}
+                  className="w-12 h-12 border border-gray-200 shrink-0"
+                  alt={activeFacilitator.name}
+                />
                 <div className="flex flex-col gap-1 min-w-0">
                   <span className="text-xs sm:text-sm font-extrabold text-black truncate">
                     {activeFacilitator.name || "Assigned Facilitator"}
