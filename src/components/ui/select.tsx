@@ -12,14 +12,17 @@ export interface SelectOption {
 export interface SelectChangeEvent {
   target: {
     name: string;
-    value: string | string[] | undefined;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    value: any;
   };
 }
 
 export interface SelectProps {
   label?: React.ReactNode;
-  value?: string | string[] | number;
-  onChange?: (e: SelectChangeEvent) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  value?: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onChange?: (e: any) => void;
   options?: (string | number | SelectOption)[];
   placeholder?: string;
   searchPlaceholder?: string;
