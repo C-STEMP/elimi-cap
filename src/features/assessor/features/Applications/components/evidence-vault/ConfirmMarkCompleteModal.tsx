@@ -9,11 +9,12 @@ interface ConfirmMarkCompleteModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
+  isLoading?: boolean;
 }
 
 export const ConfirmMarkCompleteModal: React.FC<
   ConfirmMarkCompleteModalProps
-> = ({ isOpen, onClose, onConfirm }) => {
+> = ({ isOpen, onClose, onConfirm, isLoading = false }) => {
   if (!isOpen) return null;
 
   return (
@@ -42,15 +43,17 @@ export const ConfirmMarkCompleteModal: React.FC<
             onClick={onConfirm}
             variant="amber"
             fullWidth
-            className="h-12 bg-[#FBAB2A] hover:bg-[#E89B1F] text-white font-bold text-sm sm:text-base rounded-xl shadow-md cursor-pointer transition-all"
+            disabled={isLoading}
+            className="h-12 bg-[#FBAB2A] hover:bg-[#E89B1F] text-white font-bold text-sm sm:text-base rounded-xl shadow-md cursor-pointer transition-all disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            Yes, Mark As Complete
+            {isLoading ? "Marking complete..." : "Yes, Mark As Complete"}
           </Button>
 
           <button
             type="button"
             onClick={onClose}
-            className="h-12 w-full border border-[#FBAB2A] text-[#FBAB2A] hover:bg-orange-50/60 font-bold text-sm sm:text-base rounded-xl transition-colors cursor-pointer"
+            disabled={isLoading}
+            className="h-12 w-full border border-[#FBAB2A] text-[#FBAB2A] hover:bg-orange-50/60 font-bold text-sm sm:text-base rounded-xl transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             No
           </button>

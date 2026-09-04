@@ -265,7 +265,7 @@ export const AssessorApplicantProfileView: React.FC<
         {/* Status Badge */}
         <div className="shrink-0">
           {rawStatus === "approved" || rawStatus === "accepted" ? (
-            <span className="bg-[#D1FAE5] text-[#065F46] font-semibold px-4 py-1.5 rounded-full text-xs inline-block">
+            <span className="bg-[#1E7F4C]/10 text-[#1E7F4C] font-semibold px-4 py-1.5 rounded-full text-xs inline-block">
               {isAssessorRequest ? "Approved" : "Shortlisted"}
             </span>
           ) : rawStatus === "rejected" ? (
@@ -277,7 +277,7 @@ export const AssessorApplicantProfileView: React.FC<
               Revoked
             </span>
           ) : (
-            <span className="bg-[#FEF3C7] text-[#D97706] font-semibold px-4 py-1.5 rounded-full text-xs inline-block">
+            <span className="bg-[#F9A825]/10 text-[#F9A825] font-semibold px-4 py-1.5 rounded-full text-xs inline-block">
               Pending
             </span>
           )}

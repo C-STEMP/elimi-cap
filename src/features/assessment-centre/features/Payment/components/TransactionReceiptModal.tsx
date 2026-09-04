@@ -19,6 +19,92 @@ export const TransactionReceiptModal: React.FC<
 > = ({ isOpen, transaction, onClose }) => {
   if (!isOpen || !transaction) return null;
 
+  const handleDownloadOrPrint = () => {
+    const el = document.getElementById("transaction-receipt-content");
+    if (!el) {
+      window.print();
+      return;
+    }
+
+    // Create a hidden iframe for dedicated clean printing/downloading
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow?.document;
+    if (!doc) {
+      window.print();
+      return;
+    }
+
+    const styles = Array.from(
+      document.querySelectorAll("style, link[rel='stylesheet']")
+    )
+      .map((s) => s.outerHTML)
+      .join("\n");
+
+    doc.open();
+    doc.write(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Transaction Receipt - ${transaction.transactionId}</title>
+  ${styles}
+  <style>
+    @page { margin: 12mm; size: auto; }
+    body {
+      background: #ffffff !important;
+      margin: 0;
+      padding: 24px;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      justify-content: center;
+      color: #1f2937;
+    }
+    .receipt-print-wrapper {
+      width: 100%;
+      max-width: 440px;
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 20px;
+      padding: 24px;
+    }
+    @media print {
+      body { padding: 0 !important; }
+      .receipt-print-wrapper { border: none !important; padding: 0 !important; }
+      button, .no-print { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="receipt-print-wrapper">
+    ${el.innerHTML}
+  </div>
+</body>
+</html>`);
+    doc.close();
+
+    setTimeout(() => {
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+      } catch {
+        window.print();
+      } finally {
+        setTimeout(() => {
+          if (document.body.contains(iframe)) {
+            document.body.removeChild(iframe);
+          }
+        }, 2000);
+      }
+    }, 400);
+  };
+
   return (
     <AnimatePresence>
       <div
@@ -42,7 +128,10 @@ export const TransactionReceiptModal: React.FC<
             <FiX className="w-6 h-6" />
           </button>
 
-          <div className="w-full flex flex-col items-center gap-4 mt-4 lg:mt-14">
+          <div
+            id="transaction-receipt-content"
+            className="w-full flex flex-col items-center gap-4 mt-4 lg:mt-14"
+          >
             <div className="bg-red-50/60 p-6 rounded-2xl w-full flex flex-col items-center justify-center gap-3 text-center border border-red-100/60">
               <div className="relative w-28 h-8">
                 <Image
@@ -124,14 +213,7 @@ export const TransactionReceiptModal: React.FC<
 
             <Button
               type="button"
-              onClick={() => {
-                const printContent = document.getElementById(
-                  "transaction-receipt-content",
-                );
-                if (printContent) {
-                  window.print();
-                }
-              }}
+              onClick={handleDownloadOrPrint}
               variant="secondary"
               className="w-full!"
               size="lg"

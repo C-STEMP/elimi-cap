@@ -264,7 +264,7 @@ export const JobListingDetailView: React.FC<JobListingDetailViewProps> = ({
                     </td>
                     <td className="p-3.5">
                       {app.status === "Shortlisted" ? (
-                        <span className="bg-[#D1FAE5] text-[#065F46] font-semibold px-3 py-1 rounded-full text-xs inline-block">
+                        <span className="bg-[#1E7F4C]/10 text-[#1E7F4C] font-semibold px-3 py-1 rounded-full text-xs inline-block">
                           Shortlisted
                         </span>
                       ) : app.status === "Rejected" ? (
@@ -272,7 +272,7 @@ export const JobListingDetailView: React.FC<JobListingDetailViewProps> = ({
                           Rejected
                         </span>
                       ) : (
-                        <span className="bg-[#FEF3C7] text-[#D97706] font-semibold px-3 py-1 rounded-full text-xs inline-block">
+                        <span className="bg-[#F9A825]/10 text-[#F9A825] font-semibold px-3 py-1 rounded-full text-xs inline-block">
                           Pending
                         </span>
                       )}

@@ -18,7 +18,6 @@ export interface SelectedFileType {
 const EVIDENCE_TYPE_LABELS: Record<string, string> = {
   PS: "Product / Work Sample (PS)",
   WT: "Witness Testimony (WT)",
-  DO: "Direct Observation (DO)",
   PD: "Professional Discussion (PD)",
   WP: "Workplace Performance (WP)",
   QA: "Questioning / Assessment (QA)",
@@ -31,7 +30,6 @@ const EVIDENCE_TYPE_LABELS: Record<string, string> = {
 const DEFAULT_EVIDENCE_TYPE_OPTIONS = [
   { label: "Product / Work Sample (PS)", value: "PS" },
   { label: "Witness Testimony (WT)", value: "WT" },
-  { label: "Direct Observation (DO)", value: "DO" },
   { label: "Professional Discussion (PD)", value: "PD" },
   { label: "Workplace Performance (WP)", value: "WP" },
   { label: "Questioning / Assessment (QA)", value: "QA" },
@@ -65,7 +63,7 @@ export const UploadEvidenceModal: React.FC<UploadEvidenceModalProps> = ({
     const types = evidenceTypes || tradeEvidenceTypes;
     if (Array.isArray(types) && types.length > 0) {
       const filtered = types.filter(
-        (t) => t && typeof t === "string" && t.trim().toUpperCase() !== "RPL",
+        (t) => t && typeof t === "string" && t.trim().toUpperCase() !== "RPL" && t.trim().toUpperCase() !== "DO",
       );
       if (filtered.length > 0) {
         return filtered.map((type) => {

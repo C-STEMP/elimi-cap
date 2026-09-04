@@ -423,11 +423,12 @@ export const AssessmentCentreApplicationDetailView: React.FC<
       s === "marked as complete" ||
       s === "completed" ||
       s === "competent" ||
-      s === "certified"
+      s === "certified" ||
+      s === "submitted"
     ) {
       return {
         text: statusText,
-        className: "bg-[#E6F4EA] text-[#1E7F4C]",
+        className: "bg-[#1E7F4C]/10 text-[#1E7F4C]",
       };
     }
     if (
@@ -435,11 +436,12 @@ export const AssessmentCentreApplicationDetailView: React.FC<
       s === "under review" ||
       s === "scheduled" ||
       s === "pending review" ||
-      s === "awaiting payment"
+      s === "awaiting payment" ||
+      s === "pending"
     ) {
       return {
         text: statusText,
-        className: "bg-[#FEF3C7] text-[#92400E]",
+        className: "bg-[#F9A825]/10 text-[#F9A825]",
       };
     }
     if (s === "rejected" || s === "needs attention" || s === "corrupted") {

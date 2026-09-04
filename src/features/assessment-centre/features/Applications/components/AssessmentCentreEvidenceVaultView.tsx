@@ -14,13 +14,10 @@ import { Button } from "@/src/components/ui/button";
 import { Avatar } from "@/src/components/ui/avatar";
 import { useToast } from "@/src/components/ui/toast";
 import { Loader } from "@/src/components/ui/loader";
-import { useQueryClient } from "@tanstack/react-query";
 import {
   useGetEvidenceVault,
   useGetSelfAssessment,
   useGetApplicationById,
-  useReviewApplication,
-  APPLICATION_QUERY_KEYS,
 } from "@/src/features/shared/applications/hooks";
 import { PreviewEvidenceModal } from "@/src/features/shared/evidence-vault/components/PreviewEvidenceModal";
 import type { EvidenceRecord } from "@/src/features/shared/evidence-vault/utils/evidenceConstants";
@@ -46,11 +43,7 @@ export const AssessmentCentreEvidenceVaultView: React.FC<
   const { data: selfAssessment } = useGetSelfAssessment(id);
   const { data: appDetail } = useGetApplicationById(id);
 
-  const queryClient = useQueryClient();
-  const reviewMutation = useReviewApplication();
   const [previewItem, setPreviewItem] = useState<EvidenceRecord | null>(null);
-  const [approvedItemIds, setApprovedItemIds] = useState<Record<string, boolean>>({});
-  const [isApproving, setIsApproving] = useState<boolean>(false);
 
   // Read persisted facilitator
   const persistedFacilitator = React.useMemo(() => {
@@ -73,14 +66,6 @@ export const AssessmentCentreEvidenceVaultView: React.FC<
     persistedFacilitator ||
     null;
 
-  // Calculate required/expected count from declared candidate evidence
-  const declaredEvidence = (appDetail as any)?.evidenceCandidateCanProvide;
-  const declaredCount = declaredEvidence
-    ? Object.entries(declaredEvidence).filter(
-        ([k, v]) => v === true && k !== "other" && k !== "otherText",
-      ).length
-    : 0;
-  const expectedCount = Math.max(declaredCount, 1);
 
   // Read persisted evidence items from localStorage as fallback
   const persistedEvidence: any[] = React.useMemo(() => {
@@ -154,140 +139,6 @@ export const AssessmentCentreEvidenceVaultView: React.FC<
     return list;
   }, [remoteEvidenceItems, persistedEvidence]);
 
-  const isAllUploaded = evidenceItems.length >= expectedCount;
-  const hasUnapprovedItems = evidenceItems.some((item) => {
-    const isApprovedBackend =
-      item.status === "approved" || item.status === "accepted";
-    const isApprovedLocal =
-      Boolean(approvedItemIds[item.id]) ||
-      Boolean(approvedItemIds[item.assetId]) ||
-      Boolean(approvedItemIds[item.documentName]);
-    return !isApprovedBackend && !isApprovedLocal;
-  });
-
-  const handleApproveEvidence = async (record: EvidenceRecord | any) => {
-    const targetKey = record.id || record.assetId || record.name || record.documentName;
-    setIsApproving(true);
-    try {
-      // 1. Call backend review API first
-      if (id) {
-        await reviewMutation.mutateAsync({
-          id,
-          payload: {
-            decision: "approve",
-            stageKey: "folder_arrangement",
-            feedback: `Evidence "${record.name || record.documentName || "document"}" approved by assessment centre.`,
-          },
-        });
-
-        queryClient.invalidateQueries({
-          queryKey: APPLICATION_QUERY_KEYS.evidence(id),
-        });
-        queryClient.invalidateQueries({
-          queryKey: APPLICATION_QUERY_KEYS.stages(id),
-        });
-        queryClient.invalidateQueries({
-          queryKey: APPLICATION_QUERY_KEYS.detail(id),
-        });
-        queryClient.invalidateQueries({
-          queryKey: APPLICATION_QUERY_KEYS.all,
-        });
-      }
-
-      // 2. Only on success, update state and previewItem
-      if (targetKey) {
-        setApprovedItemIds((prev) => ({ ...prev, [targetKey]: true }));
-      }
-
-      if (previewItem) {
-        setPreviewItem((prev) =>
-          prev
-            ? {
-                ...prev,
-                status: "Approved",
-                statusBg: "bg-[#E6F4EA]",
-                statusText: "text-[#1E7F4C]",
-              }
-            : null,
-        );
-      }
-
-      toast({
-        type: "success",
-        title: "Evidence Approved",
-        description: `Successfully approved "${record.name || record.documentName || "Evidence document"}".`,
-      });
-    } catch (err: any) {
-      console.error("Backend review approval error:", err);
-      toast({
-        type: "error",
-        title: "Cannot Approve",
-        description:
-          err?.response?.data?.error?.message ||
-          err?.message ||
-          "Could not approve document. Please ensure a facilitator is assigned.",
-      });
-    } finally {
-      setIsApproving(false);
-    }
-  };
-
-  const handleApproveAllEvidence = async () => {
-    if (evidenceItems.length === 0) return;
-    setIsApproving(true);
-    try {
-      // 1. Call backend review API first
-      if (id) {
-        await reviewMutation.mutateAsync({
-          id,
-          payload: {
-            decision: "approve",
-            stageKey: "folder_arrangement",
-            feedback: "All evidence items approved by assessment centre.",
-          },
-        });
-
-        queryClient.invalidateQueries({
-          queryKey: APPLICATION_QUERY_KEYS.evidence(id),
-        });
-        queryClient.invalidateQueries({
-          queryKey: APPLICATION_QUERY_KEYS.stages(id),
-        });
-        queryClient.invalidateQueries({
-          queryKey: APPLICATION_QUERY_KEYS.detail(id),
-        });
-        queryClient.invalidateQueries({
-          queryKey: APPLICATION_QUERY_KEYS.all,
-        });
-      }
-
-      // 2. Only on success, mark all as approved in state
-      const newApprovedMap: Record<string, boolean> = {};
-      evidenceItems.forEach((item: any) => {
-        const key = item.id || item.assetId || item.documentName || item.name;
-        if (key) newApprovedMap[key] = true;
-      });
-      setApprovedItemIds((prev) => ({ ...prev, ...newApprovedMap }));
-
-      toast({
-        type: "success",
-        title: "All Evidence Approved",
-        description: `Successfully approved all ${evidenceItems.length} evidence document(s).`,
-      });
-    } catch (err: any) {
-      console.error("Backend approve all error:", err);
-      toast({
-        type: "error",
-        title: "Approval Failed",
-        description:
-          err?.response?.data?.error?.message ||
-          err?.message ||
-          "Could not approve evidence. Please ensure a facilitator is assigned.",
-      });
-    } finally {
-      setIsApproving(false);
-    }
-  };
 
   const [currentMonth, setCurrentMonth] = useState("July");
   const months = [
@@ -425,10 +276,7 @@ export const AssessmentCentreEvidenceVaultView: React.FC<
                 const displaySize =
                   item.size || item.fileSize || "Uploaded document";
 
-                const isItemApproved =
-                  isApproved ||
-                  Boolean(approvedItemIds[item.id]) ||
-                  Boolean(approvedItemIds[item.assetId]);
+                const isItemApproved = isApproved;
 
                 const displayStatus = isItemApproved
                   ? "Approved"
@@ -440,20 +288,16 @@ export const AssessmentCentreEvidenceVaultView: React.FC<
                         ? item.status.replace(/_/g, " ")
                         : "Pending";
 
-                const badgeBg = isItemApproved
-                  ? "bg-[#E6F4EA]"
+                const badgeBg = isItemApproved || isSubmitted
+                  ? "bg-[#1E7F4C]/10"
                   : isAttention
                     ? "bg-[#FCE8EB]"
-                    : isSubmitted
-                      ? "bg-[#FEF3C7]"
-                      : "bg-[#FEF3C7]";
-                const badgeText = isItemApproved
+                    : "bg-[#F9A825]/10";
+                const badgeText = isItemApproved || isSubmitted
                   ? "text-[#1E7F4C]"
                   : isAttention
                     ? "text-[#A31D38]"
-                    : isSubmitted
-                      ? "text-[#92400E]"
-                      : "text-[#92400E]";
+                    : "text-[#F9A825]";
 
                 return (
                   <div
@@ -489,7 +333,7 @@ export const AssessmentCentreEvidenceVaultView: React.FC<
                             id: item.id || `ev-${idx}`,
                             name: title,
                             size: displaySize,
-                            status: isItemApproved ? "Approved" : displayStatus === "Submitted" ? "Pending" : "Pending",
+                            status: isItemApproved ? "Approved" : isSubmitted ? "Submitted" : displayStatus || "Pending",
                             statusBg: badgeBg,
                             statusText: badgeText,
                             assetId: item.assetId,
@@ -641,8 +485,6 @@ export const AssessmentCentreEvidenceVaultView: React.FC<
         item={previewItem}
         applicationId={id}
         onClose={() => setPreviewItem(null)}
-        onApprove={handleApproveEvidence}
-        isApproving={isApproving}
       />
     </div>
   );

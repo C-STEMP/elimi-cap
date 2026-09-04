@@ -52,11 +52,11 @@ export const AssessorApplicationGrid: React.FC<
                 </h4>
               </div>
               {isCompleted ? (
-                <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#E8F8F0] text-[#12B76A]">
+                <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#1E7F4C]/10 text-[#1E7F4C]">
                   Completed
                 </span>
               ) : isOngoing ? (
-                <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#FFF4E5] text-[#FF9800]">
+                <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#F9A825]/10 text-[#F9A825]">
                   Ongoing
                 </span>
               ) : (

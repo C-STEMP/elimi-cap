@@ -36,8 +36,8 @@ export const getFolderArrangementStatus = (
     },
     vault_ongoing: {
       text: "Ongoing",
-      bg: "bg-[#FEF3C7]",
-      textColor: "text-[#D97706]",
+      bg: "bg-[#F9A825]/10",
+      textColor: "text-[#F9A825]",
     },
     vault_delayed: {
       text: "23 days gone",
@@ -49,8 +49,8 @@ export const getFolderArrangementStatus = (
   return (
     statusMap[formState] || {
       text: "14 Days Left",
-      bg: "bg-[#FEF3C7]",
-      textColor: "text-[#D97706]",
+      bg: "bg-[#F9A825]/10",
+      textColor: "text-[#F9A825]",
     }
   );
 };
@@ -59,17 +59,17 @@ export const getFormStatus = (formState: ApplicationFormState) => {
   const statusMap = {
     pending: {
       status: "Completed",
-      statusBg: "bg-[#E8F5E9]",
-      statusText: "text-[#2E7D32]",
+      statusBg: "bg-[#1E7F4C]/10",
+      statusText: "text-[#1E7F4C]",
     },
     completed: {
       status: "Completed",
-      statusBg: "bg-[#E8F5E9]",
-      statusText: "text-[#2E7D32]",
+      statusBg: "bg-[#1E7F4C]/10",
+      statusText: "text-[#1E7F4C]",
     },
     approved: {
       status: "Approved",
-      statusBg: "bg-[#1E7F4C1A]",
+      statusBg: "bg-[#1E7F4C]/10",
       statusText: "text-[#1E7F4C]",
     },
     attention: {
@@ -82,8 +82,8 @@ export const getFormStatus = (formState: ApplicationFormState) => {
   return (
     statusMap[formState as keyof typeof statusMap] || {
       status: "Completed",
-      statusBg: "bg-[#E8F5E9]",
-      statusText: "text-[#2E7D32]",
+      statusBg: "bg-[#1E7F4C]/10",
+      statusText: "text-[#1E7F4C]",
     }
   );
 };
@@ -219,20 +219,20 @@ export const getStagesConfig = ({
         : "Under Review";
 
   const appFormStatusBg = isDraft
-    ? "bg-[#FEF3C7]"
+    ? "bg-[#F9A825]/10"
     : isAppFormExplicitlyApproved
-      ? "bg-[#E8F5E9]"
+      ? "bg-[#1E7F4C]/10"
       : appFormStageRow?.status === "rejected"
         ? "bg-[#FEE2E2]"
-        : "bg-[#FEF3C7]";
+        : "bg-[#F9A825]/10";
 
   const appFormStatusTextColor = isDraft
-    ? "text-[#D97706]"
+    ? "text-[#F9A825]"
     : isAppFormExplicitlyApproved
-      ? "text-[#2E7D32]"
+      ? "text-[#1E7F4C]"
       : appFormStageRow?.status === "rejected"
         ? "text-[#B91C1C]"
-        : "text-[#D97706]";
+        : "text-[#F9A825]";
 
   const appFormSubtext = isDraft
     ? "Saved as draft"
@@ -271,14 +271,14 @@ export const getStagesConfig = ({
   const paymentStatusBg = !isPaymentUnlocked
     ? "bg-[#F3F4F6]"
     : isPaymentPaid
-      ? "bg-[#1E7F4C1A]"
-      : "bg-[#FEF3C7]";
+      ? "bg-[#1E7F4C]/10"
+      : "bg-[#F9A825]/10";
 
   const paymentStatusTextColor = !isPaymentUnlocked
     ? "text-[#6B7280]"
     : isPaymentPaid
       ? "text-[#1E7F4C]"
-      : "text-[#D97706]";
+      : "text-[#F9A825]";
 
   const paymentSubtext = !isPaymentUnlocked
     ? isDraft
@@ -352,16 +352,16 @@ export const getStagesConfig = ({
           ? "Attention Required"
           : "Not Started",
     statusBg: isFolderDone
-      ? "bg-[#1E7F4C1A]"
+      ? "bg-[#1E7F4C]/10"
       : isFolderActive
-        ? "bg-[#FEF3C7]"
+        ? "bg-[#F9A825]/10"
         : folderStageRow?.status === "rejected"
           ? "bg-[#B3261E1A]"
           : "bg-[#E5E7EB]",
     statusText: isFolderDone
       ? "text-[#1E7F4C]"
       : isFolderActive
-        ? "text-[#D97706]"
+        ? "text-[#F9A825]"
         : folderStageRow?.status === "rejected"
           ? "text-[#B3261E]"
           : "text-[#6B7280]",
@@ -408,16 +408,16 @@ export const getStagesConfig = ({
           ? "Unsuccessful"
           : "Not Started",
     statusBg: isInterviewDone
-      ? "bg-[#1E7F4C1A]"
+      ? "bg-[#1E7F4C]/10"
       : isInterviewActive
-        ? "bg-[#FEF3C7]"
+        ? "bg-[#F9A825]/10"
         : interviewStageRow?.status === "rejected"
           ? "bg-[#B3261E1A]"
           : "bg-[#E5E7EB]",
     statusText: isInterviewDone
       ? "text-[#1E7F4C]"
       : isInterviewActive
-        ? "text-[#92400E]"
+        ? "text-[#F9A825]"
         : interviewStageRow?.status === "rejected"
           ? "text-[#B3261E]"
           : "text-[#6B7280]",
@@ -461,14 +461,14 @@ export const getStagesConfig = ({
         ? "Under Review"
         : "Not Started",
     statusBg: isIvDone
-      ? "bg-[#1E7F4C1A]"
+      ? "bg-[#1E7F4C]/10"
       : isIvActive
-        ? "bg-[#FEF3C7]"
+        ? "bg-[#F9A825]/10"
         : "bg-[#E5E7EB]",
     statusText: isIvDone
       ? "text-[#1E7F4C]"
       : isIvActive
-        ? "text-[#D97706]"
+        ? "text-[#F9A825]"
         : "text-[#6B7280]",
     subtext: isIvActive || isIvDone
       ? `Started on: ${ivStageRow?.enteredAt ? new Date(ivStageRow.enteredAt).toLocaleDateString() : formattedSubmittedDate}`
@@ -508,14 +508,14 @@ export const getStagesConfig = ({
         ? "Under Review"
         : "Not Started",
     statusBg: isEvDone
-      ? "bg-[#1E7F4C1A]"
+      ? "bg-[#1E7F4C]/10"
       : isEvActive
-        ? "bg-[#FEF3C7]"
+        ? "bg-[#F9A825]/10"
         : "bg-[#E5E7EB]",
     statusText: isEvDone
       ? "text-[#1E7F4C]"
       : isEvActive
-        ? "text-[#D97706]"
+        ? "text-[#F9A825]"
         : "text-[#6B7280]",
     subtext: isEvActive || isEvDone
       ? `Started on: ${evStageRow?.enteredAt ? new Date(evStageRow.enteredAt).toLocaleDateString() : formattedSubmittedDate}`
@@ -545,14 +545,14 @@ export const getStagesConfig = ({
     title: "Certification",
     status: isCertDone ? "Competent" : isCertActive ? "In Progress" : "Not Started",
     statusBg: isCertDone
-      ? "bg-[#1E7F4C1A]"
+      ? "bg-[#1E7F4C]/10"
       : isCertActive
-        ? "bg-[#FEF3C7]"
+        ? "bg-[#F9A825]/10"
         : "bg-[#E5E7EB]",
     statusText: isCertDone
       ? "text-[#1E7F4C]"
       : isCertActive
-        ? "text-[#D97706]"
+        ? "text-[#F9A825]"
         : "text-[#6B7280]",
     subtext: isCertActive || isCertDone
       ? `Completed on: ${certStageRow?.enteredAt ? new Date(certStageRow.enteredAt).toLocaleDateString() : formattedSubmittedDate}`

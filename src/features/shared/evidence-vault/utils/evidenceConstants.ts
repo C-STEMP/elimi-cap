@@ -2,7 +2,7 @@ export interface EvidenceRecord {
   id: string;
   name: string;
   size: string;
-  status: "Approved" | "Attention Required" | "Pending";
+  status: string;
   statusBg: string;
   statusText: string;
   issues?: string[];

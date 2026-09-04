@@ -182,7 +182,7 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
               Inactive
             </span>
           ) : (
-            <span className="bg-[#D1FAE5] text-[#065F46] font-semibold px-4 py-1.5 rounded-full text-xs inline-block">
+            <span className="bg-[#1E7F4C]/10 text-[#1E7F4C] font-semibold px-4 py-1.5 rounded-full text-xs inline-block">
               Active
             </span>
           )}

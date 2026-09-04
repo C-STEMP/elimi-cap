@@ -78,7 +78,15 @@ export const PendingApplicationsTable: React.FC<TableProps> = ({
                   <td className="p-3.5 text-[#12312B]">{app.trade}</td>
                   <td className="p-3.5 text-[#12312B]">{app.assessmentType}</td>
                   <td className="p-3.5">
-                    <span className="bg-secondary/20 text-secondary font-semibold px-3 py-1 rounded-full text-xs inline-block">
+                    <span
+                      className={`font-semibold px-3 py-1 rounded-full text-xs inline-block ${
+                        app.status?.toLowerCase() === "submitted" ||
+                        app.status?.toLowerCase() === "completed" ||
+                        app.status?.toLowerCase() === "approved"
+                          ? "bg-[#1E7F4C]/10 text-[#1E7F4C]"
+                          : "bg-[#F9A825]/10 text-[#F9A825]"
+                      }`}
+                    >
                       {app.status}
                     </span>
                   </td>

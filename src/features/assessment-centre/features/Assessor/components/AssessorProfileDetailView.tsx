@@ -393,11 +393,11 @@ export const AssessorProfileDetailView: React.FC<
 
                 <div className="flex flex-col items-end justify-between h-full gap-4">
                   {cand.status === "Completed" ? (
-                    <span className="bg-[#D1FAE5] text-[#065F46] font-semibold px-3 py-1 rounded-full text-xs inline-block">
+                    <span className="bg-[#1E7F4C]/10 text-[#1E7F4C] font-semibold px-3 py-1 rounded-full text-xs inline-block">
                       Completed
                     </span>
                   ) : (
-                    <span className="bg-[#FEF3C7] text-[#D97706] font-semibold px-3 py-1 rounded-full text-xs inline-block">
+                    <span className="bg-[#F9A825]/10 text-[#F9A825] font-semibold px-3 py-1 rounded-full text-xs inline-block">
                       Ongoing
                     </span>
                   )}
@@ -447,11 +447,11 @@ export const AssessorProfileDetailView: React.FC<
                     </td>
                     <td className="p-3.5">
                       {cand.status === "Completed" ? (
-                        <span className="bg-[#D1FAE5] text-[#065F46] font-semibold px-3 py-1 rounded-full text-xs inline-block">
+                        <span className="bg-[#1E7F4C]/10 text-[#1E7F4C] font-semibold px-3 py-1 rounded-full text-xs inline-block">
                           Completed
                         </span>
                       ) : (
-                        <span className="bg-[#FEF3C7] text-[#D97706] font-semibold px-3 py-1 rounded-full text-xs inline-block">
+                        <span className="bg-[#F9A825]/10 text-[#F9A825] font-semibold px-3 py-1 rounded-full text-xs inline-block">
                           Ongoing
                         </span>
                       )}

@@ -15,9 +15,12 @@ interface AssessorOverviewViewProps {
 }
 
 const STATUS_LABEL: Record<string, { label: string; className: string }> = {
-  in_progress: { label: "In Progress", className: "bg-[#FEF3C7] text-[#D97706]" },
-  draft: { label: "Draft", className: "bg-gray-100 text-gray-600" },
-  certified: { label: "Completed", className: "bg-emerald-50 text-emerald-700" },
+  in_progress: { label: "In Progress", className: "bg-[#F9A825]/10 text-[#F9A825]" },
+  draft: { label: "Draft", className: "bg-[#F9A825]/10 text-[#F9A825]" },
+  pending: { label: "Pending", className: "bg-[#F9A825]/10 text-[#F9A825]" },
+  submitted: { label: "Submitted", className: "bg-[#1E7F4C]/10 text-[#1E7F4C]" },
+  certified: { label: "Completed", className: "bg-[#1E7F4C]/10 text-[#1E7F4C]" },
+  completed: { label: "Completed", className: "bg-[#1E7F4C]/10 text-[#1E7F4C]" },
   rejected: { label: "Rejected", className: "bg-rose-50 text-rose-700" },
   withdrawn: { label: "Withdrawn", className: "bg-gray-100 text-gray-500" },
 };

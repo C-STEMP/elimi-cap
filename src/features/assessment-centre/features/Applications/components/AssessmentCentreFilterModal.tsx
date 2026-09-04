@@ -43,7 +43,7 @@ export const AssessmentCentreFilterModal: React.FC<FilterModalProps> = ({
           type="button"
           onClick={onClose}
           aria-label="Close modal"
-          className="absolute top-6 right-6 w-10 h-10 rounded-full bg-[#fde8ec] text-[#b3261e] hover:bg-[#fbd0d7] flex items-center justify-center transition-colors cursor-pointer"
+          className="absolute top-6 right-6 w-10 h-10 rounded-full bg-[#fde8ec] text-border-secondary hover:bg-[#fbd0d7] flex items-center justify-center transition-colors cursor-pointer"
         >
           <FiX className="w-5 h-5 stroke-[2.5]" />
         </button>

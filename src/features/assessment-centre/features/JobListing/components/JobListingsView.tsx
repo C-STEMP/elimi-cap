@@ -216,7 +216,7 @@ export const JobListingsView: React.FC<JobListingsViewProps> = ({
                             Closed
                           </span>
                         ) : (
-                          <span className="bg-[#D1FAE5] text-[#065F46] font-semibold px-3 py-1 rounded-full text-xs inline-block">
+                          <span className="bg-[#1E7F4C]/10 text-[#1E7F4C] font-semibold px-3 py-1 rounded-full text-xs inline-block">
                             Open
                           </span>
                         )}

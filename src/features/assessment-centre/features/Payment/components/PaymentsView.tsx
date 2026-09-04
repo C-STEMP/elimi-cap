@@ -142,11 +142,11 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
 
                 <div className="flex flex-col items-end justify-between h-full gap-4">
                   {tx.status === "Paid" ? (
-                    <span className="bg-[#D1FAE5] text-[#065F46] font-semibold px-3 py-1 rounded-full text-xs inline-block">
+                    <span className="bg-[#1E7F4C]/10 text-[#1E7F4C] font-semibold px-3 py-1 rounded-full text-xs inline-block">
                       Paid
                     </span>
                   ) : (
-                    <span className="bg-[#FEF3C7] text-[#D97706] font-semibold px-3 py-1 rounded-full text-xs inline-block">
+                    <span className="bg-[#F9A825]/10 text-[#F9A825] font-semibold px-3 py-1 rounded-full text-xs inline-block">
                       Pending
                     </span>
                   )}
@@ -191,11 +191,11 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
                     </td>
                     <td className="p-3.5">
                       {tx.status === "Paid" ? (
-                        <span className="bg-[#D1FAE5] text-[#065F46] font-semibold px-3.5 py-1 rounded-full text-xs inline-block">
+                        <span className="bg-[#1E7F4C]/10 text-[#1E7F4C] font-semibold px-3.5 py-1 rounded-full text-xs inline-block">
                           Paid
                         </span>
                       ) : (
-                        <span className="bg-[#FEF3C7] text-[#D97706] font-semibold px-3.5 py-1 rounded-full text-xs inline-block">
+                        <span className="bg-[#F9A825]/10 text-[#F9A825] font-semibold px-3.5 py-1 rounded-full text-xs inline-block">
                           Pending
                         </span>
                       )}

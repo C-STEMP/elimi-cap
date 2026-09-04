@@ -31,10 +31,7 @@ export const AssessmentCentreCandidateFormView: React.FC<
   const { data: appHistory = [] } = useGetApplicationHistory(id);
   const reviewMutation = useReviewApplication();
 
-  const [feedback, setFeedback] = useState("");
   const [isAccepted, setIsAccepted] = useState(false);
-  const [localComments, setLocalComments] = useState<string[]>([]);
-  const [isFeedbackSuccessOpen, setIsFeedbackSuccessOpen] = useState(false);
   const [isConfirmAcceptOpen, setIsConfirmAcceptOpen] = useState(false);
   const [isConfirmRejectOpen, setIsConfirmRejectOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
@@ -63,42 +60,6 @@ export const AssessmentCentreCandidateFormView: React.FC<
     (appDetail as any)?.frozenProfile?.passportUrl ||
     (appDetail as any)?.frozenProfile?.personalDetails?.passportUrl ||
     "";
-
-  const historyComments = (appHistory as any[])
-    .filter((h) => h.comment || h.feedback)
-    .map((h) => h.comment || h.feedback);
-
-  const allComments = [...localComments, ...historyComments];
-
-  const handleSendFeedback = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!feedback.trim()) return;
-    const commentText = feedback.trim();
-
-    if (id) {
-      reviewMutation.mutate(
-        {
-          id,
-          payload: {
-            decision: "approve",
-            stageKey: "application_form",
-            feedback: commentText,
-          },
-        },
-        {
-          onSuccess: () => {
-            setLocalComments((prev) => [commentText, ...prev]);
-            setFeedback("");
-            setIsFeedbackSuccessOpen(true);
-          },
-        },
-      );
-    } else {
-      setLocalComments((prev) => [commentText, ...prev]);
-      setFeedback("");
-      setIsFeedbackSuccessOpen(true);
-    }
-  };
 
   const handleAccept = () => {
     if (id) {
@@ -619,92 +580,9 @@ export const AssessmentCentreCandidateFormView: React.FC<
               );
             })()}
           </div>
-
-          <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-xs flex flex-col gap-4">
-            <h3 className="text-base font-extrabold text-black tracking-tight">
-              Send Feedback
-            </h3>
-            <form onSubmit={handleSendFeedback} className="flex flex-col gap-3">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-gray-700">
-                  Comment
-                </label>
-                <textarea
-                  rows={4}
-                  value={feedback}
-                  onChange={(e) => setFeedback(e.target.value)}
-                  placeholder="Type Here"
-                  className="w-full bg-[#F4F5F7] border border-gray-200 rounded-2xl p-3 text-xs sm:text-sm text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#a31d38]/20 transition-all resize-none"
-                />
-              </div>
-
-              <Button
-                type="submit"
-                variant="amber"
-                fullWidth
-                disabled={reviewMutation.isPending || !feedback.trim()}
-                className="bg-[#fbab2a] hover:bg-[#e89b1f] text-white font-bold text-sm py-3 rounded-xl shadow-md cursor-pointer"
-              >
-                {reviewMutation.isPending ? "Sending..." : "Send Feedback"}
-              </Button>
-            </form>
-          </div>
-
-          <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-xs flex flex-col gap-4">
-            <h3 className="text-base font-extrabold text-black tracking-tight">
-              Past Comments
-            </h3>
-            {allComments.length > 0 ? (
-              <div className="flex flex-col gap-3 max-h-60 overflow-y-auto no-scrollbar">
-                {allComments.map((comment, idx) => (
-                  <div
-                    key={idx}
-                    className="bg-[#F8F9FA] border border-gray-200/80 rounded-2xl p-3.5 text-xs text-gray-700 leading-relaxed"
-                  >
-                    {comment}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-xs text-gray-400 text-center py-4 font-normal">
-                No feedback sent yet
-              </p>
-            )}
-          </div>
         </div>
       </div>
 
-      {isFeedbackSuccessOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl max-w-sm w-full p-8 shadow-2xl flex flex-col items-center text-center animate-in zoom-in-95 duration-200 select-text">
-            <div className="w-25 h-25 mb-4 flex items-center justify-center">
-              <Image
-                src={ASSETS_URL.successCheckmarkImg}
-                alt="Success"
-                width={100}
-                height={100}
-                className="w-25 h-25 object-contain"
-                style={{ width: 100, height: 100 }}
-              />
-            </div>
-            <h3 className="text-xl sm:text-2xl font-extrabold text-black tracking-tight mb-1">
-              Feedback Sent Successfully
-            </h3>
-            <p className="text-xs sm:text-sm text-gray-500 font-normal mb-6">
-              Your feedback to candidate was sent successfully
-            </p>
-            <Button
-              type="button"
-              onClick={() => setIsFeedbackSuccessOpen(false)}
-              variant="amber"
-              fullWidth
-              className="h-12 bg-[#fbab2a] hover:bg-[#e89b1f] text-white font-bold text-base rounded-xl shadow-md cursor-pointer"
-            >
-              Continue
-            </Button>
-          </div>
-        </div>
-      )}
 
       {isConfirmAcceptOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
