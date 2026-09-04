@@ -136,13 +136,13 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
     switch (statusStr) {
       case "active":
         return (
-          <span className="bg-[#D1FAE5] text-[#065F46] font-semibold px-2.5 py-0.5 rounded-full text-[11px] inline-block">
+          <span className="bg-[#1E7F4C]/10 text-[#1E7F4C] font-semibold px-2.5 py-0.5 rounded-full text-[11px] inline-block">
             Active
           </span>
         );
       case "pending":
         return (
-          <span className="bg-[#FEF3C7] text-[#D97706] font-semibold px-2.5 py-0.5 rounded-full text-[11px] inline-block">
+          <span className="bg-[#F9A825]/10 text-[#F9A825] font-semibold px-2.5 py-0.5 rounded-full text-[11px] inline-block">
             Pending
           </span>
         );

@@ -145,11 +145,17 @@ export const PreviewEvidenceModal: React.FC<PreviewEvidenceModalProps> = ({
     item.name?.toLowerCase().endsWith(".pdf") ||
     item.mimeType === "application/pdf";
 
+  const s = (item.status as string)?.toLowerCase() || "";
   const isApproved =
     item.status === "Approved" ||
-    (item.status as string)?.toLowerCase() === "approved" ||
-    (item.status as string)?.toLowerCase() === "accepted" ||
-    (item.status as string)?.toLowerCase() === "successful";
+    s.includes("approv") ||
+    s.includes("accept") ||
+    s.includes("successful");
+  const isGreen =
+    isApproved ||
+    s.includes("complet") ||
+    s.includes("verifi") ||
+    s.includes("submi");
 
   return (
     <AnimatePresence>
@@ -181,16 +187,16 @@ export const PreviewEvidenceModal: React.FC<PreviewEvidenceModalProps> = ({
                   </h4>
                   <span
                     className={`${
-                      isApproved
-                        ? "bg-[#E6F4EA] text-[#1E7F4C]"
-                        : item.statusBg || "bg-[#FEF3C7]"
+                      isGreen
+                        ? "bg-[#1E7F4C]/10 text-[#1E7F4C]"
+                        : item.statusBg || "bg-[#F9A825]/10"
                     } ${
-                      isApproved
+                      isGreen
                         ? "text-[#1E7F4C]"
-                        : item.statusText || "text-[#D97706]"
+                        : item.statusText || "text-[#F9A825]"
                     } text-xs font-semibold px-2.5 py-0.5 rounded-full capitalize`}
                   >
-                    {isApproved ? "Approved" : item.status || "Pending"}
+                    {item.status || (isGreen ? "Approved" : "Pending")}
                   </span>
                 </div>
                 <span className="text-xs text-gray-400 font-medium">

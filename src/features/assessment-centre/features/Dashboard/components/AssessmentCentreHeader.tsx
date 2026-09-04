@@ -179,12 +179,12 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
   return (
     <header className="w-full bg-[#a31d38] text-white shadow-md select-none transition-all relative">
       <div className="max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 flex flex-col gap-6">
-        <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-5">
+        <div className="flex items-center justify-between gap-2 xl:gap-3 2xl:gap-4 border-b border-white/10 pb-5 min-w-0">
           <div className="shrink-0 cursor-pointer">
-            <Logo theme="light" href="/" />
+            <Logo theme="light" width={118} href="/" />
           </div>
 
-        <div className="hidden xl:flex items-center gap-1">
+        <div className="hidden xl:flex items-center gap-0.5 2xl:gap-1.5 shrink min-w-0">
           {navItems.map((item) => {
             const isActive = activeTab === item.id;
             return (
@@ -192,7 +192,7 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
                 key={item.id}
                 type="button"
                 onClick={() => onSelectTab(item.id)}
-                className={`px-3 py-1.5 rounded-full text-xs lg:text-base font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                className={`px-2.5 py-1.5 2xl:px-3.5 2xl:py-1.5 rounded-full text-xs xl:text-[13px] 2xl:text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
                   isActive
                     ? "bg-white/15 text-white shadow-xs"
                     : "text-white hover:bg-white/10"
@@ -204,11 +204,11 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
           })}
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 2xl:gap-3 shrink-0">
           <button
             type="button"
             onClick={() => onSelectTab("messages")}
-            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all cursor-pointer relative ${
+            className={`w-8 h-8 sm:w-9 sm:h-9 2xl:w-10 2xl:h-10 rounded-full flex items-center justify-center transition-all cursor-pointer relative ${
               activeTab === "messages"
                 ? "bg-white/30 text-white"
                 : "bg-white/10 hover:bg-white/20 text-white/90"
@@ -216,20 +216,20 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
             aria-label="Messages"
             title="Messages"
           >
-            <BiSolidMessageRoundedDetail className="w-6 h-6" />
-            <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[#fbab2a]" />
+            <BiSolidMessageRoundedDetail className="w-4 h-4 sm:w-5 sm:h-5 2xl:w-6 2xl:h-6" />
+            <span className="absolute top-1.5 right-1.5 2xl:top-2 2xl:right-2 w-2 h-2 rounded-full bg-[#fbab2a]" />
           </button>
 
           <div className="relative">
             <button
               type="button"
               onClick={() => setIsNotifOpen(!isNotifOpen)}
-              className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/90 transition-all cursor-pointer relative"
+              className="w-8 h-8 sm:w-9 sm:h-9 2xl:w-10 2xl:h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/90 transition-all cursor-pointer relative"
               aria-label="Notifications"
               title="Notifications"
             >
-              <FiBell className="w-5 h-5" />
-              <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[#fbab2a]" />
+              <FiBell className="w-4 h-4 sm:w-4.5 sm:h-4.5 2xl:w-5 2xl:h-5" />
+              <span className="absolute top-1.5 right-1.5 2xl:top-2 2xl:right-2 w-2 h-2 rounded-full bg-[#fbab2a]" />
             </button>
 
             <NotificationDropdown
@@ -247,7 +247,7 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
             <Avatar
               src={centreProfile?.logo?.url || centreData?.centre?.centreInformation?.logoUrl}
               name={centreName}
-              className="w-10 h-10 border border-white/30 shrink-0 hover:opacity-90 transition-opacity"
+              className="w-8 h-8 sm:w-9 sm:h-9 2xl:w-10 2xl:h-10 border border-white/30 shrink-0 hover:opacity-90 transition-opacity"
               alt={centreName}
             />
           </div>
@@ -258,22 +258,22 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
             aria-label="Log out"
             title="Log out"
             onClick={() => setIsLogoutOpen(true)}
-            className="hidden xl:flex w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 items-center justify-center text-white/90 transition-all cursor-pointer"
+            className="hidden xl:flex w-8 h-8 sm:w-9 sm:h-9 2xl:w-10 2xl:h-10 rounded-full bg-white/10 hover:bg-white/20 items-center justify-center text-white/90 transition-all cursor-pointer shrink-0"
           >
-            <FiLogOut className="w-4 h-4" />
+            <FiLogOut className="w-4 h-4 2xl:w-4.5 2xl:h-4.5" />
           </button>
 
           {/* Mobile Hamburger Toggle */}
           <button
             type="button"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="flex xl:hidden w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 items-center justify-center text-white/90 transition-all cursor-pointer ml-1"
+            className="flex xl:hidden w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/10 hover:bg-white/20 items-center justify-center text-white/90 transition-all cursor-pointer ml-1"
             aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
           >
             {isMobileMenuOpen ? (
-              <FiX className="w-5 h-5" />
+              <FiX className="w-4 h-4 sm:w-5 sm:h-5" />
             ) : (
-              <FiMenu className="w-5 h-5" />
+              <FiMenu className="w-4 h-4 sm:w-5 sm:h-5" />
             )}
           </button>
         </div>

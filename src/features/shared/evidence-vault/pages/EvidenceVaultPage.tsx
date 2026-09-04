@@ -17,6 +17,7 @@ import {
   useGetEvidenceVault,
   useCreateGeneralEvidence,
   useDeleteGeneralEvidence,
+  useGetInterviewSchedule,
 } from "@/src/features/shared/applications/hooks";
 import { useUploadFile } from "@/src/features/shared/storage/hooks";
 import { EvidenceRecord } from "../utils/evidenceConstants";
@@ -40,6 +41,7 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
   const { data: apiApp } = useGetApplicationById(applicationId);
   const { data: selfAssessment } = useGetSelfAssessment(applicationId);
   const { data: remoteVault = [] } = useGetEvidenceVault(applicationId);
+  const { data: interviewSchedule } = useGetInterviewSchedule(applicationId, { enabled: Boolean(applicationId) });
   const uploadFileMutation = useUploadFile();
   const createGeneralEvidenceMutation = useCreateGeneralEvidence(applicationId);
   const deleteGeneralEvidenceMutation = useDeleteGeneralEvidence(applicationId);
@@ -104,6 +106,18 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
     }
   }, [applicationId, isUploadModalOpen, isDeleteModalOpen]);
 
+  const storedFeedback: Record<string, string[]> = React.useMemo(() => {
+    if (typeof window === "undefined" || !applicationId) return {};
+    try {
+      const stored = localStorage.getItem(
+        `elimi_evidence_feedback_${applicationId}`,
+      );
+      return stored ? JSON.parse(stored) : {};
+    } catch {
+      return {};
+    }
+  }, [applicationId]);
+
   const combinedEvidenceList = React.useMemo(() => {
     const list: any[] = [];
     const seenNames = new Set<string>();
@@ -167,37 +181,6 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
   }, [remoteVault, persistedEvidence]);
 
   const evidences: EvidenceRecord[] = combinedEvidenceList.map((item, idx) => {
-    const statusStr = (item.status as string)?.toLowerCase() || "";
-    const isApproved =
-      statusStr === "approved" ||
-      statusStr === "accepted" ||
-      statusStr === "successful";
-    const isAttention =
-      statusStr === "attention required" ||
-      statusStr === "attention_required" ||
-      statusStr === "rejected" ||
-      statusStr === "needs_attention";
-    const isSubmitted = statusStr === "submitted";
-
-    const statusLabel = isApproved
-      ? "Approved"
-      : isAttention
-        ? "Attention Required"
-        : isSubmitted
-          ? "Submitted"
-          : item.status || "Pending";
-
-    const statusBg = isApproved
-      ? "bg-[#D1FAE5]"
-      : isAttention
-        ? "bg-[#FEE2E2]"
-        : "bg-[#FEF3C7]";
-    const statusText = isApproved
-      ? "text-[#047857]"
-      : isAttention
-        ? "text-[#B91C1C]"
-        : "text-[#D97706]";
-
     const docName =
       item.documentName ||
       item.name ||
@@ -206,6 +189,62 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
       item.originalName ||
       `Evidence Document ${idx + 1}`;
 
+    const itemKey = item.id || item.assetId || docName;
+    const extraFeedback =
+      storedFeedback[itemKey] ||
+      storedFeedback[docName] ||
+      (item.assetId ? storedFeedback[item.assetId] : null) ||
+      [];
+
+    const initialIssues = Array.isArray(item.issues)
+      ? item.issues
+      : item.feedback
+        ? [item.feedback]
+        : item.reviewComment
+          ? [item.reviewComment]
+          : [];
+
+    const combinedIssues = Array.from(
+      new Set([...initialIssues, ...(Array.isArray(extraFeedback) ? extraFeedback : [extraFeedback])]),
+    ).filter(Boolean);
+
+    // Use ONLY the status coming from the backend - no hardcoded status!
+    const rawStatus = (item.status as string) || (combinedIssues.length > 0 ? "Attention Required" : "Pending");
+    const statusLabel = rawStatus
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (c: string) => c.toUpperCase());
+
+    const s = rawStatus.toLowerCase().replace(/_/g, " ");
+    const isApproved =
+      s.includes("approv") ||
+      s.includes("accept") ||
+      s.includes("complet") ||
+      s.includes("verifi");
+    const isSubmitted = s.includes("submi");
+    const isAttention =
+      s.includes("reject") ||
+      s.includes("attenti") ||
+      s.includes("fail") ||
+      s.includes("declin") ||
+      (combinedIssues.length > 0 && !isApproved);
+    const isInProgress = s.includes("review") || s.includes("progress");
+
+    const statusBg = isApproved || isSubmitted
+      ? "bg-[#1E7F4C]/10"
+      : isAttention
+        ? "bg-[#FEE2E2]"
+        : isInProgress
+          ? "bg-[#EFF6FF]"
+          : "bg-[#F9A825]/10";
+
+    const statusText = isApproved || isSubmitted
+      ? "text-[#1E7F4C]"
+      : isAttention
+        ? "text-[#B91C1C]"
+        : isInProgress
+          ? "text-[#1D4ED8]"
+          : "text-[#F9A825]";
+
     return {
       id: item.id || `ev-${idx}`,
       name: docName,
@@ -213,7 +252,7 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
       status: statusLabel,
       statusBg,
       statusText,
-      issues: item.issues || [],
+      issues: combinedIssues,
       url: item.url || item.dataUrl,
       dataUrl: item.dataUrl || item.url,
       mimeType: item.mimeType,
@@ -370,17 +409,6 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
     router.push(`/dashboard/applications/${application.id}`);
   };
 
-  const declaredEvidence =
-    (apiApp as any)?.evidenceCandidateCanProvide ||
-    (apiApp as any)?.data?.evidenceCandidateCanProvide;
-  const declaredCount = declaredEvidence
-    ? Object.entries(declaredEvidence).filter(
-        ([k, v]) => v === true && k !== "other" && k !== "otherText",
-      ).length
-    : 0;
-  const expectedCount = Math.max(declaredCount, 1);
-  const isAllUploaded = evidences.length >= expectedCount;
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
@@ -436,27 +464,35 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
                 size="lg"
                 className="w-55! cursor-pointer place-self-end disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={handleSubmit}
-                disabled={!isAllUploaded}
+                disabled={evidences.length === 0 || isUploading}
               >
-                Submit Evidence ({evidences.length}/{expectedCount})
+                Submit Evidence
               </Button>
-              {!isAllUploaded && (
-                <p className="text-xs text-[#b3261e] font-medium text-right">
-                  Please upload all remaining evidence files ({evidences.length}
-                  /{expectedCount} uploaded) before submitting.
-                </p>
-              )}
             </div>
           </div>
 
           <div className="lg:col-span-4 xl:col-span-3 flex flex-col gap-6">
-            <CalendarWidget />
+            <CalendarWidget panelInterviewDate={interviewSchedule?.scheduledAt || undefined} />
             <UpcomingCard
-              interview={{
-                title: "Panel Interview",
-                date: "22-07-2026",
-                time: "12:00PM",
-              }}
+              interview={
+                interviewSchedule?.scheduledAt
+                  ? {
+                      title: "Panel Interview",
+                      date: new Date(interviewSchedule.scheduledAt).toLocaleDateString("en-GB"),
+                      time: new Date(interviewSchedule.scheduledAt).toLocaleTimeString("en-US", {
+                        hour: "numeric",
+                        minute: "2-digit",
+                        hour12: true,
+                      }),
+                      mode: interviewSchedule.mode,
+                      liveUrl:
+                        interviewSchedule.mode === "online"
+                          ? interviewSchedule.link
+                          : undefined,
+                      location: interviewSchedule.location || "Cstemp Centre",
+                    }
+                  : null
+              }
             />
           </div>
         </div>

@@ -69,11 +69,11 @@ export const AssessorApplicationTable: React.FC<
                 </td>
                 <td className="py-3.5 px-4 text-center">
                   {isCompleted ? (
-                    <span className="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-semibold bg-[#E8F8F0] text-[#12B76A]">
+                    <span className="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-semibold bg-[#1E7F4C]/10 text-[#1E7F4C]">
                       Completed
                     </span>
                   ) : isOngoing ? (
-                    <span className="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-semibold bg-[#FFF4E5] text-[#FF9800]">
+                    <span className="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-semibold bg-[#F9A825]/10 text-[#F9A825]">
                       Ongoing
                     </span>
                   ) : (

@@ -44,7 +44,7 @@ export const AssessorApplicationStageCard: React.FC<
       if (s.includes("incompetent")) {
         return "bg-rose-50 text-rose-600";
       }
-      return "bg-[#E8F8F0] text-[#12B76A]";
+      return "bg-[#1E7F4C]/10 text-[#1E7F4C]";
     }
     if (
       s.includes("days left") ||
@@ -55,7 +55,7 @@ export const AssessorApplicationStageCard: React.FC<
       s.includes("under review") ||
       s.includes("inconclusive")
     ) {
-      return "bg-[#FFF4E5] text-[#FF9800]";
+      return "bg-[#F9A825]/10 text-[#F9A825]";
     }
     return "bg-gray-100 text-gray-500";
   };

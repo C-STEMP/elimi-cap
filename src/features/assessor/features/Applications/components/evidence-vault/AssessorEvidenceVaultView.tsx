@@ -17,6 +17,8 @@ import {
   ConfirmFeedbackModal,
   FeedbackSuccessModal,
 } from "../form";
+import { PreviewEvidenceModal } from "@/src/features/shared/evidence-vault/components/PreviewEvidenceModal";
+import type { EvidenceRecord } from "@/src/features/shared/evidence-vault/utils/evidenceConstants";
 import { useToast } from "@/src/components/ui/toast";
 
 import { useGetEvidenceVault, useGetSelfAssessment, useGetThirdPartyReport, useReviewApplication } from "@/src/features/shared/applications/hooks";
@@ -52,15 +54,23 @@ export const AssessorEvidenceVaultView: React.FC<
   const reviewMutation = useReviewApplication();
 
   const [evidenceItems, setEvidenceItems] = useState<EvidenceItem[]>([]);
+  const [previewItem, setPreviewItem] = useState<EvidenceRecord | null>(null);
+  const [isApproving, setIsApproving] = useState<boolean>(false);
 
   useEffect(() => {
     let localItems: any[] = [];
+    let storedFeedbackMap: Record<string, string[]> = {};
     if (typeof window !== "undefined" && applicationId) {
       try {
         const stored = localStorage.getItem(
           `elimi_evidence_vault_${applicationId}`,
         );
         localItems = stored ? JSON.parse(stored) : [];
+
+        const storedFb = localStorage.getItem(
+          `elimi_evidence_feedback_${applicationId}`,
+        );
+        storedFeedbackMap = storedFb ? JSON.parse(storedFb) : {};
       } catch (e) {
         console.error("Storage read error:", e);
       }
@@ -98,9 +108,8 @@ export const AssessorEvidenceVaultView: React.FC<
     });
 
     if (combined.length > 0) {
-      const mapped = combined.map((e: any, idx: number) => ({
-        id: e.id || `ev-${idx}`,
-        name:
+      const mapped = combined.map((e: any, idx: number) => {
+        const docName =
           e.documentName ||
           e.name ||
           e.title ||
@@ -110,13 +119,48 @@ export const AssessorEvidenceVaultView: React.FC<
             ? "Self-Assessment Document"
             : e.kind === "third_party_report"
               ? "Third Party Report"
-              : `Evidence Item ${idx + 1}`),
-        size: e.size || e.fileSize || "5 MB",
-        status:
-          e.status === "Approved" || e.status === "approved"
-            ? ("Approved" as const)
-            : ("Pending" as const),
-      }));
+              : `Evidence Item ${idx + 1}`);
+
+        const itemKey = e.id || e.assetId || docName;
+        const extraFeedback =
+          storedFeedbackMap[itemKey] ||
+          storedFeedbackMap[docName] ||
+          (e.assetId ? storedFeedbackMap[e.assetId] : null) ||
+          [];
+
+        const initialFeedback = Array.isArray(e.feedback)
+          ? e.feedback
+          : e.feedback
+            ? [e.feedback]
+            : e.reviewComment
+              ? [e.reviewComment]
+              : Array.isArray(e.issues)
+                ? e.issues
+                : [];
+
+        const combinedFeedback = Array.from(
+          new Set([...initialFeedback, ...(Array.isArray(extraFeedback) ? extraFeedback : [extraFeedback])]),
+        ).filter(Boolean);
+
+        // Format backend status directly, no hardcoded fallbacks!
+        const rawStatus = e.status || "Pending";
+        const formattedStatus = rawStatus
+          .replace(/_/g, " ")
+          .replace(/\b\w/g, (c: string) => c.toUpperCase());
+
+        return {
+          id: e.id || `ev-${idx}`,
+          name: docName,
+          size: e.size || e.fileSize || "5 MB",
+          status: formattedStatus,
+          url: e.url || e.dataUrl,
+          dataUrl: e.dataUrl || e.url,
+          assetId: e.assetId,
+          mimeType: e.mimeType,
+          evidenceType: e.evidenceType || e.type,
+          feedback: combinedFeedback,
+        };
+      });
       setEvidenceItems(mapped);
     }
   }, [remoteEvidence, applicationId]);
@@ -147,7 +191,9 @@ export const AssessorEvidenceVaultView: React.FC<
 
   const allApproved =
     evidenceItems.length > 0 &&
-    evidenceItems.every((item) => item.status === "Approved");
+    evidenceItems.every((item) =>
+      item.status?.toLowerCase().includes("approv"),
+    );
 
   useEffect(() => {
     onAllApprovedChange?.(allApproved);
@@ -159,6 +205,28 @@ export const AssessorEvidenceVaultView: React.FC<
       onResetTriggerMarkComplete?.();
     }
   }, [triggerMarkComplete, onResetTriggerMarkComplete]);
+
+  // View Evidence Preview
+  const handleViewEvidence = (item: EvidenceItem) => {
+    setPreviewItem({
+      id: item.id,
+      name: item.name,
+      size: item.size,
+      status: item.status,
+      statusBg: item.status.toLowerCase().includes("approv")
+        ? "bg-[#D1FAE5]"
+        : "bg-[#FEF3C7]",
+      statusText: item.status.toLowerCase().includes("approv")
+        ? "text-[#047857]"
+        : "text-[#D97706]",
+      issues: item.feedback,
+      url: item.url || item.fileUrl || item.dataUrl,
+      dataUrl: item.dataUrl || item.url || item.fileUrl,
+      assetId: item.assetId,
+      mimeType: item.mimeType,
+      evidenceType: item.evidenceType,
+    });
+  };
 
   // Handle Feedback Flow
   const handleOpenSendFeedback = (item: EvidenceItem) => {
@@ -172,24 +240,109 @@ export const AssessorEvidenceVaultView: React.FC<
     setIsConfirmFeedbackModalOpen(true);
   };
 
-  const handleConfirmFeedback = () => {
-    if (selectedItemForFeedback && pendingFeedbackText) {
+  const handleConfirmFeedback = async () => {
+    if (!selectedItemForFeedback || !pendingFeedbackText.trim()) return;
+
+    const feedbackText = pendingFeedbackText.trim();
+    const item = selectedItemForFeedback;
+
+    try {
+      if (applicationId) {
+        await reviewMutation.mutateAsync({
+          id: applicationId,
+          payload: {
+            decision: "reject",
+            stageKey: "folder_arrangement",
+            feedback: `Feedback on ${item.name}: ${feedbackText}`,
+          },
+        });
+      }
+
+      // Update local state in assessor view
       setEvidenceItems((prev) =>
         prev.map((e) =>
-          e.id === selectedItemForFeedback.id
+          e.id === item.id || e.name === item.name
             ? {
                 ...e,
-                status: "Pending",
-                feedback: [pendingFeedbackText, ...(e.feedback || [])],
+                status: "Attention Required",
+                feedback: [feedbackText, ...(e.feedback || [])],
               }
             : e,
         ),
       );
+
+      // Save to localStorage for candidate to see immediately
+      if (typeof window !== "undefined" && applicationId) {
+        try {
+          const vaultKey = `elimi_evidence_vault_${applicationId}`;
+          const storedVault = localStorage.getItem(vaultKey);
+          let parsedVault = storedVault ? JSON.parse(storedVault) : [];
+
+          let found = false;
+          parsedVault = parsedVault.map((e: any) => {
+            if (
+              e.id === item.id ||
+              e.documentName === item.name ||
+              e.name === item.name ||
+              (item.assetId && e.assetId === item.assetId)
+            ) {
+              found = true;
+              return {
+                ...e,
+                status: "Attention Required",
+                issues: [feedbackText, ...(e.issues || [])],
+                feedback: feedbackText,
+              };
+            }
+            return e;
+          });
+
+          if (!found) {
+            parsedVault.push({
+              id: item.id,
+              name: item.name,
+              documentName: item.name,
+              size: item.size,
+              status: "Attention Required",
+              issues: [feedbackText],
+              feedback: feedbackText,
+              assetId: item.assetId,
+              url: item.url || item.fileUrl,
+            });
+          }
+
+          localStorage.setItem(vaultKey, JSON.stringify(parsedVault));
+
+          // Also save in dedicated feedback mapping
+          const fbKey = `elimi_evidence_feedback_${applicationId}`;
+          const storedFb = localStorage.getItem(fbKey);
+          const parsedFb = storedFb ? JSON.parse(storedFb) : {};
+          const itemKey = item.id || item.assetId || item.name;
+          const existingList = Array.isArray(parsedFb[itemKey])
+            ? parsedFb[itemKey]
+            : [];
+          parsedFb[itemKey] = [feedbackText, ...existingList];
+          parsedFb[item.name] = [feedbackText, ...(parsedFb[item.name] || [])];
+          localStorage.setItem(fbKey, JSON.stringify(parsedFb));
+        } catch (storageErr) {
+          console.error("Error saving feedback to storage:", storageErr);
+        }
+      }
+
+      setIsConfirmFeedbackModalOpen(false);
+      setIsFeedbackSuccessModalOpen(true);
+      setSelectedItemForFeedback(null);
+      setPendingFeedbackText("");
+    } catch (err: any) {
+      console.error("Feedback submit error:", err);
+      toast({
+        type: "error",
+        title: "Feedback Error",
+        description:
+          err?.message || "Failed to send feedback. Please try again.",
+      });
+      setIsConfirmFeedbackModalOpen(false);
     }
-    setIsConfirmFeedbackModalOpen(false);
-    setIsFeedbackSuccessModalOpen(true);
-    setSelectedItemForFeedback(null);
-    setPendingFeedbackText("");
   };
 
   // Handle Approve Flow
@@ -198,25 +351,128 @@ export const AssessorEvidenceVaultView: React.FC<
     setIsConfirmApproveModalOpen(true);
   };
 
-  const handleConfirmApprove = () => {
-    if (selectedItemForApprove) {
+  const handleApproveEvidence = async (
+    item: EvidenceItem | EvidenceRecord,
+  ) => {
+    setIsApproving(true);
+    try {
+      if (applicationId) {
+        await reviewMutation.mutateAsync({
+          id: applicationId,
+          payload: {
+            decision: "approve",
+            stageKey: "folder_arrangement",
+            feedback: `Evidence "${item.name}" approved by assessor.`,
+          },
+        });
+      }
+
       setEvidenceItems((prev) =>
         prev.map((e) =>
-          e.id === selectedItemForApprove.id
-            ? { ...e, status: "Approved", feedback: undefined }
+          e.id === item.id ||
+          e.name === item.name ||
+          (item.assetId && e.assetId === item.assetId)
+            ? { ...e, status: "Approved", feedback: [] }
             : e,
         ),
       );
+
+      if (
+        previewItem &&
+        (previewItem.id === item.id || previewItem.name === item.name)
+      ) {
+        setPreviewItem((prev) =>
+          prev
+            ? {
+                ...prev,
+                status: "Approved",
+                statusBg: "bg-[#D1FAE5]",
+                statusText: "text-[#047857]",
+                issues: [],
+              }
+            : null,
+        );
+      }
+
+      if (typeof window !== "undefined" && applicationId) {
+        try {
+          const vaultKey = `elimi_evidence_vault_${applicationId}`;
+          const stored = localStorage.getItem(vaultKey);
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            const updated = parsed.map((e: any) =>
+              e.id === item.id ||
+              e.name === item.name ||
+              e.documentName === item.name
+                ? { ...e, status: "Approved", issues: [], feedback: null }
+                : e,
+            );
+            localStorage.setItem(vaultKey, JSON.stringify(updated));
+          }
+          const fbKey = `elimi_evidence_feedback_${applicationId}`;
+          const storedFb = localStorage.getItem(fbKey);
+          if (storedFb) {
+            const parsedFb = JSON.parse(storedFb);
+            delete parsedFb[item.id];
+            delete parsedFb[item.name];
+            if (item.assetId) delete parsedFb[item.assetId];
+            localStorage.setItem(fbKey, JSON.stringify(parsedFb));
+          }
+        } catch (e) {
+          console.error("Local storage error on approve:", e);
+        }
+      }
+
+      toast({
+        type: "success",
+        title: "Evidence Approved",
+        description: `Successfully approved "${item.name}".`,
+      });
+      setIsConfirmApproveModalOpen(false);
+      setSelectedItemForApprove(null);
+    } catch (err: any) {
+      console.error("Approve evidence error:", err);
+      toast({
+        type: "error",
+        title: "Approval Failed",
+        description: err?.message || "Failed to approve evidence.",
+      });
+    } finally {
+      setIsApproving(false);
     }
-    setIsConfirmApproveModalOpen(false);
-    setIsApproveSuccessModalOpen(true);
-    setSelectedItemForApprove(null);
+  };
+
+  const handleConfirmApprove = () => {
+    if (selectedItemForApprove) {
+      handleApproveEvidence(selectedItemForApprove);
+    }
   };
 
   // Handle Mark As Complete Flow
-  const handleConfirmMarkComplete = () => {
-    setIsConfirmMarkCompleteOpen(false);
-    setIsFolderCompleteSuccessOpen(true);
+  const handleConfirmMarkComplete = async () => {
+    if (!applicationId) return;
+    try {
+      await reviewMutation.mutateAsync({
+        id: applicationId,
+        payload: {
+          decision: "approve",
+          stageKey: "folder_arrangement",
+          feedback: "Folder arrangement marked complete by assessor.",
+        },
+      });
+      setIsConfirmMarkCompleteOpen(false);
+      setIsFolderCompleteSuccessOpen(true);
+    } catch (err: any) {
+      console.error("Mark folder complete error:", err);
+      toast({
+        type: "error",
+        title: "Could Not Complete",
+        description:
+          err?.message ||
+          "Failed to mark folder as complete. Please try again.",
+      });
+      setIsConfirmMarkCompleteOpen(false);
+    }
   };
 
   const handleFolderCompleteFinished = () => {
@@ -233,6 +489,7 @@ export const AssessorEvidenceVaultView: React.FC<
           <ResourcesSection onViewSelfAssessment={onViewSelfAssessment} />
           <EvidenceListSection
             items={evidenceItems}
+            onView={handleViewEvidence}
             onSendFeedback={handleOpenSendFeedback}
             onApprove={handleOpenApprove}
           />
@@ -244,6 +501,15 @@ export const AssessorEvidenceVaultView: React.FC<
           <AssessorUpcomingEventsWidget />
         </div>
       </div>
+
+      {/* Document Preview Modal */}
+      <PreviewEvidenceModal
+        item={previewItem}
+        applicationId={applicationId}
+        onClose={() => setPreviewItem(null)}
+        onApprove={handleApproveEvidence}
+        isApproving={isApproving}
+      />
 
       {/* --- Feedback Modals --- */}
       <SendEvidenceFeedbackModal
@@ -287,6 +553,7 @@ export const AssessorEvidenceVaultView: React.FC<
         isOpen={isConfirmMarkCompleteOpen}
         onClose={() => setIsConfirmMarkCompleteOpen(false)}
         onConfirm={handleConfirmMarkComplete}
+        isLoading={reviewMutation.isPending}
       />
 
       <FolderCompleteSuccessModal

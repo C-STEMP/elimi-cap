@@ -37,6 +37,15 @@ export const AssessmentCentreApplicationsView: React.FC<
         rawApp.candidate?.name ||
         `${rawApp.candidate?.firstName || ""} ${rawApp.candidate?.lastName || ""}`.trim() ||
         `Candidate (${app.candidateId?.slice(0, 8) || "N/A"})`,
+      centreName:
+        rawApp.centre?.name || rawApp.centreId || "—",
+      facilitatorName:
+        rawApp.facilitator?.name ||
+        rawApp.assignedFacilitator?.name ||
+        (rawApp.facilitator?.firstName
+          ? `${rawApp.facilitator.firstName} ${rawApp.facilitator.lastName || ""}`.trim()
+          : null) ||
+        "—",
       trade: rawApp.trade?.name || app.type || "General",
       assessmentType: app.type || "RPL",
       status:
@@ -99,11 +108,13 @@ export const AssessmentCentreApplicationsView: React.FC<
   const getStatusBadgeClass = (status: string) => {
     switch (status) {
       case "Pending":
-        return "bg-[#FEF3C7] text-[#D97706]";
+        return "bg-[#F9A825]/10 text-[#F9A825]";
       case "Ongoing":
         return "bg-[#FCE8EB] text-[#A31D38]";
+      case "Submitted":
       case "Completed":
-        return "bg-[#E6F4EA] text-[#1E7F4C]";
+      case "Approved":
+        return "bg-[#1E7F4C]/10 text-[#1E7F4C]";
       case "Archived":
         return "bg-[#E5E7EB] text-[#4B5563]";
       default:
@@ -218,6 +229,8 @@ export const AssessmentCentreApplicationsView: React.FC<
                     />
                   </th>
                   <th className="p-4 whitespace-nowrap">Candidate Name</th>
+                  <th className="p-4 whitespace-nowrap">Centre Name</th>
+                  <th className="p-4 whitespace-nowrap">Facilitator</th>
                   <th className="p-4 whitespace-nowrap">Trade</th>
                   <th className="p-4 whitespace-nowrap">Assessment Type</th>
                   <th className="p-4 whitespace-nowrap">Status</th>
@@ -232,6 +245,8 @@ export const AssessmentCentreApplicationsView: React.FC<
                     <tr key={i} className="animate-pulse">
                       <td className="p-4"><div className="w-4 h-4 bg-gray-200 rounded" /></td>
                       <td className="p-4"><div className="h-3.5 bg-gray-200 rounded w-32" /></td>
+                      <td className="p-4"><div className="h-3.5 bg-gray-200 rounded w-24" /></td>
+                      <td className="p-4"><div className="h-3.5 bg-gray-200 rounded w-24" /></td>
                       <td className="p-4"><div className="h-3.5 bg-gray-200 rounded w-24" /></td>
                       <td className="p-4"><div className="h-3.5 bg-gray-200 rounded w-16" /></td>
                       <td className="p-4"><div className="h-5 bg-gray-200 rounded-full w-20" /></td>
@@ -258,6 +273,12 @@ export const AssessmentCentreApplicationsView: React.FC<
                         className="p-4 font-semibold text-black cursor-pointer hover:text-primary transition-colors"
                       >
                         {app.candidateName}
+                      </td>
+                      <td className="p-4 font-normal text-gray-600">
+                        {app.centreName}
+                      </td>
+                      <td className="p-4 font-normal text-gray-600">
+                        {app.facilitatorName}
                       </td>
                       <td className="p-4 font-normal text-gray-600">
                         {app.trade}
@@ -291,7 +312,7 @@ export const AssessmentCentreApplicationsView: React.FC<
                 ) : (
                   <tr>
                     <td
-                      colSpan={7}
+                      colSpan={9}
                       className="p-8 text-center text-gray-400 font-normal"
                     >
                       No applications found.
@@ -349,6 +370,12 @@ export const AssessmentCentreApplicationsView: React.FC<
                         className="font-bold text-sm text-black cursor-pointer hover:text-primary transition-colors"
                       >
                         {app.candidateName}
+                      </span>
+                      <span className="text-xs text-gray-500 font-normal">
+                        Centre: {app.centreName}
+                      </span>
+                      <span className="text-xs text-gray-500 font-normal">
+                        Facilitator: {app.facilitatorName}
                       </span>
                       <span className="text-xs text-gray-500 font-normal">
                         Trade: {app.trade}

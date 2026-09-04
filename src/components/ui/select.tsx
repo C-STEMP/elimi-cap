@@ -320,7 +320,7 @@ export const Select: React.FC<SelectProps> = ({
                 return (
                   <span
                     onMouseDown={onPreventMouseDown}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-0.5 my-0.5 mr-1 bg-gray-100/90 text-text-dark text-xs font-medium rounded-lg border border-gray-200/90 max-w-[220px] truncate select-none shrink-0"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-0.5 my-0.5 mr-1 bg-gray-100/90 text-text-dark text-xs font-medium rounded-lg border border-gray-200/90 max-w-55 truncate select-none shrink-0"
                     title={
                       typeof displayLabel === "string"
                         ? displayLabel
