@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useId, useState, useEffect, useRef } from "react";
+import React, { useId, useState, useRef } from "react";
 import { Select as AntSelect } from "antd";
 import { FiChevronDown, FiX, FiSearch } from "react-icons/fi";
 
@@ -9,11 +9,21 @@ export interface SelectOption {
   value: string;
 }
 
+export interface SelectChangeEvent {
+  target: {
+    name: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    value: any;
+  };
+}
+
 export interface SelectProps {
   label?: React.ReactNode;
-  value?: string | string[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  value?: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onChange?: (e: any) => void;
-  options?: (string | SelectOption)[];
+  options?: (string | number | SelectOption)[];
   placeholder?: string;
   searchPlaceholder?: string;
   error?: string;
@@ -36,7 +46,7 @@ export interface SelectProps {
   showSearch?: boolean;
   onSearch?: (value: string) => void;
   searchValue?: string;
-  filterOption?: boolean | ((input: string, option?: any) => boolean);
+  filterOption?: boolean | ((input: string, option?: SelectOption) => boolean);
   allowClear?: boolean;
   autoComplete?: string;
 }
@@ -60,12 +70,11 @@ export const Select: React.FC<SelectProps> = ({
   multiple = false,
   required = false,
   size = "md",
-  showPlaceholderOption,
   loading = false,
   notFoundContent,
   maxTagCount,
   maxTagTextLength = 22,
-  showSearch = false,
+  showSearch,
   onSearch,
   searchValue,
   filterOption,
@@ -73,35 +82,45 @@ export const Select: React.FC<SelectProps> = ({
   autoComplete = "off",
 }) => {
   const reactId = useId();
-  const [mounted, setMounted] = useState(false);
-  const [dropdownSearch, setDropdownSearch] = useState("");
+  const [internalSearch, setInternalSearch] = useState("");
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const dropdownSearch =
+    searchValue !== undefined ? searchValue : internalSearch;
+  const selectId = id || reactId;
 
-  const selectId = id || (mounted ? reactId : undefined);
-
-  const normalizedOptions: SelectOption[] = options.map((opt) =>
-    typeof opt === "string" ? { label: opt, value: opt } : opt,
-  );
+  const normalizedOptions: SelectOption[] = React.useMemo(() => {
+    return options.map((opt) =>
+      typeof opt === "string" || typeof opt === "number"
+        ? { label: String(opt), value: String(opt) }
+        : {
+            label: opt?.label !== undefined ? String(opt.label) : "",
+            value: opt?.value !== undefined ? String(opt.value) : "",
+          },
+    );
+  }, [options]);
 
   const shouldShowSearch =
-    showSearch === true ||
-    (showSearch !== false && normalizedOptions.length >= 4);
+    !loading &&
+    (showSearch === true ||
+      Boolean(searchPlaceholder) ||
+      (showSearch !== false && normalizedOptions.length >= 6));
 
   const filteredOptions: SelectOption[] = React.useMemo(() => {
+    if (filterOption === false) return normalizedOptions;
     if (!shouldShowSearch || !dropdownSearch.trim()) return normalizedOptions;
     const q = dropdownSearch.trim().toLowerCase();
     return normalizedOptions.filter((opt) => {
-      const labelStr = opt.label?.toString().toLowerCase() || "";
-      const valStr = opt.value?.toString().toLowerCase() || "";
+      if (typeof filterOption === "function") {
+        return filterOption(q, opt);
+      }
+      const labelStr = (opt.label || "").toLowerCase();
+      const valStr = (opt.value || "").toLowerCase();
       return labelStr.includes(q) || valStr.includes(q);
     });
-  }, [normalizedOptions, dropdownSearch, shouldShowSearch]);
+  }, [normalizedOptions, dropdownSearch, shouldShowSearch, filterOption]);
 
-  const handleChange = (newVal: string | string[]) => {
+  const handleChange = (newVal: string | string[] | undefined) => {
     if (!onChange) return;
     const event = {
       target: { name: name || "", value: newVal },
@@ -117,9 +136,15 @@ export const Select: React.FC<SelectProps> = ({
     );
   };
 
-  const matchesAnyOption = (val?: string) => {
-    if (!val) return false;
-    return normalizedOptions.some((o) => o.value === val || o.label === val);
+  const matchesAnyOption = (val?: string | number | null): boolean => {
+    if (val === undefined || val === null || val === "") return false;
+    return normalizedOptions.some(
+      (o) =>
+        o.value === val ||
+        String(o.value) === String(val) ||
+        o.label === val ||
+        String(o.label) === String(val),
+    );
   };
 
   const antValue: string | string[] | undefined = loading
@@ -134,7 +159,9 @@ export const Select: React.FC<SelectProps> = ({
         ? isRawId(value) && !matchesAnyOption(value)
           ? undefined
           : value
-        : undefined;
+        : typeof value === "number"
+          ? String(value)
+          : undefined;
 
   const errorClass = error
     ? "!border-primary-solid !ring-2 !ring-border-secondary"
@@ -164,57 +191,84 @@ export const Select: React.FC<SelectProps> = ({
         id={selectId}
         mode={multiple ? "multiple" : undefined}
         value={antValue}
-        placeholder={loading ? (typeof placeholder === "string" && placeholder.includes("Loading") ? placeholder : "Loading...") : placeholder}
+        placeholder={
+          loading
+            ? typeof placeholder === "string" && placeholder.includes("Loading")
+              ? placeholder
+              : "Loading..."
+            : placeholder
+        }
         disabled={disabled}
         loading={loading}
         showSearch={false}
         allowClear={allowClear}
         onOpenChange={(open) => {
           if (!open) {
-            setDropdownSearch("");
+            setInternalSearch("");
+            onSearch?.("");
           } else if (shouldShowSearch) {
             setTimeout(() => {
               searchInputRef.current?.focus();
-            }, 60);
+            }, 50);
           }
         }}
         popupRender={(menu) => (
           <div className="flex flex-col min-w-0">
             {shouldShowSearch && (
               <div
-                className="p-2 pb-2.5 border-b border-gray-100 sticky top-0 bg-white z-10 rounded-t-xl"
+                className="p-2 border-b border-gray-100 sticky top-0 bg-white z-10 rounded-t-xl"
                 onMouseDown={(e) => e.stopPropagation()}
                 onClick={(e) => e.stopPropagation()}
+                onTouchStart={(e) => e.stopPropagation()}
               >
                 <div className="relative flex items-center w-full">
-                  <FiSearch className="w-4 h-4 text-gray-400 absolute left-3 pointer-events-none" />
+                  <FiSearch className="w-4 h-4 text-gray-400 absolute left-3 pointer-events-none shrink-0" />
                   <input
                     ref={searchInputRef}
                     type="text"
                     value={dropdownSearch}
                     onChange={(e) => {
-                      setDropdownSearch(e.target.value);
-                      onSearch?.(e.target.value);
+                      const val = e.target.value;
+                      setInternalSearch(val);
+                      onSearch?.(val);
                     }}
-                    onKeyDown={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => {
+                      if (e.key !== "Escape") {
+                        e.stopPropagation();
+                      }
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                      }
+                    }}
                     placeholder={
                       searchPlaceholder ||
                       (typeof placeholder === "string" &&
-                      !placeholder.includes("Select") &&
-                      !placeholder.includes("Loading")
+                      !placeholder.toLowerCase().includes("select") &&
+                      !placeholder.toLowerCase().includes("loading")
                         ? `Search ${placeholder.toLowerCase()}...`
                         : "Search...")
                     }
-                    className="w-full h-9 pl-9 pr-7 text-xs xl:text-sm bg-[#F9FAFB] border border-gray-200 rounded-xl outline-none focus:border-[#fbab2a] focus:ring-1 focus:ring-[#fbab2a]/30 text-gray-800 placeholder:text-gray-400 font-medium transition-all"
+                    autoComplete="off"
+                    spellCheck={false}
+                    data-lpignore="true"
+                    data-1p-ignore="true"
+                    className="w-full h-9 pl-9 pr-8 text-xs sm:text-sm bg-white border border-gray-200 rounded-lg outline-none focus:border-primary-solid focus:ring-2 focus:ring-primary/10 text-text-dark placeholder:text-gray-400 font-normal transition-all"
                   />
                   {dropdownSearch && (
                     <button
                       type="button"
-                      onClick={() => {
-                        setDropdownSearch("");
-                        onSearch?.("");
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
                       }}
-                      className="absolute right-2.5 text-gray-400 hover:text-gray-600 p-0.5 rounded cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setInternalSearch("");
+                        onSearch?.("");
+                        searchInputRef.current?.focus();
+                      }}
+                      className="absolute right-2.5 text-gray-400 hover:text-gray-600 p-0.5 rounded cursor-pointer transition-colors"
+                      title="Clear search"
                     >
                       <FiX className="w-3.5 h-3.5" />
                     </button>
@@ -231,21 +285,15 @@ export const Select: React.FC<SelectProps> = ({
           "data-1p-ignore": "true",
           "data-form-type": "other",
           "aria-autocomplete": "none",
-        } as any)}
-        filterOption={
-          filterOption !== undefined
-            ? filterOption
-            : onSearch
-              ? false
-              : (input, option) =>
-                  (option?.label?.toString() || "")
-                    .toLowerCase()
-                    .includes(input.toLowerCase()) ||
-                  (option?.value?.toString() || "")
-                    .toLowerCase()
-                    .includes(input.toLowerCase())
+        } as Record<string, string>)}
+        filterOption={false}
+        maxTagCount={
+          maxTagCount !== undefined
+            ? maxTagCount
+            : multiple
+              ? "responsive"
+              : undefined
         }
-        maxTagCount={maxTagCount !== undefined ? maxTagCount : multiple ? "responsive" : undefined}
         maxTagTextLength={maxTagTextLength}
         maxTagPlaceholder={(omittedValues) => (
           <span className="inline-flex items-center px-2 py-0.5 my-0.5 bg-[#a31d38]/10 text-[#a31d38] text-xs font-semibold rounded-md border border-[#a31d38]/20 select-none">
@@ -255,7 +303,14 @@ export const Select: React.FC<SelectProps> = ({
         tagRender={
           multiple
             ? (props) => {
-                const { label, closable, onClose } = props;
+                const { value: itemValue, label, closable, onClose } = props;
+                const matchedOption = normalizedOptions.find(
+                  (o) =>
+                    o.value === itemValue ||
+                    String(o.value) === String(itemValue) ||
+                    o.label === label,
+                );
+                const displayLabel = matchedOption?.label ?? label;
                 const onPreventMouseDown = (
                   event: React.MouseEvent<HTMLSpanElement>,
                 ) => {
@@ -266,9 +321,13 @@ export const Select: React.FC<SelectProps> = ({
                   <span
                     onMouseDown={onPreventMouseDown}
                     className="inline-flex items-center gap-1.5 px-2.5 py-0.5 my-0.5 mr-1 bg-gray-100/90 text-text-dark text-xs font-medium rounded-lg border border-gray-200/90 max-w-[220px] truncate select-none shrink-0"
-                    title={typeof label === "string" ? label : undefined}
+                    title={
+                      typeof displayLabel === "string"
+                        ? displayLabel
+                        : undefined
+                    }
                   >
-                    <span className="truncate">{label}</span>
+                    <span className="truncate">{displayLabel}</span>
                     {closable && !disabled && (
                       <span
                         onClick={onClose}
@@ -285,9 +344,10 @@ export const Select: React.FC<SelectProps> = ({
         notFoundContent={
           loading ? (
             <div className="py-4 px-3 text-center text-xs xl:text-sm text-gray-500 font-medium flex items-center justify-center gap-2 select-none">
-              <span className="w-4 h-4 border-2 border-[#a31d38] border-t-transparent rounded-full animate-spin shrink-0" />
+              <span className="w-4 h-4 border-2 border-primary-solid border-t-transparent rounded-full animate-spin shrink-0" />
               <span>
-                {typeof placeholder === "string" && placeholder.includes("Loading")
+                {typeof placeholder === "string" &&
+                placeholder.includes("Loading")
                   ? placeholder
                   : "Loading..."}
               </span>
@@ -297,7 +357,7 @@ export const Select: React.FC<SelectProps> = ({
               {notFoundContent}
             </div>
           ) : (
-            <div className="py-4 px-3 text-center text-xs xl:text-sm text-gray-400 font-normal select-none">
+            <div className="py-5 px-3 text-center text-xs xl:text-sm text-gray-400 font-normal select-none">
               No options found
             </div>
           )
@@ -317,7 +377,7 @@ export const Select: React.FC<SelectProps> = ({
         }
         classNames={{
           popup: {
-            root: `rounded-2xl shadow-2xl border border-gray-100 ${popupClassName}`,
+            root: `rounded-2xl shadow-2xl border border-gray-100 overflow-hidden ${popupClassName}`,
           },
         }}
         status={error ? "error" : undefined}
@@ -333,7 +393,7 @@ export const Select: React.FC<SelectProps> = ({
         styles={{
           popup: {
             root: {
-              padding: "6px",
+              padding: shouldShowSearch ? "0px 0px 4px 0px" : "4px",
               borderRadius: "16px",
               minWidth: size === "sm" ? 100 : undefined,
             },

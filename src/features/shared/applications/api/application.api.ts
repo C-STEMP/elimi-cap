@@ -414,26 +414,10 @@ export async function reviewApplicationApi(
 
 export async function initiateApplicationPaymentApi(
   id: string,
-  payload?: { callbackUrl?: string },
+  _payload?: { callbackUrl?: string },
 ): Promise<PaymentInitiationResponse> {
-  const currentOrigin =
-    typeof window !== "undefined" && window.location?.origin
-      ? window.location.origin
-      : "";
-  const callbackUrl =
-    payload?.callbackUrl ||
-    (currentOrigin
-      ? `${currentOrigin}/dashboard/applications/${id}?payment=success`
-      : undefined);
-
   return capFetch<PaymentInitiationResponse>(`/applications/${id}/pay`, {
     method: "POST",
-    data: callbackUrl
-      ? {
-          callbackUrl,
-          callback_url: callbackUrl,
-        }
-      : undefined,
   });
 }
 
