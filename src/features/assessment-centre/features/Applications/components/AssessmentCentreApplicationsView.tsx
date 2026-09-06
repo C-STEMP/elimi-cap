@@ -1,33 +1,164 @@
 "use client";
 
-import React, { useState } from "react";
-import { FiSearch, FiFilter, FiList, FiGrid } from "react-icons/fi";
+import React, { useState, useEffect, useMemo } from "react";
+import { FiSearch, FiFilter, FiList, FiGrid, FiVideo, FiMapPin } from "react-icons/fi";
 import { AssessmentCentreFilterModal } from "./AssessmentCentreFilterModal";
+import {
+  ViewInterviewDetailModal,
+  type InterviewRowData,
+} from "./ViewInterviewDetailModal";
 import { useToast } from "@/src/components/ui/toast";
 
 import {
   useApplication,
   useGetApplications,
 } from "@/features/assessment-centre/features/Applications/hooks";
+import {
+  useGetCentreInterviews,
+  useGetCentrePanels,
+  useDeleteCentreInterview,
+} from "@/src/features/shared/centre/hooks";
 
 interface ApplicationsViewProps {
   onSelectCandidate: (candidateName: string, id?: string) => void;
+  onSelectInterview?: (interview: InterviewRowData) => void;
+  onOpenCreatePanel?: () => void;
+  onOpenScheduleInterview?: () => void;
 }
 
 export const AssessmentCentreApplicationsView: React.FC<
   ApplicationsViewProps
-> = ({ onSelectCandidate }) => {
+> = ({
+  onSelectCandidate,
+  onSelectInterview,
+  onOpenCreatePanel,
+  onOpenScheduleInterview,
+}) => {
   const { toast } = useToast();
   const { forwardToAwardingBody } = useApplication();
   const { data: remoteApps, isLoading } = useGetApplications();
+  const { data: remoteInterviews = [], isLoading: isLoadingInterviews } =
+    useGetCentreInterviews();
+  const { data: remotePanels = [] } = useGetCentrePanels();
+  const deleteInterviewMutation = useDeleteCentreInterview();
 
   const [activeFilterTab, setActiveFilterTab] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [selectedInterviewIds, setSelectedInterviewIds] = useState<string[]>([]);
+  const [viewingInterview, setViewingInterview] =
+    useState<InterviewRowData | null>(null);
 
-  const filterTabs = ["All", "Pending", "Ongoing", "Completed", "Archived"];
+  const filterTabs = [
+    "All",
+    "Pending",
+    "Ongoing",
+    "Completed",
+    "Archived",
+    "Interviews",
+  ];
+
+  // Combined Interviews list from backend
+  const interviewsList: InterviewRowData[] = React.useMemo(() => {
+    return remoteInterviews.map((item) => {
+      const matchedPanel =
+        item.panel || remotePanels.find((p) => p.id === item.panelId);
+      const lead =
+        matchedPanel?.members?.find((m) => m.isLead)?.name ||
+        matchedPanel?.members?.[0]?.name ||
+        "—";
+      const member =
+        matchedPanel?.members?.find((m) => !m.isLead && !m.isObserver)?.name ||
+        matchedPanel?.members?.[1]?.name ||
+        "—";
+      const iv =
+        matchedPanel?.members?.find((m) => m.isObserver)?.name ||
+        matchedPanel?.members?.[2]?.name ||
+        "—";
+
+      return {
+        id: item.id,
+        title: item.name,
+        leadPanelist: lead,
+        panelMember: member,
+        internalVerifier: iv,
+        mode:
+          item.mode && item.mode.toLowerCase() === "online"
+            ? "Online"
+            : "Physical",
+        createdAt: item.createdAt
+          ? new Date(item.createdAt).toLocaleDateString("en-US", {
+              month: "2-digit",
+              day: "2-digit",
+              year: "numeric",
+            })
+          : "—",
+        scheduledAt: item.scheduledAt || undefined,
+        location:
+          item.location ||
+          (item.useCentreAddress ? "Centre Address" : "Physical Location"),
+        link: item.link || undefined,
+      };
+    });
+  }, [remoteInterviews, remotePanels]);
+
+  const filteredInterviews = useMemo(() => {
+    if (!searchQuery.trim()) return interviewsList;
+    const q = searchQuery.toLowerCase();
+    return interviewsList.filter(
+      (item) =>
+        item.title.toLowerCase().includes(q) ||
+        item.leadPanelist.toLowerCase().includes(q) ||
+        item.panelMember.toLowerCase().includes(q) ||
+        item.internalVerifier.toLowerCase().includes(q) ||
+        item.mode.toLowerCase().includes(q),
+    );
+  }, [interviewsList, searchQuery]);
+
+  const handleDeleteSelectedInterviews = async () => {
+    if (selectedInterviewIds.length === 0) {
+      toast({
+        type: "info",
+        title: "No Interviews Selected",
+        description: "Please select interview rows to delete.",
+      });
+      return;
+    }
+
+    try {
+      await Promise.all(
+        selectedInterviewIds.map((id) => deleteInterviewMutation.mutateAsync(id)),
+      );
+      setSelectedInterviewIds([]);
+      toast({
+        type: "success",
+        title: "Deleted",
+        description: "Selected interviews have been removed.",
+      });
+    } catch (err: any) {
+      toast({
+        type: "error",
+        title: "Delete Failed",
+        description: err.message || "Failed to delete selected interviews.",
+      });
+    }
+  };
+
+  const toggleSelectAllInterviews = () => {
+    if (selectedInterviewIds.length === filteredInterviews.length) {
+      setSelectedInterviewIds([]);
+    } else {
+      setSelectedInterviewIds(filteredInterviews.map((i: InterviewRowData) => i.id));
+    }
+  };
+
+  const toggleSelectInterviewRow = (id: string) => {
+    setSelectedInterviewIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
+    );
+  };
 
   const applicationsList = (remoteApps ?? []).map((app) => {
     const rawApp = app as any;
@@ -148,7 +279,9 @@ export const AssessmentCentreApplicationsView: React.FC<
         <h2 className="text-base sm:text-lg font-bold text-black tracking-tight">
           {activeFilterTab === "All"
             ? "Applications"
-            : `RPL ${activeFilterTab} Applications`}
+            : activeFilterTab === "Interviews"
+              ? "Interviews"
+              : `RPL ${activeFilterTab} Applications`}
         </h2>
 
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -202,17 +335,236 @@ export const AssessmentCentreApplicationsView: React.FC<
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-5 text-xs font-semibold text-gray-600 pt-1">
-          <button
-            type="button"
-            onClick={toggleSelectAll}
-            className="hover:underline cursor-pointer transition-colors"
-          >
-            Select All
-          </button>
-        </div>
+        {activeFilterTab === "Interviews" ? (
+          <div className="flex items-center justify-end gap-5 text-xs font-semibold text-gray-500 pt-1">
+            <button
+              type="button"
+              disabled={selectedInterviewIds.length !== 1}
+              onClick={() => {
+                const target = interviewsList.find(
+                  (i) => i.id === selectedInterviewIds[0],
+                );
+                if (target) setViewingInterview(target);
+              }}
+              className="hover:underline cursor-pointer disabled:opacity-40 disabled:hover:no-underline transition-colors"
+            >
+              Edit
+            </button>
+            <button
+              type="button"
+              disabled={selectedInterviewIds.length === 0}
+              onClick={handleDeleteSelectedInterviews}
+              className="hover:underline cursor-pointer text-gray-500 hover:text-red-600 disabled:opacity-40 disabled:hover:no-underline transition-colors"
+            >
+              Delete
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center justify-end gap-5 text-xs font-semibold text-gray-600 pt-1">
+            <button
+              type="button"
+              onClick={toggleSelectAll}
+              className="hover:underline cursor-pointer transition-colors"
+            >
+              Select All
+            </button>
+          </div>
+        )}
 
-        {viewMode === "list" ? (
+        {activeFilterTab === "Interviews" ? (
+          viewMode === "list" ? (
+            <div className="overflow-x-auto no-scrollbar border border-gray-100 rounded-2xl">
+              <table className="w-full text-left text-xs sm:text-sm">
+                <thead className="bg-[#F8F9FA] text-gray-600 font-bold border-b border-gray-100 whitespace-nowrap">
+                  <tr>
+                    <th className="p-4 w-10 whitespace-nowrap">
+                      <input
+                        type="checkbox"
+                        checked={
+                          filteredInterviews.length > 0 &&
+                          selectedInterviewIds.length === filteredInterviews.length
+                        }
+                        onChange={toggleSelectAllInterviews}
+                        className="w-4 h-4 accent-primary rounded cursor-pointer"
+                      />
+                    </th>
+                    <th className="p-4 whitespace-nowrap">Title</th>
+                    <th className="p-4 whitespace-nowrap">Lead Panelist</th>
+                    <th className="p-4 whitespace-nowrap">Panel Member</th>
+                    <th className="p-4 whitespace-nowrap">Internal Verifier</th>
+                    <th className="p-4 whitespace-nowrap">Interview Mode</th>
+                    <th className="p-4 whitespace-nowrap">Created At</th>
+                    <th className="p-4 text-right whitespace-nowrap">Action</th>
+                  </tr>
+                </thead>
+
+                <tbody className="divide-y divide-gray-100">
+                  {isLoadingInterviews ? (
+                    Array.from({ length: 4 }).map((_, i) => (
+                      <tr key={i} className="animate-pulse">
+                        <td className="p-4"><div className="w-4 h-4 bg-gray-200 rounded" /></td>
+                        <td className="p-4"><div className="h-3.5 bg-gray-200 rounded w-32" /></td>
+                        <td className="p-4"><div className="h-3.5 bg-gray-200 rounded w-28" /></td>
+                        <td className="p-4"><div className="h-3.5 bg-gray-200 rounded w-28" /></td>
+                        <td className="p-4"><div className="h-3.5 bg-gray-200 rounded w-28" /></td>
+                        <td className="p-4"><div className="h-3.5 bg-gray-200 rounded w-20" /></td>
+                        <td className="p-4"><div className="h-3.5 bg-gray-200 rounded w-20" /></td>
+                        <td className="p-4 text-right"><div className="h-3.5 bg-gray-200 rounded w-10 ml-auto" /></td>
+                      </tr>
+                    ))
+                  ) : filteredInterviews.length > 0 ? (
+                    filteredInterviews.map((item: InterviewRowData) => {
+                      const isSelected = selectedInterviewIds.includes(item.id);
+                      return (
+                        <tr
+                          key={item.id}
+                          className="hover:bg-gray-50/70 transition-colors"
+                        >
+                          <td className="p-4">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => toggleSelectInterviewRow(item.id)}
+                              className="w-4 h-4 accent-primary rounded cursor-pointer"
+                            />
+                          </td>
+                          <td
+                            onClick={() =>
+                              onSelectInterview
+                                ? onSelectInterview(item)
+                                : setViewingInterview(item)
+                            }
+                            className="p-4 font-semibold text-black cursor-pointer hover:text-primary transition-colors"
+                          >
+                            {item.title}
+                          </td>
+                          <td className="p-4 font-normal text-gray-600">
+                            {item.leadPanelist}
+                          </td>
+                          <td className="p-4 font-normal text-gray-600">
+                            {item.panelMember}
+                          </td>
+                          <td className="p-4 font-normal text-gray-600">
+                            {item.internalVerifier}
+                          </td>
+                          <td className="p-4 font-normal text-gray-600">
+                            <span className="inline-flex items-center gap-1.5">
+                              {item.mode.toLowerCase() === "online" ? (
+                                <FiVideo className="w-3.5 h-3.5 text-[#A31D38]" />
+                              ) : (
+                                <FiMapPin className="w-3.5 h-3.5 text-emerald-600" />
+                              )}
+                              <span>{item.mode}</span>
+                            </span>
+                          </td>
+                          <td className="p-4 font-normal text-gray-600">
+                            {item.createdAt}
+                          </td>
+                          <td className="p-4 text-right">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                onSelectInterview
+                                  ? onSelectInterview(item)
+                                  : setViewingInterview(item)
+                              }
+                              className="font-semibold text-black underline underline-offset-2 hover:text-primary transition-colors cursor-pointer"
+                            >
+                              View
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan={8}
+                        className="p-8 text-center text-gray-400 font-normal"
+                      >
+                        No interviews found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {isLoadingInterviews ? (
+                Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="bg-white rounded-2xl p-5 border border-black/20 shadow-2xs flex flex-col gap-3 animate-pulse">
+                    <div className="h-4 bg-gray-200 rounded w-24" />
+                    <div className="h-3 bg-gray-100 rounded w-36" />
+                  </div>
+                ))
+              ) : filteredInterviews.length > 0 ? (
+                filteredInterviews.map((item: InterviewRowData) => {
+                  const isSelected = selectedInterviewIds.includes(item.id);
+                  return (
+                    <div
+                      key={item.id}
+                      className="bg-white rounded-2xl p-5 border border-black/20 shadow-2xs hover:shadow-xs transition-all flex flex-col gap-3 relative group"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleSelectInterviewRow(item.id)}
+                          className="w-4 h-4 rounded border-gray-300 text-[#a31d38] cursor-pointer"
+                        />
+                        <span className="text-xs font-semibold px-3 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                          {item.mode}
+                        </span>
+                      </div>
+
+                      <div className="flex flex-col gap-1.5">
+                        <span
+                          onClick={() =>
+                            onSelectInterview
+                              ? onSelectInterview(item)
+                              : setViewingInterview(item)
+                          }
+                          className="font-bold text-sm text-black cursor-pointer hover:text-primary transition-colors"
+                        >
+                          {item.title}
+                        </span>
+                        <span className="text-xs text-gray-500 font-normal">
+                          Lead: {item.leadPanelist}
+                        </span>
+                        <span className="text-xs text-gray-500 font-normal">
+                          Member: {item.panelMember}
+                        </span>
+                        <span className="text-xs text-gray-500 font-normal">
+                          IV: {item.internalVerifier}
+                        </span>
+                        <span className="text-xs text-gray-400">
+                          Created: {item.createdAt}
+                        </span>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          onSelectInterview
+                            ? onSelectInterview(item)
+                            : setViewingInterview(item)
+                        }
+                        className="text-xs lg:text-sm text-black font-bold underline hover:text-[#a31d38] transition-colors cursor-pointer mt-auto self-start"
+                      >
+                        View
+                      </button>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="col-span-full p-8 text-center text-gray-400 font-normal">
+                  No interviews found.
+                </div>
+              )}
+            </div>
+          )
+        ) : viewMode === "list" ? (
           <div className="overflow-x-auto no-scrollbar border border-gray-100 rounded-2xl">
             <table className="w-full text-left text-xs sm:text-sm">
               <thead className="bg-[#F8F9FA] text-gray-600 font-bold border-b border-gray-100 whitespace-nowrap">
@@ -410,6 +762,12 @@ export const AssessmentCentreApplicationsView: React.FC<
       <AssessmentCentreFilterModal
         isOpen={isFilterModalOpen}
         onClose={() => setIsFilterModalOpen(false)}
+      />
+
+      <ViewInterviewDetailModal
+        isOpen={Boolean(viewingInterview)}
+        interview={viewingInterview}
+        onClose={() => setViewingInterview(null)}
       />
     </div>
   );

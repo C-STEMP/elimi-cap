@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { FiPlus } from "react-icons/fi";
 import { useRouter } from "next/navigation";
@@ -93,6 +93,7 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
   const [itemToDelete, setItemToDelete] = useState<EvidenceRecord | null>(null);
   const [previewItem, setPreviewItem] = useState<EvidenceRecord | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isEvidenceSubmitted, setIsEvidenceSubmitted] = useState(false);
 
   const persistedEvidence: any[] = React.useMemo(() => {
     if (typeof window === "undefined" || !applicationId) return [];
@@ -209,7 +210,8 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
     ).filter(Boolean);
 
     // Use ONLY the status coming from the backend - no hardcoded status!
-    const rawStatus = (item.status as string) || (combinedIssues.length > 0 ? "Attention Required" : "Pending");
+    const defaultPendingStatus = isEvidenceSubmitted ? "Submitted" : "Pending";
+    const rawStatus = (item.status as string) || (combinedIssues.length > 0 ? "Attention Required" : defaultPendingStatus);
     const statusLabel = rawStatus
       .replace(/_/g, " ")
       .replace(/\b\w/g, (c: string) => c.toUpperCase());
@@ -220,7 +222,7 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
       s.includes("accept") ||
       s.includes("complet") ||
       s.includes("verifi");
-    const isSubmitted = s.includes("submi");
+    const isSubmitted = s.includes("submi") || (isEvidenceSubmitted && !s.includes("reject") && !s.includes("fail") && !s.includes("declin"));
     const isAttention =
       s.includes("reject") ||
       s.includes("attenti") ||
@@ -401,12 +403,36 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
 
   const handleSubmit = () => {
     dispatch(markEvidenceUploaded(application.id));
+    setIsEvidenceSubmitted(true);
+
+    if (typeof window !== "undefined" && applicationId) {
+      try {
+        localStorage.setItem(`elimi_evidence_vault_submitted_${applicationId}`, "true");
+
+        // Also update items in local storage to reflect "Submitted"
+        const stored = localStorage.getItem(`elimi_evidence_vault_${applicationId}`);
+        if (stored) {
+          const list = JSON.parse(stored) as any[];
+          const updated = list.map((item) => {
+            const currentStatus = (item.status || "").toLowerCase();
+            if (currentStatus.includes("approv")) return item;
+            return {
+              ...item,
+              status: "Submitted",
+            };
+          });
+          localStorage.setItem(`elimi_evidence_vault_${applicationId}`, JSON.stringify(updated));
+        }
+      } catch (err) {
+        console.error("Error updating submitted state:", err);
+      }
+    }
+
     toast({
       type: "success",
       title: "Evidence Submitted",
       description: "Your evidence has been submitted for review.",
     });
-    router.push(`/dashboard/applications/${application.id}`);
   };
 
   return (
@@ -464,9 +490,9 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
                 size="lg"
                 className="w-55! cursor-pointer place-self-end disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={handleSubmit}
-                disabled={evidences.length === 0 || isUploading}
+                disabled={evidences.length === 0 || isUploading || isEvidenceSubmitted}
               >
-                Submit Evidence
+                {isEvidenceSubmitted ? "Submitted" : "Submit Evidence"}
               </Button>
             </div>
           </div>

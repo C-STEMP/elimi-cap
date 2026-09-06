@@ -23,6 +23,10 @@ import { AssessmentCentreCandidateFormView } from "../features/Applications/comp
 import { AssessmentCentreEvidenceVaultView } from "../features/Applications/components/AssessmentCentreEvidenceVaultView";
 import { AssessmentCentreSelfAssessmentFormView } from "../features/Applications/components/AssessmentCentreSelfAssessmentFormView";
 import { ApplicationsHeader } from "../features/Applications/components/ApplicationsHeader";
+import { CreatePanelModal } from "../features/Applications/components/CreatePanelModal";
+import { ScheduleInterviewModal } from "../features/Applications/components/ScheduleInterviewModal";
+import { AssessmentCentreInterviewDetailView } from "../features/Applications/components/AssessmentCentreInterviewDetailView";
+import { type InterviewRowData } from "../features/Applications/components/ViewInterviewDetailModal";
 // Staff feature
 import { StaffListView } from "../features/Staff/components/StaffListView";
 import { StaffDetailView } from "../features/Staff/components/StaffDetailView";
@@ -51,6 +55,7 @@ import { PaymentsHeader } from "../features/Payment/components/PaymentsHeader";
 import { SettingsView } from "../features/Settings/components/SettingsView";
 import { SettingsHeader } from "../features/Settings/components/SettingsHeader";
 
+import { PromptCreatePanelModal } from "../features/Applications/components/PromptCreatePanelModal";
 import { FiAward, FiX } from "react-icons/fi";
 import { AssessmentCentreTab, PaymentTransaction } from "../types";
 import { useAppSelector } from "@/src/store/hooks";
@@ -59,6 +64,8 @@ import {
   useGetCentreStaff,
   useGetRetainedRequests,
   useGetCentreProfile,
+  useGetCentrePanels,
+  useGetCentreInterviews,
 } from "@/src/features/shared/centre/hooks";
 import {
   useGetApplications,
@@ -159,6 +166,27 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
     null,
   );
   const [isPostJobModalOpen, setIsPostJobModalOpen] = useState(false);
+  const [isCreatePanelModalOpen, setIsCreatePanelModalOpen] = useState(false);
+  const [isPromptCreatePanelModalOpen, setIsPromptCreatePanelModalOpen] =
+    useState(false);
+  const [isScheduleInterviewModalOpen, setIsScheduleInterviewModalOpen] =
+    useState(false);
+  const [selectedInterview, setSelectedInterview] =
+    useState<InterviewRowData | null>(null);
+
+  const { data: centrePanels = [] } = useGetCentrePanels();
+  const { data: centreInterviews = [] } = useGetCentreInterviews();
+
+  const handleOpenScheduleInterview = () => {
+    const hasPanels =
+      (centrePanels && centrePanels.length > 0) ||
+      (centreInterviews && centreInterviews.length > 0);
+    if (!hasPanels) {
+      setIsPromptCreatePanelModalOpen(true);
+    } else {
+      setIsScheduleInterviewModalOpen(true);
+    }
+  };
 
   const [selectedAssessorId, setSelectedAssessorId] = useState<string | null>(
     null,
@@ -204,13 +232,16 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
       return (
         <ApplicationsHeader
           selectedCandidateName={selectedCandidateName}
+          selectedInterviewTitle={selectedInterview?.title || null}
           showSelfAssessmentForm={showSelfAssessmentForm}
           showEvidenceVault={showEvidenceVault}
           showCandidateForm={showCandidateForm}
           onBackToList={() => {
             setSelectedCandidateName(null);
             setSelectedApplicationId(null);
+            setSelectedInterview(null);
           }}
+          onBackFromInterview={() => setSelectedInterview(null)}
           onBackFromSelfAssessment={() => setShowSelfAssessmentForm(false)}
           onBackFromEvidenceVault={() => setShowEvidenceVault(false)}
           onBackFromCandidateForm={() => setShowCandidateForm(false)}
@@ -226,6 +257,8 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
               });
             }
           }}
+          onCreatePanel={() => setIsCreatePanelModalOpen(true)}
+          onScheduleInterview={handleOpenScheduleInterview}
         />
       );
     }
@@ -454,7 +487,17 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
           >
-            {selectedCandidateName && showSelfAssessmentForm ? (
+            {selectedInterview ? (
+              <AssessmentCentreInterviewDetailView
+                interview={selectedInterview}
+                onBack={() => setSelectedInterview(null)}
+                onSelectCandidate={(name, id) => {
+                  setSelectedInterview(null);
+                  setSelectedCandidateName(name);
+                  setSelectedApplicationId(id || null);
+                }}
+              />
+            ) : selectedCandidateName && showSelfAssessmentForm ? (
               <AssessmentCentreSelfAssessmentFormView
                 id={selectedApplicationId || undefined}
                 candidateName={selectedCandidateName}
@@ -490,6 +533,11 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
                   setSelectedCandidateName(name);
                   setSelectedApplicationId(id || null);
                 }}
+                onSelectInterview={(interview) =>
+                  setSelectedInterview(interview)
+                }
+                onOpenCreatePanel={() => setIsCreatePanelModalOpen(true)}
+                onOpenScheduleInterview={handleOpenScheduleInterview}
               />
             )}
           </motion.div>
@@ -663,6 +711,30 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
           setAssessorDeactivateModalMode("activated-success");
         }}
       />
+
+      <PromptCreatePanelModal
+        isOpen={isPromptCreatePanelModalOpen}
+        onClose={() => setIsPromptCreatePanelModalOpen(false)}
+        onCreatePanel={() => {
+          setIsPromptCreatePanelModalOpen(false);
+          setIsCreatePanelModalOpen(true);
+        }}
+      />
+
+      <CreatePanelModal
+        isOpen={isCreatePanelModalOpen}
+        onClose={() => setIsCreatePanelModalOpen(false)}
+        onSuccess={() => {
+          setIsCreatePanelModalOpen(false);
+          setIsScheduleInterviewModalOpen(true);
+        }}
+      />
+
+      <ScheduleInterviewModal
+        isOpen={isScheduleInterviewModalOpen}
+        onClose={() => setIsScheduleInterviewModalOpen(false)}
+      />
     </div>
   );
 };
+

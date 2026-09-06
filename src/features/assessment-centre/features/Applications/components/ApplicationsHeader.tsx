@@ -1,32 +1,40 @@
 "use client";
 
 import React from "react";
-import { FiClipboard } from "react-icons/fi";
+import { FiClipboard, FiCalendar } from "react-icons/fi";
 import { useGetApplications } from "@/src/features/shared/applications/hooks";
 import { useGetCentreApplicationsSummary } from "@/src/features/shared/centre/hooks";
 
 interface ApplicationsHeaderProps {
   selectedCandidateName: string | null;
+  selectedInterviewTitle?: string | null;
   showSelfAssessmentForm: boolean;
   showEvidenceVault: boolean;
   showCandidateForm: boolean;
   onBackToList: () => void;
+  onBackFromInterview?: () => void;
   onBackFromSelfAssessment: () => void;
   onBackFromEvidenceVault: () => void;
   onBackFromCandidateForm: () => void;
   onAcceptApplication?: () => void;
+  onScheduleInterview?: () => void;
+  onCreatePanel?: () => void;
 }
 
 export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = ({
   selectedCandidateName,
+  selectedInterviewTitle,
   showSelfAssessmentForm,
   showEvidenceVault,
   showCandidateForm,
   onBackToList,
+  onBackFromInterview,
   onBackFromSelfAssessment,
   onBackFromEvidenceVault,
   onBackFromCandidateForm,
   onAcceptApplication,
+  onScheduleInterview,
+  onCreatePanel,
 }) => {
   const { data: applications = [] } = useGetApplications();
   const { data: appSummary } = useGetCentreApplicationsSummary();
@@ -46,6 +54,33 @@ export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = ({
     applications.filter(
       (a) => a.status === "rejected" || a.status === "withdrawn",
     ).length;
+
+  if (selectedInterviewTitle) {
+    return (
+      <div className="flex flex-col gap-1 pt-2">
+        <button
+          type="button"
+          onClick={onBackFromInterview}
+          className="flex items-center gap-2 text-white font-bold text-2xl lg:text-3xl tracking-tight hover:opacity-90 text-left cursor-pointer"
+        >
+          <span className="text-xl font-bold">&lt;</span>
+          <span>{selectedInterviewTitle}</span>
+        </button>
+        <div className="flex items-center gap-2 text-xs lg:text-sm text-white/90 font-normal">
+          <span
+            onClick={onBackFromInterview}
+            className="hover:underline cursor-pointer"
+          >
+            Applications
+          </span>
+          <span>&gt;</span>
+          <span className="font-semibold text-white">
+            {selectedInterviewTitle}
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   if (selectedCandidateName && showSelfAssessmentForm) {
     return (
@@ -191,9 +226,35 @@ export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = ({
 
   return (
     <div className="flex flex-col gap-6 pt-2">
-      <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
-        Applications
-      </h1>
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+          Applications
+        </h1>
+
+        <div className="flex items-center gap-3">
+          {onScheduleInterview && (
+            <button
+              type="button"
+              onClick={onScheduleInterview}
+              className="bg-[#8B182E]/80 hover:bg-[#8B182E] border border-[#F59E0B] text-[#F59E0B] font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-xs"
+            >
+              <span>Schedule Interview</span>
+              <FiCalendar className="w-4 h-4 text-[#F59E0B]" />
+            </button>
+          )}
+
+          {onCreatePanel && (
+            <button
+              type="button"
+              onClick={onCreatePanel}
+              className="bg-[#F59E0B] hover:bg-[#D97706] text-white font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl flex items-center gap-1.5 transition-all cursor-pointer shadow-md shadow-amber-500/20"
+            >
+              <span>Create Panel</span>
+              <span className="text-lg font-black leading-none">+</span>
+            </button>
+          )}
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5">
         <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 flex flex-col gap-1 border border-white/15 transition-all shadow-xs">

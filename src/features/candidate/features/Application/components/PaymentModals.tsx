@@ -30,6 +30,21 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   onClose,
   onAction,
 }) => {
+  // Automatically close and redirect/proceed after a few seconds when payment is successful
+  React.useEffect(() => {
+    if (isOpen && type === "success") {
+      const timer = setTimeout(() => {
+        if (onAction) {
+          onAction();
+        } else {
+          onClose();
+        }
+      }, 3500);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, type, onAction, onClose]);
+
   if (!isOpen || !type) return null;
 
   const variantMap: Record<string, StatusModalVariant> = {

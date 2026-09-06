@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   FiChevronLeft,
   FiChevronRight,
@@ -28,7 +29,14 @@ import { AssignPanelistModal, ScheduledPanelistInfo } from "./AssignPanelistModa
 import { RescheduleInterviewModal } from "./RescheduleInterviewModal";
 import { AssignVerifierModal } from "./AssignVerifierModal";
 import { ReviewVerifierModal } from "./ReviewVerifierModal";
-import { useGetCentreAssessors } from "@/src/features/shared/centre/hooks";
+import {
+  useGetCentreAssessors,
+  useGetCentrePanels,
+  useGetCentreInterviews,
+} from "@/src/features/shared/centre/hooks";
+import { PromptCreatePanelModal } from "./PromptCreatePanelModal";
+import { CreatePanelModal } from "./CreatePanelModal";
+import { ScheduleInterviewModal } from "./ScheduleInterviewModal";
 import { UpcomingCard } from "@/features/candidate/features/Dashboard/components/UpcomingCard";
 
 interface ApplicationDetailViewProps {
@@ -49,6 +57,7 @@ export const AssessmentCentreApplicationDetailView: React.FC<
   onOpenEvidenceVault,
 }) => {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: appDetail, isLoading: isLoadingDetail } = useGetApplicationById(id);
   const { data: stages = [], isLoading: isLoadingStages } = useGetApplicationStages(id);
@@ -75,6 +84,13 @@ export const AssessmentCentreApplicationDetailView: React.FC<
 
   const { data: interviewPanelFromApi } = useGetInterviewPanel(id);
   const { data: centreAssessors = [] } = useGetCentreAssessors({ status: "all" });
+  const { data: centrePanels = [] } = useGetCentrePanels();
+  const { data: centreInterviews = [] } = useGetCentreInterviews();
+
+  const [isPromptCreatePanelOpen, setIsPromptCreatePanelOpen] = useState(false);
+  const [isScheduleInterviewModalOpen, setIsScheduleInterviewModalOpen] =
+    useState(false);
+  const [isCreatePanelModalOpen, setIsCreatePanelModalOpen] = useState(false);
 
   const rawTrade =
     (appDetail as any)?.trade?.name ||
@@ -101,23 +117,38 @@ export const AssessmentCentreApplicationDetailView: React.FC<
     }
   }, [id]);
 
-  const persistedSchedule = React.useMemo(() => {
-    if (typeof window === "undefined" || !id) return null;
-    try {
-      const stored = localStorage.getItem(`elimi_interview_schedule_${id}`);
-      return stored ? JSON.parse(stored) : null;
-    } catch {
-      return null;
-    }
-  }, [id]);
+  const interviewStage = useMemo(
+    () =>
+      stages.find(
+        (s) =>
+          s.stageKey === "interview" ||
+          s.stageKey === "direct_observation" ||
+          s.stageKey === "observation",
+      ),
+    [stages],
+  );
 
-  const persistedPanel = React.useMemo(() => {
-    if (typeof window === "undefined" || !id) return null;
-    try {
-      const stored = localStorage.getItem(`elimi_interview_panel_${id}`);
-      return stored ? JSON.parse(stored) : null;
-    } catch {
-      return null;
+  const evidenceStage = useMemo(
+    () =>
+      stages.find(
+        (s) =>
+          s.stageKey === "evidence_vault" ||
+          s.stageKey === "folder_arrangement" ||
+          s.stageKey === "evidence",
+      ),
+    [stages],
+  );
+
+  const rawApiSchedule = (interviewSchedule as any)?.data || interviewSchedule;
+  const isInterviewNotStarted = !rawApiSchedule?.scheduledAt && interviewStage?.status === "not_started";
+
+  // Clean out any stale local storage mocks
+  React.useEffect(() => {
+    if (typeof window !== "undefined" && id) {
+      try {
+        localStorage.removeItem(`elimi_interview_schedule_${id}`);
+        localStorage.removeItem(`elimi_interview_panel_${id}`);
+      } catch {}
     }
   }, [id]);
 
@@ -129,18 +160,14 @@ export const AssessmentCentreApplicationDetailView: React.FC<
     persistedFacilitator ||
     null;
 
-  const activeInterviewSchedule =
-    scheduledPanelistData
-      ? {
-          scheduledAt: `${scheduledPanelistData.date}T${scheduledPanelistData.time}:00`,
-          mode: scheduledPanelistData.mode === "virtual" ? "online" : "physical",
-          location: scheduledPanelistData.location,
-          link: scheduledPanelistData.meetingLink,
-          status: "scheduled",
-        }
-      : interviewSchedule || persistedSchedule;
+  const activeInterviewSchedule = rawApiSchedule?.scheduledAt
+    ? rawApiSchedule
+    : null;
 
-  const isInterviewScheduled = Boolean(activeInterviewSchedule?.scheduledAt);
+  const isInterviewScheduled = Boolean(
+    activeInterviewSchedule?.scheduledAt ||
+      interviewStage?.status === "scheduled"
+  );
 
   const interviewDateFormatted = activeInterviewSchedule?.scheduledAt
     ? new Date(activeInterviewSchedule.scheduledAt).toLocaleDateString("en-US", {
@@ -148,7 +175,7 @@ export const AssessmentCentreApplicationDetailView: React.FC<
         day: "numeric",
         year: "numeric",
       })
-    : "8/15/2026";
+    : "";
 
   const interviewTimeFormatted = activeInterviewSchedule?.scheduledAt
     ? new Date(activeInterviewSchedule.scheduledAt).toLocaleTimeString("en-US", {
@@ -156,14 +183,14 @@ export const AssessmentCentreApplicationDetailView: React.FC<
         minute: "2-digit",
         hour12: true,
       })
-    : "12:00PM";
+    : "";
 
   const interviewEventDateFormatted = activeInterviewSchedule?.scheduledAt
     ? new Date(activeInterviewSchedule.scheduledAt).toLocaleDateString("en-GB")
-    : "22/03/2026";
+    : "";
 
   const interviewAssessorsList = useMemo(() => {
-    // 1. If backend returned panel members via GET /applications/{id}/interview/panel
+    // Only use panel members returned by the backend via GET /applications/{id}/interview/panel
     if (interviewPanelFromApi?.members && interviewPanelFromApi.members.length > 0) {
       const nonObserverMembers = interviewPanelFromApi.members.filter((m) => !m.isObserver);
       const membersToUse =
@@ -204,119 +231,8 @@ export const AssessmentCentreApplicationDetailView: React.FC<
       });
     }
 
-    // 2. If scheduled during this session
-    if (scheduledPanelistData) {
-      return [
-        {
-          ...scheduledPanelistData.leadAssessor,
-          role: "Lead Panelist",
-          tags: [resolvedTradeName, "RPL Coordinator"],
-          isHighlighted: false,
-        },
-        ...scheduledPanelistData.panelMembers.map((m, idx) => ({
-          ...m,
-          role: "Panel Member",
-          tags: [resolvedTradeName, "RPL Coordinator"],
-          isHighlighted: idx === 0,
-        })),
-      ];
-    }
-
-    // 3. If persisted in localStorage for this application
-    if (persistedPanel?.leadAssessor) {
-      return [
-        {
-          ...persistedPanel.leadAssessor,
-          role: "Lead Panelist",
-          tags: [resolvedTradeName, "RPL Coordinator"],
-          isHighlighted: false,
-        },
-        ...(persistedPanel.panelMembers || []).map((m: any, idx: number) => ({
-          ...m,
-          role: "Panel Member",
-          tags: [resolvedTradeName, "RPL Coordinator"],
-          isHighlighted: idx === 0,
-        })),
-      ];
-    }
-
-    // 4. PULL REAL ASSESSORS FROM BACKEND centreAssessors
-    if (centreAssessors && centreAssessors.length > 0) {
-      const lead = centreAssessors[0];
-      const member1 = centreAssessors[1] || centreAssessors[0];
-      const member2 = centreAssessors[2] || centreAssessors[1] || centreAssessors[0];
-
-      return [
-        {
-          id: lead.id,
-          name: lead.name,
-          avatar:
-            (lead as any).avatar ||
-            (lead as any).photoUrl ||
-            "/images/facilitator_ngozi.jpg",
-          role: "Lead Panelist",
-          tags: [resolvedTradeName, "RPL Coordinator"],
-          isHighlighted: false,
-        },
-        {
-          id: member1.id,
-          name: member1.name,
-          avatar:
-            (member1 as any).avatar ||
-            (member1 as any).photoUrl ||
-            "/images/facilitator_ngozi.jpg",
-          role: "Panel Member",
-          tags: [resolvedTradeName, "RPL Coordinator"],
-          isHighlighted: true,
-        },
-        {
-          id: member2.id,
-          name: member2.name,
-          avatar:
-            (member2 as any).avatar ||
-            (member2 as any).photoUrl ||
-            "/images/facilitator_ngozi.jpg",
-          role: "Panel Member",
-          tags: [resolvedTradeName, "RPL Coordinator"],
-          isHighlighted: false,
-        },
-      ];
-    }
-
-    // 5. Default realistic assessors matching trade
-    return [
-      {
-        id: "assessor-lead",
-        name: "RUQOYAT BABALOLA",
-        avatar: "/images/facilitator_ngozi.jpg",
-        role: "Lead Panelist",
-        tags: [resolvedTradeName, "RPL Coordinator"],
-        isHighlighted: false,
-      },
-      {
-        id: "assessor-member-1",
-        name: "Angela Jones",
-        avatar: "/images/facilitator_ngozi.jpg",
-        role: "Panel Member",
-        tags: [resolvedTradeName, "RPL Coordinator"],
-        isHighlighted: true,
-      },
-      {
-        id: "assessor-member-2",
-        name: "Amina Bello",
-        avatar: "/images/facilitator_ngozi.jpg",
-        role: "Panel Member",
-        tags: [resolvedTradeName, "RPL Coordinator"],
-        isHighlighted: false,
-      },
-    ];
-  }, [
-    interviewPanelFromApi,
-    scheduledPanelistData,
-    persistedPanel,
-    centreAssessors,
-    resolvedTradeName,
-  ]);
+    return [];
+  }, [interviewPanelFromApi, centreAssessors, resolvedTradeName]);
 
   const [currentMonth, setCurrentMonth] = useState("July");
   const months = [
@@ -417,6 +333,12 @@ export const AssessmentCentreApplicationDetailView: React.FC<
 
   const getStatusBadge = (statusText: string) => {
     const s = statusText.toLowerCase();
+    if (s === "not started" || s === "not_started") {
+      return {
+        text: "Not Started",
+        className: "bg-gray-100 text-gray-500",
+      };
+    }
     if (
       s === "approved" ||
       s === "successful" ||
@@ -435,6 +357,7 @@ export const AssessmentCentreApplicationDetailView: React.FC<
       s === "in progress" ||
       s === "under review" ||
       s === "scheduled" ||
+      s === "awaiting interview" ||
       s === "pending review" ||
       s === "awaiting payment" ||
       s === "pending"
@@ -452,7 +375,7 @@ export const AssessmentCentreApplicationDetailView: React.FC<
     }
     return {
       text: statusText,
-      className: "bg-gray-100 text-gray-600",
+      className: "bg-gray-100 text-gray-500",
     };
   };
 
@@ -509,61 +432,49 @@ export const AssessmentCentreApplicationDetailView: React.FC<
     : "—";
 
   // Stage 4: Interview Stage
-  const interviewStage = stages.find(
-    (s) =>
-      s.stageKey === "interview" ||
-      s.stageKey === "direct_observation" ||
-      s.stageKey === "observation",
-  );
   const interviewStatus =
     interviewSchedule?.status === "completed" ||
+    activeInterviewSchedule?.status === "completed" ||
     interviewStage?.status === "successful" ||
     isCompleted
       ? "Completed"
-      : interviewSchedule?.status === "scheduled" ||
-          interviewStage?.status === "scheduled"
+      : isInterviewScheduled ||
+        interviewSchedule?.status === "scheduled" ||
+        activeInterviewSchedule?.status === "scheduled" ||
+        interviewStage?.status === "scheduled"
         ? "Scheduled"
         : interviewStage?.status === "in_progress"
           ? "In Progress"
-          : "Pending";
+          : "Not Started";
 
-  const interviewDate = interviewSchedule?.scheduledAt
-    ? new Date(interviewSchedule.scheduledAt).toLocaleDateString("en-US")
-    : interviewStage?.enteredAt
-      ? new Date(interviewStage.enteredAt).toLocaleDateString("en-US")
-      : interviewStatus === "Completed"
-        ? submittedDate
-        : "—";
+  const interviewDate = activeInterviewSchedule?.scheduledAt
+    ? new Date(activeInterviewSchedule.scheduledAt).toLocaleDateString("en-US")
+    : interviewSchedule?.scheduledAt
+      ? new Date(interviewSchedule.scheduledAt).toLocaleDateString("en-US")
+      : interviewStage?.enteredAt && interviewStatus !== "Not Started"
+        ? new Date(interviewStage.enteredAt).toLocaleDateString("en-US")
+        : interviewStatus === "Completed"
+          ? submittedDate
+          : "—";
 
   // Stage 3: Folder Arrangement
-  const evidenceStage = stages.find(
-    (s) =>
-      s.stageKey === "evidence_vault" ||
-      s.stageKey === "folder_arrangement" ||
-      s.stageKey === "evidence",
-  );
   const evidenceStatus =
-    evidenceStage?.status === "successful" ||
-    isCompleted ||
-    isInterviewScheduled ||
-    interviewStage?.status === "scheduled" ||
-    interviewStage?.status === "in_progress"
+    evidenceStage?.status === "successful" || isCompleted
       ? "Marked as complete"
       : evidenceStage?.status === "under_review"
         ? "Under Review"
         : evidenceStage?.status === "in_progress"
           ? "In Progress"
-          : "Pending";
+          : evidenceStage?.status === "not_started"
+            ? "Not Started"
+            : "Pending";
 
   const isAtInterviewStage = Boolean(
-    isInterviewScheduled ||
-    activeInterviewSchedule?.scheduledAt ||
     interviewStage?.status === "scheduled" ||
     interviewStage?.status === "in_progress" ||
     interviewStage?.status === "successful" ||
     (appDetail as any)?.currentStageKey === "interview" ||
-    (appDetail as any)?.currentStageKey === "direct_observation" ||
-    evidenceStatus === "Marked as complete",
+    (appDetail as any)?.currentStageKey === "direct_observation"
   );
 
   const evidenceDate = evidenceStage?.enteredAt
@@ -589,13 +500,15 @@ export const AssessmentCentreApplicationDetailView: React.FC<
   const ivStatus =
     ivStage?.status === "successful" || isCompleted
       ? "Completed"
-      : ivStage?.status === "in_progress" || ivStage?.status === "under_review" || activeIv
-        ? "In Progress"
-        : "Pending";
+      : ivStage?.status === "not_started"
+        ? "Not Started"
+        : ivStage?.status === "in_progress" || ivStage?.status === "under_review" || activeIv
+          ? "In Progress"
+          : "Not Started";
 
-  const ivDate = activeIv?.assignedAt
+  const ivDate = activeIv?.assignedAt && ivStatus !== "Not Started"
     ? new Date(activeIv.assignedAt).toLocaleDateString("en-US")
-    : ivStage?.enteredAt
+    : ivStage?.enteredAt && ivStatus !== "Not Started"
       ? new Date(ivStage.enteredAt).toLocaleDateString("en-US")
       : ivStatus === "Completed"
         ? submittedDate
@@ -617,13 +530,15 @@ export const AssessmentCentreApplicationDetailView: React.FC<
   const evStatus =
     evStage?.status === "successful" || isCompleted
       ? "Completed"
-      : evStage?.status === "in_progress" || evStage?.status === "under_review" || activeEv
-        ? "In Progress"
-        : "Pending";
+      : evStage?.status === "not_started"
+        ? "Not Started"
+        : evStage?.status === "in_progress" || evStage?.status === "under_review" || activeEv
+          ? "In Progress"
+          : "Not Started";
 
-  const evDate = activeEv?.assignedAt
+  const evDate = activeEv?.assignedAt && evStatus !== "Not Started"
     ? new Date(activeEv.assignedAt).toLocaleDateString("en-US")
-    : evStage?.enteredAt
+    : evStage?.enteredAt && evStatus !== "Not Started"
       ? new Date(evStage.enteredAt).toLocaleDateString("en-US")
       : evStatus === "Completed"
         ? submittedDate
@@ -634,9 +549,17 @@ export const AssessmentCentreApplicationDetailView: React.FC<
   const certStatus =
     isCompleted || certStage?.status === "successful"
       ? "Competent"
-      : certStage?.status === "in_progress"
-        ? "In Progress"
-        : "Pending";
+      : certStage?.status === "not_started"
+        ? "Not Started"
+        : certStage?.status === "in_progress"
+          ? "In Progress"
+          : "Not Started";
+
+  const certDate = certStage?.enteredAt && certStatus !== "Not Started"
+    ? new Date(certStage.enteredAt).toLocaleDateString("en-US")
+    : certStatus === "Competent"
+      ? submittedDate
+      : "—";
 
   if (isLoadingDetail && !appDetail) {
     return (
@@ -751,7 +674,7 @@ export const AssessmentCentreApplicationDetailView: React.FC<
                 <h3 className="text-black font-bold text-base sm:text-lg lg:text-xl tracking-tight">
                   Folder Arrangement
                 </h3>
-                {evidenceStatus === "Marked as complete" || isAtInterviewStage || isInterviewScheduled ? (
+                {evidenceStatus === "Marked as complete" ? (
                   <span className="bg-[#E6F4EA] text-[#1E7F4C] text-xs font-semibold px-3 py-0.5 rounded-full capitalize">
                     Marked as Complete
                   </span>
@@ -798,16 +721,26 @@ export const AssessmentCentreApplicationDetailView: React.FC<
                     <span className="bg-[#E6F4EA] text-[#1E7F4C] text-xs font-semibold px-3 py-0.5 rounded-full capitalize">
                       Completed
                     </span>
-                  ) : (
+                  ) : isInterviewScheduled ? (
                     <span className="bg-[#FEF3C7] text-[#92400E] text-xs font-semibold px-3 py-0.5 rounded-full capitalize">
                       Awaiting Interview
+                    </span>
+                  ) : interviewStatus === "In Progress" ? (
+                    <span className="bg-[#FEF3C7] text-[#92400E] text-xs font-semibold px-3 py-0.5 rounded-full capitalize">
+                      In Progress
+                    </span>
+                  ) : (
+                    <span className="bg-gray-100 text-gray-500 text-xs font-semibold px-3 py-0.5 rounded-full capitalize">
+                      Not Started
                     </span>
                   )}
                 </div>
                 <p className="text-gray-400 text-xs sm:text-sm font-normal">
                   {interviewStatus === "Completed"
                     ? `Completed on: ${interviewDate}`
-                    : `Scheduled for: ${interviewDateFormatted}`}
+                    : isInterviewScheduled && interviewDateFormatted
+                      ? `Scheduled for: ${interviewDateFormatted}`
+                      : "Not scheduled yet"}
                 </p>
               </div>
 
@@ -831,15 +764,49 @@ export const AssessmentCentreApplicationDetailView: React.FC<
                   Reschedule Interview
                 </Button>
               ) : (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setIsAssignPanelistOpen(true)}
-                  className="bg-[#fbab2a]! hover:bg-[#e89b1f]! text-white! font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl shadow-none! cursor-pointer shrink-0"
-                >
-                  Schedule Interview
-                </Button>
+                (() => {
+                  const canScheduleInterview = isPaymentPaid;
+
+                  return (
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        disabled={!canScheduleInterview}
+                        onClick={() => {
+                          if (canScheduleInterview) {
+                            const hasPanels =
+                              (centrePanels && centrePanels.length > 0) ||
+                              (centreInterviews && centreInterviews.length > 0);
+                            if (!hasPanels) {
+                              setIsPromptCreatePanelOpen(true);
+                            } else {
+                              setIsScheduleInterviewModalOpen(true);
+                            }
+                          }
+                        }}
+                        title={
+                          !canScheduleInterview
+                            ? "Interview cannot be scheduled yet. Candidate payment must be completed before scheduling."
+                            : undefined
+                        }
+                        className={`font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl shadow-none! shrink-0 transition-all ${
+                          canScheduleInterview
+                            ? "bg-[#fbab2a]! hover:bg-[#e89b1f]! text-white! cursor-pointer"
+                            : "bg-gray-200! text-gray-400! border-gray-200! cursor-not-allowed opacity-60 pointer-events-auto"
+                        }`}
+                      >
+                        Schedule Interview
+                      </Button>
+                      {!canScheduleInterview && (
+                        <span className="text-[10px] text-gray-400 font-medium">
+                          Requires completed payment
+                        </span>
+                      )}
+                    </div>
+                  );
+                })()
               )}
             </div>
 
@@ -927,7 +894,7 @@ export const AssessmentCentreApplicationDetailView: React.FC<
               <span className="text-gray-400 font-bold text-sm hidden sm:inline">
                 {ivDate}
               </span>
-              {!activeIv && (interviewStatus === "Completed" || isAtInterviewStage) && ivStatus !== "Completed" && (
+              {!activeIv && ivStatus !== "Not Started" && ivStatus !== "Completed" && (
                 <Button
                   type="button"
                   variant="amber"
@@ -941,7 +908,7 @@ export const AssessmentCentreApplicationDetailView: React.FC<
                   Assign IV
                 </Button>
               )}
-              {activeIv && ivStatus !== "Completed" && (
+              {activeIv && ivStatus !== "Not Started" && ivStatus !== "Completed" && (
                 <Button
                   type="button"
                   variant="amber"
@@ -988,7 +955,7 @@ export const AssessmentCentreApplicationDetailView: React.FC<
               <span className="text-gray-400 font-bold text-sm hidden sm:inline">
                 {evDate}
               </span>
-              {!activeEv && (ivStatus === "Completed" || interviewStatus === "Completed") && evStatus !== "Completed" && (
+              {!activeEv && evStatus !== "Not Started" && evStatus !== "Completed" && (
                 <Button
                   type="button"
                   variant="amber"
@@ -1002,7 +969,7 @@ export const AssessmentCentreApplicationDetailView: React.FC<
                   Assign EV
                 </Button>
               )}
-              {activeEv && evStatus !== "Completed" && (
+              {activeEv && evStatus !== "Not Started" && evStatus !== "Completed" && (
                 <Button
                   type="button"
                   variant="amber"
@@ -1044,7 +1011,7 @@ export const AssessmentCentreApplicationDetailView: React.FC<
               </p>
             </div>
             <span className="text-gray-400 font-bold text-sm shrink-0">
-              {certStatus === "Competent" ? submittedDate : "---"}
+              {certDate}
             </span>
           </div>
         </div>
@@ -1189,7 +1156,7 @@ export const AssessmentCentreApplicationDetailView: React.FC<
             : "Carpentry")
         }
         initialSchedule={activeInterviewSchedule}
-        initialPanel={persistedPanel || interviewPanelFromApi}
+        initialPanel={interviewPanelFromApi}
         onSuccess={handlePanelistSuccess}
       />
 
@@ -1227,6 +1194,53 @@ export const AssessmentCentreApplicationDetailView: React.FC<
             ? activeIv?.name || "Internal Verifier"
             : activeEv?.name || "External Verifier"
         }
+      />
+
+      <PromptCreatePanelModal
+        isOpen={isPromptCreatePanelOpen}
+        onClose={() => setIsPromptCreatePanelOpen(false)}
+        onCreatePanel={() => {
+          setIsPromptCreatePanelOpen(false);
+          setIsCreatePanelModalOpen(true);
+        }}
+      />
+
+      <CreatePanelModal
+        isOpen={isCreatePanelModalOpen}
+        onClose={() => setIsCreatePanelModalOpen(false)}
+        onSuccess={() => {
+          setIsCreatePanelModalOpen(false);
+          setIsScheduleInterviewModalOpen(true);
+        }}
+      />
+
+      <ScheduleInterviewModal
+        isOpen={isScheduleInterviewModalOpen}
+        onClose={() => setIsScheduleInterviewModalOpen(false)}
+        initialApplicationId={id}
+        initialCandidateName={candidateName}
+        initialTradeName={resolvedTradeName}
+        onSuccess={() => {
+          queryClient.invalidateQueries({
+            queryKey: ["applications", "interview-schedule", id],
+          });
+          queryClient.invalidateQueries({
+            queryKey: ["applications", "interview-panel", id],
+          });
+          queryClient.invalidateQueries({
+            queryKey: ["applications", "stages", id],
+          });
+          queryClient.invalidateQueries({
+            queryKey: ["centre", "applications", "detail", id],
+          });
+          queryClient.invalidateQueries({
+            queryKey: ["applications", id],
+          });
+          queryClient.invalidateQueries({
+            queryKey: ["applications"],
+          });
+          setIsScheduleInterviewModalOpen(false);
+        }}
       />
     </div>
   );

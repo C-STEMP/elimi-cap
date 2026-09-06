@@ -60,12 +60,18 @@ export const AssessorEvidenceVaultView: React.FC<
   useEffect(() => {
     let localItems: any[] = [];
     let storedFeedbackMap: Record<string, string[]> = {};
+    let isVaultSubmitted = false;
     if (typeof window !== "undefined" && applicationId) {
       try {
         const stored = localStorage.getItem(
           `elimi_evidence_vault_${applicationId}`,
         );
         localItems = stored ? JSON.parse(stored) : [];
+
+        const submitted = localStorage.getItem(
+          `elimi_evidence_vault_submitted_${applicationId}`,
+        );
+        isVaultSubmitted = submitted === "true";
 
         const storedFb = localStorage.getItem(
           `elimi_evidence_feedback_${applicationId}`,
@@ -143,7 +149,8 @@ export const AssessorEvidenceVaultView: React.FC<
         ).filter(Boolean);
 
         // Format backend status directly, no hardcoded fallbacks!
-        const rawStatus = e.status || "Pending";
+        const defaultStatus = isVaultSubmitted ? "Submitted" : "Pending";
+        const rawStatus = e.status || defaultStatus;
         const formattedStatus = rawStatus
           .replace(/_/g, " ")
           .replace(/\b\w/g, (c: string) => c.toUpperCase());

@@ -2,6 +2,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import {
   getSectorsApi,
   getTradesBySectorApi,
+  getAllTradesApi,
   getTradeDetailApi,
   getUnitsByTradeApi,
   getEvidenceTypesByTradeApi,
@@ -17,6 +18,7 @@ import {
 
 export const REFERENCE_QUERY_KEYS = {
   sectors: ["catalogue", "sectors"] as const,
+  allTrades: ["catalogue", "all-trades"] as const,
   trades: (sectorId: string) => ["catalogue", "trades", sectorId] as const,
   tradeDetail: (tradeId: string) => ["catalogue", "trade", tradeId] as const,
   units: (tradeId: string, level?: number) =>
@@ -46,6 +48,14 @@ export function useGetTradesBySector(sectorId: string) {
     queryKey: REFERENCE_QUERY_KEYS.trades(sectorId),
     queryFn: () => getTradesBySectorApi(sectorId),
     enabled: Boolean(sectorId),
+  });
+}
+
+export function useGetAllTrades() {
+  return useQuery({
+    queryKey: REFERENCE_QUERY_KEYS.allTrades,
+    queryFn: () => getAllTradesApi(),
+    staleTime: 1000 * 60 * 30,
   });
 }
 

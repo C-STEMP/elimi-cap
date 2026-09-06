@@ -53,6 +53,24 @@ import {
   type CentreStaffStatus,
   type AssessorQualification,
   type JobPostingStatus,
+  getCentrePanelsApi,
+  postCentrePanelsApi,
+  getCentrePanelDetailApi,
+  patchCentrePanelApi,
+  deleteCentrePanelApi,
+  getCentreInterviewsApi,
+  postCentreInterviewsApi,
+  getCentreInterviewDetailApi,
+  patchCentreInterviewApi,
+  deleteCentreInterviewApi,
+  scheduleCentreInterviewFromTemplateApi,
+  getCentreInterviewBookingsApi,
+  getCentreInterviewBookingDetailApi,
+  patchCentreInterviewBookingApi,
+  type CreateCentrePanelPayload,
+  type PatchCentrePanelPayload,
+  type CreateCentreInterviewPayload,
+  type ScheduleCentreInterviewPayload,
 } from "../api/centre.api";
 
 export const CENTRE_QUERY_KEYS = {
@@ -85,6 +103,14 @@ export const CENTRE_QUERY_KEYS = {
   profile: ["centre", "profile"] as const,
   notificationPolicy: ["centre", "notification-policy"] as const,
   directory: (params?: unknown) => ["centre", "directory", params] as const,
+  panels: (params?: unknown) => ["centre", "panels", params] as const,
+  panelDetail: (id: string) => ["centre", "panel-detail", id] as const,
+  interviews: (params?: unknown) => ["centre", "interviews", params] as const,
+  interviewDetail: (id: string) => ["centre", "interview-detail", id] as const,
+  interviewBookings: (params?: unknown) =>
+    ["centre", "interview-bookings", params] as const,
+  interviewBookingDetail: (id: string) =>
+    ["centre", "interview-booking-detail", id] as const,
 };
 
 // ─── Staff Hooks ─────────────────────────────────────────────────────────────
@@ -839,6 +865,301 @@ export function useGetDirectory(params?: {
   });
 }
 
+// ─── Panels & Interviews Hooks ───────────────────────────────────────────────
+
+export function useGetCentrePanels(params?: {
+  cursor?: string;
+  limit?: number;
+  q?: string;
+  order?: "asc" | "desc";
+}) {
+  return useQuery({
+    queryKey: CENTRE_QUERY_KEYS.panels(params),
+    queryFn: () => getCentrePanelsApi(params),
+  });
+}
+
+export function useGetCentrePanelDetail(id: string) {
+  return useQuery({
+    queryKey: CENTRE_QUERY_KEYS.panelDetail(id),
+    queryFn: () => getCentrePanelDetailApi(id),
+    enabled: Boolean(id),
+  });
+}
+
+export function useCreateCentrePanel() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (payload: CreateCentrePanelPayload) => postCentrePanelsApi(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["centre", "panels"] });
+      toast({
+        type: "success",
+        title: "Panel Created",
+        description: "Interview panel template created successfully.",
+      });
+    },
+    onError: (error: ApiError) => {
+      toast({
+        type: "error",
+        title: "Failed to Create Panel",
+        description: error.message || "Could not create interview panel.",
+      });
+    },
+  });
+}
+
+export function usePatchCentrePanel() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: PatchCentrePanelPayload }) =>
+      patchCentrePanelApi(id, payload),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ["centre", "panels"] });
+      queryClient.invalidateQueries({ queryKey: CENTRE_QUERY_KEYS.panelDetail(id) });
+      toast({
+        type: "success",
+        title: "Panel Updated",
+        description: "Interview panel updated successfully.",
+      });
+    },
+    onError: (error: ApiError) => {
+      toast({
+        type: "error",
+        title: "Failed to Update Panel",
+        description: error.message || "Could not update interview panel.",
+      });
+    },
+  });
+}
+
+export function useDeleteCentrePanel() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (id: string) => deleteCentrePanelApi(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["centre", "panels"] });
+      toast({
+        type: "success",
+        title: "Panel Deleted",
+        description: "Interview panel deleted successfully.",
+      });
+    },
+    onError: (error: ApiError) => {
+      toast({
+        type: "error",
+        title: "Failed to Delete Panel",
+        description: error.message || "Could not delete interview panel.",
+      });
+    },
+  });
+}
+
+export function useGetCentreInterviews(params?: {
+  cursor?: string;
+  limit?: number;
+  q?: string;
+  from?: string;
+  to?: string;
+  scheduledAt?: string;
+  order?: "asc" | "desc";
+}) {
+  return useQuery({
+    queryKey: CENTRE_QUERY_KEYS.interviews(params),
+    queryFn: () => getCentreInterviewsApi(params),
+  });
+}
+
+export function useGetCentreInterviewDetail(id: string) {
+  return useQuery({
+    queryKey: CENTRE_QUERY_KEYS.interviewDetail(id),
+    queryFn: () => getCentreInterviewDetailApi(id),
+    enabled: Boolean(id),
+  });
+}
+
+export function useCreateCentreInterview() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (payload: CreateCentreInterviewPayload) =>
+      postCentreInterviewsApi(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["centre", "interviews"] });
+      toast({
+        type: "success",
+        title: "Interview Template Created",
+        description: "Interview template created successfully.",
+      });
+    },
+    onError: (error: ApiError) => {
+      toast({
+        type: "error",
+        title: "Failed to Create Interview",
+        description: error.message || "Could not create interview template.",
+      });
+    },
+  });
+}
+
+export function usePatchCentreInterview() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: Partial<CreateCentreInterviewPayload>;
+    }) => patchCentreInterviewApi(id, payload),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ["centre", "interviews"] });
+      queryClient.invalidateQueries({
+        queryKey: CENTRE_QUERY_KEYS.interviewDetail(id),
+      });
+      toast({
+        type: "success",
+        title: "Interview Updated",
+        description: "Interview template updated successfully.",
+      });
+    },
+    onError: (error: ApiError) => {
+      toast({
+        type: "error",
+        title: "Failed to Update Interview",
+        description: error.message || "Could not update interview template.",
+      });
+    },
+  });
+}
+
+export function useDeleteCentreInterview() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (id: string) => deleteCentreInterviewApi(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["centre", "interviews"] });
+      toast({
+        type: "success",
+        title: "Interview Deleted",
+        description: "Interview template deleted successfully.",
+      });
+    },
+    onError: (error: ApiError) => {
+      toast({
+        type: "error",
+        title: "Failed to Delete Interview",
+        description: error.message || "Could not delete interview template.",
+      });
+    },
+  });
+}
+
+export function useScheduleCentreInterviewFromTemplate() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: ({
+      templateId,
+      payload,
+    }: {
+      templateId: string;
+      payload: ScheduleCentreInterviewPayload;
+    }) => scheduleCentreInterviewFromTemplateApi(templateId, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["centre", "interview-bookings"] });
+      queryClient.invalidateQueries({ queryKey: ["applications"] });
+      toast({
+        type: "success",
+        title: "Interview Scheduled",
+        description: "Interview sitting scheduled for the application.",
+      });
+    },
+    onError: (error: ApiError) => {
+      toast({
+        type: "error",
+        title: "Failed to Schedule Interview",
+        description: error.message || "Could not schedule interview.",
+      });
+    },
+  });
+}
+
+export function useGetCentreInterviewBookings(params?: {
+  cursor?: string;
+  limit?: number;
+  q?: string;
+  from?: string;
+  to?: string;
+  scheduledAt?: string;
+  status?: "scheduled" | "completed" | "cancelled";
+  order?: "asc" | "desc";
+}) {
+  return useQuery({
+    queryKey: CENTRE_QUERY_KEYS.interviewBookings(params),
+    queryFn: () => getCentreInterviewBookingsApi(params),
+  });
+}
+
+export function useGetCentreInterviewBookingDetail(id: string) {
+  return useQuery({
+    queryKey: CENTRE_QUERY_KEYS.interviewBookingDetail(id),
+    queryFn: () => getCentreInterviewBookingDetailApi(id),
+    enabled: Boolean(id),
+  });
+}
+
+export function usePatchCentreInterviewBooking() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: {
+        scheduledAt?: string;
+        mode?: "physical" | "online";
+        location?: string;
+        useCentreAddress?: boolean;
+        link?: string;
+      };
+    }) => patchCentreInterviewBookingApi(id, payload),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ["centre", "interview-bookings"] });
+      queryClient.invalidateQueries({
+        queryKey: CENTRE_QUERY_KEYS.interviewBookingDetail(id),
+      });
+      toast({
+        type: "success",
+        title: "Booking Updated",
+        description: "Interview booking updated successfully.",
+      });
+    },
+    onError: (error: ApiError) => {
+      toast({
+        type: "error",
+        title: "Failed to Update Booking",
+        description: error.message || "Could not update interview booking.",
+      });
+    },
+  });
+}
+
 // ─── Composite Hook ──────────────────────────────────────────────────────────
 export function useCentre() {
   const addStaff = useAddCentreStaff();
@@ -847,6 +1168,9 @@ export function useCentre() {
   const rejectRetainedRequest = useRejectRetainedRequest();
   const setPricing = useSetCentrePricing();
   const withdrawWallet = useWithdrawCentreWallet();
+  const createPanel = useCreateCentrePanel();
+  const createInterview = useCreateCentreInterview();
+  const scheduleInterview = useScheduleCentreInterviewFromTemplate();
 
   return {
     addStaff,
@@ -855,5 +1179,9 @@ export function useCentre() {
     rejectRetainedRequest,
     setPricing,
     withdrawWallet,
+    createPanel,
+    createInterview,
+    scheduleInterview,
   };
 }
+
