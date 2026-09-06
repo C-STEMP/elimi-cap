@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FiX, FiCheck, FiCalendar, FiClock } from "react-icons/fi";
+import { FiX, FiCheck } from "react-icons/fi";
 import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -202,9 +202,8 @@ export const RescheduleInterviewModal: React.FC<RescheduleInterviewModalProps> =
                         value={date}
                         onChange={(e) => setDate(e.target.value)}
                         required
-                        className="w-full h-11 px-3.5 pr-10 rounded-xl border border-gray-200 bg-[#F9FAFB] text-sm text-gray-800 outline-none focus:border-[#fbab2a] focus:ring-1 focus:ring-[#fbab2a]/30 transition-all font-medium"
+                        className="w-full h-11 px-3.5 rounded-xl border border-gray-200 bg-[#F9FAFB] text-sm text-gray-800 outline-none focus:border-[#fbab2a] focus:ring-1 focus:ring-[#fbab2a]/30 transition-all font-medium cursor-pointer"
                       />
-                      <FiCalendar className="w-4 h-4 text-gray-400 absolute right-3.5 pointer-events-none" />
                     </div>
                   </div>
 
@@ -216,9 +215,8 @@ export const RescheduleInterviewModal: React.FC<RescheduleInterviewModalProps> =
                         value={time}
                         onChange={(e) => setTime(e.target.value)}
                         required
-                        className="w-full h-11 px-3.5 pr-10 rounded-xl border border-gray-200 bg-[#F9FAFB] text-sm text-gray-800 outline-none focus:border-[#fbab2a] focus:ring-1 focus:ring-[#fbab2a]/30 transition-all font-medium"
+                        className="w-full h-11 px-3.5 rounded-xl border border-gray-200 bg-[#F9FAFB] text-sm text-gray-800 outline-none focus:border-[#fbab2a] focus:ring-1 focus:ring-[#fbab2a]/30 transition-all font-medium cursor-pointer"
                       />
-                      <FiClock className="w-4 h-4 text-gray-400 absolute right-3.5 pointer-events-none" />
                     </div>
                   </div>
                 </div>

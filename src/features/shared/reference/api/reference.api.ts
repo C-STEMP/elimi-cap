@@ -115,6 +115,44 @@ export async function getTradesBySectorApi(sectorId: string): Promise<Trade[]> {
 }
 
 /**
+ * Catalogue: List all trades across sectors
+ */
+export async function getAllTradesApi(): Promise<Trade[]> {
+  try {
+    const res = await capFetch<Trade[] | { data: Trade[] }>("/trades", {
+      method: "GET",
+    });
+    const list = Array.isArray(res) ? res : (res as any)?.data;
+    if (Array.isArray(list) && list.length > 0) {
+      return list;
+    }
+  } catch {
+    // If /trades is not available, fetch via sectors
+  }
+
+  try {
+    const sectors = await getSectorsApi();
+    if (Array.isArray(sectors) && sectors.length > 0) {
+      const tradeArrays = await Promise.all(
+        sectors.map((s) => getTradesBySectorApi(s.id).catch(() => [])),
+      );
+      const allTrades = tradeArrays.flat();
+      const seen = new Set<string>();
+      return allTrades.filter((t) => {
+        const key = t.id || t.name;
+        if (!key || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    }
+  } catch {
+    // fallback
+  }
+
+  return [];
+}
+
+/**
  * Catalogue: Get a trade with its single active NOS document
  */
 export async function getTradeDetailApi(tradeId: string): Promise<TradeDetail> {

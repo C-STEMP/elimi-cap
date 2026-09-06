@@ -824,3 +824,296 @@ export async function getDirectoryApi(params?: {
   });
   return Array.isArray(res) ? res : (res as any)?.data || [];
 }
+
+// ─── Panels & Interviews API (OpenAPI spec §28 /centre/panels & /centre/interviews) ───
+
+export interface CentrePanelMember {
+  assessorId: string;
+  name: string;
+  email?: string | null;
+  photoAssetId?: string | null;
+  photo?: { assetId: string; url?: string | null } | null;
+  isLead: boolean;
+  isObserver: boolean;
+}
+
+export interface CentrePanel {
+  id: string;
+  centreId: string;
+  name: string;
+  description?: string | null;
+  assessorIds: string[];
+  leadAssessorId: string;
+  observerIvAssessorId?: string;
+  members: CentrePanelMember[];
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface CreateCentrePanelPayload {
+  name: string;
+  description?: string | null;
+  assessorIds: string[];
+  leadAssessorId: string;
+  observerIvAssessorId?: string;
+}
+
+export interface PatchCentrePanelPayload {
+  name?: string;
+  description?: string | null;
+  assessorIds?: string[];
+  leadAssessorId?: string;
+  observerIvAssessorId?: string;
+}
+
+export interface CentreInterview {
+  id: string;
+  centreId: string;
+  name: string;
+  description?: string | null;
+  durationMinutes?: number | null;
+  panelId?: string | null;
+  panel?: {
+    id: string;
+    name: string;
+    members: CentrePanelMember[];
+  } | null;
+  scheduledAt?: string | null;
+  mode?: "physical" | "online" | null;
+  link?: string | null;
+  location?: string | null;
+  useCentreAddress?: boolean;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface CreateCentreInterviewPayload {
+  name: string;
+  description?: string | null;
+  durationMinutes?: number | null;
+  panelId?: string | null;
+  scheduledAt?: string | null;
+  mode?: "physical" | "online" | null;
+  location?: string;
+  useCentreAddress?: boolean;
+  link?: string;
+}
+
+export interface ScheduleCentreInterviewPayload {
+  applicationId: string;
+  scheduledAt?: string;
+  mode?: "physical" | "online";
+  location?: string;
+  useCentreAddress?: boolean;
+  link?: string;
+}
+
+export interface CentreInterviewBooking {
+  id: string;
+  scheduledAt: string;
+  mode?: "physical" | "online" | null;
+  link?: string | null;
+  location?: string | null;
+  useCentreAddress?: boolean;
+  status: "scheduled" | "completed" | "cancelled";
+  centreInterviewId?: string | null;
+  application: {
+    id: string;
+    type: "RPL" | "NSQ";
+    status: string;
+    currentStageKey: string;
+    trade?: { id: string; name: string } | null;
+  };
+  candidate: {
+    id: string;
+    name: string;
+    email?: string | null;
+    photoAssetId?: string | null;
+    photo?: { assetId: string; url?: string | null } | null;
+  };
+  panel: {
+    id: string;
+    members: CentrePanelMember[];
+  };
+}
+
+export async function getCentrePanelsApi(params?: {
+  cursor?: string;
+  limit?: number;
+  q?: string;
+  order?: "asc" | "desc";
+}): Promise<CentrePanel[]> {
+  const res = await capFetch<
+    CentrePanel[] | { data: CentrePanel[]; meta: PaginationMeta }
+  >("/centre/panels", {
+    method: "GET",
+    params: params as Record<string, unknown>,
+  });
+  return Array.isArray(res) ? res : (res as any)?.data || [];
+}
+
+export async function postCentrePanelsApi(
+  payload: CreateCentrePanelPayload,
+): Promise<CentrePanel> {
+  const res = await capFetch<CentrePanel | { data: CentrePanel }>(
+    "/centre/panels",
+    {
+      method: "POST",
+      data: payload,
+    },
+  );
+  return (res as any)?.data || res;
+}
+
+export async function getCentrePanelDetailApi(id: string): Promise<CentrePanel> {
+  const res = await capFetch<CentrePanel | { data: CentrePanel }>(
+    `/centre/panels/${id}`,
+    {
+      method: "GET",
+    },
+  );
+  return (res as any)?.data || res;
+}
+
+export async function patchCentrePanelApi(
+  id: string,
+  payload: PatchCentrePanelPayload,
+): Promise<CentrePanel> {
+  const res = await capFetch<CentrePanel | { data: CentrePanel }>(
+    `/centre/panels/${id}`,
+    {
+      method: "PATCH",
+      data: payload,
+    },
+  );
+  return (res as any)?.data || res;
+}
+
+export async function deleteCentrePanelApi(id: string): Promise<void> {
+  await capFetch<void>(`/centre/panels/${id}`, {
+    method: "DELETE",
+  });
+}
+
+export async function getCentreInterviewsApi(params?: {
+  cursor?: string;
+  limit?: number;
+  q?: string;
+  from?: string;
+  to?: string;
+  scheduledAt?: string;
+  order?: "asc" | "desc";
+}): Promise<CentreInterview[]> {
+  const res = await capFetch<
+    CentreInterview[] | { data: CentreInterview[]; meta: PaginationMeta }
+  >("/centre/interviews", {
+    method: "GET",
+    params: params as Record<string, unknown>,
+  });
+  return Array.isArray(res) ? res : (res as any)?.data || [];
+}
+
+export async function postCentreInterviewsApi(
+  payload: CreateCentreInterviewPayload,
+): Promise<CentreInterview> {
+  const res = await capFetch<CentreInterview | { data: CentreInterview }>(
+    "/centre/interviews",
+    {
+      method: "POST",
+      data: payload,
+    },
+  );
+  return (res as any)?.data || res;
+}
+
+export async function getCentreInterviewDetailApi(
+  id: string,
+): Promise<CentreInterview> {
+  const res = await capFetch<CentreInterview | { data: CentreInterview }>(
+    `/centre/interviews/${id}`,
+    {
+      method: "GET",
+    },
+  );
+  return (res as any)?.data || res;
+}
+
+export async function patchCentreInterviewApi(
+  id: string,
+  payload: Partial<CreateCentreInterviewPayload>,
+): Promise<CentreInterview> {
+  const res = await capFetch<CentreInterview | { data: CentreInterview }>(
+    `/centre/interviews/${id}`,
+    {
+      method: "PATCH",
+      data: payload,
+    },
+  );
+  return (res as any)?.data || res;
+}
+
+export async function deleteCentreInterviewApi(id: string): Promise<void> {
+  await capFetch<void>(`/centre/interviews/${id}`, {
+    method: "DELETE",
+  });
+}
+
+export async function scheduleCentreInterviewFromTemplateApi(
+  templateId: string,
+  payload: ScheduleCentreInterviewPayload,
+): Promise<any> {
+  return capFetch<any>(`/centre/interviews/${templateId}/schedule`, {
+    method: "POST",
+    data: payload,
+  });
+}
+
+export async function getCentreInterviewBookingsApi(params?: {
+  cursor?: string;
+  limit?: number;
+  q?: string;
+  from?: string;
+  to?: string;
+  scheduledAt?: string;
+  status?: "scheduled" | "completed" | "cancelled";
+  order?: "asc" | "desc";
+}): Promise<CentreInterviewBooking[]> {
+  const res = await capFetch<
+    CentreInterviewBooking[] | { data: CentreInterviewBooking[]; meta: PaginationMeta }
+  >("/centre/interview-bookings", {
+    method: "GET",
+    params: params as Record<string, unknown>,
+  });
+  return Array.isArray(res) ? res : (res as any)?.data || [];
+}
+
+export async function getCentreInterviewBookingDetailApi(
+  id: string,
+): Promise<CentreInterviewBooking> {
+  const res = await capFetch<
+    CentreInterviewBooking | { data: CentreInterviewBooking }
+  >(`/centre/interview-bookings/${id}`, {
+    method: "GET",
+  });
+  return (res as any)?.data || res;
+}
+
+export async function patchCentreInterviewBookingApi(
+  id: string,
+  payload: {
+    scheduledAt?: string;
+    mode?: "physical" | "online";
+    location?: string;
+    useCentreAddress?: boolean;
+    link?: string;
+  },
+): Promise<CentreInterviewBooking> {
+  const res = await capFetch<
+    CentreInterviewBooking | { data: CentreInterviewBooking }
+  >(`/centre/interview-bookings/${id}`, {
+    method: "PATCH",
+    data: payload,
+  });
+  return (res as any)?.data || res;
+}
+
