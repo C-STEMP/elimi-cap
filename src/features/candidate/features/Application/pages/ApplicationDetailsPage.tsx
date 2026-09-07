@@ -21,6 +21,7 @@ import {
 import { ApplicationStageCard } from "../components/ApplicationStageCard";
 import { ApplicationFormModal } from "../components/ApplicationFormModal";
 import { UploadSignatureModal } from "../components/UploadSignatureModal";
+import { useCandidateProfileSignature } from "@/src/features/shared/onboarding/hooks";
 import { NsqApplicationDetailView } from "../components/nsq/NsqApplicationDetailView";
 import { TransactionReceiptModal } from "@/features/assessment-centre/features/Payment/components/TransactionReceiptModal";
 import { FacilitatorCard } from "@/features/candidate/features/Dashboard/components/FacilitatorCard";
@@ -287,6 +288,7 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
   const [isInterviewCollapsed, setIsInterviewCollapsed] = useState(false);
+  const { data: profileSignature } = useCandidateProfileSignature();
 
   const authUser = useAppSelector((state) => state.auth.user);
 
@@ -673,7 +675,32 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({
             title: "Navigating to Course",
             description: "Redirecting to course...",
           }),
-        onOpenSignatureModal: () => setIsSignatureModalOpen(true),
+        onOpenSignatureModal: () => {
+          let hasSaved = Boolean(
+            profileSignature?.assetId || profileSignature?.url,
+          );
+          if (!hasSaved) {
+            try {
+              const local = localStorage.getItem("user_saved_signature");
+              if (local) {
+                const parsed = JSON.parse(local);
+                if (parsed?.assetId || parsed?.url) hasSaved = true;
+              }
+            } catch {}
+          }
+
+          if (hasSaved) {
+            toast({
+              type: "success",
+              title: "Signature Appended",
+              description:
+                "Your saved signature has been attached to the form.",
+            });
+            return;
+          }
+
+          setIsSignatureModalOpen(true);
+        },
         onProceedToExternalVerifier: handleProceedToExternalVerifier,
         onProceedToCertification: handleProceedToCertification,
         submittedDate: (application as any).submittedAt || application.createdAt,
