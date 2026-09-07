@@ -43,7 +43,7 @@ export const CreatePanelModal: React.FC<CreatePanelModalProps> = (props) => {
 
               <div className="text-center mb-6 pr-6">
                 <h3 className="text-xl sm:text-2xl font-black text-black tracking-tight mb-1">Create Panel</h3>
-                <p className="text-gray-400 text-xs sm:text-sm font-normal">Select 3 assessors and an optional internal verifier</p>
+                <p className="text-gray-400 text-xs sm:text-sm font-normal">Select lead panelist, panel member and internal verifier</p>
               </div>
 
               <form onSubmit={s.handleTriggerCreate} className="flex flex-col gap-4">
@@ -76,37 +76,27 @@ export const CreatePanelModal: React.FC<CreatePanelModalProps> = (props) => {
                   value={s.leadPanelistId}
                   onChange={(e) => s.setLeadPanelistId(e.target.value)}
                   options={s.assessorOptions
-                    .filter((a) => a.value !== s.panelMember1Id && a.value !== s.panelMember2Id && a.value !== s.internalVerifierId)
+                    .filter((a) => a.value !== s.panelMemberId && a.value !== s.internalVerifierId)
                     .map((a) => ({ label: `${a.label} ${a.qualifications.length ? `(${a.qualifications.join(", ")})` : ""}`, value: a.value }))}
                 />
 
                 <Select
-                  label="First Panel Member *"
-                  placeholder={s.isLoadingAssessors ? "Loading Assessors..." : "Select First Panel Member"}
-                  value={s.panelMember1Id}
-                  onChange={(e) => s.setPanelMember1Id(e.target.value)}
+                  label="Panel Member *"
+                  placeholder={s.isLoadingAssessors ? "Loading Assessors..." : "Select Panel Member"}
+                  value={s.panelMemberId}
+                  onChange={(e) => s.setPanelMemberId(e.target.value)}
                   options={s.assessorOptions
-                    .filter((a) => a.value !== s.leadPanelistId && a.value !== s.panelMember2Id && a.value !== s.internalVerifierId)
+                    .filter((a) => a.value !== s.leadPanelistId && a.value !== s.internalVerifierId)
                     .map((a) => ({ label: `${a.label} ${a.qualifications.length ? `(${a.qualifications.join(", ")})` : ""}`, value: a.value }))}
                 />
 
                 <Select
-                  label="Second Panel Member *"
-                  placeholder={s.isLoadingAssessors ? "Loading Assessors..." : "Select Second Panel Member"}
-                  value={s.panelMember2Id}
-                  onChange={(e) => s.setPanelMember2Id(e.target.value)}
-                  options={s.assessorOptions
-                    .filter((a) => a.value !== s.leadPanelistId && a.value !== s.panelMember1Id && a.value !== s.internalVerifierId)
-                    .map((a) => ({ label: `${a.label} ${a.qualifications.length ? `(${a.qualifications.join(", ")})` : ""}`, value: a.value }))}
-                />
-
-                <Select
-                  label="Internal Verifier (Optional)"
-                  placeholder={s.isLoadingAssessors ? "Loading Assessors..." : "Select Internal Verifier (Optional)"}
+                  label="Internal Verifier *"
+                  placeholder={s.isLoadingAssessors ? "Loading Assessors..." : "Select Internal Verifier"}
                   value={s.internalVerifierId}
                   onChange={(e) => s.setInternalVerifierId(e.target.value)}
                   options={s.assessorOptions
-                    .filter((a) => a.value !== s.leadPanelistId && a.value !== s.panelMember1Id && a.value !== s.panelMember2Id)
+                    .filter((a) => a.value !== s.leadPanelistId && a.value !== s.panelMemberId)
                     .map((a) => ({ label: `${a.label} ${a.qualifications.length ? `(${a.qualifications.join(", ")})` : ""}`, value: a.value }))}
                 />
 
