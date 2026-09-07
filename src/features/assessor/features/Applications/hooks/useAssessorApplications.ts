@@ -12,17 +12,20 @@ import type {
 
 export type { Application };
 
-export function useGetAssessorApplications(params?: {
-  q?: string;
-  tradeId?: string;
-  type?: ApplicationType;
-  status?: ApplicationStatus;
-  sort?: string;
-  order?: "asc" | "desc";
-  cursor?: string;
-  limit?: number;
-}) {
-  return useSharedGetAssessorApplications(params);
+export function useGetAssessorApplications(
+  params?: {
+    q?: string;
+    tradeId?: string;
+    type?: ApplicationType;
+    status?: ApplicationStatus;
+    sort?: string;
+    order?: "asc" | "desc";
+    cursor?: string;
+    limit?: number;
+  },
+  options?: { enabled?: boolean },
+) {
+  return useSharedGetAssessorApplications(params, options);
 }
 
 export function useGetAssessorApplicationById(id: string) {

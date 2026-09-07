@@ -1,9 +1,11 @@
 "use client";
 
 import React from "react";
-import { FiClipboard, FiCalendar } from "react-icons/fi";
+import { FiCalendar } from "react-icons/fi";
 import { useGetApplications } from "@/src/features/shared/applications/hooks";
 import { useGetCentreApplicationsSummary } from "@/src/features/shared/centre/hooks";
+import { ApplicationsHeaderBreadcrumb } from "./ApplicationsHeaderBreadcrumb";
+import { ApplicationsStatsCards } from "./ApplicationsStatsCards";
 
 interface ApplicationsHeaderProps {
   selectedCandidateName: string | null;
@@ -18,210 +20,45 @@ interface ApplicationsHeaderProps {
   onBackFromCandidateForm: () => void;
   onAcceptApplication?: () => void;
   onScheduleInterview?: () => void;
+  onCreateInterview?: () => void;
   onCreatePanel?: () => void;
 }
 
-export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = ({
-  selectedCandidateName,
-  selectedInterviewTitle,
-  showSelfAssessmentForm,
-  showEvidenceVault,
-  showCandidateForm,
-  onBackToList,
-  onBackFromInterview,
-  onBackFromSelfAssessment,
-  onBackFromEvidenceVault,
-  onBackFromCandidateForm,
-  onAcceptApplication,
-  onScheduleInterview,
-  onCreatePanel,
-}) => {
+export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = (props) => {
+  const {
+    selectedCandidateName,
+    selectedInterviewTitle,
+    showSelfAssessmentForm,
+    showEvidenceVault,
+    showCandidateForm,
+    onScheduleInterview,
+    onCreateInterview,
+    onCreatePanel,
+  } = props;
+
   const { data: applications = [] } = useGetApplications();
   const { data: appSummary } = useGetCentreApplicationsSummary();
 
   const totalCount = appSummary?.total ?? applications.length;
   const pendingCount =
-    appSummary?.pending ??
-    applications.filter((a) => a.status === "draft").length;
+    appSummary?.pending ?? applications.filter((a) => a.status === "draft").length;
   const ongoingCount =
-    appSummary?.ongoing ??
-    applications.filter((a) => a.status === "in_progress").length;
+    appSummary?.ongoing ?? applications.filter((a) => a.status === "in_progress").length;
   const completedCount =
-    appSummary?.completed ??
-    applications.filter((a) => a.status === "certified").length;
+    appSummary?.completed ?? applications.filter((a) => a.status === "certified").length;
   const archivedCount =
     appSummary?.archived ??
-    applications.filter(
-      (a) => a.status === "rejected" || a.status === "withdrawn",
-    ).length;
+    applications.filter((a) => a.status === "rejected" || a.status === "withdrawn").length;
 
-  if (selectedInterviewTitle) {
-    return (
-      <div className="flex flex-col gap-1 pt-2">
-        <button
-          type="button"
-          onClick={onBackFromInterview}
-          className="flex items-center gap-2 text-white font-bold text-2xl lg:text-3xl tracking-tight hover:opacity-90 text-left cursor-pointer"
-        >
-          <span className="text-xl font-bold">&lt;</span>
-          <span>{selectedInterviewTitle}</span>
-        </button>
-        <div className="flex items-center gap-2 text-xs lg:text-sm text-white/90 font-normal">
-          <span
-            onClick={onBackFromInterview}
-            className="hover:underline cursor-pointer"
-          >
-            Applications
-          </span>
-          <span>&gt;</span>
-          <span className="font-semibold text-white">
-            {selectedInterviewTitle}
-          </span>
-        </div>
-      </div>
-    );
-  }
+  const isDetailView = Boolean(
+    selectedInterviewTitle ||
+      (selectedCandidateName &&
+        (showSelfAssessmentForm || showEvidenceVault || showCandidateForm)) ||
+      selectedCandidateName,
+  );
 
-  if (selectedCandidateName && showSelfAssessmentForm) {
-    return (
-      <div className="flex flex-col gap-1 pt-2">
-        <button
-          type="button"
-          onClick={onBackFromSelfAssessment}
-          className="flex items-center gap-2 text-white font-bold text-2xl lg:text-3xl tracking-tight hover:opacity-90 text-left cursor-pointer"
-        >
-          <span className="text-xl font-bold">&lt;</span>
-          <span>Self Assessment Form</span>
-        </button>
-        <div className="flex items-center gap-2 text-xs lg:text-sm text-white/90 font-normal flex-wrap">
-          <span
-            onClick={onBackToList}
-            className="hover:underline cursor-pointer"
-          >
-            Applications
-          </span>
-          <span>&gt;</span>
-          <span
-            onClick={onBackFromEvidenceVault}
-            className="hover:underline cursor-pointer"
-          >
-            {selectedCandidateName}
-          </span>
-          <span>&gt;</span>
-          <span
-            onClick={onBackFromSelfAssessment}
-            className="hover:underline cursor-pointer"
-          >
-            Evidence Vault
-          </span>
-          <span>&gt;</span>
-          <span className="font-semibold text-white">Self Assessment Form</span>
-        </div>
-      </div>
-    );
-  }
-
-  if (selectedCandidateName && showEvidenceVault) {
-    return (
-      <div className="flex flex-col gap-1 pt-2">
-        <button
-          type="button"
-          onClick={onBackFromEvidenceVault}
-          className="flex items-center gap-2 text-white font-bold text-2xl lg:text-3xl tracking-tight hover:opacity-90 text-left cursor-pointer"
-        >
-          <span className="text-xl font-bold">&lt;</span>
-          <span>Evidence Vault</span>
-        </button>
-        <div className="flex items-center gap-2 text-xs lg:text-sm text-white/90 font-normal">
-          <span
-            onClick={onBackToList}
-            className="hover:underline cursor-pointer"
-          >
-            Applications
-          </span>
-          <span>&gt;</span>
-          <span
-            onClick={onBackFromEvidenceVault}
-            className="hover:underline cursor-pointer"
-          >
-            {selectedCandidateName}
-          </span>
-          <span>&gt;</span>
-          <span className="font-semibold text-white">Evidence Vault</span>
-        </div>
-      </div>
-    );
-  }
-
-  if (selectedCandidateName && showCandidateForm) {
-    return (
-      <div className="flex items-center justify-between gap-4 pt-2 flex-wrap">
-        <div className="flex flex-col gap-1">
-          <button
-            type="button"
-            onClick={onBackFromCandidateForm}
-            className="flex items-center gap-2 text-white font-bold text-2xl lg:text-3xl tracking-tight hover:opacity-90 text-left cursor-pointer"
-          >
-            <span className="text-xl font-bold">&lt;</span>
-            <span>Application Form</span>
-          </button>
-          <div className="flex items-center gap-2 text-xs lg:text-sm text-white/90 font-normal">
-            <span
-              onClick={onBackToList}
-              className="hover:underline cursor-pointer"
-            >
-              Applications
-            </span>
-            <span>&gt;</span>
-            <span
-              onClick={onBackFromCandidateForm}
-              className="hover:underline cursor-pointer"
-            >
-              {selectedCandidateName}
-            </span>
-            <span>&gt;</span>
-            <span className="font-semibold text-white">Application Form</span>
-          </div>
-        </div>
-
-        {onAcceptApplication && (
-          <button
-            type="button"
-            onClick={onAcceptApplication}
-            className="bg-secondary hover:bg-[#e89b1f] text-white font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-md shrink-0"
-          >
-            <span>Accept Application</span>
-          </button>
-        )}
-      </div>
-    );
-  }
-
-  if (selectedCandidateName) {
-    return (
-      <div className="flex flex-col gap-1 pt-2">
-        <button
-          type="button"
-          onClick={onBackToList}
-          className="flex items-center gap-2 text-white font-bold text-2xl lg:text-3xl tracking-tight hover:opacity-90 text-left cursor-pointer"
-        >
-          <span className="text-xl font-bold">&lt;</span>
-          <span>{selectedCandidateName}</span>
-        </button>
-        <div className="flex items-center gap-2 text-xs lg:text-sm text-white/90 font-normal">
-          <span
-            onClick={onBackToList}
-            className="hover:underline cursor-pointer"
-          >
-            Applications
-          </span>
-          <span>&gt;</span>
-          <span className="font-semibold text-white">
-            {selectedCandidateName}
-          </span>
-        </div>
-      </div>
-    );
+  if (isDetailView) {
+    return <ApplicationsHeaderBreadcrumb {...props} />;
   }
 
   return (
@@ -231,15 +68,26 @@ export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = ({
           Applications
         </h1>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
           {onScheduleInterview && (
             <button
               type="button"
               onClick={onScheduleInterview}
-              className="bg-[#8B182E]/80 hover:bg-[#8B182E] border border-[#F59E0B] text-[#F59E0B] font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-xs"
+              className="bg-[#8B182E]/90 hover:bg-[#8B182E] border border-[#F59E0B] text-[#F59E0B] font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-xs"
             >
               <span>Schedule Interview</span>
               <FiCalendar className="w-4 h-4 text-[#F59E0B]" />
+            </button>
+          )}
+
+          {onCreateInterview && (
+            <button
+              type="button"
+              onClick={onCreateInterview}
+              className="bg-white/10 hover:bg-white/20 border border-white/30 text-white font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
+            >
+              <span>Create Interview</span>
+              <span className="text-base font-black leading-none">+</span>
             </button>
           )}
 
@@ -256,69 +104,13 @@ export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5">
-        <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 flex flex-col gap-1 border border-white/15 transition-all shadow-xs">
-          <span className="text-xs font-semibold text-white/90">
-            Total Applications
-          </span>
-          <div className="flex items-baseline gap-1 mt-0.5">
-            <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-              {totalCount.toLocaleString()}
-            </span>
-            <span className="text-xs text-white/80 font-normal">
-              applications
-            </span>
-          </div>
-        </div>
-
-        <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 flex flex-col gap-1 border border-white/15 transition-all shadow-xs">
-          <span className="text-xs font-semibold text-white/90">Pending</span>
-          <div className="flex items-baseline gap-1 mt-0.5">
-            <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-              {pendingCount.toLocaleString()}
-            </span>
-            <span className="text-xs text-white/80 font-normal">
-              applications
-            </span>
-          </div>
-        </div>
-
-        <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 flex flex-col gap-1 border border-white/15 transition-all shadow-xs">
-          <span className="text-xs font-semibold text-white/90">Ongoing</span>
-          <div className="flex items-baseline gap-1 mt-0.5">
-            <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-              {ongoingCount.toLocaleString()}
-            </span>
-            <span className="text-xs text-white/80 font-normal">
-              applications
-            </span>
-          </div>
-        </div>
-
-        <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 flex flex-col gap-1 border border-white/15 transition-all shadow-xs">
-          <span className="text-xs font-semibold text-white/90">Completed</span>
-          <div className="flex items-baseline gap-1 mt-0.5">
-            <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-              {completedCount.toLocaleString()}
-            </span>
-            <span className="text-xs text-white/80 font-normal">
-              applications
-            </span>
-          </div>
-        </div>
-
-        <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 flex flex-col gap-1 border border-white/15 transition-all shadow-xs">
-          <span className="text-xs font-semibold text-white/90">Archived</span>
-          <div className="flex items-baseline gap-1 mt-0.5">
-            <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-              {archivedCount.toLocaleString()}
-            </span>
-            <span className="text-xs text-white/80 font-normal">
-              applications
-            </span>
-          </div>
-        </div>
-      </div>
+      <ApplicationsStatsCards
+        totalCount={totalCount}
+        pendingCount={pendingCount}
+        ongoingCount={ongoingCount}
+        completedCount={completedCount}
+        archivedCount={archivedCount}
+      />
     </div>
   );
 };

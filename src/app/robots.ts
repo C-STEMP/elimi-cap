@@ -7,8 +7,20 @@ export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
       userAgent: "*",
-      allow: "/",
-      disallow: ["/dashboard/", "/onboarding/", "/nsq/", "/rpl/"],
+      allow: ["/", "/login", "/signin", "/register", "/signup"],
+      disallow: [
+        "/dashboard/",
+        "/assessment-centre/",
+        "/assessor/",
+        "/onboarding/",
+        "/nsq/",
+        "/rpl/",
+        "/verify",
+        "/enter-otp",
+        "/forgot-password",
+        "/change-password",
+        "/complete-signup",
+      ],
     },
     sitemap: `${baseUrl}/sitemap.xml`,
   };

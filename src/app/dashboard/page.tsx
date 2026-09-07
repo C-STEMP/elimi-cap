@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import { useAppSelector } from "@/src/store/hooks";
 import { getPersona, savePersona } from "@/src/lib/auth-storage";
 import { Dashboard as CandidateDashboard } from "@/features/candidate/features/Dashboard/pages/Dashboard";
-import { AssessorDashboard } from "@/src/features/assessor/features/Dashboard/pages/AssessorDashboard";
 import { Loader } from "@/src/components/ui/loader";
+
+const ASSESSOR_ROLES = ["assessor", "quality-assurance", "quality_assurance", "qaa"];
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -21,25 +22,30 @@ export default function DashboardPage() {
     const effectiveRole = userRole || storedPersona;
 
     if (effectiveRole === "centre") {
-      setResolvedPersona("centre");
-      setIsReady(true);
-      router.replace("/assessment-centre");
-    } else if (
-      effectiveRole === "assessor" ||
-      effectiveRole === "quality-assurance" ||
-      effectiveRole === "quality_assurance" ||
-      effectiveRole === "qaa"
-    ) {
+      savePersona("centre");
+      router.replace("/assessment-centre/dashboard");
+      return;
+    }
+
+    if (ASSESSOR_ROLES.includes(effectiveRole || "")) {
       savePersona("assessor");
-      setResolvedPersona("assessor");
-      setIsReady(true);
-    } else if (effectiveRole === "candidate") {
+      router.replace("/assessor/dashboard/overview");
+      return;
+    }
+
+    if (effectiveRole === "candidate") {
       savePersona("candidate");
       setResolvedPersona("candidate");
       setIsReady(true);
-    } else if (storedPersona) {
-      setResolvedPersona(storedPersona);
-      setIsReady(true);
+      return;
+    }
+
+    // Fallback — use stored persona or default to candidate
+    const fallback = storedPersona || "candidate";
+    if (ASSESSOR_ROLES.includes(fallback)) {
+      router.replace("/assessor/dashboard/overview");
+    } else if (fallback === "centre") {
+      router.replace("/assessment-centre/dashboard");
     } else {
       setResolvedPersona("candidate");
       setIsReady(true);
@@ -48,19 +54,6 @@ export default function DashboardPage() {
 
   if (!isReady || !resolvedPersona) {
     return <Loader tip="Loading dashboard..." />;
-  }
-
-  if (resolvedPersona === "centre") {
-    return <Loader tip="Redirecting to Assessment Centre..." />;
-  }
-
-  if (
-    resolvedPersona === "assessor" ||
-    resolvedPersona === "quality-assurance" ||
-    resolvedPersona === "quality_assurance" ||
-    resolvedPersona === "qaa"
-  ) {
-    return <AssessorDashboard />;
   }
 
   return <CandidateDashboard />;

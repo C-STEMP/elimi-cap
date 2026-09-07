@@ -7,6 +7,8 @@ import { FiAlertTriangle } from "react-icons/fi";
 interface ConfirmCreatePanelModalProps {
   isOpen: boolean;
   isSubmitting?: boolean;
+  title?: string;
+  description?: string;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -14,6 +16,8 @@ interface ConfirmCreatePanelModalProps {
 export const ConfirmCreatePanelModal: React.FC<ConfirmCreatePanelModalProps> = ({
   isOpen,
   isSubmitting = false,
+  title = "Are you sure?",
+  description = "Confirm you want to create panel",
   onConfirm,
   onCancel,
 }) => {
@@ -39,10 +43,10 @@ export const ConfirmCreatePanelModal: React.FC<ConfirmCreatePanelModalProps> = (
           </div>
 
           <h3 className="text-xl sm:text-2xl font-black text-black tracking-tight mb-2">
-            Are you sure?
+            {title}
           </h3>
           <p className="text-gray-500 text-xs sm:text-sm font-normal mb-8 max-w-xs">
-            Confirm you want to create panel
+            {description}
           </p>
 
           <div className="flex flex-col gap-3 w-full">

@@ -29,6 +29,13 @@ interface RouteGuardProps {
 // Public routes that should NEVER block on session check
 const PUBLIC_ROUTES = ["/", "/signup", "/register", "/login", "/signin"];
 
+let lastSessionCheckTime = 0;
+const SESSION_CHECK_TTL_MS = 3 * 60 * 1000; // 3 minutes
+
+export function invalidateRouteGuardSession(): void {
+  lastSessionCheckTime = 0;
+}
+
 export const RouteGuard: React.FC<RouteGuardProps> = ({ children }) => {
   const pathname = usePathname();
   const router = useRouter();
@@ -44,18 +51,33 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({ children }) => {
       // 1. Public marketing / auth pages — render immediately, no blocking
       if (isPublicRoute) {
         const isAuth = isAuthenticated();
+        if (!isAuth) {
+          lastSessionCheckTime = 0;
+          return;
+        }
+
+        let currentPersona = getPersona();
+        let isOnboarded = getOnboardedStatus();
+        const currentUser = getUser();
+        const userEmail = currentUser?.email;
+
         // If already logged in and visiting landing/login/signup, redirect to dashboard silently in background
-        if (isAuth && (pathname === "/login" || pathname === "/signin" || pathname === "/")) {
+        if (pathname === "/login" || pathname === "/signin" || pathname === "/") {
+          if (isOnboarded && currentPersona && Date.now() - lastSessionCheckTime < SESSION_CHECK_TTL_MS) {
+            if ((pathname === "/login" || pathname === "/signin") && isMounted) {
+              const destination = resolveUserDestination(isOnboarded, currentPersona, userEmail);
+              router.push(destination);
+            }
+            return;
+          }
+
           try {
             const [resMine, resMe] = await Promise.allSettled([
               getOnboardingMineApi(),
               getMeApi(),
             ]);
 
-            let currentPersona = getPersona();
-            let isOnboarded = getOnboardedStatus();
-            const currentUser = getUser();
-            const userEmail = currentUser?.email;
+            lastSessionCheckTime = Date.now();
 
             if (resMine.status === "fulfilled") {
               const parsed = parseOnboardingMine(resMine.value);
@@ -109,12 +131,20 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({ children }) => {
 
       let currentPersona = getPersona();
 
-      if (isAuth) {
+      const needsSessionFetch =
+        isAuth &&
+        (!isOnboarded ||
+          !currentPersona ||
+          Date.now() - lastSessionCheckTime >= SESSION_CHECK_TTL_MS);
+
+      if (needsSessionFetch) {
         try {
           const [resMine, resMe] = await Promise.allSettled([
             getOnboardingMineApi(),
             getMeApi(),
           ]);
+
+          lastSessionCheckTime = Date.now();
 
           if (resMine.status === "fulfilled") {
             const parsed = parseOnboardingMine(resMine.value);

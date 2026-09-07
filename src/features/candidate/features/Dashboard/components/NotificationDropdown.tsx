@@ -31,7 +31,10 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
   maxItems = 3,
 }) => {
   const router = useRouter();
-  const { data: remoteNotifications = [], isLoading } = useGetNotifications();
+  const { data: remoteNotifications = [], isLoading } = useGetNotifications(
+    undefined,
+    { enabled: isOpen },
+  );
   const markReadMutation = useMarkNotificationRead();
   const markAllReadMutation = useMarkAllNotificationsRead();
 

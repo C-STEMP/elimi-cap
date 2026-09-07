@@ -1,102 +1,164 @@
 "use client";
 
-import React, { useState } from "react";
-import { motion } from "framer-motion";
-
-// Dashboard feature
+import React, { useState, useEffect } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { AssessmentCentreHeader } from "../features/Dashboard/components/AssessmentCentreHeader";
-import { AssessmentCentreEmptyView } from "../features/Dashboard/components/AssessmentCentreEmptyView";
-import { RevenueChart } from "../features/Dashboard/components/RevenueChart";
-import { TradeChart } from "../features/Dashboard/components/TradeChart";
-import { GenderChart } from "../features/Dashboard/components/GenderChart";
-import { StaffActivityLogCard } from "../features/Dashboard/components/StaffActivityLogCard";
-import { MessagesView } from "../features/Dashboard/components/MessagesView";
 import { NotificationDrawer } from "../features/Dashboard/components/NotificationDrawer";
-import { BroadcastModal } from "../features/Dashboard/components/BroadcastModal";
-import { MessagesHeader } from "../features/Dashboard/components/MessagesHeader";
-// Applications feature
-import { AssessmentStageCard } from "../features/Applications/components/AssessmentStageCard";
-import { PendingApplicationsTable } from "../features/Applications/components/PendingApplicationsTable";
-import { AssessmentCentreApplicationsView } from "../features/Applications/components/AssessmentCentreApplicationsView";
-import { AssessmentCentreApplicationDetailView } from "../features/Applications/components/AssessmentCentreApplicationDetailView";
-import { AssessmentCentreCandidateFormView } from "../features/Applications/components/AssessmentCentreCandidateFormView";
-import { AssessmentCentreEvidenceVaultView } from "../features/Applications/components/AssessmentCentreEvidenceVaultView";
-import { AssessmentCentreSelfAssessmentFormView } from "../features/Applications/components/AssessmentCentreSelfAssessmentFormView";
-import { ApplicationsHeader } from "../features/Applications/components/ApplicationsHeader";
-import { CreatePanelModal } from "../features/Applications/components/CreatePanelModal";
-import { ScheduleInterviewModal } from "../features/Applications/components/ScheduleInterviewModal";
-import { AssessmentCentreInterviewDetailView } from "../features/Applications/components/AssessmentCentreInterviewDetailView";
-import { type InterviewRowData } from "../features/Applications/components/ViewInterviewDetailModal";
-// Staff feature
-import { StaffListView } from "../features/Staff/components/StaffListView";
-import { StaffDetailView } from "../features/Staff/components/StaffDetailView";
-import { AddStaffModal } from "../features/Staff/components/AddStaffModal";
-import { StaffStatusModal, StaffStatusModalMode } from "../features/Staff/components/StaffStatusModal";
-import { StaffHeader } from "../features/Staff/components/StaffHeader";
-// JobListing feature
-import { JobListingsView } from "../features/JobListing/components/JobListingsView";
-import { JobListingDetailView } from "../features/JobListing/components/JobListingDetailView";
-import { PostJobModal } from "../features/JobListing/components/PostJobModal";
-import { JobListingHeader } from "../features/JobListing/components/JobListingHeader";
-// Assessor feature
-import { AssessorsListView } from "../features/Assessor/components/AssessorsListView";
-import { AssessorProfileDetailView } from "../features/Assessor/components/AssessorProfileDetailView";
-import { AssessorApplicantProfileView } from "../features/Assessor/components/AssessorApplicantProfileView";
-import { AssessorsHeader } from "../features/Assessor/components/AssessorsHeader";
-// AssessorRequest feature
-import { AssessorRequestListView } from "../features/AssessorRequest/components/AssessorRequestListView";
-import { AssessorRequestHeader } from "../features/AssessorRequest/components/AssessorRequestHeader";
-// Payment feature
-import { PaymentsView } from "../features/Payment/components/PaymentsView";
-import { WithdrawModal } from "../features/Payment/components/WithdrawModal";
-import { TransactionReceiptModal } from "../features/Payment/components/TransactionReceiptModal";
-import { PaymentsHeader } from "../features/Payment/components/PaymentsHeader";
-// Settings feature
-import { SettingsView } from "../features/Settings/components/SettingsView";
-import { SettingsHeader } from "../features/Settings/components/SettingsHeader";
+import dynamic from "next/dynamic";
+import { Loader } from "@/src/components/ui/loader";
+import type { StaffStatusModalMode } from "../features/Staff/components/StaffStatusModal";
 
-import { PromptCreatePanelModal } from "../features/Applications/components/PromptCreatePanelModal";
-import { FiAward, FiX } from "react-icons/fi";
+const TabLoadingFallback = () => (
+  <div className="w-full min-h-75 flex items-center justify-center">
+    <Loader tip="Loading section..." />
+  </div>
+);
+
+const BroadcastModal = dynamic(() =>
+  import("../features/Dashboard/components/BroadcastModal").then(
+    (m) => m.BroadcastModal,
+  ),
+);
+const AddStaffModal = dynamic(() =>
+  import("../features/Staff/components/AddStaffModal").then(
+    (m) => m.AddStaffModal,
+  ),
+);
+const StaffStatusModal = dynamic(() =>
+  import("../features/Staff/components/StaffStatusModal").then(
+    (m) => m.StaffStatusModal,
+  ),
+);
+const PostJobModal = dynamic(() =>
+  import("../features/JobListing/components/PostJobModal").then(
+    (m) => m.PostJobModal,
+  ),
+);
+const CreatePanelModal = dynamic(() =>
+  import("../features/Applications/components/CreatePanelModal").then(
+    (m) => m.CreatePanelModal,
+  ),
+);
+const CreateInterviewModal = dynamic(() =>
+  import("../features/Applications/components/CreateInterviewModal").then(
+    (m) => m.CreateInterviewModal,
+  ),
+);
+const ScheduleInterviewModal = dynamic(() =>
+  import("../features/Applications/components/ScheduleInterviewModal").then(
+    (m) => m.ScheduleInterviewModal,
+  ),
+);
+const PromptCreatePanelModal = dynamic(() =>
+  import("../features/Applications/components/PromptCreatePanelModal").then(
+    (m) => m.PromptCreatePanelModal,
+  ),
+);
+const WithdrawModal = dynamic(() =>
+  import("../features/Payment/components/WithdrawModal").then(
+    (m) => m.WithdrawModal,
+  ),
+);
+const TransactionReceiptModal = dynamic(() =>
+  import("../features/Payment/components/TransactionReceiptModal").then(
+    (m) => m.TransactionReceiptModal,
+  ),
+);
+
+import { OverviewTab } from "../features/Dashboard/components/OverviewTab";
+
+const StaffTab = dynamic(
+  () => import("../features/Staff/components/StaffTab").then((m) => m.StaffTab),
+  { loading: () => <TabLoadingFallback /> },
+);
+const ApplicationsTab = dynamic(
+  () =>
+    import("../features/Applications/components/ApplicationsTab").then(
+      (m) => m.ApplicationsTab,
+    ),
+  { loading: () => <TabLoadingFallback /> },
+);
+const JobListingTab = dynamic(
+  () =>
+    import("../features/JobListing/components/JobListingTab").then(
+      (m) => m.JobListingTab,
+    ),
+  { loading: () => <TabLoadingFallback /> },
+);
+const AssessorRequestTab = dynamic(
+  () =>
+    import("../features/AssessorRequest/components/AssessorRequestTab").then(
+      (m) => m.AssessorRequestTab,
+    ),
+  { loading: () => <TabLoadingFallback /> },
+);
+const AssessorsTab = dynamic(
+  () =>
+    import("../features/Assessor/components/AssessorsTab").then(
+      (m) => m.AssessorsTab,
+    ),
+  { loading: () => <TabLoadingFallback /> },
+);
+const PaymentsTab = dynamic(
+  () =>
+    import("../features/Payment/components/PaymentsTab").then(
+      (m) => m.PaymentsTab,
+    ),
+  { loading: () => <TabLoadingFallback /> },
+);
+const MessagesTab = dynamic(
+  () =>
+    import("../features/Dashboard/components/MessagesTab").then(
+      (m) => m.MessagesTab,
+    ),
+  { loading: () => <TabLoadingFallback /> },
+);
+const SettingsTab = dynamic(
+  () =>
+    import("../features/Settings/components/SettingsTab").then(
+      (m) => m.SettingsTab,
+    ),
+  { loading: () => <TabLoadingFallback /> },
+);
+
+import { StaffHeader } from "../features/Staff/components/StaffHeader";
+import { ApplicationsHeader } from "../features/Applications/components/ApplicationsHeader";
+import { JobListingHeader } from "../features/JobListing/components/JobListingHeader";
+import { AssessorRequestHeader } from "../features/AssessorRequest/components/AssessorRequestHeader";
+import { AssessorsHeader } from "../features/Assessor/components/AssessorsHeader";
+import { PaymentsHeader } from "../features/Payment/components/PaymentsHeader";
+import { SettingsHeader } from "../features/Settings/components/SettingsHeader";
+import { MessagesHeader } from "../features/Dashboard/components/MessagesHeader";
+
 import { AssessmentCentreTab, PaymentTransaction } from "../types";
+import { type InterviewRowData } from "../features/Applications/components/ViewInterviewDetailModal";
 import { useAppSelector } from "@/src/store/hooks";
 import {
   useGetCentreDashboard,
-  useGetCentreStaff,
-  useGetRetainedRequests,
   useGetCentreProfile,
   useGetCentrePanels,
   useGetCentreInterviews,
 } from "@/src/features/shared/centre/hooks";
-import {
-  useGetApplications,
-  useReviewApplication,
-} from "@/src/features/shared/applications/hooks";
+import { useReviewApplication } from "@/src/features/shared/applications/hooks";
 import { useGetMe } from "@/src/features/shared/account/hooks";
 import {
   saveCentreId,
   saveCentreRole,
   getCentreRole,
 } from "@/src/lib/auth-storage";
-import {
-  getPermittedTabs,
-  normalizeRole,
-  canViewPayments,
-  canAddStaff,
-  RoleType,
-} from "../utils/rbac";
+import { getPermittedTabs, normalizeRole, RoleType } from "../utils/rbac";
 
 export const AssessmentCentreDashboardPage: React.FC = () => {
+  const router = useRouter();
+  const params = useParams();
+  const searchParams = useSearchParams();
   const user = useAppSelector((state) => state.auth.user);
   const { data: meData } = useGetMe();
   const activeCentre = meData?.centres?.[0];
 
-  React.useEffect(() => {
-    if (activeCentre?.centreId) {
-      saveCentreId(activeCentre.centreId);
-    }
-    if (activeCentre?.role) {
-      saveCentreRole(activeCentre.role);
-    }
+  useEffect(() => {
+    if (activeCentre?.centreId) saveCentreId(activeCentre.centreId);
+    if (activeCentre?.role) saveCentreRole(activeCentre.role);
   }, [activeCentre]);
 
   const activeRole: RoleType = normalizeRole(
@@ -106,51 +168,54 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
       user?.role,
   );
 
-  const [activeTab, setActiveTab] = useState<AssessmentCentreTab>("overview");
+  const routeTab =
+    (params?.tab as AssessmentCentreTab) ||
+    (searchParams.get("tab") as AssessmentCentreTab) ||
+    "overview";
+  const [activeTab, setActiveTabState] =
+    useState<AssessmentCentreTab>(routeTab);
+
+  useEffect(() => {
+    if (routeTab && routeTab !== activeTab) {
+      setActiveTabState(routeTab);
+    }
+  }, [routeTab]);
+
+  const handleSelectTab = (tab: AssessmentCentreTab) => {
+    setActiveTabState(tab);
+    router.push(`/assessment-centre/dashboard/${tab}`);
+  };
 
   const { data: dashboardData } = useGetCentreDashboard();
-  const { data: applications = [] } = useGetApplications();
-  const { data: staff = [] } = useGetCentreStaff();
-  const { data: assessors = [] } = useGetRetainedRequests();
-
-  const { data: centreProfile } = useGetCentreProfile();
+  const isApplicationsTab = activeTab === "applications";
+  const { data: centreProfile } = useGetCentreProfile({
+    enabled: activeTab === "overview",
+  });
+  const { data: centrePanels = [] } = useGetCentrePanels(undefined, {
+    enabled: isApplicationsTab,
+  });
+  const { data: centreInterviews = [] } = useGetCentreInterviews(undefined, {
+    enabled: isApplicationsTab,
+  });
+  const reviewMutation = useReviewApplication();
 
   const hasActivity =
     (dashboardData?.kpis?.applications ?? 0) > 0 ||
     (dashboardData?.kpis?.staff ?? 0) > 0 ||
-    (dashboardData?.kpis?.assessors ?? 0) > 0 ||
-    applications.length > 0 ||
-    staff.length > 0;
+    (dashboardData?.kpis?.assessors ?? 0) > 0;
 
-  // Auto-switch to overview if the user's role is restricted on the current tab
-  React.useEffect(() => {
+  useEffect(() => {
     const permitted = getPermittedTabs(activeRole);
     if (!permitted.includes(activeTab)) {
-      setActiveTab("overview");
+      handleSelectTab("overview");
     }
   }, [activeRole, activeTab]);
+
+  // Modal and Selection State
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState(false);
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
   const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useState(false);
-  const [isApprovalDismissed, setIsApprovalDismissed] = useState(() => {
-    if (typeof window === "undefined") return false;
-    try {
-      return localStorage.getItem("elimi_centre_approval_dismissed") === "true";
-    } catch {
-      return false;
-    }
-  });
-
-  const handleDismissApproval = () => {
-    setIsApprovalDismissed(true);
-    try {
-      localStorage.setItem("elimi_centre_approval_dismissed", "true");
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
   const [selectedCandidateName, setSelectedCandidateName] = useState<
     string | null
   >(null);
@@ -160,179 +225,156 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
   const [showCandidateForm, setShowCandidateForm] = useState(false);
   const [showEvidenceVault, setShowEvidenceVault] = useState(false);
   const [showSelfAssessmentForm, setShowSelfAssessmentForm] = useState(false);
-
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [selectedApplicantId, setSelectedApplicantId] = useState<string | null>(
     null,
   );
   const [isPostJobModalOpen, setIsPostJobModalOpen] = useState(false);
   const [isCreatePanelModalOpen, setIsCreatePanelModalOpen] = useState(false);
+  const [isCreateInterviewModalOpen, setIsCreateInterviewModalOpen] =
+    useState(false);
   const [isPromptCreatePanelModalOpen, setIsPromptCreatePanelModalOpen] =
     useState(false);
   const [isScheduleInterviewModalOpen, setIsScheduleInterviewModalOpen] =
     useState(false);
   const [selectedInterview, setSelectedInterview] =
     useState<InterviewRowData | null>(null);
-
-  const { data: centrePanels = [] } = useGetCentrePanels();
-  const { data: centreInterviews = [] } = useGetCentreInterviews();
-
-  const handleOpenScheduleInterview = () => {
-    const hasPanels =
-      (centrePanels && centrePanels.length > 0) ||
-      (centreInterviews && centreInterviews.length > 0);
-    if (!hasPanels) {
-      setIsPromptCreatePanelModalOpen(true);
-    } else {
-      setIsScheduleInterviewModalOpen(true);
-    }
-  };
-
   const [selectedAssessorId, setSelectedAssessorId] = useState<string | null>(
     null,
   );
   const [selectedAssessorRequestId, setSelectedAssessorRequestId] = useState<
     string | null
   >(null);
-
   const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
   const [selectedReceiptTx, setSelectedReceiptTx] =
     useState<PaymentTransaction | null>(null);
-
   const [isStaffDeactivateModalOpen, setIsStaffDeactivateModalOpen] =
     useState(false);
   const [staffDeactivateModalMode, setStaffDeactivateModalMode] =
     useState<StaffStatusModalMode>("confirm-deactivate");
-
   const [isAssessorDeactivateModalOpen, setIsAssessorDeactivateModalOpen] =
     useState(false);
   const [assessorDeactivateModalMode, setAssessorDeactivateModalMode] =
     useState<StaffStatusModalMode>("confirm-deactivate");
 
-  const reviewMutation = useReviewApplication();
+  const handleOpenScheduleInterview = () => {
+    const hasPanels =
+      (centrePanels && centrePanels.length > 0) ||
+      (centreInterviews && centreInterviews.length > 0);
+    if (!hasPanels) setIsPromptCreatePanelModalOpen(true);
+    else setIsScheduleInterviewModalOpen(true);
+  };
 
   const renderHeaderContent = () => {
-    if (activeTab === "overview") return null;
-
-    if (activeTab === "staff") {
-      return (
-        <StaffHeader
-          selectedStaffId={selectedStaffId}
-          onBack={() => setSelectedStaffId(null)}
-          onAddStaff={() => setIsAddStaffModalOpen(true)}
-          onDeactivate={(mode) => {
-            setStaffDeactivateModalMode(mode);
-            setIsStaffDeactivateModalOpen(true);
-          }}
-        />
-      );
+    switch (activeTab) {
+      case "staff":
+        return (
+          <StaffHeader
+            selectedStaffId={selectedStaffId}
+            onBack={() => setSelectedStaffId(null)}
+            onAddStaff={() => setIsAddStaffModalOpen(true)}
+            onDeactivate={(mode) => {
+              setStaffDeactivateModalMode(mode);
+              setIsStaffDeactivateModalOpen(true);
+            }}
+          />
+        );
+      case "applications":
+        return (
+          <ApplicationsHeader
+            selectedCandidateName={selectedCandidateName}
+            selectedInterviewTitle={selectedInterview?.title || null}
+            showSelfAssessmentForm={showSelfAssessmentForm}
+            showEvidenceVault={showEvidenceVault}
+            showCandidateForm={showCandidateForm}
+            onBackToList={() => {
+              setSelectedCandidateName(null);
+              setSelectedApplicationId(null);
+              setSelectedInterview(null);
+            }}
+            onBackFromInterview={() => setSelectedInterview(null)}
+            onBackFromSelfAssessment={() => setShowSelfAssessmentForm(false)}
+            onBackFromEvidenceVault={() => setShowEvidenceVault(false)}
+            onBackFromCandidateForm={() => setShowCandidateForm(false)}
+            onAcceptApplication={() => {
+              if (selectedApplicationId) {
+                reviewMutation.mutate({
+                  id: selectedApplicationId,
+                  payload: {
+                    decision: "approve",
+                    stageKey: "application_form",
+                    feedback: "Accepted by Assessment Centre",
+                  },
+                });
+              }
+            }}
+            onCreatePanel={() => setIsCreatePanelModalOpen(true)}
+            onCreateInterview={() => setIsCreateInterviewModalOpen(true)}
+            onScheduleInterview={handleOpenScheduleInterview}
+          />
+        );
+      case "job-listing":
+        return (
+          <JobListingHeader
+            selectedJobId={selectedJobId}
+            selectedApplicantId={selectedApplicantId}
+            onBackToList={() => {
+              setSelectedJobId(null);
+              setSelectedApplicantId(null);
+            }}
+            onBackFromJob={() => setSelectedJobId(null)}
+            onBackFromApplicant={() => {
+              setSelectedApplicantId(null);
+              setSelectedJobId(null);
+            }}
+            onPostRequest={() => setIsPostJobModalOpen(true)}
+            onMarkAsFilled={() => setSelectedJobId(null)}
+          />
+        );
+      case "assessor-request":
+        return (
+          <AssessorRequestHeader
+            selectedAssessorRequestId={selectedAssessorRequestId}
+            onBackToList={() => setSelectedAssessorRequestId(null)}
+          />
+        );
+      case "assessors":
+        return (
+          <AssessorsHeader
+            selectedAssessorId={selectedAssessorId}
+            onBackToList={() => setSelectedAssessorId(null)}
+            onDeactivate={(mode) => {
+              setAssessorDeactivateModalMode(mode);
+              setIsAssessorDeactivateModalOpen(true);
+            }}
+            userRole={activeRole}
+          />
+        );
+      case "payments":
+        return (
+          <PaymentsHeader
+            onWithdrawFunds={() => setIsWithdrawModalOpen(true)}
+          />
+        );
+      case "settings":
+        return <SettingsHeader />;
+      case "messages":
+        return (
+          <MessagesHeader
+            userRole={activeRole}
+            onSendBroadcast={() => setIsBroadcastModalOpen(true)}
+          />
+        );
+      default:
+        return null;
     }
-
-    if (activeTab === "applications") {
-      return (
-        <ApplicationsHeader
-          selectedCandidateName={selectedCandidateName}
-          selectedInterviewTitle={selectedInterview?.title || null}
-          showSelfAssessmentForm={showSelfAssessmentForm}
-          showEvidenceVault={showEvidenceVault}
-          showCandidateForm={showCandidateForm}
-          onBackToList={() => {
-            setSelectedCandidateName(null);
-            setSelectedApplicationId(null);
-            setSelectedInterview(null);
-          }}
-          onBackFromInterview={() => setSelectedInterview(null)}
-          onBackFromSelfAssessment={() => setShowSelfAssessmentForm(false)}
-          onBackFromEvidenceVault={() => setShowEvidenceVault(false)}
-          onBackFromCandidateForm={() => setShowCandidateForm(false)}
-          onAcceptApplication={() => {
-            if (selectedApplicationId) {
-              reviewMutation.mutate({
-                id: selectedApplicationId,
-                payload: {
-                  decision: "approve",
-                  stageKey: "application_form",
-                  feedback: "Application accepted by Assessment Centre",
-                },
-              });
-            }
-          }}
-          onCreatePanel={() => setIsCreatePanelModalOpen(true)}
-          onScheduleInterview={handleOpenScheduleInterview}
-        />
-      );
-    }
-
-    if (activeTab === "job-listing") {
-      return (
-        <JobListingHeader
-          selectedJobId={selectedJobId}
-          selectedApplicantId={selectedApplicantId}
-          onBackToList={() => {
-            setSelectedJobId(null);
-            setSelectedApplicantId(null);
-          }}
-          onBackFromJob={() => setSelectedJobId(null)}
-          onBackFromApplicant={() => {
-            setSelectedApplicantId(null);
-            setSelectedJobId(null);
-          }}
-          onPostRequest={() => setIsPostJobModalOpen(true)}
-          onMarkAsFilled={() => setSelectedJobId(null)}
-        />
-      );
-    }
-
-    if (activeTab === "assessor-request") {
-      return (
-        <AssessorRequestHeader
-          selectedAssessorRequestId={selectedAssessorRequestId}
-          onBackToList={() => setSelectedAssessorRequestId(null)}
-        />
-      );
-    }
-
-    if (activeTab === "assessors") {
-      return (
-        <AssessorsHeader
-          selectedAssessorId={selectedAssessorId}
-          onBackToList={() => setSelectedAssessorId(null)}
-          userRole={activeRole}
-          onDeactivate={(mode) => {
-            setAssessorDeactivateModalMode(mode);
-            setIsAssessorDeactivateModalOpen(true);
-          }}
-        />
-      );
-    }
-
-    if (activeTab === "payments") {
-      return (
-        <PaymentsHeader onWithdrawFunds={() => setIsWithdrawModalOpen(true)} />
-      );
-    }
-
-    if (activeTab === "settings") {
-      return <SettingsHeader />;
-    }
-
-    if (activeTab === "messages") {
-      return (
-        <MessagesHeader
-          userRole={activeRole}
-          onSendBroadcast={() => setIsBroadcastModalOpen(true)}
-        />
-      );
-    }
-
-    return null;
   };
 
   return (
     <div className="min-h-screen bg-[#F4F5F7] flex flex-col font-sans select-text">
       <AssessmentCentreHeader
         activeTab={activeTab}
-        onSelectTab={setActiveTab}
+        onSelectTab={handleSelectTab}
         onOpenNotifications={() => setIsNotificationsOpen(true)}
         showStats={activeTab === "overview"}
         userRole={activeRole}
@@ -342,399 +384,167 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
 
       <div className="max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1 flex flex-col gap-6 sm:gap-8">
         {activeTab === "overview" && (
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
-            className="flex flex-col gap-6"
-          >
-            {/* Centre Accreditation & Approval Status Banner */}
-            {centreProfile?.status === "pending" ? (
-              <div className="bg-[#FEF3C7] rounded-3xl p-5 sm:p-6 border border-[#F59E0B]/30 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="flex items-center gap-4 min-w-0">
-                  <div className="w-12 h-12 rounded-2xl bg-[#FDE68A] text-[#92400E] flex items-center justify-center shrink-0 border border-amber-300">
-                    <FiAward className="w-6 h-6" />
-                  </div>
-                  <div className="flex flex-col gap-1 min-w-0">
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <h3 className="text-base sm:text-lg font-extrabold text-[#92400E] tracking-tight truncate">
-                        {centreProfile?.name || "Assessment Centre"}
-                      </h3>
-                      <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-semibold bg-white text-[#92400E] border border-[#F59E0B]/30">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#D97706] animate-pulse" />
-                        Accreditation Pending Review
-                      </span>
-                    </div>
-                    <p className="text-xs text-[#B45309] font-normal">
-                      Centre ID: <span className="font-semibold">{centreProfile?.registrationNo || "AC-NBTE-0042"}</span> • Your centre credentials are under review by NBTE &amp; Sector Skills Council.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 self-start md:self-auto shrink-0">
-                  <span className="text-xs font-semibold text-[#92400E] bg-white/80 border border-[#F59E0B]/30 px-3.5 py-1.5 rounded-xl">
-                    Status: <span className="font-bold capitalize">Pending Approval</span>
-                  </span>
-                </div>
-              </div>
-            ) : !isApprovalDismissed ? (
-              <div className="bg-white rounded-3xl p-5 sm:p-6 border border-[#1E7F4C]/20 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4 relative">
-                <div className="flex items-center gap-4 min-w-0">
-                  <div className="w-12 h-12 rounded-2xl bg-[#E6F4EA] text-[#1E7F4C] flex items-center justify-center shrink-0 border border-[#1E7F4C]/20">
-                    <FiAward className="w-6 h-6" />
-                  </div>
-                  <div className="flex flex-col gap-1 min-w-0">
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <h3 className="text-base sm:text-lg font-extrabold text-black tracking-tight truncate">
-                        {centreProfile?.name || "Assessment Centre"}
-                      </h3>
-                      <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-semibold bg-[#E6F4EA] text-[#1E7F4C] border border-[#1E7F4C]/20">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#1E7F4C]" />
-                        Accredited &amp; Approved Centre
-                      </span>
-                    </div>
-                    <p className="text-xs text-gray-500 font-normal">
-                      Centre ID: <span className="font-semibold text-gray-800">{centreProfile?.registrationNo || "AC-NBTE-0042"}</span> • Recognized by NBTE &amp; Sector Skills Council
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 self-start md:self-auto shrink-0">
-                  <span className="text-xs font-semibold text-gray-700 bg-gray-50 border border-gray-200 px-3.5 py-1.5 rounded-xl">
-                    Accreditation: <span className="text-[#1E7F4C] font-bold capitalize">{centreProfile?.status || "Approved"}</span>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handleDismissApproval}
-                    aria-label="Dismiss approval banner"
-                    className="p-1.5 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
-                    title="Dismiss"
-                  >
-                    <FiX className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            ) : null}
-
-            {hasActivity ? (
-              <>
-                <div
-                  className={`grid grid-cols-1 ${
-                    canViewPayments(activeRole)
-                      ? "md:grid-cols-2 lg:grid-cols-3"
-                      : "md:grid-cols-2"
-                  } gap-6 items-stretch`}
-                >
-                  {canViewPayments(activeRole) && <RevenueChart />}
-                  <TradeChart />
-                  <GenderChart />
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-                  <AssessmentStageCard />
-                  <StaffActivityLogCard />
-                </div>
-
-                <PendingApplicationsTable
-                  onViewAll={() => setActiveTab("applications")}
-                  onViewApplication={(appId) => {
-                    setActiveTab("applications");
-                    setSelectedApplicationId(appId);
-                    setSelectedCandidateName("Candidate");
-                  }}
-                />
-              </>
-            ) : (
-              <AssessmentCentreEmptyView />
-            )}
-          </motion.div>
+          <OverviewTab
+            activeRole={activeRole}
+            centreProfile={centreProfile}
+            hasActivity={hasActivity}
+            onNavigateToApplications={(appId) => {
+              handleSelectTab("applications");
+              if (appId) {
+                setSelectedApplicationId(appId);
+                setSelectedCandidateName("Candidate");
+              }
+            }}
+          />
         )}
-
-        {activeTab === "messages" && (
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
-          >
-            <MessagesView />
-          </motion.div>
-        )}
-
+        {activeTab === "messages" && <MessagesTab />}
         {activeTab === "staff" && (
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
-          >
-            {selectedStaffId ? (
-              <StaffDetailView
-                staffId={selectedStaffId}
-                onBack={() => setSelectedStaffId(null)}
-              />
-            ) : (
-              <StaffListView
-                userRole={activeRole}
-                onSelectStaff={(id) => setSelectedStaffId(id)}
-                onAddStaff={() => setIsAddStaffModalOpen(true)}
-              />
-            )}
-          </motion.div>
+          <StaffTab
+            activeRole={activeRole}
+            selectedStaffId={selectedStaffId}
+            onSelectStaff={setSelectedStaffId}
+            onOpenAddStaffModal={() => setIsAddStaffModalOpen(true)}
+          />
         )}
-
         {activeTab === "applications" && (
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
-          >
-            {selectedInterview ? (
-              <AssessmentCentreInterviewDetailView
-                interview={selectedInterview}
-                onBack={() => setSelectedInterview(null)}
-                onSelectCandidate={(name, id) => {
-                  setSelectedInterview(null);
-                  setSelectedCandidateName(name);
-                  setSelectedApplicationId(id || null);
-                }}
-              />
-            ) : selectedCandidateName && showSelfAssessmentForm ? (
-              <AssessmentCentreSelfAssessmentFormView
-                id={selectedApplicationId || undefined}
-                candidateName={selectedCandidateName}
-                onBack={() => setShowSelfAssessmentForm(false)}
-              />
-            ) : selectedCandidateName && showEvidenceVault ? (
-              <AssessmentCentreEvidenceVaultView
-                id={selectedApplicationId || undefined}
-                candidateName={selectedCandidateName}
-                onBack={() => setShowEvidenceVault(false)}
-                onOpenSelfAssessmentForm={() => setShowSelfAssessmentForm(true)}
-              />
-            ) : selectedCandidateName && showCandidateForm ? (
-              <AssessmentCentreCandidateFormView
-                id={selectedApplicationId || undefined}
-                candidateName={selectedCandidateName}
-                onBack={() => setShowCandidateForm(false)}
-              />
-            ) : selectedCandidateName ? (
-              <AssessmentCentreApplicationDetailView
-                id={selectedApplicationId || undefined}
-                candidateName={selectedCandidateName}
-                onBack={() => {
-                  setSelectedCandidateName(null);
-                  setSelectedApplicationId(null);
-                }}
-                onOpenCandidateForm={() => setShowCandidateForm(true)}
-                onOpenEvidenceVault={() => setShowEvidenceVault(true)}
-              />
-            ) : (
-              <AssessmentCentreApplicationsView
-                onSelectCandidate={(name, id) => {
-                  setSelectedCandidateName(name);
-                  setSelectedApplicationId(id || null);
-                }}
-                onSelectInterview={(interview) =>
-                  setSelectedInterview(interview)
-                }
-                onOpenCreatePanel={() => setIsCreatePanelModalOpen(true)}
-                onOpenScheduleInterview={handleOpenScheduleInterview}
-              />
-            )}
-          </motion.div>
+          <ApplicationsTab
+            selectedInterview={selectedInterview}
+            selectedCandidateName={selectedCandidateName}
+            selectedApplicationId={selectedApplicationId}
+            showCandidateForm={showCandidateForm}
+            showEvidenceVault={showEvidenceVault}
+            showSelfAssessmentForm={showSelfAssessmentForm}
+            onSelectInterview={setSelectedInterview}
+            onSelectCandidate={(name, id) => {
+              setSelectedCandidateName(name);
+              setSelectedApplicationId(id || null);
+            }}
+            onCloseCandidateForm={() => setShowCandidateForm(false)}
+            onOpenCandidateForm={() => setShowCandidateForm(true)}
+            onCloseEvidenceVault={() => setShowEvidenceVault(false)}
+            onOpenEvidenceVault={() => setShowEvidenceVault(true)}
+            onCloseSelfAssessmentForm={() => setShowSelfAssessmentForm(false)}
+            onOpenSelfAssessmentForm={() => setShowSelfAssessmentForm(true)}
+            onOpenCreatePanel={() => setIsCreatePanelModalOpen(true)}
+            onOpenCreateInterview={() => setIsCreateInterviewModalOpen(true)}
+            onOpenScheduleInterview={handleOpenScheduleInterview}
+          />
         )}
-
         {activeTab === "job-listing" && (
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
-          >
-            {selectedApplicantId ? (
-              <AssessorApplicantProfileView
-                applicantId={selectedApplicantId}
-                onBack={() => setSelectedApplicantId(null)}
-                isAssessorRequest={false}
-              />
-            ) : selectedJobId ? (
-              <JobListingDetailView
-                jobId={selectedJobId}
-                onBack={() => setSelectedJobId(null)}
-                onSelectApplicant={(id) => setSelectedApplicantId(id)}
-              />
-            ) : (
-              <JobListingsView
-                onSelectJob={(id) => setSelectedJobId(id)}
-                onPostRequest={() => setIsPostJobModalOpen(true)}
-              />
-            )}
-          </motion.div>
+          <JobListingTab
+            selectedJobId={selectedJobId}
+            selectedApplicantId={selectedApplicantId}
+            onSelectJob={setSelectedJobId}
+            onSelectApplicant={setSelectedApplicantId}
+            onOpenPostJobModal={() => setIsPostJobModalOpen(true)}
+          />
         )}
-
         {activeTab === "assessor-request" && (
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
-          >
-            {selectedAssessorRequestId ? (
-              <AssessorApplicantProfileView
-                applicantId={selectedAssessorRequestId}
-                onBack={() => setSelectedAssessorRequestId(null)}
-              />
-            ) : (
-              <AssessorRequestListView
-                onSelectAssessorRequest={(id) =>
-                  setSelectedAssessorRequestId(id)
-                }
-              />
-            )}
-          </motion.div>
+          <AssessorRequestTab
+            selectedAssessorRequestId={selectedAssessorRequestId}
+            onSelectAssessorRequest={setSelectedAssessorRequestId}
+          />
         )}
-
         {activeTab === "assessors" && (
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
-          >
-            {selectedAssessorId ? (
-              <AssessorProfileDetailView
-                assessorId={selectedAssessorId}
-                onBack={() => setSelectedAssessorId(null)}
-                onViewCandidate={(candidateId) => {
-                  setActiveTab("applications");
-                  setSelectedCandidateName(candidateId);
-                }}
-              />
-            ) : (
-              <AssessorsListView
-                userRole={activeRole}
-                onSelectAssessor={(id) => setSelectedAssessorId(id)}
-              />
-            )}
-          </motion.div>
+          <AssessorsTab
+            activeRole={activeRole}
+            selectedAssessorId={selectedAssessorId}
+            onSelectAssessor={setSelectedAssessorId}
+            onViewCandidate={(candidateId) => {
+              handleSelectTab("applications");
+              setSelectedCandidateName(candidateId);
+            }}
+          />
         )}
-
         {activeTab === "payments" && (
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
-          >
-            <PaymentsView
-              onWithdrawFunds={() => setIsWithdrawModalOpen(true)}
-              onSelectReceipt={(tx) => setSelectedReceiptTx(tx)}
-            />
-          </motion.div>
+          <PaymentsTab
+            onWithdrawFunds={() => setIsWithdrawModalOpen(true)}
+            onSelectReceipt={setSelectedReceiptTx}
+          />
         )}
-
-        {activeTab === "settings" && (
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
-          >
-            <SettingsView />
-          </motion.div>
-        )}
+        {activeTab === "settings" && <SettingsTab />}
       </div>
 
-      <AddStaffModal
-        isOpen={isAddStaffModalOpen}
-        onClose={() => setIsAddStaffModalOpen(false)}
-      />
-
-      <PostJobModal
-        isOpen={isPostJobModalOpen}
-        onClose={() => setIsPostJobModalOpen(false)}
-      />
-
-      <WithdrawModal
-        isOpen={isWithdrawModalOpen}
-        onClose={() => setIsWithdrawModalOpen(false)}
-      />
-
-      <TransactionReceiptModal
-        isOpen={!!selectedReceiptTx}
-        onClose={() => setSelectedReceiptTx(null)}
-        transaction={selectedReceiptTx}
-      />
-
-      <NotificationDrawer
-        isOpen={isNotificationsOpen}
-        onClose={() => setIsNotificationsOpen(false)}
-      />
-
-      <BroadcastModal
-        isOpen={isBroadcastModalOpen}
-        onClose={() => setIsBroadcastModalOpen(false)}
-      />
-
-      <StaffStatusModal
-        isOpen={isStaffDeactivateModalOpen}
-        mode={staffDeactivateModalMode}
-        staffName={
-          selectedStaffId
-            ? staff.find((s) => s.id === selectedStaffId)?.name ||
-              staff.find((s) => s.id === selectedStaffId)?.email ||
-              undefined
-            : undefined
-        }
-        onClose={() => setIsStaffDeactivateModalOpen(false)}
-        onConfirmDeactivate={() => {
-          setStaffDeactivateModalMode("deactivated-success");
-        }}
-        onConfirmActivate={() => {
-          setStaffDeactivateModalMode("activated-success");
-        }}
-      />
-
-      <StaffStatusModal
-        isOpen={isAssessorDeactivateModalOpen}
-        mode={assessorDeactivateModalMode}
-        staffName={
-          selectedAssessorId
-            ? assessors.find((a) => a.id === selectedAssessorId)?.assessor
-                ?.name ||
-              (assessors.find((a) => a.id === selectedAssessorId)?.assessorId
-                ? `Assessor (${assessors
-                    .find((a) => a.id === selectedAssessorId)
-                    ?.assessorId?.slice(0, 8)})`
-                : undefined)
-            : undefined
-        }
-        onClose={() => setIsAssessorDeactivateModalOpen(false)}
-        onConfirmDeactivate={() => {
-          setAssessorDeactivateModalMode("deactivated-success");
-        }}
-        onConfirmActivate={() => {
-          setAssessorDeactivateModalMode("activated-success");
-        }}
-      />
-
-      <PromptCreatePanelModal
-        isOpen={isPromptCreatePanelModalOpen}
-        onClose={() => setIsPromptCreatePanelModalOpen(false)}
-        onCreatePanel={() => {
-          setIsPromptCreatePanelModalOpen(false);
-          setIsCreatePanelModalOpen(true);
-        }}
-      />
-
-      <CreatePanelModal
-        isOpen={isCreatePanelModalOpen}
-        onClose={() => setIsCreatePanelModalOpen(false)}
-        onSuccess={() => {
-          setIsCreatePanelModalOpen(false);
-          setIsScheduleInterviewModalOpen(true);
-        }}
-      />
-
-      <ScheduleInterviewModal
-        isOpen={isScheduleInterviewModalOpen}
-        onClose={() => setIsScheduleInterviewModalOpen(false)}
-      />
+      {isAddStaffModalOpen && (
+        <AddStaffModal
+          isOpen={isAddStaffModalOpen}
+          onClose={() => setIsAddStaffModalOpen(false)}
+        />
+      )}
+      {isPostJobModalOpen && (
+        <PostJobModal
+          isOpen={isPostJobModalOpen}
+          onClose={() => setIsPostJobModalOpen(false)}
+        />
+      )}
+      {isCreatePanelModalOpen && (
+        <CreatePanelModal
+          isOpen={isCreatePanelModalOpen}
+          onClose={() => setIsCreatePanelModalOpen(false)}
+        />
+      )}
+      {isCreateInterviewModalOpen && (
+        <CreateInterviewModal
+          isOpen={isCreateInterviewModalOpen}
+          onClose={() => setIsCreateInterviewModalOpen(false)}
+          onOpenCreatePanel={() => setIsCreatePanelModalOpen(true)}
+        />
+      )}
+      {isPromptCreatePanelModalOpen && (
+        <PromptCreatePanelModal
+          isOpen={isPromptCreatePanelModalOpen}
+          onClose={() => setIsPromptCreatePanelModalOpen(false)}
+          onCreatePanel={() => {
+            setIsPromptCreatePanelModalOpen(false);
+            setIsCreatePanelModalOpen(true);
+          }}
+        />
+      )}
+      {isScheduleInterviewModalOpen && (
+        <ScheduleInterviewModal
+          isOpen={isScheduleInterviewModalOpen}
+          onClose={() => setIsScheduleInterviewModalOpen(false)}
+        />
+      )}
+      {isWithdrawModalOpen && (
+        <WithdrawModal
+          isOpen={isWithdrawModalOpen}
+          onClose={() => setIsWithdrawModalOpen(false)}
+        />
+      )}
+      {Boolean(selectedReceiptTx) && (
+        <TransactionReceiptModal
+          isOpen={Boolean(selectedReceiptTx)}
+          transaction={selectedReceiptTx}
+          onClose={() => setSelectedReceiptTx(null)}
+        />
+      )}
+      {isStaffDeactivateModalOpen && (
+        <StaffStatusModal
+          isOpen={isStaffDeactivateModalOpen}
+          mode={staffDeactivateModalMode}
+          onClose={() => setIsStaffDeactivateModalOpen(false)}
+        />
+      )}
+      {isAssessorDeactivateModalOpen && (
+        <StaffStatusModal
+          isOpen={isAssessorDeactivateModalOpen}
+          mode={assessorDeactivateModalMode}
+          onClose={() => setIsAssessorDeactivateModalOpen(false)}
+        />
+      )}
+      {isNotificationsOpen && (
+        <NotificationDrawer
+          isOpen={isNotificationsOpen}
+          onClose={() => setIsNotificationsOpen(false)}
+        />
+      )}
+      {isBroadcastModalOpen && (
+        <BroadcastModal
+          isOpen={isBroadcastModalOpen}
+          onClose={() => setIsBroadcastModalOpen(false)}
+        />
+      )}
     </div>
   );
 };
-

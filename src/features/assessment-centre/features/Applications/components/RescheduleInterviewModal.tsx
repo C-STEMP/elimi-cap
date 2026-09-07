@@ -1,12 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiX, FiCheck } from "react-icons/fi";
 import { Button } from "@/src/components/ui/button";
-import { useToast } from "@/src/components/ui/toast";
-import { useQueryClient } from "@tanstack/react-query";
-import { scheduleInterviewApi } from "@/src/features/shared/applications/api/application.api";
+import { useRescheduleInterviewState } from "../hooks/useRescheduleInterviewState";
 
 interface RescheduleInterviewModalProps {
   isOpen: boolean;
@@ -26,142 +24,16 @@ interface RescheduleInterviewModalProps {
   }) => void;
 }
 
-export const RescheduleInterviewModal: React.FC<RescheduleInterviewModalProps> = ({
-  isOpen,
-  onClose,
-  applicationId,
-  currentDate = "",
-  currentTime = "",
-  currentMeetingLink = "www.meet.google.com",
-  currentLocation = "Cstemp Centre",
-  currentMode = "virtual",
-  onSuccess,
-}) => {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
+export const RescheduleInterviewModal: React.FC<RescheduleInterviewModalProps> = (props) => {
+  const { isOpen, onClose, currentMode = "virtual" } = props;
+  const s = useRescheduleInterviewState(props);
 
-  const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
-  const [meetingLink, setMeetingLink] = useState("www.meet.google.com");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSuccessOpen, setIsSuccessOpen] = useState(false);
-
-  useEffect(() => {
-    if (isOpen) {
-      if (currentDate) {
-        setDate(currentDate);
-      } else {
-        const d = new Date();
-        d.setDate(d.getDate() + 7);
-        setDate(d.toISOString().split("T")[0]);
-      }
-      setTime(currentTime || "12:00");
-      setMeetingLink(currentMeetingLink || "www.meet.google.com");
-    }
-  }, [isOpen, currentDate, currentTime, currentMeetingLink]);
-
-  if (!isOpen && !isSuccessOpen) return null;
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!date) {
-      toast({
-        type: "error",
-        title: "Date Required",
-        description: "Please specify the rescheduled interview date.",
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    let scheduledAtIso = new Date().toISOString();
-    try {
-      const timeStr = time || "12:00";
-      const [h, m] = timeStr.split(":");
-      const d = new Date(date);
-      d.setHours(parseInt(h || "12", 10));
-      d.setMinutes(parseInt(m || "0", 10));
-      d.setSeconds(0);
-      scheduledAtIso = d.toISOString();
-    } catch {
-      scheduledAtIso = new Date(`${date}T${time || "12:00"}:00`).toISOString();
-    }
-
-    const formattedMeetingLink =
-      meetingLink.startsWith("http://") || meetingLink.startsWith("https://")
-        ? meetingLink
-        : `https://${meetingLink}`;
-
-    // Persist updated schedule and mark isRescheduled: true
-    if (typeof window !== "undefined" && applicationId) {
-      try {
-        const storedSchedule = localStorage.getItem(`elimi_interview_schedule_${applicationId}`);
-        const parsed = storedSchedule ? JSON.parse(storedSchedule) : {};
-
-        localStorage.setItem(
-          `elimi_interview_schedule_${applicationId}`,
-          JSON.stringify({
-            ...parsed,
-            scheduledAt: scheduledAtIso,
-            mode: currentMode === "virtual" ? "online" : "physical",
-            link: formattedMeetingLink,
-            location: currentLocation || "Cstemp Centre",
-            status: "scheduled",
-            isRescheduled: true,
-          }),
-        );
-      } catch (err) {
-        console.warn("Storage error:", err);
-      }
-    }
-
-    try {
-      const isRealApp =
-        applicationId &&
-        !applicationId.startsWith("mock") &&
-        !applicationId.startsWith("sample");
-
-      if (isRealApp) {
-        await scheduleInterviewApi(applicationId, {
-          scheduledAt: scheduledAtIso,
-          mode: currentMode === "virtual" ? "online" : "physical",
-          location: currentMode === "physical" ? currentLocation : undefined,
-          link: currentMode === "virtual" ? formattedMeetingLink : undefined,
-        }).catch((err) => console.warn("Schedule interview API fallback:", err));
-      }
-
-      queryClient.invalidateQueries({
-        queryKey: ["applications", "interview-schedule", applicationId],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["applications", applicationId],
-      });
-    } catch (err) {
-      console.warn("Reschedule interview error:", err);
-    } finally {
-      setIsSubmitting(false);
-      setIsSuccessOpen(true);
-    }
-  };
-
-  const handleContinue = () => {
-    setIsSuccessOpen(false);
-    onSuccess({
-      date,
-      time,
-      meetingLink,
-      location: currentLocation,
-      isRescheduled: true,
-    });
-    onClose();
-  };
+  if (!isOpen && !s.isSuccessOpen) return null;
 
   return (
     <>
       <AnimatePresence>
-        {isOpen && !isSuccessOpen && (
+        {isOpen && !s.isSuccessOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
@@ -170,7 +42,6 @@ export const RescheduleInterviewModal: React.FC<RescheduleInterviewModalProps> =
               transition={{ duration: 0.2, ease: "easeOut" }}
               className="bg-white rounded-[28px] p-6 sm:p-8 max-w-md w-full shadow-2xl relative border border-gray-100 text-left"
             >
-              {/* Close Button */}
               <button
                 type="button"
                 onClick={onClose}
@@ -180,7 +51,6 @@ export const RescheduleInterviewModal: React.FC<RescheduleInterviewModalProps> =
                 <FiX className="w-5 h-5 stroke-[2.5]" />
               </button>
 
-              {/* Modal Header */}
               <div className="text-center mb-6 pr-6">
                 <h3 className="text-xl sm:text-2xl font-black text-black tracking-tight mb-1">
                   Reschedule Interview
@@ -190,59 +60,53 @@ export const RescheduleInterviewModal: React.FC<RescheduleInterviewModalProps> =
                 </p>
               </div>
 
-              {/* Form */}
-              <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                {/* Date & Time Row */}
+              <form onSubmit={s.handleSubmit} className="flex flex-col gap-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-semibold text-gray-700">Date</label>
-                    <div className="relative flex items-center">
-                      <input
-                        type="date"
-                        value={date}
-                        onChange={(e) => setDate(e.target.value)}
-                        required
-                        className="w-full h-11 px-3.5 rounded-xl border border-gray-200 bg-[#F9FAFB] text-sm text-gray-800 outline-none focus:border-[#fbab2a] focus:ring-1 focus:ring-[#fbab2a]/30 transition-all font-medium cursor-pointer"
-                      />
-                    </div>
+                    <input
+                      type="date"
+                      value={s.date}
+                      onChange={(e) => s.setDate(e.target.value)}
+                      required
+                      className="w-full h-11 px-3.5 rounded-xl border border-gray-200 bg-[#F9FAFB] text-sm text-gray-800 outline-none focus:border-[#fbab2a] focus:ring-1 focus:ring-[#fbab2a]/30 transition-all font-medium cursor-pointer"
+                    />
                   </div>
 
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-semibold text-gray-700">Time</label>
-                    <div className="relative flex items-center">
-                      <input
-                        type="time"
-                        value={time}
-                        onChange={(e) => setTime(e.target.value)}
-                        required
-                        className="w-full h-11 px-3.5 rounded-xl border border-gray-200 bg-[#F9FAFB] text-sm text-gray-800 outline-none focus:border-[#fbab2a] focus:ring-1 focus:ring-[#fbab2a]/30 transition-all font-medium cursor-pointer"
-                      />
-                    </div>
+                    <input
+                      type="time"
+                      value={s.time}
+                      onChange={(e) => s.setTime(e.target.value)}
+                      required
+                      className="w-full h-11 px-3.5 rounded-xl border border-gray-200 bg-[#F9FAFB] text-sm text-gray-800 outline-none focus:border-[#fbab2a] focus:ring-1 focus:ring-[#fbab2a]/30 transition-all font-medium cursor-pointer"
+                    />
                   </div>
                 </div>
 
-                {/* Meeting Link */}
-                <div className="flex flex-col gap-1.5 pt-1">
-                  <label className="text-xs font-semibold text-gray-700">Meeting Link</label>
-                  <input
-                    type="text"
-                    value={meetingLink}
-                    onChange={(e) => setMeetingLink(e.target.value)}
-                    placeholder="www.meet.google.com"
-                    required
-                    className="w-full h-11 px-3.5 rounded-xl border border-gray-200 bg-[#F9FAFB] text-sm text-gray-800 outline-none focus:border-[#fbab2a] focus:ring-1 focus:ring-[#fbab2a]/30 transition-all font-medium"
-                  />
-                </div>
+                {currentMode === "virtual" && (
+                  <div className="flex flex-col gap-1.5 pt-1">
+                    <label className="text-xs font-semibold text-gray-700">Meeting Link</label>
+                    <input
+                      type="text"
+                      value={s.meetingLink}
+                      onChange={(e) => s.setMeetingLink(e.target.value)}
+                      placeholder="www.meet.google.com"
+                      required
+                      className="w-full h-11 px-3.5 rounded-xl border border-gray-200 bg-[#F9FAFB] text-sm text-gray-800 outline-none focus:border-[#fbab2a] focus:ring-1 focus:ring-[#fbab2a]/30 transition-all font-medium"
+                    />
+                  </div>
+                )}
 
-                {/* Submit Button */}
                 <Button
                   type="submit"
                   variant="secondary"
                   size="md"
-                  disabled={isSubmitting}
+                  disabled={s.isSubmitting}
                   className="w-full bg-[#fbab2a] hover:bg-[#e89b1f] text-white font-bold text-sm sm:text-base h-12.5 rounded-xl mt-4 cursor-pointer transition-all shadow-none select-none"
                 >
-                  {isSubmitting ? "Rescheduling..." : "Reschedule Interview"}
+                  {s.isSubmitting ? "Rescheduling Interview..." : "Reschedule Interview"}
                 </Button>
               </form>
             </motion.div>
@@ -250,9 +114,8 @@ export const RescheduleInterviewModal: React.FC<RescheduleInterviewModalProps> =
         )}
       </AnimatePresence>
 
-      {/* Success Confirmation Modal */}
       <AnimatePresence>
-        {isSuccessOpen && (
+        {s.isSuccessOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
             <motion.div
               initial={{ opacity: 0, scale: 0.94 }}
@@ -272,14 +135,14 @@ export const RescheduleInterviewModal: React.FC<RescheduleInterviewModalProps> =
                 Interview Rescheduled Successfully
               </h3>
               <p className="text-gray-400 text-xs sm:text-sm font-normal leading-relaxed mb-8 max-w-xs">
-                You have successfully rescheduled this interview
+                You have successfully rescheduled an interview for this candidate
               </p>
 
               <Button
                 type="button"
                 variant="secondary"
                 size="md"
-                onClick={handleContinue}
+                onClick={s.handleContinue}
                 className="w-full bg-[#fbab2a] hover:bg-[#e89b1f] active:scale-98 text-white font-bold text-sm sm:text-base h-12.5 rounded-xl cursor-pointer transition-all shadow-none select-none"
               >
                 Continue

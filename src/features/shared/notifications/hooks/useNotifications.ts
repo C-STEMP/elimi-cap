@@ -21,10 +21,14 @@ export const NOTIFICATION_QUERY_KEYS = {
     ["application-events", applicationId] as const,
 };
 
-export function useGetNotifications(params?: NotificationListParams) {
+export function useGetNotifications(
+  params?: NotificationListParams,
+  options?: { enabled?: boolean },
+) {
   return useQuery({
     queryKey: NOTIFICATION_QUERY_KEYS.list(params),
     queryFn: () => getNotificationsApi(params),
+    enabled: options?.enabled ?? true,
   });
 }
 

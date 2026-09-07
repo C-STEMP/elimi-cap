@@ -23,6 +23,8 @@ const nextConfig: NextConfig = {
       "@ant-design/icons",
       "framer-motion",
       "recharts",
+      "react-icons",
+      "date-fns",
     ],
   },
 };
