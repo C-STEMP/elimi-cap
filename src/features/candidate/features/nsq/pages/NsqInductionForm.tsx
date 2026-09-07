@@ -17,6 +17,7 @@ import {
 import { Input } from "@/src/components/ui/input";
 import { Select, SelectOption } from "@/src/components/ui/select";
 import { Button } from "@/src/components/ui/button";
+import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/src/components/ui/toast";
 import { useAppDispatch, useAppSelector } from "@/src/store/hooks";
 import { setNsqApplication } from "@/src/store/slices/onboardingSlice";
@@ -25,13 +26,22 @@ import {
   useGetUnitsByTrade,
   useGetSectors,
 } from "@/src/features/shared/reference/hooks";
+import {
+  getCentresApi,
+  getSectorsApi,
+  getTradesBySectorApi,
+} from "@/src/features/shared/reference/api";
 import { useGetMeProfile } from "@/src/features/shared/account/hooks";
 import { useUploadFile } from "@/src/features/shared/storage/hooks";
 import {
   createApplicationApi,
+  getApplicationsApi,
   submitApplicationApi,
   submitInductionFormApi,
 } from "@/src/features/shared/applications/api";
+import { APPLICATION_QUERY_KEYS } from "@/src/features/shared/applications/hooks";
+import { UploadSignatureModal } from "@/src/features/candidate/features/Application/components/UploadSignatureModal";
+import { useCandidateProfileSignature } from "@/src/features/shared/onboarding/hooks";
 import { NsqConfirmationModal } from "../components/NsqConfirmationModal";
 import { NsqSuccessModal } from "../components/NsqSuccessModal";
 
@@ -75,11 +85,14 @@ export const NsqInductionForm: React.FC = () => {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const saved = useAppSelector((state) => state.onboarding.nsqApplication);
   const authUser = useAppSelector((state) => state.auth.user);
   const { data: meProfile } = useGetMeProfile();
+  const { data: profileSignature } = useCandidateProfileSignature();
   const uploadFileMutation = useUploadFile();
+  const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
 
   // Form Fields
   const [firstName, setFirstName] = useState(
@@ -219,6 +232,52 @@ export const NsqInductionForm: React.FC = () => {
     }
   }, [unitsList, selectedUnitIds.length]);
 
+  useEffect(() => {
+    if (!passportAssetId) {
+      const assetId =
+        saved.passportAssetId ||
+        meProfile?.photo?.assetId ||
+        meProfile?.photoAssetId ||
+        meProfile?.personalDetails?.passportPhotoAssetId;
+      if (assetId) {
+        setPassportAssetId(assetId);
+      }
+    }
+    if (!passportPreview) {
+      const previewUrl =
+        saved.passportPreview ||
+        saved.passportUrl ||
+        meProfile?.photo?.url ||
+        meProfile?.personalDetails?.passportUrl ||
+        authUser?.avatar;
+      if (previewUrl) {
+        setPassportPreview(previewUrl);
+      }
+    }
+  }, [meProfile, authUser, saved, passportAssetId, passportPreview]);
+
+  useEffect(() => {
+    if (!signatureAssetId) {
+      const assetId = profileSignature?.assetId || saved.signatureAssetId;
+      if (assetId) {
+        setSignatureAssetId(assetId);
+        setIsSignatureAppended(true);
+      } else {
+        try {
+          const local = localStorage.getItem("user_saved_signature");
+          if (local) {
+            const parsed = JSON.parse(local);
+            if (parsed?.assetId) {
+              setSignatureAssetId(parsed.assetId);
+              if (parsed?.url) setSignatureUrl(parsed.url);
+              setIsSignatureAppended(true);
+            }
+          }
+        } catch {}
+      }
+    }
+  }, [profileSignature, saved.signatureAssetId, signatureAssetId]);
+
   const toggleUnit = (uId: string) => {
     setSelectedUnitIds((prev) =>
       prev.includes(uId) ? prev.filter((id) => id !== uId) : [...prev, uId],
@@ -263,27 +322,109 @@ export const NsqInductionForm: React.FC = () => {
       });
       if (asset?.assetId) {
         setPassportAssetId(asset.assetId);
+        dispatch(
+          setNsqApplication({
+            passportAssetId: asset.assetId,
+            passportPreview: asset.url || localUrl,
+          }),
+        );
+        toast({
+          type: "success",
+          title: "Passport Photo Uploaded",
+          description: "Your passport photo has been uploaded successfully.",
+        });
       }
       if (asset?.url) {
         setPassportPreview(asset.url);
       }
     } catch {
-      // Keep local preview
+      toast({
+        type: "error",
+        title: "Upload Failed",
+        description: "Could not upload passport photograph. Please try again.",
+      });
     }
   };
 
   const handleAppendSignature = () => {
-    setIsSignatureAppended(true);
-    setSignatureUrl(
-      `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60"><text x="10" y="40" font-family="cursive" font-size="24" fill="%238a1538">${encodeURIComponent(
-        `${firstName || "Candidate"} ${lastName || "Signature"}`,
-      )}</text></svg>`,
-    );
-    toast({
-      type: "success",
-      title: "Signature Appended",
-      description: "Your digital signature has been successfully appended.",
-    });
+    // If signature is already appended and user clicks the button ("✓ Signature Appended (Click to update)"),
+    // open the upload modal so they can upload a new one / update their saved signature.
+    if (isSignatureAppended && signatureAssetId) {
+      setIsSignatureModalOpen(true);
+      return;
+    }
+
+    // Check if there is an existing saved signature from backend profile, Redux, or localStorage
+    let savedAssetId =
+      signatureAssetId ||
+      profileSignature?.assetId ||
+      saved.signatureAssetId;
+    let savedUrl =
+      signatureUrl ||
+      profileSignature?.url ||
+      saved.signatureUrl;
+
+    if (!savedAssetId) {
+      try {
+        const local = localStorage.getItem("user_saved_signature");
+        if (local) {
+          const parsed = JSON.parse(local);
+          if (parsed?.assetId) {
+            savedAssetId = parsed.assetId;
+            savedUrl = parsed.url || savedUrl;
+          }
+        }
+      } catch {}
+    }
+
+    // A valid saved signature MUST have an assetId (non-empty string)
+    if (savedAssetId && savedAssetId.trim()) {
+      setIsSignatureAppended(true);
+      setSignatureAssetId(savedAssetId);
+      if (savedUrl) setSignatureUrl(savedUrl);
+      dispatch(
+        setNsqApplication({
+          signatureAssetId: savedAssetId,
+          signatureUrl: savedUrl || "",
+        }),
+      );
+      toast({
+        type: "success",
+        title: "Signature Appended",
+        description: "Your saved signature has been automatically appended.",
+      });
+      return;
+    }
+
+    // First time (or no valid assetId saved yet) -> ask user to upload signature!
+    setIsSignatureModalOpen(true);
+  };
+
+  const handleSignatureUploadSuccess = (sig?: {
+    assetId: string;
+    url?: string;
+  }) => {
+    const assetId = sig?.assetId || "";
+    const url = sig?.url || "";
+
+    if (assetId || url) {
+      setIsSignatureAppended(true);
+      if (assetId) setSignatureAssetId(assetId);
+      if (url) setSignatureUrl(url);
+
+      dispatch(
+        setNsqApplication({
+          signatureAssetId: assetId,
+          signatureUrl: url,
+        }),
+      );
+
+      toast({
+        type: "success",
+        title: "Signature Appended",
+        description: "Your signature has been uploaded and saved for future usage.",
+      });
+    }
   };
 
   const handleFormSubmit = (e: React.FormEvent) => {
@@ -316,11 +457,20 @@ export const NsqInductionForm: React.FC = () => {
       return;
     }
 
-    if (!isSignatureAppended) {
+    if (!passportAssetId || !passportAssetId.trim()) {
+      toast({
+        type: "error",
+        title: "Passport Photo Required",
+        description: "Please upload your passport photograph before submitting.",
+      });
+      return;
+    }
+
+    if (!isSignatureAppended || !signatureAssetId || !signatureAssetId.trim()) {
       toast({
         type: "error",
         title: "Signature Required",
-        description: "Please append your signature before submitting.",
+        description: "Please upload and append your signature before submitting.",
       });
       return;
     }
@@ -356,55 +506,130 @@ export const NsqInductionForm: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      const activeCentreId = saved.centreId;
-      const activeSectorId = saved.sectorId;
-      const activeTradeId = tradeId || saved.tradeId;
+      let activeCentreId = saved.centreId;
+      let activeSectorId = saved.sectorId;
+      let activeTradeId = tradeId || saved.tradeId;
 
-      const app = await createApplicationApi({
-        type: "NSQ",
-        centreId: activeCentreId,
-        sectorId: activeSectorId,
-        tradeId: activeTradeId,
-        unitIds: selectedUnitIds,
-      });
-
-      if (app?.id) {
-        setCreatedAppId(app.id);
+      // Fallback IDs if catalogue selection state is missing
+      if (!activeCentreId || !activeSectorId || !activeTradeId) {
         try {
-          await submitInductionFormApi(app.id, {
-            firstName,
-            lastName,
-            middleName,
-            registrationNo,
-            level,
-            assessmentType,
-            courseStartDate,
-            selectedUnitIds,
-            highestQualification,
-            impairment,
-            learningStrengths,
-            learningWeaknesses,
-            passportAssetId,
-            signatureAssetId,
-          });
+          const [centres, sectors] = await Promise.all([
+            getCentresApi(),
+            getSectorsApi(),
+          ]);
+          if (!activeCentreId && centres.length > 0) activeCentreId = centres[0].id;
+          if (!activeSectorId && sectors.length > 0) activeSectorId = sectors[0].id;
+          if (activeSectorId && !activeTradeId) {
+            const trades = await getTradesBySectorApi(activeSectorId);
+            if (trades.length > 0) activeTradeId = trades[0].id;
+          }
         } catch {
-          // Continue gracefully
-        }
-        try {
-          await submitApplicationApi(app.id);
-        } catch {
-          // Continue if already submitted or handled
+          // Fallback handled below
         }
       }
+
+      let appId = "";
+
+      try {
+        const app = await createApplicationApi({
+          type: "NSQ",
+          centreId: activeCentreId,
+          sectorId: activeSectorId,
+          tradeId: activeTradeId,
+          unitIds: selectedUnitIds,
+        });
+
+        if (app?.id) {
+          appId = app.id;
+        }
+      } catch (createErr: any) {
+        // If candidate already has an application in progress or draft for this trade
+        const msg = createErr?.message || "";
+        const code = createErr?.code || "";
+        if (
+          code === "application.trade_in_progress" ||
+          code === "application.draft_exists" ||
+          msg.toLowerCase().includes("in-progress") ||
+          msg.toLowerCase().includes("already has") ||
+          createErr?.statusCode === 409
+        ) {
+          const list = await getApplicationsApi();
+          const match =
+            list.find(
+              (a) =>
+                a.type === "NSQ" &&
+                (a.tradeId === activeTradeId || (a.trade as any)?.id === activeTradeId) &&
+                (a.status === "draft" || a.status === "in_progress"),
+            ) ||
+            list.find(
+              (a) =>
+                a.type === "NSQ" &&
+                (a.status === "draft" || a.status === "in_progress"),
+            );
+          if (match?.id) {
+            appId = match.id;
+          } else {
+            throw createErr;
+          }
+        } else {
+          throw createErr;
+        }
+      }
+
+      if (!appId) {
+        throw new Error("Could not initialize application. Please try again.");
+      }
+
+      setCreatedAppId(appId);
+
+      // 1. Move application to in_progress so the backend allows submitting the induction form
+      try {
+        await submitApplicationApi(appId);
+      } catch (submitErr: any) {
+        // Continue if already active or submitted
+        const msg = submitErr?.message || "";
+        const code = submitErr?.code || "";
+        if (
+          !code.includes("already") &&
+          !msg.toLowerCase().includes("already") &&
+          !msg.toLowerCase().includes("in_progress")
+        ) {
+          console.warn("Notice: submitApplicationApi:", submitErr);
+        }
+      }
+
+      // 2. Submit the induction form (conforming strictly to backend schema)
+      await submitInductionFormApi(appId, {
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        ...(middleName?.trim() ? { middleName: middleName.trim() } : {}),
+        ...(registrationNo?.trim() ? { registrationNo: registrationNo.trim() } : {}),
+        assessmentType,
+        courseStartDate,
+        impairment,
+        learningStrengths,
+        learningWeaknesses,
+        passportAssetId: passportAssetId.trim(),
+        signatureAssetId: signatureAssetId.trim(),
+      });
+
+      queryClient.invalidateQueries({ queryKey: APPLICATION_QUERY_KEYS.all });
 
       setIsConfirmModalOpen(false);
       setIsSuccessModalOpen(true);
     } catch (err: any) {
+      let errorMsg =
+        err?.message || "Could not submit your NSQ application. Please try again.";
+      if (err?.details && Array.isArray(err.details)) {
+        errorMsg =
+          err.details
+            .map((d: any) => `${d.field ? d.field + ": " : ""}${d.issue || d.message}`)
+            .join("; ") || errorMsg;
+      }
       toast({
         type: "error",
         title: "Submission Error",
-        description:
-          err?.message || "Could not submit your NSQ application. Please try again.",
+        description: errorMsg,
       });
     } finally {
       setIsSubmitting(false);
@@ -775,18 +1000,34 @@ export const NsqInductionForm: React.FC = () => {
 
           <div
             onClick={handleAppendSignature}
-            className={`w-full h-14 rounded-xl border-2 border-dashed flex items-center justify-center gap-2 text-xs font-bold transition-all cursor-pointer select-none ${
+            className={`w-full min-h-14 rounded-xl border-2 border-dashed flex items-center justify-center gap-2 text-xs font-bold transition-all cursor-pointer select-none py-3 px-4 ${
               isSignatureAppended
                 ? "bg-amber-50/70 border-amber-400 text-amber-800"
                 : "bg-[#fffaf0] border-[#fbab2a]/40 text-[#d98200] hover:bg-[#fff5e0] hover:border-[#fbab2a]"
             }`}
           >
-            <FiEdit3 className="w-4 h-4" />
-            <span>
-              {isSignatureAppended
-                ? "✓ Signature Appended (Click to update)"
-                : "Append Signature"}
-            </span>
+            {isSignatureAppended && signatureUrl && !signatureUrl.startsWith("data:image/svg") ? (
+              <div className="flex items-center gap-3">
+                <img
+                  src={signatureUrl}
+                  alt="Signature"
+                  className="h-9 max-w-[120px] object-contain border border-amber-200/80 rounded-md bg-white p-1"
+                />
+                <div className="flex items-center gap-1.5 text-amber-800">
+                  <FiEdit3 className="w-4 h-4 text-amber-800" />
+                  <span>✓ Signature Appended (Click to update)</span>
+                </div>
+              </div>
+            ) : (
+              <>
+                <FiEdit3 className="w-4 h-4" />
+                <span>
+                  {isSignatureAppended
+                    ? "✓ Signature Appended (Click to update)"
+                    : "Append Signature"}
+                </span>
+              </>
+            )}
           </div>
         </div>
 
@@ -832,6 +1073,13 @@ export const NsqInductionForm: React.FC = () => {
             router.push("/dashboard");
           }
         }}
+      />
+
+      {/* Upload Signature Modal */}
+      <UploadSignatureModal
+        isOpen={isSignatureModalOpen}
+        onClose={() => setIsSignatureModalOpen(false)}
+        onUploadSuccess={handleSignatureUploadSuccess}
       />
     </motion.div>
   );

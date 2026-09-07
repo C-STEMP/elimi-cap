@@ -37,7 +37,7 @@ const PILLARS = [
   {
     num: "08",
     title: "Mobile-First & Accessible",
-    desc: "OThe full learner journey — access, learn, resume, complete — works on the phones trainees actually use.",
+    desc: "The full learner journey — access, learn, resume, complete — works on the phones trainees actually use.",
   },
   {
     num: "09",

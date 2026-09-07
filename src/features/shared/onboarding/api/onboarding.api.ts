@@ -211,9 +211,13 @@ export interface CandidateProfileSignature {
 }
 
 export async function getCandidateProfileSignatureApi(): Promise<CandidateProfileSignature> {
-  return capFetch<CandidateProfileSignature>("/candidate/profile/signature", {
-    method: "GET",
-  });
+  try {
+    return await capFetch<CandidateProfileSignature>("/candidate/profile/signature", {
+      method: "GET",
+    });
+  } catch {
+    return { assetId: null, url: null };
+  }
 }
 
 export async function putCandidateProfileSignatureApi(payload: {

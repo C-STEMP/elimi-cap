@@ -66,8 +66,8 @@ export function PipelineSection() {
             Pipeline
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-sm sm:text-base lg:text-lg text-black leading-relaxed">
-            Lorem ipsum dolor lorem ipsum dolor lorem ipsum dolor lorem ipsum
-            <br className="hidden sm:inline" /> dolor lorem ipsum dolor
+            A seamless, three-stage pathway connecting candidates from accredited
+            skills training to certified competency assessment and direct employer placement.
           </p>
         </div>
 

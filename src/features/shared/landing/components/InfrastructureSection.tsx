@@ -3,7 +3,7 @@ import { landingImg1 } from "@/assets";
 
 const STATS = [
   { value: "14,800+", label: "Accredited Centers" },
-  { value: "280+", label: "Certification Rate" },
+  { value: "98%", label: "Certification Rate" },
   { value: "45+", label: "Trade Curriculums" },
   { value: "100%", label: "Credential Safety" },
 ];

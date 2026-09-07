@@ -205,11 +205,12 @@ export function useCandidateProfile(enabled = false) {
   });
 }
 
-export function useCandidateProfileSignature(enabled = false) {
+export function useCandidateProfileSignature(enabled = true) {
   return useQuery({
     queryKey: ONBOARDING_QUERY_KEYS.candidateSignature,
     queryFn: () => getCandidateProfileSignatureApi(),
     enabled,
+    staleTime: 1000 * 60 * 5,
   });
 }
 

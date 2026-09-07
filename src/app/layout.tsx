@@ -35,8 +35,11 @@ export const metadata: Metadata = {
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_APP_URL ||
       process.env.NEXTAUTH_URL ||
-      "https://cap.elimi.africa",
+      "https://cap.e-limi.africa",
   ),
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
     title: "ELIMI — Nigeria's Unified TVET Platform",
     description:
@@ -44,7 +47,7 @@ export const metadata: Metadata = {
     url:
       process.env.NEXT_PUBLIC_APP_URL ||
       process.env.NEXTAUTH_URL ||
-      "https://cap.elimi.africa",
+      "https://cap.e-limi.africa",
     siteName: "ELIMI :: Nigeria's Unified TVET Platform",
     images: [
       {

@@ -57,7 +57,7 @@ export const NinVerificationPage: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-white flex flex-col lg:flex-row h-screen w-full overflow-hidden font-sans antialiased">
+    <div className="fixed inset-0 z-50 bg-primary-solid lg:bg-white flex flex-col lg:flex-row h-screen w-full overflow-hidden font-sans antialiased">
       {/* Left Sidebar - Full Height Auth Sidebar Structure */}
       <div className="hidden lg:flex lg:w-[40%] h-screen sticky top-0 shrink-0 bg-primary-solid flex-col justify-between p-12 xl:p-16 overflow-hidden select-none">
         <FloatingCircles />
@@ -91,20 +91,19 @@ export const NinVerificationPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Mobile Top Header (Visible on smaller screens) */}
-      <div className="lg:hidden bg-primary-solid text-white p-6 flex flex-col gap-4">
-        <Logo theme="light" />
-        <div>
-          <h1 className="text-xl font-bold">NIN Verification</h1>
-          <p className="text-xs text-white/80 mt-1">
-            Complete your one-time identity verification with your National
-            Identification Number.
-          </p>
-        </div>
+      {/* Mobile Top Header */}
+      <div
+        suppressHydrationWarning
+        className="w-full bg-primary-solid pt-3 pb-5 flex items-center justify-center lg:hidden shrink-0"
+      >
+        <Logo theme="light" href="/" />
       </div>
 
       {/* Right Main Panel */}
-      <div className="flex-1 h-full overflow-y-auto flex flex-col items-center p-6 md:p-10 xl:p-12 bg-white relative">
+      <div
+        suppressHydrationWarning
+        className="flex-1 w-full max-w-full h-screen overflow-y-auto bg-white rounded-t-4xl lg:rounded-none -mt-4 lg:mt-0 p-4 sm:p-8 md:p-10 xl:p-12 flex flex-col items-center justify-start relative shadow-md lg:shadow-none"
+      >
         <div className="w-full max-w-xl my-auto py-6 flex flex-col text-left">
           <h2 className="text-2xl xl:text-3xl font-bold text-primary-hover mb-3">
             Verify Your Identity
