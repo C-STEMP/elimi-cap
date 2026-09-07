@@ -17,7 +17,10 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
   isOpen,
   onClose,
 }) => {
-  const { data: notifications = [], isLoading } = useGetNotifications();
+  const { data: notifications = [], isLoading } = useGetNotifications(
+    undefined,
+    { enabled: isOpen },
+  );
   const markReadMutation = useMarkNotificationRead();
 
   if (!isOpen) return null;

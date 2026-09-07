@@ -38,7 +38,10 @@ export const PersonalDetailsDocumentSection: React.FC<
   const qualTitle = applicationDetail?.trade?.name || trade || "—";
 
   const passportUrl =
+    applicationDetail?.candidate?.photo?.url ||
+    (applicationDetail as any)?.candidate?.photoAssetId ||
     (pDetails as any)?.passportUrl ||
+    (pDetails as any)?.photoUrl ||
     (applicationDetail as any)?.candidate?.passportUrl ||
     (applicationDetail as any)?.passportUrl ||
     (applicationDetail as any)?.frozenProfile?.passportUrl ||

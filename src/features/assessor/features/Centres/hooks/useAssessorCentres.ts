@@ -6,15 +6,18 @@ import {
 } from "@/src/features/shared/assessor/hooks";
 import type { RequestRetainedAssessorPayload } from "@/src/features/shared/assessor/api";
 
-export function useGetAssessorCentres(params?: {
-  status?: "pending" | "approved" | "revoked" | "rejected" | "all";
-  q?: string;
-  sort?: "joinedAt" | "requestedAt";
-  order?: "asc" | "desc";
-  cursor?: string;
-  limit?: number;
-}) {
-  return useSharedGetAssessorCentres(params);
+export function useGetAssessorCentres(
+  params?: {
+    status?: "pending" | "approved" | "revoked" | "rejected" | "all";
+    q?: string;
+    sort?: "joinedAt" | "requestedAt";
+    order?: "asc" | "desc";
+    cursor?: string;
+    limit?: number;
+  },
+  options?: { enabled?: boolean },
+) {
+  return useSharedGetAssessorCentres(params, options);
 }
 
 export function useGetAssessorCentreApplications(

@@ -536,15 +536,15 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
             {/* Assessor Profile Card */}
             <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center gap-3.5">
               <Avatar
-                src={null}
-                name="Ngozi Eze"
+                src={(application as any)?.facilitator?.photo?.url || (application as any)?.facilitator?.avatar || null}
+                name={(application as any)?.facilitator?.name || "Assessor"}
                 className="w-12 h-12 shrink-0"
                 alt="Assessor"
               />
 
               <div className="flex flex-col gap-1 min-w-0">
                 <span className="font-extrabold text-sm text-neutral-primary truncate">
-                  Ngozi Eze
+                  {(application as any)?.facilitator?.name || "Assigned Assessor"}
                 </span>
                 <span className="text-[11px] text-gray-500 font-medium truncate">
                   Assessor · {resolvedTradeName} ({levelName})

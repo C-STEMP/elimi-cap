@@ -128,6 +128,9 @@ export const CandidateApplicationFormView: React.FC<
     "NOS-ELI-L3";
 
   const passportUrl =
+    (apiApp as any)?.candidate?.photo?.url ||
+    (apiApp as any)?.candidate?.photoAssetId ||
+    (apiApp as any)?.personalInformation?.personalDetails?.photoUrl ||
     savedPersonalInfo.passportUrl ||
     (authUser as any)?.avatar ||
     (authUser as any)?.avatarUrl ||

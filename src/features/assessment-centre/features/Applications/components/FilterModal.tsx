@@ -15,7 +15,7 @@ interface FilterModalProps {
   }) => void;
 }
 
-export const AssessmentCentreFilterModal: React.FC<FilterModalProps> = ({
+export const FilterModal: React.FC<FilterModalProps> = ({
   isOpen,
   onClose,
   onApplyFilter,

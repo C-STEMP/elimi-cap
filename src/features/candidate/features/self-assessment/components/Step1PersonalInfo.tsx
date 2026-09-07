@@ -45,6 +45,8 @@ export const Step1PersonalInfo: React.FC<Step1Props> = ({
   const { data: candidateProfile } = useCandidateProfile(true);
 
   const profileAvatar =
+    (application as any)?.candidate?.photo?.url ||
+    (application as any)?.candidate?.photoAssetId ||
     savedPersonalInfo.passportUrl ||
     savedPersonalInfo.passportPreview ||
     application?.personalInformation?.passportAsset?.url ||

@@ -57,34 +57,42 @@ export function useGetAssessorEvents(params?: {
 }
 
 // ─── 3. Assessor Applications Hook ───────────────────────────────────────────
-export function useGetAssessorApplications(params?: {
-  q?: string;
-  tradeId?: string;
-  type?: ApplicationType;
-  status?: ApplicationStatus;
-  sort?: string;
-  order?: "asc" | "desc";
-  cursor?: string;
-  limit?: number;
-}) {
+export function useGetAssessorApplications(
+  params?: {
+    q?: string;
+    tradeId?: string;
+    type?: ApplicationType;
+    status?: ApplicationStatus;
+    sort?: string;
+    order?: "asc" | "desc";
+    cursor?: string;
+    limit?: number;
+  },
+  options?: { enabled?: boolean },
+) {
   return useQuery({
     queryKey: ASSESSOR_QUERY_KEYS.applications(params),
     queryFn: () => getAssessorApplicationsApi(params),
+    enabled: options?.enabled ?? true,
   });
 }
 
 // ─── 4. Assessor Centres Hook ────────────────────────────────────────────────
-export function useGetAssessorCentres(params?: {
-  status?: "pending" | "approved" | "revoked" | "rejected" | "all";
-  q?: string;
-  sort?: "joinedAt" | "requestedAt";
-  order?: "asc" | "desc";
-  cursor?: string;
-  limit?: number;
-}) {
+export function useGetAssessorCentres(
+  params?: {
+    status?: "pending" | "approved" | "revoked" | "rejected" | "all";
+    q?: string;
+    sort?: "joinedAt" | "requestedAt";
+    order?: "asc" | "desc";
+    cursor?: string;
+    limit?: number;
+  },
+  options?: { enabled?: boolean },
+) {
   return useQuery({
     queryKey: ASSESSOR_QUERY_KEYS.centres(params),
     queryFn: () => getAssessorCentresApi(params),
+    enabled: options?.enabled ?? true,
   });
 }
 

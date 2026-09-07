@@ -160,7 +160,7 @@ export default function NotificationsPage() {
             <div className="w-16 h-16 rounded-3xl bg-gray-100 text-gray-400 flex items-center justify-center mb-4">
               <FiBell className="w-8 h-8" />
             </div>
-            <h3 className="text-lg font-bold text-[#1e1e1e]">
+            <h3 className="text-lg font-bold text-text-dark">
               No Notifications Found
             </h3>
             <p className="text-sm text-gray-500 mt-1 max-w-sm">
@@ -199,7 +199,7 @@ export default function NotificationsPage() {
 
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h4 className="text-sm font-bold text-[#1e1e1e]">
+                        <h4 className="text-sm font-bold text-text-dark">
                           {itemTitle}
                         </h4>
                         {isUnread && (

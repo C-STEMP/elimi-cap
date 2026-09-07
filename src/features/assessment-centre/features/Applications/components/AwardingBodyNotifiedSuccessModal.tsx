@@ -26,7 +26,7 @@ export const AwardingBodyNotifiedSuccessModal: React.FC<
           className="bg-white rounded-[28px] p-8 sm:p-10 max-w-md w-full flex flex-col items-center text-center shadow-2xl relative border border-gray-100"
         >
           <div className="w-20 h-20 rounded-full bg-[#48C046] flex items-center justify-center text-white mb-6 shadow-md">
-            <FiCheck className="w-10 h-10 stroke-[3]" />
+            <FiCheck className="w-10 h-10 stroke-3" />
           </div>
 
           <h3 className="text-xl sm:text-2xl font-extrabold text-black tracking-tight mb-2">

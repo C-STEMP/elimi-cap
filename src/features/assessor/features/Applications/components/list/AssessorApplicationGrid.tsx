@@ -1,6 +1,5 @@
-"use client";
-
 import React from "react";
+import { Avatar } from "@/src/components/ui/avatar";
 import type { AssessorApplicationRecord } from "../../types/applications.types";
 
 interface AssessorApplicationGridProps {
@@ -43,13 +42,20 @@ export const AssessorApplicationGrid: React.FC<
             className="bg-white border border-gray-100 hover:border-gray-200 hover:shadow-md rounded-2xl p-5 flex flex-col justify-between gap-4 transition-all cursor-pointer group"
           >
             <div className="flex items-start justify-between gap-2">
-              <div className="flex flex-col">
-                <span className="text-[11px] font-medium text-neutral-secondary">
-                  {app.role || "Facilitator"}
-                </span>
-                <h4 className="text-base font-bold text-neutral-primary group-hover:text-primary transition-colors">
-                  {app.candidateName}
-                </h4>
+              <div className="flex items-center gap-3 min-w-0">
+                <Avatar
+                  src={app.candidatePhotoUrl}
+                  name={app.candidateName}
+                  className="w-10 h-10 rounded-full border border-gray-100 shrink-0"
+                />
+                <div className="flex flex-col min-w-0">
+                  <span className="text-[11px] font-medium text-neutral-secondary">
+                    {app.role || "Facilitator"}
+                  </span>
+                  <h4 className="text-base font-bold text-neutral-primary group-hover:text-primary transition-colors truncate">
+                    {app.candidateName}
+                  </h4>
+                </div>
               </div>
               {isCompleted ? (
                 <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#1E7F4C]/10 text-[#1E7F4C]">

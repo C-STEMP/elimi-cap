@@ -83,10 +83,15 @@ export function useGetEvidenceTypesByTrade(tradeId: string) {
   });
 }
 
-export function useGetCentres(params?: { cursor?: string; limit?: number }) {
+export function useGetCentres(
+  params?: { cursor?: string; limit?: number },
+  options?: { enabled?: boolean },
+) {
   return useQuery({
     queryKey: REFERENCE_QUERY_KEYS.centres(params),
     queryFn: () => getCentresApi(params),
+    enabled: options?.enabled ?? true,
+    staleTime: 1000 * 60 * 10,
   });
 }
 

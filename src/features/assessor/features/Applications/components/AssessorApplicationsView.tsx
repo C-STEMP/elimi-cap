@@ -39,10 +39,18 @@ function mapApplicationToRecord(app: any): AssessorApplicationRecord {
       ? app.roles.map((r: string) => r.replace(/_/g, " ")).join(", ")
       : app.role || "Assessor";
 
+  const candidatePhotoUrl =
+    app.candidate?.photo?.url ||
+    app.candidate?.photoAssetId ||
+    app.candidate?.avatar ||
+    null;
+
   return {
     id: app.id,
     role: resolvedRole.charAt(0).toUpperCase() + resolvedRole.slice(1),
     candidateName,
+    candidatePhotoUrl,
+    currentStageKey: app.currentStageKey || app.stage,
     trade: tradeName,
     assessmentType: app.type || "RPL",
     status: statusMap[app.status] ?? "Pending",

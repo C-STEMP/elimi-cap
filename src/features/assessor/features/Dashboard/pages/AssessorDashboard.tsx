@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useRouter, usePathname, useParams } from "next/navigation";
 import { useAppSelector } from "@/src/store/hooks";
 import { useGetAssessorCentres } from "../../Centres/hooks";
 import { useGetAssessorApplications } from "../../Applications/hooks";
@@ -14,33 +15,57 @@ import {
 } from "../components/AssessorHeaderBanner";
 import { AssessorOverviewView } from "../components/AssessorOverviewView";
 
+import dynamic from "next/dynamic";
+import { Loader } from "@/src/components/ui/loader";
+
+const AssessorTabLoadingFallback = () => (
+  <div className="w-full min-h-[300px] flex items-center justify-center">
+    <Loader tip="Loading section..." />
+  </div>
+);
+
 // Centres feature components
-import {
-  AssessorCentresView,
-  type AssessorCentreItem,
-} from "../../Centres/components/AssessorCentresView";
-import { AssessorCentreDetailView } from "../../Centres/components/AssessorCentreDetailView";
-import { ApplyToCentreModal } from "../../Centres/components/ApplyToCentreModal";
+import type { AssessorCentreItem } from "../../Centres/components/AssessorCentresView";
+const AssessorCentresView = dynamic(
+  () => import("../../Centres/components/AssessorCentresView").then((m) => m.AssessorCentresView),
+  { loading: () => <AssessorTabLoadingFallback /> }
+);
+const AssessorCentreDetailView = dynamic(
+  () => import("../../Centres/components/AssessorCentreDetailView").then((m) => m.AssessorCentreDetailView),
+  { loading: () => <AssessorTabLoadingFallback /> }
+);
+const ApplyToCentreModal = dynamic(
+  () => import("../../Centres/components/ApplyToCentreModal").then((m) => m.ApplyToCentreModal)
+);
 
 // Applications feature components
-import {
-  AssessorApplicationsView,
-  type AssessorApplicationRecord,
-} from "../../Applications/components/AssessorApplicationsView";
-import {
-  AssessorApplicationDetailView,
-  type AssessorDetailSubView,
-} from "../../Applications/components/AssessorApplicationDetailView";
+import type { AssessorApplicationRecord } from "../../Applications/components/AssessorApplicationsView";
+import type { AssessorDetailSubView } from "../../Applications/components/AssessorApplicationDetailView";
+const AssessorApplicationsView = dynamic(
+  () => import("../../Applications/components/AssessorApplicationsView").then((m) => m.AssessorApplicationsView),
+  { loading: () => <AssessorTabLoadingFallback /> }
+);
+const AssessorApplicationDetailView = dynamic(
+  () => import("../../Applications/components/AssessorApplicationDetailView").then((m) => m.AssessorApplicationDetailView),
+  { loading: () => <AssessorTabLoadingFallback /> }
+);
 
 // JobBoard feature components
-import {
-  AssessorJobBoardView,
-  type AssessorJobRecord,
-} from "../../JobBoard/components/AssessorJobBoardView";
-import { AssessorJobDetailView } from "../../JobBoard/components/AssessorJobDetailView";
+import type { AssessorJobRecord } from "../../JobBoard/components/AssessorJobBoardView";
+const AssessorJobBoardView = dynamic(
+  () => import("../../JobBoard/components/AssessorJobBoardView").then((m) => m.AssessorJobBoardView),
+  { loading: () => <AssessorTabLoadingFallback /> }
+);
+const AssessorJobDetailView = dynamic(
+  () => import("../../JobBoard/components/AssessorJobDetailView").then((m) => m.AssessorJobDetailView),
+  { loading: () => <AssessorTabLoadingFallback /> }
+);
 
 // Settings feature components
-import { AssessorSettingsView } from "../../Settings/components/AssessorSettingsView";
+const AssessorSettingsView = dynamic(
+  () => import("../../Settings/components/AssessorSettingsView").then((m) => m.AssessorSettingsView),
+  { loading: () => <AssessorTabLoadingFallback /> }
+);
 
 import { useGetCentres } from "@/src/features/shared/reference/hooks";
 import { useToast } from "@/src/components/ui/toast";
@@ -50,10 +75,51 @@ export const AssessorDashboard: React.FC = () => {
   const user = useAppSelector((state) => state.auth.user);
   const userName = user?.fullName || user?.email?.split("@")[0] || "Assessor";
 
+  const router = useRouter();
+  const params = useParams();
+
+  const TAB_TO_SLUG: Record<AssessorNavTab, string> = {
+    Overview: "overview",
+    Centres: "centres",
+    Applications: "applications",
+    "Job Board": "job-board",
+    Settings: "settings",
+  };
+
+  const SLUG_TO_TAB: Record<string, AssessorNavTab> = {
+    overview: "Overview",
+    centres: "Centres",
+    applications: "Applications",
+    "job-board": "Job Board",
+    settings: "Settings",
+  };
+
+  const routeTabSlug = params?.tab as string | undefined;
+  const initialTab =
+    routeTabSlug && SLUG_TO_TAB[routeTabSlug] ? SLUG_TO_TAB[routeTabSlug] : "Overview";
+
+  const [activeTab, setActiveTab] = useState<AssessorNavTab>(initialTab);
+
+  useEffect(() => {
+    if (routeTabSlug && SLUG_TO_TAB[routeTabSlug]) {
+      setActiveTab(SLUG_TO_TAB[routeTabSlug]);
+    }
+  }, [routeTabSlug]);
+
+  const isCentresActive = activeTab === "Centres";
+  const isAppsActive = activeTab === "Applications";
+  const isOverviewActive = activeTab === "Overview";
+
   const { data: summaryData } = useGetAssessorSummary();
-  const { data: centresData } = useGetAssessorCentres();
-  const { data: applicationsData = [] } = useGetAssessorApplications();
-  const { data: remoteCentres = [] } = useGetCentres();
+  const { data: centresData } = useGetAssessorCentres(undefined, {
+    enabled: isCentresActive || isOverviewActive,
+  });
+  const { data: applicationsData = [] } = useGetAssessorApplications(undefined, {
+    enabled: isAppsActive || isOverviewActive,
+  });
+  const { data: remoteCentres = [] } = useGetCentres(undefined, {
+    enabled: isCentresActive,
+  });
 
   const centresMap = React.useMemo(() => {
     const map = new Map<string, string>();
@@ -135,7 +201,6 @@ export const AssessorDashboard: React.FC = () => {
       (a) => a.status === "rejected" || a.status === "withdrawn",
     ).length;
 
-  const [activeTab, setActiveTab] = useState<AssessorNavTab>("Overview");
 
   const [selectedCentre, setSelectedCentre] =
     useState<AssessorCentreItem | null>(null);
@@ -159,6 +224,8 @@ export const AssessorDashboard: React.FC = () => {
     setCanMarkAsComplete(false);
     setTriggerMarkComplete(false);
     setSelectedJob(null);
+    const slug = TAB_TO_SLUG[tab] || "overview";
+    router.push(`/assessor/dashboard/${slug}`);
   };
 
   const handleBackFromApplication = () => {
@@ -304,11 +371,13 @@ export const AssessorDashboard: React.FC = () => {
         )}
       </div>
 
-      <ApplyToCentreModal
-        isOpen={isApplyModalOpen}
-        onClose={() => setIsApplyModalOpen(false)}
-        onSuccess={() => setIsApplyModalOpen(false)}
-      />
+      {isApplyModalOpen && (
+        <ApplyToCentreModal
+          isOpen={isApplyModalOpen}
+          onClose={() => setIsApplyModalOpen(false)}
+          onSuccess={() => setIsApplyModalOpen(false)}
+        />
+      )}
     </div>
   );
 };

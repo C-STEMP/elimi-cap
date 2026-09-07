@@ -14,6 +14,8 @@ export interface AssessorApplicationRecord {
   id: string;
   role?: AssessorRole | string;
   candidateName: string;
+  candidatePhotoUrl?: string | null;
+  currentStageKey?: string;
   trade: string;
   assessmentType: "RPL" | "NSQ" | string;
   status: AssessorApplicationStatus;

@@ -760,10 +760,11 @@ export function useWithdrawCentreWallet() {
 }
 
 // ─── Profile & Policy Hooks ──────────────────────────────────────────────────
-export function useGetCentreProfile() {
+export function useGetCentreProfile(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: CENTRE_QUERY_KEYS.profile,
     queryFn: () => getCentreProfileApi(),
+    enabled: options?.enabled ?? true,
   });
 }
 
@@ -867,15 +868,19 @@ export function useGetDirectory(params?: {
 
 // ─── Panels & Interviews Hooks ───────────────────────────────────────────────
 
-export function useGetCentrePanels(params?: {
-  cursor?: string;
-  limit?: number;
-  q?: string;
-  order?: "asc" | "desc";
-}) {
+export function useGetCentrePanels(
+  params?: {
+    cursor?: string;
+    limit?: number;
+    q?: string;
+    order?: "asc" | "desc";
+  },
+  options?: { enabled?: boolean },
+) {
   return useQuery({
     queryKey: CENTRE_QUERY_KEYS.panels(params),
     queryFn: () => getCentrePanelsApi(params),
+    enabled: options?.enabled ?? true,
   });
 }
 
@@ -961,18 +966,22 @@ export function useDeleteCentrePanel() {
   });
 }
 
-export function useGetCentreInterviews(params?: {
-  cursor?: string;
-  limit?: number;
-  q?: string;
-  from?: string;
-  to?: string;
-  scheduledAt?: string;
-  order?: "asc" | "desc";
-}) {
+export function useGetCentreInterviews(
+  params?: {
+    cursor?: string;
+    limit?: number;
+    q?: string;
+    from?: string;
+    to?: string;
+    scheduledAt?: string;
+    order?: "asc" | "desc";
+  },
+  options?: { enabled?: boolean },
+) {
   return useQuery({
     queryKey: CENTRE_QUERY_KEYS.interviews(params),
     queryFn: () => getCentreInterviewsApi(params),
+    enabled: options?.enabled ?? true,
   });
 }
 
