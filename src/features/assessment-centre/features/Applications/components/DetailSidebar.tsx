@@ -101,7 +101,7 @@ export const DetailSidebar: React.FC<DetailSidebarProps> = ({
             <h3 className="text-base font-extrabold text-black tracking-tight">Facilitator</h3>
             <div className="flex items-center gap-3.5">
               <Avatar
-                src={activeFacilitator.avatar}
+                src={activeFacilitator.photo?.url || activeFacilitator.photoUrl || activeFacilitator.avatar}
                 name={activeFacilitator.name}
                 className="w-13 h-13 border border-gray-200 shrink-0"
                 alt={activeFacilitator.name}

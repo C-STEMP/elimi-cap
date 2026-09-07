@@ -16,18 +16,40 @@ export interface EvaluateInterviewPayload {
 
 export async function getInterviewPanelApi(
   id: string,
-): Promise<InterviewPanel> {
-  return capFetch<InterviewPanel>(`/applications/${id}/interview/panel`, {
-    method: "GET",
-  });
+): Promise<InterviewPanel | null> {
+  try {
+    return await capFetch<InterviewPanel>(`/applications/${id}/interview/panel`, {
+      method: "GET",
+    });
+  } catch (err: any) {
+    if (
+      err?.statusCode === 404 ||
+      err?.status === 404 ||
+      err?.error?.code?.includes("not_found")
+    ) {
+      return null;
+    }
+    throw err;
+  }
 }
 
 export async function getInterviewScheduleApi(
   id: string,
-): Promise<InterviewSchedule> {
-  return capFetch<InterviewSchedule>(`/applications/${id}/interview/schedule`, {
-    method: "GET",
-  });
+): Promise<InterviewSchedule | null> {
+  try {
+    return await capFetch<InterviewSchedule>(`/applications/${id}/interview/schedule`, {
+      method: "GET",
+    });
+  } catch (err: any) {
+    if (
+      err?.statusCode === 404 ||
+      err?.status === 404 ||
+      err?.error?.code?.includes("not_found")
+    ) {
+      return null;
+    }
+    throw err;
+  }
 }
 
 export async function evaluateInterviewApi(
@@ -43,11 +65,22 @@ export async function evaluateInterviewApi(
 export async function getInterviewFormsApi(
   id: string,
 ): Promise<InterviewForm[]> {
-  const res = await capFetch<InterviewForm[] | { data: InterviewForm[] }>(
-    `/applications/${id}/interview/forms`,
-    { method: "GET" },
-  );
-  return Array.isArray(res) ? res : (res as any)?.data || [];
+  try {
+    const res = await capFetch<InterviewForm[] | { data: InterviewForm[] }>(
+      `/applications/${id}/interview/forms`,
+      { method: "GET" },
+    );
+    return Array.isArray(res) ? res : (res as any)?.data || [];
+  } catch (err: any) {
+    if (
+      err?.statusCode === 404 ||
+      err?.status === 404 ||
+      err?.error?.code?.includes("not_found")
+    ) {
+      return [];
+    }
+    throw err;
+  }
 }
 
 export async function updateInterviewFormApi(
@@ -79,11 +112,22 @@ export async function signoffInterviewFormApi(
 export async function getInterviewObserverCommentsApi(
   id: string,
 ): Promise<InterviewObserverComment[]> {
-  const res = await capFetch<InterviewObserverComment[] | { data: InterviewObserverComment[] }>(
-    `/applications/${id}/interview/observer-comments`,
-    { method: "GET" },
-  );
-  return Array.isArray(res) ? res : (res as any)?.data || [];
+  try {
+    const res = await capFetch<InterviewObserverComment[] | { data: InterviewObserverComment[] }>(
+      `/applications/${id}/interview/observer-comments`,
+      { method: "GET" },
+    );
+    return Array.isArray(res) ? res : (res as any)?.data || [];
+  } catch (err: any) {
+    if (
+      err?.statusCode === 404 ||
+      err?.status === 404 ||
+      err?.error?.code?.includes("not_found")
+    ) {
+      return [];
+    }
+    throw err;
+  }
 }
 
 export async function postInterviewObserverCommentApi(

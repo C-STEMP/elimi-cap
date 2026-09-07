@@ -40,6 +40,8 @@ export function useCandidateFormState({
       : appDetail?.candidate?.name || candidateName;
 
   const resolvedPassportUrl =
+    appDetail?.candidate?.photo?.url ||
+    (appDetail as any)?.candidate?.photoAssetId ||
     personalDetails?.passportUrl ||
     (personalDetails as any)?.photoUrl ||
     (appDetail as any)?.candidate?.passportUrl ||

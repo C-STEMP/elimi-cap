@@ -58,14 +58,14 @@ export function usePanelistModalState({
         label: a.name || "Assessor",
         value: a.id || (a as any).assessorId || (a as any).userId,
         sectors: a.sectors || [],
-        avatar: (a as any).avatar || "/images/facilitator_ngozi.jpg",
+        avatar: (a as any)?.photo?.url || (a as any).avatar || (a as any).photoUrl || undefined,
       }));
     }
     return [
-      { label: "RUQOYAT BABALOLA", value: "assessor-ruqoyat", sectors: [{ id: "sec-1", name: tradeName }], avatar: "/images/facilitator_ngozi.jpg" },
-      { label: "Angela Jones", value: "assessor-angela", sectors: [{ id: "sec-1", name: tradeName }], avatar: "/images/facilitator_ngozi.jpg" },
-      { label: "Amina Bello", value: "assessor-amina", sectors: [{ id: "sec-1", name: tradeName }], avatar: "/images/facilitator_ngozi.jpg" },
-      { label: "David Adeleke", value: "assessor-david", sectors: [{ id: "sec-1", name: tradeName }], avatar: "/images/facilitator_ngozi.jpg" },
+      { label: "RUQOYAT BABALOLA", value: "assessor-ruqoyat", sectors: [{ id: "sec-1", name: tradeName }], avatar: undefined },
+      { label: "Angela Jones", value: "assessor-angela", sectors: [{ id: "sec-1", name: tradeName }], avatar: undefined },
+      { label: "Amina Bello", value: "assessor-amina", sectors: [{ id: "sec-1", name: tradeName }], avatar: undefined },
+      { label: "David Adeleke", value: "assessor-david", sectors: [{ id: "sec-1", name: tradeName }], avatar: undefined },
     ];
   }, [centreAssessors, tradeName]);
 
@@ -134,10 +134,45 @@ export function usePanelistModalState({
     const link = mode === "online" ? (meetingLink.startsWith("http") ? meetingLink : `https://${meetingLink}`) : undefined;
 
     const panelistData: ScheduledPanelistInfo = {
-      trade: selectedTrade || tradeName, leadAssessor: { id: leadAssessor.value, name: leadAssessor.label, avatar: (leadAssessor as any).avatar || "/images/facilitator_ngozi.jpg", role: "Lead Panelist", tags: [selectedTrade, "RPL Coordinator"] },
-      panelMembers: [{ id: panelMemberAssessor.value, name: panelMemberAssessor.label, avatar: (panelMemberAssessor as any).avatar || "/images/facilitator_ngozi.jpg", role: "Panel Member", tags: [selectedTrade], isHighlighted: true }, { id: thirdAssessor.value, name: thirdAssessor.label, avatar: "/images/facilitator_ngozi.jpg", role: "Panel Member", tags: [selectedTrade], isHighlighted: false }],
-      internalVerifier: { id: ivAssessor.value, name: ivAssessor.label, avatar: "/images/user_avatar_chidi.jpg", role: "Internal Verifier", tags: ["IV", "RPL Quality Assessor"] },
-      date, time: time || "12:00", mode: interviewMode === "Virtual" ? "virtual" : "physical", location: location || "Cstemp Centre", meetingLink: link, useCompanyAddress: sameAsCompanyAddress,
+      trade: selectedTrade || tradeName,
+      leadAssessor: {
+        id: leadAssessor.value,
+        name: leadAssessor.label,
+        avatar: (leadAssessor as any)?.avatar || (leadAssessor as any)?.photo?.url || undefined,
+        role: "Lead Panelist",
+        tags: [selectedTrade, "RPL Coordinator"],
+      },
+      panelMembers: [
+        {
+          id: panelMemberAssessor.value,
+          name: panelMemberAssessor.label,
+          avatar: (panelMemberAssessor as any)?.avatar || (panelMemberAssessor as any)?.photo?.url || undefined,
+          role: "Panel Member",
+          tags: [selectedTrade],
+          isHighlighted: true,
+        },
+        {
+          id: thirdAssessor.value,
+          name: thirdAssessor.label,
+          avatar: (thirdAssessor as any)?.avatar || (thirdAssessor as any)?.photo?.url || undefined,
+          role: "Panel Member",
+          tags: [selectedTrade],
+          isHighlighted: false,
+        },
+      ],
+      internalVerifier: {
+        id: ivAssessor.value,
+        name: ivAssessor.label,
+        avatar: (ivAssessor as any)?.avatar || (ivAssessor as any)?.photo?.url || undefined,
+        role: "Internal Verifier",
+        tags: ["IV", "RPL Quality Assessor"],
+      },
+      date,
+      time: time || "12:00",
+      mode: interviewMode === "Virtual" ? "virtual" : "physical",
+      location: location || "Cstemp Centre",
+      meetingLink: link,
+      useCompanyAddress: sameAsCompanyAddress,
     };
 
     if (typeof window !== "undefined" && applicationId) {

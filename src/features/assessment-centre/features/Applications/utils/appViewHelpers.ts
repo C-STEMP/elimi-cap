@@ -57,6 +57,11 @@ export function mapApplicationItem(app: any) {
       rawApp.candidate?.name ||
       `${rawApp.candidate?.firstName || ""} ${rawApp.candidate?.lastName || ""}`.trim() ||
       `Candidate (${app.candidateId?.slice(0, 8) || "N/A"})`,
+    photoUrl:
+      rawApp.candidate?.photo?.url ||
+      rawApp.candidate?.photoAssetId ||
+      rawApp.candidate?.avatar ||
+      null,
     centreName: rawApp.centre?.name || rawApp.centreId || "—",
     facilitatorName:
       rawApp.facilitator?.name ||

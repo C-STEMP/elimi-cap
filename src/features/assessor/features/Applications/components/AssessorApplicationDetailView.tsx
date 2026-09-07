@@ -87,8 +87,18 @@ export const AssessorApplicationDetailView: React.FC<
   onResetTriggerMarkComplete,
 }) => {
   const { toast } = useToast();
-  const { data: interviewSchedule } = useGetInterviewSchedule(application.id);
-  const { data: remoteForms } = useGetInterviewForms(application.id);
+  const { data: appDetail } = useGetApplicationById(application.id);
+  const isInterviewStage = Boolean(
+    appDetail?.currentStageKey === "interview" ||
+    (appDetail as any)?.stage === "interview" ||
+    application?.currentStageKey === "interview"
+  );
+  const { data: interviewSchedule } = useGetInterviewSchedule(application.id, {
+    enabled: isInterviewStage,
+  });
+  const { data: remoteForms } = useGetInterviewForms(application.id, {
+    enabled: isInterviewStage,
+  });
   const evaluateInterview = useEvaluateInterview(application.id);
 
   const [internalSubView, setInternalSubView] =
@@ -182,8 +192,6 @@ export const AssessorApplicationDetailView: React.FC<
     setInternalSubView(next);
     onSubViewChange?.(next);
   };
-
-  const { data: appDetail } = useGetApplicationById(application.id);
 
   const handleConfirmCompetent = async () => {
     setIsConfirmCompetentOpen(false);
@@ -343,8 +351,16 @@ export const AssessorApplicationDetailView: React.FC<
     );
   }
 
+  const resolvedCandidatePhoto =
+    appDetail?.candidate?.photo?.url ||
+    (appDetail as any)?.candidate?.photoAssetId ||
+    (appDetail as any)?.candidate?.avatar ||
+    application.candidatePhotoUrl ||
+    null;
+
   const activeApplicationRecord: AssessorApplicationRecord = {
     ...application,
+    candidatePhotoUrl: resolvedCandidatePhoto,
     status: interviewOutcome === "competent" ? "Completed" : application.status,
   };
 

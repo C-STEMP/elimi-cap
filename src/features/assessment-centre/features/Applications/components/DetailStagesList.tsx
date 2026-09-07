@@ -1,11 +1,12 @@
-"use client";
-
 import React from "react";
 import { FiFlag } from "react-icons/fi";
 import { Button } from "@/src/components/ui/button";
+import { Avatar } from "@/src/components/ui/avatar";
 import { getStatusBadge } from "../utils/detailHelpers";
 
 interface DetailStagesListProps {
+  candidateName?: string;
+  candidatePhotoUrl?: string | null;
   submittedDate: string;
   onOpenCandidateForm: () => void;
   onOpenEvidenceVault?: () => void;
@@ -40,6 +41,8 @@ interface DetailStagesListProps {
 }
 
 export const DetailStagesList: React.FC<DetailStagesListProps> = ({
+  candidateName,
+  candidatePhotoUrl,
   submittedDate,
   onOpenCandidateForm,
   onOpenEvidenceVault,
@@ -211,9 +214,11 @@ export const DetailStagesList: React.FC<DetailStagesListProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
               {interviewAssessorsList.slice(0, 3).map((assessor, idx) => (
                 <div key={assessor.id || idx} className={`bg-white rounded-2xl p-4 flex items-center gap-3.5 border transition-all ${idx === 1 || assessor.isHighlighted ? "border-2 border-[#FBAB2A] shadow-xs" : "border-gray-100 shadow-2xs"}`}>
-                  <div className="relative w-12 h-12 rounded-full overflow-hidden shrink-0 border border-gray-100 bg-gray-50">
-                    <img src={assessor.avatar || "/images/facilitator_ngozi.jpg"} alt={assessor.name} className="w-full h-full object-cover" />
-                  </div>
+                  <Avatar
+                    src={assessor.avatar}
+                    name={assessor.name}
+                    className="w-12 h-12 shrink-0 border border-gray-100 rounded-full"
+                  />
                   <div className="flex flex-col min-w-0">
                     <h4 className="text-black font-bold text-sm leading-snug truncate">{assessor.name}</h4>
                     <p className="text-gray-400 text-xs font-normal truncate mt-0.5">{assessor.role || (idx === 0 ? "Lead Panelist" : "Panel Member")}</p>

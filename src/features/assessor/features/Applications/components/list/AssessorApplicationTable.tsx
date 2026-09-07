@@ -1,6 +1,5 @@
-"use client";
-
 import React from "react";
+import { Avatar } from "@/src/components/ui/avatar";
 import type { AssessorApplicationRecord } from "../../types/applications.types";
 
 interface AssessorApplicationTableProps {
@@ -59,7 +58,14 @@ export const AssessorApplicationTable: React.FC<
                   {app.role || "Facilitator"}
                 </td>
                 <td className="py-3.5 px-4 font-medium text-neutral-primary">
-                  {app.candidateName}
+                  <div className="flex items-center gap-2.5">
+                    <Avatar
+                      src={app.candidatePhotoUrl}
+                      name={app.candidateName}
+                      className="w-7 h-7 rounded-full border border-gray-100 shrink-0"
+                    />
+                    <span className="truncate">{app.candidateName}</span>
+                  </div>
                 </td>
                 <td className="py-3.5 px-4 text-neutral-secondary">
                   {app.trade}

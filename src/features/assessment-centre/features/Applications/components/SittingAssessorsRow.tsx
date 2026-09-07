@@ -1,11 +1,13 @@
 "use client";
 
 import React from "react";
+import { Avatar } from "@/src/components/ui/avatar";
 
 interface AssessorInfo {
   name: string;
   email: string;
-  avatar: string;
+  avatar?: string;
+  photoUrl?: string;
 }
 
 interface Props {
@@ -23,20 +25,14 @@ export const SittingAssessorsRow: React.FC<Props> = ({
     {
       title: "Lead Panelist",
       data: leadAssessor,
-      fallbackAvatar:
-        "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200",
     },
     {
       title: "Panel Member",
       data: memberAssessor,
-      fallbackAvatar:
-        "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=200",
     },
     {
       title: "Internal Verifier",
       data: ivAssessor,
-      fallbackAvatar:
-        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200",
     },
   ];
 
@@ -47,13 +43,10 @@ export const SittingAssessorsRow: React.FC<Props> = ({
           key={idx}
           className="bg-white rounded-3xl p-5 border border-gray-100 shadow-2xs flex items-center gap-4"
         >
-          <img
-            src={(card.data as any)?.avatarUrl || card.data.avatar || "/images/facilitator_ngozi.jpg"}
-            alt={card.data.name}
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).src = card.fallbackAvatar;
-            }}
-            className="w-13 h-13 rounded-full object-cover shrink-0 border border-gray-100 shadow-2xs"
+          <Avatar
+            src={(card.data as any)?.photo?.url || card.data.photoUrl || card.data.avatar}
+            name={card.data.name}
+            className="w-13 h-13 rounded-full shrink-0 border border-gray-100 shadow-2xs"
           />
           <div className="flex flex-col min-w-0">
             <h4 className="font-bold text-sm text-gray-900 truncate">{card.data.name}</h4>

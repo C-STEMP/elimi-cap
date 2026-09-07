@@ -19,6 +19,11 @@ export interface ApplicationCandidateRef {
   firstName: string;
   lastName: string;
   name: string;
+  photoAssetId?: string | null;
+  photo?: {
+    assetId?: string;
+    url?: string | null;
+  } | null;
 }
 
 export interface ApplicationNamedRef {
@@ -149,6 +154,11 @@ export interface ApplicationDetail extends Application {
     id?: string;
     name: string;
     avatar?: string;
+    photoAssetId?: string | null;
+    photo?: {
+      assetId?: string;
+      url?: string | null;
+    } | null;
     role?: string;
     tags?: string[];
     trade?: string;

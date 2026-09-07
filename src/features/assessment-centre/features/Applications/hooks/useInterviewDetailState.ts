@@ -54,7 +54,7 @@ export function useInterviewDetailState(interview: InterviewRowData) {
     return {
       name: match?.name || member?.name || interview.leadPanelist || staff[0]?.name || "Lead Panelist",
       email: match?.email || (member as any)?.email || staff[0]?.email || "",
-      avatar: (match as any)?.avatar || (match as any)?.photoUrl || "/images/facilitator_ngozi.jpg",
+      avatar: (match as any)?.photo?.url || (match as any)?.avatar || (match as any)?.photoUrl || undefined,
     };
   }, [resolvedPanel, interview.leadPanelist, staff]);
 
@@ -65,7 +65,7 @@ export function useInterviewDetailState(interview: InterviewRowData) {
     return {
       name: match?.name || member?.name || interview.panelMember || staff[1]?.name || "Panel Member",
       email: match?.email || (member as any)?.email || staff[1]?.email || "",
-      avatar: (match as any)?.avatar || (match as any)?.photoUrl || "/images/facilitator_ngozi.jpg",
+      avatar: (match as any)?.photo?.url || (match as any)?.avatar || (match as any)?.photoUrl || undefined,
     };
   }, [resolvedPanel, interview.panelMember, staff]);
 
@@ -76,7 +76,7 @@ export function useInterviewDetailState(interview: InterviewRowData) {
     return {
       name: match?.name || member?.name || interview.internalVerifier || staff[2]?.name || "Internal Verifier",
       email: match?.email || (member as any)?.email || staff[2]?.email || "",
-      avatar: (match as any)?.avatar || (match as any)?.photoUrl || "/images/facilitator_ngozi.jpg",
+      avatar: (match as any)?.photo?.url || (match as any)?.avatar || (match as any)?.photoUrl || undefined,
     };
   }, [resolvedPanel, interview.internalVerifier, staff]);
 

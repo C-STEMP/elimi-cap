@@ -22,9 +22,30 @@ export function useApplicationDetailState(id: string, candidateNameProp = "Candi
 
   const { data: appDetail, isLoading: isLoadingDetail } = useGetApplicationById(id);
   const { data: stages = [] } = useGetApplicationStages(id);
-  const { data: interviewSchedule } = useGetInterviewSchedule(id);
+
+  const isInterviewStage = Boolean(
+    appDetail?.currentStageKey === "interview" ||
+    (appDetail as any)?.interviewScheduled ||
+    stages.some(
+      (s) =>
+        (s.stageKey === "interview" ||
+          s.stageKey === "observation" ||
+          s.stageKey === "direct_observation") &&
+        s.status !== "not_started"
+    ) ||
+    (appDetail?.status &&
+      ["interview_scheduled", "interview_completed", "certification"].includes(
+        appDetail.status
+      ))
+  );
+
+  const { data: interviewSchedule } = useGetInterviewSchedule(id, {
+    enabled: Boolean(id && isInterviewStage),
+  });
   const { data: appHistory = [] } = useGetApplicationHistory(id);
-  const { data: interviewPanelFromApi } = useGetInterviewPanel(id);
+  const { data: interviewPanelFromApi } = useGetInterviewPanel(id, {
+    enabled: Boolean(id && isInterviewStage),
+  });
   const { data: centreAssessors = [] } = useGetCentreAssessors({ status: "all" });
   const { data: centrePanels = [] } = useGetCentrePanels();
   const { data: centreInterviews = [] } = useGetCentreInterviews();
@@ -71,7 +92,7 @@ export function useApplicationDetailState(id: string, candidateNameProp = "Candi
         return {
           id: m.assessorId || `panelist-${i}`,
           name: matched?.name || m.name || (m.isLead ? "Lead Assessor" : `Panelist ${i + 1}`),
-          avatar: (matched as any)?.avatar || (matched as any)?.photoUrl || "/images/facilitator_ngozi.jpg",
+          avatar: (matched as any)?.photo?.url || (matched as any)?.avatar || (matched as any)?.photoUrl || undefined,
           role: m.isLead || i === 0 ? "Lead Panelist" : "Panel Member",
           tags: m.sectors?.length ? m.sectors.map((s) => s.name) : matched?.sectors?.length ? matched.sectors.map((s) => s.name) : [resolvedTradeName, "RPL Coordinator"],
           isHighlighted: i === 1,
@@ -141,6 +162,12 @@ export function useApplicationDetailState(id: string, candidateNameProp = "Candi
     isLoadingDetail,
     resolvedTradeName,
     resolvedCandidateName,
+    candidatePhotoUrl:
+      appDetail?.candidate?.photo?.url ||
+      (appDetail as any)?.candidate?.photoAssetId ||
+      (appDetail as any)?.personalInformation?.personalDetails?.photoUrl ||
+      (appDetail as any)?.candidate?.avatar ||
+      null,
     submittedDate,
     interviewAssessorsList,
     activeInterviewSchedule,

@@ -18,6 +18,8 @@ export function useGetInterviewPanel(id: string, options?: { enabled?: boolean }
     queryKey: ["applications", "interview-panel", id],
     queryFn: () => getInterviewPanelApi(id),
     enabled: Boolean(id) && (options?.enabled ?? true),
+    retry: false,
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -26,6 +28,8 @@ export function useGetInterviewSchedule(id: string, options?: { enabled?: boolea
     queryKey: ["applications", "interview-schedule", id],
     queryFn: () => getInterviewScheduleApi(id),
     enabled: Boolean(id) && (options?.enabled ?? true),
+    retry: false,
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -76,11 +80,13 @@ export function useEvaluateInterview(id: string) {
   });
 }
 
-export function useGetInterviewForms(id: string) {
+export function useGetInterviewForms(id: string, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["applications", "interview-forms", id],
     queryFn: () => getInterviewFormsApi(id),
-    enabled: Boolean(id),
+    enabled: Boolean(id) && (options?.enabled ?? true),
+    retry: false,
+    staleTime: 5 * 60 * 1000,
   });
 }
 

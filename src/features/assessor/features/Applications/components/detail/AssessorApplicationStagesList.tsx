@@ -9,6 +9,7 @@ import type {
 } from "../../types/applications.types";
 
 import { ASSETS_URL } from "@/src/assets";
+import { Avatar } from "@/src/components/ui/avatar";
 import {
   useGetInterviewPanel,
   useGetApplicationStages,
@@ -58,8 +59,17 @@ export const AssessorApplicationStagesList: React.FC<
   interviewOutcome = "ongoing",
   interviewFeedback,
 }) => {
-  const { data: panelData } = useGetInterviewPanel(application.id);
   const { data: stagesData } = useGetApplicationStages(application.id);
+  const isInterviewStage = Boolean(
+    application.currentStageKey === "interview" ||
+    (application as any).stage === "interview" ||
+    stagesData?.some(
+      (s) =>
+        (s.stageKey === "interview" || s.stageKey === "direct_observation") &&
+        (s.status === "scheduled" || s.status === "in_progress" || s.status === "successful")
+    )
+  );
+  const { data: panelData } = useGetInterviewPanel(application.id, { enabled: isInterviewStage });
   const { data: centreAssessors = [] } = useGetCentreAssessors({ status: "all" });
 
   const panelMembers: AssessorPanelMember[] = React.useMemo(() => {
@@ -76,9 +86,10 @@ export const AssessorApplicationStagesList: React.FC<
         m.name ||
         (idx === 0 ? "Lead Assessor" : `Panelist ${idx + 1}`);
       const avatar =
+        (match as any)?.photo?.url ||
         (match as any)?.avatar ||
         (match as any)?.photoUrl ||
-        ASSETS_URL.userAvatar;
+        undefined;
       const tags = m.sectors?.length
         ? m.sectors.map((s) => s.name)
         : match?.sectors?.length

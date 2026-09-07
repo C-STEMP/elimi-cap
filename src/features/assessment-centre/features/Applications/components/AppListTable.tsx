@@ -1,11 +1,11 @@
-"use client";
-
 import React from "react";
+import { Avatar } from "@/src/components/ui/avatar";
 import { getStatusBadgeClass } from "../utils/appViewHelpers";
 
 interface AppRow {
   id: string;
   candidateName: string;
+  photoUrl?: string | null;
   centreName: string;
   facilitatorName: string;
   trade: string;
@@ -42,7 +42,10 @@ export const AppListTable: React.FC<Props> = ({
           ? filteredApplications.map((app) => (
               <div key={app.id} className="bg-white rounded-2xl p-5 border border-black/20 shadow-2xs hover:shadow-xs transition-all flex flex-col gap-3">
                 <div className="flex items-start justify-between gap-3">
-                  <input type="checkbox" checked={selectedIds.includes(app.id)} onChange={() => onToggleSelect(app.id)} className="mt-1 w-4 h-4 rounded border-gray-300 text-[#a31d38] cursor-pointer" />
+                  <div className="flex items-center gap-3 min-w-0">
+                    <input type="checkbox" checked={selectedIds.includes(app.id)} onChange={() => onToggleSelect(app.id)} className="w-4 h-4 rounded border-gray-300 text-[#a31d38] cursor-pointer shrink-0" />
+                    <Avatar src={app.photoUrl} name={app.candidateName} className="w-10 h-10 rounded-full border border-gray-100 shrink-0" />
+                  </div>
                   <span className={`text-xs font-semibold px-3 py-1 rounded-full ${getStatusBadgeClass(app.status)}`}>{app.status}</span>
                 </div>
                 <div className="flex flex-col gap-2">
@@ -81,7 +84,12 @@ export const AppListTable: React.FC<Props> = ({
             ? filteredApplications.map((app) => (
                 <tr key={app.id} className="hover:bg-gray-50/70 transition-colors">
                   <td className="p-4"><input type="checkbox" checked={selectedIds.includes(app.id)} onChange={() => onToggleSelect(app.id)} className="w-4 h-4 accent-primary rounded cursor-pointer" /></td>
-                  <td onClick={() => onSelectCandidate(app.candidateName, app.id)} className="p-4 font-semibold text-black cursor-pointer hover:text-primary">{app.candidateName}</td>
+                  <td onClick={() => onSelectCandidate(app.candidateName, app.id)} className="p-4 font-semibold text-black cursor-pointer hover:text-primary">
+                    <div className="flex items-center gap-2.5">
+                      <Avatar src={app.photoUrl} name={app.candidateName} className="w-8 h-8 rounded-full border border-gray-100 shrink-0" />
+                      <span className="truncate">{app.candidateName}</span>
+                    </div>
+                  </td>
                   <td className="p-4 text-gray-600">{app.centreName}</td>
                   <td className="p-4 text-gray-600">{app.facilitatorName}</td>
                   <td className="p-4 text-gray-600">{app.trade}</td>
