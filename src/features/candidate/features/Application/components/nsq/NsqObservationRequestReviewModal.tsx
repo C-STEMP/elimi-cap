@@ -4,6 +4,9 @@ import React, { useState } from "react";
 import { Modal } from "antd";
 import { FiX, FiCheck, FiEdit3, FiAlertTriangle } from "react-icons/fi";
 import { Button } from "@/src/components/ui/button";
+import { useToast } from "@/src/components/ui/toast";
+import { UploadSignatureModal } from "../UploadSignatureModal";
+import { useCandidateProfileSignature } from "@/src/features/shared/onboarding/hooks";
 
 export type ObservationStatus =
   | "pending"
@@ -33,8 +36,11 @@ interface NsqObservationRequestReviewModalProps {
 export const NsqObservationRequestReviewModal: React.FC<
   NsqObservationRequestReviewModalProps
 > = ({ isOpen, onClose, details, onConfirmSchedule }) => {
+  const { toast } = useToast();
+  const { data: profileSignature } = useCandidateProfileSignature();
   const [isSigned, setIsSigned] = useState(details?.isSigned ?? false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!details) return null;
@@ -45,7 +51,37 @@ export const NsqObservationRequestReviewModal: React.FC<
       : ["UNIT 1", "UNIT 2", "UNIT 3"];
 
   const handleAppendSignature = () => {
+    let hasSaved = Boolean(profileSignature?.assetId || profileSignature?.url);
+    if (!hasSaved) {
+      try {
+        const local = localStorage.getItem("user_saved_signature");
+        if (local) {
+          const parsed = JSON.parse(local);
+          if (parsed?.assetId || parsed?.url) hasSaved = true;
+        }
+      } catch {}
+    }
+
+    if (hasSaved) {
+      setIsSigned(true);
+      toast({
+        type: "success",
+        title: "Signature Appended",
+        description: "Your saved signature has been appended.",
+      });
+      return;
+    }
+
+    setIsSignatureModalOpen(true);
+  };
+
+  const handleSignatureUploadSuccess = () => {
     setIsSigned(true);
+    toast({
+      type: "success",
+      title: "Signature Appended",
+      description: "Your signature has been saved and appended.",
+    });
   };
 
   const handleOpenConfirmDialog = () => {
@@ -308,6 +344,12 @@ export const NsqObservationRequestReviewModal: React.FC<
           </div>
         </div>
       </Modal>
+
+      <UploadSignatureModal
+        isOpen={isSignatureModalOpen}
+        onClose={() => setIsSignatureModalOpen(false)}
+        onUploadSuccess={handleSignatureUploadSuccess}
+      />
     </>
   );
 };

@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard/
+Disallow: /onboarding/
+Disallow: /nsq/
+Disallow: /rpl/
+
+Sitemap: https://cap.e-limi.africa/sitemap.xml

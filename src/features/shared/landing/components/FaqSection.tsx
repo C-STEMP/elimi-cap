@@ -52,6 +52,24 @@ export function FaqSection() {
           </p>
         </div>
 
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "FAQPage",
+              mainEntity: FAQS.map((faq) => ({
+                "@type": "Question",
+                name: faq.q,
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: faq.a,
+                },
+              })),
+            }),
+          }}
+        />
+
         <div className="mt-12 space-y-4">
           {FAQS.map((faq, idx) => {
             const isOpen = openIndex === idx;
@@ -60,10 +78,13 @@ export function FaqSection() {
                 key={idx}
                 data-aos="fade-up"
                 data-aos-delay={(idx % 5) * 80 + 50}
-                className="overflow-hidden rounded-xl border border-gray-200/80 bg-white transition-all shadow-lg"
+                className="overflow-hidden rounded-xl border border-gray-200/80 bg-white transition-all shadow-sm"
               >
                 <button
+                  type="button"
                   onClick={() => toggleFaq(idx)}
+                  aria-expanded={isOpen}
+                  aria-controls={`faq-answer-${idx}`}
                   className={`flex w-full items-center justify-between px-6 py-5 text-left text-base font-bold transition-colors cursor-pointer select-none ${
                     isOpen ? "text-primary" : "text-text-dark hover:text-primary"
                   }`}
@@ -80,11 +101,18 @@ export function FaqSection() {
                   </span>
                 </button>
 
-                {isOpen && (
+                <div
+                  id={`faq-answer-${idx}`}
+                  role="region"
+                  aria-labelledby={`faq-header-${idx}`}
+                  className={`transition-all duration-300 ease-in-out overflow-hidden ${
+                    isOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+                  }`}
+                >
                   <div className="border-t border-gray-100 px-6 py-4 text-sm leading-relaxed text-gray-600 bg-slate-50/40">
                     {faq.a}
                   </div>
-                )}
+                </div>
               </div>
             );
           })}
