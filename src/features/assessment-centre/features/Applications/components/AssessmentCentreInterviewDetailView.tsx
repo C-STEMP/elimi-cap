@@ -14,7 +14,10 @@ import {
   useGetCentreInterviewDetail,
   useGetCentreInterviewBookings,
   useGetCentrePanels,
+  useGetCentreStaff,
+  useGetCentreProfile,
 } from "@/src/features/shared/centre/hooks";
+import { useGetAllTrades } from "@/src/features/shared/reference/hooks";
 import { type InterviewRowData } from "./ViewInterviewDetailModal";
 
 interface AssessmentCentreInterviewDetailViewProps {
@@ -30,6 +33,9 @@ export const AssessmentCentreInterviewDetailView: React.FC<
   const { data: interviewDetail } = useGetCentreInterviewDetail(interview.id);
   const { data: bookings = [] } = useGetCentreInterviewBookings();
   const { data: panels = [] } = useGetCentrePanels();
+  const { data: staff = [] } = useGetCentreStaff();
+  const { data: centreProfile } = useGetCentreProfile();
+  const { data: availableTrades = [] } = useGetAllTrades();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTrade, setSelectedTrade] = useState<string>("All");
@@ -50,35 +56,85 @@ export const AssessmentCentreInterviewDetailView: React.FC<
     return null;
   }, [interviewDetail, panels]);
 
-  const leadAssessor = useMemo(() => {
+  const findStaffMatch = (assessorIdOrName?: string) => {
+    if (!assessorIdOrName) return null;
     return (
-      resolvedPanel?.members?.find((m) => m.isLead) ||
-      resolvedPanel?.members?.[0] || {
-        name: interview.leadPanelist || "Lead Assessor",
-        email: `${(interview.leadPanelist || "lead").toLowerCase().replace(/\s+/g, "")}@cstemp.org`,
-      }
+      staff.find(
+        (s) =>
+          s.id === assessorIdOrName ||
+          s.name?.toLowerCase() === assessorIdOrName.toLowerCase(),
+      ) || null
     );
-  }, [resolvedPanel, interview.leadPanelist]);
+  };
+
+  const leadAssessor = useMemo(() => {
+    const member =
+      resolvedPanel?.members?.find((m) => m.isLead) ||
+      resolvedPanel?.members?.[0];
+    const staffMatch = findStaffMatch(member?.assessorId || interview.leadPanelist);
+
+    const name =
+      staffMatch?.name ||
+      member?.name ||
+      interview.leadPanelist ||
+      (staff[0]?.name ? staff[0].name : "Lead Panelist");
+    const email =
+      staffMatch?.email ||
+      (member as any)?.email ||
+      (staff[0]?.email ? staff[0].email : "");
+    const avatar =
+      (staffMatch as any)?.avatar ||
+      (staffMatch as any)?.photoUrl ||
+      "/images/facilitator_ngozi.jpg";
+
+    return { name, email, avatar };
+  }, [resolvedPanel, interview.leadPanelist, staff]);
 
   const memberAssessor = useMemo(() => {
-    return (
+    const member =
       resolvedPanel?.members?.find((m) => !m.isLead && !m.isObserver) ||
-      resolvedPanel?.members?.[1] || {
-        name: interview.panelMember || "Panel Member",
-        email: `${(interview.panelMember || "member").toLowerCase().replace(/\s+/g, "")}@cstemp.org`,
-      }
-    );
-  }, [resolvedPanel, interview.panelMember]);
+      resolvedPanel?.members?.[1];
+    const staffMatch = findStaffMatch(member?.assessorId || interview.panelMember);
+
+    const name =
+      staffMatch?.name ||
+      member?.name ||
+      interview.panelMember ||
+      (staff[1]?.name ? staff[1].name : "Panel Member");
+    const email =
+      staffMatch?.email ||
+      (member as any)?.email ||
+      (staff[1]?.email ? staff[1].email : "");
+    const avatar =
+      (staffMatch as any)?.avatar ||
+      (staffMatch as any)?.photoUrl ||
+      "/images/facilitator_ngozi.jpg";
+
+    return { name, email, avatar };
+  }, [resolvedPanel, interview.panelMember, staff]);
 
   const ivAssessor = useMemo(() => {
-    return (
+    const member =
       resolvedPanel?.members?.find((m) => m.isObserver) ||
-      resolvedPanel?.members?.[2] || {
-        name: interview.internalVerifier || "Internal Verifier",
-        email: `${(interview.internalVerifier || "verifier").toLowerCase().replace(/\s+/g, "")}@cstemp.org`,
-      }
-    );
-  }, [resolvedPanel, interview.internalVerifier]);
+      resolvedPanel?.members?.[2];
+    const staffMatch = findStaffMatch(member?.assessorId || interview.internalVerifier);
+
+    const name =
+      staffMatch?.name ||
+      member?.name ||
+      interview.internalVerifier ||
+      (staff[2]?.name ? staff[2].name : "Internal Verifier");
+    const email =
+      staffMatch?.email ||
+      (member as any)?.email ||
+      (staff[2]?.email ? staff[2].email : "");
+    const avatar =
+      (staffMatch as any)?.avatar ||
+      (staffMatch as any)?.photoUrl ||
+      "/images/facilitator_ngozi.jpg";
+
+    return { name, email, avatar };
+  }, [resolvedPanel, interview.internalVerifier, staff]);
 
   // Derive candidate rows for this interview sitting strictly from backend bookings and applications
   const candidatesList = useMemo(() => {
@@ -90,19 +146,24 @@ export const AssessmentCentreInterviewDetailView: React.FC<
       return interviewBookings.map((b) => {
         const candidateName =
           b.candidate?.name ||
+          `${(b.candidate as any)?.firstName || ""} ${(b.candidate as any)?.lastName || ""}`.trim() ||
           `Candidate (${b.application?.id?.slice(0, 8) || b.id.slice(0, 8)})`;
         const trade =
           b.application?.trade?.name || b.application?.type || "General Trade";
         const stage =
           b.application?.currentStageKey === "interview"
             ? "Interview Stage"
-            : b.application?.currentStageKey || "Interview Stage";
+            : b.application?.currentStageKey === "folder_arrangement"
+              ? "Folder Arrangement"
+              : b.application?.currentStageKey
+                ? b.application.currentStageKey.replace(/_/g, " ").replace(/\b\w/g, (l: string) => l.toUpperCase())
+                : "Interview Stage";
         const dateObj = b.scheduledAt ? new Date(b.scheduledAt) : new Date();
         return {
           id: b.application?.id || b.id,
           candidateName,
           trade,
-          assessmentType: b.application?.type || "RPL",
+          assessmentType: b.application?.type?.toUpperCase() || "RPL",
           stage,
           interviewDate: dateObj.toLocaleDateString("en-US", {
             month: "2-digit",
@@ -110,27 +171,41 @@ export const AssessmentCentreInterviewDetailView: React.FC<
             year: "numeric",
           }),
           interviewTime: dateObj.toLocaleTimeString([], {
-            hour: "2-digit",
+            hour: "numeric",
             minute: "2-digit",
           }),
         };
       });
     }
 
-    // Applications at interview stage
-    const activeInterviewApps = applications.filter(
-      (app: any) => app.currentStageKey === "interview",
-    );
-
-    if (activeInterviewApps.length > 0) {
-      return activeInterviewApps.map((app: any, idx: number) => {
+    if (applications && applications.length > 0) {
+      return applications.map((app: any, idx: number) => {
         const raw = app as any;
         const candidateName =
           raw.candidate?.name ||
           `${raw.candidate?.firstName || ""} ${raw.candidate?.lastName || ""}`.trim() ||
           `Candidate (${app.id.slice(0, 8)})`;
-        const trade = raw.trade?.name || app.type || "General Trade";
-        const stage = "Interview Stage";
+        const trade =
+          raw.trade?.name ||
+          (typeof raw.trade === "string" ? raw.trade : null) ||
+          app.type ||
+          "General Trade";
+        const stage =
+          raw.currentStageKey === "folder_arrangement"
+            ? "Folder Arrangement"
+            : raw.currentStageKey === "interview"
+              ? "Interview Stage"
+              : raw.currentStageKey
+                ? raw.currentStageKey.replace(/_/g, " ").replace(/\b\w/g, (l: string) => l.toUpperCase())
+                : "Interview Stage";
+        const baseDate = interviewDetail?.scheduledAt || interview.scheduledAt;
+        const interviewDate = baseDate
+          ? new Date(baseDate).toLocaleDateString("en-US", {
+              month: "2-digit",
+              day: "2-digit",
+              year: "numeric",
+            })
+          : "—";
         const hour = 12 + (idx % 4);
         const timeStr = `${hour > 12 ? hour - 12 : hour}:00pm`;
 
@@ -138,22 +213,33 @@ export const AssessmentCentreInterviewDetailView: React.FC<
           id: app.id,
           candidateName,
           trade,
-          assessmentType: app.type || "RPL",
+          assessmentType: app.type?.toUpperCase() || "RPL",
           stage,
-          interviewDate: interview.scheduledAt
-            ? new Date(interview.scheduledAt).toLocaleDateString("en-US", {
-                month: "2-digit",
-                day: "2-digit",
-                year: "numeric",
-              })
-            : "—",
+          interviewDate,
           interviewTime: timeStr,
         };
       });
     }
 
     return [];
-  }, [bookings, applications, interview]);
+  }, [bookings, applications, interview, interviewDetail]);
+
+  const tradeOptions = useMemo(() => {
+    const set = new Set<string>();
+    candidatesList.forEach((c) => {
+      if (c.trade) set.add(c.trade);
+    });
+    availableTrades.forEach((t: { name: string }) => set.add(t.name));
+    return Array.from(set).filter(Boolean);
+  }, [candidatesList, availableTrades]);
+
+  const stageOptions = useMemo(() => {
+    const set = new Set<string>();
+    candidatesList.forEach((c) => {
+      if (c.stage) set.add(c.stage);
+    });
+    return Array.from(set).filter(Boolean);
+  }, [candidatesList]);
 
   const filteredCandidates = useMemo(() => {
     return candidatesList.filter((c) => {
@@ -199,9 +285,12 @@ export const AssessmentCentreInterviewDetailView: React.FC<
     );
   };
 
+  const isOnline =
+    (interviewDetail?.mode || interview.mode).toLowerCase() === "online";
+
   return (
     <div className="w-full flex flex-col gap-6 select-text">
-      {/* Sitting Metadata Card matching media_1788703578265.png */}
+      {/* Sitting Metadata Card */}
       <div className="bg-white rounded-3xl p-6 sm:p-7 border border-gray-100 shadow-2xs">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-6 gap-x-8">
           {/* Row 1, Col 1 */}
@@ -210,7 +299,7 @@ export const AssessmentCentreInterviewDetailView: React.FC<
               Title
             </span>
             <span className="text-sm sm:text-base font-bold text-gray-950">
-              {interview.title || "Masonry Interview"}
+              {interviewDetail?.name || interview.title || "Interview Sitting"}
             </span>
           </div>
 
@@ -220,7 +309,7 @@ export const AssessmentCentreInterviewDetailView: React.FC<
               Interview Mode
             </span>
             <span className="text-sm sm:text-base font-bold text-gray-950 flex items-center gap-1.5">
-              {interview.mode.toLowerCase() === "online" ? (
+              {isOnline ? (
                 <>
                   <FiVideo className="w-4 h-4 text-[#A31D38]" />
                   <span>Online</span>
@@ -240,9 +329,13 @@ export const AssessmentCentreInterviewDetailView: React.FC<
               Interview Date &amp; Time
             </span>
             <span className="text-sm sm:text-base font-bold text-gray-950">
-              {interview.scheduledAt
-                ? `${new Date(interview.scheduledAt).toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" })} - ${new Date(interview.scheduledAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
-                : `${interview.createdAt || "07/22/2026"} - 12:00pm`}
+              {(() => {
+                const sched =
+                  interviewDetail?.scheduledAt || interview.scheduledAt;
+                if (!sched) return "—";
+                const d = new Date(sched);
+                return `${d.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" })} - ${d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
+              })()}
             </span>
           </div>
 
@@ -252,7 +345,7 @@ export const AssessmentCentreInterviewDetailView: React.FC<
               Country
             </span>
             <span className="text-sm sm:text-base font-bold text-gray-950">
-              Nigeria
+              {centreProfile?.address?.country || "Nigeria"}
             </span>
           </div>
 
@@ -262,29 +355,31 @@ export const AssessmentCentreInterviewDetailView: React.FC<
               State
             </span>
             <span className="text-sm sm:text-base font-bold text-gray-950">
-              FCT Abuja
+              {centreProfile?.address?.state || "—"}
             </span>
           </div>
 
           {/* Row 2, Col 3 */}
           <div className="flex flex-col gap-1">
             <span className="text-[11px] font-bold text-gray-400 tracking-wider uppercase">
-              {interview.mode.toLowerCase() === "online"
-                ? "Meeting Link"
-                : "Street Address"}
+              {isOnline ? "Meeting Link" : "Street Address"}
             </span>
-            {interview.mode.toLowerCase() === "online" ? (
+            {isOnline ? (
               <a
-                href={interview.link || "#"}
+                href={interviewDetail?.link || interview.link || "#"}
                 target="_blank"
                 rel="noreferrer"
                 className="text-sm sm:text-base font-bold text-[#A31D38] hover:underline truncate"
               >
-                {interview.link || "https://meet.google.com/abc-defg-hij"}
+                {interviewDetail?.link || interview.link || "—"}
               </a>
             ) : (
               <span className="text-sm sm:text-base font-bold text-gray-950">
-                {interview.location || "3 Abbey Street Kubwa Expressway"}
+                {interviewDetail?.location ||
+                  interview.location ||
+                  centreProfile?.formattedAddress ||
+                  centreProfile?.address?.address ||
+                  "—"}
               </span>
             )}
           </div>
@@ -312,7 +407,7 @@ export const AssessmentCentreInterviewDetailView: React.FC<
               Lead Panelist
             </span>
             <span className="text-[11px] text-gray-400 truncate">
-              {leadAssessor.email || `${leadAssessor.name.toLowerCase().replace(/\s+/g, "")}@gmail.com`}
+              {leadAssessor.email || "—"}
             </span>
           </div>
         </div>
@@ -336,7 +431,7 @@ export const AssessmentCentreInterviewDetailView: React.FC<
               Panel Member
             </span>
             <span className="text-[11px] text-gray-400 truncate">
-              {memberAssessor.email || `${memberAssessor.name.toLowerCase().replace(/\s+/g, "")}@gmail.com`}
+              {memberAssessor.email || "—"}
             </span>
           </div>
         </div>
@@ -360,7 +455,7 @@ export const AssessmentCentreInterviewDetailView: React.FC<
               Internal Verifier
             </span>
             <span className="text-[11px] text-gray-400 truncate">
-              {ivAssessor.email || `${ivAssessor.name.toLowerCase().replace(/\s+/g, "")}@gmail.com`}
+              {ivAssessor.email || "—"}
             </span>
           </div>
         </div>
@@ -396,10 +491,11 @@ export const AssessmentCentreInterviewDetailView: React.FC<
                 className="appearance-none bg-white border border-gray-200 text-gray-700 font-semibold text-xs sm:text-sm pl-4 pr-8 py-2.5 rounded-xl cursor-pointer hover:bg-gray-50 transition-all shadow-2xs outline-none"
               >
                 <option value="All">Trade</option>
-                <option value="Masonry">Masonry</option>
-                <option value="Carpentry">Carpentry</option>
-                <option value="Plumbing">Plumbing</option>
-                <option value="Painting">Painting</option>
+                {tradeOptions.map((trade) => (
+                  <option key={trade} value={trade}>
+                    {trade}
+                  </option>
+                ))}
               </select>
               <FiChevronDown className="w-4 h-4 text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
@@ -426,8 +522,11 @@ export const AssessmentCentreInterviewDetailView: React.FC<
                 className="appearance-none bg-white border border-gray-200 text-gray-700 font-semibold text-xs sm:text-sm pl-4 pr-8 py-2.5 rounded-xl cursor-pointer hover:bg-gray-50 transition-all shadow-2xs outline-none"
               >
                 <option value="All">Status</option>
-                <option value="Folder Arrangement">Folder Arrangement</option>
-                <option value="Interview Stage">Interview Stage</option>
+                {stageOptions.map((stage) => (
+                  <option key={stage} value={stage}>
+                    {stage}
+                  </option>
+                ))}
               </select>
               <FiChevronDown className="w-4 h-4 text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
