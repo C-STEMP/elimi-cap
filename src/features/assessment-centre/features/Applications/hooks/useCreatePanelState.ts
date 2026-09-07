@@ -22,8 +22,7 @@ export function useCreatePanelState({ isOpen, onClose, onSuccess }: Props) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [leadPanelistId, setLeadPanelistId] = useState("");
-  const [panelMember1Id, setPanelMember1Id] = useState("");
-  const [panelMember2Id, setPanelMember2Id] = useState("");
+  const [panelMemberId, setPanelMemberId] = useState("");
   const [internalVerifierId, setInternalVerifierId] = useState("");
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
@@ -45,30 +44,22 @@ export function useCreatePanelState({ isOpen, onClose, onSuccess }: Props) {
       setTitle("");
       setDescription("");
       if (assessorOptions.length >= 3) {
-        const lead = assessorOptions[0]?.value || "";
-        const m1 = assessorOptions[1]?.value || "";
-        const m2 = assessorOptions[2]?.value || "";
-        setLeadPanelistId(lead);
-        setPanelMember1Id(m1);
-        setPanelMember2Id(m2);
-
+        setLeadPanelistId(assessorOptions[0]?.value || "");
+        setPanelMemberId(assessorOptions[1]?.value || "");
         const ivCandidate = assessorOptions.find(
           (a) =>
             a.qualifications?.includes("IV") &&
-            a.value !== lead &&
-            a.value !== m1 &&
-            a.value !== m2
+            a.value !== assessorOptions[0]?.value &&
+            a.value !== assessorOptions[1]?.value,
         );
-        setInternalVerifierId(ivCandidate?.value || assessorOptions[3]?.value || "");
+        setInternalVerifierId(ivCandidate?.value || assessorOptions[2]?.value || "");
       } else if (assessorOptions.length === 2) {
         setLeadPanelistId(assessorOptions[0]?.value || "");
-        setPanelMember1Id(assessorOptions[1]?.value || "");
-        setPanelMember2Id("");
+        setPanelMemberId(assessorOptions[1]?.value || "");
         setInternalVerifierId("");
       } else if (assessorOptions.length === 1) {
         setLeadPanelistId(assessorOptions[0]?.value || "");
-        setPanelMember1Id("");
-        setPanelMember2Id("");
+        setPanelMemberId("");
         setInternalVerifierId("");
       }
     }
@@ -84,30 +75,21 @@ export function useCreatePanelState({ isOpen, onClose, onSuccess }: Props) {
       toast({ type: "error", title: "Lead Panelist Required", description: "Please select a Lead Panelist." });
       return;
     }
-    if (!panelMember1Id) {
-      toast({ type: "error", title: "First Panel Member Required", description: "Please select the First Panel Member." });
+    if (!panelMemberId) {
+      toast({ type: "error", title: "Panel Member Required", description: "Please select a Panel Member." });
       return;
     }
-    if (!panelMember2Id) {
-      toast({ type: "error", title: "Second Panel Member Required", description: "Please select the Second Panel Member." });
+    if (!internalVerifierId) {
+      toast({ type: "error", title: "Internal Verifier Required", description: "Please select an Internal Verifier." });
       return;
     }
 
-    const votingIds = new Set([leadPanelistId, panelMember1Id, panelMember2Id]);
-    if (votingIds.size < 3) {
+    const distinctIds = new Set([leadPanelistId, panelMemberId, internalVerifierId]);
+    if (distinctIds.size < 3) {
       toast({
         type: "error",
         title: "Distinct Assessors Required",
-        description: "The Lead Panelist and both Panel Members must be 3 different assessors.",
-      });
-      return;
-    }
-
-    if (internalVerifierId && votingIds.has(internalVerifierId)) {
-      toast({
-        type: "error",
-        title: "Distinct Internal Verifier Required",
-        description: "The Internal Verifier must be different from the 3 voting panelists.",
+        description: "The Lead Panelist, Panel Member, and Internal Verifier must be 3 different assessors.",
       });
       return;
     }
@@ -118,7 +100,7 @@ export function useCreatePanelState({ isOpen, onClose, onSuccess }: Props) {
   const handleFinalSubmit = async () => {
     setIsSubmitting(true);
     try {
-      const assessorIds = [leadPanelistId, panelMember1Id, panelMember2Id];
+      const assessorIds = [leadPanelistId, panelMemberId, internalVerifierId].filter(Boolean);
       await postCentrePanelsApi({
         name: title.trim(),
         description: description.trim() || `${title.trim()} Panel`,
@@ -154,8 +136,7 @@ export function useCreatePanelState({ isOpen, onClose, onSuccess }: Props) {
     title, setTitle,
     description, setDescription,
     leadPanelistId, setLeadPanelistId,
-    panelMember1Id, setPanelMember1Id,
-    panelMember2Id, setPanelMember2Id,
+    panelMemberId, setPanelMemberId,
     internalVerifierId, setInternalVerifierId,
     isConfirmOpen, setIsConfirmOpen,
     isSuccessOpen, setIsSuccessOpen,
