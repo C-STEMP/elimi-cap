@@ -27,12 +27,13 @@ import { NsqUnitDetailView } from "./NsqUnitDetailView";
 import { NsqRequestObservationModal } from "./NsqRequestObservationModal";
 import { NsqObservationRequestReviewModal } from "./NsqObservationRequestReviewModal";
 import { NsqObservationSuccessModal } from "./NsqObservationSuccessModal";
+import { CandidateReportSignatureModal } from "./CandidateReportSignatureModal";
 
 interface NsqUnitItem {
   id: string;
   unitNo: string;
   title: string;
-  status: "Not Started" | "In Progress" | "Completed";
+  status: "Not Started" | "In Progress" | "Completed" | "Approved";
   structure?: Record<string, unknown>;
 }
 
@@ -49,6 +50,8 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
   const [isObservationModalOpen, setIsObservationModalOpen] = useState(false);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [isReportSignatureModalOpen, setIsReportSignatureModalOpen] = useState(false);
+  const [isReportSigned, setIsReportSigned] = useState(false);
   const [successModalInfo, setSuccessModalInfo] = useState({
     title: "Direct Observation Request Sent",
     subtitle: "You have successfully sent your direct observation request",
@@ -108,7 +111,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
     (typeof application?.trade === "string" && !isRawId(application?.trade)
       ? application?.trade
       : "") ||
-    "Cosmetology";
+    "Masonry";
 
   const resolvedSectorName =
     (tradeDetail as any)?.sector?.name ||
@@ -116,7 +119,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
     (typeof application?.sector === "string" && !isRawId(application?.sector)
       ? application?.sector
       : "") ||
-    "Personal Services";
+    "Construction";
 
   const levelName = application?.level || "Level 3";
 
@@ -134,26 +137,26 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
           {
             id: "unit-01",
             unitNo: "UNIT 1",
-            title: `Maintain personal health, hygiene, and safe workplace environments`,
-            status: "Not Started" as const,
+            title: `Lorem ipsum dolor dolor satuir`,
+            status: "Approved" as const,
           },
           {
             id: "unit-02",
             unitNo: "UNIT 2",
-            title: `Core trade fundamentals, material measurement, and preparation in ${resolvedTradeName}`,
-            status: "Not Started" as const,
+            title: `Lorem ipsum dolor dolor satuir`,
+            status: "Approved" as const,
           },
           {
             id: "unit-03",
             unitNo: "UNIT 3",
-            title: `Specialized practical tools, equipment operation, and treatment standards in ${resolvedTradeName}`,
-            status: "Not Started" as const,
+            title: `Lorem ipsum dolor dolor satuir`,
+            status: "Approved" as const,
           },
           {
             id: "unit-04",
             unitNo: "UNIT 4",
-            title: `Quality inspection, structural durability testing, and site sanitation`,
-            status: "Not Started" as const,
+            title: `Lorem ipsum dolor dolor satuir`,
+            status: "Approved" as const,
           },
         ];
 
@@ -408,9 +411,16 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                     </div>
 
                     <div className="flex items-center gap-2.5 shrink-0">
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold bg-gray-200/70 text-gray-600">
-                        {unit.status}
-                      </span>
+                      {unit.status === "Approved" ? (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#2e7d32] text-white">
+                          <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                          <span>Approved</span>
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold bg-gray-200/70 text-gray-600">
+                          {unit.status}
+                        </span>
+                      )}
                       <FiChevronRight className="w-4 h-4 text-gray-400 group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
                     </div>
                   </div>
@@ -533,32 +543,47 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
               )}
             </div>
 
-            {/* Assessor Profile Card */}
-            <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center gap-3.5">
+            {/* Verifier / Assessor Profile Card */}
+            <div className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-100 shadow-sm flex items-center gap-3.5">
               <Avatar
-                src={(application as any)?.facilitator?.photo?.url || (application as any)?.facilitator?.avatar || null}
-                name={(application as any)?.facilitator?.name || "Assessor"}
+                src={(application as any)?.verifier?.photo?.url || (application as any)?.facilitator?.photo?.url || null}
+                name={(application as any)?.verifier?.name || "Ngozi Eze"}
                 className="w-12 h-12 shrink-0"
-                alt="Assessor"
+                alt="Internal Verifier"
               />
 
-              <div className="flex flex-col gap-1 min-w-0">
+              <div className="flex flex-col min-w-0">
                 <span className="font-extrabold text-sm text-neutral-primary truncate">
-                  {(application as any)?.facilitator?.name || "Assigned Assessor"}
+                  {(application as any)?.verifier?.name || "Ngozi Eze"}
                 </span>
-                <span className="text-[11px] text-gray-500 font-medium truncate">
-                  Assessor · {resolvedTradeName} ({levelName})
+                <span className="text-[11px] text-neutral-secondary font-medium truncate mt-0.5">
+                  Internal Verifier
                 </span>
+              </div>
+            </div>
 
-                <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
-                  <span className="px-2 py-0.5 rounded-md bg-pink-50 text-pink-700 text-[10px] font-bold">
-                    {resolvedTradeName}
-                  </span>
-                  <span className="px-2 py-0.5 rounded-md bg-pink-50 text-pink-700 text-[10px] font-bold">
-                    RPL Coordinator
+            {/* Append Signature Card (Figma Screen) */}
+            <div
+              onClick={() => setIsReportSignatureModalOpen(true)}
+              className="bg-white hover:bg-gray-50/70 rounded-2xl p-4 sm:p-5 border border-gray-100 shadow-sm flex items-center justify-between gap-4 cursor-pointer transition-all group select-none"
+            >
+              <div className="flex flex-col gap-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h4 className="text-xs sm:text-sm font-extrabold text-neutral-primary">
+                    Append Signature
+                  </h4>
+                  <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                    isReportSigned ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-600"
+                  }`}>
+                    {isReportSigned ? "Signed" : "Attention Required"}
                   </span>
                 </div>
+                <span className="text-[11px] text-neutral-secondary truncate">
+                  Internal Verifier Report Form
+                </span>
               </div>
+
+              <FiChevronRight className="w-4 h-4 text-gray-400 group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
             </div>
           </div>
         </div>
@@ -586,6 +611,13 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
         onClose={() => setIsSuccessModalOpen(false)}
         title={successModalInfo.title}
         subtitle={successModalInfo.subtitle}
+      />
+
+      {/* Internal Verifier Report Signature Modal */}
+      <CandidateReportSignatureModal
+        isOpen={isReportSignatureModalOpen}
+        onClose={() => setIsReportSignatureModalOpen(false)}
+        onSignedSuccess={() => setIsReportSigned(true)}
       />
     </div>
   );
