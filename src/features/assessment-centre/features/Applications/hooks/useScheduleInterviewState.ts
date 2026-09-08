@@ -100,30 +100,29 @@ export function useScheduleInterviewState({
     const displayValue = isOnline
       ? selectedInterview.link || "—"
       : selectedInterview.location || "—";
-    const panelName = selectedInterview.panel?.name || "—";
+    const panel = selectedInterview.panel || panels.find((p) => p.id === selectedInterview.panelId);
+    const panelName = panel?.name || selectedInterview.panel?.name || "—";
+    const panelMemberCount = panel?.members?.length || (panel as any)?.assessorIds?.length || 0;
 
     return {
       title: selectedInterview.name,
       panelName,
+      panelMemberCount,
       mode,
       isOnline,
       dateTime: `${dateStr} - ${timeStr}`,
       scheduledAtDate: scheduledDate,
       displayValue,
     };
-  }, [selectedInterview]);
+  }, [selectedInterview, panels]);
 
-  // Candidate applications in interview or folder_arrangement stage
+  // Candidate applications strictly in interview stage
   const schedulableApplications = useMemo(() => {
     return applications.filter((app: any) => {
       if (app.status === "certified" || app.status === "rejected" || app.status === "withdrawn") {
         return false;
       }
-      return (
-        app.currentStageKey === "interview" ||
-        app.currentStageKey === "folder_arrangement" ||
-        app.status === "in_progress"
-      );
+      return app.currentStageKey === "interview";
     });
   }, [applications]);
 
@@ -156,8 +155,9 @@ export function useScheduleInterviewState({
           `${app.candidate?.firstName || ""} ${app.candidate?.lastName || ""}`.trim() ||
           `Candidate (${app.id.slice(0, 8)})`;
         const trade = app?.trade?.name || (typeof app?.trade === "string" ? app.trade : "General");
+        const stageLabel = app.currentStageKey ? ` [${app.currentStageKey.replace(/_/g, " ")}]` : "";
         return {
-          label: `${name} — ${trade}`,
+          label: `${name} — ${trade}${stageLabel}`,
           value: app.id,
           name,
           trade,
@@ -165,40 +165,64 @@ export function useScheduleInterviewState({
       });
   }, [schedulableApplications, candidateRows, selectedTrade]);
 
-  // Initialize on open
+  // Initialize / reset on open
   useEffect(() => {
-    if (isOpen) {
-      if (interviewOptions.length > 0 && !selectedInterviewId) {
-        setSelectedInterviewId(interviewOptions[0].value);
-      }
-      if (initialTradeName && tradeOptions.includes(initialTradeName)) {
-        setSelectedTrade(initialTradeName);
-      } else {
-        setSelectedTrade("All Trades");
-      }
+    if (!isOpen) return;
 
-      if (initialApplicationId) {
-        const app = applications.find((a) => a.id === initialApplicationId) as any;
-        const name =
-          initialCandidateName ||
-          app?.candidate?.name ||
-          `${app?.candidate?.firstName || ""} ${app?.candidate?.lastName || ""}`.trim() ||
-          "Candidate";
-        const trade = app?.trade?.name || (typeof app?.trade === "string" ? app.trade : "General");
-        setCandidateRows([
-          {
-            id: `slot-${initialApplicationId}`,
-            applicationId: initialApplicationId,
-            name,
-            tradeName: trade,
-            time: "10:00",
-          },
-        ]);
-      } else {
-        setCandidateRows([]);
-      }
+    if (interviewTemplates.length > 0) {
+      setSelectedInterviewId((prev) => prev || interviewTemplates[0].id);
     }
-  }, [isOpen, interviewOptions, initialApplicationId, initialCandidateName, initialTradeName, applications, tradeOptions, selectedInterviewId]);
+    setSelectedTrade(initialTradeName || "All Trades");
+    setCandidatePickerId("");
+
+    if (initialApplicationId) {
+      const app = applications.find((a) => a.id === initialApplicationId) as any;
+      const name =
+        initialCandidateName ||
+        app?.candidate?.name ||
+        `${app?.candidate?.firstName || ""} ${app?.candidate?.lastName || ""}`.trim() ||
+        "Candidate";
+      const trade = app?.trade?.name || (typeof app?.trade === "string" ? app.trade : "General");
+      setCandidateRows([
+        {
+          id: `slot-${initialApplicationId}`,
+          applicationId: initialApplicationId,
+          name,
+          tradeName: trade,
+          time: "10:00",
+        },
+      ]);
+    } else {
+      setCandidateRows([]);
+    }
+  }, [isOpen, initialApplicationId, initialCandidateName, initialTradeName]);
+
+  // Pick first interview if interviewTemplates load after modal opens
+  useEffect(() => {
+    if (isOpen && interviewTemplates.length > 0 && !selectedInterviewId) {
+      setSelectedInterviewId(interviewTemplates[0].id);
+    }
+  }, [isOpen, interviewTemplates, selectedInterviewId]);
+
+  const handleSelectCandidate = (appId: string) => {
+    if (!appId) return;
+    const found = unselectedCandidates.find((c) => c.value === appId);
+    if (!found) return;
+    setCandidateRows((prev) => {
+      if (prev.some((r) => r.applicationId === appId)) return prev;
+      return [
+        ...prev,
+        {
+          id: `slot-${Date.now()}`,
+          applicationId: appId,
+          name: found.name,
+          tradeName: found.trade,
+          time: "10:00",
+        },
+      ];
+    });
+    setCandidatePickerId("");
+  };
 
   const handleAddCandidate = () => {
     if (!candidatePickerId) {
@@ -209,21 +233,7 @@ export function useScheduleInterviewState({
       });
       return;
     }
-    const found = unselectedCandidates.find((c) => c.value === candidatePickerId);
-    const name = found?.name || "Candidate";
-    const trade = found?.trade || "General";
-
-    setCandidateRows((prev) => [
-      ...prev,
-      {
-        id: `slot-${Date.now()}`,
-        applicationId: candidatePickerId,
-        name,
-        tradeName: trade,
-        time: "10:00",
-      },
-    ]);
-    setCandidatePickerId("");
+    handleSelectCandidate(candidatePickerId);
   };
 
   const handleRemoveCandidate = (id: string) =>
@@ -281,8 +291,8 @@ export function useScheduleInterviewState({
         }
         const scheduledAtIso = candDate.toISOString();
 
-        // 1. Curate panel on application if available
-        if (assessorIds.length > 0 && leadAssessorId) {
+        // 1. Curate panel on application if panel has all 3 required assessors
+        if (assessorIds.length >= 3 && leadAssessorId) {
           try {
             await curateInterviewPanelApi(cand.applicationId, {
               assessorIds,
@@ -363,6 +373,7 @@ export function useScheduleInterviewState({
     tradeOptions,
     isLoadingTrades,
     unselectedCandidates,
+    handleSelectCandidate,
     handleAddCandidate,
     handleRemoveCandidate,
     handleUpdateCandidateTime,

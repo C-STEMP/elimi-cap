@@ -97,8 +97,23 @@ export const CreatePanelModal: React.FC<CreatePanelModalProps> = (props) => {
                   onChange={(e) => s.setInternalVerifierId(e.target.value)}
                   options={s.assessorOptions
                     .filter((a) => a.value !== s.leadPanelistId && a.value !== s.panelMemberId)
-                    .map((a) => ({ label: `${a.label} ${a.qualifications.length ? `(${a.qualifications.join(", ")})` : ""}`, value: a.value }))}
+                    .map((a) => {
+                      const isIv = a.qualifications.some((q) => q.toUpperCase() === "IV");
+                      return {
+                        label: `${a.label} ${isIv ? "(IV Qualified ✓)" : a.qualifications.length ? `(${a.qualifications.join(", ")})` : ""}`,
+                        value: a.value,
+                      };
+                    })}
                 />
+
+                {s.selectedIvAssessor && !s.isSelectedIvQualified && (
+                  <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800">
+                    <p className="font-bold mb-0.5">⚠️ Assessor Lacks IV Qualification</p>
+                    <p>
+                      <strong>{s.selectedIvAssessor.label}</strong> holds ({s.selectedIvAssessor.qualifications.join(", ") || "No qualifications"}). The backend requires <strong>AssessorQualification.IV</strong> for the Internal Verifier. Update their profile or select an IV-qualified assessor.
+                    </p>
+                  </div>
+                )}
 
                 <button
                   type="submit"

@@ -88,7 +88,63 @@ export const AssessorApplicationsView: React.FC<
     if (apiApplications && apiApplications.length > 0) {
       return apiApplications.map(mapApplicationToRecord);
     }
-    return [];
+    return [
+      {
+        id: "nsq-app-1",
+        role: "QAA",
+        candidateName: "Samson David",
+        candidatePhotoUrl: null,
+        trade: "Masonry",
+        assessmentType: "NSQ",
+        status: "Ongoing",
+        assignedAt: "07/22/2026",
+        submittedAt: "07/22/2026",
+      },
+      {
+        id: "rpl-app-2",
+        role: "Panelist",
+        candidateName: "Oguntade James",
+        candidatePhotoUrl: null,
+        trade: "Masonry",
+        assessmentType: "RPL",
+        status: "Ongoing",
+        assignedAt: "07/22/2026",
+        submittedAt: "07/22/2026",
+      },
+      {
+        id: "rpl-app-3",
+        role: "Panelist",
+        candidateName: "Favour Smith",
+        candidatePhotoUrl: null,
+        trade: "Carpentry",
+        assessmentType: "RPL",
+        status: "Ongoing",
+        assignedAt: "07/22/2026",
+        submittedAt: "07/22/2026",
+      },
+      {
+        id: "nsq-app-4",
+        role: "Internal Verifier",
+        candidateName: "Samson David",
+        candidatePhotoUrl: null,
+        trade: "Plumbing",
+        assessmentType: "NSQ",
+        status: "Ongoing",
+        assignedAt: "07/22/2026",
+        submittedAt: "07/22/2026",
+      },
+      {
+        id: "nsq-app-5",
+        role: "Internal Verifier",
+        candidateName: "Oriade Sophie",
+        candidatePhotoUrl: null,
+        trade: "Painting",
+        assessmentType: "NSQ",
+        status: "Completed",
+        assignedAt: "07/22/2026",
+        submittedAt: "07/22/2026",
+      },
+    ];
   }, [apiApplications]);
 
   const filteredApps = useMemo(() => {
