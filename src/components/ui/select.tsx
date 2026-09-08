@@ -147,7 +147,7 @@ export const Select: React.FC<SelectProps> = ({
     );
   };
 
-  const antValue: string | string[] | undefined = loading
+  const antValue: string | string[] | null | undefined = loading
     ? undefined
     : multiple
       ? Array.isArray(value)
@@ -157,11 +157,11 @@ export const Select: React.FC<SelectProps> = ({
           : []
       : typeof value === "string" && value
         ? isRawId(value) && !matchesAnyOption(value)
-          ? undefined
+          ? null
           : value
         : typeof value === "number"
           ? String(value)
-          : undefined;
+          : null;
 
   const errorClass = error
     ? "!border-primary-solid !ring-2 !ring-border-secondary"

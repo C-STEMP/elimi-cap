@@ -31,7 +31,9 @@ export type AssessorNavTab =
   | "Overview"
   | "Centres"
   | "Applications"
+  | "IQAM Tools"
   | "Job Board"
+  | "Payments"
   | "Settings";
 
 interface AssessorHeaderBannerProps {
@@ -41,6 +43,9 @@ interface AssessorHeaderBannerProps {
   selectedCentreName?: string | null;
   onBackFromCentre?: () => void;
   selectedApplicationName?: string | null;
+  isNsqApplication?: boolean;
+  nsqSubViewTitle?: string | null;
+  onMoveToIqam?: () => void;
   applicationSubView?:
     | "stages"
     | "application_form"
@@ -64,6 +69,9 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
   selectedCentreName,
   onBackFromCentre,
   selectedApplicationName,
+  isNsqApplication = false,
+  nsqSubViewTitle = null,
+  onMoveToIqam,
   applicationSubView = "stages",
   canMarkAsComplete = false,
   onMarkAsComplete,
@@ -121,7 +129,9 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
     "Overview",
     "Centres",
     "Applications",
+    "IQAM Tools",
     "Job Board",
+    "Payments",
     "Settings",
   ];
 
@@ -428,11 +438,13 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
               >
                 <FiChevronLeft className="w-6 h-6 stroke-[2.5]" />
                 <span>
-                  {applicationSubView === "evidence_vault"
-                    ? "Evidence Vault"
-                    : applicationSubView === "application_form"
-                      ? "Application Form"
-                      : selectedApplicationName}
+                  {isNsqApplication && nsqSubViewTitle
+                    ? nsqSubViewTitle
+                    : applicationSubView === "evidence_vault"
+                      ? "Evidence Vault"
+                      : applicationSubView === "application_form"
+                        ? "Application Form"
+                        : selectedApplicationName}
                 </span>
               </button>
               <div className="flex items-center gap-2 text-xs sm:text-sm text-white/90 font-normal">
@@ -445,19 +457,27 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
                 <span>&gt;</span>
                 <span
                   onClick={
-                    applicationSubView !== "stages"
+                    (isNsqApplication && nsqSubViewTitle) || applicationSubView !== "stages"
                       ? onBackFromApplication
                       : undefined
                   }
                   className={
-                    applicationSubView !== "stages"
+                    (isNsqApplication && nsqSubViewTitle) || applicationSubView !== "stages"
                       ? "hover:underline cursor-pointer"
                       : "font-semibold text-white"
                   }
                 >
                   {selectedApplicationName}
                 </span>
-                {applicationSubView !== "stages" && (
+                {isNsqApplication && nsqSubViewTitle && (
+                  <>
+                    <span>&gt;</span>
+                    <span className="font-semibold text-white">
+                      {nsqSubViewTitle}
+                    </span>
+                  </>
+                )}
+                {!isNsqApplication && applicationSubView !== "stages" && (
                   <>
                     <span>&gt;</span>
                     <span className="font-semibold text-white">
@@ -470,8 +490,20 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
               </div>
             </div>
 
-            {/* Mark As Complete Button: only shows when all uploaded evidence are approved */}
-            {applicationSubView === "evidence_vault" && canMarkAsComplete && (
+            {/* NSQ Move To IQAM Action */}
+            {isNsqApplication && !nsqSubViewTitle && (
+              <button
+                type="button"
+                onClick={onMoveToIqam}
+                className="bg-[#FBAB2A] hover:bg-[#E89B1F] text-white font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl shadow-lg flex items-center gap-1.5 cursor-pointer transition-all self-start sm:self-center shrink-0"
+              >
+                <span>Move To IQAM</span>
+                <FiPlus className="w-4 h-4 stroke-3" />
+              </button>
+            )}
+
+            {/* RPL Mark As Complete Button: only shows when all uploaded evidence are approved */}
+            {!isNsqApplication && applicationSubView === "evidence_vault" && canMarkAsComplete && (
               <Button
                 type="button"
                 variant="amber"

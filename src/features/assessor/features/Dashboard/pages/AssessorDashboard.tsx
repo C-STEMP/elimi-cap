@@ -8,7 +8,6 @@ import { useGetAssessorApplications } from "../../Applications/hooks";
 import { useGetAssessorSummary } from "@/src/features/shared/assessor/hooks";
 import type { Application } from "../../Applications/hooks";
 
-// Header & Overview components
 import {
   AssessorHeaderBanner,
   type AssessorNavTab,
@@ -19,52 +18,86 @@ import dynamic from "next/dynamic";
 import { Loader } from "@/src/components/ui/loader";
 
 const AssessorTabLoadingFallback = () => (
-  <div className="w-full min-h-[300px] flex items-center justify-center">
+  <div className="w-full min-h-75 flex items-center justify-center">
     <Loader tip="Loading section..." />
   </div>
 );
 
-// Centres feature components
 import type { AssessorCentreItem } from "../../Centres/components/AssessorCentresView";
 const AssessorCentresView = dynamic(
-  () => import("../../Centres/components/AssessorCentresView").then((m) => m.AssessorCentresView),
-  { loading: () => <AssessorTabLoadingFallback /> }
+  () =>
+    import("../../Centres/components/AssessorCentresView").then(
+      (m) => m.AssessorCentresView,
+    ),
+  { loading: () => <AssessorTabLoadingFallback /> },
 );
 const AssessorCentreDetailView = dynamic(
-  () => import("../../Centres/components/AssessorCentreDetailView").then((m) => m.AssessorCentreDetailView),
-  { loading: () => <AssessorTabLoadingFallback /> }
+  () =>
+    import("../../Centres/components/AssessorCentreDetailView").then(
+      (m) => m.AssessorCentreDetailView,
+    ),
+  { loading: () => <AssessorTabLoadingFallback /> },
 );
-const ApplyToCentreModal = dynamic(
-  () => import("../../Centres/components/ApplyToCentreModal").then((m) => m.ApplyToCentreModal)
+const ApplyToCentreModal = dynamic(() =>
+  import("../../Centres/components/ApplyToCentreModal").then(
+    (m) => m.ApplyToCentreModal,
+  ),
 );
 
-// Applications feature components
 import type { AssessorApplicationRecord } from "../../Applications/components/AssessorApplicationsView";
 import type { AssessorDetailSubView } from "../../Applications/components/AssessorApplicationDetailView";
 const AssessorApplicationsView = dynamic(
-  () => import("../../Applications/components/AssessorApplicationsView").then((m) => m.AssessorApplicationsView),
-  { loading: () => <AssessorTabLoadingFallback /> }
+  () =>
+    import("../../Applications/components/AssessorApplicationsView").then(
+      (m) => m.AssessorApplicationsView,
+    ),
+  { loading: () => <AssessorTabLoadingFallback /> },
 );
 const AssessorApplicationDetailView = dynamic(
-  () => import("../../Applications/components/AssessorApplicationDetailView").then((m) => m.AssessorApplicationDetailView),
-  { loading: () => <AssessorTabLoadingFallback /> }
+  () =>
+    import("../../Applications/components/AssessorApplicationDetailView").then(
+      (m) => m.AssessorApplicationDetailView,
+    ),
+  { loading: () => <AssessorTabLoadingFallback /> },
+);
+const NsqAssessorApplicationDetailView = dynamic(
+  () =>
+    import("../../Applications/components/nsq/NsqAssessorApplicationDetailView").then(
+      (m) => m.NsqAssessorApplicationDetailView,
+    ),
+  { loading: () => <AssessorTabLoadingFallback /> },
 );
 
-// JobBoard feature components
 import type { AssessorJobRecord } from "../../JobBoard/components/AssessorJobBoardView";
 const AssessorJobBoardView = dynamic(
-  () => import("../../JobBoard/components/AssessorJobBoardView").then((m) => m.AssessorJobBoardView),
-  { loading: () => <AssessorTabLoadingFallback /> }
+  () =>
+    import("../../JobBoard/components/AssessorJobBoardView").then(
+      (m) => m.AssessorJobBoardView,
+    ),
+  { loading: () => <AssessorTabLoadingFallback /> },
 );
 const AssessorJobDetailView = dynamic(
-  () => import("../../JobBoard/components/AssessorJobDetailView").then((m) => m.AssessorJobDetailView),
-  { loading: () => <AssessorTabLoadingFallback /> }
+  () =>
+    import("../../JobBoard/components/AssessorJobDetailView").then(
+      (m) => m.AssessorJobDetailView,
+    ),
+  { loading: () => <AssessorTabLoadingFallback /> },
 );
 
-// Settings feature components
 const AssessorSettingsView = dynamic(
-  () => import("../../Settings/components/AssessorSettingsView").then((m) => m.AssessorSettingsView),
-  { loading: () => <AssessorTabLoadingFallback /> }
+  () =>
+    import("../../Settings/components/AssessorSettingsView").then(
+      (m) => m.AssessorSettingsView,
+    ),
+  { loading: () => <AssessorTabLoadingFallback /> },
+);
+
+const IqamToolsDashboard = dynamic(
+  () =>
+    import("../../iqam/IqamToolsDashboard").then(
+      (m) => m.IqamToolsDashboard,
+    ),
+  { loading: () => <AssessorTabLoadingFallback /> },
 );
 
 import { useGetCentres } from "@/src/features/shared/reference/hooks";
@@ -82,7 +115,9 @@ export const AssessorDashboard: React.FC = () => {
     Overview: "overview",
     Centres: "centres",
     Applications: "applications",
+    "IQAM Tools": "iqam-tools",
     "Job Board": "job-board",
+    Payments: "payments",
     Settings: "settings",
   };
 
@@ -90,13 +125,17 @@ export const AssessorDashboard: React.FC = () => {
     overview: "Overview",
     centres: "Centres",
     applications: "Applications",
+    "iqam-tools": "IQAM Tools",
     "job-board": "Job Board",
+    payments: "Payments",
     settings: "Settings",
   };
 
   const routeTabSlug = params?.tab as string | undefined;
   const initialTab =
-    routeTabSlug && SLUG_TO_TAB[routeTabSlug] ? SLUG_TO_TAB[routeTabSlug] : "Overview";
+    routeTabSlug && SLUG_TO_TAB[routeTabSlug]
+      ? SLUG_TO_TAB[routeTabSlug]
+      : "Overview";
 
   const [activeTab, setActiveTab] = useState<AssessorNavTab>(initialTab);
 
@@ -114,9 +153,12 @@ export const AssessorDashboard: React.FC = () => {
   const { data: centresData } = useGetAssessorCentres(undefined, {
     enabled: isCentresActive || isOverviewActive,
   });
-  const { data: applicationsData = [] } = useGetAssessorApplications(undefined, {
-    enabled: isAppsActive || isOverviewActive,
-  });
+  const { data: applicationsData = [] } = useGetAssessorApplications(
+    undefined,
+    {
+      enabled: isAppsActive || isOverviewActive,
+    },
+  );
   const { data: remoteCentres = [] } = useGetCentres(undefined, {
     enabled: isCentresActive,
   });
@@ -184,9 +226,9 @@ export const AssessorDashboard: React.FC = () => {
     };
   });
 
-  // Derive stat counts from API summary or calculate from applicationsData
   const totalCentres = summaryData?.totalCentres ?? centres.length;
-  const totalApplications = summaryData?.totalApplications ?? applicationsData.length;
+  const totalApplications =
+    summaryData?.totalApplications ?? applicationsData.length;
   const pendingApplications =
     summaryData?.pendingApplications ??
     applicationsData.filter(
@@ -201,7 +243,6 @@ export const AssessorDashboard: React.FC = () => {
       (a) => a.status === "rejected" || a.status === "withdrawn",
     ).length;
 
-
   const [selectedCentre, setSelectedCentre] =
     useState<AssessorCentreItem | null>(null);
   const [selectedApplication, setSelectedApplication] =
@@ -213,6 +254,11 @@ export const AssessorDashboard: React.FC = () => {
   const [selectedJob, setSelectedJob] = useState<AssessorJobRecord | null>(
     null,
   );
+  const [nsqSubViewTitle, setNsqSubViewTitle] = useState<string | null>(null);
+  const [nsqNavState, setNsqNavState] = useState<
+    "overview" | "unit" | "observation_form"
+  >("overview");
+  const moveToIqamRef = React.useRef<(() => void) | null>(null);
 
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
 
@@ -220,6 +266,8 @@ export const AssessorDashboard: React.FC = () => {
     setActiveTab(tab);
     setSelectedCentre(null);
     setSelectedApplication(null);
+    setNsqSubViewTitle(null);
+    setNsqNavState("overview");
     setApplicationSubView("stages");
     setCanMarkAsComplete(false);
     setTriggerMarkComplete(false);
@@ -229,6 +277,18 @@ export const AssessorDashboard: React.FC = () => {
   };
 
   const handleBackFromApplication = () => {
+    if (selectedApplication?.assessmentType === "NSQ") {
+      if (nsqNavState !== "overview") {
+        setNsqNavState("overview");
+        setNsqSubViewTitle(null);
+      } else {
+        setSelectedApplication(null);
+        setNsqSubViewTitle(null);
+        setNsqNavState("overview");
+      }
+      return;
+    }
+
     if (applicationSubView !== "stages") {
       setApplicationSubView("stages");
     } else {
@@ -261,6 +321,9 @@ export const AssessorDashboard: React.FC = () => {
         selectedCentreName={selectedCentre?.name}
         onBackFromCentre={() => setSelectedCentre(null)}
         selectedApplicationName={selectedApplication?.candidateName}
+        isNsqApplication={selectedApplication?.assessmentType === "NSQ"}
+        nsqSubViewTitle={nsqSubViewTitle}
+        onMoveToIqam={() => moveToIqamRef.current?.()}
         applicationSubView={applicationSubView}
         canMarkAsComplete={canMarkAsComplete}
         onMarkAsComplete={handleTriggerMarkComplete}
@@ -301,6 +364,8 @@ export const AssessorDashboard: React.FC = () => {
                 submittedAt: app.createdAt,
               });
               setApplicationSubView("stages");
+              setNsqNavState("overview");
+              setNsqSubViewTitle(null);
               setCanMarkAsComplete(false);
               setTriggerMarkComplete(false);
             }}
@@ -315,6 +380,8 @@ export const AssessorDashboard: React.FC = () => {
                 setActiveTab("Applications");
                 setSelectedApplication(appRecord);
                 setApplicationSubView("stages");
+                setNsqNavState("overview");
+                setNsqSubViewTitle(null);
                 setCanMarkAsComplete(false);
                 setTriggerMarkComplete(false);
               }}
@@ -328,21 +395,42 @@ export const AssessorDashboard: React.FC = () => {
           )
         ) : activeTab === "Applications" ? (
           selectedApplication ? (
-            <AssessorApplicationDetailView
-              application={selectedApplication}
-              subView={applicationSubView}
-              onSubViewChange={setApplicationSubView}
-              onAllApprovedChange={setCanMarkAsComplete}
-              onMarkAsComplete={handleMarkAsCompleteFinished}
-              triggerMarkComplete={triggerMarkComplete}
-              onResetTriggerMarkComplete={() => setTriggerMarkComplete(false)}
-              onBack={handleBackFromApplication}
-            />
+            selectedApplication.role === "Internal Verifier" ? (
+              <IqamToolsDashboard
+                initialToolId="CON/04/IQAM"
+                initialCandidateName={selectedApplication.candidateName}
+                onBack={handleBackFromApplication}
+              />
+            ) : selectedApplication.assessmentType === "NSQ" ? (
+              <NsqAssessorApplicationDetailView
+                application={selectedApplication}
+                onBack={handleBackFromApplication}
+                onSubViewChange={setNsqSubViewTitle}
+                subViewNavState={nsqNavState}
+                onSubViewNavStateChange={setNsqNavState}
+                onRegisterMoveToIqam={(fn) => {
+                  moveToIqamRef.current = fn;
+                }}
+              />
+            ) : (
+              <AssessorApplicationDetailView
+                application={selectedApplication}
+                subView={applicationSubView}
+                onSubViewChange={setApplicationSubView}
+                onAllApprovedChange={setCanMarkAsComplete}
+                onMarkAsComplete={handleMarkAsCompleteFinished}
+                triggerMarkComplete={triggerMarkComplete}
+                onResetTriggerMarkComplete={() => setTriggerMarkComplete(false)}
+                onBack={handleBackFromApplication}
+              />
+            )
           ) : (
             <AssessorApplicationsView
               onSelectApplication={(app) => {
                 setSelectedApplication(app);
                 setApplicationSubView("stages");
+                setNsqNavState("overview");
+                setNsqSubViewTitle(null);
                 setCanMarkAsComplete(false);
                 setTriggerMarkComplete(false);
               }}
@@ -357,6 +445,8 @@ export const AssessorDashboard: React.FC = () => {
           ) : (
             <AssessorJobBoardView onSelectJob={(job) => setSelectedJob(job)} />
           )
+        ) : activeTab === "IQAM Tools" ? (
+          <IqamToolsDashboard />
         ) : activeTab === "Settings" ? (
           <AssessorSettingsView />
         ) : (

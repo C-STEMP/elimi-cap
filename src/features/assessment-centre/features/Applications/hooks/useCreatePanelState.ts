@@ -30,40 +30,51 @@ export function useCreatePanelState({ isOpen, onClose, onSuccess }: Props) {
 
   const assessorOptions = useMemo(() => {
     if (centreAssessors && centreAssessors.length > 0) {
-      return centreAssessors.map((a) => ({
-        label: a.name || "Assessor",
-        value: a.id || (a as any).assessorId || (a as any).userId,
-        qualifications: a.qualifications || [],
-      }));
+      return centreAssessors.map((a) => {
+        const rawQuals =
+          (a as any).qualifications ||
+          (a as any).assessor?.qualifications ||
+          (a as any).assessorSnapshot?.qualifications ||
+          [];
+        const qualifications = Array.isArray(rawQuals) ? rawQuals : [rawQuals];
+        return {
+          label: a.name || "Assessor",
+          value: a.id || (a as any).assessorId || (a as any).userId,
+          qualifications: qualifications.map((q: any) => String(q)),
+        };
+      });
     }
     return [];
   }, [centreAssessors]);
 
   useEffect(() => {
-    if (isOpen) {
-      setTitle("");
-      setDescription("");
-      if (assessorOptions.length >= 3) {
-        setLeadPanelistId(assessorOptions[0]?.value || "");
-        setPanelMemberId(assessorOptions[1]?.value || "");
-        const ivCandidate = assessorOptions.find(
-          (a) =>
-            a.qualifications?.includes("IV") &&
-            a.value !== assessorOptions[0]?.value &&
-            a.value !== assessorOptions[1]?.value,
-        );
-        setInternalVerifierId(ivCandidate?.value || assessorOptions[2]?.value || "");
-      } else if (assessorOptions.length === 2) {
-        setLeadPanelistId(assessorOptions[0]?.value || "");
-        setPanelMemberId(assessorOptions[1]?.value || "");
-        setInternalVerifierId("");
-      } else if (assessorOptions.length === 1) {
-        setLeadPanelistId(assessorOptions[0]?.value || "");
-        setPanelMemberId("");
-        setInternalVerifierId("");
-      }
+    if (!isOpen) return;
+    setTitle("");
+    setDescription("");
+    if (assessorOptions.length >= 3) {
+      setLeadPanelistId(assessorOptions[0]?.value || "");
+      setPanelMemberId(assessorOptions[1]?.value || "");
+      const iv = assessorOptions.find(
+        (a) => a.qualifications?.some((q) => q.toUpperCase() === "IV") &&
+          a.value !== assessorOptions[0]?.value && a.value !== assessorOptions[1]?.value,
+      );
+      setInternalVerifierId(iv?.value || assessorOptions[2]?.value || "");
+    } else {
+      setLeadPanelistId(assessorOptions[0]?.value || "");
+      setPanelMemberId(assessorOptions[1]?.value || "");
+      setInternalVerifierId(assessorOptions[2]?.value || "");
     }
   }, [isOpen, assessorOptions]);
+
+  const selectedIvAssessor = useMemo(
+    () => assessorOptions.find((a) => a.value === internalVerifierId),
+    [assessorOptions, internalVerifierId],
+  );
+
+  const isSelectedIvQualified = useMemo(() => {
+    if (!selectedIvAssessor) return true;
+    return selectedIvAssessor.qualifications.some((q) => q.toUpperCase() === "IV");
+  }, [selectedIvAssessor]);
 
   const handleTriggerCreate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,55 +82,42 @@ export function useCreatePanelState({ isOpen, onClose, onSuccess }: Props) {
       toast({ type: "error", title: "Title Required", description: "Please provide a panel title." });
       return;
     }
-    if (!leadPanelistId) {
-      toast({ type: "error", title: "Lead Panelist Required", description: "Please select a Lead Panelist." });
+    if (!leadPanelistId || !panelMemberId || !internalVerifierId) {
+      toast({ type: "error", title: "All Panelists Required", description: "Please select Lead Panelist, Panel Member, and Internal Verifier." });
       return;
     }
-    if (!panelMemberId) {
-      toast({ type: "error", title: "Panel Member Required", description: "Please select a Panel Member." });
+    if (new Set([leadPanelistId, panelMemberId, internalVerifierId]).size < 3) {
+      toast({ type: "error", title: "Distinct Assessors Required", description: "All 3 panel members must be distinct assessors." });
       return;
     }
-    if (!internalVerifierId) {
-      toast({ type: "error", title: "Internal Verifier Required", description: "Please select an Internal Verifier." });
-      return;
-    }
-
-    const distinctIds = new Set([leadPanelistId, panelMemberId, internalVerifierId]);
-    if (distinctIds.size < 3) {
+    if (!isSelectedIvQualified) {
       toast({
         type: "error",
-        title: "Distinct Assessors Required",
-        description: "The Lead Panelist, Panel Member, and Internal Verifier must be 3 different assessors.",
+        title: "IV Qualification Required",
+        description: `${selectedIvAssessor?.label || "Selected Internal Verifier"} does not hold the IV qualification. Please select an assessor with AssessorQualification.IV or update their profile.`,
       });
       return;
     }
-
     setIsConfirmOpen(true);
   };
 
   const handleFinalSubmit = async () => {
     setIsSubmitting(true);
     try {
-      const assessorIds = [leadPanelistId, panelMemberId, internalVerifierId].filter(Boolean);
       await postCentrePanelsApi({
         name: title.trim(),
         description: description.trim() || `${title.trim()} Panel`,
-        assessorIds,
+        assessorIds: [leadPanelistId, panelMemberId, internalVerifierId],
         leadAssessorId: leadPanelistId,
-        observerIvAssessorId: internalVerifierId || undefined,
+        observerIvAssessorId: internalVerifierId,
       });
 
       queryClient.invalidateQueries({ queryKey: ["centre", "panels"] });
       toast({ type: "success", title: "Panel Created", description: "Interview panel successfully created." });
-
       setIsConfirmOpen(false);
       setIsSuccessOpen(true);
     } catch (err: any) {
-      toast({
-        type: "error",
-        title: "Failed to Create Panel",
-        description: err.message || "An error occurred while creating the panel.",
-      });
+      toast({ type: "error", title: "Failed to Create Panel", description: err.message || "Error creating panel." });
       setIsConfirmOpen(false);
     } finally {
       setIsSubmitting(false);
@@ -133,17 +131,10 @@ export function useCreatePanelState({ isOpen, onClose, onSuccess }: Props) {
   };
 
   return {
-    title, setTitle,
-    description, setDescription,
-    leadPanelistId, setLeadPanelistId,
-    panelMemberId, setPanelMemberId,
-    internalVerifierId, setInternalVerifierId,
-    isConfirmOpen, setIsConfirmOpen,
-    isSuccessOpen, setIsSuccessOpen,
-    isSubmitting,
-    assessorOptions, isLoadingAssessors,
-    handleTriggerCreate,
-    handleFinalSubmit,
-    handleContinueSuccess,
+    title, setTitle, description, setDescription,
+    leadPanelistId, setLeadPanelistId, panelMemberId, setPanelMemberId,
+    internalVerifierId, setInternalVerifierId, selectedIvAssessor, isSelectedIvQualified,
+    isConfirmOpen, setIsConfirmOpen, isSuccessOpen, setIsSuccessOpen, isSubmitting,
+    assessorOptions, isLoadingAssessors, handleTriggerCreate, handleFinalSubmit, handleContinueSuccess,
   };
 }
