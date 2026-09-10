@@ -74,18 +74,36 @@ export const AssessorApplicationStagesList: React.FC<
 
   const panelMembers: AssessorPanelMember[] = React.useMemo(() => {
     if (!panelData?.members || !Array.isArray(panelData.members)) return [];
-    return panelData.members.map((m, idx) => {
+    const sorted = [...panelData.members].sort((a, b) => {
+      if (a.isLead) return -1;
+      if (b.isLead) return 1;
+      if (a.isObserver) return 1;
+      if (b.isObserver) return -1;
+      return 0;
+    });
+
+    return sorted.map((m, idx) => {
       const match = centreAssessors.find(
         (a) =>
           a.id === m.assessorId ||
           (a as any).assessorId === m.assessorId ||
           (a as any).userId === m.assessorId,
       );
+      const role = m.isLead
+        ? "Lead Panelist"
+        : m.isObserver
+        ? "Internal Verifier"
+        : "Panel Member";
       const name =
         match?.name ||
         m.name ||
-        (idx === 0 ? "Lead Assessor" : `Panelist ${idx + 1}`);
+        (m.isLead
+          ? "Lead Assessor"
+          : m.isObserver
+          ? "Internal Verifier"
+          : `Panel Member ${idx + 1}`);
       const avatar =
+        (m as any)?.photo?.url ||
         (match as any)?.photo?.url ||
         (match as any)?.avatar ||
         (match as any)?.photoUrl ||
@@ -98,10 +116,10 @@ export const AssessorApplicationStagesList: React.FC<
       return {
         id: m.assessorId,
         name,
-        role: idx === 0 ? "Lead Panelist" : "Panel Member",
+        role,
         avatar,
         tags,
-        isHighlighted: idx === 1,
+        isHighlighted: Boolean(m.isLead),
       };
     });
   }, [panelData, centreAssessors, application.trade]);
@@ -239,7 +257,7 @@ export const AssessorApplicationStagesList: React.FC<
       isCollapsible: false,
       isCollapsed: false,
       assessors: panelMembers,
-      formsToSign: interviewOutcome === "awaiting_signature" ? formsToSign : undefined,
+      formsToSign: isInterviewStage || interviewOutcome === "awaiting_signature" ? formsToSign : undefined,
       onAppendSignature: onAppendSignature,
       inconclusiveDetails: interviewFeedback || undefined,
       menuActions: isInterviewDone ? [] : [

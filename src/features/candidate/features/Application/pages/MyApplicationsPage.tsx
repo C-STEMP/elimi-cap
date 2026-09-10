@@ -266,7 +266,7 @@ export const MyApplicationsPage: React.FC = () => {
                       <div
                         key={app.id}
                         onClick={() =>
-                          router.push(`/dashboard/applications/${app.id}`)
+                          router.push(`/applications/${app.id}`)
                         }
                         className="bg-input-bg rounded-xl p-4 flex items-center justify-between border-l-[5px] border-secondary hover:bg-[#f0f2f7] transition-all cursor-pointer group shadow-2xs"
                       >

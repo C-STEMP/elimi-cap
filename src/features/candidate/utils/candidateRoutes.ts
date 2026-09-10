@@ -13,9 +13,9 @@ export const CANDIDATE_ROUTES = {
     notifications: "/dashboard/notifications",
     settings: "/dashboard/settings",
     ninVerification: "/dashboard/settings/nin-verification",
-    applicationDetail: (id: string) => `/dashboard/applications/${id}`,
-    evidenceVault: (id: string) => `/dashboard/applications/${id}/evidence-vault`,
-    selfAssessment: (id: string) => `/dashboard/applications/${id}/self-assessment`,
+    applicationDetail: (id: string) => `/applications/${id}`,
+    evidenceVault: (id: string) => `/applications/${id}/evidence-vault`,
+    selfAssessment: (id: string) => `/applications/${id}/self-assessment`,
   },
 
   /**

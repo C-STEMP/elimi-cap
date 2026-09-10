@@ -48,12 +48,15 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(signinUrl);
   }
 
+  const isApplicationsRoute = pathname.startsWith("/applications");
+
   if (
     isAuthenticated &&
     isDashboardRoute &&
     !isOnboarded &&
     !isNotificationRoute &&
     !isAssessmentCentreRoute &&
+    !isApplicationsRoute &&
     !personaCookie
   ) {
     const onboardingUrl = new URL("/onboarding/welcome", request.url);

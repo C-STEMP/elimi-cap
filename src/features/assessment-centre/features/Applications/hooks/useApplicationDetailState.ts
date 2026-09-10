@@ -85,17 +85,45 @@ export function useApplicationDetailState(id: string, candidateNameProp = "Candi
 
   const interviewAssessorsList = useMemo(() => {
     if (interviewPanelFromApi?.members && interviewPanelFromApi.members.length > 0) {
-      const nonObserver = interviewPanelFromApi.members.filter((m) => !m.isObserver);
-      const membersToUse = nonObserver.length >= 3 ? nonObserver.slice(0, 3) : interviewPanelFromApi.members.slice(0, 3);
-      return membersToUse.map((m, i) => {
-        const matched = centreAssessors.find((a) => a.id === m.assessorId || (a as any).assessorId === m.assessorId || (a as any).userId === m.assessorId);
+      const sorted = [...interviewPanelFromApi.members].sort((a: any, b: any) => {
+        if (a.isLead) return -1;
+        if (b.isLead) return 1;
+        if (a.isObserver) return 1;
+        if (b.isObserver) return -1;
+        return 0;
+      });
+
+      return sorted.slice(0, 3).map((m, i) => {
+        const matched = centreAssessors.find(
+          (a) =>
+            a.id === m.assessorId ||
+            (a as any).assessorId === m.assessorId ||
+            (a as any).userId === m.assessorId,
+        );
+        const role = m.isLead
+          ? "Lead Panelist"
+          : m.isObserver
+            ? "Internal Verifier"
+            : "Panel Member";
+
         return {
           id: m.assessorId || `panelist-${i}`,
-          name: matched?.name || m.name || (m.isLead ? "Lead Assessor" : `Panelist ${i + 1}`),
-          avatar: (matched as any)?.photo?.url || (matched as any)?.avatar || (matched as any)?.photoUrl || undefined,
-          role: m.isLead || i === 0 ? "Lead Panelist" : "Panel Member",
-          tags: m.sectors?.length ? m.sectors.map((s) => s.name) : matched?.sectors?.length ? matched.sectors.map((s) => s.name) : [resolvedTradeName, "RPL Coordinator"],
-          isHighlighted: i === 1,
+          name: matched?.name || m.name || role,
+          avatar:
+            (m as any)?.photo?.url ||
+            (matched as any)?.photo?.url ||
+            (matched as any)?.avatar ||
+            (matched as any)?.photoUrl ||
+            undefined,
+          role,
+          tags: m.isObserver
+            ? ["Internal Verifier", "RPL Quality"]
+            : m.sectors?.length
+              ? m.sectors.map((s) => s.name)
+              : matched?.sectors?.length
+                ? matched.sectors.map((s) => s.name)
+                : [resolvedTradeName, m.isLead ? "Lead Assessor" : "Assessor"],
+          isHighlighted: Boolean(m.isLead),
         };
       });
     }

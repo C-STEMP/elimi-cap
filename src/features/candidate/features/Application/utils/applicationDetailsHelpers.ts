@@ -53,16 +53,34 @@ export const buildFacilitatorData = (rawFacilitator: any, resolvedTrade: string)
 
 export const buildInterviewAssessors = (panelData: any, resolvedTrade: string) => {
   if (!panelData?.members || !Array.isArray(panelData.members) || panelData.members.length === 0) return undefined;
-  const nonObserver = panelData.members.filter((m: any) => !m.isObserver);
-  const toUse = nonObserver.length >= 3 ? nonObserver.slice(0, 3) : panelData.members.slice(0, 3);
-  return toUse.map((m: any, i: number) => ({
-    id: m.assessorId || `assessor-${i}`,
-    name: m.name || (m.isLead ? "Lead Assessor" : `Panelist ${i + 1}`),
-    avatar: m.photo?.url || m.avatar || m.photoUrl || undefined,
-    role: m.isLead || i === 0 ? "Lead Panelist" : "Panel Member",
-    tags: m.sectors?.length ? m.sectors.map((s: any) => s.name) : [resolvedTrade, "RPL Coordinator"],
-    isHighlighted: i === 1,
-  }));
+  const sorted = [...panelData.members].sort((a: any, b: any) => {
+    if (a.isLead) return -1;
+    if (b.isLead) return 1;
+    if (a.isObserver) return 1;
+    if (b.isObserver) return -1;
+    return 0;
+  });
+
+  return sorted.slice(0, 3).map((m: any, i: number) => {
+    const role = m.isLead
+      ? "Lead Panelist"
+      : m.isObserver
+        ? "Internal Verifier"
+        : "Panel Member";
+
+    return {
+      id: m.assessorId || `assessor-${i}`,
+      name: m.name || role,
+      avatar: m.photo?.url || m.avatar || m.photoUrl || undefined,
+      role,
+      tags: m.isObserver
+        ? ["Internal Verifier", "RPL Quality"]
+        : m.sectors?.length
+          ? m.sectors.map((s: any) => s.name)
+          : [resolvedTrade, m.isLead ? "Lead Assessor" : "Assessor"],
+      isHighlighted: Boolean(m.isLead),
+    };
+  });
 };
 
 export const buildTransactionReceipt = (

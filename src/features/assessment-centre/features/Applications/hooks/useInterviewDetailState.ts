@@ -48,35 +48,32 @@ export function useInterviewDetailState(interview: InterviewRowData) {
   };
 
   const leadAssessor = useMemo(() => {
-    const member =
-      resolvedPanel?.members?.find((m) => m.isLead) || resolvedPanel?.members?.[0];
+    const member = resolvedPanel?.members?.find((m) => m.isLead);
     const match = findStaffMatch(member?.assessorId || interview.leadPanelist);
     return {
-      name: match?.name || member?.name || interview.leadPanelist || staff[0]?.name || "Lead Panelist",
-      email: match?.email || (member as any)?.email || staff[0]?.email || "",
-      avatar: (match as any)?.photo?.url || (match as any)?.avatar || (match as any)?.photoUrl || undefined,
+      name: member?.name || match?.name || interview.leadPanelist || "Lead Panelist",
+      email: (member as any)?.email || match?.email || "",
+      avatar: (member as any)?.photo?.url || (match as any)?.photo?.url || (match as any)?.avatar || undefined,
     };
   }, [resolvedPanel, interview.leadPanelist, staff]);
 
   const memberAssessor = useMemo(() => {
-    const member =
-      resolvedPanel?.members?.find((m) => !m.isLead && !m.isObserver) || resolvedPanel?.members?.[1];
+    const member = resolvedPanel?.members?.find((m) => !m.isLead && !m.isObserver);
     const match = findStaffMatch(member?.assessorId || interview.panelMember);
     return {
-      name: match?.name || member?.name || interview.panelMember || staff[1]?.name || "Panel Member",
-      email: match?.email || (member as any)?.email || staff[1]?.email || "",
-      avatar: (match as any)?.photo?.url || (match as any)?.avatar || (match as any)?.photoUrl || undefined,
+      name: member?.name || match?.name || interview.panelMember || "Panel Member",
+      email: (member as any)?.email || match?.email || "",
+      avatar: (member as any)?.photo?.url || (match as any)?.photo?.url || (match as any)?.avatar || undefined,
     };
   }, [resolvedPanel, interview.panelMember, staff]);
 
   const ivAssessor = useMemo(() => {
-    const member =
-      resolvedPanel?.members?.find((m) => m.isObserver) || resolvedPanel?.members?.[2];
+    const member = resolvedPanel?.members?.find((m) => m.isObserver);
     const match = findStaffMatch(member?.assessorId || interview.internalVerifier);
     return {
-      name: match?.name || member?.name || interview.internalVerifier || staff[2]?.name || "Internal Verifier",
-      email: match?.email || (member as any)?.email || staff[2]?.email || "",
-      avatar: (match as any)?.photo?.url || (match as any)?.avatar || (match as any)?.photoUrl || undefined,
+      name: member?.name || match?.name || interview.internalVerifier || "Internal Verifier",
+      email: (member as any)?.email || match?.email || "",
+      avatar: (member as any)?.photo?.url || (match as any)?.photo?.url || (match as any)?.avatar || undefined,
     };
   }, [resolvedPanel, interview.internalVerifier, staff]);
 

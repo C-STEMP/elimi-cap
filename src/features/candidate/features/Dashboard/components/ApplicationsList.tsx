@@ -76,7 +76,7 @@ export const ApplicationsList: React.FC<ApplicationsListProps> = ({
           {applications.map((app) => (
             <Link
               key={app.id}
-              href={`/dashboard/applications/${app.id}`}
+              href={`/applications/${app.id}`}
               className="bg-[#f8f9fa] rounded-xl p-4 flex items-center justify-between border-l-[5px] border-[#fbab2a] hover:bg-[#f0f2f7] transition-all cursor-pointer group shadow-2xs"
             >
               <div className="flex flex-col gap-1">
