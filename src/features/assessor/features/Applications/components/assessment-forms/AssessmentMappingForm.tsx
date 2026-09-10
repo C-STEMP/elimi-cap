@@ -1,8 +1,8 @@
 "use client";
 
+import { useToast } from "@/src/components/ui/toast";
 import React, { useState } from "react";
 import { AssessorAssessmentFormLayout } from "./AssessorAssessmentFormLayout";
-import { useToast } from "@/src/components/ui/toast";
 
 interface UnitMappingItem {
   id: string;
@@ -17,7 +17,8 @@ const INITIAL_UNITS: UnitMappingItem[] = [
   {
     id: "unit-1",
     occupationalUnit: "Core Occupational Standards & Practical Execution",
-    performanceCriteria: "Accurate measurement, planning, tooling, and execution per standard trade requirements",
+    performanceCriteria:
+      "Accurate measurement, planning, tooling, and execution per standard trade requirements",
     typeOfEvidence: "Direct Observation & Practical Evidence",
     description: "",
     status: "Satisfied",
@@ -25,7 +26,8 @@ const INITIAL_UNITS: UnitMappingItem[] = [
   {
     id: "unit-2",
     occupationalUnit: "Workplace Safety & Standards Compliance",
-    performanceCriteria: "Compliance with health, safety, hazard mitigation and regulatory standards",
+    performanceCriteria:
+      "Compliance with health, safety, hazard mitigation and regulatory standards",
     typeOfEvidence: "Third Party Report & Portfolio Evidence",
     description: "",
     status: "Satisfied",
@@ -36,11 +38,15 @@ interface AssessmentMappingFormProps {
   candidateName: string;
   onBack: () => void;
   onSubmit: () => void;
+  isReadOnly?: boolean;
 }
 
-export const AssessmentMappingForm: React.FC<
-  AssessmentMappingFormProps
-> = ({ candidateName, onBack, onSubmit }) => {
+export const AssessmentMappingForm: React.FC<AssessmentMappingFormProps> = ({
+  candidateName,
+  onBack,
+  onSubmit,
+  isReadOnly,
+}) => {
   const { toast } = useToast();
   const [units, setUnits] = useState<UnitMappingItem[]>(INITIAL_UNITS);
   const [assessorSigned, setAssessorSigned] = useState(false);
@@ -86,6 +92,7 @@ export const AssessmentMappingForm: React.FC<
       onBack={onBack}
       onSubmit={onSubmit}
       submitLabel="Continue →"
+      isReadOnly={isReadOnly}
     >
       {/* 1. Personal Details */}
       <div className="flex flex-col gap-4">
@@ -124,8 +131,12 @@ export const AssessmentMappingForm: React.FC<
             </label>
             <select className="w-full bg-[#F8F9FA] border border-gray-200 rounded-xl p-3 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A]">
               <option>Select</option>
-              <option value="CRP-301">CRP-301: Advanced Joinery & Surface Prep</option>
-              <option value="CRP-302">CRP-302: Finishing & Structural Framework</option>
+              <option value="CRP-301">
+                CRP-301: Advanced Joinery & Surface Prep
+              </option>
+              <option value="CRP-302">
+                CRP-302: Finishing & Structural Framework
+              </option>
             </select>
           </div>
 
@@ -189,7 +200,11 @@ export const AssessmentMappingForm: React.FC<
                   type="text"
                   value={unit.performanceCriteria}
                   onChange={(e) =>
-                    updateUnitField(unit.id, "performanceCriteria", e.target.value)
+                    updateUnitField(
+                      unit.id,
+                      "performanceCriteria",
+                      e.target.value,
+                    )
                   }
                   placeholder="Type Here"
                   className="w-full bg-white border border-gray-200 rounded-xl p-3 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A]"

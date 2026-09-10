@@ -55,6 +55,14 @@ interface AssessorHeaderBannerProps {
   onMarkAsComplete?: () => void;
   onBackFromApplication?: () => void;
   onApplyToCentre?: () => void;
+  isIvApplication?: boolean;
+  activeIqamToolTitle?: string | null;
+  activeIqamBreadcrumb?: string | null;
+  onBackFromIqamTool?: () => void;
+  iqamActionLabel?: string | null;
+  onIqamAction?: () => void;
+  selectedJobTitle?: string | null;
+  onBackFromJob?: () => void;
   totalCentresCount?: number;
   totalApplicationsCount?: number;
   pendingApplicationsCount?: number;
@@ -77,6 +85,14 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
   onMarkAsComplete,
   onBackFromApplication,
   onApplyToCentre,
+  isIvApplication = false,
+  activeIqamToolTitle = null,
+  activeIqamBreadcrumb = null,
+  onBackFromIqamTool,
+  iqamActionLabel = null,
+  onIqamAction,
+  selectedJobTitle = null,
+  onBackFromJob,
   totalCentresCount = 0,
   totalApplicationsCount = 0,
   pendingApplicationsCount = 0,
@@ -429,8 +445,56 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
         </div>
       ) : activeTab === "Applications" ? (
         selectedApplicationName ? (
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
-            <div className="flex flex-col gap-2">
+          isIvApplication ? (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
+              <div className="flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={onBackFromApplication}
+                  className="flex items-center gap-2 text-white font-bold text-2xl sm:text-3xl hover:opacity-90 transition-opacity w-fit cursor-pointer"
+                >
+                  <FiChevronLeft className="w-6 h-6 stroke-[2.5]" />
+                  <span>
+                    {activeIqamToolTitle ||
+                      "Internal Verifier's Comprehensive Report Form"}
+                  </span>
+                </button>
+                <div className="flex items-center gap-2 text-xs sm:text-sm text-white/90 font-normal">
+                  <span
+                    onClick={onBackFromApplication}
+                    className="hover:underline cursor-pointer"
+                  >
+                    Applications
+                  </span>
+                  <span>&gt;</span>
+                  <span
+                    onClick={onBackFromApplication}
+                    className="hover:underline cursor-pointer"
+                  >
+                    {selectedApplicationName}
+                  </span>
+                  <span>&gt;</span>
+                  <span className="font-semibold text-white">
+                    {activeIqamBreadcrumb ||
+                      activeIqamToolTitle ||
+                      "Internal Verifier's Comprehensive Report Form"}
+                  </span>
+                </div>
+              </div>
+
+              {iqamActionLabel && (
+                <button
+                  type="button"
+                  onClick={onIqamAction}
+                  className="bg-[#FBAB2A] hover:bg-[#E89B1F] text-white font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl shadow-lg cursor-pointer transition-all self-start sm:self-center shrink-0"
+                >
+                  {iqamActionLabel}
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
+              <div className="flex flex-col gap-2">
               <button
                 type="button"
                 onClick={onBackFromApplication}
@@ -516,6 +580,7 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
               </Button>
             )}
           </div>
+          )
         ) : (
           <div className="flex flex-col gap-5 pt-2">
             <h1 className="text-2xl sm:text-3xl xl:text-[32px] font-extrabold tracking-tight text-white">
@@ -650,14 +715,80 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
             </div>
           </div>
         )
+      ) : activeTab === "IQAM Tools" ? (
+        activeIqamToolTitle ? (
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
+            <div className="flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={onBackFromIqamTool}
+                className="flex items-center gap-2 text-white font-bold text-2xl sm:text-3xl hover:opacity-90 transition-opacity w-fit cursor-pointer"
+              >
+                <FiChevronLeft className="w-6 h-6 stroke-[2.5]" />
+                <span>{activeIqamToolTitle}</span>
+              </button>
+              <div className="flex items-center gap-2 text-xs sm:text-sm text-white/90 font-normal">
+                <span
+                  onClick={onBackFromIqamTool}
+                  className="hover:underline cursor-pointer"
+                >
+                  IQAM Tools
+                </span>
+                <span>&gt;</span>
+                <span className="font-semibold text-white">
+                  {activeIqamBreadcrumb || activeIqamToolTitle}
+                </span>
+              </div>
+            </div>
+
+            {iqamActionLabel && (
+              <button
+                type="button"
+                onClick={onIqamAction}
+                className="bg-[#FBAB2A] hover:bg-[#E89B1F] text-white font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl shadow-lg cursor-pointer transition-all self-start sm:self-center shrink-0"
+              >
+                {iqamActionLabel}
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2 pt-2">
+            <h1 className="text-2xl sm:text-3xl xl:text-[32px] font-extrabold tracking-tight text-white">
+              IQAM Assessment Tools
+            </h1>
+          </div>
+        )
+      ) : activeTab === "Job Board" ? (
+        selectedJobTitle ? (
+          <div className="flex flex-col gap-2 pt-2">
+            <button
+              type="button"
+              onClick={onBackFromJob}
+              className="flex items-center gap-2 text-white font-bold text-2xl sm:text-3xl hover:opacity-90 transition-opacity w-fit cursor-pointer"
+            >
+              <FiChevronLeft className="w-6 h-6 stroke-[2.5]" />
+              <span>Assessor</span>
+            </button>
+            <div className="flex items-center gap-2 text-xs sm:text-sm text-white/90 font-normal">
+              <span onClick={onBackFromJob} className="hover:underline cursor-pointer">
+                Job Board
+              </span>
+              <span>&gt;</span>
+              <span className="font-semibold text-white">{selectedJobTitle}</span>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2 pt-2">
+            <h1 className="text-2xl sm:text-3xl xl:text-[32px] font-extrabold tracking-tight text-white">
+              Job Board
+            </h1>
+          </div>
+        )
       ) : (
         <div className="flex flex-col gap-2 pt-2">
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
+          <h1 className="text-2xl sm:text-3xl xl:text-[32px] font-extrabold tracking-tight text-white">
             {activeTab}
           </h1>
-          <p className="text-sm text-white/80">
-            Content for {activeTab} section
-          </p>
         </div>
       )}
 

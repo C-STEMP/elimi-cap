@@ -56,7 +56,8 @@ export const AssessorProfileDetailView: React.FC<
 
   const assessorName =
     remoteDetail?.name ||
-    (remoteDetail?.id ? `Assessor (${remoteDetail.id.slice(0, 8)})` : "Assessor");
+    (remoteDetail?.email ? remoteDetail.email.split("@")[0] : null) ||
+    "Assessor";
   const assessorEmail = remoteDetail?.email || "No email provided";
   const assessorExperience = remoteDetail?.yearsOfExperience ?? 0;
   const qualifications = remoteDetail?.qualifications || [];
@@ -85,7 +86,9 @@ export const AssessorProfileDetailView: React.FC<
         app.candidate?.name ||
         (app.candidate?.firstName
           ? `${app.candidate.firstName} ${app.candidate.lastName || ""}`.trim()
-          : app.candidateId || "Candidate");
+          : app.candidateId && !/^[0-9a-fA-Z-]{15,}$/i.test(app.candidateId)
+            ? app.candidateId
+            : "Candidate");
       const tradeName =
         app.trade?.name ||
         app.tradeId ||

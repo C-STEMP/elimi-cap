@@ -17,6 +17,7 @@ import {
   buildInterviewAssessors, buildTransactionReceipt, populateOnboardingFromAppDetail,
 } from "../utils/applicationDetailsHelpers";
 import type { PaymentModalType } from "../components/PaymentModals";
+import { formatCurrency } from "@/src/utils/currency";
 
 export function useApplicationDetailsState(id?: string) {
   const router = useRouter();
@@ -125,8 +126,10 @@ export function useApplicationDetailsState(id?: string) {
   };
 
   const paymentAmountText = paymentQuote?.amountMinorUnits
-    ? `₦${(Number(paymentQuote.amountMinorUnits) / 100).toLocaleString()}`
-    : paymentStage?.amountMinorUnits ? `₦${(Number(paymentStage.amountMinorUnits) / 100).toLocaleString()}` : "—";
+    ? formatCurrency(paymentQuote.amountMinorUnits, paymentQuote.currency || "NGN")
+    : paymentStage?.amountMinorUnits
+      ? formatCurrency(paymentStage.amountMinorUnits, paymentStage.currency || "NGN")
+      : "—";
 
   const stages = application ? getStagesConfig({
     formState, isVaultActive, folderStatus, formStatus, isInterviewCollapsed,

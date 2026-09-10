@@ -153,7 +153,7 @@ export function useScheduleInterviewState({
         const name =
           app.candidate?.name ||
           `${app.candidate?.firstName || ""} ${app.candidate?.lastName || ""}`.trim() ||
-          `Candidate (${app.id.slice(0, 8)})`;
+          "Candidate";
         const trade = app?.trade?.name || (typeof app?.trade === "string" ? app.trade : "General");
         const stageLabel = app.currentStageKey ? ` [${app.currentStageKey.replace(/_/g, " ")}]` : "";
         return {

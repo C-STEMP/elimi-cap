@@ -87,14 +87,6 @@ export const ApplicationSidebarWidgets: React.FC<
               <span className="text-xs text-gray-500">
                 Facilitator · {tradeName} (Level 3)
               </span>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="bg-rose-100 text-rose-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                  {tradeName}
-                </span>
-                <span className="bg-pink-100 text-pink-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                  RPL Coordinator
-                </span>
-              </div>
             </div>
           </div>
         </div>

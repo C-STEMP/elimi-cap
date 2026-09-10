@@ -1,13 +1,18 @@
 "use client";
 
-import React, { useState } from "react";
-import { IqamHeaderBanner } from "../common/IqamHeaderBanner";
+import React, { useState, useEffect } from "react";
 import { FiCalendar, FiChevronDown } from "react-icons/fi";
 import type { SamplingPlanItem } from "../../types/iqam.types";
 
 interface SamplingPlanViewProps {
   onBack: () => void;
   onSubmit?: () => void;
+  onUpdateHeader?: (config: {
+    title: string;
+    breadcrumb: string;
+    actionLabel?: string;
+    onAction?: () => void;
+  } | null) => void;
 }
 
 const INITIAL_ROWS: SamplingPlanItem[] = [
@@ -18,8 +23,17 @@ const INITIAL_ROWS: SamplingPlanItem[] = [
   { id: "5", assessorName: "Adegbogunmi Samson", candidateName: "Oriade Sophie", termType: "Select", plannedDate: "", units: {} },
 ];
 
-export const SamplingPlanView: React.FC<SamplingPlanViewProps> = ({ onBack, onSubmit }) => {
+export const SamplingPlanView: React.FC<SamplingPlanViewProps> = ({ onBack, onSubmit, onUpdateHeader }) => {
   const [rows, setRows] = useState<SamplingPlanItem[]>(INITIAL_ROWS);
+
+  useEffect(() => {
+    onUpdateHeader?.({
+      title: "Internal Verification Sampling Plan",
+      breadcrumb: "Internal Verification Sampling Plan",
+      actionLabel: "Submit",
+      onAction: onSubmit,
+    });
+  }, [onUpdateHeader, onSubmit]);
 
   const toggleUnit = (rowId: string, unitKey: string) => {
     setRows((prev) =>
@@ -39,13 +53,6 @@ export const SamplingPlanView: React.FC<SamplingPlanViewProps> = ({ onBack, onSu
 
   return (
     <div className="w-full flex flex-col gap-6 select-text pb-12 animate-fadeIn">
-      <IqamHeaderBanner
-        title="Internal Verification Sampling Plan"
-        breadcrumbChild="Internal Verification Sampling Plan"
-        onBack={onBack}
-        actionButtonLabel="Submit"
-        onActionClick={onSubmit}
-      />
 
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-6">
         {/* Top Summary Cards */}

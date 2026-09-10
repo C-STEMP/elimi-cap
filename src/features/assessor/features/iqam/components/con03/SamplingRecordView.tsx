@@ -1,13 +1,18 @@
 "use client";
 
-import React, { useState } from "react";
-import { IqamHeaderBanner } from "../common/IqamHeaderBanner";
+import React, { useState, useEffect } from "react";
 import { FiCalendar, FiPlus } from "react-icons/fi";
 import type { SamplingRecordItem } from "../../types/iqam.types";
 
 interface SamplingRecordViewProps {
   onBack: () => void;
   onSubmit?: () => void;
+  onUpdateHeader?: (config: {
+    title: string;
+    breadcrumb: string;
+    actionLabel?: string;
+    onAction?: () => void;
+  } | null) => void;
 }
 
 const INITIAL_LOGS: SamplingRecordItem[] = [
@@ -18,18 +23,20 @@ const INITIAL_LOGS: SamplingRecordItem[] = [
   { id: "5", assessorName: "Adegbogunmi Samson", status: "NSNQ", assessmentSite: "3 Abbey Street, Kubwa Expressway", candidateName: "Samson David", unitsAssessed: "UNIT 1/UNIT 2/UNIT 3", process: "P/R/F/FC", method: "QA/DO/WP/PS" },
 ];
 
-export const SamplingRecordView: React.FC<SamplingRecordViewProps> = ({ onBack, onSubmit }) => {
+export const SamplingRecordView: React.FC<SamplingRecordViewProps> = ({ onBack, onSubmit, onUpdateHeader }) => {
   const [logs] = useState<SamplingRecordItem[]>(INITIAL_LOGS);
+
+  useEffect(() => {
+    onUpdateHeader?.({
+      title: "Internal Verification Sampling Record",
+      breadcrumb: "Internal Verification Sampling Record",
+      actionLabel: "Submit",
+      onAction: onSubmit,
+    });
+  }, [onUpdateHeader, onSubmit]);
 
   return (
     <div className="w-full flex flex-col gap-6 select-text pb-12 animate-fadeIn">
-      <IqamHeaderBanner
-        title="Internal Verification Sampling Record"
-        breadcrumbChild="Internal Verification Sampling Record"
-        onBack={onBack}
-        actionButtonLabel="Submit"
-        onActionClick={onSubmit}
-      />
 
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-6">
         {/* Subheader Banner */}

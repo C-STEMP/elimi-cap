@@ -8,6 +8,7 @@ interface Props {
   showSelfAssessmentForm: boolean;
   showEvidenceVault: boolean;
   showCandidateForm: boolean;
+  isApplicationApproved?: boolean;
   onBackToList: () => void;
   onBackFromInterview?: () => void;
   onBackFromSelfAssessment: () => void;
@@ -22,6 +23,7 @@ export const ApplicationsHeaderBreadcrumb: React.FC<Props> = ({
   showSelfAssessmentForm,
   showEvidenceVault,
   showCandidateForm,
+  isApplicationApproved,
   onBackToList,
   onBackFromInterview,
   onBackFromSelfAssessment,
@@ -118,7 +120,7 @@ export const ApplicationsHeaderBreadcrumb: React.FC<Props> = ({
           </div>
         </div>
 
-        {onAcceptApplication && (
+        {onAcceptApplication && !isApplicationApproved && (
           <button
             type="button"
             onClick={onAcceptApplication}

@@ -56,7 +56,7 @@ export function mapApplicationItem(app: any) {
     candidateName:
       rawApp.candidate?.name ||
       `${rawApp.candidate?.firstName || ""} ${rawApp.candidate?.lastName || ""}`.trim() ||
-      `Candidate (${app.candidateId?.slice(0, 8) || "N/A"})`,
+      "Candidate",
     photoUrl:
       rawApp.candidate?.photo?.url ||
       rawApp.candidate?.photoAssetId ||

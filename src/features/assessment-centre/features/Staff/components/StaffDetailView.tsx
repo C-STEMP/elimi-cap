@@ -71,7 +71,7 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
     candidateName:
       app.candidate?.name ||
       `${app.candidate?.firstName || ""} ${app.candidate?.lastName || ""}`.trim() ||
-      `Candidate (${app.candidateId?.slice(0, 8) || "N/A"})`,
+      "Candidate",
     trade: app.trade?.name || app.type || "General",
     assessmentType: app.type || "RPL",
     status:

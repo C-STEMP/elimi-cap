@@ -54,11 +54,12 @@ interface PracticalObservationFormProps {
   candidateName: string;
   onBack: () => void;
   onSubmit: () => void;
+  isReadOnly?: boolean;
 }
 
 export const PracticalObservationForm: React.FC<
   PracticalObservationFormProps
-> = ({ candidateName, onBack, onSubmit }) => {
+> = ({ candidateName, onBack, onSubmit, isReadOnly }) => {
   const { toast } = useToast();
   const [checklist, setChecklist] =
     useState<ObservationChecklistItem[]>(DEFAULT_CHECKLIST);
@@ -95,6 +96,7 @@ export const PracticalObservationForm: React.FC<
       onBack={onBack}
       onSubmit={onSubmit}
       submitLabel="Continue →"
+      isReadOnly={isReadOnly}
     >
       {/* 1. Personal Details */}
       <div className="flex flex-col gap-4">

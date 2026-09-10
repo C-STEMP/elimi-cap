@@ -22,7 +22,7 @@ export const PendingApplicationsTable: React.FC<TableProps> = ({
       candidateName:
         rawApp.candidate?.name ||
         `${rawApp.candidate?.firstName || ""} ${rawApp.candidate?.lastName || ""}`.trim() ||
-        `Candidate (${app.candidateId?.slice(0, 8) || "N/A"})`,
+        "Candidate",
       trade: rawApp.trade?.name || app.type || "General",
       assessmentType: app.type || "RPL",
       status: "Pending",

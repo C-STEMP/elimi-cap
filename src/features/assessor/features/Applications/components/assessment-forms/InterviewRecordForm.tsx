@@ -36,12 +36,14 @@ interface InterviewRecordFormProps {
   candidateName: string;
   onBack: () => void;
   onSubmit: () => void;
+  isReadOnly?: boolean;
 }
 
 export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
   candidateName,
   onBack,
   onSubmit,
+  isReadOnly,
 }) => {
   const { toast } = useToast();
   const [questions, setQuestions] =
@@ -82,6 +84,7 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
       onBack={onBack}
       onSubmit={onSubmit}
       submitLabel="Submit"
+      isReadOnly={isReadOnly}
     >
       {/* 1. Personal Details */}
       <div className="flex flex-col gap-4">

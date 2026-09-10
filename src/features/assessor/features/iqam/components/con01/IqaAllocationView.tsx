@@ -1,13 +1,18 @@
 "use client";
 
-import React, { useState } from "react";
-import { IqamHeaderBanner } from "../common/IqamHeaderBanner";
+import React, { useState, useEffect } from "react";
 import { CompleteCandidateModal } from "../common/CompleteCandidateModal";
 import type { CandidateAllocationItem } from "../../types/iqam.types";
 
 interface IqaAllocationViewProps {
   onBack: () => void;
   onOpenCandidateForm?: (candidateName: string) => void;
+  onUpdateHeader?: (config: {
+    title: string;
+    breadcrumb: string;
+    actionLabel?: string;
+    onAction?: () => void;
+  } | null) => void;
 }
 
 const DEFAULT_ALLOCATIONS: CandidateAllocationItem[] = [
@@ -21,16 +26,19 @@ const DEFAULT_ALLOCATIONS: CandidateAllocationItem[] = [
 export const IqaAllocationView: React.FC<IqaAllocationViewProps> = ({
   onBack,
   onOpenCandidateForm,
+  onUpdateHeader,
 }) => {
   const [selectedCandidateForModal, setSelectedCandidateForModal] = useState<string | null>(null);
 
+  useEffect(() => {
+    onUpdateHeader?.({
+      title: "IQA Allocation Form of Candidates to Assessor",
+      breadcrumb: "IQA Allocation Form",
+    });
+  }, [onUpdateHeader]);
+
   return (
     <div className="w-full flex flex-col gap-6 select-text pb-12 animate-fadeIn">
-      <IqamHeaderBanner
-        title="IQA Allocation Form of Candidates to Assessor"
-        breadcrumbChild="IQA Allocation Form"
-        onBack={onBack}
-      />
 
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-6">
         {/* Top Summary Cards */}

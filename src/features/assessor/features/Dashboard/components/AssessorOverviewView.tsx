@@ -7,6 +7,7 @@ import { useGetAssessorApplications } from "@/src/features/assessor/features/App
 import { useGetAssessorProfile } from "@/src/features/assessor/hooks";
 import type { Application } from "@/src/features/shared/applications/api";
 import { Loader } from "@/src/components/ui/loader";
+import { Avatar } from "@/src/components/ui/avatar";
 
 interface AssessorOverviewViewProps {
   onViewAllApplications: () => void;
@@ -143,11 +144,12 @@ export const AssessorOverviewView: React.FC<AssessorOverviewViewProps> = ({
         </div>
       ) : applications.length > 0 ? (
         <div className="w-full overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[500px]">
+          <table className="w-full text-left border-collapse min-w-[700px]">
             <thead>
               <tr className="border-b border-gray-100 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                <th className="p-3.5">ID</th>
-                <th className="p-3.5">Type</th>
+                <th className="p-3.5">Candidate Name</th>
+                <th className="p-3.5">Trade</th>
+                <th className="p-3.5">Assessment Type</th>
                 <th className="p-3.5">Status</th>
                 <th className="p-3.5">Stage</th>
                 <th className="p-3.5">Date</th>
@@ -161,12 +163,36 @@ export const AssessorOverviewView: React.FC<AssessorOverviewViewProps> = ({
                     label: app.status,
                     className: "bg-gray-100 text-gray-600",
                   };
+                const rawApp = app as any;
+                const candidateName =
+                  rawApp.candidate?.name ||
+                  `${rawApp.candidate?.firstName || ""} ${rawApp.candidate?.lastName || ""}`.trim() ||
+                  "Candidate";
+                const candidatePhoto =
+                  rawApp.candidate?.photo?.url ||
+                  rawApp.candidate?.photoAssetId ||
+                  rawApp.candidate?.avatar ||
+                  null;
+                const tradeName =
+                  rawApp.trade?.name ||
+                  (typeof rawApp.trade === "string" ? rawApp.trade : null) ||
+                  app.type ||
+                  "General";
+
                 return (
                   <tr key={app.id} className="hover:bg-gray-50/60 transition-colors">
-                    <td className="p-3.5 font-mono text-xs text-neutral-primary">
-                      {app.id.slice(0, 8)}…
+                    <td className="p-3.5 font-medium text-neutral-primary">
+                      <div className="flex items-center gap-2.5">
+                        <Avatar
+                          src={candidatePhoto}
+                          name={candidateName}
+                          className="w-7 h-7 rounded-full border border-gray-100 shrink-0"
+                        />
+                        <span className="truncate">{candidateName}</span>
+                      </div>
                     </td>
-                    <td className="p-3.5 text-gray-600 font-medium">{app.type}</td>
+                    <td className="p-3.5 text-gray-600">{tradeName}</td>
+                    <td className="p-3.5 text-gray-600 font-medium">{app.type || "RPL"}</td>
                     <td className="p-3.5">
                       <span
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${s.className}`}
@@ -174,8 +200,8 @@ export const AssessorOverviewView: React.FC<AssessorOverviewViewProps> = ({
                         {s.label}
                       </span>
                     </td>
-                    <td className="p-3.5 text-gray-500 text-xs">
-                      {(app as any).currentStageKey ?? "—"}
+                    <td className="p-3.5 text-gray-500 text-xs capitalize">
+                      {rawApp.currentStageKey ? rawApp.currentStageKey.replace(/_/g, " ") : "—"}
                     </td>
                     <td className="p-3.5 text-gray-500 text-xs">
                       {app.createdAt

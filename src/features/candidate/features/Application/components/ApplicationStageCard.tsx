@@ -204,17 +204,6 @@ export const ApplicationStageCard: React.FC<ApplicationStageCardProps> = ({
                   <p className="text-gray-400 text-xs font-normal truncate mt-0.5">
                     {assessor.role}
                   </p>
-
-                  <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                    {assessor.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="bg-[#FDF2F4] text-[#A31D38] text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
                 </div>
               </div>
             ))}

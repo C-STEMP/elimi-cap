@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { FiSearch, FiList, FiGrid } from "react-icons/fi";
 import { Select } from "@/src/components/ui/select";
 import { PaymentTransaction } from "@/features/assessment-centre/types";
+import { formatCurrency } from "@/src/utils/currency";
 import { useGetCentrePayments } from "@/src/features/shared/centre/hooks";
 import { Loader } from "@/src/components/ui/loader";
 
@@ -24,9 +25,10 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
     id: tx.applicationId,
     candidateName: tx.candidateName || "Candidate",
     assessmentType: tx.applicationType,
-    amountPaid: `${tx.amount.currency === "USD" ? "$" : "₦"}${(
-      Number(tx.amount.amountMinorUnits || "0") / 100
-    ).toLocaleString()}`,
+    amountPaid: formatCurrency(
+      tx.amount.amountMinorUnits || "0",
+      tx.amount.currency || "NGN",
+    ),
     status: tx.status === "completed" ? "Paid" : "Pending",
     date: tx.paidAt
       ? new Date(tx.paidAt).toLocaleDateString("en-GB")

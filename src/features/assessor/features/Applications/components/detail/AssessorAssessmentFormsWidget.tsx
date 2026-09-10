@@ -18,11 +18,12 @@ const DEFAULT_ASSESSMENT_FORMS: AssessmentFormItem[] = [
 interface AssessorAssessmentFormsWidgetProps {
   forms?: AssessmentFormItem[];
   onViewForm?: (form: AssessmentFormItem) => void;
+  isReadOnly?: boolean;
 }
 
 export const AssessorAssessmentFormsWidget: React.FC<
   AssessorAssessmentFormsWidgetProps
-> = ({ forms = DEFAULT_ASSESSMENT_FORMS, onViewForm }) => {
+> = ({ forms = DEFAULT_ASSESSMENT_FORMS, onViewForm, isReadOnly = false }) => {
   const { toast } = useToast();
 
   const handleView = (form: AssessmentFormItem) => {
@@ -39,9 +40,20 @@ export const AssessorAssessmentFormsWidget: React.FC<
 
   return (
     <div className="bg-white rounded-3xl p-6 shadow-xs border border-gray-100 flex flex-col gap-4 w-full select-text">
-      <h4 className="text-base font-bold text-neutral-primary">
-        Assessment Forms
-      </h4>
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <h4 className="text-base font-bold text-neutral-primary">
+          Assessment Forms
+        </h4>
+        {isReadOnly ? (
+          <span className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full">
+            IV (View Only)
+          </span>
+        ) : (
+          <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+            Lead Panelist (Fill)
+          </span>
+        )}
+      </div>
 
       <div className="flex flex-col gap-2.5 w-full">
         {forms.map((form) => (
@@ -58,7 +70,7 @@ export const AssessorAssessmentFormsWidget: React.FC<
               onClick={() => handleView(form)}
               className="text-[#FBAB2A] hover:text-[#E89B1F] font-semibold text-xs sm:text-sm transition-colors cursor-pointer shrink-0"
             >
-              View
+              {isReadOnly ? "View" : "Fill Form"}
             </button>
           </div>
         ))}

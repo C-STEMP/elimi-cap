@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
-import { IqamHeaderBanner } from "../common/IqamHeaderBanner";
+import React, { useState, useEffect } from "react";
 import { IqamSignatureBlock } from "../common/IqamSignatureBlock";
 import type { ChecklistQuestionItem } from "../../types/iqam.types";
 
@@ -10,6 +9,12 @@ interface FinalPortfolioReportViewProps {
   candidateName?: string;
   enrolmentNo?: string;
   onSubmit?: () => void;
+  onUpdateHeader?: (config: {
+    title: string;
+    breadcrumb: string;
+    actionLabel?: string;
+    onAction?: () => void;
+  } | null) => void;
 }
 
 const CHECKPOINTS: ChecklistQuestionItem[] = [
@@ -29,11 +34,21 @@ export const FinalPortfolioReportView: React.FC<FinalPortfolioReportViewProps> =
   candidateName = "Samson David",
   enrolmentNo = "NBTE/MAQ/2026/10892",
   onSubmit,
+  onUpdateHeader,
 }) => {
   const [fullAwardVerified, setFullAwardVerified] = useState<"yes" | "no">("yes");
   const [checkpoints, setCheckpoints] = useState(CHECKPOINTS);
   const [ivSigned, setIvSigned] = useState(false);
   const [countersigningIvaSigned, setCountersigningIvaSigned] = useState(false);
+
+  useEffect(() => {
+    onUpdateHeader?.({
+      title: "Internal Verifiers Final Portfolio / Award Report Form",
+      breadcrumb: "Final Portfolio Report",
+      actionLabel: "Submit",
+      onAction: onSubmit,
+    });
+  }, [onUpdateHeader, onSubmit]);
 
   const toggleAnswer = (id: string, ans: "yes" | "no") => {
     setCheckpoints((prev) => prev.map((c) => (c.id === id ? { ...c, answer: ans } : c)));
@@ -45,13 +60,6 @@ export const FinalPortfolioReportView: React.FC<FinalPortfolioReportViewProps> =
 
   return (
     <div className="w-full flex flex-col gap-6 select-text pb-12 animate-fadeIn">
-      <IqamHeaderBanner
-        title="Internal Verifiers Final Portfolio / Award Report Form"
-        breadcrumbChild="Final Portfolio Report"
-        onBack={onBack}
-        actionButtonLabel="Submit"
-        onActionClick={onSubmit}
-      />
 
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-6">
         {/* Banner 3-Column Grid */}

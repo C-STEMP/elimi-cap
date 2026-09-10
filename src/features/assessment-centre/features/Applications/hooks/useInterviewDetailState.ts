@@ -87,7 +87,7 @@ export function useInterviewDetailState(interview: InterviewRowData) {
         const candidateName =
           b.candidate?.name ||
           `${(b.candidate as any)?.firstName || ""} ${(b.candidate as any)?.lastName || ""}`.trim() ||
-          `Candidate (${b.application?.id?.slice(0, 8) || b.id.slice(0, 8)})`;
+          "Candidate";
         const trade = b.application?.trade?.name || b.application?.type || "General Trade";
         const stage =
           b.application?.currentStageKey === "interview"
@@ -116,7 +116,7 @@ export function useInterviewDetailState(interview: InterviewRowData) {
         const candidateName =
           raw.candidate?.name ||
           `${raw.candidate?.firstName || ""} ${raw.candidate?.lastName || ""}`.trim() ||
-          `Candidate (${app.id.slice(0, 8)})`;
+          "Candidate";
         const trade = raw.trade?.name || (typeof raw.trade === "string" ? raw.trade : null) || app.type || "General Trade";
         const stage =
           raw.currentStageKey === "folder_arrangement"

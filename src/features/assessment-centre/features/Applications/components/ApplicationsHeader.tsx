@@ -13,6 +13,7 @@ interface ApplicationsHeaderProps {
   showSelfAssessmentForm: boolean;
   showEvidenceVault: boolean;
   showCandidateForm: boolean;
+  isApplicationApproved?: boolean;
   onBackToList: () => void;
   onBackFromInterview?: () => void;
   onBackFromSelfAssessment: () => void;

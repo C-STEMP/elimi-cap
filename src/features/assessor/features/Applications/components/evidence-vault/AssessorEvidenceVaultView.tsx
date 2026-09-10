@@ -254,28 +254,24 @@ export const AssessorEvidenceVaultView: React.FC<
     const item = selectedItemForFeedback;
 
     try {
-      if (applicationId) {
-        await reviewMutation.mutateAsync({
-          id: applicationId,
-          payload: {
-            decision: "reject",
-            stageKey: "folder_arrangement",
-            feedback: `Feedback on ${item.name}: ${feedbackText}`,
-          },
-        });
-      }
+      const targetId = item.id;
+      const targetAssetId = item.assetId;
 
       // Update local state in assessor view
       setEvidenceItems((prev) =>
-        prev.map((e) =>
-          e.id === item.id || e.name === item.name
+        prev.map((e) => {
+          const isMatch =
+            (targetId && e.id === targetId) ||
+            (targetAssetId && e.assetId === targetAssetId) ||
+            (!targetId && !targetAssetId && e.name === item.name);
+          return isMatch
             ? {
                 ...e,
                 status: "Attention Required",
                 feedback: [feedbackText, ...(e.feedback || [])],
               }
-            : e,
-        ),
+            : e;
+        }),
       );
 
       // Save to localStorage for candidate to see immediately
@@ -363,30 +359,24 @@ export const AssessorEvidenceVaultView: React.FC<
   ) => {
     setIsApproving(true);
     try {
-      if (applicationId) {
-        await reviewMutation.mutateAsync({
-          id: applicationId,
-          payload: {
-            decision: "approve",
-            stageKey: "folder_arrangement",
-            feedback: `Evidence "${item.name}" approved by assessor.`,
-          },
-        });
-      }
+      const targetId = item.id;
+      const targetAssetId = item.assetId;
 
       setEvidenceItems((prev) =>
-        prev.map((e) =>
-          e.id === item.id ||
-          e.name === item.name ||
-          (item.assetId && e.assetId === item.assetId)
-            ? { ...e, status: "Approved", feedback: [] }
-            : e,
-        ),
+        prev.map((e) => {
+          const isMatch =
+            (targetId && e.id === targetId) ||
+            (targetAssetId && e.assetId === targetAssetId) ||
+            (!targetId && !targetAssetId && e.name === item.name);
+          return isMatch ? { ...e, status: "Approved", feedback: [] } : e;
+        }),
       );
 
       if (
         previewItem &&
-        (previewItem.id === item.id || previewItem.name === item.name)
+        ((targetId && previewItem.id === targetId) ||
+          (targetAssetId && previewItem.assetId === targetAssetId) ||
+          (!targetId && !targetAssetId && previewItem.name === item.name))
       ) {
         setPreviewItem((prev) =>
           prev
@@ -407,22 +397,24 @@ export const AssessorEvidenceVaultView: React.FC<
           const stored = localStorage.getItem(vaultKey);
           if (stored) {
             const parsed = JSON.parse(stored);
-            const updated = parsed.map((e: any) =>
-              e.id === item.id ||
-              e.name === item.name ||
-              e.documentName === item.name
+            const updated = parsed.map((e: any) => {
+              const isMatch =
+                (targetId && e.id === targetId) ||
+                (targetAssetId && e.assetId === targetAssetId) ||
+                (!targetId && !targetAssetId && (e.name === item.name || e.documentName === item.name));
+              return isMatch
                 ? { ...e, status: "Approved", issues: [], feedback: null }
-                : e,
-            );
+                : e;
+            });
             localStorage.setItem(vaultKey, JSON.stringify(updated));
           }
           const fbKey = `elimi_evidence_feedback_${applicationId}`;
           const storedFb = localStorage.getItem(fbKey);
           if (storedFb) {
             const parsedFb = JSON.parse(storedFb);
-            delete parsedFb[item.id];
+            if (targetId) delete parsedFb[targetId];
             delete parsedFb[item.name];
-            if (item.assetId) delete parsedFb[item.assetId];
+            if (targetAssetId) delete parsedFb[targetAssetId];
             localStorage.setItem(fbKey, JSON.stringify(parsedFb));
           }
         } catch (e) {
