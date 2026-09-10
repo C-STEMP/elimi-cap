@@ -12,6 +12,7 @@ interface AssessorAssessmentFormLayoutProps {
   onBack: () => void;
   onSubmit: () => void;
   submitLabel?: string;
+  isReadOnly?: boolean;
   children: React.ReactNode;
 }
 
@@ -23,6 +24,7 @@ export const AssessorAssessmentFormLayout: React.FC<
   onBack,
   onSubmit,
   submitLabel = "Submit",
+  isReadOnly = false,
   children,
 }) => {
   return (
@@ -57,7 +59,16 @@ export const AssessorAssessmentFormLayout: React.FC<
 
       {/* Right Form Area */}
       <div className="lg:col-span-8 bg-white rounded-3xl p-6 sm:p-8 border border-gray-100 shadow-xs flex flex-col gap-8">
-        {children}
+        {isReadOnly && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center justify-between gap-3 text-amber-900 text-xs sm:text-sm font-medium">
+            <span>👁️ <strong>Read-Only View:</strong> Assessment forms are to be filled by the Lead Panelist.</span>
+            <span className="bg-amber-200/80 text-amber-900 px-2.5 py-1 rounded-full text-xs font-bold shrink-0">Internal Verifier View</span>
+          </div>
+        )}
+
+        <div className={isReadOnly ? "pointer-events-none opacity-90 select-text" : ""}>
+          {children}
+        </div>
 
         {/* Bottom Actions */}
         <div className="flex items-center justify-between gap-4 pt-4 border-t border-gray-100">
@@ -70,14 +81,16 @@ export const AssessorAssessmentFormLayout: React.FC<
             Back
           </button>
 
-          <Button
-            type="button"
-            onClick={onSubmit}
-            variant="amber"
-            className="h-11 px-8 bg-[#FBAB2A] hover:bg-[#E89B1F] text-white font-bold text-xs sm:text-sm rounded-xl shadow-md cursor-pointer transition-all"
-          >
-            {submitLabel}
-          </Button>
+          {!isReadOnly && (
+            <Button
+              type="button"
+              onClick={onSubmit}
+              variant="amber"
+              className="h-11 px-8 bg-[#FBAB2A] hover:bg-[#E89B1F] text-white font-bold text-xs sm:text-sm rounded-xl shadow-md cursor-pointer transition-all"
+            >
+              {submitLabel}
+            </Button>
+          )}
         </div>
       </div>
     </div>

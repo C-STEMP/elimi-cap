@@ -50,7 +50,8 @@ export const JobListingDetailView: React.FC<JobListingDetailViewProps> = ({
     return (remoteApplicants || []).map((app: any) => {
       const assessorName =
         app.assessor?.name ||
-        (app.id ? `Applicant (${app.id.slice(0, 8)})` : "Applicant");
+        (app.assessor?.email ? app.assessor.email.split("@")[0] : null) ||
+        "Applicant";
       const tradeName = app.trade?.name || job?.trade?.name || "General";
       const experience = app.assessor?.yearsOfExperience ?? 0;
       const certificatesCount = app.assessor?.certificates?.length ?? 0;

@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   useGetApplicationById,
   useGetApplicationStages,
   useReviewApplication,
+  APPLICATION_QUERY_KEYS,
 } from "@/src/features/shared/applications/hooks";
 
 interface Props {
@@ -21,6 +23,24 @@ export function useCandidateFormState({
   const { data: appDetail, isLoading: isLoadingDetail } = useGetApplicationById(id);
   const { data: stages = [] } = useGetApplicationStages(id);
   const reviewMutation = useReviewApplication();
+  const queryClient = useQueryClient();
+
+  const appFormStage = stages.find(
+    (s) =>
+      s.stageKey === "application_form" ||
+      s.stageKey === "application_review" ||
+      s.stageKey === "application",
+  );
+
+  const isFormAlreadyApproved = Boolean(
+    appFormStage?.status === "successful" ||
+      (appFormStage?.status as string) === "approved" ||
+      (appDetail?.currentStageKey &&
+        appDetail.currentStageKey !== "application_form" &&
+        appDetail.currentStageKey !== "application_review" &&
+        appDetail.currentStageKey !== "draft" &&
+        appDetail.currentStageKey !== "submitted"),
+  );
 
   const [isAccepted, setIsAccepted] = useState(false);
   const [isConfirmAcceptOpen, setIsConfirmAcceptOpen] = useState(false);
@@ -75,6 +95,19 @@ export function useCandidateFormState({
             setIsConfirmAcceptOpen(false);
             setIsAccepted(true);
             setIsAcceptSuccessOpen(true);
+            if (id) {
+              queryClient.invalidateQueries({
+                queryKey: APPLICATION_QUERY_KEYS.detail(id),
+              });
+              queryClient.invalidateQueries({
+                queryKey: APPLICATION_QUERY_KEYS.stages(id),
+              });
+            }
+            queryClient.invalidateQueries({
+              queryKey: APPLICATION_QUERY_KEYS.all,
+            });
+            queryClient.invalidateQueries({ queryKey: ["applications"] });
+            queryClient.invalidateQueries({ queryKey: ["centre"] });
             onAcceptApplication?.();
           },
         },
@@ -102,6 +135,19 @@ export function useCandidateFormState({
           onSuccess: () => {
             setIsConfirmRejectOpen(false);
             setRejectReason("");
+            if (id) {
+              queryClient.invalidateQueries({
+                queryKey: APPLICATION_QUERY_KEYS.detail(id),
+              });
+              queryClient.invalidateQueries({
+                queryKey: APPLICATION_QUERY_KEYS.stages(id),
+              });
+            }
+            queryClient.invalidateQueries({
+              queryKey: APPLICATION_QUERY_KEYS.all,
+            });
+            queryClient.invalidateQueries({ queryKey: ["applications"] });
+            queryClient.invalidateQueries({ queryKey: ["centre"] });
           },
         },
       );
@@ -115,7 +161,7 @@ export function useCandidateFormState({
     isLoadingDetail,
     stages,
     reviewMutation,
-    isAccepted,
+    isAccepted: isAccepted || isFormAlreadyApproved,
     isConfirmAcceptOpen,
     setIsConfirmAcceptOpen,
     isConfirmRejectOpen,

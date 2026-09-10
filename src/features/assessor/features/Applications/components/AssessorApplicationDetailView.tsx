@@ -28,6 +28,7 @@ import {
   useGetInterviewSchedule,
   useGetInterviewForms,
   useEvaluateInterview,
+  useGetInterviewPanel,
 } from "@/src/features/shared/applications/hooks";
 import {
   reviewIvApi,
@@ -35,6 +36,7 @@ import {
 } from "@/src/features/shared/applications/api/application.api";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/src/components/ui/toast";
+import { useAppSelector } from "@/src/store/hooks";
 
 export type AssessorDetailSubView =
   | "stages"
@@ -100,6 +102,42 @@ export const AssessorApplicationDetailView: React.FC<
     enabled: isInterviewStage,
   });
   const evaluateInterview = useEvaluateInterview(application.id);
+
+  const user = useAppSelector((state) => state.auth.user);
+  const { data: interviewPanel } = useGetInterviewPanel(application.id, {
+    enabled: isInterviewStage,
+  });
+
+  const isUserIV = Boolean(
+    user?.role?.toLowerCase()?.includes("iv") ||
+      user?.role?.toLowerCase()?.includes("verifier") ||
+      interviewPanel?.members?.some(
+        (m: any) =>
+          (m.isObserver ||
+            m.role?.toLowerCase()?.includes("iv") ||
+            m.role?.toLowerCase()?.includes("internal verifier")) &&
+          (m.assessorId === user?.id ||
+            (m as any).userId === user?.id ||
+            (m as any).email === user?.email),
+      ),
+  );
+
+  const leadMember =
+    interviewPanel?.members?.find((m: any) => m.isLead) ||
+    interviewPanel?.members?.[0];
+
+  const isUserLeadPanelist = Boolean(
+    leadMember &&
+      user?.id &&
+      (leadMember.assessorId === user.id ||
+        (leadMember as any).userId === user.id ||
+        (leadMember as any).id === user.id ||
+        (leadMember as any).email === user.email),
+  );
+
+  // Assessment forms are to be filled by Lead Panelist & viewed by IV
+  const isAssessmentFormReadOnly =
+    isUserIV || (Boolean(interviewPanel?.members?.length) && !isUserLeadPanelist);
 
   const [internalSubView, setInternalSubView] =
     useState<AssessorDetailSubView>("stages");
@@ -347,6 +385,7 @@ export const AssessorApplicationDetailView: React.FC<
         formId={selectedAssessmentFormId}
         candidateName={application.candidateName}
         onBack={() => setSubView("stages")}
+        isReadOnly={isAssessmentFormReadOnly}
       />
     );
   }
@@ -415,6 +454,7 @@ export const AssessorApplicationDetailView: React.FC<
         />
         <AssessorUpcomingEventsWidget event={upcomingEvent} />
         <AssessorAssessmentFormsWidget
+          isReadOnly={isAssessmentFormReadOnly}
           onViewForm={(form) => {
             setSelectedAssessmentFormId(form.id);
             setSubView("assessment_form");

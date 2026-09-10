@@ -133,6 +133,12 @@ import { MessagesHeader } from "../features/Dashboard/components/MessagesHeader"
 import { AssessmentCentreTab, PaymentTransaction } from "../types";
 import { type InterviewRowData } from "../features/Applications/components/ViewInterviewDetailModal";
 import { useAppSelector } from "@/src/store/hooks";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  useGetApplicationById,
+  useGetApplicationStages,
+  APPLICATION_QUERY_KEYS,
+} from "@/src/features/shared/applications/hooks";
 import {
   useGetCentreDashboard,
   useGetCentreProfile,
@@ -222,6 +228,33 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
   const [selectedApplicationId, setSelectedApplicationId] = useState<
     string | null
   >(null);
+
+  const queryClient = useQueryClient();
+  const { data: selectedAppDetail } = useGetApplicationById(
+    selectedApplicationId || "",
+  );
+  const { data: selectedAppStages = [] } = useGetApplicationStages(
+    selectedApplicationId || "",
+  );
+
+  const isSelectedAppApproved = Boolean(
+    (selectedAppDetail?.status as string) === "approved" ||
+      selectedAppDetail?.status === "in_progress" ||
+      selectedAppDetail?.status === "certified" ||
+      selectedAppStages.some(
+        (s) =>
+          (s.stageKey === "application_form" ||
+            s.stageKey === "application_review" ||
+            s.stageKey === "application") &&
+          ((s.status as string) === "successful" ||
+            (s.status as string) === "approved"),
+      ) ||
+      (selectedAppDetail?.currentStageKey &&
+        selectedAppDetail.currentStageKey !== "application_form" &&
+        selectedAppDetail.currentStageKey !== "application_review" &&
+        selectedAppDetail.currentStageKey !== "draft" &&
+        selectedAppDetail.currentStageKey !== "submitted"),
+  );
   const [showCandidateForm, setShowCandidateForm] = useState(false);
   const [showEvidenceVault, setShowEvidenceVault] = useState(false);
   const [showSelfAssessmentForm, setShowSelfAssessmentForm] = useState(false);
@@ -287,6 +320,7 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
             showSelfAssessmentForm={showSelfAssessmentForm}
             showEvidenceVault={showEvidenceVault}
             showCandidateForm={showCandidateForm}
+            isApplicationApproved={isSelectedAppApproved}
             onBackToList={() => {
               setSelectedCandidateName(null);
               setSelectedApplicationId(null);
@@ -298,14 +332,37 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
             onBackFromCandidateForm={() => setShowCandidateForm(false)}
             onAcceptApplication={() => {
               if (selectedApplicationId) {
-                reviewMutation.mutate({
-                  id: selectedApplicationId,
-                  payload: {
-                    decision: "approve",
-                    stageKey: "application_form",
-                    feedback: "Accepted by Assessment Centre",
+                reviewMutation.mutate(
+                  {
+                    id: selectedApplicationId,
+                    payload: {
+                      decision: "approve",
+                      stageKey: "application_form",
+                      feedback: "Accepted by Assessment Centre",
+                    },
                   },
-                });
+                  {
+                    onSuccess: () => {
+                      queryClient.invalidateQueries({
+                        queryKey: APPLICATION_QUERY_KEYS.all,
+                      });
+                      queryClient.invalidateQueries({
+                        queryKey: APPLICATION_QUERY_KEYS.detail(
+                          selectedApplicationId,
+                        ),
+                      });
+                      queryClient.invalidateQueries({
+                        queryKey: APPLICATION_QUERY_KEYS.stages(
+                          selectedApplicationId,
+                        ),
+                      });
+                      queryClient.invalidateQueries({
+                        queryKey: ["applications"],
+                      });
+                      queryClient.invalidateQueries({ queryKey: ["centre"] });
+                    },
+                  },
+                );
               }
             }}
             onCreatePanel={() => setIsCreatePanelModalOpen(true)}

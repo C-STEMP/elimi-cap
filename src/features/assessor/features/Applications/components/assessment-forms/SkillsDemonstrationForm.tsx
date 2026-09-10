@@ -54,11 +54,12 @@ interface SkillsDemonstrationFormProps {
   candidateName: string;
   onBack: () => void;
   onSubmit: () => void;
+  isReadOnly?: boolean;
 }
 
 export const SkillsDemonstrationForm: React.FC<
   SkillsDemonstrationFormProps
-> = ({ candidateName, onBack, onSubmit }) => {
+> = ({ candidateName, onBack, onSubmit, isReadOnly }) => {
   const { toast } = useToast();
   const [criteria, setCriteria] = useState<CriteriaItem[]>(INITIAL_CRITERIA);
   const [verdict, setVerdict] = useState<"Competent" | "Not Competent">("Competent");
@@ -92,6 +93,7 @@ export const SkillsDemonstrationForm: React.FC<
       onBack={onBack}
       onSubmit={onSubmit}
       submitLabel="Submit"
+      isReadOnly={isReadOnly}
     >
       {/* 1. Personal Details */}
       <div className="flex flex-col gap-4">

@@ -81,7 +81,8 @@ const ApplicantDetailHeader: React.FC<ApplicantDetailHeaderProps> = ({
 
   const applicantName =
     applicantDetail?.assessor?.name ||
-    (applicantDetail?.id ? `Applicant (${applicantDetail.id.slice(0, 8)})` : "Applicant");
+    (applicantDetail?.assessor?.email ? applicantDetail.assessor.email.split("@")[0] : null) ||
+    "Applicant";
 
   return (
     <div className="flex flex-col gap-1 pt-2">

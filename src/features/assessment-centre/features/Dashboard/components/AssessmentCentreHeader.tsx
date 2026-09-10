@@ -12,7 +12,10 @@ import {
   FiDollarSign,
   FiMenu,
   FiX,
+  FiChevronDown,
+  FiPlus,
 } from "react-icons/fi";
+import { formatCurrency } from "@/src/utils/currency";
 import { BiSolidMessageRoundedDetail } from "react-icons/bi";
 import { Logo } from "@/src/components/ui/logo";
 import { Avatar } from "@/src/components/ui/avatar";
@@ -108,9 +111,7 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
 
   const rawRevenue = dashboardData?.kpis?.revenue || wallet?.balance;
   const formattedRevenue = rawRevenue?.amountMinorUnits
-    ? `${rawRevenue.currency === "USD" ? "$" : "₦"}${(
-        Number(rawRevenue.amountMinorUnits) / 100
-      ).toLocaleString()}`
+    ? formatCurrency(rawRevenue.amountMinorUnits, rawRevenue.currency || "NGN")
     : "₦0";
 
   const dynamicStats = [

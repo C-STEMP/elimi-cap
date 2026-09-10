@@ -3,6 +3,7 @@ import { setCurrentApplication } from "@/store/slices/applicationSlice";
 import { setPersonalInfo, setRPLExperienceTrade } from "@/store/slices/onboardingSlice";
 import { getStagesConfig } from "./constants";
 import type { ApplicationDetail } from "@/src/features/shared/applications/api";
+import { formatCurrency } from "@/src/utils/currency";
 
 export const isRawId = (str?: string): boolean => {
   if (!str) return false;
@@ -73,7 +74,8 @@ export const buildTransactionReceipt = (
   paymentStage: any,
 ) => {
   const amountMinor = receiptData?.amount?.amountMinorUnits || paymentQuote?.amountMinorUnits || paymentStage?.amountMinorUnits;
-  const amountPaid = amountMinor ? `₦${(Number(amountMinor) / 100).toLocaleString()}` : "—";
+  const currency = receiptData?.amount?.currency || paymentQuote?.currency || paymentStage?.currency || "NGN";
+  const amountPaid = amountMinor ? formatCurrency(amountMinor, currency) : "—";
   return {
     id: receiptData?.paymentId || (application?.id ? "TXN_" + application.id.slice(0, 8) : "TXN_PENDING"),
     candidateName: receiptData?.candidateName || apiApp?.candidate?.name || authUser?.fullName || "Candidate",

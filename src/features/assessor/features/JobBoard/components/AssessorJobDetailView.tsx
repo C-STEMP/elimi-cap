@@ -21,25 +21,6 @@ export const AssessorJobDetailView: React.FC<AssessorJobDetailViewProps> = ({
 
   return (
     <div className="w-full flex flex-col gap-6 select-text">
-      {/* Header Banner Row matching Images 1, 3, 4 */}
-      <div className="flex flex-col gap-1 bg-[#a31d38] text-white p-6 rounded-3xl shadow-md">
-        <button
-          type="button"
-          onClick={onBack}
-          className="flex items-center gap-2 text-white font-bold text-2xl sm:text-3xl hover:opacity-90 transition-opacity w-fit cursor-pointer"
-        >
-          <FiChevronLeft className="w-6 h-6 stroke-[2.5]" />
-          <span>Assessor</span>
-        </button>
-        <div className="flex items-center gap-2 text-xs sm:text-sm text-white/90 font-normal">
-          <span onClick={onBack} className="hover:underline cursor-pointer">
-            Job Board
-          </span>
-          <span>&gt;</span>
-          <span className="font-semibold text-white">{job.title}</span>
-        </div>
-      </div>
-
       {/* Top Overview Card */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-center gap-4">

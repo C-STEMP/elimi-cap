@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { IqaAllocationView } from "./components/con01/IqaAllocationView";
 import { SamplingPlanView } from "./components/con02/SamplingPlanView";
 import { SamplingRecordView } from "./components/con03/SamplingRecordView";
@@ -50,30 +50,55 @@ const IQAM_TOOLS: IqamToolCard[] = [
 
 interface IqamToolsDashboardProps {
   initialToolId?: IqamToolId | null;
+  activeTool?: IqamToolId | null;
   initialCandidateName?: string;
   onToolSelect?: (toolId: IqamToolId | null) => void;
   onBack?: () => void;
+  onUpdateHeader?: (config: {
+    title: string;
+    breadcrumb: string;
+    actionLabel?: string;
+    onAction?: () => void;
+  } | null) => void;
 }
 
 export const IqamToolsDashboard: React.FC<IqamToolsDashboardProps> = ({
   initialToolId = null,
+  activeTool: externalActiveTool,
   initialCandidateName = "Samson David",
   onToolSelect,
   onBack,
+  onUpdateHeader,
 }) => {
-  const [activeTool, setActiveTool] = useState<IqamToolId | null>(initialToolId);
+  const [internalActiveTool, setInternalActiveTool] = useState<IqamToolId | null>(initialToolId);
+  const effectiveActiveTool = externalActiveTool !== undefined ? externalActiveTool : internalActiveTool;
   const [selectedCandidate, setSelectedCandidate] = useState<string>(initialCandidateName);
 
+  useEffect(() => {
+    if (externalActiveTool !== undefined) {
+      setInternalActiveTool(externalActiveTool);
+    }
+  }, [externalActiveTool]);
+
+  useEffect(() => {
+    if (!effectiveActiveTool) {
+      onUpdateHeader?.(null);
+    }
+  }, [effectiveActiveTool, onUpdateHeader]);
+
   const handleSelectTool = (id: IqamToolId | null) => {
-    if (!id && onBack && initialToolId) {
+    if (!id && onBack && (initialToolId || externalActiveTool !== undefined)) {
       onBack();
       return;
     }
-    setActiveTool(id);
+    setInternalActiveTool(id);
     onToolSelect?.(id);
+    if (!id) {
+      onUpdateHeader?.(null);
+    }
   };
 
-  if (activeTool === "CON/01/IQAM") {
+  if (effectiveActiveTool === "CON/01/IQAM") {
     return (
       <IqaAllocationView
         onBack={() => handleSelectTool(null)}
@@ -81,65 +106,59 @@ export const IqamToolsDashboard: React.FC<IqamToolsDashboardProps> = ({
           setSelectedCandidate(cand);
           handleSelectTool("CON/04/IQAM");
         }}
+        onUpdateHeader={onUpdateHeader}
       />
     );
   }
 
-  if (activeTool === "CON/02/IQAM") {
-    return <SamplingPlanView onBack={() => handleSelectTool(null)} />;
+  if (effectiveActiveTool === "CON/02/IQAM") {
+    return <SamplingPlanView onBack={() => handleSelectTool(null)} onUpdateHeader={onUpdateHeader} />;
   }
 
-  if (activeTool === "CON/03/IQAM") {
-    return <SamplingRecordView onBack={() => handleSelectTool(null)} />;
+  if (effectiveActiveTool === "CON/03/IQAM") {
+    return <SamplingRecordView onBack={() => handleSelectTool(null)} onUpdateHeader={onUpdateHeader} />;
   }
 
-  if (activeTool === "CON/04/IQAM") {
+  if (effectiveActiveTool === "CON/04/IQAM") {
     return (
       <ComprehensiveReportView
         candidateName={selectedCandidate}
         onBack={() => handleSelectTool(null)}
+        onUpdateHeader={onUpdateHeader}
       />
     );
   }
 
-  if (activeTool === "CON/05/IQAM") {
+  if (effectiveActiveTool === "CON/05/IQAM") {
     return (
       <ObservationChecklistView
         candidateName={selectedCandidate}
         onBack={() => handleSelectTool(null)}
+        onUpdateHeader={onUpdateHeader}
       />
     );
   }
 
-  if (activeTool === "CON/06/IQAM") {
+  if (effectiveActiveTool === "CON/06/IQAM") {
     return (
       <FinalPortfolioReportView
         candidateName={selectedCandidate}
         onBack={() => handleSelectTool(null)}
+        onUpdateHeader={onUpdateHeader}
       />
     );
   }
 
   return (
-    <div className="w-full flex flex-col gap-6 select-text pb-12 animate-fadeIn">
-      {/* Top Banner */}
-      <div className="w-full bg-[#a31d38] text-white py-7 px-4 sm:px-6 lg:px-8 shadow-sm">
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight">
-            IQAM Assessment Tools
-          </h2>
-        </div>
+    <div className="w-full flex flex-col gap-5 select-text pb-12 animate-fadeIn">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm sm:text-base font-extrabold text-neutral-primary">
+          Assessment Tools
+        </h3>
+        <span className="px-3 py-1 bg-emerald-100/70 text-emerald-800 text-[11px] font-extrabold rounded-xl">
+          Active
+        </span>
       </div>
-
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-5">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm sm:text-base font-extrabold text-neutral-primary">
-            Assessment Tools
-          </h3>
-          <span className="px-3 py-1 bg-emerald-100/70 text-emerald-800 text-[11px] font-extrabold rounded-xl">
-            Active
-          </span>
-        </div>
 
         {/* 6 Tool Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -170,7 +189,6 @@ export const IqamToolsDashboard: React.FC<IqamToolsDashboardProps> = ({
             </div>
           ))}
         </div>
-      </div>
     </div>
   );
 };

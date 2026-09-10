@@ -21,6 +21,7 @@ import { useToast } from "@/src/components/ui/toast";
 import { DeleteAccountModal } from "./DeleteAccountModal";
 import { ASSETS_URL } from "@/assets";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import {Select as AntSelect} from "antd"
 import {
   useGetAssessorProfileSectors,
   useUpdateAssessorProfileSectors,
@@ -506,6 +507,20 @@ export const AssessorSettingsView: React.FC = () => {
                     options={["Male", "Female", "Other"]}
                     value={gender}
                     onChange={(e) => setGender(e.target.value)}
+                  />
+                  <AntSelect
+                    // allowClear
+                    className="w-full h-12!"
+                    showSearch
+                    // label="Nationality*"
+                    placeholder="Select Country"
+                    options={countries.map((c) => ({
+                      label: c.label,
+                      value: c.value,
+                    }))}
+                    // labelInValue="label"
+                    value={nationality ? { label: nationality, value: nationality } : undefined}
+                    onChange={(val) => setNationality(val?.value || "")}
                   />
                   <Select
                     label="Nationality*"

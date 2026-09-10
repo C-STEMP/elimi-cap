@@ -7,9 +7,10 @@ import {
   useGetCentreWallet,
   useGetCentrePaymentsSummary,
 } from "@/src/features/shared/centre/hooks";
+import { formatCurrency } from "@/src/utils/currency";
 
 interface PaymentsHeaderProps {
-  onWithdrawFunds: () => void;
+  onWithdrawFunds?: () => void;
 }
 
 export const PaymentsHeader: React.FC<PaymentsHeaderProps> = ({
@@ -20,9 +21,7 @@ export const PaymentsHeader: React.FC<PaymentsHeaderProps> = ({
 
   const rawRevenue = paymentsSummary?.totalRevenue || wallet?.balance;
   const formattedRevenue = rawRevenue?.amountMinorUnits
-    ? `${rawRevenue.currency === "USD" ? "$" : "₦"}${(
-        Number(rawRevenue.amountMinorUnits) / 100
-      ).toLocaleString()}`
+    ? formatCurrency(rawRevenue.amountMinorUnits, rawRevenue.currency || "NGN")
     : "₦0";
 
   const completedCount = paymentsSummary?.completedCount ?? 0;

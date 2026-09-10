@@ -111,7 +111,12 @@ export const EvidenceItemCard: React.FC<EvidenceItemCardProps> = ({
   }, [isMenuOpen]);
 
   const badge = getStatusBadge(item.status);
-  const isApproved = item.status?.toLowerCase().includes("approv");
+  const isApproved = Boolean(
+    item.status &&
+      (item.status.toLowerCase().includes("approv") ||
+        item.status.toLowerCase() === "accepted" ||
+        item.status.toLowerCase() === "successful"),
+  );
 
   return (
     <div

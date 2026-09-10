@@ -12,6 +12,7 @@ import {
   AssessorHeaderBanner,
   type AssessorNavTab,
 } from "../components/AssessorHeaderBanner";
+import type { IqamToolId } from "../../iqam/types/iqam.types";
 import { AssessorOverviewView } from "../components/AssessorOverviewView";
 
 import dynamic from "next/dynamic";
@@ -254,6 +255,13 @@ export const AssessorDashboard: React.FC = () => {
   const [selectedJob, setSelectedJob] = useState<AssessorJobRecord | null>(
     null,
   );
+  const [selectedIqamTool, setSelectedIqamTool] = useState<IqamToolId | null>(null);
+  const [iqamHeaderConfig, setIqamHeaderConfig] = useState<{
+    title: string;
+    breadcrumb: string;
+    actionLabel?: string;
+    onAction?: () => void;
+  } | null>(null);
   const [nsqSubViewTitle, setNsqSubViewTitle] = useState<string | null>(null);
   const [nsqNavState, setNsqNavState] = useState<
     "overview" | "unit" | "observation_form"
@@ -272,11 +280,19 @@ export const AssessorDashboard: React.FC = () => {
     setCanMarkAsComplete(false);
     setTriggerMarkComplete(false);
     setSelectedJob(null);
+    setSelectedIqamTool(null);
+    setIqamHeaderConfig(null);
     const slug = TAB_TO_SLUG[tab] || "overview";
     router.push(`/assessor/dashboard/${slug}`);
   };
 
   const handleBackFromApplication = () => {
+    if (selectedApplication?.role === "Internal Verifier") {
+      setSelectedApplication(null);
+      setIqamHeaderConfig(null);
+      return;
+    }
+
     if (selectedApplication?.assessmentType === "NSQ") {
       if (nsqNavState !== "overview") {
         setNsqNavState("overview");
@@ -328,6 +344,17 @@ export const AssessorDashboard: React.FC = () => {
         canMarkAsComplete={canMarkAsComplete}
         onMarkAsComplete={handleTriggerMarkComplete}
         onBackFromApplication={handleBackFromApplication}
+        isIvApplication={selectedApplication?.role === "Internal Verifier"}
+        activeIqamToolTitle={iqamHeaderConfig?.title || (selectedIqamTool ? "IQAM Tool" : null)}
+        activeIqamBreadcrumb={iqamHeaderConfig?.breadcrumb}
+        onBackFromIqamTool={() => {
+          setSelectedIqamTool(null);
+          setIqamHeaderConfig(null);
+        }}
+        iqamActionLabel={iqamHeaderConfig?.actionLabel}
+        onIqamAction={iqamHeaderConfig?.onAction}
+        selectedJobTitle={selectedJob?.title}
+        onBackFromJob={() => setSelectedJob(null)}
         totalCentresCount={totalCentres}
         totalApplicationsCount={totalApplications}
         pendingApplicationsCount={pendingApplications}
@@ -400,6 +427,7 @@ export const AssessorDashboard: React.FC = () => {
                 initialToolId="CON/04/IQAM"
                 initialCandidateName={selectedApplication.candidateName}
                 onBack={handleBackFromApplication}
+                onUpdateHeader={setIqamHeaderConfig}
               />
             ) : selectedApplication.assessmentType === "NSQ" ? (
               <NsqAssessorApplicationDetailView
@@ -446,7 +474,18 @@ export const AssessorDashboard: React.FC = () => {
             <AssessorJobBoardView onSelectJob={(job) => setSelectedJob(job)} />
           )
         ) : activeTab === "IQAM Tools" ? (
-          <IqamToolsDashboard />
+          <IqamToolsDashboard
+            activeTool={selectedIqamTool}
+            onToolSelect={(toolId) => {
+              setSelectedIqamTool(toolId);
+              if (!toolId) setIqamHeaderConfig(null);
+            }}
+            onBack={() => {
+              setSelectedIqamTool(null);
+              setIqamHeaderConfig(null);
+            }}
+            onUpdateHeader={setIqamHeaderConfig}
+          />
         ) : activeTab === "Settings" ? (
           <AssessorSettingsView />
         ) : (

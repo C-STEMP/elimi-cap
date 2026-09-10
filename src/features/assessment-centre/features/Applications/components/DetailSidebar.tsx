@@ -111,14 +111,6 @@ export const DetailSidebar: React.FC<DetailSidebarProps> = ({
                 <p className="text-[11px] text-gray-500 font-normal truncate">
                   Facilitator · {activeFacilitator.trade || tradeName} (Level 3)
                 </p>
-                <div className="flex items-center gap-1.5 flex-wrap mt-1">
-                  <span className="bg-[#fdf2f4] text-[#a31d38] text-[10px] font-semibold px-2.5 py-0.5 rounded-full">
-                    {activeFacilitator.trade || tradeName}
-                  </span>
-                  <span className="bg-[#fdf2f4] text-[#a31d38] text-[10px] font-semibold px-2.5 py-0.5 rounded-full">
-                    RPL Coordinator
-                  </span>
-                </div>
               </div>
             </div>
           </div>

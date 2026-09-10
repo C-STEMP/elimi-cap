@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
-import { IqamHeaderBanner } from "../common/IqamHeaderBanner";
+import React, { useState, useEffect } from "react";
 import { Section04AVerificationScope } from "./sections/Section04AVerificationScope";
 import { Section04BMethodsQuality } from "./sections/Section04BMethodsQuality";
 import { Section04CUnitOutcomes } from "./sections/Section04CUnitOutcomes";
@@ -10,6 +9,12 @@ interface ComprehensiveReportViewProps {
   onBack: () => void;
   candidateName?: string;
   onSubmit?: () => void;
+  onUpdateHeader?: (config: {
+    title: string;
+    breadcrumb: string;
+    actionLabel?: string;
+    onAction?: () => void;
+  } | null) => void;
 }
 
 type TabType = "04A" | "04B" | "04C";
@@ -18,6 +23,7 @@ export const ComprehensiveReportView: React.FC<ComprehensiveReportViewProps> = (
   onBack,
   candidateName = "Samson David",
   onSubmit,
+  onUpdateHeader,
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>("04A");
 
@@ -27,15 +33,17 @@ export const ComprehensiveReportView: React.FC<ComprehensiveReportViewProps> = (
     else onSubmit?.();
   };
 
+  useEffect(() => {
+    onUpdateHeader?.({
+      title: "Internal Verifier's Comprehensive Report Form",
+      breadcrumb: "Internal Verifier's Comprehensive Report Form",
+      actionLabel: activeTab === "04C" ? "Submit" : "Next",
+      onAction: handleNextOrSubmit,
+    });
+  }, [activeTab, onUpdateHeader]);
+
   return (
     <div className="w-full flex flex-col gap-6 select-text pb-12 animate-fadeIn">
-      <IqamHeaderBanner
-        title="Internal Verifier's Comprehensive Report Form"
-        breadcrumbChild="Internal Verifier's Comprehensive Report Form"
-        onBack={onBack}
-        actionButtonLabel={activeTab === "04C" ? "Submit" : "Next"}
-        onActionClick={handleNextOrSubmit}
-      />
 
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-6">
         {/* Navigation Tabs Pill Container */}

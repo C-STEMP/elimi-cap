@@ -69,17 +69,6 @@ export const FacilitatorCard: React.FC<FacilitatorCardProps> = ({
             <p className="text-gray-400 text-xs font-normal mb-3">
               {facilitator.role}
             </p>
-
-            <div className="flex items-center justify-center flex-wrap gap-2 mb-4">
-              {facilitator.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="bg-[#fdf2f4] text-[#a31d38] text-[11px] font-semibold px-3 py-1 rounded-full"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
           </div>
 
           {countdownTimer ? (

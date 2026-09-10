@@ -119,15 +119,12 @@ export const AssessorApplicantProfileView: React.FC<
 
   const assessorName =
     assessorSnapshot?.name ||
-    (isAssessorRequest && retainedRequest?.assessorId
-      ? `Assessor (${retainedRequest.assessorId.slice(0, 8)})`
+    (assessorSnapshot?.email
+      ? assessorSnapshot.email.split("@")[0]
       : "Assessor");
 
   const assessorEmail =
-    assessorSnapshot?.email ||
-    (isAssessorRequest && retainedRequest?.assessorId
-      ? `${retainedRequest.assessorId.slice(0, 8)}@assessor.ng`
-      : "No email provided");
+    assessorSnapshot?.email || "No email provided";
 
   const experienceYears = assessorSnapshot?.yearsOfExperience ?? 0;
   const qualifications = assessorSnapshot?.qualifications || [];

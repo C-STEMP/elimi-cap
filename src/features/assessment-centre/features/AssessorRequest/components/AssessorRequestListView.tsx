@@ -51,14 +51,11 @@ export const AssessorRequestListView: React.FC<
       id: req.id,
       name:
         assessorSnap?.name ||
-        (req.assessorId
-          ? `Assessor (${req.assessorId.slice(0, 8)})`
+        (assessorSnap?.email
+          ? assessorSnap.email.split("@")[0]
           : "Assessor"),
       email:
-        assessorSnap?.email ||
-        (req.assessorId
-          ? `${req.assessorId.slice(0, 8)}@assessor.ng`
-          : "assessor@ng.org"),
+        assessorSnap?.email || "assessor@ng.org",
       trade: sectorsStr || "Technical Trade",
       role: primaryRole,
       status: "Pending",

@@ -222,11 +222,6 @@ export const DetailStagesList: React.FC<DetailStagesListProps> = ({
                   <div className="flex flex-col min-w-0">
                     <h4 className="text-black font-bold text-sm leading-snug truncate">{assessor.name}</h4>
                     <p className="text-gray-400 text-xs font-normal truncate mt-0.5">{assessor.role || (idx === 0 ? "Lead Panelist" : "Panel Member")}</p>
-                    <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                      {(assessor.tags || [resolvedTradeName, "RPL Coordinator"]).map((tag: string) => (
-                        <span key={tag} className="bg-[#FDF2F4] text-[#A31D38] text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0">{tag}</span>
-                      ))}
-                    </div>
                   </div>
                 </div>
               ))}

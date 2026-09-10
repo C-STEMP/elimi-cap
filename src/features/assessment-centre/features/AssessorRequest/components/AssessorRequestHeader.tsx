@@ -20,8 +20,8 @@ export const AssessorRequestHeader: React.FC<AssessorRequestHeaderProps> = ({
   if (selectedAssessorRequestId) {
     const assessorName =
       requestDetail?.assessor?.name ||
-      (requestDetail?.assessorId
-        ? `Assessor (${requestDetail.assessorId.slice(0, 8)})`
+      (requestDetail?.assessor?.email
+        ? requestDetail.assessor.email.split("@")[0]
         : "Assessor");
 
     return (

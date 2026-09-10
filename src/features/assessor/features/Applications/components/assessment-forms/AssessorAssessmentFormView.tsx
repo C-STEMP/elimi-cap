@@ -12,15 +12,17 @@ interface AssessorAssessmentFormViewProps {
   formId: string;
   candidateName: string;
   onBack: () => void;
+  isReadOnly?: boolean;
 }
 
 export const AssessorAssessmentFormView: React.FC<
   AssessorAssessmentFormViewProps
-> = ({ formId, candidateName, onBack }) => {
+> = ({ formId, candidateName, onBack, isReadOnly = false }) => {
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
 
   const handleRequestSubmit = () => {
+    if (isReadOnly) return;
     setIsConfirmModalOpen(true);
   };
 
@@ -42,6 +44,7 @@ export const AssessorAssessmentFormView: React.FC<
             candidateName={candidateName}
             onBack={onBack}
             onSubmit={handleRequestSubmit}
+            isReadOnly={isReadOnly}
           />
         );
       case "assessment_mapping":
@@ -50,6 +53,7 @@ export const AssessorAssessmentFormView: React.FC<
             candidateName={candidateName}
             onBack={onBack}
             onSubmit={handleRequestSubmit}
+            isReadOnly={isReadOnly}
           />
         );
       case "observation_checklist":
@@ -58,6 +62,7 @@ export const AssessorAssessmentFormView: React.FC<
             candidateName={candidateName}
             onBack={onBack}
             onSubmit={handleRequestSubmit}
+            isReadOnly={isReadOnly}
           />
         );
       case "interview_record":
@@ -67,6 +72,7 @@ export const AssessorAssessmentFormView: React.FC<
             candidateName={candidateName}
             onBack={onBack}
             onSubmit={handleRequestSubmit}
+            isReadOnly={isReadOnly}
           />
         );
     }

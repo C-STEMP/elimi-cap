@@ -157,37 +157,6 @@ export const NsqAssessorApplicationDetailView: React.FC<
 
   return (
     <div className="w-full flex flex-col items-center select-text">
-      {showHeader && (
-        <div className="w-full bg-[#a31d38] text-white pt-6 pb-8 px-4 sm:px-6 lg:px-8 shadow-sm mb-6">
-          <div className="max-w-7xl xl:max-w-360 mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex flex-col gap-2">
-              <button
-                type="button"
-                onClick={onBack}
-                className="flex items-center gap-2 text-white/95 hover:text-white text-lg sm:text-xl font-bold transition-colors cursor-pointer w-fit"
-              >
-                <FiChevronLeft className="w-6 h-6" />
-                <span>{candidateName}</span>
-              </button>
-              <div className="flex items-center gap-2 text-white/70 text-xs pl-8">
-                <span>Applications</span>
-                <span>&gt;</span>
-                <span className="text-white font-medium">{candidateName}</span>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleMoveToIqam}
-              className="px-5 py-2.5 bg-[#fbab2a] hover:bg-[#e89b1f] active:scale-95 text-white font-bold text-xs sm:text-sm rounded-xl flex items-center gap-1.5 shadow-md transition-all cursor-pointer shrink-0 self-start sm:self-auto"
-            >
-              <span>Move To IQAM</span>
-              <FiPlus className="w-4 h-4 stroke-[3]" />
-            </button>
-          </div>
-        </div>
-      )}
-
       <div className="w-full max-w-7xl xl:max-w-360 mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           <div className="lg:col-span-8 flex flex-col gap-6 w-full">

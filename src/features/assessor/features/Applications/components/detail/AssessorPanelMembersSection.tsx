@@ -63,17 +63,6 @@ export const AssessorPanelMembersSection: React.FC<
                 <p className="text-neutral-secondary text-xs font-normal truncate mt-0.5">
                   {assessor.role}
                 </p>
-
-                <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                  {assessor.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="bg-[#FCE8EB] text-[#A31D38] text-[9px] font-medium px-2 py-0.5 rounded-full shrink-0"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
               </div>
             </div>
           );

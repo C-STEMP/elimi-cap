@@ -64,7 +64,8 @@ const AssessorDetailHeader: React.FC<AssessorDetailHeaderProps> = ({
 
   const assessorName =
     assessorDetail?.name ||
-    (assessorDetail?.id ? `Assessor (${assessorDetail.id.slice(0, 8)})` : "Assessor");
+    (assessorDetail?.email ? assessorDetail.email.split("@")[0] : null) ||
+    "Assessor";
 
   const assessorStatus = assessorDetail?.status
     ? assessorDetail.status === "revoked" || assessorDetail.status === "pending"

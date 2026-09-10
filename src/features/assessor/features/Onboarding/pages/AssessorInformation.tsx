@@ -149,7 +149,7 @@ export const AssessorInformation: React.FC = () => {
               qaaCertificateSize: fileData.size,
             }),
           );
-          setErrors((prev) => ({ ...prev, qaa: "" }));
+          setErrors((prev) => ({ ...prev, qaa: "", certificates: "" }));
         } else {
           setIqmFile(fileData);
           dispatch(
@@ -159,7 +159,7 @@ export const AssessorInformation: React.FC = () => {
               iqmCertificateSize: fileData.size,
             }),
           );
-          setErrors((prev) => ({ ...prev, iqm: "" }));
+          setErrors((prev) => ({ ...prev, iqm: "", certificates: "" }));
         }
       } catch {
         clearInterval(progressInterval);
@@ -188,12 +188,9 @@ export const AssessorInformation: React.FC = () => {
       newErrors.qualification = "Qualification is required";
       valid = false;
     }
-    if (!qaaFile) {
-      newErrors.qaa = "QAA Certificate is required";
-      valid = false;
-    }
-    if (!iqmFile) {
-      newErrors.iqm = "IQM Certificate is required";
+    if (!qaaFile && !iqmFile) {
+      newErrors.certificates =
+        "Please upload at least one qualification certificate (QAA or IQM)";
       valid = false;
     }
 
@@ -207,7 +204,8 @@ export const AssessorInformation: React.FC = () => {
       toast({
         type: "error",
         title: "Input Required",
-        description: "Please complete all required fields and upload certificates.",
+        description:
+          "Please complete all required fields and upload at least one certificate.",
       });
       return;
     }
@@ -281,19 +279,32 @@ export const AssessorInformation: React.FC = () => {
 
         {/* Upload Certificate Section */}
         <div className="pt-2">
-          <h2 className="text-xl font-extrabold text-neutral-primary mb-4">
-            Upload Certificate
-          </h2>
+          <div className="mb-4">
+            <h2 className="text-xl font-extrabold text-neutral-primary">
+              Upload Certificate<span className="text-primary-solid ml-0.5">*</span>
+            </h2>
+            <p className="text-xs text-neutral-secondary mt-0.5">
+              Please upload at least one qualification certificate (QAA or IQM)
+            </p>
+            {errors.certificates && (
+              <p className="text-red-600 text-xs font-semibold mt-2 bg-red-50 border border-red-200 rounded-xl p-2.5">
+                {errors.certificates}
+              </p>
+            )}
+          </div>
 
           {/* QAA Certificate Upload */}
           <div className="mb-5">
             <label className="block text-sm font-semibold text-neutral-primary mb-1.5">
-              QAA Certificate<span className="text-primary-solid ml-0.5">*</span>
+              QAA Certificate{" "}
+              <span className="text-xs font-normal text-neutral-secondary">
+                (Optional if IQM is uploaded)
+              </span>
             </label>
 
             <label
               className={`w-full min-h-28 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center p-4 text-center cursor-pointer transition-all ${
-                errors.qaa
+                errors.qaa || (errors.certificates && !qaaFile)
                   ? "border-red-500 bg-red-50/50"
                   : "border-red-300 bg-red-50/20 hover:bg-red-50/40"
               }`}
@@ -384,12 +395,15 @@ export const AssessorInformation: React.FC = () => {
           {/* IQM Certificate Upload */}
           <div className="mb-2">
             <label className="block text-sm font-semibold text-neutral-primary mb-1.5">
-              IQM Certificate<span className="text-primary-solid ml-0.5">*</span>
+              IQM Certificate{" "}
+              <span className="text-xs font-normal text-neutral-secondary">
+                (Optional if QAA is uploaded)
+              </span>
             </label>
 
             <label
               className={`w-full min-h-28 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center p-4 text-center cursor-pointer transition-all ${
-                errors.iqm
+                errors.iqm || (errors.certificates && !iqmFile)
                   ? "border-red-500 bg-red-50/50"
                   : "border-red-300 bg-red-50/20 hover:bg-red-50/40"
               }`}
