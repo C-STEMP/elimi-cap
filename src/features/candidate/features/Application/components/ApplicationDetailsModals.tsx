@@ -7,6 +7,10 @@ import { ApplicationFormModal } from "./ApplicationFormModal";
 import { UploadSignatureModal } from "./UploadSignatureModal";
 import { TransactionReceiptModal } from "@/features/assessment-centre/features/Payment/components/TransactionReceiptModal";
 
+import { CandidateInterviewFormModal } from "./CandidateInterviewFormModal";
+import { CandidateAppealModal } from "./CandidateAppealModal";
+import type { InterviewForm } from "@/src/features/shared/applications/api/types";
+
 interface ApplicationDetailsModalsProps {
   activePaymentModal: PaymentModalType;
   paymentErrorInfo: { title?: string; description?: string };
@@ -23,6 +27,13 @@ interface ApplicationDetailsModalsProps {
   onSignatureSuccess: () => void;
   isReceiptModalOpen: boolean;
   onCloseReceiptModal: () => void;
+  isInterviewFormModalOpen?: boolean;
+  onCloseInterviewFormModal?: () => void;
+  selectedInterviewFormType?: "records" | "assessment_grid" | "practical_observation" | "skill_demonstration" | null;
+  interviewForms?: InterviewForm[];
+  candidateName?: string;
+  isAppealModalOpen?: boolean;
+  onCloseAppealModal?: () => void;
   transactionReceipt: {
     id: string;
     candidateName: string;
@@ -52,8 +63,26 @@ export const ApplicationDetailsModals: React.FC<ApplicationDetailsModalsProps> =
   onSignatureSuccess,
   isReceiptModalOpen,
   onCloseReceiptModal,
+  isInterviewFormModalOpen = false,
+  onCloseInterviewFormModal,
+  selectedInterviewFormType,
+  interviewForms,
+  candidateName,
+  isAppealModalOpen = false,
+  onCloseAppealModal,
   transactionReceipt,
 }) => {
+  const activeFormRecord = interviewForms?.find(
+    (f) => f.formType === selectedInterviewFormType,
+  );
+
+  const FORM_TITLES: Record<string, string> = {
+    records: "Interview Record Form",
+    assessment_grid: "Assessment Grid/Mapping Form",
+    practical_observation: "Practical Observation Checklist Form",
+    skill_demonstration: "Skills Demonstration Form",
+  };
+
   return (
     <>
       <PaymentModal
@@ -85,6 +114,24 @@ export const ApplicationDetailsModals: React.FC<ApplicationDetailsModalsProps> =
         isOpen={isSignatureModalOpen}
         onClose={onCloseSignatureModal}
         onUploadSuccess={onSignatureSuccess}
+      />
+
+      {selectedInterviewFormType && (
+        <CandidateInterviewFormModal
+          isOpen={isInterviewFormModalOpen}
+          onClose={onCloseInterviewFormModal || (() => {})}
+          applicationId={applicationId}
+          formType={selectedInterviewFormType}
+          formTitle={FORM_TITLES[selectedInterviewFormType] || "Assessment Form"}
+          formRecord={activeFormRecord}
+          candidateName={candidateName}
+        />
+      )}
+
+      <CandidateAppealModal
+        isOpen={isAppealModalOpen}
+        onClose={onCloseAppealModal || (() => {})}
+        applicationId={applicationId}
       />
 
       <TransactionReceiptModal

@@ -1,6 +1,14 @@
 import type { InterviewRowData } from "../components/ViewInterviewDetailModal";
 
-export const FILTER_TABS = ["All", "Pending", "Ongoing", "Completed", "Archived", "Interviews"];
+export const FILTER_TABS = [
+  "All",
+  "Pending",
+  "Ongoing",
+  "IV Approved",
+  "Completed",
+  "Archived",
+  "Interviews",
+];
 
 export function getStatusBadgeClass(status: string): string {
   switch (status) {
@@ -8,6 +16,8 @@ export function getStatusBadgeClass(status: string): string {
       return "bg-[#F9A825]/10 text-[#F9A825]";
     case "Ongoing":
       return "bg-[#FCE8EB] text-[#A31D38]";
+    case "IV Approved":
+      return "bg-[#1E7F4C]/10 text-[#1E7F4C]";
     case "Submitted":
     case "Completed":
     case "Approved":
@@ -79,10 +89,11 @@ export function mapApplicationItem(app: any) {
           app.status === "draft"
         ? "Pending"
         : app.status === "in_progress"
-        ? "Ongoing"
+        ? (rawApp.ivApproved ? "IV Approved" : "Ongoing")
         : app.status === "rejected" || app.status === "withdrawn"
         ? "Archived"
         : "Pending",
+    ivApproved: Boolean(rawApp.ivApproved),
     submittedAt: rawApp.submittedAt
       ? new Date(rawApp.submittedAt).toLocaleDateString("en-GB")
       : new Date(app.createdAt).toLocaleDateString("en-GB"),

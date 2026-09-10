@@ -169,7 +169,7 @@ export const AssessorsListView: React.FC<AssessorsListViewProps> = ({
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               options={[
-                { label: "Status", value: "All" },
+                { label: "All", value: "All" },
                 { label: "Active", value: "Active" },
                 { label: "Pending", value: "Pending" },
                 { label: "Inactive", value: "Inactive" },

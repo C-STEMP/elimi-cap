@@ -9,7 +9,7 @@ import {
   useApplication, useGetApplicationById, useGetApplicationStages,
   useGetPaymentQuote, useGetApplicationReceipt,
 } from "./useApplication";
-import { useGetInterviewSchedule, useGetInterviewPanel } from "@/src/features/shared/applications/hooks";
+import { useGetInterviewSchedule, useGetInterviewPanel, useGetInterviewForms } from "@/src/features/shared/applications/hooks";
 import { APPLICATION_QUERY_KEYS } from "@/src/features/shared/applications/hooks/useApplication";
 import { getFolderArrangementStatus, getFormStatus, getStagesConfig } from "../utils/constants";
 import {
@@ -35,6 +35,11 @@ export function useApplicationDetailsState(id?: string) {
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
   const [isInterviewCollapsed, setIsInterviewCollapsed] = useState(false);
+  const [selectedInterviewFormType, setSelectedInterviewFormType] = useState<
+    "records" | "assessment_grid" | "practical_observation" | "skill_demonstration" | null
+  >(null);
+  const [isInterviewFormModalOpen, setIsInterviewFormModalOpen] = useState(false);
+  const [isAppealModalOpen, setIsAppealModalOpen] = useState(false);
 
   const authUser = useAppSelector((state) => state.auth.user);
   const { data: apiApp, isLoading } = useGetApplicationById(id || "");
@@ -53,6 +58,7 @@ export function useApplicationDetailsState(id?: string) {
   const { data: receiptData } = useGetApplicationReceipt(id || "", { enabled: Boolean(id && isPaymentPaid) });
   const { data: interviewSchedule } = useGetInterviewSchedule(id || "", { enabled: Boolean(id && !isDraft && isInterviewStageActive) });
   const { data: interviewPanel } = useGetInterviewPanel(id || "", { enabled: Boolean(id && !isDraft && isInterviewStageActive) });
+  const { data: interviewForms } = useGetInterviewForms(id || "", { enabled: Boolean(id && !isDraft && isInterviewStageActive) });
 
   const isInterviewScheduled = Boolean(interviewSchedule?.scheduledAt);
   const formattedInterviewDate = interviewSchedule?.scheduledAt
@@ -131,6 +137,45 @@ export function useApplicationDetailsState(id?: string) {
       ? formatCurrency(paymentStage.amountMinorUnits, paymentStage.currency || "NGN")
       : "—";
 
+  const FORMS_CONFIG: Array<{
+    id: "records" | "assessment_grid" | "practical_observation" | "skill_demonstration";
+    title: string;
+    description: string;
+  }> = [
+    {
+      id: "records",
+      title: "Interview Record Form",
+      description: "Form recording interview questions and demonstration notes",
+    },
+    {
+      id: "assessment_grid",
+      title: "Assessment Grid/Mapping Form",
+      description: "Form mapping competency criteria and scores",
+    },
+    {
+      id: "practical_observation",
+      title: "Practical Observation Checklist Form",
+      description: "Form recording practical observation findings",
+    },
+    {
+      id: "skill_demonstration",
+      title: "Skills Demonstration Form",
+      description: "Form recording candidate practical skills demonstration and safety standards",
+    },
+  ];
+
+  const formsToSign = useMemo(() => {
+    return FORMS_CONFIG.map((f) => {
+      const matched = interviewForms?.find((rf) => rf.formType === f.id);
+      return {
+        id: f.id,
+        title: f.title,
+        description: f.description,
+        signed: Boolean(matched?.candidateSignedAt),
+      };
+    });
+  }, [interviewForms]);
+
   const stages = application ? getStagesConfig({
     formState, isVaultActive, folderStatus, formStatus, isInterviewCollapsed,
     onToggleInterviewCollapse: () => setIsInterviewCollapsed(!isInterviewCollapsed),
@@ -138,9 +183,19 @@ export function useApplicationDetailsState(id?: string) {
     onMakePayment: handleMakePayment,
     onDownloadReceipt: () => setIsReceiptModalOpen(true),
     onNavigateToVault: () => router.push(`/dashboard/applications/${application.id}/evidence-vault`),
-    onAppeal: () => toast({ type: "info", title: "Appeal Submitted", description: "Your appeal request has been recorded." }),
+    onAppeal: () => setIsAppealModalOpen(true),
     onTakeCourse: () => toast({ type: "info", title: "Navigating to Course", description: "Redirecting to course..." }),
-    onOpenSignatureModal: () => setIsSignatureModalOpen(true),
+    onOpenSignatureModal: (formId: string) => {
+      const matchingType = (["records", "assessment_grid", "practical_observation", "skill_demonstration"] as const).find(
+        (t) => t === formId,
+      );
+      if (matchingType) {
+        setSelectedInterviewFormType(matchingType);
+        setIsInterviewFormModalOpen(true);
+      } else {
+        setIsSignatureModalOpen(true);
+      }
+    },
     onProceedToExternalVerifier: () => { queryClient.invalidateQueries({ queryKey: APPLICATION_QUERY_KEYS.stages(application.id) }); },
     onProceedToCertification: () => { queryClient.invalidateQueries({ queryKey: APPLICATION_QUERY_KEYS.stages(application.id) }); },
     submittedDate: (application as any).submittedAt || application.createdAt,
@@ -149,6 +204,7 @@ export function useApplicationDetailsState(id?: string) {
     evidenceUploaded: application.evidenceUploaded || application.selfAssessmentCompleted,
     stagesData, currentStageKey: apiApp?.currentStageKey,
     assessors: interviewAssessors, interviewDateText: formattedInterviewDate,
+    formsToSign,
   }) : [];
 
   const transactionReceipt = useMemo(
@@ -160,10 +216,12 @@ export function useApplicationDetailsState(id?: string) {
     apiApp, application, isLoading, isDraft, isPaymentPaid, stages, activeInterviewSchedule: interviewSchedule,
     isInterviewScheduled, isAtInterviewStage, facilitatorData, activePaymentModal, paymentErrorInfo,
     isCallRequestModalOpen, isFormModalOpen, isSignatureModalOpen, isReceiptModalOpen, transactionReceipt,
+    interviewForms, selectedInterviewFormType, isInterviewFormModalOpen, isAppealModalOpen,
     handleMakePayment,
     handleEditApplication: () => { if (application) { populateOnboardingFromAppDetail(dispatch, application.id, apiApp); router.push("/rpl/personal-info"); } },
     handleStartFolderArrangement: () => { setActivePaymentModal(null); router.push(`/dashboard/applications/${application?.id}/evidence-vault`); },
     handleConfirmCallModal: () => { setIsCallRequestModalOpen(false); toast({ type: "success", title: "Call Requested", description: "Facilitator will contact you soon." }); },
     setActivePaymentModal, setIsCallRequestModalOpen, setIsFormModalOpen, setIsSignatureModalOpen, setIsReceiptModalOpen,
+    setSelectedInterviewFormType, setIsInterviewFormModalOpen, setIsAppealModalOpen,
   };
 }

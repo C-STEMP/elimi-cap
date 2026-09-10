@@ -46,9 +46,18 @@ export interface WalletBalance {
 }
 
 export async function getCentreApplicationsApi(
-  status?: ApplicationStatus,
+  params?:
+    | ApplicationStatus
+    | {
+        status?: ApplicationStatus;
+        ivApproved?: boolean;
+        interviewSchedulable?: boolean;
+      },
 ): Promise<Application[]> {
-  return getApplicationsApi({ status });
+  if (typeof params === "string") {
+    return getApplicationsApi({ status: params });
+  }
+  return getApplicationsApi(params);
 }
 
 export async function getCentreApplicationByIdApi(

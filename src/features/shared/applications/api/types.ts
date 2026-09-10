@@ -270,14 +270,42 @@ export interface InterviewSchedule {
 
 export interface InterviewForm {
   id: string;
-  formType: "records" | "assessment_grid" | "practical_observation";
+  formType:
+    | "records"
+    | "assessment_grid"
+    | "practical_observation"
+    | "skill_demonstration";
   data: Record<string, unknown>;
   status: "draft" | "completed";
   populatedBy?: string;
   candidateSignatureAssetId?: string | null;
   candidateSignedAt?: string | null;
+  assessorSignedAt?: string | null;
   signatureMode?: "upload" | "default" | "typed" | null;
   typedSignatureName?: string | null;
+}
+
+export interface ApplicationShareToken {
+  token: string;
+  applicationId: string;
+  createdAt: string;
+}
+
+export interface ApplicationDossier {
+  application: Application;
+  stages: ApplicationStage[];
+  stageHistory: Array<Record<string, unknown>>;
+  appeals: Appeal[];
+  interview?: Record<string, unknown> | null;
+  evidence?: Record<string, unknown> | null;
+  assessors: Array<Record<string, unknown>>;
+  nsq?: Record<string, unknown> | null;
+}
+
+export interface CentreBulkCertifyResult {
+  updated: string[];
+  skipped: string[];
+  failed: Array<{ id: string; code: string; message: string }>;
 }
 
 export interface InterviewObserverComment {

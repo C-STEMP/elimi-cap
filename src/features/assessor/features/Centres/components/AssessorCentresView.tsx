@@ -73,10 +73,16 @@ export const AssessorCentresView: React.FC<AssessorCentresViewProps> = ({
         <div className="flex items-center gap-3 w-full md:w-auto justify-end">
           <div className="w-36">
             <Select
-              placeholder="Status"
-              value={statusFilter === "All" ? "" : statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value || "All")}
-              options={["Active", "Inactive", "Pending"]}
+              size="sm"
+              showPlaceholderOption={false}
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              options={[
+                { label: "All", value: "All" },
+                { label: "Active", value: "Active" },
+                { label: "Inactive", value: "Inactive" },
+                { label: "Pending", value: "Pending" },
+              ]}
             />
           </div>
 

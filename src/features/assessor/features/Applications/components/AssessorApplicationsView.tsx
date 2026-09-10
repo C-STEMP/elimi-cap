@@ -81,7 +81,7 @@ export const AssessorApplicationsView: React.FC<
   const [filterCriteria, setFilterCriteria] = useState<AssessorFilterCriteria>({
     trade: "",
     assessmentType: "",
-    status: "",
+    status: "All",
   });
 
   const applications: AssessorApplicationRecord[] = useMemo(() => {
@@ -166,6 +166,7 @@ export const AssessorApplicationsView: React.FC<
 
       const matchesStatus =
         !filterCriteria.status ||
+        filterCriteria.status === "All" ||
         app.status.toLowerCase() === filterCriteria.status.toLowerCase();
 
       return matchesSearch && matchesTrade && matchesType && matchesStatus;

@@ -113,6 +113,13 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({ 
         isSignatureModalOpen={state.isSignatureModalOpen}
         onCloseSignatureModal={() => state.setIsSignatureModalOpen(false)}
         onSignatureSuccess={() => {}}
+        isInterviewFormModalOpen={state.isInterviewFormModalOpen}
+        onCloseInterviewFormModal={() => state.setIsInterviewFormModalOpen(false)}
+        selectedInterviewFormType={state.selectedInterviewFormType}
+        interviewForms={state.interviewForms}
+        candidateName={state.apiApp?.candidate?.name || "Candidate"}
+        isAppealModalOpen={state.isAppealModalOpen}
+        onCloseAppealModal={() => state.setIsAppealModalOpen(false)}
         isReceiptModalOpen={state.isReceiptModalOpen}
         onCloseReceiptModal={() => state.setIsReceiptModalOpen(false)}
         transactionReceipt={state.transactionReceipt}

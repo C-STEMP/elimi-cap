@@ -99,7 +99,11 @@ export function useUpdateInterviewForm(id: string) {
       formType,
       data,
     }: {
-      formType: "records" | "assessment_grid" | "practical_observation";
+      formType:
+        | "records"
+        | "assessment_grid"
+        | "practical_observation"
+        | "skill_demonstration";
       data: Record<string, unknown>;
     }) => updateInterviewFormApi(id, formType, { data }),
 
@@ -141,7 +145,11 @@ export function useSignoffInterviewForm(id: string) {
       formType,
       payload,
     }: {
-      formType: "records" | "assessment_grid" | "practical_observation";
+      formType:
+        | "records"
+        | "assessment_grid"
+        | "practical_observation"
+        | "skill_demonstration";
       payload: {
         signatureMode: "upload" | "default" | "typed";
         signatureAssetId?: string;

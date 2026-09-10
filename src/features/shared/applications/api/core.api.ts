@@ -9,6 +9,8 @@ import type {
   ApplicationVersion,
   CreateApplicationPayload,
   ReviewDecisionPayload,
+  ApplicationShareToken,
+  ApplicationDossier,
 } from "./types";
 
 export async function createApplicationApi(
@@ -30,6 +32,8 @@ export async function getApplicationsApi(params?: {
   order?: "asc" | "desc";
   cursor?: string;
   limit?: number;
+  ivApproved?: boolean;
+  interviewSchedulable?: boolean;
 }): Promise<Application[]> {
   const query = new URLSearchParams();
   if (params?.status) query.append("status", params.status);
@@ -41,6 +45,8 @@ export async function getApplicationsApi(params?: {
   if (params?.order) query.append("order", params.order);
   if (params?.cursor) query.append("cursor", params.cursor);
   if (params?.limit) query.append("limit", params.limit.toString());
+  if (params?.ivApproved !== undefined) query.append("ivApproved", params.ivApproved.toString());
+  if (params?.interviewSchedulable !== undefined) query.append("interviewSchedulable", params.interviewSchedulable.toString());
 
   const queryString = query.toString() ? `?${query.toString()}` : "";
   return capFetch<Application[]>(`/applications${queryString}`, {
@@ -108,5 +114,29 @@ export async function reviewApplicationApi(
   return capFetch<Application>(`/applications/${id}/review`, {
     method: "POST",
     data: safePayload,
+  });
+}
+
+export async function createShareTokenApi(
+  id: string,
+): Promise<ApplicationShareToken> {
+  return capFetch<ApplicationShareToken>(`/applications/${id}/share-token`, {
+    method: "POST",
+  });
+}
+
+export async function deleteShareTokenApi(
+  id: string,
+): Promise<{ message?: string }> {
+  return capFetch<{ message?: string }>(`/applications/${id}/share-token`, {
+    method: "DELETE",
+  });
+}
+
+export async function getSharedApplicationApi(
+  token: string,
+): Promise<ApplicationDossier> {
+  return capFetch<ApplicationDossier>(`/shared/applications/${token}`, {
+    method: "GET",
   });
 }

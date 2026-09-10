@@ -329,7 +329,7 @@ export const AssessorProfileDetailView: React.FC<
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               options={[
-                { label: "Status", value: "All" },
+                { label: "All", value: "All" },
                 { label: "Ongoing", value: "Ongoing" },
                 { label: "Completed", value: "Completed" },
               ]}

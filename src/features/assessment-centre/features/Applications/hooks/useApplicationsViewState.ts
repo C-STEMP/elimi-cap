@@ -10,6 +10,7 @@ import {
   useGetCentreInterviews,
   useGetCentrePanels,
   useDeleteCentreInterview,
+  useBulkCertifyApplications,
 } from "@/src/features/shared/centre/hooks";
 import { mapInterviewItem, mapApplicationItem } from "../utils/appViewHelpers";
 import type { InterviewRowData } from "../components/ViewInterviewDetailModal";
@@ -17,12 +18,20 @@ import type { InterviewRowData } from "../components/ViewInterviewDetailModal";
 export function useApplicationsViewState() {
   const { toast } = useToast();
   const { forwardToAwardingBody } = useApplication();
-  const { data: remoteApps, isLoading } = useGetApplications();
+  const [activeFilterTab, setActiveFilterTab] = useState<string>("All");
+
+  const appQueryParams = useMemo(() => {
+    if (activeFilterTab === "IV Approved") {
+      return { ivApproved: true, status: "in_progress" as const };
+    }
+    return undefined;
+  }, [activeFilterTab]);
+
+  const { data: remoteApps, isLoading } = useGetApplications(appQueryParams);
   const { data: remoteInterviews = [], isLoading: isLoadingInterviews } = useGetCentreInterviews();
   const { data: remotePanels = [] } = useGetCentrePanels();
   const deleteInterviewMutation = useDeleteCentreInterview();
-
-  const [activeFilterTab, setActiveFilterTab] = useState<string>("All");
+  const bulkCertifyMutation = useBulkCertifyApplications();
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
@@ -56,7 +65,11 @@ export function useApplicationsViewState() {
   const filteredApplications = useMemo(
     () =>
       applicationsList.filter((app) => {
-        const matchesTab = activeFilterTab === "All" || app.status === activeFilterTab;
+        const matchesTab =
+          activeFilterTab === "All" ||
+          (activeFilterTab === "IV Approved"
+            ? Boolean((app as any).ivApproved || app.status === "IV Approved")
+            : app.status === activeFilterTab);
         const q = searchQuery.toLowerCase();
         const matchesSearch =
           app.candidateName.toLowerCase().includes(q) ||
@@ -107,6 +120,32 @@ export function useApplicationsViewState() {
     selectedIds.forEach((id) => forwardToAwardingBody.mutate(id));
   };
 
+  const handleBulkCertify = async () => {
+    if (selectedIds.length === 0) {
+      toast({
+        type: "info",
+        title: "No Applications Selected",
+        description: "Please select IV approved applications to mark as certified.",
+      });
+      return;
+    }
+    try {
+      const res = await bulkCertifyMutation.mutateAsync(selectedIds);
+      setSelectedIds([]);
+      toast({
+        type: "success",
+        title: "Certification Complete",
+        description: `Successfully certified ${res.updated?.length || selectedIds.length} application(s).`,
+      });
+    } catch (err: any) {
+      toast({
+        type: "error",
+        title: "Certification Failed",
+        description: err?.message || "Failed to certify selected applications.",
+      });
+    }
+  };
+
   return {
     isLoading, isLoadingInterviews,
     activeFilterTab, setActiveFilterTab,
@@ -119,5 +158,7 @@ export function useApplicationsViewState() {
     toggleSelectAll, toggleSelectRow,
     toggleSelectAllInterviews, toggleSelectInterviewRow,
     handleDeleteSelectedInterviews, handleNotifyAwardingBody,
+    handleBulkCertify,
+    isBulkCertifying: bulkCertifyMutation.isPending,
   };
 }

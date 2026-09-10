@@ -8,27 +8,69 @@ import { InterviewRecordForm } from "./InterviewRecordForm";
 import { ConfirmSubmitFormModal } from "./ConfirmSubmitFormModal";
 import { FormSubmittedSuccessModal } from "./FormSubmittedSuccessModal";
 
+import { useGetInterviewForms, useUpdateInterviewForm } from "@/src/features/shared/applications/hooks";
+import { useToast } from "@/src/components/ui/toast";
+
 interface AssessorAssessmentFormViewProps {
+  applicationId: string;
   formId: string;
   candidateName: string;
   onBack: () => void;
   isReadOnly?: boolean;
 }
 
+const FORM_MAP: Record<
+  string,
+  "skill_demonstration" | "assessment_grid" | "practical_observation" | "records"
+> = {
+  skills_demo: "skill_demonstration",
+  skill_demonstration: "skill_demonstration",
+  assessment_mapping: "assessment_grid",
+  assessment_grid: "assessment_grid",
+  observation_checklist: "practical_observation",
+  practical_observation: "practical_observation",
+  interview_record: "records",
+  records: "records",
+};
+
 export const AssessorAssessmentFormView: React.FC<
   AssessorAssessmentFormViewProps
-> = ({ formId, candidateName, onBack, isReadOnly = false }) => {
+> = ({ applicationId, formId, candidateName, onBack, isReadOnly = false }) => {
+  const { toast } = useToast();
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
 
+  const formType = FORM_MAP[formId] || "records";
+  const { data: remoteForms } = useGetInterviewForms(applicationId);
+  const updateFormMutation = useUpdateInterviewForm(applicationId);
+
+  const matchedRemoteForm = remoteForms?.find((f) => f.formType === formType);
+  const isCandidateSigned = Boolean(matchedRemoteForm?.candidateSignedAt);
+  const effectiveReadOnly = isReadOnly || isCandidateSigned;
+
   const handleRequestSubmit = () => {
-    if (isReadOnly) return;
+    if (effectiveReadOnly) return;
     setIsConfirmModalOpen(true);
   };
 
-  const handleConfirmSubmit = () => {
+  const handleConfirmSubmit = async () => {
     setIsConfirmModalOpen(false);
-    setIsSuccessModalOpen(true);
+    try {
+      await updateFormMutation.mutateAsync({
+        formType,
+        data: {
+          submittedAt: new Date().toISOString(),
+          status: "submitted",
+        },
+      });
+      setIsSuccessModalOpen(true);
+    } catch (err: any) {
+      toast({
+        type: "error",
+        title: "Submission Error",
+        description: err?.message || "Failed to submit assessment form.",
+      });
+    }
   };
 
   const handleSuccessContinue = () => {
