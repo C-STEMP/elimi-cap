@@ -2,11 +2,51 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/src/components/ui/toast";
 import { ApiError } from "@/src/lib/api/client";
 import {
+  createAppealApi,
   resolveAppealApi,
   getRecommendationsApi,
   closeRecommendationsApi,
 } from "../api";
 import { APPLICATION_QUERY_KEYS } from "./queryKeys";
+
+export function useCreateAppeal(id: string) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (comment: string) => createAppealApi(id, comment),
+
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: APPLICATION_QUERY_KEYS.detail(id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: APPLICATION_QUERY_KEYS.stages(id),
+      });
+      toast({
+        type: "success",
+        title: "Appeal Submitted",
+        description: "Your appeal has been lodged and sent to the lead panelist for review.",
+      });
+    },
+
+    onError: (error: Error) => {
+      if (error instanceof ApiError) {
+        toast({
+          type: "error",
+          title: "Appeal Submission Failed",
+          description: error.message,
+        });
+      } else {
+        toast({
+          type: "error",
+          title: "Network Error",
+          description: "Unable to submit appeal. Please try again.",
+        });
+      }
+    },
+  });
+}
 
 export function useResolveAppeal(id: string) {
   const queryClient = useQueryClient();

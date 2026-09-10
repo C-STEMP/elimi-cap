@@ -177,7 +177,7 @@ export const JobListingDetailView: React.FC<JobListingDetailViewProps> = ({
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               options={[
-                { label: "Status", value: "All" },
+                { label: "All", value: "All" },
                 { label: "Pending", value: "Pending" },
                 { label: "Shortlisted", value: "Shortlisted" },
                 { label: "Rejected", value: "Rejected" },

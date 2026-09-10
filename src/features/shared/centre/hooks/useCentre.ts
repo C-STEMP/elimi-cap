@@ -67,11 +67,16 @@ import {
   getCentreInterviewBookingsApi,
   getCentreInterviewBookingDetailApi,
   patchCentreInterviewBookingApi,
+  bulkCertifyApplicationsApi,
   type CreateCentrePanelPayload,
   type PatchCentrePanelPayload,
   type CreateCentreInterviewPayload,
   type ScheduleCentreInterviewPayload,
 } from "../api/centre.api";
+import {
+  createShareTokenApi,
+  deleteShareTokenApi,
+} from "@/src/features/shared/applications/api";
 
 export const CENTRE_QUERY_KEYS = {
   staff: (params?: unknown) => ["centre", "staff", params] as const,
@@ -1164,6 +1169,83 @@ export function usePatchCentreInterviewBooking() {
         type: "error",
         title: "Failed to Update Booking",
         description: error.message || "Could not update interview booking.",
+      });
+    },
+  });
+}
+
+export function useBulkCertifyApplications() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (ids: string[]) => bulkCertifyApplicationsApi(ids),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ["applications"] });
+      queryClient.invalidateQueries({ queryKey: CENTRE_QUERY_KEYS.applicationsSummary });
+      toast({
+        type: "success",
+        title: "Applications Certified",
+        description: `Successfully marked ${res?.updated?.length ?? 0} application(s) as certified.`,
+      });
+    },
+    onError: (err: ApiError) => {
+      toast({
+        type: "error",
+        title: "Bulk Certification Failed",
+        description: err.message || "Could not bulk-certify selected applications.",
+      });
+    },
+  });
+}
+
+export function useCreateShareToken(applicationId: string) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: () => createShareTokenApi(applicationId),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({
+        queryKey: ["applications", "share-token", applicationId],
+      });
+      toast({
+        type: "success",
+        title: "Share Link Generated",
+        description: "Shareable application link created.",
+      });
+    },
+    onError: (err: ApiError) => {
+      toast({
+        type: "error",
+        title: "Failed to Generate Link",
+        description: err.message || "Could not generate share link.",
+      });
+    },
+  });
+}
+
+export function useDeleteShareToken(applicationId: string) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: () => deleteShareTokenApi(applicationId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["applications", "share-token", applicationId],
+      });
+      toast({
+        type: "success",
+        title: "Share Link Revoked",
+        description: "Share link has been revoked.",
+      });
+    },
+    onError: (err: ApiError) => {
+      toast({
+        type: "error",
+        title: "Failed to Revoke Link",
+        description: err.message || "Could not revoke share link.",
       });
     },
   });

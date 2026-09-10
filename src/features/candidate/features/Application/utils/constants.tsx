@@ -140,6 +140,7 @@ export interface GetStagesConfigParams {
   currentStageKey?: string;
   assessors?: Assessor[];
   interviewDateText?: string;
+  formsToSign?: FormItem[];
 }
 
 export const getStagesConfig = ({
@@ -170,6 +171,7 @@ export const getStagesConfig = ({
   currentStageKey,
   assessors,
   interviewDateText,
+  formsToSign,
 }: GetStagesConfigParams): StageConfig[] => {
   const formattedSubmittedDate = submittedDate
     ? new Date(submittedDate).toLocaleDateString()
@@ -432,6 +434,19 @@ export const getStagesConfig = ({
     isCollapsed: isInterviewCollapsed,
     onToggleCollapse: onToggleInterviewCollapse,
     assessors: isInterviewActive && assessors && assessors.length > 0 ? assessors : undefined,
+    formsToSign: isInterviewActive && formsToSign && formsToSign.length > 0 ? formsToSign : undefined,
+    onOpenSignatureModal,
+    inconclusiveBanner:
+      (interviewStageRow?.status as string) === "rejected" ||
+      (interviewStageRow?.status as string) === "inconclusive"
+        ? {
+            title: "Interview Outcome: Inconclusive / Reassessment Required",
+            description:
+              "The panel assessment was marked as inconclusive or unsuccessful. You may lodge an official appeal for reconsideration.",
+            onAppeal,
+            onTakeCourse,
+          }
+        : null,
   };
 
   // ─── Stage 5: Internal Verifier ────────────────────────────────────────────

@@ -22,7 +22,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
 }) => {
   const [assessmentType, setAssessmentType] = useState("");
   const [stage, setStage] = useState("");
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState("All");
 
   if (!isOpen) return null;
 
@@ -90,7 +90,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
             placeholder="Select"
             value={status}
             onChange={(e) => setStatus(e.target.value)}
-            options={["Pending", "Ongoing", "Completed", "Archived"]}
+            options={["All", "Pending", "Ongoing", "Completed", "Archived"]}
           />
 
           <Button

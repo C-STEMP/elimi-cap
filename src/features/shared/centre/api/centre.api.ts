@@ -4,6 +4,7 @@ import type {
   ContactInformation,
   ResidentialAddress,
 } from "@/src/features/shared/account/api";
+import type { CentreBulkCertifyResult } from "@/src/features/shared/applications/api/types";
 
 export type CentreStaffRole = "super_admin" | "regular_admin" | "staff";
 export type CentreStaffStatus = "pending" | "active" | "inactive";
@@ -1115,5 +1116,14 @@ export async function patchCentreInterviewBookingApi(
     data: payload,
   });
   return (res as any)?.data || res;
+}
+
+export async function bulkCertifyApplicationsApi(
+  ids: string[],
+): Promise<CentreBulkCertifyResult> {
+  return capFetch<CentreBulkCertifyResult>("/centre/applications/bulk", {
+    method: "PATCH",
+    data: { ids, action: "certify" },
+  });
 }
 

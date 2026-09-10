@@ -85,7 +85,11 @@ export async function getInterviewFormsApi(
 
 export async function updateInterviewFormApi(
   id: string,
-  formType: "records" | "assessment_grid" | "practical_observation",
+  formType:
+    | "records"
+    | "assessment_grid"
+    | "practical_observation"
+    | "skill_demonstration",
   payload: { data: Record<string, unknown> },
 ): Promise<InterviewForm> {
   return capFetch<InterviewForm>(
@@ -96,7 +100,11 @@ export async function updateInterviewFormApi(
 
 export async function signoffInterviewFormApi(
   id: string,
-  formType: "records" | "assessment_grid" | "practical_observation",
+  formType:
+    | "records"
+    | "assessment_grid"
+    | "practical_observation"
+    | "skill_demonstration",
   payload: {
     signatureMode: "upload" | "default" | "typed";
     signatureAssetId?: string;

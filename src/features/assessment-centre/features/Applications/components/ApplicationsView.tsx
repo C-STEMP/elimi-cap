@@ -54,6 +54,9 @@ export const ApplicationsView: React.FC<ApplicationsViewProps> = ({
         filteredInterviewsLength={state.filteredInterviews.length}
         onDeleteInterviews={state.handleDeleteSelectedInterviews}
         onSelectAll={state.toggleSelectAll}
+        selectedCount={state.selectedIds.length}
+        onBulkCertify={state.handleBulkCertify}
+        isBulkCertifying={state.isBulkCertifying}
       />
 
       {state.activeFilterTab === "Interviews" ? (

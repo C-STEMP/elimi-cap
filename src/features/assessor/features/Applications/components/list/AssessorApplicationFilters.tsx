@@ -80,11 +80,11 @@ export const AssessorApplicationFilters: React.FC<
         {/* Status Filter */}
         <div className="relative inline-block">
           <select
-            value={filterCriteria.status}
+            value={filterCriteria.status || "All"}
             onChange={(e) => onFilterChange({ status: e.target.value })}
             className="appearance-none bg-white border border-gray-200 text-neutral-primary font-medium text-xs sm:text-sm px-3.5 py-2 pr-8 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer shadow-2xs hover:bg-gray-50/50"
           >
-            <option value="">Status</option>
+            <option value="All">All</option>
             <option value="Ongoing">Ongoing</option>
             <option value="Completed">Completed</option>
             <option value="Pending">Pending</option>

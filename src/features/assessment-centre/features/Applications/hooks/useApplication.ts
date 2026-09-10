@@ -33,10 +33,18 @@ export const CENTRE_APPLICATION_QUERY_KEYS = {
   wallet: ["centre", "wallet"] as const,
 };
 
-export function useGetApplications(status?: ApplicationStatus) {
+export function useGetApplications(
+  params?:
+    | ApplicationStatus
+    | {
+        status?: ApplicationStatus;
+        ivApproved?: boolean;
+        interviewSchedulable?: boolean;
+      },
+) {
   return useQuery({
-    queryKey: CENTRE_APPLICATION_QUERY_KEYS.list(status),
-    queryFn: () => getCentreApplicationsApi(status),
+    queryKey: ["centre", "applications", "list", params],
+    queryFn: () => getCentreApplicationsApi(params),
   });
 }
 

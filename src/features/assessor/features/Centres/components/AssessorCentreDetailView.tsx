@@ -174,10 +174,16 @@ export const AssessorCentreDetailView: React.FC<
 
           <div className="w-28">
             <Select
-              placeholder="Status"
-              value={statusFilter === "All" ? "" : statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value || "All")}
-              options={["Ongoing", "Completed", "Pending"]}
+              size="sm"
+              showPlaceholderOption={false}
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              options={[
+                { label: "All", value: "All" },
+                { label: "Ongoing", value: "Ongoing" },
+                { label: "Completed", value: "Completed" },
+                { label: "Pending", value: "Pending" },
+              ]}
             />
           </div>
 

@@ -242,7 +242,7 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               options={[
-                { label: "Status", value: "All" },
+                { label: "All", value: "All" },
                 { label: "Ongoing", value: "Ongoing" },
                 { label: "Certified", value: "Certified" },
                 { label: "Pending", value: "Pending" },

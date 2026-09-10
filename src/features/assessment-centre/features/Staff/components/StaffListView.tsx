@@ -191,7 +191,7 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               options={[
-                { label: "Role / Status", value: "All" },
+                { label: "All", value: "All" },
                 { label: "Super Admin", value: "super_admin" },
                 { label: "Admin", value: "regular_admin" },
                 { label: "Staff", value: "staff" },

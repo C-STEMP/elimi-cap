@@ -16,12 +16,16 @@ interface Props {
   filteredInterviewsLength: number;
   onDeleteInterviews: () => void;
   onSelectAll: () => void;
+  selectedCount?: number;
+  onBulkCertify?: () => void;
+  isBulkCertifying?: boolean;
 }
 
 export const AppsFilterBar: React.FC<Props> = ({
   activeFilterTab, onTabChange, searchQuery, onSearchChange,
   onFilterOpen, viewMode, onViewModeChange,
   selectedInterviewIds, filteredInterviewsLength, onDeleteInterviews, onSelectAll,
+  selectedCount, onBulkCertify, isBulkCertifying,
 }) => (
   <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-2xs flex flex-col gap-5">
     <h2 className="text-base sm:text-lg font-bold text-black tracking-tight">
@@ -59,7 +63,19 @@ export const AppsFilterBar: React.FC<Props> = ({
         <button type="button" disabled={selectedInterviewIds.length === 0} onClick={onDeleteInterviews} className="hover:underline cursor-pointer text-gray-500 hover:text-red-600 disabled:opacity-40 transition-colors">Delete</button>
       </div>
     ) : (
-      <div className="flex items-center justify-end gap-5 text-xs font-semibold text-gray-600 pt-1">
+      <div className="flex items-center justify-end gap-4 text-xs font-semibold text-gray-600 pt-1">
+        {activeFilterTab === "IV Approved" && onBulkCertify && (
+          <button
+            type="button"
+            onClick={onBulkCertify}
+            disabled={isBulkCertifying || (selectedCount ?? 0) === 0}
+            className="bg-[#1E7F4C] hover:bg-[#1E7F4C]/90 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all cursor-pointer shadow-xs disabled:opacity-40"
+          >
+            {isBulkCertifying
+              ? "Certifying..."
+              : `Bulk Certify ${selectedCount ? `(${selectedCount})` : ""}`}
+          </button>
+        )}
         <button type="button" onClick={onSelectAll} className="hover:underline cursor-pointer transition-colors">Select All</button>
       </div>
     )}

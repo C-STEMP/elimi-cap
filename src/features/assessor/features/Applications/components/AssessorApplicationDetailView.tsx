@@ -29,6 +29,7 @@ import {
   useGetInterviewForms,
   useEvaluateInterview,
   useGetInterviewPanel,
+  useResolveAppeal,
 } from "@/src/features/shared/applications/hooks";
 import {
   reviewIvApi,
@@ -102,11 +103,16 @@ export const AssessorApplicationDetailView: React.FC<
     enabled: isInterviewStage,
   });
   const evaluateInterview = useEvaluateInterview(application.id);
+  const resolveAppeal = useResolveAppeal(application.id);
 
   const user = useAppSelector((state) => state.auth.user);
   const { data: interviewPanel } = useGetInterviewPanel(application.id, {
     enabled: isInterviewStage,
   });
+
+  const openAppeal = (appDetail as any)?.appeals?.find(
+    (a: any) => a.status === "open" || a.status === "pending",
+  );
 
   const isUserIV = Boolean(
     user?.role?.toLowerCase()?.includes("iv") ||
@@ -382,6 +388,7 @@ export const AssessorApplicationDetailView: React.FC<
   if (subView === "assessment_form") {
     return (
       <AssessorAssessmentFormView
+        applicationId={application.id}
         formId={selectedAssessmentFormId}
         candidateName={application.candidateName}
         onBack={() => setSubView("stages")}
@@ -426,6 +433,56 @@ export const AssessorApplicationDetailView: React.FC<
     <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-6 items-start select-text">
       {/* Left Column: Stages Timeline */}
       <div className="lg:col-span-8 flex flex-col gap-4">
+        {openAppeal && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 sm:p-5 flex flex-col gap-3 shadow-xs">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <span className="text-xs font-bold uppercase tracking-wider text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full">
+                Active Candidate Appeal
+              </span>
+              <span className="text-xs text-amber-700">
+                {openAppeal.createdAt
+                  ? new Date(openAppeal.createdAt).toLocaleDateString()
+                  : "Recent"}
+              </span>
+            </div>
+            <p className="text-sm text-amber-900 font-medium leading-relaxed">
+              &ldquo;{openAppeal.comment}&rdquo;
+            </p>
+            {isUserLeadPanelist && (
+              <div className="flex items-center gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={() =>
+                    resolveAppeal.mutate({
+                      appealId: openAppeal.id,
+                      decision: "reopen",
+                      comment: "Assessment stage reopened for further evaluation.",
+                    })
+                  }
+                  disabled={resolveAppeal.isPending}
+                  className="bg-[#1E7F4C] hover:bg-[#1E7F4C]/90 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all cursor-pointer shadow-xs disabled:opacity-50"
+                >
+                  Reopen Assessment
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    resolveAppeal.mutate({
+                      appealId: openAppeal.id,
+                      decision: "dismiss",
+                      comment: "Appeal dismissed after panel review.",
+                    })
+                  }
+                  disabled={resolveAppeal.isPending}
+                  className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold text-xs px-4 py-2 rounded-xl transition-all cursor-pointer shadow-xs disabled:opacity-50"
+                >
+                  Dismiss Appeal
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
         <AssessorApplicationStagesList
           application={activeApplicationRecord}
           interviewOutcome={interviewOutcome}
