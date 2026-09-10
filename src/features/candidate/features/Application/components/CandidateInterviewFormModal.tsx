@@ -159,20 +159,185 @@ export const CandidateInterviewFormModal: React.FC<
                 {formRecord?.assessorSignedAt ? "Signed by Assessor" : "Evaluated"}
               </span>
             </div>
-            {formRecord?.data && Object.keys(formRecord.data).length > 0 ? (
-              <div className="text-xs text-gray-700 bg-white p-3 rounded-xl border border-gray-200/70 max-h-36 overflow-y-auto">
-                <span className="font-semibold block mb-1">Evaluation Details:</span>
-                <p className="whitespace-pre-line text-gray-600">
-                  {typeof (formRecord.data as any)?.summary === "string"
-                    ? (formRecord.data as any).summary
-                    : "Form findings and competency notes recorded by panel assessor."}
-                </p>
-              </div>
-            ) : (
-              <p className="text-xs text-gray-500 italic bg-white p-3 rounded-xl border border-gray-200/70">
-                Evaluation recorded and ready for candidate endorsement.
-              </p>
-            )}
+            {(() => {
+              const data = (formRecord?.data || {}) as Record<string, any>;
+              const hasData = Object.keys(data).length > 0;
+              const assessorName = data.assessorName || "";
+              const unitTitleCode = data.unitTitleCode || "";
+              const date =
+                data.interviewDate ||
+                data.demonstrationDate ||
+                data.observationDate ||
+                data.dateCollected ||
+                "";
+              const verdict = data.verdict || "";
+              const notes =
+                data.panelistSummaryNotes ||
+                data.observationNotes ||
+                data.taskDemonstrated ||
+                data.summary ||
+                "";
+
+              if (!hasData) {
+                return (
+                  <p className="text-xs text-gray-500 italic bg-white p-3 rounded-xl border border-gray-200/70">
+                    Evaluation recorded and ready for candidate endorsement.
+                  </p>
+                );
+              }
+
+              return (
+                <div className="text-xs text-gray-700 bg-white p-3.5 rounded-xl border border-gray-200/70 max-h-48 overflow-y-auto flex flex-col gap-2.5">
+                  <div className="grid grid-cols-2 gap-2 text-gray-500 text-[11px] pb-2 border-b border-gray-100">
+                    {assessorName && (
+                      <div>
+                        <span className="font-semibold text-gray-700">Assessor: </span>
+                        <span>{assessorName}</span>
+                      </div>
+                    )}
+                    {unitTitleCode && (
+                      <div>
+                        <span className="font-semibold text-gray-700">Unit: </span>
+                        <span>{unitTitleCode}</span>
+                      </div>
+                    )}
+                    {date && (
+                      <div>
+                        <span className="font-semibold text-gray-700">Date: </span>
+                        <span>{date}</span>
+                      </div>
+                    )}
+                    {verdict && (
+                      <div>
+                        <span className="font-semibold text-gray-700">Verdict: </span>
+                        <span
+                          className={
+                            verdict === "Competent"
+                              ? "text-emerald-700 font-bold"
+                              : "text-rose-700 font-bold"
+                          }
+                        >
+                          {verdict}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {notes && (
+                    <div>
+                      <span className="font-semibold text-gray-700 block mb-0.5 text-[11px]">
+                        Assessor Notes:
+                      </span>
+                      <p className="whitespace-pre-line text-gray-600 text-xs">{notes}</p>
+                    </div>
+                  )}
+
+                  {Array.isArray(data.criteria) && data.criteria.length > 0 && (
+                    <div className="flex flex-col gap-1 pt-1 border-t border-gray-100 text-[11px]">
+                      <span className="font-semibold text-gray-700">Assessment Criteria:</span>
+                      <div className="flex flex-col gap-1">
+                        {data.criteria.map((c: any, idx: number) => (
+                          <div
+                            key={c.id || idx}
+                            className="flex items-center justify-between text-gray-600"
+                          >
+                            <span className="truncate pr-2">
+                              {idx + 1}. {c.title || "Criterion"}
+                            </span>
+                            <span
+                              className={`font-semibold shrink-0 ${
+                                c.demonstrated ? "text-emerald-600" : "text-rose-600"
+                              }`}
+                            >
+                              {c.demonstrated ? "Demonstrated" : "Not Demonstrated"}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {Array.isArray(data.checklist) && data.checklist.length > 0 && (
+                    <div className="flex flex-col gap-1 pt-1 border-t border-gray-100 text-[11px]">
+                      <span className="font-semibold text-gray-700">Observation Checklist:</span>
+                      <div className="flex flex-col gap-1">
+                        {data.checklist.map((c: any, idx: number) => (
+                          <div
+                            key={c.id || idx}
+                            className="flex items-center justify-between text-gray-600"
+                          >
+                            <span className="truncate pr-2">
+                              {idx + 1}. {c.title || "Checklist Item"}
+                            </span>
+                            <span
+                              className={`font-semibold shrink-0 ${
+                                c.demonstrated ? "text-emerald-600" : "text-rose-600"
+                              }`}
+                            >
+                              {c.demonstrated ? "Demonstrated" : "Not Demonstrated"}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {Array.isArray(data.questions) && data.questions.length > 0 && (
+                    <div className="flex flex-col gap-1 pt-1 border-t border-gray-100 text-[11px]">
+                      <span className="font-semibold text-gray-700">Interview Questions:</span>
+                      <div className="flex flex-col gap-1">
+                        {data.questions.map((q: any, idx: number) => (
+                          <div
+                            key={q.id || idx}
+                            className="flex items-center justify-between text-gray-600"
+                          >
+                            <span className="truncate pr-2">
+                              {idx + 1}. {q.question || "Question"}
+                            </span>
+                            <span
+                              className={`font-semibold shrink-0 ${
+                                q.rating === "Satisfactory"
+                                  ? "text-emerald-600"
+                                  : "text-amber-600"
+                              }`}
+                            >
+                              {q.rating || "Evaluated"}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {Array.isArray(data.units) && data.units.length > 0 && (
+                    <div className="flex flex-col gap-1 pt-1 border-t border-gray-100 text-[11px]">
+                      <span className="font-semibold text-gray-700">Assessment Evidence Units:</span>
+                      <div className="flex flex-col gap-1">
+                        {data.units.map((u: any, idx: number) => (
+                          <div
+                            key={u.id || idx}
+                            className="flex items-center justify-between text-gray-600"
+                          >
+                            <span className="truncate pr-2">
+                              {idx + 1}. {u.occupationalUnit || u.performanceCriteria || "Unit"}
+                            </span>
+                            <span
+                              className={`font-semibold shrink-0 ${
+                                u.status === "Satisfied"
+                                  ? "text-emerald-600"
+                                  : "text-rose-600"
+                              }`}
+                            >
+                              {u.status || "Evaluated"}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
 
           {isAlreadySigned ? (

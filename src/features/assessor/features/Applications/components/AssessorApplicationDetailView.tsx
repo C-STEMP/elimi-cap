@@ -48,8 +48,8 @@ export type AssessorDetailSubView =
 const BASE_FORMS_TO_SIGN: ApplicationStageFormToSign[] = [
   {
     id: "records",
-    title: "Skills Demonstration Records Form",
-    description: "Form recording interview questions and demonstration notes",
+    title: "Interview Records Form",
+    description: "Form recording interview questions and panelist dialogue",
     signed: false,
   },
   {
@@ -62,6 +62,12 @@ const BASE_FORMS_TO_SIGN: ApplicationStageFormToSign[] = [
     id: "practical_observation",
     title: "Practical Observation Checklist Form",
     description: "Form recording practical observation findings",
+    signed: false,
+  },
+  {
+    id: "skill_demonstration",
+    title: "Skills Demonstration Form",
+    description: "Form recording candidate practical skills demonstration and safety standards",
     signed: false,
   },
 ];
@@ -119,18 +125,15 @@ export const AssessorApplicationDetailView: React.FC<
       user?.role?.toLowerCase()?.includes("verifier") ||
       interviewPanel?.members?.some(
         (m: any) =>
-          (m.isObserver ||
-            m.role?.toLowerCase()?.includes("iv") ||
-            m.role?.toLowerCase()?.includes("internal verifier")) &&
+          Boolean(m.isObserver) &&
           (m.assessorId === user?.id ||
             (m as any).userId === user?.id ||
+            (m as any).id === user?.id ||
             (m as any).email === user?.email),
       ),
   );
 
-  const leadMember =
-    interviewPanel?.members?.find((m: any) => m.isLead) ||
-    interviewPanel?.members?.[0];
+  const leadMember = interviewPanel?.members?.find((m: any) => m.isLead);
 
   const isUserLeadPanelist = Boolean(
     leadMember &&
@@ -350,14 +353,8 @@ export const AssessorApplicationDetailView: React.FC<
   };
 
   const handleAppendSignature = (formId: string) => {
-    setFormsToSign((prev) =>
-      prev.map((f) => (f.id === formId ? { ...f, signed: true } : f)),
-    );
-    toast({
-      type: "success",
-      title: "Signature Appended",
-      description: "Your signature has been added to the form.",
-    });
+    setSelectedAssessmentFormId(formId);
+    setSubView("assessment_form");
   };
 
   if (subView === "application_form") {
@@ -512,6 +509,7 @@ export const AssessorApplicationDetailView: React.FC<
         <AssessorUpcomingEventsWidget event={upcomingEvent} />
         <AssessorAssessmentFormsWidget
           isReadOnly={isAssessmentFormReadOnly}
+          remoteForms={remoteForms}
           onViewForm={(form) => {
             setSelectedAssessmentFormId(form.id);
             setSubView("assessment_form");

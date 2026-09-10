@@ -39,6 +39,7 @@ export const AssessorAssessmentFormView: React.FC<
   const { toast } = useToast();
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [pendingFormData, setPendingFormData] = useState<Record<string, any> | null>(null);
 
   const formType = FORM_MAP[formId] || "records";
   const { data: remoteForms } = useGetInterviewForms(applicationId);
@@ -48,8 +49,9 @@ export const AssessorAssessmentFormView: React.FC<
   const isCandidateSigned = Boolean(matchedRemoteForm?.candidateSignedAt);
   const effectiveReadOnly = isReadOnly || isCandidateSigned;
 
-  const handleRequestSubmit = () => {
+  const handleRequestSubmit = (data: Record<string, any>) => {
     if (effectiveReadOnly) return;
+    setPendingFormData(data);
     setIsConfirmModalOpen(true);
   };
 
@@ -59,6 +61,8 @@ export const AssessorAssessmentFormView: React.FC<
       await updateFormMutation.mutateAsync({
         formType,
         data: {
+          ...(matchedRemoteForm?.data || {}),
+          ...(pendingFormData || {}),
           submittedAt: new Date().toISOString(),
           status: "submitted",
         },
@@ -86,7 +90,8 @@ export const AssessorAssessmentFormView: React.FC<
             candidateName={candidateName}
             onBack={onBack}
             onSubmit={handleRequestSubmit}
-            isReadOnly={isReadOnly}
+            formData={matchedRemoteForm?.data}
+            isReadOnly={effectiveReadOnly}
           />
         );
       case "assessment_mapping":
@@ -95,7 +100,8 @@ export const AssessorAssessmentFormView: React.FC<
             candidateName={candidateName}
             onBack={onBack}
             onSubmit={handleRequestSubmit}
-            isReadOnly={isReadOnly}
+            formData={matchedRemoteForm?.data}
+            isReadOnly={effectiveReadOnly}
           />
         );
       case "observation_checklist":
@@ -104,7 +110,8 @@ export const AssessorAssessmentFormView: React.FC<
             candidateName={candidateName}
             onBack={onBack}
             onSubmit={handleRequestSubmit}
-            isReadOnly={isReadOnly}
+            formData={matchedRemoteForm?.data}
+            isReadOnly={effectiveReadOnly}
           />
         );
       case "interview_record":
@@ -114,7 +121,8 @@ export const AssessorAssessmentFormView: React.FC<
             candidateName={candidateName}
             onBack={onBack}
             onSubmit={handleRequestSubmit}
-            isReadOnly={isReadOnly}
+            formData={matchedRemoteForm?.data}
+            isReadOnly={effectiveReadOnly}
           />
         );
     }

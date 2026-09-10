@@ -453,10 +453,10 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
             centreProfile={centreProfile}
             hasActivity={hasActivity}
             onNavigateToApplications={(appId) => {
-              handleSelectTab("applications");
               if (appId) {
-                setSelectedApplicationId(appId);
-                setSelectedCandidateName("Candidate");
+                router.push(`/applications/${appId}?from=centre`);
+              } else {
+                handleSelectTab("applications");
               }
             }}
           />
@@ -480,8 +480,12 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
             showSelfAssessmentForm={showSelfAssessmentForm}
             onSelectInterview={setSelectedInterview}
             onSelectCandidate={(name, id) => {
-              setSelectedCandidateName(name);
-              setSelectedApplicationId(id || null);
+              if (id) {
+                router.push(`/applications/${id}?from=centre`);
+              } else {
+                setSelectedCandidateName(name);
+                setSelectedApplicationId(null);
+              }
             }}
             onCloseCandidateForm={() => setShowCandidateForm(false)}
             onOpenCandidateForm={() => setShowCandidateForm(true)}
@@ -515,8 +519,7 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
             selectedAssessorId={selectedAssessorId}
             onSelectAssessor={setSelectedAssessorId}
             onViewCandidate={(candidateId) => {
-              handleSelectTab("applications");
-              setSelectedCandidateName(candidateId);
+              router.push(`/applications/${candidateId}?from=centre`);
             }}
           />
         )}

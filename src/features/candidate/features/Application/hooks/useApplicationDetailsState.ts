@@ -179,10 +179,10 @@ export function useApplicationDetailsState(id?: string) {
   const stages = application ? getStagesConfig({
     formState, isVaultActive, folderStatus, formStatus, isInterviewCollapsed,
     onToggleInterviewCollapse: () => setIsInterviewCollapsed(!isInterviewCollapsed),
-    onOpenFormModal: () => isDraft ? (populateOnboardingFromAppDetail(dispatch, application.id, apiApp), router.push("/rpl/personal-info")) : router.push(`/dashboard/applications/${application.id}/application-form`),
+    onOpenFormModal: () => isDraft ? (populateOnboardingFromAppDetail(dispatch, application.id, apiApp), router.push("/rpl/personal-info")) : router.push(`/applications/${application.id}/application-form`),
     onMakePayment: handleMakePayment,
     onDownloadReceipt: () => setIsReceiptModalOpen(true),
-    onNavigateToVault: () => router.push(`/dashboard/applications/${application.id}/evidence-vault`),
+    onNavigateToVault: () => router.push(`/applications/${application.id}/evidence-vault`),
     onAppeal: () => setIsAppealModalOpen(true),
     onTakeCourse: () => toast({ type: "info", title: "Navigating to Course", description: "Redirecting to course..." }),
     onOpenSignatureModal: (formId: string) => {

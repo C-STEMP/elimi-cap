@@ -369,32 +369,7 @@ export const AssessorDashboard: React.FC = () => {
           <AssessorOverviewView
             onViewAllApplications={() => handleTabChange("Applications")}
             onSelectApplication={(app: Application) => {
-              setActiveTab("Applications");
-              setSelectedApplication({
-                id: app.id,
-                candidateName:
-                  app.candidate?.name ||
-                  (app.candidate?.firstName
-                    ? `${app.candidate.firstName} ${app.candidate.lastName || ""}`.trim()
-                    : app.candidateId),
-                trade:
-                  app.trade?.name ||
-                  app.tradeId ||
-                  (app.type === "NSQ" ? "Standard Assessment" : "RPL"),
-                assessmentType: app.type,
-                status:
-                  app.status === "certified"
-                    ? "Completed"
-                    : app.status === "in_progress"
-                      ? "Ongoing"
-                      : "Pending",
-                submittedAt: app.createdAt,
-              });
-              setApplicationSubView("stages");
-              setNsqNavState("overview");
-              setNsqSubViewTitle(null);
-              setCanMarkAsComplete(false);
-              setTriggerMarkComplete(false);
+              router.push(`/applications/${app.id}?from=assessor`);
             }}
             onApplyToCentre={() => setIsApplyModalOpen(true)}
           />
@@ -404,13 +379,7 @@ export const AssessorDashboard: React.FC = () => {
               centre={selectedCentre}
               onBack={() => setSelectedCentre(null)}
               onSelectApplication={(appRecord) => {
-                setActiveTab("Applications");
-                setSelectedApplication(appRecord);
-                setApplicationSubView("stages");
-                setNsqNavState("overview");
-                setNsqSubViewTitle(null);
-                setCanMarkAsComplete(false);
-                setTriggerMarkComplete(false);
+                router.push(`/applications/${appRecord.id}?from=assessor`);
               }}
             />
           ) : (
@@ -455,12 +424,7 @@ export const AssessorDashboard: React.FC = () => {
           ) : (
             <AssessorApplicationsView
               onSelectApplication={(app) => {
-                setSelectedApplication(app);
-                setApplicationSubView("stages");
-                setNsqNavState("overview");
-                setNsqSubViewTitle(null);
-                setCanMarkAsComplete(false);
-                setTriggerMarkComplete(false);
+                router.push(`/applications/${app.id}?from=assessor`);
               }}
             />
           )

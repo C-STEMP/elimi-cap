@@ -31,15 +31,9 @@ export function getStatusBadgeClass(status: string): string {
 
 export function mapInterviewItem(item: any, remotePanels: any[]): InterviewRowData {
   const matchedPanel = item.panel || remotePanels.find((p) => p.id === item.panelId);
-  const lead =
-    matchedPanel?.members?.find((m: any) => m.isLead)?.name ||
-    matchedPanel?.members?.[0]?.name || "—";
-  const member =
-    matchedPanel?.members?.find((m: any) => !m.isLead && !m.isObserver)?.name ||
-    matchedPanel?.members?.[1]?.name || "—";
-  const iv =
-    matchedPanel?.members?.find((m: any) => m.isObserver)?.name ||
-    matchedPanel?.members?.[2]?.name || "—";
+  const lead = matchedPanel?.members?.find((m: any) => m.isLead)?.name || "—";
+  const member = matchedPanel?.members?.find((m: any) => !m.isLead && !m.isObserver)?.name || "—";
+  const iv = matchedPanel?.members?.find((m: any) => m.isObserver)?.name || "—";
 
   return {
     id: item.id,
