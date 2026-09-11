@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { AssessorAssessmentFormLayout } from "./AssessorAssessmentFormLayout";
 import { useToast } from "@/src/components/ui/toast";
+import { Select } from "@/src/components/ui/select";
 import { FiPlus, FiTrash2 } from "react-icons/fi";
 
 export interface ObservationChecklistItem {
@@ -12,19 +13,69 @@ export interface ObservationChecklistItem {
   comments: string;
 }
 
+const DEFAULT_OBSERVATION_CHECKLIST: ObservationChecklistItem[] = [
+  {
+    id: "obs-1",
+    title: "Prepares work area and equipment",
+    demonstrated: true,
+    comments: "",
+  },
+  {
+    id: "obs-2",
+    title: "Follows safety procedures",
+    demonstrated: true,
+    comments: "",
+  },
+  {
+    id: "obs-3",
+    title: "Performs task to required standard",
+    demonstrated: true,
+    comments: "",
+  },
+  {
+    id: "obs-4",
+    title: "Demonstrates problem-solving skills",
+    demonstrated: true,
+    comments: "",
+  },
+  {
+    id: "obs-5",
+    title: "Communicates effectively",
+    demonstrated: true,
+    comments: "",
+  },
+  {
+    id: "obs-6",
+    title: "Cleans and secures work area",
+    demonstrated: true,
+    comments: "",
+  },
+];
+
+import { getAutoFilledUnitTitleCode, getUnitOptions } from "./utils";
+
 interface PracticalObservationFormProps {
   candidateName: string;
   onBack: () => void;
   onSubmit: (data: Record<string, any>) => void;
   formData?: Record<string, any>;
   isReadOnly?: boolean;
+  applicationTrade?: string;
 }
 
 export const PracticalObservationForm: React.FC<
   PracticalObservationFormProps
-> = ({ candidateName, onBack, onSubmit, formData, isReadOnly = false }) => {
+> = ({
+  candidateName,
+  onBack,
+  onSubmit,
+  formData,
+  isReadOnly = false,
+  applicationTrade,
+}) => {
   const { toast } = useToast();
 
+  const autoUnit = getAutoFilledUnitTitleCode(applicationTrade, "observation_checklist");
   const [candidateFullName, setCandidateFullName] = useState<string>(
     formData?.candidateFullName ?? candidateName ?? "",
   );
@@ -32,8 +83,22 @@ export const PracticalObservationForm: React.FC<
     formData?.assessorName ?? "",
   );
   const [unitTitleCode, setUnitTitleCode] = useState<string>(
-    formData?.unitTitleCode ?? "",
+    formData?.unitTitleCode && formData.unitTitleCode !== "Select"
+      ? formData.unitTitleCode
+      : autoUnit,
   );
+
+  React.useEffect(() => {
+    if (formData?.unitTitleCode && formData.unitTitleCode !== "Select") {
+      setUnitTitleCode(formData.unitTitleCode);
+    } else if (!unitTitleCode && autoUnit) {
+      setUnitTitleCode(autoUnit);
+    }
+  }, [formData?.unitTitleCode, autoUnit]);
+
+  const unitOptions = React.useMemo(() => {
+    return getUnitOptions(unitTitleCode, "observation_checklist");
+  }, [unitTitleCode]);
   const [observationDate, setObservationDate] = useState<string>(
     formData?.observationDate ?? "",
   );
@@ -46,14 +111,7 @@ export const PracticalObservationForm: React.FC<
       ? formData.checklist
       : isReadOnly
       ? []
-      : [
-          {
-            id: "obs-1",
-            title: "",
-            demonstrated: true,
-            comments: "",
-          },
-        ],
+      : DEFAULT_OBSERVATION_CHECKLIST,
   );
 
   const [verdict, setVerdict] = useState<"Competent" | "Not Competent">(
@@ -98,6 +156,11 @@ export const PracticalObservationForm: React.FC<
         comments: "",
       },
     ]);
+    toast({
+      type: "success",
+      title: "Checklist Item Added",
+      description: "A new checklist item has been added.",
+    });
   };
 
   const handleRemoveChecklistItem = (id: string) => {
@@ -143,13 +206,13 @@ export const PracticalObservationForm: React.FC<
       isReadOnly={isReadOnly}
     >
       {/* 1. Personal Details */}
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 sm:gap-5">
         <h3 className="text-sm sm:text-base font-bold text-neutral-primary">
           Personal Details
         </h3>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="flex flex-col gap-1.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+          <div className="flex flex-col gap-2">
             <label className="text-xs font-medium text-neutral-primary">
               Candidate Full Name<span className="text-rose-500">*</span>
             </label>
@@ -159,11 +222,11 @@ export const PracticalObservationForm: React.FC<
               disabled={isReadOnly}
               onChange={(e) => setCandidateFullName(e.target.value)}
               placeholder="Candidate Name"
-              className="w-full bg-[#F8F9FA] border border-gray-200 rounded-xl p-3 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80"
+              className="w-full h-11 sm:h-12 bg-[#F8F9FA] border border-gray-200 rounded-xl px-3.5 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80 transition-all"
             />
           </div>
 
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-2">
             <label className="text-xs font-medium text-neutral-primary">
               Assessors Full Name<span className="text-rose-500">*</span>
             </label>
@@ -173,25 +236,21 @@ export const PracticalObservationForm: React.FC<
               disabled={isReadOnly}
               onChange={(e) => setAssessorName(e.target.value)}
               placeholder="Enter Assessor Name"
-              className="w-full bg-[#F8F9FA] border border-gray-200 rounded-xl p-3 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80"
+              className="w-full h-11 sm:h-12 bg-[#F8F9FA] border border-gray-200 rounded-xl px-3.5 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80 transition-all"
             />
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-neutral-primary">
-              Unit Title &amp; Code
-            </label>
-            <input
-              type="text"
-              value={unitTitleCode}
-              disabled={isReadOnly}
-              onChange={(e) => setUnitTitleCode(e.target.value)}
-              placeholder="e.g. CRP-301: Advanced Joinery & Surface Prep"
-              className="w-full bg-[#F8F9FA] border border-gray-200 rounded-xl p-3 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80"
-            />
-          </div>
+          <Select
+            label={<span className="text-xs font-medium text-neutral-primary">Unit Title &amp; Code</span>}
+            placeholder="Select"
+            value={unitTitleCode}
+            disabled={isReadOnly}
+            options={unitOptions}
+            onChange={(e) => setUnitTitleCode(e.target.value || "")}
+            containerClassName="gap-2"
+          />
 
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-2">
             <label className="text-xs font-medium text-neutral-primary">
               Observation Date<span className="text-rose-500">*</span>
             </label>
@@ -200,12 +259,12 @@ export const PracticalObservationForm: React.FC<
               value={observationDate}
               disabled={isReadOnly}
               onChange={(e) => setObservationDate(e.target.value)}
-              className="w-full bg-[#F8F9FA] border border-gray-200 rounded-xl p-3 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80"
+              className="w-full h-11 sm:h-12 bg-[#F8F9FA] border border-gray-200 rounded-xl px-3.5 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80 transition-all"
             />
           </div>
         </div>
 
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-2">
           <label className="text-xs font-medium text-neutral-primary">
             Observation Site / Facility<span className="text-rose-500">*</span>
           </label>
@@ -215,13 +274,13 @@ export const PracticalObservationForm: React.FC<
             value={observationSite}
             disabled={isReadOnly}
             onChange={(e) => setObservationSite(e.target.value)}
-            className="w-full bg-[#F8F9FA] border border-gray-200 rounded-xl p-3 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80"
+            className="w-full h-11 sm:h-12 bg-[#F8F9FA] border border-gray-200 rounded-xl px-3.5 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80 transition-all"
           />
         </div>
       </div>
 
       {/* 2. Observation Criteria & Standards Checklist */}
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 pt-4 border-t border-gray-100">
         <div className="flex items-center justify-between">
           <h3 className="text-sm sm:text-base font-bold text-neutral-primary">
             Observation Criteria &amp; Standards Checklist
@@ -254,14 +313,23 @@ export const PracticalObservationForm: React.FC<
                     <span className="text-xs font-bold text-neutral-secondary shrink-0">
                       #{index + 1}
                     </span>
-                    <input
-                      type="text"
-                      disabled={isReadOnly}
-                      value={item.title}
-                      onChange={(e) => updateTitle(item.id, e.target.value)}
-                      placeholder="e.g. Prepares work area and equipment safely"
-                      className="w-full bg-white border border-gray-200 rounded-xl p-2.5 text-xs sm:text-sm font-medium text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80"
-                    />
+                    {item.title &&
+                    DEFAULT_OBSERVATION_CHECKLIST.some(
+                      (d) => d.id === item.id,
+                    ) ? (
+                      <span className="text-xs sm:text-sm font-bold text-neutral-primary">
+                        {item.title}
+                      </span>
+                    ) : (
+                      <input
+                        type="text"
+                        disabled={isReadOnly}
+                        value={item.title}
+                        onChange={(e) => updateTitle(item.id, e.target.value)}
+                        placeholder="e.g. Prepares work area and equipment safely"
+                        className="w-full bg-white border border-gray-200 rounded-xl p-2.5 text-xs sm:text-sm font-medium text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80"
+                      />
+                    )}
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
@@ -313,7 +381,7 @@ export const PracticalObservationForm: React.FC<
                   disabled={isReadOnly}
                   value={item.comments}
                   onChange={(e) => updateComments(item.id, e.target.value)}
-                  placeholder="Type comments or specific observations here..."
+                  placeholder="Type Comments Here"
                   className="w-full bg-white border border-gray-200 rounded-xl p-3 text-xs text-neutral-primary placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] resize-none disabled:opacity-80"
                 />
               </div>
@@ -323,7 +391,7 @@ export const PracticalObservationForm: React.FC<
       </div>
 
       {/* 3. Overall Observation Decision & Notes */}
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 pt-4 border-t border-gray-100">
         <h3 className="text-sm sm:text-base font-bold text-neutral-primary">
           Overall Observation Decision &amp; Notes
         </h3>
@@ -379,7 +447,7 @@ export const PracticalObservationForm: React.FC<
       </div>
 
       {/* 4. Signature Section */}
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 pt-4 border-t border-gray-100">
         <h3 className="text-sm sm:text-base font-bold text-neutral-primary">
           Signature
         </h3>

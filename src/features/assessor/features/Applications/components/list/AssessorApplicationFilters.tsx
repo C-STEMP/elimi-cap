@@ -1,7 +1,8 @@
 "use client";
 
 import React from "react";
-import { FiSearch, FiChevronDown, FiList, FiGrid } from "react-icons/fi";
+import { FiSearch, FiList, FiGrid } from "react-icons/fi";
+import { Select } from "@/src/components/ui/select";
 import type { AssessorFilterCriteria } from "../../types/applications.types";
 
 interface AssessorApplicationFiltersProps {
@@ -44,53 +45,49 @@ export const AssessorApplicationFilters: React.FC<
       {/* Filter Dropdowns and View Mode Switcher */}
       <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
         {/* Trade Filter */}
-        <div className="relative inline-block">
-          <select
-            value={filterCriteria.trade}
+        <div className="w-28">
+          <Select
+            size="sm"
+            placeholder="Trade"
+            value={filterCriteria.trade || ""}
             onChange={(e) => onFilterChange({ trade: e.target.value })}
-            className="appearance-none bg-white border border-gray-200 text-neutral-primary font-medium text-xs sm:text-sm px-3.5 py-2 pr-8 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer shadow-2xs hover:bg-gray-50/50"
-          >
-            <option value="">Trade</option>
-            {availableTrades.map((trade) => (
-              <option key={trade} value={trade}>
-                {trade}
-              </option>
-            ))}
-          </select>
-          <FiChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500 pointer-events-none" />
+            options={availableTrades.map((trade) => ({
+              label: trade,
+              value: trade,
+            }))}
+            allowClear
+          />
         </div>
 
         {/* Assessment Type Filter */}
-        <div className="relative inline-block">
-          <select
-            value={filterCriteria.assessmentType}
-            onChange={(e) => onFilterChange({ assessmentType: e.target.value })}
-            className="appearance-none bg-white border border-gray-200 text-neutral-primary font-medium text-xs sm:text-sm px-3.5 py-2 pr-8 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer shadow-2xs hover:bg-gray-50/50"
-          >
-            <option value="">Assessment Type</option>
-            {availableTypes.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
-          <FiChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500 pointer-events-none" />
+        <div className="w-36">
+          <Select
+            size="sm"
+            placeholder="Assessment Type"
+            value={filterCriteria.assessmentType || ""}
+            onChange={(e) =>
+              onFilterChange({ assessmentType: e.target.value })
+            }
+            options={availableTypes.map((t) => ({ label: t, value: t }))}
+            allowClear
+          />
         </div>
 
         {/* Status Filter */}
-        <div className="relative inline-block">
-          <select
+        <div className="w-28">
+          <Select
+            size="sm"
+            showPlaceholderOption={false}
             value={filterCriteria.status || "All"}
             onChange={(e) => onFilterChange({ status: e.target.value })}
-            className="appearance-none bg-white border border-gray-200 text-neutral-primary font-medium text-xs sm:text-sm px-3.5 py-2 pr-8 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer shadow-2xs hover:bg-gray-50/50"
-          >
-            <option value="All">All</option>
-            <option value="Ongoing">Ongoing</option>
-            <option value="Completed">Completed</option>
-            <option value="Pending">Pending</option>
-            <option value="Archived">Archived</option>
-          </select>
-          <FiChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500 pointer-events-none" />
+            options={[
+              { label: "All", value: "All" },
+              { label: "Ongoing", value: "Ongoing" },
+              { label: "Completed", value: "Completed" },
+              { label: "Pending", value: "Pending" },
+              { label: "Archived", value: "Archived" },
+            ]}
+          />
         </div>
 
         {/* View Switchers */}

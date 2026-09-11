@@ -300,7 +300,7 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 28, stiffness: 300 }}
-              className="relative w-full max-w-[290px] bg-[#8c1830] border-l border-white/10 text-white h-full shadow-2xl flex flex-col z-10 p-5 overflow-y-auto"
+              className="relative w-full max-w-72.5 bg-[#8c1830] border-l border-white/10 text-white h-full shadow-2xl flex flex-col z-10 p-5 overflow-y-auto"
             >
               <div className="flex items-center justify-between pb-4 border-b border-white/15">
                 <div className="flex items-center gap-3 min-w-0">

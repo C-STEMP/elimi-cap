@@ -1,22 +1,20 @@
 "use client";
 
-import React, { useState } from "react";
-import Image from "next/image";
+import { LogoutModal } from "@/components/LogoutModal";
+import { Avatar } from "@/src/components/ui/avatar";
+import { Logo } from "@/src/components/ui/logo";
+import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useState } from "react";
 import {
-  FiPlus,
   FiBell,
-  FiLogOut,
   FiChevronLeft,
+  FiLogOut,
   FiMenu,
+  FiPlus,
   FiX,
 } from "react-icons/fi";
-import { ASSETS_URL } from "@/assets";
-import { Logo } from "@/src/components/ui/logo";
-import { Avatar } from "@/src/components/ui/avatar";
-import { LogoutModal } from "@/components/LogoutModal";
 import { NotificationDropdown } from "./NotificationDropdown";
 
 import { useAppSelector } from "@/store/hooks";
@@ -203,7 +201,7 @@ export const HeaderBanner: React.FC<HeaderBannerProps> = ({
                 animate={{ x: 0 }}
                 exit={{ x: "100%" }}
                 transition={{ type: "spring", damping: 28, stiffness: 300 }}
-                className="relative w-full max-w-[280px] bg-[#8c1830] border-l border-white/10 text-white h-full shadow-2xl flex flex-col z-10 p-5 overflow-y-auto"
+                className="relative w-full max-w-70 bg-[#8c1830] border-l border-white/10 text-white h-full shadow-2xl flex flex-col z-10 p-5 overflow-y-auto"
               >
                 <div className="flex items-center justify-between pb-4 border-b border-white/15">
                   <div className="flex items-center gap-3 min-w-0">
@@ -214,8 +212,12 @@ export const HeaderBanner: React.FC<HeaderBannerProps> = ({
                       alt={userName}
                     />
                     <div className="flex flex-col min-w-0">
-                      <span className="text-sm font-bold text-white truncate">{displayName}</span>
-                      <span className="text-[11px] text-white/70">Candidate</span>
+                      <span className="text-sm font-bold text-white truncate">
+                        {displayName}
+                      </span>
+                      <span className="text-[11px] text-white/70">
+                        Candidate
+                      </span>
                     </div>
                   </div>
 
@@ -229,10 +231,7 @@ export const HeaderBanner: React.FC<HeaderBannerProps> = ({
                   </button>
                 </div>
 
-                <div className="flex flex-col gap-1.5 pt-4">
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-white/50 px-3 mb-1">
-                    Navigation
-                  </span>
+                <div className="flex flex-col gap-1.5 pt-5">
                   {NAV_LINKS.map((link, i) => {
                     const isActive =
                       link.href === "/dashboard"
@@ -345,7 +344,9 @@ export const HeaderBanner: React.FC<HeaderBannerProps> = ({
           )}
 
           {rightAction ? (
-            <div className="shrink-0 max-w-full self-start sm:self-auto">{rightAction}</div>
+            <div className="shrink-0 max-w-full self-start sm:self-auto">
+              {rightAction}
+            </div>
           ) : (
             showCreateButton && (
               <Link

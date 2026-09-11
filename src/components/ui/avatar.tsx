@@ -107,7 +107,8 @@ export const Avatar: React.FC<AvatarProps> = ({
         <img
           src={resolvedSrc}
           alt={displayAlt}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover block"
+          style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
           onError={() => setHasImageError(true)}
         />
       </div>
@@ -124,7 +125,8 @@ export const Avatar: React.FC<AvatarProps> = ({
         <img
           src={randomAvatarUrl}
           alt={displayAlt}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover block"
+          style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
           onError={() => setHasRandomAvatarError(true)}
         />
       </div>

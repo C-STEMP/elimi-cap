@@ -89,6 +89,8 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({ 
             isAtInterviewStage={state.isAtInterviewStage}
             facilitatorData={state.facilitatorData}
             onRequestCall={() => state.setIsCallRequestModalOpen(true)}
+            formsToSign={state.formsToSign}
+            onOpenForm={state.handleOpenForm}
           />
         </div>
       </div>

@@ -76,6 +76,7 @@ export interface StageConfig {
   formsBannerMessage?: string | null;
   formsToSign?: FormItem[];
   onOpenSignatureModal?: (formId: string) => void;
+  onOpenFormView?: (formId: string) => void;
   competentBanner?: {
     title: string;
     subtitle: string;

@@ -201,6 +201,41 @@ export const AssessorApplicationStagesList: React.FC<
           ? "awaiting_signature"
           : "ongoing";
 
+  const formatFriendlyDate = (dateStr?: string | null): string => {
+    if (!dateStr) return "";
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      return d.toLocaleDateString("en-GB");
+    } catch {
+      return dateStr || "";
+    }
+  };
+
+  const appFormStageRow = stagesData?.find(
+    (s) =>
+      s.stageKey === "application_form" ||
+      s.stageKey === "application_review" ||
+      s.stageKey === "application",
+  );
+  const paymentStageRow = stagesData?.find(
+    (s) => s.stageKey === "payment" || s.stageKey === "payment_quote",
+  );
+
+  const rawApprovedDate =
+    appFormStageRow?.enteredAt ||
+    (appFormStageRow as any)?.updatedAt ||
+    application.submittedAt ||
+    (application as any).createdAt;
+  const formattedApprovedDate = formatFriendlyDate(rawApprovedDate);
+
+  const rawPaidDate =
+    paymentStageRow?.enteredAt ||
+    (paymentStageRow as any)?.updatedAt ||
+    application.submittedAt ||
+    (application as any).createdAt;
+  const formattedPaidDate = formatFriendlyDate(rawPaidDate);
+
   const stages: ApplicationStageItem[] = [
     {
       id: "application_form",
@@ -208,8 +243,8 @@ export const AssessorApplicationStagesList: React.FC<
       status: "Approved",
       badgeType: "approved",
       badgeText: "Approved",
-      dateText: application.submittedAt
-        ? `Submitted on: ${application.submittedAt}`
+      dateText: formattedApprovedDate
+        ? `Approved on: ${formattedApprovedDate}`
         : "—",
       actionButton: {
         label: "View",
@@ -223,8 +258,8 @@ export const AssessorApplicationStagesList: React.FC<
       status: "Successful",
       badgeType: "successful",
       badgeText: "Successful",
-      dateText: application.submittedAt
-        ? `Paid on: ${application.submittedAt}`
+      dateText: formattedPaidDate
+        ? `Paid on: ${formattedPaidDate}`
         : "—",
     },
     {
@@ -234,8 +269,10 @@ export const AssessorApplicationStagesList: React.FC<
       badgeType: isFolderDone ? "completed" : "ongoing",
       badgeText: isFolderDone ? "Marked as complete" : "In Progress",
       dateText: application.assignedAt
-        ? `Started on: ${application.assignedAt}`
-        : "—",
+        ? `Started on: ${formatFriendlyDate(application.assignedAt)}`
+        : folderStageRow?.enteredAt
+          ? `Started on: ${formatFriendlyDate(folderStageRow.enteredAt)}`
+          : "—",
       actionButton: {
         label: "Evidence Vault",
         variant: "evidence_vault",
@@ -279,9 +316,9 @@ export const AssessorApplicationStagesList: React.FC<
       badgeType: isIvDone ? "completed" : isInternalVerifierRole ? "under_review" : "not_started",
       badgeText: isIvDone ? "Completed" : isInternalVerifierRole ? "Under Review" : "Not Started",
       dateText: isIvDone
-        ? (ivStageRow?.enteredAt ? `Completed on: ${new Date(ivStageRow.enteredAt).toLocaleDateString()}` : `Started on: ${application.submittedAt || "7/23/2026"}`)
+        ? (ivStageRow?.enteredAt ? `Completed on: ${formatFriendlyDate(ivStageRow.enteredAt)}` : `Started on: ${formatFriendlyDate(application.submittedAt || "2026-07-23")}`)
         : isInternalVerifierRole
-          ? `Started on: ${application.submittedAt || "7/23/2026"}`
+          ? `Started on: ${formatFriendlyDate(application.submittedAt || "2026-07-23")}`
           : "---",
       actionButton:
         !isIvDone && (application.role === "Internal Verifier" || isInternalVerifierRole) && onMarkCompetent
@@ -299,9 +336,9 @@ export const AssessorApplicationStagesList: React.FC<
       badgeType: isEvDone ? "completed" : (isExternalVerifierRole && isIvDone) ? "under_review" : "not_started",
       badgeText: isEvDone ? "Completed" : (isExternalVerifierRole && isIvDone) ? "Under Review" : "Not Started",
       dateText: isEvDone
-        ? (evStageRow?.enteredAt ? `Completed on: ${new Date(evStageRow.enteredAt).toLocaleDateString()}` : `Started on: ${application.submittedAt || "8/15/2026"}`)
+        ? (evStageRow?.enteredAt ? `Completed on: ${formatFriendlyDate(evStageRow.enteredAt)}` : `Started on: ${formatFriendlyDate(application.submittedAt || "2026-08-15")}`)
         : (isExternalVerifierRole && isIvDone)
-          ? `Started on: ${application.submittedAt || "8/15/2026"}`
+          ? `Started on: ${formatFriendlyDate(application.submittedAt || "2026-08-15")}`
           : "---",
       actionButton:
         !isEvDone && (application.role === "External Verifier" || isExternalVerifierRole) && isIvDone && onMarkEvCompetent
@@ -318,7 +355,7 @@ export const AssessorApplicationStagesList: React.FC<
       status: isCompleted || isEvDone ? "Competent" : "Not Started",
       badgeType: isCompleted || isEvDone ? "competent" : "not_started",
       badgeText: isCompleted || isEvDone ? "Competent" : "Not Started",
-      dateText: isCompleted || isEvDone ? (application.submittedAt ? `Completed on: ${application.submittedAt}` : "—") : "---",
+      dateText: isCompleted || isEvDone ? (application.submittedAt ? `Completed on: ${formatFriendlyDate(application.submittedAt)}` : "—") : "---",
     },
   ];
 

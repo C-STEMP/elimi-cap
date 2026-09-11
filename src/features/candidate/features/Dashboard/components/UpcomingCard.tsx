@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { FiCalendar } from "react-icons/fi";
+import { FiCalendar, FiCheck, FiEdit3 } from "react-icons/fi";
 
 export interface InterviewData {
   title?: string;
@@ -14,14 +14,25 @@ export interface InterviewData {
   countdownTimer?: string;
 }
 
+export interface FormToSignItem {
+  id: string;
+  title: string;
+  description?: string;
+  signed?: boolean;
+}
+
 interface UpcomingCardProps {
   interview?: InterviewData | null;
   className?: string;
+  forms?: FormToSignItem[];
+  onOpenForm?: (formId: string) => void;
 }
 
 export const UpcomingCard: React.FC<UpcomingCardProps> = ({
   interview,
   className = "",
+  forms,
+  onOpenForm,
 }) => {
   const showEvents = Boolean(interview && (interview.date || interview.time));
   const isOnline =
@@ -104,6 +115,51 @@ export const UpcomingCard: React.FC<UpcomingCardProps> = ({
             </span>
           </div>
         </>
+      )}
+
+      {forms && forms.length > 0 && (
+        <div className="w-full flex flex-col gap-2.5 pt-3 border-t border-gray-100 text-left mt-1">
+          <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block">
+            Assessment Forms
+          </span>
+          <div className="flex flex-col gap-2">
+            {forms.map((form) => (
+              <div
+                key={form.id}
+                onClick={() => onOpenForm?.(form.id)}
+                className="bg-[#F9FAFB] hover:bg-gray-50 rounded-xl p-3 border border-gray-100/90 hover:border-[#8A1538]/30 flex items-center justify-between gap-2 shadow-2xs cursor-pointer transition-all group"
+              >
+                <div className="flex flex-col min-w-0 pr-1">
+                  <span className="text-xs font-bold text-gray-900 truncate group-hover:text-[#8A1538] transition-colors">
+                    {form.title}
+                  </span>
+                  {form.description && (
+                    <span className="text-[10px] text-gray-400 truncate mt-0.5">
+                      {form.description}
+                    </span>
+                  )}
+                </div>
+
+                {form.signed ? (
+                  <span className="shrink-0 bg-[#E6F4EA] text-[#1E7F4C] border border-[#1E7F4C]/20 text-[10px] font-bold px-2 py-0.5 rounded-lg flex items-center gap-1 select-none">
+                    <FiCheck className="w-3 h-3" /> Signed
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onOpenForm?.(form.id);
+                    }}
+                    className="shrink-0 bg-[#FFF8EB] border border-[#FBAB2A] hover:bg-[#FDEED5] text-[#FBAB2A] text-[11px] font-bold px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
+                  >
+                    <FiEdit3 className="w-3 h-3" /> View &amp; Sign
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );

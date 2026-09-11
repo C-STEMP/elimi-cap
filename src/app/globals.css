@@ -334,22 +334,27 @@ input[type="checkbox"]:checked {
   /* Remove max-width and margins from parent wrappers */
   main,
   div:has(> #printable-application-card),
-  div:has(> .printable-application-card) {
+  div:has(> .printable-application-card),
+  div:has(> #printable-assessment-form),
+  div:has(> .printable-container) {
     max-width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
     width: 100% !important;
   }
 
-  /* Turn grid containing the application card into a single full-width block */
-  .grid {
+  /* Turn outer layout grids containing the printable card into single full-width blocks */
+  main > .grid,
+  .lg\:grid-cols-12 {
     display: block !important;
     width: 100% !important;
   }
 
-  /* Application Card: span full width, clean styling for print */
+  /* Printable Cards: span full width, clean styling for print */
   #printable-application-card,
-  .printable-application-card {
+  .printable-application-card,
+  #printable-assessment-form,
+  .printable-container {
     display: block !important;
     width: 100% !important;
     max-width: 100% !important;
@@ -361,9 +366,26 @@ input[type="checkbox"]:checked {
     background: transparent !important;
   }
 
-  /* Hide any siblings of the application card (like sidebars) */
+  /* Maintain internal grid and flex structures in print */
+  #printable-application-card .grid,
+  .printable-application-card .grid,
+  #printable-assessment-form .grid,
+  .printable-container .grid {
+    display: grid !important;
+  }
+
+  #printable-application-card .flex,
+  .printable-application-card .flex,
+  #printable-assessment-form .flex,
+  .printable-container .flex {
+    display: flex !important;
+  }
+
+  /* Hide any siblings of the printable card (like sidebars) */
   #printable-application-card ~ *,
-  .printable-application-card ~ * {
+  .printable-application-card ~ *,
+  #printable-assessment-form ~ *,
+  .printable-container ~ * {
     display: none !important;
   }
 }

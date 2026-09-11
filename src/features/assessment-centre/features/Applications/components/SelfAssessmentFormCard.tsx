@@ -33,7 +33,7 @@ export const SelfAssessmentFormCard: React.FC<Props> = ({
       <div className="bg-white rounded-3xl p-6 sm:p-10 border border-gray-100 shadow-sm flex flex-col gap-8">
         <div className="flex flex-col items-center text-center gap-3 border-b border-gray-100 pb-6 relative">
           <div className="flex justify-center mb-1">
-            <Image src={ASSETS_URL.logoIcon2} alt="ELIMI Logo" width={100} height={40} className="w-auto h-8 object-contain" />
+            <Image src={ASSETS_URL.logoIcon2} alt="ELIMI Logo" width={100} height={40} className="w-auto h-8 object-contain" style={{ width: "auto", height: "auto" }} />
           </div>
           <h2 className="text-base sm:text-lg font-extrabold text-black tracking-tight max-w-lg leading-tight uppercase">
             Ref: NBTE/RPL/ 02 NSQ/RPL/QCF ASSESSMENT CENTRE SELF-ASSESSMENT OF COMPETENCY FORM

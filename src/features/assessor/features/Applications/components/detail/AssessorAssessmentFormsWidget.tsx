@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useRouter } from "next/navigation";
 import { useToast } from "@/src/components/ui/toast";
 import type { InterviewForm } from "@/src/features/shared/applications/api/types";
 
@@ -9,11 +10,11 @@ export interface AssessmentFormItem {
   name: string;
 }
 
-const DEFAULT_ASSESSMENT_FORMS: AssessmentFormItem[] = [
-  { id: "skills_demo", name: "Skills Demonstration Form" },
-  { id: "assessment_mapping", name: "Assessment Mapping Form" },
-  { id: "interview_record", name: "Interview Record Form" },
-  { id: "observation_checklist", name: "Observation Checklist Form" },
+export const DEFAULT_ASSESSMENT_FORMS: AssessmentFormItem[] = [
+  { id: "skills_demo", name: "Skills Demonstration Records Form" },
+  { id: "observation_checklist", name: "Practical Observation Record" },
+  { id: "interview_record", name: "Interview Question Bank & Record Sheet" },
+  { id: "assessment_mapping", name: "RPL Assessment Grid / Mapping Form" },
 ];
 
 const FORM_TYPE_MAP: Record<string, string> = {
@@ -28,6 +29,7 @@ const FORM_TYPE_MAP: Record<string, string> = {
 };
 
 interface AssessorAssessmentFormsWidgetProps {
+  applicationId?: string;
   forms?: AssessmentFormItem[];
   onViewForm?: (form: AssessmentFormItem) => void;
   isReadOnly?: boolean;
@@ -37,16 +39,20 @@ interface AssessorAssessmentFormsWidgetProps {
 export const AssessorAssessmentFormsWidget: React.FC<
   AssessorAssessmentFormsWidgetProps
 > = ({
+  applicationId,
   forms = DEFAULT_ASSESSMENT_FORMS,
   onViewForm,
   isReadOnly = false,
   remoteForms,
 }) => {
+  const router = useRouter();
   const { toast } = useToast();
 
   const handleView = (form: AssessmentFormItem) => {
     if (onViewForm) {
       onViewForm(form);
+    } else if (applicationId) {
+      router.push(`/applications/${applicationId}/assessment-forms/${form.id}`);
     } else {
       toast({
         type: "info",
@@ -62,15 +68,6 @@ export const AssessorAssessmentFormsWidget: React.FC<
         <h4 className="text-base font-bold text-neutral-primary">
           Assessment Forms
         </h4>
-        {isReadOnly ? (
-          <span className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full">
-            IV (View Only)
-          </span>
-        ) : (
-          <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
-            Lead Panelist (Fill)
-          </span>
-        )}
       </div>
 
       <div className="flex flex-col gap-2.5 w-full">
@@ -92,10 +89,11 @@ export const AssessorAssessmentFormsWidget: React.FC<
           return (
             <div
               key={form.id}
-              className="bg-[#F8F9FA] rounded-2xl p-3.5 sm:p-4 border border-gray-100 flex items-center justify-between gap-3 transition-all hover:bg-gray-100/70"
+              onClick={() => handleView(form)}
+              className="bg-[#F8F9FA] rounded-2xl p-3.5 sm:p-4 border border-gray-100 flex items-center justify-between gap-3 transition-all hover:bg-gray-100/70 cursor-pointer group"
             >
               <div className="flex items-center gap-2 min-w-0">
-                <span className="text-xs sm:text-sm font-semibold text-neutral-primary truncate">
+                <span className="text-xs sm:text-sm font-semibold text-neutral-primary group-hover:text-primary transition-colors truncate">
                   {form.name}
                 </span>
                 {isSigned ? (
@@ -115,7 +113,10 @@ export const AssessorAssessmentFormsWidget: React.FC<
 
               <button
                 type="button"
-                onClick={() => handleView(form)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleView(form);
+                }}
                 className="text-[#FBAB2A] hover:text-[#E89B1F] font-semibold text-xs sm:text-sm transition-colors cursor-pointer shrink-0"
               >
                 {isReadOnly || isSigned

@@ -228,33 +228,41 @@ export const CandidateApplicationFormView: React.FC<
           {/* Card 1: Main Application Header & Personal Details */}
           <div className="bg-white rounded-3xl p-6 sm:p-10 lg:p-12 border border-gray-200/80 shadow-xs flex flex-col gap-8">
             {/* Header with Logo & Passport */}
-            <div className="flex flex-col items-center text-center gap-3 border-b border-gray-100 pb-8 relative">
-              <div className="flex justify-center mb-1">
-                <Image
-                  src={ASSETS_URL.logoIcon2}
-                  alt="ELIMI Logo"
-                  width={100}
-                  height={40}
-                  className="w-auto h-8 object-contain"
-                />
+            <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4 border-b border-gray-100 pb-6 w-full">
+              {/* Left spacer to balance passport photo and keep title centered */}
+              <div className="hidden sm:block w-28 sm:w-32 shrink-0" aria-hidden="true" />
+
+              {/* Center Logo & Title */}
+              <div className="flex flex-col items-center text-center gap-2 flex-1 max-w-lg mx-auto">
+                <div className="flex justify-center mb-0.5">
+                  <Image
+                    src={ASSETS_URL.logoIcon2}
+                    alt="ELIMI Logo"
+                    width={100}
+                    height={40}
+                    className="w-auto h-8 object-contain"
+                    style={{ width: "auto", height: "32px" }}
+                  />
+                </div>
+
+                <h1 className="text-base sm:text-lg font-extrabold text-black tracking-tight leading-tight uppercase">
+                  NBTE/RPL/ 01 NSQ/RPL/QCF ASSESSMENT CENTRE CANDIDATE APPLICATION
+                  FORM
+                </h1>
               </div>
 
-            <h1 className="text-base sm:text-lg font-extrabold text-black tracking-tight max-w-lg leading-tight uppercase">
-              NBTE/RPL/ 01 NSQ/RPL/QCF ASSESSMENT CENTRE CANDIDATE APPLICATION
-              FORM
-            </h1>
-
-            {/* Passport Photograph */}
-            <div className="sm:absolute sm:top-0 sm:right-0 mt-4 sm:mt-0">
-              <Avatar
-                src={passportUrl}
-                name={applicantName}
-                shape="rounded"
-                className="w-28 sm:w-32 h-28 sm:h-32 border-2 border-dashed border-primary/20 bg-[#fdf2f5] p-1 shadow-2xs"
-                alt="Passport"
-              />
+              {/* Passport Photograph - Clean right placement in normal flow */}
+              <div className="w-28 sm:w-32 shrink-0 flex justify-center sm:justify-end">
+                <Avatar
+                  src={passportUrl}
+                  name={applicantName}
+                  shape="rounded"
+                  className="w-28 sm:w-32 h-28 sm:h-32 border-2 border-dashed border-primary/20 bg-[#fdf2f5] p-1 shadow-2xs shrink-0"
+                  style={{ width: "112px", height: "112px", maxWidth: "112px", maxHeight: "112px" }}
+                  alt="Passport"
+                />
+              </div>
             </div>
-          </div>
 
           {/* Personal Details */}
           <div className="flex flex-col gap-3">

@@ -141,6 +141,7 @@ export interface GetStagesConfigParams {
   assessors?: Assessor[];
   interviewDateText?: string;
   formsToSign?: FormItem[];
+  onOpenFormView?: (formId: string) => void;
 }
 
 export const getStagesConfig = ({
@@ -153,6 +154,7 @@ export const getStagesConfig = ({
   onAppeal,
   onTakeCourse,
   onOpenSignatureModal,
+  onOpenFormView,
   onProceedToExternalVerifier,
   onProceedToCertification,
   submittedDate,
@@ -174,8 +176,8 @@ export const getStagesConfig = ({
   formsToSign,
 }: GetStagesConfigParams): StageConfig[] => {
   const formattedSubmittedDate = submittedDate
-    ? new Date(submittedDate).toLocaleDateString()
-    : new Date().toLocaleDateString();
+    ? new Date(submittedDate).toLocaleDateString("en-GB")
+    : new Date().toLocaleDateString("en-GB");
 
   // Find backend stage rows
   const appFormStageRow = stagesData?.find(
@@ -287,7 +289,7 @@ export const getStagesConfig = ({
       ? "---"
       : "Centre must approve application form first"
     : isPaymentPaid
-      ? `Paid on: ${paymentStageRow?.enteredAt ? new Date(paymentStageRow.enteredAt).toLocaleDateString() : formattedSubmittedDate}`
+      ? `Paid on: ${paymentStageRow?.enteredAt ? new Date(paymentStageRow.enteredAt).toLocaleDateString("en-GB") : formattedSubmittedDate}`
       : "Application approved — Ready for payment";
 
   const paymentStage: StageConfig = {
@@ -434,8 +436,8 @@ export const getStagesConfig = ({
     isCollapsed: isInterviewCollapsed,
     onToggleCollapse: onToggleInterviewCollapse,
     assessors: isInterviewActive && assessors && assessors.length > 0 ? assessors : undefined,
-    formsToSign: isInterviewActive && formsToSign && formsToSign.length > 0 ? formsToSign : undefined,
     onOpenSignatureModal,
+    onOpenFormView,
     inconclusiveBanner:
       (interviewStageRow?.status as string) === "rejected" ||
       (interviewStageRow?.status as string) === "inconclusive"

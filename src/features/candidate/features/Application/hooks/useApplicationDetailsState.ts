@@ -189,12 +189,15 @@ export function useApplicationDetailsState(id?: string) {
       const matchingType = (["records", "assessment_grid", "practical_observation", "skill_demonstration"] as const).find(
         (t) => t === formId,
       );
-      if (matchingType) {
-        setSelectedInterviewFormType(matchingType);
-        setIsInterviewFormModalOpen(true);
+      if (matchingType && application) {
+        router.push(`/applications/${application.id}/assessment-forms/${matchingType}?from=candidate`);
       } else {
         setIsSignatureModalOpen(true);
       }
+    },
+    onOpenFormView: (formId: string) => {
+      if (!application) return;
+      router.push(`/applications/${application.id}/assessment-forms/${formId}?from=candidate`);
     },
     onProceedToExternalVerifier: () => { queryClient.invalidateQueries({ queryKey: APPLICATION_QUERY_KEYS.stages(application.id) }); },
     onProceedToCertification: () => { queryClient.invalidateQueries({ queryKey: APPLICATION_QUERY_KEYS.stages(application.id) }); },
@@ -223,5 +226,10 @@ export function useApplicationDetailsState(id?: string) {
     handleConfirmCallModal: () => { setIsCallRequestModalOpen(false); toast({ type: "success", title: "Call Requested", description: "Facilitator will contact you soon." }); },
     setActivePaymentModal, setIsCallRequestModalOpen, setIsFormModalOpen, setIsSignatureModalOpen, setIsReceiptModalOpen,
     setSelectedInterviewFormType, setIsInterviewFormModalOpen, setIsAppealModalOpen,
+    formsToSign,
+    handleOpenForm: (formId: string) => {
+      if (!application) return;
+      router.push(`/applications/${application.id}/assessment-forms/${formId}?from=candidate`);
+    },
   };
 }

@@ -3,14 +3,27 @@
 import React, { useState } from "react";
 import { AssessorAssessmentFormLayout } from "./AssessorAssessmentFormLayout";
 import { useToast } from "@/src/components/ui/toast";
+import { Select } from "@/src/components/ui/select";
 import { FiPlus, FiTrash2 } from "react-icons/fi";
 
 export interface InterviewQuestionItem {
   id: string;
   question: string;
   candidateResponse: string;
-  rating: "Satisfactory" | "Needs Improvement";
 }
+
+const DEFAULT_QUESTIONS: string[] = [
+  "Can you describe your previous experience related to this role?",
+  "How do you prioritize tasks when managing multiple deadlines?",
+  "Give an example of a problem you faced and how you solved it?",
+  "How do you handle working as part of a team?",
+  "Tell us about a time you received feedback. How did you respond?",
+  "Describe a situation where you had to learn something quickly?",
+  "Why are you interested in this position or field?",
+  "What do you consider to be your biggest strength?",
+  "What areas do you feel you need to improve?",
+  "Do you have any questions for us?",
+];
 
 interface InterviewRecordFormProps {
   candidateName: string;
@@ -32,60 +45,59 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
   const [candidateFullName, setCandidateFullName] = useState<string>(
     formData?.candidateFullName ?? candidateName ?? "",
   );
-  const [assessorName, setAssessorName] = useState<string>(
-    formData?.assessorName ?? "",
+  const [levelAppliedFor, setLevelAppliedFor] = useState<string>(
+    formData?.levelAppliedFor ?? formData?.level ?? "Level 3",
   );
-  const [unitTitleCode, setUnitTitleCode] = useState<string>(
-    formData?.unitTitleCode ?? "",
+
+  const levelOptions = React.useMemo(() => {
+    const base = [
+      { label: "Level 1", value: "Level 1" },
+      { label: "Level 2", value: "Level 2" },
+      { label: "Level 3", value: "Level 3" },
+      { label: "Level 4", value: "Level 4" },
+      { label: "Level 5", value: "Level 5" },
+    ];
+    if (levelAppliedFor && !base.some((b) => b.value === levelAppliedFor)) {
+      return [{ label: levelAppliedFor, value: levelAppliedFor }, ...base];
+    }
+    return base;
+  }, [levelAppliedFor]);
+  const [interviewerNames, setInterviewerNames] = useState<string>(
+    formData?.interviewerNames ?? formData?.assessorName ?? "",
   );
   const [interviewDate, setInterviewDate] = useState<string>(
     formData?.interviewDate ?? "",
   );
-  const [interviewLocation, setInterviewLocation] = useState<string>(
-    formData?.interviewLocation ?? "",
+
+  const [questions, setQuestions] = useState<InterviewQuestionItem[]>(() => {
+    if (Array.isArray(formData?.questions) && formData.questions.length > 0) {
+      return formData.questions.map((q: any, i: number) => ({
+        id: q.id || `q-${i + 1}`,
+        question: q.question || DEFAULT_QUESTIONS[i] || `Question ${i + 1}`,
+        candidateResponse: q.candidateResponse || q.response || "",
+      }));
+    }
+    return DEFAULT_QUESTIONS.map((q, i) => ({
+      id: `q-${i + 1}`,
+      question: q,
+      candidateResponse: "",
+    }));
+  });
+
+  const [strengths, setStrengths] = useState<string>(
+    formData?.strengths ?? formData?.panelistSummaryNotes ?? "",
+  );
+  const [areasForDevelopment, setAreasForDevelopment] = useState<string>(
+    formData?.areasForDevelopment ?? "",
   );
 
-  const [questions, setQuestions] = useState<InterviewQuestionItem[]>(
-    Array.isArray(formData?.questions) && formData.questions.length > 0
-      ? formData.questions
-      : isReadOnly
-      ? []
-      : [
-          {
-            id: "q-1",
-            question: "",
-            candidateResponse: "",
-            rating: "Satisfactory",
-          },
-        ],
+  const [leadPanelistSigned, setLeadPanelistSigned] = useState<boolean>(
+    Boolean(
+      formData?.leadPanelistSigned ||
+        formData?.assessorSigned ||
+        formData?.assessorSignedAt,
+    ),
   );
-
-  const [verdict, setVerdict] = useState<"Competent" | "Not Competent">(
-    formData?.verdict ?? "Competent",
-  );
-  const [panelistSummaryNotes, setPanelistSummaryNotes] = useState<string>(
-    formData?.panelistSummaryNotes ?? "",
-  );
-  const [assessorSigned, setAssessorSigned] = useState<boolean>(
-    Boolean(formData?.assessorSigned || formData?.assessorSignedAt),
-  );
-
-  const toggleRating = (
-    id: string,
-    val: "Satisfactory" | "Needs Improvement",
-  ) => {
-    if (isReadOnly) return;
-    setQuestions((prev) =>
-      prev.map((q) => (q.id === id ? { ...q, rating: val } : q)),
-    );
-  };
-
-  const updateQuestionText = (id: string, text: string) => {
-    if (isReadOnly) return;
-    setQuestions((prev) =>
-      prev.map((q) => (q.id === id ? { ...q, question: text } : q)),
-    );
-  };
 
   const updateResponse = (id: string, text: string) => {
     if (isReadOnly) return;
@@ -100,9 +112,8 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
       ...prev,
       {
         id: `q-${Date.now()}`,
-        question: "",
+        question: `Additional Question ${prev.length + 1}`,
         candidateResponse: "",
-        rating: "Satisfactory",
       },
     ]);
   };
@@ -114,11 +125,11 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
 
   const handleAppendSignature = () => {
     if (isReadOnly) return;
-    setAssessorSigned(true);
+    setLeadPanelistSigned(true);
     toast({
       type: "success",
       title: "Signature Appended",
-      description: "Assessor signature has been recorded.",
+      description: "Lead panelist signature recorded successfully.",
     });
   };
 
@@ -126,15 +137,18 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
     if (isReadOnly) return;
     onSubmit({
       candidateFullName,
-      assessorName,
-      unitTitleCode,
+      levelAppliedFor,
+      interviewerNames,
       interviewDate,
-      interviewLocation,
       questions,
-      verdict,
-      panelistSummaryNotes,
-      assessorSigned,
-      assessorSignedAt: assessorSigned
+      strengths,
+      areasForDevelopment,
+      leadPanelistSigned,
+      leadPanelistSignedAt: leadPanelistSigned
+        ? formData?.leadPanelistSignedAt || new Date().toISOString()
+        : undefined,
+      assessorSigned: leadPanelistSigned,
+      assessorSignedAt: leadPanelistSigned
         ? formData?.assessorSignedAt || new Date().toISOString()
         : undefined,
     });
@@ -142,21 +156,21 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
 
   return (
     <AssessorAssessmentFormLayout
-      title="Interview Record Form"
-      subtitle="Structured record of panelist dialogue, technical questioning, and oral defense."
+      title="Interview Question Bank & Record Sheet"
+      subtitle="Structured oral questioning instrument assessing theoretical knowledge, safety protocols, and problem-solving."
       onBack={onBack}
       onSubmit={handleSubmit}
       submitLabel="Submit Form"
       isReadOnly={isReadOnly}
     >
       {/* 1. Personal Details */}
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 sm:gap-5">
         <h3 className="text-sm sm:text-base font-bold text-neutral-primary">
           Personal Details
         </h3>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="flex flex-col gap-1.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+          <div className="flex flex-col gap-2">
             <label className="text-xs font-medium text-neutral-primary">
               Candidate Full Name<span className="text-rose-500">*</span>
             </label>
@@ -166,237 +180,154 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
               disabled={isReadOnly}
               onChange={(e) => setCandidateFullName(e.target.value)}
               placeholder="Candidate Name"
-              className="w-full bg-[#F8F9FA] border border-gray-200 rounded-xl p-3 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80"
+              className="w-full h-11 sm:h-12 bg-[#F8F9FA] border border-gray-200 rounded-xl px-3.5 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80 transition-all"
             />
           </div>
 
-          <div className="flex flex-col gap-1.5">
+          <Select
+            label={<span className="text-xs font-medium text-neutral-primary">Level Applied For<span className="text-rose-500">*</span></span>}
+            placeholder="Select Level"
+            value={levelAppliedFor}
+            disabled={isReadOnly}
+            options={levelOptions}
+            onChange={(e) => setLevelAppliedFor(e.target.value || "")}
+            containerClassName="gap-2"
+          />
+
+          <div className="flex flex-col gap-2">
             <label className="text-xs font-medium text-neutral-primary">
-              Assessor&apos;s Full Name<span className="text-rose-500">*</span>
+              Interviewer Name(s)
             </label>
             <input
               type="text"
-              value={assessorName}
+              value={interviewerNames}
               disabled={isReadOnly}
-              onChange={(e) => setAssessorName(e.target.value)}
-              placeholder="Enter Assessor Name"
-              className="w-full bg-[#F8F9FA] border border-gray-200 rounded-xl p-3 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80"
+              onChange={(e) => setInterviewerNames(e.target.value)}
+              placeholder="Enter interviewer names"
+              className="w-full h-11 sm:h-12 bg-[#F8F9FA] border border-gray-200 rounded-xl px-3.5 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80 transition-all"
             />
           </div>
 
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-2">
             <label className="text-xs font-medium text-neutral-primary">
-              Unit Title &amp; Code
-            </label>
-            <input
-              type="text"
-              value={unitTitleCode}
-              disabled={isReadOnly}
-              onChange={(e) => setUnitTitleCode(e.target.value)}
-              placeholder="e.g. CRP-301: Joinery &amp; Woodwork"
-              className="w-full bg-[#F8F9FA] border border-gray-200 rounded-xl p-3 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80"
-            />
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-neutral-primary">
-              Interview Date<span className="text-rose-500">*</span>
+              Date of Interview
             </label>
             <input
               type="date"
               value={interviewDate}
               disabled={isReadOnly}
               onChange={(e) => setInterviewDate(e.target.value)}
-              className="w-full bg-[#F8F9FA] border border-gray-200 rounded-xl p-3 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80"
+              className="w-full h-11 sm:h-12 bg-[#F8F9FA] border border-gray-200 rounded-xl px-3.5 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80 transition-all"
             />
           </div>
         </div>
-
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-medium text-neutral-primary">
-            Interview Location<span className="text-rose-500">*</span>
-          </label>
-          <input
-            type="text"
-            placeholder="Enter venue or online link"
-            value={interviewLocation}
-            disabled={isReadOnly}
-            onChange={(e) => setInterviewLocation(e.target.value)}
-            className="w-full bg-[#F8F9FA] border border-gray-200 rounded-xl p-3 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80"
-          />
-        </div>
       </div>
 
-      {/* 2. Questioning & Technical Discussion */}
-      <div className="flex flex-col gap-4">
+      {/* 2. Question Bank & Live Responses */}
+      <div className="flex flex-col gap-4 pt-4 border-t border-gray-100">
         <div className="flex items-center justify-between">
           <h3 className="text-sm sm:text-base font-bold text-neutral-primary">
-            Questioning &amp; Technical Discussion
+            Question Bank &amp; Live Responses
           </h3>
           {!isReadOnly && (
             <button
               type="button"
               onClick={handleAddQuestion}
-              className="text-xs font-semibold text-[#FBAB2A] hover:text-[#E89B1F] flex items-center gap-1 cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#8A1538] text-[#8A1538] text-xs font-semibold hover:bg-[#8A1538]/5 transition-colors cursor-pointer"
             >
-              <FiPlus className="w-4 h-4" /> Add Question
+              <FiPlus className="w-3.5 h-3.5" />
+              Add Question
             </button>
           )}
         </div>
 
-        {questions.length === 0 ? (
-          <p className="text-xs text-gray-400 italic bg-[#F8F9FA] p-4 rounded-xl border border-gray-100">
-            No questions recorded.
-          </p>
-        ) : (
-          <div className="flex flex-col gap-3.5">
-            {questions.map((q, idx) => (
-              <div
-                key={q.id}
-                className="bg-[#F8F9FA] rounded-2xl p-4 sm:p-5 border border-gray-100 flex flex-col gap-3"
-              >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="flex-1 flex items-center gap-2">
-                    <span className="text-xs font-bold text-gray-400 shrink-0">
-                      #{idx + 1}
-                    </span>
-                    {isReadOnly ? (
-                      <span className="text-xs sm:text-sm font-semibold text-neutral-primary">
-                        {q.question || "Unspecified Question"}
-                      </span>
-                    ) : (
-                      <input
-                        type="text"
-                        value={q.question}
-                        onChange={(e) => updateQuestionText(q.id, e.target.value)}
-                        placeholder="Type question or competency criteria..."
-                        className="w-full bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-xs text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A]"
-                      />
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-2 shrink-0">
-                    <div className="flex items-center rounded-lg overflow-hidden border border-gray-200 bg-white p-0.5">
-                      <button
-                        type="button"
-                        disabled={isReadOnly}
-                        onClick={() => toggleRating(q.id, "Satisfactory")}
-                        className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${
-                          q.rating === "Satisfactory"
-                            ? "bg-[#8A1538] text-white"
-                            : "text-neutral-secondary hover:text-neutral-primary"
-                        }`}
-                      >
-                        Satisfactory
-                      </button>
-                      <button
-                        type="button"
-                        disabled={isReadOnly}
-                        onClick={() => toggleRating(q.id, "Needs Improvement")}
-                        className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${
-                          q.rating === "Needs Improvement"
-                            ? "bg-[#8A1538] text-white"
-                            : "text-neutral-secondary hover:text-neutral-primary"
-                        }`}
-                      >
-                        Needs Improvement
-                      </button>
-                    </div>
-
-                    {!isReadOnly && (
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveQuestion(q.id)}
-                        className="text-gray-400 hover:text-rose-600 p-1"
-                      >
-                        <FiTrash2 className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                <textarea
-                  rows={2}
-                  value={q.candidateResponse}
-                  disabled={isReadOnly}
-                  onChange={(e) => updateResponse(q.id, e.target.value)}
-                  placeholder={isReadOnly ? "No candidate response notes recorded." : "Type candidate response notes..."}
-                  className="w-full bg-white border border-gray-200 rounded-xl p-3 text-xs text-neutral-primary placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] resize-none disabled:opacity-80"
-                />
+        <div className="flex flex-col gap-4">
+          {questions.map((q, idx) => (
+            <div key={q.id} className="flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs sm:text-sm font-medium text-neutral-primary">
+                  {idx + 1}. {q.question}
+                  <span className="text-rose-500">*</span>
+                </label>
+                {!isReadOnly && idx >= DEFAULT_QUESTIONS.length && (
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveQuestion(q.id)}
+                    className="p-1 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                    title="Remove question"
+                  >
+                    <FiTrash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
-            ))}
-          </div>
-        )}
+              <textarea
+                rows={3}
+                value={q.candidateResponse}
+                disabled={isReadOnly}
+                onChange={(e) => updateResponse(q.id, e.target.value)}
+                placeholder="Type Here"
+                className="w-full bg-[#F8F9FA] border border-gray-200 rounded-xl p-3 text-xs sm:text-sm text-neutral-primary placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] resize-none disabled:opacity-80 transition-all"
+              />
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* 3. Overall Interview Decision & Notes */}
-      <div className="flex flex-col gap-4">
+      {/* 3. Overall Assessment */}
+      <div className="flex flex-col gap-4 pt-4 border-t border-gray-100">
         <h3 className="text-sm sm:text-base font-bold text-neutral-primary">
-          Overall Interview Decision &amp; Notes
+          Overall Assessment
         </h3>
 
-        <div className="bg-[#F8F9FA] rounded-2xl p-4 sm:p-5 border border-gray-100 flex flex-col gap-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <span className="text-xs sm:text-sm font-semibold text-neutral-primary">
-              Interview Verdict:
-            </span>
-
-            <div className="flex items-center rounded-lg overflow-hidden border border-gray-200 bg-white p-0.5 shrink-0">
-              <button
-                type="button"
-                disabled={isReadOnly}
-                onClick={() => setVerdict("Competent")}
-                className={`px-4 py-1.5 text-xs font-bold rounded-md transition-colors ${
-                  verdict === "Competent"
-                    ? "bg-[#8A1538] text-white"
-                    : "text-neutral-secondary hover:text-neutral-primary"
-                }`}
-              >
-                Competent
-              </button>
-              <button
-                type="button"
-                disabled={isReadOnly}
-                onClick={() => setVerdict("Not Competent")}
-                className={`px-4 py-1.5 text-xs font-bold rounded-md transition-colors ${
-                  verdict === "Not Competent"
-                    ? "bg-[#8A1538] text-white"
-                    : "text-neutral-secondary hover:text-neutral-primary"
-                }`}
-              >
-                Not Competent
-              </button>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-neutral-primary">
-              Panelist Summary Notes
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <label className="text-xs sm:text-sm font-medium text-neutral-primary">
+              Strengths Identified<span className="text-rose-500">*</span>
             </label>
             <textarea
               rows={3}
-              placeholder={isReadOnly ? "No summary notes provided." : "Type overall assessment notes..."}
-              value={panelistSummaryNotes}
+              placeholder="Type Here"
+              value={strengths}
               disabled={isReadOnly}
-              onChange={(e) => setPanelistSummaryNotes(e.target.value)}
-              className="w-full bg-white border border-gray-200 rounded-xl p-3 text-xs text-neutral-primary placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] resize-none disabled:opacity-80"
+              onChange={(e) => setStrengths(e.target.value)}
+              className="w-full bg-[#F8F9FA] border border-gray-200 rounded-xl p-3 text-xs sm:text-sm text-neutral-primary placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] resize-none disabled:opacity-80 transition-all"
+            />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label className="text-xs sm:text-sm font-medium text-neutral-primary">
+              Areas for Development<span className="text-rose-500">*</span>
+            </label>
+            <textarea
+              rows={3}
+              placeholder="Type Here"
+              value={areasForDevelopment}
+              disabled={isReadOnly}
+              onChange={(e) => setAreasForDevelopment(e.target.value)}
+              className="w-full bg-[#F8F9FA] border border-gray-200 rounded-xl p-3 text-xs sm:text-sm text-neutral-primary placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] resize-none disabled:opacity-80 transition-all"
             />
           </div>
         </div>
       </div>
 
-      {/* 4. Signature Section */}
-      <div className="flex flex-col gap-4">
+      {/* 4. Interviewer Declaration */}
+      <div className="flex flex-col gap-4 pt-4 border-t border-gray-100">
         <h3 className="text-sm sm:text-base font-bold text-neutral-primary">
-          Signature
+          Interviewer Declaration
         </h3>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <p className="text-xs text-neutral-secondary italic">
+          I confirm that the information provided in this assessment is true and
+          based on my own participation
+        </p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Lead Panelist */}
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium text-neutral-primary">
-              Assessor Signature<span className="text-rose-500">*</span>
+              Lead Panelist<span className="text-rose-500">*</span>
             </label>
-            {assessorSigned ? (
+            {leadPanelistSigned ? (
               <div className="h-11 bg-[#E6F4EA] border border-[#1E7F4C]/30 text-[#1E7F4C] font-bold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2 select-none shadow-2xs">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -413,17 +344,14 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
                   <path d="M12 20h9" />
                   <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
                 </svg>
-                Signed by Assessor
-              </div>
-            ) : isReadOnly ? (
-              <div className="h-11 bg-gray-100 border border-gray-200 text-gray-500 text-xs sm:text-sm rounded-xl flex items-center justify-center">
-                Pending Assessor Signature
+                Signed
               </div>
             ) : (
               <button
                 type="button"
+                disabled={isReadOnly}
                 onClick={handleAppendSignature}
-                className="h-11 bg-[#FFF8EB] border border-[#FBAB2A] hover:bg-[#FDEED5] text-[#FBAB2A] font-bold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs"
+                className="h-11 bg-[#FFF8EB] border border-[#FBAB2A] hover:bg-[#FDEED5] text-[#FBAB2A] font-bold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -445,49 +373,54 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
             )}
           </div>
 
+          {/* Facilitator */}
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium text-neutral-primary">
-              Candidate Signature<span className="text-rose-500">*</span>
+              Facilitator<span className="text-rose-500">*</span>
             </label>
-            {formData?.candidateSignedAt ? (
-              <div className="h-11 bg-[#E6F4EA] border border-[#1E7F4C]/30 text-[#1E7F4C] font-bold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2 select-none shadow-2xs">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="w-4 h-4 text-[#1E7F4C]"
-                >
-                  <path d="M12 20h9" />
-                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-                </svg>
-                Signed by Candidate ({new Date(formData.candidateSignedAt).toLocaleDateString()})
-              </div>
-            ) : (
-              <div className="h-11 bg-[#FFF8EB] border border-[#FBAB2A]/60 text-[#FBAB2A] font-semibold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2 select-none">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="w-4 h-4 text-[#FBAB2A]"
-                >
-                  <path d="M12 20h9" />
-                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-                </svg>
-                Awaiting Candidate Signature
-              </div>
-            )}
+            <div className="h-11 bg-[#FFF8EB] border border-[#FBAB2A]/60 text-[#FBAB2A] font-semibold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2 select-none">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="w-4 h-4 text-[#FBAB2A]"
+              >
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+              </svg>
+              Awaiting Signature
+            </div>
+          </div>
+
+          {/* Internal Verifier */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-neutral-primary">
+              Internal Verifier<span className="text-rose-500">*</span>
+            </label>
+            <div className="h-11 bg-[#FFF8EB] border border-[#FBAB2A]/60 text-[#FBAB2A] font-semibold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2 select-none">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="w-4 h-4 text-[#FBAB2A]"
+              >
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+              </svg>
+              Awaiting Signature
+            </div>
           </div>
         </div>
       </div>

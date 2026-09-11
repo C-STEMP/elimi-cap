@@ -88,28 +88,35 @@ export const PersonalDetailsDocumentSection: React.FC<
   return (
     <div className="bg-white rounded-3xl p-6 sm:p-10 border border-gray-100 shadow-xs flex flex-col gap-8 w-full">
       {/* Header with Logo, Title & Upload Box */}
-      <div className="flex flex-col items-center text-center gap-4 relative border-b border-gray-100 pb-6">
-        <div className="flex justify-center mb-1">
-          <Image
-            src={ASSETS_URL.logoIcon2}
-            alt="ELIMI Logo"
-            width={110}
-            height={44}
-            className="w-auto h-8 object-contain"
-          />
+      <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4 border-b border-gray-100 pb-6 w-full">
+        {/* Left spacer to keep title centered */}
+        <div className="hidden sm:block w-24 sm:w-28 shrink-0" aria-hidden="true" />
+
+        <div className="flex flex-col items-center text-center gap-2 flex-1 max-w-lg mx-auto">
+          <div className="flex justify-center mb-0.5">
+            <Image
+              src={ASSETS_URL.logoIcon2}
+              alt="ELIMI Logo"
+              width={110}
+              height={44}
+              className="w-auto h-8 object-contain"
+              style={{ width: "auto", height: "32px" }}
+            />
+          </div>
+
+          <h2 className="text-base sm:text-lg font-extrabold text-neutral-primary tracking-tight leading-snug uppercase">
+            NBTE/RPL/ 01 NSQ/RPL/QCF ASSESSMENT CENTRE CANDIDATE APPLICATION FORM
+          </h2>
         </div>
 
-        <h2 className="text-base sm:text-lg font-extrabold text-neutral-primary tracking-tight max-w-xl leading-snug uppercase">
-          NBTE/RPL/ 01 NSQ/RPL/QCF ASSESSMENT CENTRE CANDIDATE APPLICATION FORM
-        </h2>
-
         {/* Candidate Passport / Avatar */}
-        <div className="hidden sm:flex absolute right-0 top-0">
+        <div className="w-24 sm:w-28 shrink-0 flex justify-center sm:justify-end">
           <Avatar
             src={passportUrl}
             name={fullName}
             shape="rounded"
-            className="w-24 h-24 border-2 border-dashed border-rose-200 bg-[#FFF5F6] p-1 shadow-2xs"
+            className="w-24 h-24 border-2 border-dashed border-rose-200 bg-[#FFF5F6] p-1 shadow-2xs shrink-0"
+            style={{ width: "96px", height: "96px", maxWidth: "96px", maxHeight: "96px" }}
             alt={fullName}
           />
         </div>
