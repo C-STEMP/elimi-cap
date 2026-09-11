@@ -377,10 +377,11 @@ export const AssessorProfileDetailView: React.FC<
             {filteredCandidates.map((cand) => (
               <div
                 key={cand.id}
-                className="bg-white rounded-2xl p-5 border border-black/20 shadow-2xs hover:shadow-xs transition-all flex items-start justify-between relative group"
+                onClick={() => onViewCandidate?.(cand.id)}
+                className="bg-white rounded-2xl p-5 border border-black/20 shadow-2xs hover:shadow-xs transition-all flex items-start justify-between relative group cursor-pointer"
               >
                 <div className="flex flex-col gap-2">
-                  <span className="font-bold text-sm text-neutral-primary">
+                  <span className="font-bold text-sm text-neutral-primary group-hover:text-primary transition-colors">
                     {cand.candidateName}
                   </span>
                   <span className="text-xs text-gray-500 font-normal">
@@ -407,7 +408,10 @@ export const AssessorProfileDetailView: React.FC<
 
                   <button
                     type="button"
-                    onClick={() => onViewCandidate?.(cand.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onViewCandidate?.(cand.id);
+                    }}
                     className="text-xs lg:text-sm text-neutral-primary font-bold underline hover:text-[#a31d38] transition-colors cursor-pointer mt-2"
                   >
                     View
@@ -434,12 +438,13 @@ export const AssessorProfileDetailView: React.FC<
                 {filteredCandidates.map((cand) => (
                   <tr
                     key={cand.id}
-                    className="hover:bg-gray-50/50 transition-colors"
+                    onClick={() => onViewCandidate?.(cand.id)}
+                    className="hover:bg-gray-50/50 transition-colors cursor-pointer group"
                   >
                     <td className="p-3.5 text-neutral-secondary">
                       {cand.role}
                     </td>
-                    <td className="p-3.5 font-bold text-neutral-primary">
+                    <td className="p-3.5 font-bold text-neutral-primary group-hover:text-primary transition-colors">
                       {cand.candidateName}
                     </td>
                     <td className="p-3.5 text-neutral-secondary">
@@ -465,7 +470,10 @@ export const AssessorProfileDetailView: React.FC<
                     <td className="p-3.5 text-right">
                       <button
                         type="button"
-                        onClick={() => onViewCandidate?.(cand.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onViewCandidate?.(cand.id);
+                        }}
                         className="text-neutral-primary font-bold text-xs underline hover:text-[#a31d38] transition-colors cursor-pointer"
                       >
                         View

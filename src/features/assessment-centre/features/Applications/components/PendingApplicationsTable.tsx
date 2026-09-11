@@ -72,9 +72,10 @@ export const PendingApplicationsTable: React.FC<TableProps> = ({
               pendingList.map((app) => (
                 <tr
                   key={app.id}
-                  className="hover:bg-input-bg transition-colors border-4 border-input-bg"
+                  onClick={() => onViewApplication?.(app.id)}
+                  className="hover:bg-input-bg transition-colors border-4 border-input-bg cursor-pointer group"
                 >
-                  <td className="p-3.5 text-[#12312B]">{app.candidateName}</td>
+                  <td className="p-3.5 text-[#12312B] font-semibold group-hover:text-[#a31d38] transition-colors">{app.candidateName}</td>
                   <td className="p-3.5 text-[#12312B]">{app.trade}</td>
                   <td className="p-3.5 text-[#12312B]">{app.assessmentType}</td>
                   <td className="p-3.5">
@@ -94,8 +95,11 @@ export const PendingApplicationsTable: React.FC<TableProps> = ({
                   <td className="p-3.5 text-right">
                     <button
                       type="button"
-                      onClick={() => onViewApplication?.(app.id)}
-                      className="text-[#12312B] text-sm underline hover:text-[#a31d38] transition-colors cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onViewApplication?.(app.id);
+                      }}
+                      className="text-[#12312B] text-sm underline hover:text-[#a31d38] transition-colors cursor-pointer font-semibold"
                     >
                       View
                     </button>

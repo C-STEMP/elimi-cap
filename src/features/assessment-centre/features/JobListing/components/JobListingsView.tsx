@@ -109,18 +109,20 @@ export const JobListingsView: React.FC<JobListingsViewProps> = ({
               return (
                 <div
                   key={job.id}
-                  className="bg-white rounded-2xl p-5 border border-black/20 shadow-2xs hover:shadow-xs transition-all flex items-start justify-between relative group"
+                  onClick={() => onSelectJob(job.id)}
+                  className="bg-white rounded-2xl p-5 border border-black/20 shadow-2xs hover:shadow-xs transition-all flex items-start justify-between relative group cursor-pointer"
                 >
                   <div className="flex items-start gap-3">
                     <input
                       type="checkbox"
                       checked={isSelected}
+                      onClick={(e) => e.stopPropagation()}
                       onChange={() => toggleSelectJob(job.id)}
                       className="mt-1 place-self-center w-4 h-4 rounded border-gray-300 text-[#a31d38] focus:ring-0 cursor-pointer"
                     />
 
                     <div className="flex flex-col gap-2">
-                      <span className="font-bold text-sm text-neutral-primary">
+                      <span className="font-bold text-sm text-neutral-primary group-hover:text-primary transition-colors">
                         {job.title}
                       </span>
                       <span className="text-xs text-gray-500 font-normal">
@@ -148,7 +150,10 @@ export const JobListingsView: React.FC<JobListingsViewProps> = ({
 
                     <button
                       type="button"
-                      onClick={() => onSelectJob(job.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelectJob(job.id);
+                      }}
                       className="text-xs lg:text-sm text-neutral-primary font-bold underline hover:text-[#a31d38] transition-colors cursor-pointer mt-2"
                     >
                       View
@@ -188,9 +193,10 @@ export const JobListingsView: React.FC<JobListingsViewProps> = ({
                   return (
                     <tr
                       key={job.id}
-                      className="hover:bg-gray-50/50 transition-colors"
+                      onClick={() => onSelectJob(job.id)}
+                      className="hover:bg-gray-50/50 transition-colors cursor-pointer group"
                     >
-                      <td className="p-3.5">
+                      <td className="p-3.5" onClick={(e) => e.stopPropagation()}>
                         <input
                           type="checkbox"
                           checked={isSelected}
@@ -198,7 +204,7 @@ export const JobListingsView: React.FC<JobListingsViewProps> = ({
                           className="w-4 h-4 rounded border-gray-300 text-[#a31d38] focus:ring-0 cursor-pointer"
                         />
                       </td>
-                      <td className="p-3.5 font-bold text-neutral-primary">
+                      <td className="p-3.5 font-bold text-neutral-primary group-hover:text-primary transition-colors">
                         {job.title}
                       </td>
                       <td className="p-3.5 text-neutral-secondary">
@@ -224,7 +230,10 @@ export const JobListingsView: React.FC<JobListingsViewProps> = ({
                       <td className="p-3.5 text-right">
                         <button
                           type="button"
-                          onClick={() => onSelectJob(job.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSelectJob(job.id);
+                          }}
                           className="text-neutral-primary font-bold text-xs underline hover:text-[#a31d38] transition-colors cursor-pointer"
                         >
                           View

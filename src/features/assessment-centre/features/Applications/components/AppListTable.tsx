@@ -40,23 +40,42 @@ export const AppListTable: React.FC<Props> = ({
             ))
           : filteredApplications.length > 0
           ? filteredApplications.map((app) => (
-              <div key={app.id} className="bg-white rounded-2xl p-5 border border-black/20 shadow-2xs hover:shadow-xs transition-all flex flex-col gap-3">
+              <div
+                key={app.id}
+                onClick={() => onSelectCandidate(app.candidateName, app.id)}
+                className="bg-white rounded-2xl p-5 border border-black/20 shadow-2xs hover:shadow-xs transition-all flex flex-col gap-3 cursor-pointer group"
+              >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
-                    <input type="checkbox" checked={selectedIds.includes(app.id)} onChange={() => onToggleSelect(app.id)} className="w-4 h-4 rounded border-gray-300 text-[#a31d38] cursor-pointer shrink-0" />
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(app.id)}
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={() => onToggleSelect(app.id)}
+                      className="w-4 h-4 rounded border-gray-300 text-[#a31d38] cursor-pointer shrink-0"
+                    />
                     <Avatar src={app.photoUrl} name={app.candidateName} className="w-10 h-10 rounded-full border border-gray-100 shrink-0" />
                   </div>
                   <span className={`text-xs font-semibold px-3 py-1 rounded-full ${getStatusBadgeClass(app.status)}`}>{app.status}</span>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <span onClick={() => onSelectCandidate(app.candidateName, app.id)} className="font-bold text-sm text-black cursor-pointer hover:text-primary">{app.candidateName}</span>
+                  <span className="font-bold text-sm text-black group-hover:text-primary transition-colors">{app.candidateName}</span>
                   <span className="text-xs text-gray-500">Centre: {app.centreName}</span>
                   <span className="text-xs text-gray-500">Facilitator: {app.facilitatorName}</span>
                   <span className="text-xs text-gray-500">Trade: {app.trade}</span>
                   <span className="text-xs text-gray-500">Type: {app.assessmentType}</span>
                   <span className="text-xs text-gray-400">Submitted: {app.submittedAt}</span>
                 </div>
-                <button type="button" onClick={() => onSelectCandidate(app.candidateName, app.id)} className="text-xs text-black font-bold underline hover:text-[#a31d38] cursor-pointer mt-auto self-start">View</button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSelectCandidate(app.candidateName, app.id);
+                  }}
+                  className="text-xs text-black font-bold underline hover:text-[#a31d38] cursor-pointer mt-auto self-start"
+                >
+                  View
+                </button>
               </div>
             ))
           : <div className="col-span-full p-8 text-center text-gray-400">No applications found.</div>}
@@ -82,9 +101,20 @@ export const AppListTable: React.FC<Props> = ({
               ))
             : filteredApplications.length > 0
             ? filteredApplications.map((app) => (
-                <tr key={app.id} className="hover:bg-gray-50/70 transition-colors">
-                  <td className="p-4"><input type="checkbox" checked={selectedIds.includes(app.id)} onChange={() => onToggleSelect(app.id)} className="w-4 h-4 accent-primary rounded cursor-pointer" /></td>
-                  <td onClick={() => onSelectCandidate(app.candidateName, app.id)} className="p-4 font-semibold text-black cursor-pointer hover:text-primary">
+                <tr
+                  key={app.id}
+                  onClick={() => onSelectCandidate(app.candidateName, app.id)}
+                  className="hover:bg-gray-50/70 transition-colors cursor-pointer group"
+                >
+                  <td className="p-4" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(app.id)}
+                      onChange={() => onToggleSelect(app.id)}
+                      className="w-4 h-4 accent-primary rounded cursor-pointer"
+                    />
+                  </td>
+                  <td className="p-4 font-semibold text-black group-hover:text-primary transition-colors">
                     <div className="flex items-center gap-2.5">
                       <Avatar src={app.photoUrl} name={app.candidateName} className="w-8 h-8 rounded-full border border-gray-100 shrink-0" />
                       <span className="truncate">{app.candidateName}</span>
@@ -96,7 +126,18 @@ export const AppListTable: React.FC<Props> = ({
                   <td className="p-4 text-gray-600">{app.assessmentType}</td>
                   <td className="p-4"><span className={`text-xs font-semibold px-3 py-1 rounded-full ${getStatusBadgeClass(app.status)}`}>{app.status}</span></td>
                   <td className="p-4 text-gray-600">{app.submittedAt}</td>
-                  <td className="p-4 text-right"><button type="button" onClick={() => onSelectCandidate(app.candidateName, app.id)} className="font-semibold text-black underline underline-offset-2 hover:text-primary cursor-pointer">View</button></td>
+                  <td className="p-4 text-right">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelectCandidate(app.candidateName, app.id);
+                      }}
+                      className="font-semibold text-black underline underline-offset-2 hover:text-primary cursor-pointer"
+                    >
+                      View
+                    </button>
+                  </td>
                 </tr>
               ))
             : <tr><td colSpan={9} className="p-8 text-center text-gray-400">No applications found.</td></tr>}

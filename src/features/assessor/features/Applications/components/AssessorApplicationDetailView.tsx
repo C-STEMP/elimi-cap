@@ -21,7 +21,6 @@ import { AssessorEvidenceVaultView } from "./evidence-vault";
 import { AssessorAssessmentFormView } from "./assessment-forms";
 import type {
   AssessorApplicationRecord,
-  ApplicationStageFormToSign,
 } from "../types/applications.types";
 import {
   useGetApplicationById,
@@ -44,33 +43,6 @@ export type AssessorDetailSubView =
   | "application_form"
   | "evidence_vault"
   | "assessment_form";
-
-const BASE_FORMS_TO_SIGN: ApplicationStageFormToSign[] = [
-  {
-    id: "records",
-    title: "Interview Records Form",
-    description: "Form recording interview questions and panelist dialogue",
-    signed: false,
-  },
-  {
-    id: "assessment_grid",
-    title: "Assessment Grid/Mapping Form",
-    description: "Form mapping competency criteria and scores",
-    signed: false,
-  },
-  {
-    id: "practical_observation",
-    title: "Practical Observation Checklist Form",
-    description: "Form recording practical observation findings",
-    signed: false,
-  },
-  {
-    id: "skill_demonstration",
-    title: "Skills Demonstration Form",
-    description: "Form recording candidate practical skills demonstration and safety standards",
-    signed: false,
-  },
-];
 
 interface AssessorApplicationDetailViewProps {
   application: AssessorApplicationRecord;
@@ -163,31 +135,6 @@ export const AssessorApplicationDetailView: React.FC<
     reason: string;
     recommendation: string;
   } | null>(null);
-
-  const [formsToSign, setFormsToSign] =
-    useState<ApplicationStageFormToSign[]>(BASE_FORMS_TO_SIGN);
-
-  React.useEffect(() => {
-    if (remoteForms && remoteForms.length > 0) {
-      setFormsToSign((prev) =>
-        prev.map((f) => {
-          const matching = remoteForms.find(
-            (rf) =>
-              rf.formType === f.id ||
-              rf.id === f.id,
-          );
-          return matching
-            ? {
-                ...f,
-                signed: Boolean(
-                  matching.candidateSignedAt || matching.status === "completed",
-                ),
-              }
-            : f;
-        }),
-      );
-    }
-  }, [remoteForms]);
 
   const queryClient = useQueryClient();
 
@@ -352,10 +299,6 @@ export const AssessorApplicationDetailView: React.FC<
     setInterviewOutcome("awaiting_signature");
   };
 
-  const handleAppendSignature = (formId: string) => {
-    setSelectedAssessmentFormId(formId);
-    setSubView("assessment_form");
-  };
 
   if (subView === "application_form") {
     return (
@@ -484,8 +427,6 @@ export const AssessorApplicationDetailView: React.FC<
           application={activeApplicationRecord}
           interviewOutcome={interviewOutcome}
           interviewFeedback={interviewFeedback}
-          formsToSign={formsToSign}
-          onAppendSignature={handleAppendSignature}
           onViewApplicationForm={() => setSubView("application_form")}
           onOpenEvidenceVault={() => setSubView("evidence_vault")}
           onMarkCompetent={() => setIsConfirmCompetentOpen(true)}

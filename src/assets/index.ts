@@ -44,6 +44,7 @@ import activateStaffImg from "@/assets/icons/activate.svg";
 import shortlistApplicantImg from "@/assets/icons/shortlist-applicant.png";
 import rejectApplicantImg from "@/assets/icons/reject-applicant.png";
 import warningIcon from "@/assets/icons/warning-icon.svg";
+import warningSignIcon from "@/assets/icons/warning-sign.svg";
 import cstempLogo from "@/assets/icons/cstemp.png";
 
 export {
@@ -88,6 +89,7 @@ export {
   shortlistApplicantImg,
   rejectApplicantImg,
   warningIcon,
+  warningSignIcon,
   cstempLogo,
 };
 
@@ -133,5 +135,6 @@ export const ASSETS_URL = {
   shortlistApplicantImg,
   rejectApplicantImg,
   warningIcon,
+  warningSignIcon,
   cstempLogo,
 };

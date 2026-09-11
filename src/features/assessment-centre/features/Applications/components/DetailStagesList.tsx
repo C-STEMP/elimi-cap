@@ -78,10 +78,13 @@ export const DetailStagesList: React.FC<DetailStagesListProps> = ({
   return (
     <div className="lg:col-span-8 xl:col-span-9 flex flex-col gap-4">
       {/* Stage 1: Application Form */}
-      <div className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-100 shadow-2xs flex items-center justify-between gap-4">
+      <div
+        onClick={onOpenCandidateForm}
+        className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-100 shadow-2xs flex items-center justify-between gap-4 cursor-pointer group"
+      >
         <div className="flex flex-col gap-1.5 min-w-0">
           <div className="flex items-center gap-3 flex-wrap">
-            <h3 className="text-black font-bold text-base sm:text-lg lg:text-xl tracking-tight">Application Form</h3>
+            <h3 className="text-black font-bold text-base sm:text-lg lg:text-xl tracking-tight group-hover:text-primary transition-colors">Application Form</h3>
             <span className={`${getStatusBadge(appFormStatus).className} text-xs font-semibold px-3 py-0.5 rounded-full capitalize`}>
               {getStatusBadge(appFormStatus).text}
             </span>
@@ -90,7 +93,10 @@ export const DetailStagesList: React.FC<DetailStagesListProps> = ({
         </div>
         <Button
           type="button"
-          onClick={onOpenCandidateForm}
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpenCandidateForm();
+          }}
           variant="outline"
           size="sm"
           className="bg-white! text-[#fbab2a]! border border-gray-200! hover:bg-gray-50! font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl cursor-pointer shrink-0"

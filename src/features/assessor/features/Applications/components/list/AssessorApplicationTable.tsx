@@ -64,7 +64,9 @@ export const AssessorApplicationTable: React.FC<
                       name={app.candidateName}
                       className="w-7 h-7 rounded-full border border-gray-100 shrink-0"
                     />
-                    <span className="truncate">{app.candidateName}</span>
+                    <span className="truncate group-hover:text-primary transition-colors">
+                      {app.candidateName}
+                    </span>
                   </div>
                 </td>
                 <td className="py-3.5 px-4 text-neutral-secondary">

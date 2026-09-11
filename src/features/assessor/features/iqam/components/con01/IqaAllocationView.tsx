@@ -81,15 +81,22 @@ export const IqaAllocationView: React.FC<IqaAllocationViewProps> = ({
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {DEFAULT_ALLOCATIONS.map((row) => (
-                  <tr key={row.id} className="hover:bg-gray-50/50 transition-colors font-medium text-neutral-primary">
+                  <tr
+                    key={row.id}
+                    onClick={() => setSelectedCandidateForModal(row.candidateName)}
+                    className="hover:bg-gray-50/50 transition-colors font-medium text-neutral-primary cursor-pointer group"
+                  >
                     <td className="py-3.5 px-3">{row.assessorName}</td>
-                    <td className="py-3.5 px-3">{row.candidateName}</td>
+                    <td className="py-3.5 px-3 font-semibold group-hover:text-primary transition-colors">{row.candidateName}</td>
                     <td className="py-3.5 px-3 text-gray-600">{row.level}</td>
                     <td className="py-3.5 px-3 text-gray-600">{row.units}</td>
                     <td className="py-3.5 px-3 text-right">
                       <button
                         type="button"
-                        onClick={() => setSelectedCandidateForModal(row.candidateName)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedCandidateForModal(row.candidateName);
+                        }}
                         className="text-xs font-bold text-gray-600 hover:text-[#a31d38] underline transition-colors cursor-pointer"
                       >
                         View

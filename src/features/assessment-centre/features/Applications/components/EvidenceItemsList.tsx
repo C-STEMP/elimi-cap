@@ -30,13 +30,16 @@ export const EvidenceItemsList: React.FC<Props> = ({
       <div className="flex flex-col gap-4">
         <h2 className="text-lg font-extrabold text-black tracking-tight">Resources</h2>
 
-        <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-2xs flex items-center justify-between gap-4 transition-all">
+        <div
+          onClick={onOpenSelfAssessmentForm}
+          className="bg-white rounded-2xl p-5 border border-gray-100 shadow-2xs flex items-center justify-between gap-4 transition-all cursor-pointer group"
+        >
           <div className="flex items-center gap-4 min-w-0">
             <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
               <FiFileText className="w-6 h-6 text-[#a31d38]" />
             </div>
             <div className="flex flex-col gap-1 min-w-0">
-              <h3 className="text-base sm:text-lg font-bold text-black tracking-tight truncate">
+              <h3 className="text-base sm:text-lg font-bold text-black tracking-tight truncate group-hover:text-primary transition-colors">
                 Self-Assessment Form
               </h3>
               <span className="text-xs text-gray-400 font-normal">
@@ -48,7 +51,10 @@ export const EvidenceItemsList: React.FC<Props> = ({
           </div>
           <Button
             type="button"
-            onClick={onOpenSelfAssessmentForm}
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenSelfAssessmentForm();
+            }}
             variant="outline"
             size="sm"
             className="bg-white! text-[#fbab2a]! border border-gray-200! hover:bg-gray-50! font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl transition-all cursor-pointer shadow-none! shrink-0"
@@ -113,8 +119,28 @@ export const EvidenceItemsList: React.FC<Props> = ({
             const badgeBg = isApproved || isSubmitted ? "bg-[#1E7F4C]/10" : isAttention ? "bg-[#FCE8EB]" : "bg-[#F9A825]/10";
             const badgeText = isApproved || isSubmitted ? "text-[#1E7F4C]" : isAttention ? "text-[#A31D38]" : "text-[#F9A825]";
 
+            const handlePreview = () => {
+              onSelectPreview({
+                id: item.id || `ev-${idx}`,
+                name: title,
+                size: displaySize,
+                status: isApproved ? "Approved" : isSubmitted ? "Submitted" : displayStatus,
+                statusBg: badgeBg,
+                statusText: badgeText,
+                assetId: item.assetId,
+                url: item.url,
+                dataUrl: item.dataUrl,
+                mimeType: item.mimeType,
+                evidenceType: item.evidenceType || "General Evidence",
+              });
+            };
+
             return (
-              <div key={item.id || idx} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-2xs flex flex-col gap-3 transition-all">
+              <div
+                key={item.id || idx}
+                onClick={handlePreview}
+                className="bg-white rounded-2xl p-5 border border-gray-100 shadow-2xs flex flex-col gap-3 transition-all cursor-pointer group"
+              >
                 <div className="flex items-center justify-between gap-4 flex-wrap">
                   <div className="flex items-center gap-4 min-w-0">
                     <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
@@ -122,7 +148,7 @@ export const EvidenceItemsList: React.FC<Props> = ({
                     </div>
                     <div className="flex flex-col gap-1 min-w-0">
                       <div className="flex items-center gap-3 flex-wrap">
-                        <h3 className="text-base sm:text-lg font-bold text-black tracking-tight truncate">{title}</h3>
+                        <h3 className="text-base sm:text-lg font-bold text-black tracking-tight truncate group-hover:text-primary transition-colors">{title}</h3>
                         <span className={`text-xs font-semibold px-3 py-0.5 rounded-full capitalize ${badgeBg} ${badgeText}`}>
                           {displayStatus}
                         </span>
@@ -133,20 +159,9 @@ export const EvidenceItemsList: React.FC<Props> = ({
 
                   <button
                     type="button"
-                    onClick={() => {
-                      onSelectPreview({
-                        id: item.id || `ev-${idx}`,
-                        name: title,
-                        size: displaySize,
-                        status: isApproved ? "Approved" : isSubmitted ? "Submitted" : displayStatus,
-                        statusBg: badgeBg,
-                        statusText: badgeText,
-                        assetId: item.assetId,
-                        url: item.url,
-                        dataUrl: item.dataUrl,
-                        mimeType: item.mimeType,
-                        evidenceType: item.evidenceType || "General Evidence",
-                      });
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handlePreview();
                     }}
                     className="bg-white border border-gray-200 hover:bg-gray-50 text-[#fbab2a] font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl cursor-pointer shrink-0 transition-colors shadow-none"
                   >

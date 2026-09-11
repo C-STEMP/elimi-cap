@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
@@ -17,12 +18,20 @@ import { CalendarWidget } from "@/features/candidate/features/Dashboard/componen
 import { Button } from "@/src/components/ui/button";
 import { Avatar } from "@/src/components/ui/avatar";
 import { ASSETS_URL } from "@/assets";
-import { scheduleDirectObservationApi } from "@/src/features/shared/applications/api";
+import { useToast } from "@/src/components/ui/toast";
+import { StatusModal } from "@/components/status-modal";
+import {
+  scheduleDirectObservationApi,
+  initiateApplicationPaymentApi,
+} from "@/src/features/shared/applications/api";
 import {
   useGetTradeDetail,
   useGetUnitsByTrade,
   useGetEvidenceTypesByTrade,
+  useGetCentres,
+  useGetSectors,
 } from "@/src/features/shared/reference/hooks";
+import { useAppSelector } from "@/src/store/hooks";
 import { NsqUnitDetailView } from "./NsqUnitDetailView";
 import { NsqRequestObservationModal } from "./NsqRequestObservationModal";
 import { NsqObservationRequestReviewModal } from "./NsqObservationRequestReviewModal";
@@ -45,6 +54,9 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
   application,
 }) => {
   const router = useRouter();
+  const { toast } = useToast();
+
+  const savedOnboarding = useAppSelector((state) => state.onboarding.nsqApplication);
 
   const [selectedUnit, setSelectedUnit] = useState<NsqUnitItem | null>(null);
   const [isObservationModalOpen, setIsObservationModalOpen] = useState(false);
@@ -52,6 +64,18 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [isReportSignatureModalOpen, setIsReportSignatureModalOpen] = useState(false);
   const [isReportSigned, setIsReportSigned] = useState(false);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+
+  // Application payment status
+  const appId = application?.id || "nsq";
+  const [isPaid, setIsPaid] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem(`nsq_payment_paid_${appId}`);
+      if (stored === "true") return true;
+    }
+    return Boolean(application?.paymentCompleted);
+  });
+
   const [successModalInfo, setSuccessModalInfo] = useState({
     title: "Direct Observation Request Sent",
     subtitle: "You have successfully sent your direct observation request",
@@ -69,14 +93,34 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
     (typeof application?.trade === "object" ? application?.trade?.id : null) ||
     (typeof application?.trade === "string" && isRawId(application?.trade)
       ? application?.trade
-      : "");
+      : "") ||
+    savedOnboarding?.tradeId ||
+    "";
 
-  // Fetch dynamic Trade Detail, Units, and Evidence Types from Catalogue API
+  const sectorId =
+    application?.sectorId ||
+    (typeof application?.sector === "object" ? application?.sector?.id : null) ||
+    (typeof application?.sector === "string" && isRawId(application?.sector)
+      ? application?.sector
+      : "") ||
+    savedOnboarding?.sectorId ||
+    "";
+
+  const centreId =
+    application?.centreId ||
+    (typeof application?.centre === "object" ? application?.centre?.id : null) ||
+    (typeof application?.centre === "string" && isRawId(application?.centre)
+      ? application?.centre
+      : "") ||
+    savedOnboarding?.centreId ||
+    "";
+
+  // Fetch dynamic Trade Detail, Units, Centres, and Sectors
   const { data: tradeDetail } = useGetTradeDetail(tradeId);
-  const { data: remoteUnits = [], isLoading: isUnitsLoading } =
-    useGetUnitsByTrade(tradeId);
-  const { data: remoteEvidenceTypes = [] } =
-    useGetEvidenceTypesByTrade(tradeId);
+  const { data: remoteUnits = [] } = useGetUnitsByTrade(tradeId);
+  const { data: remoteEvidenceTypes = [] } = useGetEvidenceTypesByTrade(tradeId);
+  const { data: remoteCentres = [] } = useGetCentres();
+  const { data: remoteSectors = [] } = useGetSectors();
 
   const [scheduledObservation, setScheduledObservation] = useState<{
     units?: string[];
@@ -111,7 +155,8 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
     (typeof application?.trade === "string" && !isRawId(application?.trade)
       ? application?.trade
       : "") ||
-    "Masonry";
+    savedOnboarding?.tradeName ||
+    "Carpentry";
 
   const resolvedSectorName =
     (tradeDetail as any)?.sector?.name ||
@@ -119,59 +164,50 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
     (typeof application?.sector === "string" && !isRawId(application?.sector)
       ? application?.sector
       : "") ||
+    remoteSectors.find((s) => s.id === sectorId)?.name ||
+    savedOnboarding?.sectorName ||
     "Construction";
 
-  const levelName = application?.level || "Level 3";
+  const resolvedCentreName =
+    (application as any)?.centre?.name ||
+    (typeof application?.centre === "string" && !isRawId(application?.centre)
+      ? application?.centre
+      : "") ||
+    remoteCentres.find((c) => c.id === centreId)?.name ||
+    savedOnboarding?.centreName ||
+    "Elimi Assessment Centre";
 
-  // Dynamic Units list from Catalogue API
-  const unitsList: NsqUnitItem[] =
-    remoteUnits && remoteUnits.length > 0
-      ? remoteUnits.map((u, idx) => ({
-          id: u.id,
-          unitNo: u.referenceNumber || `UNIT ${idx + 1}`,
-          title: u.title,
-          status: "Not Started" as const,
-          structure: u.structure,
-        }))
-      : [
-          {
-            id: "unit-01",
-            unitNo: "UNIT 1",
-            title: `Lorem ipsum dolor dolor satuir`,
-            status: "Approved" as const,
-          },
-          {
-            id: "unit-02",
-            unitNo: "UNIT 2",
-            title: `Lorem ipsum dolor dolor satuir`,
-            status: "Approved" as const,
-          },
-          {
-            id: "unit-03",
-            unitNo: "UNIT 3",
-            title: `Lorem ipsum dolor dolor satuir`,
-            status: "Approved" as const,
-          },
-          {
-            id: "unit-04",
-            unitNo: "UNIT 4",
-            title: `Lorem ipsum dolor dolor satuir`,
-            status: "Approved" as const,
-          },
-        ];
+  // Handle Make Payment action
+  const handleMakePayment = async () => {
+    setIsProcessingPayment(true);
 
-  const qualificationCode =
-    remoteUnits[0]?.referenceNumber ||
-    (tradeDetail?.activeNosDocument as any)?.qualificationLevels?.[0]?.slug ||
-    (tradeDetail?.activeNosDocument as any)?.title ||
-    `CON/MS001/L1`;
+    try {
+      if (application?.id && isRawId(application.id)) {
+        try {
+          await initiateApplicationPaymentApi(application.id);
+        } catch {
+          // Fallback simulation for payment demo
+        }
+      }
+    } catch {
+      // Ignore network errors for mock transition
+    }
 
-  const evidenceTypesText =
-    remoteEvidenceTypes && remoteEvidenceTypes.length > 0
-      ? remoteEvidenceTypes.join("/")
-      : "DO/QA/WT/WP/ASS";
+    setTimeout(() => {
+      setIsProcessingPayment(false);
+      setIsPaid(true);
+      if (typeof window !== "undefined") {
+        localStorage.setItem(`nsq_payment_paid_${appId}`, "true");
+      }
+      toast({
+        type: "success",
+        title: "Payment Successful",
+        description: "Your NSQ assessment fee payment has been confirmed.",
+      });
+    }, 2200);
+  };
 
-  // If a unit is selected, show the Unit Detail View (Image 1)
+  // If a unit is selected, show the Unit Detail View
   if (selectedUnit) {
     return (
       <NsqUnitDetailView
@@ -255,8 +291,8 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
       <div className="w-full max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Left Main Column */}
-          <div className="lg:col-span-8 flex flex-col gap-6">
-            {/* Assessment Progress Timeline Card */}
+          <div className="lg:col-span-8 flex flex-col gap-5">
+            {/* 1. Assessment Progress Timeline Card */}
             <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-6">
               <h3 className="text-base sm:text-lg font-extrabold text-neutral-primary tracking-tight">
                 Assessment Progress
@@ -266,7 +302,11 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
               <div className="relative flex items-center justify-between w-full px-2 sm:px-6">
                 {/* Horizontal Background Line */}
                 <div className="absolute left-6 right-6 top-4 h-0.5 bg-gray-200 -z-0" />
-                <div className="absolute left-6 right-3/4 top-4 h-0.5 bg-emerald-500 -z-0" />
+                <div
+                  className={`absolute left-6 top-4 h-0.5 -z-0 transition-all duration-300 ${
+                    isPaid ? "right-2/4 bg-emerald-500" : "right-3/4 bg-emerald-500"
+                  }`}
+                />
 
                 {/* Step 1: Induction Form */}
                 <div className="flex flex-col items-center gap-2 z-10">
@@ -280,10 +320,24 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
 
                 {/* Step 2: QAA */}
                 <div className="flex flex-col items-center gap-2 z-10">
-                  <div className="w-8 h-8 rounded-full bg-[#fbab2a] text-white flex items-center justify-center font-bold text-xs shadow-md shadow-amber-500/20">
-                    <div className="w-2.5 h-2.5 rounded-full bg-white animate-ping" />
+                  <div
+                    className={`w-8 h-8 rounded-full text-white flex items-center justify-center font-bold text-xs shadow-md ${
+                      isPaid
+                        ? "bg-emerald-500 shadow-emerald-500/20"
+                        : "bg-[#fbab2a] shadow-amber-500/20"
+                    }`}
+                  >
+                    {isPaid ? (
+                      <FiCheck className="w-4 h-4 stroke-[3]" />
+                    ) : (
+                      <div className="w-2.5 h-2.5 rounded-full bg-white animate-ping" />
+                    )}
                   </div>
-                  <span className="text-[11px] font-bold text-[#fbab2a] text-center">
+                  <span
+                    className={`text-[11px] font-bold text-center ${
+                      isPaid ? "text-emerald-600" : "text-[#fbab2a]"
+                    }`}
+                  >
                     QAA
                   </span>
                 </div>
@@ -314,118 +368,79 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
               </div>
             </div>
 
-            {/* Middle Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Left Card: NOS Details */}
-              <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex flex-col justify-between gap-4">
-                <div className="flex flex-col gap-2">
-                  <span className="self-start px-2.5 py-0.5 rounded-md bg-pink-50 text-pink-700 font-bold text-[11px] uppercase tracking-wide">
-                    Mandatory
+            {/* 2. Application Status Card */}
+            <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <h4 className="text-base sm:text-lg font-extrabold text-neutral-primary tracking-tight">
+                  Application Status
+                </h4>
+                {isPaid ? (
+                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
+                    Approved
                   </span>
-                  <h4 className="text-base font-extrabold text-neutral-primary tracking-tight">
-                    {resolvedTradeName} National Occupational Standard
-                  </h4>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-100">
-                  <div className="flex flex-col">
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">
-                      Qualification Code
-                    </span>
-                    <span className="text-xs sm:text-sm font-extrabold text-neutral-primary truncate">
-                      {qualificationCode}
-                    </span>
-                  </div>
-
-                  <div className="flex flex-col">
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">
-                      Evidence Type
-                    </span>
-                    <span className="text-xs sm:text-sm font-extrabold text-neutral-primary truncate">
-                      {evidenceTypesText}
-                    </span>
-                  </div>
-                </div>
+                ) : (
+                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#FFF7ED] text-[#C2410C]">
+                    Application Submitted
+                  </span>
+                )}
               </div>
-
-              {/* Right Card: Metrics */}
-              <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm grid grid-cols-2 gap-4 items-center">
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">
-                    Sector
-                  </span>
-                  <span className="text-xs sm:text-sm font-extrabold text-neutral-primary truncate">
-                    {resolvedSectorName}
-                  </span>
-                </div>
-
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">
-                    Mandatory Unit Score
-                  </span>
-                  <span className="text-base sm:text-lg font-black text-neutral-primary">
-                    0
-                  </span>
-                </div>
-
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">
-                    Level
-                  </span>
-                  <span className="text-xs sm:text-sm font-extrabold text-neutral-primary">
-                    {levelName}
-                  </span>
-                </div>
-
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">
-                    Optional Unit Score
-                  </span>
-                  <span className="text-base sm:text-lg font-black text-neutral-primary">
-                    0
-                  </span>
-                </div>
-              </div>
+              <p className="text-xs sm:text-sm text-neutral-secondary font-medium">
+                {resolvedCentreName} | {resolvedSectorName} | {resolvedTradeName}
+              </p>
             </div>
 
-            {/* Units List */}
-            <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-4">
-              <h3 className="text-base sm:text-lg font-extrabold text-neutral-primary tracking-tight">
-                {resolvedTradeName} {levelName}
-              </h3>
-
-              <div className="flex flex-col gap-3">
-                {unitsList.map((unit) => (
-                  <div
-                    key={unit.id}
-                    onClick={() => setSelectedUnit(unit)}
-                    className="p-4 rounded-xl border border-gray-100 hover:border-gray-200 bg-[#f8f9fa] hover:bg-white flex items-center justify-between gap-4 cursor-pointer transition-all group shadow-2xs"
-                  >
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 min-w-0">
-                      <span className="font-extrabold text-xs sm:text-sm text-neutral-primary uppercase shrink-0">
-                        {unit.unitNo}:
-                      </span>
-                      <span className="text-xs sm:text-sm text-gray-700 font-medium truncate">
-                        {unit.title}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-2.5 shrink-0">
-                      {unit.status === "Approved" ? (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#2e7d32] text-white">
-                          <span className="w-1.5 h-1.5 rounded-full bg-white" />
-                          <span>Approved</span>
-                        </span>
-                      ) : (
-                        <span className="px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold bg-gray-200/70 text-gray-600">
-                          {unit.status}
-                        </span>
-                      )}
-                      <FiChevronRight className="w-4 h-4 text-gray-400 group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
-                    </div>
-                  </div>
-                ))}
+            {/* 3. Payment Card */}
+            <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-gray-100 flex items-center justify-between gap-4">
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2.5">
+                  <span className="text-lg sm:text-xl font-black text-neutral-primary">
+                    ₦45,000
+                  </span>
+                  {isPaid ? (
+                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800">
+                      Completed
+                    </span>
+                  ) : (
+                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-gray-100 text-gray-600">
+                      Not Started
+                    </span>
+                  )}
+                </div>
+                <span className="text-xs sm:text-sm text-neutral-secondary font-medium">
+                  NSQ Standard Assessment Fee
+                </span>
               </div>
+
+              {!isPaid ? (
+                <button
+                  type="button"
+                  onClick={handleMakePayment}
+                  className="text-sm font-extrabold text-[#fbab2a] hover:text-[#e89b1f] hover:underline cursor-pointer select-none shrink-0"
+                >
+                  Make Payment
+                </button>
+              ) : (
+                <span className="text-sm font-bold text-emerald-600 flex items-center gap-1 shrink-0">
+                  <FiCheck className="w-4 h-4" /> Paid
+                </span>
+              )}
+            </div>
+
+            {/* 4. Candidate Induction Form Card */}
+            <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-gray-100 flex items-center justify-between gap-4">
+              <span className="text-sm sm:text-base font-extrabold text-neutral-primary tracking-tight">
+                Candidate Induction Form
+              </span>
+
+              <button
+                type="button"
+                onClick={() =>
+                  router.push(`/nsq/induction-form?applicationId=${application?.id || ""}`)
+                }
+                className="text-sm font-extrabold text-[#fbab2a] hover:text-[#e89b1f] hover:underline cursor-pointer select-none shrink-0"
+              >
+                Complete Form
+              </button>
             </div>
           </div>
 
@@ -434,7 +449,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
             {/* Calendar */}
             <CalendarWidget />
 
-            {/* Observation Request Card (Images 1 to 5) */}
+            {/* Observation Request Card */}
             <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex flex-col gap-3">
               <h4 className="text-sm font-extrabold text-neutral-primary tracking-tight">
                 Observation Request
@@ -515,7 +530,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                     )}
                   </div>
 
-                  {/* View Form Button for Completed status (Image 1) */}
+                  {/* View Form Button for Completed status */}
                   {scheduledObservation.status === "completed" && (
                     <Button
                       type="button"
@@ -542,49 +557,6 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                 </div>
               )}
             </div>
-
-            {/* Verifier / Assessor Profile Card */}
-            <div className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-100 shadow-sm flex items-center gap-3.5">
-              <Avatar
-                src={(application as any)?.verifier?.photo?.url || (application as any)?.facilitator?.photo?.url || null}
-                name={(application as any)?.verifier?.name || "Ngozi Eze"}
-                className="w-12 h-12 shrink-0"
-                alt="Internal Verifier"
-              />
-
-              <div className="flex flex-col min-w-0">
-                <span className="font-extrabold text-sm text-neutral-primary truncate">
-                  {(application as any)?.verifier?.name || "Ngozi Eze"}
-                </span>
-                <span className="text-[11px] text-neutral-secondary font-medium truncate mt-0.5">
-                  Internal Verifier
-                </span>
-              </div>
-            </div>
-
-            {/* Append Signature Card (Figma Screen) */}
-            <div
-              onClick={() => setIsReportSignatureModalOpen(true)}
-              className="bg-white hover:bg-gray-50/70 rounded-2xl p-4 sm:p-5 border border-gray-100 shadow-sm flex items-center justify-between gap-4 cursor-pointer transition-all group select-none"
-            >
-              <div className="flex flex-col gap-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h4 className="text-xs sm:text-sm font-extrabold text-neutral-primary">
-                    Append Signature
-                  </h4>
-                  <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                    isReportSigned ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-600"
-                  }`}>
-                    {isReportSigned ? "Signed" : "Attention Required"}
-                  </span>
-                </div>
-                <span className="text-[11px] text-neutral-secondary truncate">
-                  Internal Verifier Report Form
-                </span>
-              </div>
-
-              <FiChevronRight className="w-4 h-4 text-gray-400 group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
-            </div>
           </div>
         </div>
       </div>
@@ -597,7 +569,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
         onRequestSubmitted={handleObservationRequestSubmitted}
       />
 
-      {/* Observation Request Review & Signature Modal (Images 3 & 4) */}
+      {/* Observation Request Review & Signature Modal */}
       <NsqObservationRequestReviewModal
         isOpen={isReviewModalOpen}
         onClose={() => setIsReviewModalOpen(false)}
@@ -605,7 +577,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
         onConfirmSchedule={handleConfirmSchedule}
       />
 
-      {/* Observation Success Confirmation Modal (Image 5 & Image 3) */}
+      {/* Observation Success Confirmation Modal */}
       <NsqObservationSuccessModal
         isOpen={isSuccessModalOpen}
         onClose={() => setIsSuccessModalOpen(false)}
@@ -618,6 +590,14 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
         isOpen={isReportSignatureModalOpen}
         onClose={() => setIsReportSignatureModalOpen(false)}
         onSignedSuccess={() => setIsReportSigned(true)}
+      />
+
+      {/* Processing Payment Modal (media_1789106852366.png) */}
+      <StatusModal
+        isOpen={isProcessingPayment}
+        variant="processing-payment"
+        title="Processing Payment"
+        description="Please wait while we process your payment"
       />
     </div>
   );

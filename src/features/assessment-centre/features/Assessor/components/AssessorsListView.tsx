@@ -231,18 +231,20 @@ export const AssessorsListView: React.FC<AssessorsListViewProps> = ({
               return (
                 <div
                   key={assessor.id}
-                  className="bg-white rounded-2xl p-5 border border-black/20 shadow-2xs hover:shadow-xs transition-all flex items-start justify-between relative group"
+                  onClick={() => onSelectAssessor(assessor.id)}
+                  className="bg-white rounded-2xl p-5 border border-black/20 shadow-2xs hover:shadow-xs transition-all flex items-start justify-between relative group cursor-pointer"
                 >
                   <div className="flex items-start gap-3">
                     <input
                       type="checkbox"
                       checked={isSelected}
+                      onClick={(e) => e.stopPropagation()}
                       onChange={() => toggleSelectOne(assessor.id)}
                       className="mt-1 w-4 h-4 rounded border-gray-300 text-[#a31d38] focus:ring-0 cursor-pointer"
                     />
 
                     <div className="flex flex-col gap-2">
-                      <span className="font-bold text-sm text-neutral-primary">
+                      <span className="font-bold text-sm text-neutral-primary group-hover:text-primary transition-colors">
                         {assessor.name}
                       </span>
                       <span className="text-xs text-gray-500 font-normal">
@@ -262,7 +264,10 @@ export const AssessorsListView: React.FC<AssessorsListViewProps> = ({
 
                     <button
                       type="button"
-                      onClick={() => onSelectAssessor(assessor.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelectAssessor(assessor.id);
+                      }}
                       className="text-xs lg:text-sm text-neutral-primary font-bold underline hover:text-[#a31d38] transition-colors cursor-pointer mt-2"
                     >
                       View
@@ -303,9 +308,10 @@ export const AssessorsListView: React.FC<AssessorsListViewProps> = ({
                 {filteredAssessors.map((assessor) => (
                   <tr
                     key={assessor.id}
-                    className="hover:bg-gray-50/50 transition-colors"
+                    onClick={() => onSelectAssessor(assessor.id)}
+                    className="hover:bg-gray-50/50 transition-colors cursor-pointer group"
                   >
-                    <td className="p-3.5">
+                    <td className="p-3.5" onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
                         checked={selectedIds.includes(assessor.id)}
@@ -313,7 +319,7 @@ export const AssessorsListView: React.FC<AssessorsListViewProps> = ({
                         className="w-4 h-4 rounded border-gray-300 text-[#a31d38] focus:ring-0 cursor-pointer"
                       />
                     </td>
-                    <td className="p-3.5 font-bold text-neutral-primary">
+                    <td className="p-3.5 font-bold text-neutral-primary group-hover:text-primary transition-colors">
                       {assessor.name}
                     </td>
                     <td className="p-3.5 text-neutral-secondary">
@@ -334,7 +340,10 @@ export const AssessorsListView: React.FC<AssessorsListViewProps> = ({
                     <td className="p-3.5 text-right">
                       <button
                         type="button"
-                        onClick={() => onSelectAssessor(assessor.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSelectAssessor(assessor.id);
+                        }}
                         className="text-neutral-primary font-bold text-xs underline hover:text-[#a31d38] transition-colors cursor-pointer"
                       >
                         View
