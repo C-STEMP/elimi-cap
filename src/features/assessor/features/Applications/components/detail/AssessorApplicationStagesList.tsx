@@ -36,6 +36,8 @@ interface AssessorApplicationStagesListProps {
     reason: string;
     recommendation: string;
   } | null;
+  isUserLeadPanelist?: boolean;
+  isUserPanelMember?: boolean;
 }
 
 export const AssessorApplicationStagesList: React.FC<
@@ -52,6 +54,8 @@ export const AssessorApplicationStagesList: React.FC<
   onScheduleObservation,
   interviewOutcome = "ongoing",
   interviewFeedback,
+  isUserLeadPanelist = false,
+  isUserPanelMember = false,
 }) => {
   const { data: stagesData } = useGetApplicationStages(application.id);
   const isInterviewStage = Boolean(
@@ -273,12 +277,29 @@ export const AssessorApplicationStagesList: React.FC<
       status: currentInterviewStatus,
       badgeType: currentInterviewBadgeType,
       badgeText: currentInterviewStatus,
-      dateText: "—",
+      dateText:
+        interviewOutcome === "awaiting_signature"
+          ? "Awaiting remaining panel signatures"
+          : "—",
       isCollapsible: false,
       isCollapsed: false,
       assessors: panelMembers,
       inconclusiveDetails: interviewFeedback || undefined,
-      menuActions: isInterviewDone ? [] : [
+      actionButton:
+        !isInterviewDone && isUserPanelMember && !isUserLeadPanelist && onMarkCandidateCompetent
+          ? interviewOutcome === "awaiting_signature"
+            ? {
+                label: "Evaluation Recorded",
+                variant: "view",
+                onClick: () => {},
+              }
+            : {
+                label: "Sign Off Interview",
+                variant: "amber",
+                onClick: onMarkCandidateCompetent,
+              }
+          : undefined,
+      menuActions: (isInterviewDone || !isUserLeadPanelist) ? [] : [
         {
           label: "Competent",
           onClick: onMarkCandidateCompetent || (() => {}),

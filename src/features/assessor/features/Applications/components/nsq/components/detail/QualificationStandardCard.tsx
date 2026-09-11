@@ -24,42 +24,57 @@ export const QualificationStandardCard: React.FC<
   optionalScore = 0,
 }) => {
   return (
-    <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-4 select-text">
-      <div className="flex items-center gap-2">
-        <span className="px-2.5 py-0.5 bg-rose-50 text-rose-700 font-bold text-[10px] rounded-md border border-rose-100">
-          Mandatory
-        </span>
+    <div className="grid grid-cols-1 md:grid-cols-12 gap-5 w-full select-text">
+      {/* Left Card: Qualification Standard */}
+      <div className="md:col-span-7 bg-white rounded-3xl p-5 sm:p-6 shadow-xs border border-gray-100 flex flex-col justify-between gap-5">
+        <div className="flex flex-col gap-2.5">
+          <span className="w-fit px-2.5 py-0.5 bg-[#fce7f3] text-[#be185d] font-bold text-[10px] rounded-md tracking-wide">
+            Mandatory
+          </span>
+
+          <h2 className="text-base sm:text-lg font-black text-neutral-primary tracking-tight">
+            {tradeName} National Occupational Standard
+          </h2>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100">
+          <div>
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
+              QUALIFICATION CODE
+            </span>
+            <span className="text-xs sm:text-sm font-black text-neutral-primary mt-1 block">
+              {qualificationCode}
+            </span>
+          </div>
+
+          <div>
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
+              EVIDENCE TYPE
+            </span>
+            <span className="text-xs sm:text-sm font-black text-neutral-primary mt-1 block">
+              {evidenceTypes}
+            </span>
+          </div>
+        </div>
       </div>
 
-      <h2 className="text-base sm:text-lg font-extrabold text-neutral-primary">
-        {tradeName} National Occupational Standard
-      </h2>
-
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-3 border-t border-gray-100">
-        <div>
-          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
-            QUALIFICATION CODE
-          </span>
-          <span className="text-xs font-bold text-neutral-primary mt-0.5 block">
-            {qualificationCode}
-          </span>
-        </div>
-
-        <div>
-          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
-            EVIDENCE TYPE
-          </span>
-          <span className="text-xs font-bold text-neutral-primary mt-0.5 block">
-            {evidenceTypes}
-          </span>
-        </div>
-
+      {/* Right Card: Sector & Metrics */}
+      <div className="md:col-span-5 bg-white rounded-3xl p-5 sm:p-6 shadow-xs border border-gray-100 grid grid-cols-2 gap-y-5 gap-x-4 items-center">
         <div>
           <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
             SECTOR
           </span>
-          <span className="text-xs font-bold text-neutral-primary mt-0.5 block">
+          <span className="text-xs sm:text-sm font-black text-neutral-primary mt-1 block">
             {sector}
+          </span>
+        </div>
+
+        <div>
+          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
+            MANDATORY UNIT SCORE
+          </span>
+          <span className="text-base sm:text-lg font-black text-neutral-primary mt-1 block">
+            {mandatoryScore}
           </span>
         </div>
 
@@ -67,19 +82,8 @@ export const QualificationStandardCard: React.FC<
           <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
             LEVEL
           </span>
-          <span className="text-xs font-bold text-neutral-primary mt-0.5 block">
+          <span className="text-xs sm:text-sm font-black text-neutral-primary mt-1 block">
             {level}
-          </span>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4 pt-3 border-t border-gray-100">
-        <div>
-          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
-            MANDATORY UNIT SCORE
-          </span>
-          <span className="text-sm font-extrabold text-neutral-primary mt-0.5 block">
-            {mandatoryScore}
           </span>
         </div>
 
@@ -87,7 +91,7 @@ export const QualificationStandardCard: React.FC<
           <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
             OPTIONAL UNIT SCORE
           </span>
-          <span className="text-sm font-extrabold text-neutral-primary mt-0.5 block">
+          <span className="text-base sm:text-lg font-black text-neutral-primary mt-1 block">
             {optionalScore}
           </span>
         </div>

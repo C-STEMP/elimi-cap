@@ -23,12 +23,16 @@ import {
   useGetCentrePanels,
   useGetCentreInterviews,
 } from "@/src/features/shared/centre/hooks";
+import { NsqCentreApplicationDetailView } from "./nsq/NsqCentreApplicationDetailView";
+import { GenerateLinkSuccessModal } from "./nsq/GenerateLinkSuccessModal";
+import { useToast } from "@/src/components/ui/toast";
 
 export const CentreApplicationRouteView: React.FC<{ id: string }> = ({
   id,
 }) => {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const { data: application, isLoading } = useGetApplicationById(id);
   const reviewMutation = useReviewApplication();
 
@@ -42,6 +46,8 @@ export const CentreApplicationRouteView: React.FC<{ id: string }> = ({
     useState(false);
   const [isCreateInterviewModalOpen, setIsCreateInterviewModalOpen] =
     useState(false);
+  const [isGenerateLinkModalOpen, setIsGenerateLinkModalOpen] = useState(false);
+  const [selectedUnitNumber, setSelectedUnitNumber] = useState<string | null>(null);
 
   const { data: centrePanels = [] } = useGetCentrePanels();
   const { data: centreInterviews = [] } = useGetCentreInterviews();
@@ -89,6 +95,34 @@ export const CentreApplicationRouteView: React.FC<{ id: string }> = ({
     application.status === "in_progress" ||
     application.status === "certified";
 
+  const isNsqApplication =
+    application.type === "NSQ" ||
+    (application as any)?.assessmentType === "NSQ";
+
+  const tradeName =
+    (typeof application.trade === "object" ? (application.trade as any)?.name : null) ||
+    (typeof application.trade === "string" && !/^[0-9A-Z]{20,}$/.test(application.trade)
+      ? application.trade
+      : null) ||
+    "Masonry";
+
+  const handleGenerateLink = () => {
+    setIsGenerateLinkModalOpen(true);
+  };
+
+  const handleCopyGeneratedLink = () => {
+    if (typeof window !== "undefined") {
+      const shareUrl = `${window.location.origin}/applications/${id}?from=centre`;
+      navigator.clipboard.writeText(shareUrl);
+      setIsGenerateLinkModalOpen(false);
+      toast({
+        type: "success",
+        title: "Link Copied",
+        description: "You have successfully copied a link",
+      });
+    }
+  };
+
   const handleOpenScheduleInterview = () => {
     const hasPanels =
       (centrePanels && centrePanels.length > 0) ||
@@ -112,12 +146,17 @@ export const CentreApplicationRouteView: React.FC<{ id: string }> = ({
         <ApplicationsHeader
           selectedCandidateName={candidateName}
           selectedInterviewTitle={null}
+          selectedUnitNumber={selectedUnitNumber}
+          selectedTradeName={tradeName}
           showSelfAssessmentForm={showSelfAssessmentForm}
           showEvidenceVault={showEvidenceVault}
           showCandidateForm={showCandidateForm}
           isApplicationApproved={isSelectedAppApproved}
+          isNsqApplication={isNsqApplication}
+          onGenerateLink={handleGenerateLink}
           onBackToList={handleBackToList}
           onBackFromInterview={handleBackToList}
+          onBackFromUnit={() => setSelectedUnitNumber(null)}
           onBackFromSelfAssessment={() => setShowSelfAssessmentForm(false)}
           onBackFromEvidenceVault={() => setShowEvidenceVault(false)}
           onBackFromCandidateForm={() => setShowCandidateForm(false)}
@@ -169,6 +208,13 @@ export const CentreApplicationRouteView: React.FC<{ id: string }> = ({
             candidateName={candidateName}
             onBack={() => setShowCandidateForm(false)}
           />
+        ) : isNsqApplication ? (
+          <NsqCentreApplicationDetailView
+            application={application}
+            onBack={handleBackToList}
+            selectedUnitNumber={selectedUnitNumber}
+            onSelectUnit={setSelectedUnitNumber}
+          />
         ) : (
           <ApplicationDetail
             id={id}
@@ -201,6 +247,11 @@ export const CentreApplicationRouteView: React.FC<{ id: string }> = ({
       <CreateInterviewModal
         isOpen={isCreateInterviewModalOpen}
         onClose={() => setIsCreateInterviewModalOpen(false)}
+      />
+      <GenerateLinkSuccessModal
+        isOpen={isGenerateLinkModalOpen}
+        onClose={() => setIsGenerateLinkModalOpen(false)}
+        onCopyLink={handleCopyGeneratedLink}
       />
     </div>
   );

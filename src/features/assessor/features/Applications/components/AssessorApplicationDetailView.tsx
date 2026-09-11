@@ -148,6 +148,7 @@ export const AssessorApplicationDetailView: React.FC<
   };
 
   const leadMember = interviewPanel?.members?.find((m: any) => m.isLead);
+  const panelMember = interviewPanel?.members?.find((m: any) => !m.isLead && !m.isObserver);
   const ivMember = interviewPanel?.members?.find((m: any) => m.isObserver);
 
   // User is IV if system role is explicitly IV/verifier OR user matches an observer member on the panel
@@ -164,6 +165,12 @@ export const AssessorApplicationDetailView: React.FC<
     leadMember
       ? isMemberMatch(leadMember)
       : application.role?.toLowerCase()?.includes("lead"),
+  );
+
+  const isUserPanelMember = Boolean(
+    panelMember
+      ? isMemberMatch(panelMember)
+      : (!isUserLeadPanelist && !isUserIV && (user?.role?.toLowerCase()?.includes("assessor") || application.role?.toLowerCase()?.includes("panel")))
   );
 
   // Assessment forms are to be filled by Lead Panelist & viewed by IV, Facilitator, and other panel members
@@ -286,11 +293,24 @@ export const AssessorApplicationDetailView: React.FC<
 
   const handleConfirmCandidateCompetent = async () => {
     try {
-      const res = await evaluateInterview.mutateAsync({
-        decision: "approve",
-        feedback: "Candidate demonstrated all required competencies.",
+      const isLead = isUserLeadPanelist;
+      const uName = user?.fullName || (user as any)?.name || "Assessor";
+      const payload: {
+        feedback: string;
+        signatureAssetId: string;
+        decision?: "approve" | "reject";
+      } = {
+        feedback: isLead
+          ? "Candidate demonstrated all required competencies."
+          : `Interview evaluated and approved by panel member (${uName}).`,
         signatureAssetId: "default",
-      });
+      };
+
+      if (isLead) {
+        payload.decision = "approve";
+      }
+
+      const res = await evaluateInterview.mutateAsync(payload);
 
       setIsConfirmCandidateCompetentOpen(false);
 
@@ -310,9 +330,9 @@ export const AssessorApplicationDetailView: React.FC<
       } else {
         setInterviewOutcome("competent");
         setCompetentSuccessModalConfig({
-          title: "Candidate Marked As Competent",
+          title: isLead ? "Candidate Marked As Competent" : "Interview Evaluation Submitted",
           message:
-            msg || "You have successfully marked this candidate as competent.",
+            msg || (isLead ? "You have successfully marked this candidate as competent." : "Your interview evaluation has been recorded."),
         });
       }
 
@@ -528,6 +548,8 @@ export const AssessorApplicationDetailView: React.FC<
           application={activeApplicationRecord}
           interviewOutcome={interviewOutcome}
           interviewFeedback={interviewFeedback}
+          isUserLeadPanelist={isUserLeadPanelist}
+          isUserPanelMember={isUserPanelMember}
           onViewApplicationForm={() => setSubView("application_form")}
           onOpenEvidenceVault={() => setSubView("evidence_vault")}
           onMarkCompetent={() => setIsConfirmCompetentOpen(true)}
@@ -591,6 +613,7 @@ export const AssessorApplicationDetailView: React.FC<
         onClose={() => setIsConfirmCandidateCompetentOpen(false)}
         onConfirm={handleConfirmCandidateCompetent}
         isLoading={evaluateInterview.isPending}
+        isLead={isUserLeadPanelist}
       />
 
       <CandidateCompetentSuccessModal

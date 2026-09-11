@@ -7,6 +7,7 @@ import { SamplingRecordView } from "./components/con03/SamplingRecordView";
 import { ComprehensiveReportView } from "./components/con04/ComprehensiveReportView";
 import { ObservationChecklistView } from "./components/con05/ObservationChecklistView";
 import { FinalPortfolioReportView } from "./components/con06/FinalPortfolioReportView";
+import { CompleteCandidateModal } from "./components/common/CompleteCandidateModal";
 import type { IqamToolCard, IqamToolId } from "./types/iqam.types";
 
 const IQAM_TOOLS: IqamToolCard[] = [
@@ -73,6 +74,7 @@ export const IqamToolsDashboard: React.FC<IqamToolsDashboardProps> = ({
   const [internalActiveTool, setInternalActiveTool] = useState<IqamToolId | null>(initialToolId);
   const effectiveActiveTool = externalActiveTool !== undefined ? externalActiveTool : internalActiveTool;
   const [selectedCandidate, setSelectedCandidate] = useState<string>(initialCandidateName);
+  const [isCandidateModalOpen, setIsCandidateModalOpen] = useState(false);
 
   useEffect(() => {
     if (externalActiveTool !== undefined) {
@@ -96,6 +98,14 @@ export const IqamToolsDashboard: React.FC<IqamToolsDashboardProps> = ({
     if (!id) {
       onUpdateHeader?.(null);
     }
+  };
+
+  const handleOpenTool = (id: IqamToolId) => {
+    if (id === "CON/04/IQAM") {
+      setIsCandidateModalOpen(true);
+      return;
+    }
+    handleSelectTool(id);
   };
 
   if (effectiveActiveTool === "CON/01/IQAM") {
@@ -181,7 +191,7 @@ export const IqamToolsDashboard: React.FC<IqamToolsDashboardProps> = ({
 
               <button
                 type="button"
-                onClick={() => handleSelectTool(tool.id)}
+                onClick={() => handleOpenTool(tool.id)}
                 className="w-full h-11 bg-[#fbab2a] hover:bg-[#e89b1f] text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition-all cursor-pointer flex items-center justify-center"
               >
                 Open
@@ -189,6 +199,16 @@ export const IqamToolsDashboard: React.FC<IqamToolsDashboardProps> = ({
             </div>
           ))}
         </div>
+
+      <CompleteCandidateModal
+        isOpen={isCandidateModalOpen}
+        onClose={() => setIsCandidateModalOpen(false)}
+        onComplete={(candidate) => {
+          setSelectedCandidate(candidate);
+          setIsCandidateModalOpen(false);
+          handleSelectTool("CON/04/IQAM");
+        }}
+      />
     </div>
   );
 };

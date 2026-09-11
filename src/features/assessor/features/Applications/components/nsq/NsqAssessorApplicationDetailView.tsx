@@ -21,8 +21,19 @@ import {
   ObservationAcceptedSuccessModal,
   ObservationRejectedSuccessModal,
 } from "./NsqAssessorModals";
+import { ComprehensiveReportView } from "../../../iqam/components/con04/ComprehensiveReportView";
+import { ObservationChecklistView } from "../../../iqam/components/con05/ObservationChecklistView";
+import { FinalPortfolioReportView } from "../../../iqam/components/con06/FinalPortfolioReportView";
 import { useToast } from "@/src/components/ui/toast";
 import type { AssessorApplicationRecord } from "../../types/applications.types";
+
+export type NsqAssessorSubView =
+  | "overview"
+  | "unit"
+  | "observation_form"
+  | "iqam_con04"
+  | "iqam_con05"
+  | "iqam_con06";
 
 export interface NsqAssessorApplicationDetailViewProps {
   application: AssessorApplicationRecord;
@@ -30,17 +41,14 @@ export interface NsqAssessorApplicationDetailViewProps {
   showHeader?: boolean;
   onSubViewChange?: (subViewTitle: string | null) => void;
   onRegisterMoveToIqam?: (fn: () => void) => void;
-  subViewNavState?: "overview" | "unit" | "observation_form";
-  onSubViewNavStateChange?: (state: "overview" | "unit" | "observation_form") => void;
+  subViewNavState?: NsqAssessorSubView;
+  onSubViewNavStateChange?: (state: NsqAssessorSubView) => void;
 }
 
 const DEFAULT_UNITS: QualificationUnitItem[] = [
   { id: "unit-1", unitNo: "UNIT 1", title: "Lorem ipsum dolor dolor satuir", approvedCount: 0, totalCount: 10, hasNewUpload: false },
-  { id: "unit-2", unitNo: "UNIT 2", title: "Lorem ipsum dolor dolor satuir", approvedCount: 0, totalCount: 10, hasNewUpload: true },
-  { id: "unit-3", unitNo: "UNIT 3", title: "Lorem ipsum dolor dolor satuir", approvedCount: 0, totalCount: 10, hasNewUpload: false },
-  { id: "unit-4", unitNo: "UNIT 4", title: "Lorem ipsum dolor dolor satuir", approvedCount: 0, totalCount: 10, hasNewUpload: false },
-  { id: "unit-5", unitNo: "UNIT 5", title: "Lorem ipsum dolor dolor satuir", approvedCount: 0, totalCount: 10, hasNewUpload: true },
-  { id: "unit-6", unitNo: "UNIT 6", title: "Lorem ipsum dolor dolor satuir", approvedCount: 0, totalCount: 10, hasNewUpload: false },
+  { id: "unit-2", unitNo: "UNIT 2", title: "Lorem ipsum dolor dolor satuir", approvedCount: 10, totalCount: 10, hasNewUpload: false },
+  { id: "unit-3", unitNo: "UNIT 3", title: "Lorem ipsum dolor dolor satuir", approvedCount: 10, totalCount: 10, hasNewUpload: false },
 ];
 
 export const NsqAssessorApplicationDetailView: React.FC<
@@ -55,15 +63,18 @@ export const NsqAssessorApplicationDetailView: React.FC<
   onSubViewNavStateChange,
 }) => {
   const { toast } = useToast();
-  const [internalSubView, setInternalSubView] = useState<"overview" | "unit" | "observation_form">("overview");
+  const [internalSubView, setInternalSubView] = useState<NsqAssessorSubView>("overview");
   const activeSubView = externalNavState || internalSubView;
 
-  const setActiveSubView = (next: "overview" | "unit" | "observation_form") => {
+  const setActiveSubView = (next: NsqAssessorSubView) => {
     setInternalSubView(next);
     onSubViewNavStateChange?.(next);
     if (next === "overview") onSubViewChange?.(null);
     else if (next === "unit") onSubViewChange?.(selectedUnit?.unitNo || "UNIT 1");
     else if (next === "observation_form") onSubViewChange?.("Physical Observation Form");
+    else if (next === "iqam_con04") onSubViewChange?.("Comprehensive Internal Verifier Report Form");
+    else if (next === "iqam_con05") onSubViewChange?.("IV Observation & Questioning Checklist");
+    else if (next === "iqam_con06") onSubViewChange?.("Final Portfolio / Award Report Form");
   };
 
   const [selectedUnit, setSelectedUnit] = useState<QualificationUnitItem | null>(DEFAULT_UNITS[0]);
@@ -155,6 +166,33 @@ export const NsqAssessorApplicationDetailView: React.FC<
     );
   }
 
+  if (activeSubView === "iqam_con04") {
+    return (
+      <ComprehensiveReportView
+        candidateName={candidateName}
+        onBack={() => setActiveSubView("overview")}
+      />
+    );
+  }
+
+  if (activeSubView === "iqam_con05") {
+    return (
+      <ObservationChecklistView
+        candidateName={candidateName}
+        onBack={() => setActiveSubView("overview")}
+      />
+    );
+  }
+
+  if (activeSubView === "iqam_con06") {
+    return (
+      <FinalPortfolioReportView
+        candidateName={candidateName}
+        onBack={() => setActiveSubView("overview")}
+      />
+    );
+  }
+
   return (
     <div className="w-full flex flex-col items-center select-text">
       <div className="w-full max-w-7xl xl:max-w-360 mx-auto">
@@ -167,6 +205,59 @@ export const NsqAssessorApplicationDetailView: React.FC<
               units={DEFAULT_UNITS}
               onSelectUnit={handleSelectUnit}
             />
+
+            {/* 4. IQAM Forms Card */}
+            <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-xs border border-gray-100 flex flex-col gap-4">
+              <div className="flex items-center gap-2.5">
+                <h3 className="text-base font-extrabold text-neutral-primary tracking-tight">
+                  IQAM Forms
+                </h3>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-[#fce7f3] text-[#be185d]">
+                  Attention Required
+                </span>
+              </div>
+
+              <div className="flex flex-col gap-3">
+                <div className="p-4 bg-gray-50/70 hover:bg-gray-100/70 rounded-2xl border border-gray-100/80 transition-all flex items-center justify-between gap-3">
+                  <span className="text-xs sm:text-sm font-semibold text-neutral-primary">
+                    Comprehensive Internal Verifier Report Form
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setActiveSubView("iqam_con04")}
+                    className="text-[#fbab2a] hover:text-[#e89b1f] hover:underline font-bold text-xs sm:text-sm cursor-pointer select-none shrink-0"
+                  >
+                    View
+                  </button>
+                </div>
+
+                <div className="p-4 bg-gray-50/70 hover:bg-gray-100/70 rounded-2xl border border-gray-100/80 transition-all flex items-center justify-between gap-3">
+                  <span className="text-xs sm:text-sm font-semibold text-neutral-primary">
+                    IV Observation & Questioning Checklist
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setActiveSubView("iqam_con05")}
+                    className="text-[#fbab2a] hover:text-[#e89b1f] hover:underline font-bold text-xs sm:text-sm cursor-pointer select-none shrink-0"
+                  >
+                    View
+                  </button>
+                </div>
+
+                <div className="p-4 bg-gray-50/70 hover:bg-gray-100/70 rounded-2xl border border-gray-100/80 transition-all flex items-center justify-between gap-3">
+                  <span className="text-xs sm:text-sm font-semibold text-neutral-primary">
+                    Final Portfolio / Award Report Form
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setActiveSubView("iqam_con06")}
+                    className="text-[#fbab2a] hover:text-[#e89b1f] hover:underline font-bold text-xs sm:text-sm cursor-pointer select-none shrink-0"
+                  >
+                    View
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="lg:col-span-4 w-full">

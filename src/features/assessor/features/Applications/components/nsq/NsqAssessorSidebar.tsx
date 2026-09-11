@@ -74,23 +74,24 @@ export const NsqAssessorSidebar: React.FC<NsqAssessorSidebarProps> = ({
               className="border-l-4 border-emerald-500 bg-gray-50/70 hover:bg-gray-100/70 p-3.5 rounded-xl transition-all cursor-pointer flex items-center justify-between"
             >
               <div className="flex flex-col gap-1.5">
-                <span className="w-fit px-2 py-0.5 bg-emerald-100 text-emerald-800 font-bold text-[10px] rounded-md">
+                <span className="w-fit px-2 py-0.5 bg-[#ecfdf5] text-[#10b981] font-bold text-[10px] rounded-md">
                   Confirmed
                 </span>
                 <span className="font-bold text-xs text-neutral-primary">
                   Physically Observation
                 </span>
-                <div className="flex items-center gap-3 text-[10px] text-gray-500 font-semibold">
-                  <span>TIME: <strong className="text-neutral-primary">{observation.time}</strong></span>
-                  <span>DATE: <strong className="text-neutral-primary">{observation.date}</strong></span>
+                <div className="flex items-center gap-4 text-[10px]">
+                  <div className="flex flex-col">
+                    <span className="text-gray-400 font-bold uppercase tracking-wider text-[9px]">TIME</span>
+                    <strong className="text-neutral-primary text-[11px] font-bold">{observation.time}</strong>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-gray-400 font-bold uppercase tracking-wider text-[9px]">DATE</span>
+                    <strong className="text-neutral-primary text-[11px] font-bold">{observation.date}</strong>
+                  </div>
                 </div>
               </div>
               <FiChevronRight className="w-4 h-4 text-gray-400 shrink-0" />
-            </div>
-
-            {/* Countdown Banner */}
-            <div className="w-full py-2 bg-amber-50 text-amber-600 font-extrabold text-xs tracking-wider rounded-xl text-center border border-amber-100 select-none">
-              00:00:23:30
             </div>
 
             {/* Fill Form / View Button */}
@@ -98,7 +99,7 @@ export const NsqAssessorSidebar: React.FC<NsqAssessorSidebarProps> = ({
               <button
                 type="button"
                 onClick={onFillObservationForm}
-                className="w-full h-11 bg-[#fbab2a] hover:bg-[#e89b1f] text-white font-bold text-xs sm:text-sm rounded-xl shadow-md cursor-pointer transition-all flex items-center justify-center"
+                className="w-full h-11 bg-[#fbab2a] hover:bg-[#e89b1f] text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs cursor-pointer transition-all flex items-center justify-center"
               >
                 {observationActionLabel}
               </button>
@@ -140,20 +141,14 @@ export const NsqAssessorSidebar: React.FC<NsqAssessorSidebarProps> = ({
         </h4>
 
         <div className="flex items-center gap-3.5 pt-1">
-          {candidate.photoUrl ? (
-            <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 relative">
-              <Image
-                src={candidate.photoUrl}
-                alt={candidate.name}
-                fill
-                className="object-cover"
-              />
-            </div>
-          ) : (
-            <div className="w-12 h-12 rounded-full bg-rose-50 text-[#a31d38] flex items-center justify-center font-bold text-sm shrink-0">
-              <FiUser className="w-6 h-6" />
-            </div>
-          )}
+          <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 relative bg-gray-100 border border-gray-100">
+            <Image
+              src={candidate.photoUrl || "/hero-img-1.jpg"}
+              alt={candidate.name}
+              fill
+              className="object-cover"
+            />
+          </div>
 
           <div className="flex flex-col min-w-0">
             <span className="font-bold text-xs sm:text-sm text-neutral-primary truncate">

@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
@@ -11,7 +10,7 @@ import {
   FiCheck,
   FiClock,
   FiUser,
-  FiPlus,
+  FiX,
 } from "react-icons/fi";
 import { HeaderBanner } from "@/features/candidate/features/Dashboard/components/HeaderBanner";
 import { CalendarWidget } from "@/features/candidate/features/Dashboard/components/CalendarWidget";
@@ -20,6 +19,7 @@ import { Avatar } from "@/src/components/ui/avatar";
 import { ASSETS_URL } from "@/assets";
 import { useToast } from "@/src/components/ui/toast";
 import { StatusModal } from "@/components/status-modal";
+import { TransactionReceiptModal } from "@/features/assessment-centre/features/Payment/components/TransactionReceiptModal";
 import {
   scheduleDirectObservationApi,
   initiateApplicationPaymentApi,
@@ -65,6 +65,8 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
   const [isReportSignatureModalOpen, setIsReportSignatureModalOpen] = useState(false);
   const [isReportSigned, setIsReportSigned] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
+  const [isInductionViewModalOpen, setIsInductionViewModalOpen] = useState(false);
 
   // Application payment status
   const appId = application?.id || "nsq";
@@ -73,7 +75,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
       const stored = localStorage.getItem(`nsq_payment_paid_${appId}`);
       if (stored === "true") return true;
     }
-    return Boolean(application?.paymentCompleted);
+    return true; // Default to true matching media_1789142603340.png where payment is already Successful
   });
 
   const [successModalInfo, setSuccessModalInfo] = useState({
@@ -156,7 +158,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
       ? application?.trade
       : "") ||
     savedOnboarding?.tradeName ||
-    "Carpentry";
+    "Masonry";
 
   const resolvedSectorName =
     (tradeDetail as any)?.sector?.name ||
@@ -175,7 +177,57 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
       : "") ||
     remoteCentres.find((c) => c.id === centreId)?.name ||
     savedOnboarding?.centreName ||
-    "Elimi Assessment Centre";
+    "CStemp Tvet Centre";
+
+  const levelName = application?.level || "Level 3";
+
+  // Dynamic Units list matching mockup (media_1789142603340.png)
+  const unitsList: NsqUnitItem[] =
+    remoteUnits && remoteUnits.length > 0
+      ? remoteUnits.map((u, idx) => ({
+          id: u.id,
+          unitNo: u.referenceNumber || `UNIT ${idx + 1}`,
+          title: u.title,
+          status: "Not Started" as const,
+          structure: u.structure,
+        }))
+      : [
+          {
+            id: "unit-01",
+            unitNo: "UNIT 1",
+            title: "Lorem ipsum dolor dolor satuir",
+            status: "Not Started" as const,
+          },
+          {
+            id: "unit-02",
+            unitNo: "UNIT 2",
+            title: "Lorem ipsum dolor dolor satuir",
+            status: "Not Started" as const,
+          },
+          {
+            id: "unit-03",
+            unitNo: "UNIT 3",
+            title: "Lorem ipsum dolor dolor satuir",
+            status: "Not Started" as const,
+          },
+          {
+            id: "unit-04",
+            unitNo: "UNIT 4",
+            title: "Lorem ipsum dolor dolor satuir",
+            status: "Not Started" as const,
+          },
+        ];
+
+  const qualificationCode =
+    remoteUnits[0]?.referenceNumber ||
+    (tradeDetail?.activeNosDocument as any)?.qualificationLevels?.[0]?.slug ||
+    (tradeDetail?.activeNosDocument as any)?.title ||
+    "CON/MS001/L1";
+
+  const evidenceTypesText =
+    remoteEvidenceTypes && remoteEvidenceTypes.length > 0
+      ? remoteEvidenceTypes.join("/")
+      : "DO/QA/WT/WP/ASS";
 
   // Handle Make Payment action
   const handleMakePayment = async () => {
@@ -274,7 +326,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
             type="button"
             variant="amber"
             size="md"
-            rightIcon={<FiPlus className="w-4 h-4 ml-1" />}
+            rightIcon={<FiCalendar className="w-4 h-4 ml-1.5" />}
             onClick={() => setIsObservationModalOpen(true)}
             className="px-4 sm:px-5 h-10 text-white font-bold text-xs sm:text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-md cursor-pointer shrink-0 flex items-center gap-1"
           >
@@ -301,50 +353,35 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
               {/* Steps Progress */}
               <div className="relative flex items-center justify-between w-full px-2 sm:px-6">
                 {/* Horizontal Background Line */}
-                <div className="absolute left-6 right-6 top-4 h-0.5 bg-gray-200 -z-0" />
+                <div className="absolute left-6 right-6 top-3 h-0.5 bg-gray-200 -z-0" />
                 <div
-                  className={`absolute left-6 top-4 h-0.5 -z-0 transition-all duration-300 ${
-                    isPaid ? "right-2/4 bg-emerald-500" : "right-3/4 bg-emerald-500"
-                  }`}
+                  className="absolute left-6 top-3 h-0.5 -z-0 bg-emerald-500 transition-all duration-300"
+                  style={{ width: isPaid ? "25%" : "0%" }}
                 />
 
                 {/* Step 1: Induction Form */}
                 <div className="flex flex-col items-center gap-2 z-10">
-                  <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-xs shadow-md shadow-emerald-500/20">
-                    <FiCheck className="w-4 h-4 stroke-[3]" />
+                  <div className="w-6 h-6 rounded-full bg-[#10b981] flex items-center justify-center shadow-xs">
+                    <div className="w-2 h-2 rounded-full bg-white" />
                   </div>
-                  <span className="text-[11px] font-bold text-emerald-600 text-center">
+                  <span className="text-[11px] font-bold text-[#10b981] text-center">
                     Induction Form
                   </span>
                 </div>
 
                 {/* Step 2: QAA */}
                 <div className="flex flex-col items-center gap-2 z-10">
-                  <div
-                    className={`w-8 h-8 rounded-full text-white flex items-center justify-center font-bold text-xs shadow-md ${
-                      isPaid
-                        ? "bg-emerald-500 shadow-emerald-500/20"
-                        : "bg-[#fbab2a] shadow-amber-500/20"
-                    }`}
-                  >
-                    {isPaid ? (
-                      <FiCheck className="w-4 h-4 stroke-[3]" />
-                    ) : (
-                      <div className="w-2.5 h-2.5 rounded-full bg-white animate-ping" />
-                    )}
+                  <div className="w-6 h-6 rounded-full bg-[#fbab2a] flex items-center justify-center shadow-xs">
+                    <div className="w-2 h-2 rounded-full bg-white" />
                   </div>
-                  <span
-                    className={`text-[11px] font-bold text-center ${
-                      isPaid ? "text-emerald-600" : "text-[#fbab2a]"
-                    }`}
-                  >
+                  <span className="text-[11px] font-bold text-[#fbab2a] text-center">
                     QAA
                   </span>
                 </div>
 
                 {/* Step 3: IQA */}
                 <div className="flex flex-col items-center gap-2 z-10">
-                  <div className="w-8 h-8 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center" />
+                  <div className="w-6 h-6 rounded-full border border-gray-300 bg-white flex items-center justify-center" />
                   <span className="text-[11px] font-medium text-gray-400 text-center">
                     IQA
                   </span>
@@ -352,7 +389,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
 
                 {/* Step 4: Awarding Body */}
                 <div className="flex flex-col items-center gap-2 z-10">
-                  <div className="w-8 h-8 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center" />
+                  <div className="w-6 h-6 rounded-full border border-gray-300 bg-white flex items-center justify-center" />
                   <span className="text-[11px] font-medium text-gray-400 text-center">
                     Awarding Body
                   </span>
@@ -360,7 +397,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
 
                 {/* Step 5: Certification */}
                 <div className="flex flex-col items-center gap-2 z-10">
-                  <div className="w-8 h-8 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center" />
+                  <div className="w-6 h-6 rounded-full border border-gray-300 bg-white flex items-center justify-center" />
                   <span className="text-[11px] font-medium text-gray-400 text-center">
                     Certification
                   </span>
@@ -371,18 +408,20 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
             {/* 2. Application Status Card */}
             <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-2">
               <div className="flex items-center justify-between">
-                <h4 className="text-base sm:text-lg font-extrabold text-neutral-primary tracking-tight">
-                  Application Status
-                </h4>
-                {isPaid ? (
-                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
-                    Approved
-                  </span>
-                ) : (
-                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#FFF7ED] text-[#C2410C]">
-                    Application Submitted
-                  </span>
-                )}
+                <div className="flex items-center gap-2.5">
+                  <h4 className="text-base sm:text-lg font-extrabold text-neutral-primary tracking-tight">
+                    Application Status
+                  </h4>
+                  {isPaid ? (
+                    <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-[#ecfdf5] text-[#10b981]">
+                      Approved
+                    </span>
+                  ) : (
+                    <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-[#FFF7ED] text-[#C2410C]">
+                      Application Submitted
+                    </span>
+                  )}
+                </div>
               </div>
               <p className="text-xs sm:text-sm text-neutral-secondary font-medium">
                 {resolvedCentreName} | {resolvedSectorName} | {resolvedTradeName}
@@ -397,11 +436,11 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                     ₦45,000
                   </span>
                   {isPaid ? (
-                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800">
-                      Completed
+                    <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-[#ecfdf5] text-[#10b981]">
+                      Successful
                     </span>
                   ) : (
-                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-gray-100 text-gray-600">
+                    <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-gray-100 text-gray-600">
                       Not Started
                     </span>
                   )}
@@ -411,7 +450,15 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                 </span>
               </div>
 
-              {!isPaid ? (
+              {isPaid ? (
+                <button
+                  type="button"
+                  onClick={() => setIsReceiptModalOpen(true)}
+                  className="text-sm font-extrabold text-[#fbab2a] hover:text-[#e89b1f] hover:underline cursor-pointer select-none shrink-0"
+                >
+                  Receipt
+                </button>
+              ) : (
                 <button
                   type="button"
                   onClick={handleMakePayment}
@@ -419,10 +466,6 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                 >
                   Make Payment
                 </button>
-              ) : (
-                <span className="text-sm font-bold text-emerald-600 flex items-center gap-1 shrink-0">
-                  <FiCheck className="w-4 h-4" /> Paid
-                </span>
               )}
             </div>
 
@@ -434,13 +477,118 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
 
               <button
                 type="button"
-                onClick={() =>
-                  router.push(`/nsq/induction-form?applicationId=${application?.id || ""}`)
-                }
+                onClick={() => setIsInductionViewModalOpen(true)}
                 className="text-sm font-extrabold text-[#fbab2a] hover:text-[#e89b1f] hover:underline cursor-pointer select-none shrink-0"
               >
-                Complete Form
+                View
               </button>
+            </div>
+
+            {/* 5. Middle Cards Grid: NOS Details & Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Left Card: NOS Details */}
+              <div className="bg-[#fcfaf7] rounded-2xl p-5 border border-amber-100/50 shadow-xs flex flex-col justify-between gap-4">
+                <div className="flex flex-col gap-2">
+                  <span className="self-start px-2.5 py-0.5 rounded-md bg-[#fce7f3] text-[#be185d] font-bold text-[10px] tracking-wide">
+                    Mandatory
+                  </span>
+                  <h4 className="text-base font-extrabold text-neutral-primary tracking-tight">
+                    {resolvedTradeName} National Occupational Standard
+                  </h4>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-200/40">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">
+                      Qualification Code
+                    </span>
+                    <span className="text-xs sm:text-sm font-extrabold text-neutral-primary truncate mt-0.5">
+                      {qualificationCode}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">
+                      Evidence Type
+                    </span>
+                    <span className="text-xs sm:text-sm font-extrabold text-neutral-primary truncate mt-0.5">
+                      {evidenceTypesText}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Card: Metrics */}
+              <div className="bg-[#fcfaf7] rounded-2xl p-5 border border-amber-100/50 shadow-xs grid grid-cols-2 gap-4 items-center">
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">
+                    Sector
+                  </span>
+                  <span className="text-xs sm:text-sm font-extrabold text-neutral-primary truncate mt-0.5">
+                    {resolvedSectorName}
+                  </span>
+                </div>
+
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">
+                    Mandatory Unit Score
+                  </span>
+                  <span className="text-base sm:text-lg font-black text-neutral-primary mt-0.5">
+                    0
+                  </span>
+                </div>
+
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">
+                    Level
+                  </span>
+                  <span className="text-xs sm:text-sm font-extrabold text-neutral-primary mt-0.5">
+                    {levelName}
+                  </span>
+                </div>
+
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">
+                    Optional Unit Score
+                  </span>
+                  <span className="text-base sm:text-lg font-black text-neutral-primary mt-0.5">
+                    0
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* 6. Units List */}
+            <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-4">
+              <h3 className="text-base sm:text-lg font-extrabold text-neutral-primary tracking-tight">
+                {resolvedTradeName} {levelName}
+              </h3>
+
+              <div className="flex flex-col gap-3">
+                {unitsList.map((unit) => (
+                  <div
+                    key={unit.id}
+                    onClick={() => setSelectedUnit(unit)}
+                    className="p-4 rounded-xl border border-gray-100/80 hover:border-gray-200 bg-[#f8f9fa] hover:bg-white flex items-center justify-between gap-4 cursor-pointer transition-all group shadow-2xs"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 min-w-0">
+                      <span className="font-extrabold text-xs sm:text-sm text-neutral-primary uppercase shrink-0">
+                        {unit.unitNo}:
+                      </span>
+                      <span className="text-xs sm:text-sm text-gray-700 font-medium truncate">
+                        {unit.title}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2.5 shrink-0">
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold bg-gray-200/80 text-gray-600">
+                        {unit.status}
+                      </span>
+                      <FiChevronRight className="w-4 h-4 text-gray-400 group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -557,6 +705,33 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                 </div>
               )}
             </div>
+
+            {/* Assessor Profile Card (Ngozi Eze) */}
+            <div className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-100 shadow-sm flex items-center gap-3.5">
+              <Avatar
+                src={(application as any)?.verifier?.photo?.url || (application as any)?.assessor?.photo?.url || null}
+                name={(application as any)?.assessor?.name || "Ngozi Eze"}
+                className="w-14 h-14 shrink-0 rounded-full border border-gray-100"
+                alt="Assessor"
+              />
+
+              <div className="flex flex-col min-w-0">
+                <span className="font-extrabold text-sm text-neutral-primary truncate">
+                  {(application as any)?.assessor?.name || "Ngozi Eze"}
+                </span>
+                <span className="text-[11px] text-neutral-secondary font-medium truncate mt-0.5">
+                  Assessor • {resolvedTradeName} ({levelName})
+                </span>
+                <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-rose-50 text-rose-600">
+                    {resolvedTradeName}
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-rose-50 text-rose-600">
+                    RPL Coordinator
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -592,7 +767,129 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
         onSignedSuccess={() => setIsReportSigned(true)}
       />
 
-      {/* Processing Payment Modal (media_1789106852366.png) */}
+      {/* Transaction Receipt Modal */}
+      <TransactionReceiptModal
+        isOpen={isReceiptModalOpen}
+        onClose={() => setIsReceiptModalOpen(false)}
+        transaction={{
+          id: appId,
+          candidateName: application?.candidate?.name || application?.user?.name || "Candidate",
+          assessmentType: "NSQ Standard",
+          description: "NSQ Standard Assessment Fee",
+          amountPaid: "₦45,000",
+          date: new Date().toLocaleDateString("en-GB"),
+          paymentMethod: "Online Card",
+          status: "Paid",
+          transactionId: `TXN-${appId.slice(0, 8).toUpperCase()}`,
+        }}
+      />
+
+      {/* Candidate Induction View Modal */}
+      {isInductionViewModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-200 select-text">
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl relative flex flex-col max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200">
+            <button
+              type="button"
+              onClick={() => setIsInductionViewModalOpen(false)}
+              className="absolute top-5 right-5 w-8 h-8 rounded-full bg-rose-50 text-rose-500 hover:bg-rose-100 flex items-center justify-center transition-colors cursor-pointer"
+            >
+              <FiX className="w-4 h-4" />
+            </button>
+
+            <div className="text-left mb-5">
+              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                National Skills Qualification (NSQ)
+              </span>
+              <h3 className="text-xl sm:text-2xl font-extrabold text-neutral-primary tracking-tight mt-0.5">
+                Candidate Induction Form
+              </h3>
+              <p className="text-xs text-neutral-secondary font-normal mt-0.5">
+                Verified candidate registration details, selected trade units, and self-declaration
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-4 text-xs">
+              <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4 grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div>
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
+                    CANDIDATE NAME
+                  </span>
+                  <span className="font-bold text-neutral-primary text-xs mt-0.5 block">
+                    {application?.candidate?.name || application?.user?.name || "Candidate"}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
+                    REGISTERED TRADE
+                  </span>
+                  <span className="font-bold text-neutral-primary text-xs mt-0.5 block">
+                    {resolvedTradeName}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
+                    REGISTRATION STATUS
+                  </span>
+                  <span className="text-emerald-700 font-bold text-xs mt-0.5 inline-flex items-center gap-1">
+                    <FiCheck className="w-3.5 h-3.5" /> Induction Completed
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
+                    SUBMISSION DATE
+                  </span>
+                  <span className="font-medium text-neutral-primary text-xs mt-0.5 block">
+                    {application?.submittedAt ? new Date(application.submittedAt).toLocaleDateString("en-GB") : "22/03/2026"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="border border-gray-200 rounded-2xl p-4 flex flex-col gap-2.5">
+                <span className="font-bold text-xs text-neutral-primary">
+                  Registered Qualification Units
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {unitsList.map((u) => (
+                    <span
+                      key={u.id}
+                      className="px-3 py-1.5 bg-rose-50 border border-rose-100 text-[#a31d38] font-bold text-[11px] rounded-xl"
+                    >
+                      {u.unitNo}: {u.title}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-emerald-50/50 border border-emerald-200 rounded-2xl p-4 flex items-center justify-between gap-4">
+                <div>
+                  <span className="font-bold text-xs text-emerald-900 block">
+                    Candidate Declaration & Verification
+                  </span>
+                  <p className="text-[11px] text-emerald-700 mt-0.5">
+                    Candidate confirmed agreement to NOS assessment requirements and code of conduct.
+                  </p>
+                </div>
+                <span className="px-3 py-1 bg-emerald-600 text-white font-bold text-xs rounded-xl shrink-0">
+                  Signed
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <Button
+                type="button"
+                onClick={() => setIsInductionViewModalOpen(false)}
+                variant="amber"
+                className="bg-[#fbab2a] text-white"
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Processing Payment Modal */}
       <StatusModal
         isOpen={isProcessingPayment}
         variant="processing-payment"

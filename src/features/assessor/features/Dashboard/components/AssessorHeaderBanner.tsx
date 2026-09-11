@@ -156,10 +156,10 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
   };
 
   return (
-    <header className="w-full bg-[#a31d38] text-white shadow-md select-none transition-all relative">
-      <div className="max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 flex flex-col gap-6">
+    <div className="w-full max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 select-none">
+      <header className="w-full bg-[#900B27] text-white rounded-3xl shadow-md transition-all relative p-5 sm:p-6 flex flex-col gap-6">
         {/* Top Bar */}
-        <div className="flex items-center justify-between gap-2 sm:gap-4 border-b border-white/10 pb-5">
+        <div className="flex items-center justify-between gap-2 sm:gap-4 pb-2">
           <div className="shrink-0 cursor-pointer">
             <Logo theme="light" href="/" />
           </div>
@@ -806,7 +806,7 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
           isOpen={isLogoutOpen}
           onClose={() => setIsLogoutOpen(false)}
         />
-      </div>
-    </header>
+      </header>
+    </div>
   );
 };

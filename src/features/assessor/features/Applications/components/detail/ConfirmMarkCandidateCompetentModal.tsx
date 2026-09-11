@@ -10,11 +10,12 @@ interface ConfirmMarkCandidateCompetentModalProps {
   onClose: () => void;
   onConfirm: () => void;
   isLoading?: boolean;
+  isLead?: boolean;
 }
 
 export const ConfirmMarkCandidateCompetentModal: React.FC<
   ConfirmMarkCandidateCompetentModalProps
-> = ({ isOpen, onClose, onConfirm, isLoading = false }) => {
+> = ({ isOpen, onClose, onConfirm, isLoading = false, isLead = true }) => {
   if (!isOpen) return null;
 
   return (
@@ -31,10 +32,12 @@ export const ConfirmMarkCandidateCompetentModal: React.FC<
         </div>
 
         <h3 className="text-xl sm:text-2xl font-extrabold text-neutral-primary tracking-tight mb-1">
-          Are You sure?
+          {isLead ? "Are You sure?" : "Sign Off Interview"}
         </h3>
         <p className="text-xs sm:text-sm text-neutral-secondary font-normal mb-6">
-          Confirm you want to mark as competent
+          {isLead
+            ? "Confirm you want to mark as competent"
+            : "Confirm you want to submit your evaluation and sign off on this interview"}
         </p>
 
         <div className="flex flex-col gap-3 w-full">
@@ -47,7 +50,11 @@ export const ConfirmMarkCandidateCompetentModal: React.FC<
             fullWidth
             className="h-12 bg-[#FBAB2A] hover:bg-[#E89B1F] text-white font-bold text-sm sm:text-base rounded-xl shadow-md cursor-pointer transition-all"
           >
-            {isLoading ? "Marking..." : "Yes, Mark As Competent"}
+            {isLoading
+              ? "Submitting..."
+              : isLead
+              ? "Yes, Mark As Competent"
+              : "Yes, Sign Off Interview"}
           </Button>
 
           <button

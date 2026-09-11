@@ -7,6 +7,8 @@ import { SelfAssessmentFormView } from "./SelfAssessmentFormView";
 import { EvidenceVaultView } from "./EvidenceVaultView";
 import { CandidateFormView } from "./CandidateFormView";
 import { ApplicationDetail } from "./ApplicationDetail";
+import { NsqCentreApplicationDetailView } from "./nsq/NsqCentreApplicationDetailView";
+import { useGetApplicationById } from "@/src/features/shared/applications/hooks";
 import { ApplicationsView } from "./ApplicationsView";
 import { type InterviewRowData } from "./ViewInterviewDetailModal";
 
@@ -49,6 +51,13 @@ export const ApplicationsTab: React.FC<ApplicationsTabProps> = ({
   onOpenCreateInterview,
   onOpenScheduleInterview,
 }) => {
+  const { data: selectedApp } = useGetApplicationById(
+    selectedApplicationId || "",
+  );
+  const isSelectedNsq =
+    selectedApp?.type === "NSQ" ||
+    (selectedApp as any)?.assessmentType === "NSQ";
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 15 }}
@@ -84,13 +93,20 @@ export const ApplicationsTab: React.FC<ApplicationsTabProps> = ({
           onBack={onCloseCandidateForm}
         />
       ) : selectedCandidateName ? (
-        <ApplicationDetail
-          id={selectedApplicationId || undefined}
-          candidateName={selectedCandidateName}
-          onBack={() => onSelectCandidate(null, null)}
-          onOpenCandidateForm={onOpenCandidateForm}
-          onOpenEvidenceVault={onOpenEvidenceVault}
-        />
+        isSelectedNsq && selectedApp ? (
+          <NsqCentreApplicationDetailView
+            application={selectedApp}
+            onBack={() => onSelectCandidate(null, null)}
+          />
+        ) : (
+          <ApplicationDetail
+            id={selectedApplicationId || undefined}
+            candidateName={selectedCandidateName}
+            onBack={() => onSelectCandidate(null, null)}
+            onOpenCandidateForm={onOpenCandidateForm}
+            onOpenEvidenceVault={onOpenEvidenceVault}
+          />
+        )
       ) : (
         <ApplicationsView
           onSelectCandidate={(name, id) => onSelectCandidate(name, id || null)}
