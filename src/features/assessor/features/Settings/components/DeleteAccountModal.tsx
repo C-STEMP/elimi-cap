@@ -77,6 +77,7 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
               width={85}
               height={48}
               className="w-auto h-9 object-contain"
+              style={{ width: "auto", height: "auto" }}
             />
           </div>
 

@@ -2,7 +2,10 @@
 
 import React from "react";
 import { CalendarWidget } from "@/features/candidate/features/Dashboard/components/CalendarWidget";
-import { UpcomingCard } from "@/features/candidate/features/Dashboard/components/UpcomingCard";
+import {
+  UpcomingCard,
+  FormToSignItem,
+} from "@/features/candidate/features/Dashboard/components/UpcomingCard";
 import {
   FacilitatorCard,
   FacilitatorData,
@@ -22,6 +25,8 @@ interface ApplicationDetailsSidebarProps {
   isAtInterviewStage: boolean;
   facilitatorData: FacilitatorData | null;
   onRequestCall: () => void;
+  formsToSign?: FormToSignItem[];
+  onOpenForm?: (formId: string) => void;
 }
 
 export const ApplicationDetailsSidebar: React.FC<ApplicationDetailsSidebarProps> = ({
@@ -30,6 +35,8 @@ export const ApplicationDetailsSidebar: React.FC<ApplicationDetailsSidebarProps>
   isAtInterviewStage,
   facilitatorData,
   onRequestCall,
+  formsToSign,
+  onOpenForm,
 }) => {
   const upcomingInterview =
     isInterviewScheduled && activeInterviewSchedule?.scheduledAt
@@ -56,7 +63,11 @@ export const ApplicationDetailsSidebar: React.FC<ApplicationDetailsSidebarProps>
       <CalendarWidget
         panelInterviewDate={activeInterviewSchedule?.scheduledAt || undefined}
       />
-      <UpcomingCard interview={upcomingInterview} />
+      <UpcomingCard
+        interview={upcomingInterview}
+        forms={isAtInterviewStage ? formsToSign : undefined}
+        onOpenForm={onOpenForm}
+      />
       {!isAtInterviewStage && (
         <FacilitatorCard
           facilitator={facilitatorData}

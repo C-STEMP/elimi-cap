@@ -3,7 +3,8 @@
 import React, { useState } from "react";
 import { AssessorAssessmentFormLayout } from "./AssessorAssessmentFormLayout";
 import { useToast } from "@/src/components/ui/toast";
-import { FiPlus, FiTrash2 } from "react-icons/fi";
+import { Select } from "@/src/components/ui/select";
+import { FiPlus, FiTrash2, FiCalendar } from "react-icons/fi";
 
 export interface CriteriaItem {
   id: string;
@@ -18,13 +19,69 @@ interface SkillsDemonstrationFormProps {
   onSubmit: (data: Record<string, any>) => void;
   formData?: Record<string, any>;
   isReadOnly?: boolean;
+  applicationTrade?: string;
 }
+
+const DEFAULT_SKILLS_CRITERIA: CriteriaItem[] = [
+  {
+    id: "crit-1",
+    title: "Demonstrated correct use of surface preparation tools and brushes",
+    demonstrated: true,
+    comments: "",
+  },
+  {
+    id: "crit-2",
+    title: "Followed safety procedures, dust protection, and PPE requirements",
+    demonstrated: true,
+    comments: "",
+  },
+  {
+    id: "crit-3",
+    title: "Performed tasks according to workplace coating thickness specifications",
+    demonstrated: true,
+    comments: "",
+  },
+  {
+    id: "crit-4",
+    title: "Demonstrated technical skills in POP mixing and feathering",
+    demonstrated: true,
+    comments: "",
+  },
+  {
+    id: "crit-5",
+    title: "Solved problems (repaired hairline plaster shrinkage crack)",
+    demonstrated: true,
+    comments: "",
+  },
+  {
+    id: "crit-6",
+    title: "Communicated clearly and maintained clean working space",
+    demonstrated: true,
+    comments: "",
+  },
+  {
+    id: "crit-7",
+    title: "Completed task within designated 90-minute timeframe",
+    demonstrated: true,
+    comments: "",
+  },
+];
+
+import { getAutoFilledUnitTitleCode, getUnitOptions } from "./utils";
 
 export const SkillsDemonstrationForm: React.FC<
   SkillsDemonstrationFormProps
-> = ({ candidateName, onBack, onSubmit, formData, isReadOnly = false }) => {
+> = ({
+  candidateName,
+  onBack,
+  onSubmit,
+  formData,
+  isReadOnly = false,
+  applicationTrade,
+}) => {
   const { toast } = useToast();
 
+  const autoUnit = getAutoFilledUnitTitleCode(applicationTrade, "skills_demo");
   const [candidateFullName, setCandidateFullName] = useState<string>(
     formData?.candidateFullName ?? candidateName ?? "",
   );
@@ -32,8 +89,22 @@ export const SkillsDemonstrationForm: React.FC<
     formData?.assessorName ?? "",
   );
   const [unitTitleCode, setUnitTitleCode] = useState<string>(
-    formData?.unitTitleCode ?? "",
+    formData?.unitTitleCode && formData.unitTitleCode !== "Select"
+      ? formData.unitTitleCode
+      : autoUnit,
   );
+
+  React.useEffect(() => {
+    if (formData?.unitTitleCode && formData.unitTitleCode !== "Select") {
+      setUnitTitleCode(formData.unitTitleCode);
+    } else if (!unitTitleCode && autoUnit) {
+      setUnitTitleCode(autoUnit);
+    }
+  }, [formData?.unitTitleCode, autoUnit]);
+
+  const unitOptions = React.useMemo(() => {
+    return getUnitOptions(unitTitleCode, "skills_demo");
+  }, [unitTitleCode]);
   const [demonstrationDate, setDemonstrationDate] = useState<string>(
     formData?.demonstrationDate ?? "",
   );
@@ -43,20 +114,17 @@ export const SkillsDemonstrationForm: React.FC<
   const [taskDemonstrated, setTaskDemonstrated] = useState<string>(
     formData?.taskDemonstrated ?? "",
   );
+  const [workplaceDescription, setWorkplaceDescription] = useState<string>(
+    formData?.workplaceDescription ?? "",
+  );
+  const [toolsUsed, setToolsUsed] = useState<string>(
+    formData?.toolsUsed ?? "",
+  );
 
   const [criteria, setCriteria] = useState<CriteriaItem[]>(
     Array.isArray(formData?.criteria) && formData.criteria.length > 0
       ? formData.criteria
-      : isReadOnly
-      ? []
-      : [
-          {
-            id: "crit-1",
-            title: "",
-            demonstrated: true,
-            comments: "",
-          },
-        ],
+      : DEFAULT_SKILLS_CRITERIA,
   );
 
   const [verdict, setVerdict] = useState<"Competent" | "Not Competent">(
@@ -69,19 +137,10 @@ export const SkillsDemonstrationForm: React.FC<
     Boolean(formData?.assessorSigned || formData?.assessorSignedAt),
   );
 
-  const toggleDemonstrated = (id: string) => {
+  const toggleDemonstrated = (id: string, value: boolean) => {
     if (isReadOnly) return;
     setCriteria((prev) =>
-      prev.map((c) =>
-        c.id === id ? { ...c, demonstrated: !c.demonstrated } : c,
-      ),
-    );
-  };
-
-  const updateCriteriaTitle = (id: string, text: string) => {
-    if (isReadOnly) return;
-    setCriteria((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, title: text } : c)),
+      prev.map((c) => (c.id === id ? { ...c, demonstrated: value } : c)),
     );
   };
 
@@ -90,24 +149,6 @@ export const SkillsDemonstrationForm: React.FC<
     setCriteria((prev) =>
       prev.map((c) => (c.id === id ? { ...c, comments: text } : c)),
     );
-  };
-
-  const handleAddCriteria = () => {
-    if (isReadOnly) return;
-    setCriteria((prev) => [
-      ...prev,
-      {
-        id: `crit-${Date.now()}`,
-        title: "",
-        demonstrated: true,
-        comments: "",
-      },
-    ]);
-  };
-
-  const handleRemoveCriteria = (id: string) => {
-    if (isReadOnly) return;
-    setCriteria((prev) => prev.filter((c) => c.id !== id));
   };
 
   const handleAppendSignature = () => {
@@ -129,6 +170,8 @@ export const SkillsDemonstrationForm: React.FC<
       demonstrationDate,
       location,
       taskDemonstrated,
+      workplaceDescription,
+      toolsUsed,
       criteria,
       verdict,
       assessorComments,
@@ -142,20 +185,20 @@ export const SkillsDemonstrationForm: React.FC<
   return (
     <AssessorAssessmentFormLayout
       title="Skills Demonstration Records Form"
-      subtitle="Direct Observation & Practical Performance Record formally capturing practical skill demonstration."
+      subtitle="Direct Observation & Practical Performance Record Formally records real-time skill demonstration under controlled workshop conditions."
       onBack={onBack}
       onSubmit={handleSubmit}
-      submitLabel="Submit Form"
+      submitLabel="Submit"
       isReadOnly={isReadOnly}
     >
       {/* 1. Personal Details */}
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 sm:gap-5">
         <h3 className="text-sm sm:text-base font-bold text-neutral-primary">
           Personal Details
         </h3>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="flex flex-col gap-1.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+          <div className="flex flex-col gap-2">
             <label className="text-xs font-medium text-neutral-primary">
               Candidate Full Name<span className="text-rose-500">*</span>
             </label>
@@ -164,187 +207,186 @@ export const SkillsDemonstrationForm: React.FC<
               value={candidateFullName}
               disabled={isReadOnly}
               onChange={(e) => setCandidateFullName(e.target.value)}
-              placeholder="Candidate Name"
-              className="w-full bg-[#F8F9FA] border border-gray-200 rounded-xl p-3 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80"
+              placeholder="Type Here"
+              className="w-full h-11 sm:h-12 bg-[#F8F9FA] border border-gray-200 rounded-xl px-3.5 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80 transition-all placeholder:text-gray-400"
             />
           </div>
 
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-2">
             <label className="text-xs font-medium text-neutral-primary">
-              Assessor&apos;s Full Name<span className="text-rose-500">*</span>
+              Assessors Full Name<span className="text-rose-500">*</span>
             </label>
             <input
               type="text"
               value={assessorName}
               disabled={isReadOnly}
               onChange={(e) => setAssessorName(e.target.value)}
-              placeholder="Enter Assessor Name"
-              className="w-full bg-[#F8F9FA] border border-gray-200 rounded-xl p-3 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80"
+              placeholder="Type Here"
+              className="w-full h-11 sm:h-12 bg-[#F8F9FA] border border-gray-200 rounded-xl px-3.5 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80 transition-all placeholder:text-gray-400"
             />
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-neutral-primary">
-              Unit Title &amp; Code
-            </label>
-            <input
-              type="text"
-              value={unitTitleCode}
-              disabled={isReadOnly}
-              onChange={(e) => setUnitTitleCode(e.target.value)}
-              placeholder="e.g. CRP-301: Structural Framework"
-              className="w-full bg-[#F8F9FA] border border-gray-200 rounded-xl p-3 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80"
-            />
-          </div>
+          <Select
+            label={<span className="text-xs font-medium text-neutral-primary">Unit Title &amp; Code</span>}
+            placeholder="Select"
+            value={unitTitleCode}
+            disabled={isReadOnly}
+            options={unitOptions}
+            onChange={(e) => setUnitTitleCode(e.target.value || "")}
+            containerClassName="gap-2"
+          />
 
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-2">
             <label className="text-xs font-medium text-neutral-primary">
               Date Of Demonstration<span className="text-rose-500">*</span>
             </label>
-            <input
-              type="date"
-              value={demonstrationDate}
-              disabled={isReadOnly}
-              onChange={(e) => setDemonstrationDate(e.target.value)}
-              className="w-full bg-[#F8F9FA] border border-gray-200 rounded-xl p-3 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80"
-            />
+            <div className="relative w-full">
+              <input
+                type="date"
+                value={demonstrationDate}
+                disabled={isReadOnly}
+                onChange={(e) => setDemonstrationDate(e.target.value)}
+                className="w-full h-11 sm:h-12 bg-[#F8F9FA] border border-gray-200 rounded-xl px-3.5 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80 transition-all"
+              />
+            </div>
           </div>
         </div>
 
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-2">
           <label className="text-xs font-medium text-neutral-primary">
             Location Of Demonstration<span className="text-rose-500">*</span>
           </label>
           <input
             type="text"
-            placeholder="Enter demonstration workshop/site"
+            placeholder="Type Here"
             value={location}
             disabled={isReadOnly}
             onChange={(e) => setLocation(e.target.value)}
-            className="w-full bg-[#F8F9FA] border border-gray-200 rounded-xl p-3 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80"
+            className="w-full h-11 sm:h-12 bg-[#F8F9FA] border border-gray-200 rounded-xl px-3.5 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80 transition-all placeholder:text-gray-400"
           />
         </div>
       </div>
 
       {/* 2. Demonstration Details */}
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 sm:gap-5">
         <h3 className="text-sm sm:text-base font-bold text-neutral-primary">
           Demonstration Details
         </h3>
 
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-2">
           <label className="text-xs font-medium text-neutral-primary">
             Task/Activity Being Demonstrated<span className="text-rose-500">*</span>
           </label>
           <textarea
-            rows={2}
-            placeholder={isReadOnly ? "No demonstration task description provided." : "Type activity details being demonstrated..."}
+            rows={3}
+            placeholder="Type Here"
             value={taskDemonstrated}
             disabled={isReadOnly}
             onChange={(e) => setTaskDemonstrated(e.target.value)}
-            className="w-full bg-[#F8F9FA] border border-gray-200 rounded-xl p-3 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] resize-none disabled:opacity-80"
+            className="w-full bg-[#F8F9FA] border border-gray-200 rounded-xl p-3.5 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] resize-none disabled:opacity-80 transition-all placeholder:text-gray-400"
+          />
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <label className="text-xs font-medium text-neutral-primary">
+            Workplace/Simulated Environment Description<span className="text-rose-500">*</span>
+          </label>
+          <textarea
+            rows={3}
+            placeholder="Type Here"
+            value={workplaceDescription}
+            disabled={isReadOnly}
+            onChange={(e) => setWorkplaceDescription(e.target.value)}
+            className="w-full bg-[#F8F9FA] border border-gray-200 rounded-xl p-3.5 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] resize-none disabled:opacity-80 transition-all placeholder:text-gray-400"
+          />
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <label className="text-xs font-medium text-neutral-primary">
+            Tools/Equipment Used<span className="text-rose-500">*</span>
+          </label>
+          <textarea
+            rows={3}
+            placeholder="Type Here"
+            value={toolsUsed}
+            disabled={isReadOnly}
+            onChange={(e) => setToolsUsed(e.target.value)}
+            className="w-full bg-[#F8F9FA] border border-gray-200 rounded-xl p-3.5 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] resize-none disabled:opacity-80 transition-all placeholder:text-gray-400"
           />
         </div>
       </div>
 
-      {/* 3. Performance Criteria & Evidence Checklist */}
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm sm:text-base font-bold text-neutral-primary">
-            Performance Criteria &amp; Evidence Checklist
-          </h3>
-          {!isReadOnly && (
-            <button
-              type="button"
-              onClick={handleAddCriteria}
-              className="text-xs font-semibold text-[#FBAB2A] hover:text-[#E89B1F] flex items-center gap-1 cursor-pointer"
+      {/* 3. Demonstration Criteria */}
+      <div className="flex flex-col gap-4 sm:gap-5">
+        <h3 className="text-sm sm:text-base font-bold text-neutral-primary">
+          Demonstration Criteria
+        </h3>
+
+        <div className="flex flex-col gap-4">
+          {criteria.map((item, idx) => (
+            <div
+              key={item.id}
+              className="bg-[#F8F9FA] rounded-2xl p-4 sm:p-5 border border-gray-100 flex flex-col gap-3"
             >
-              <FiPlus className="w-4 h-4" /> Add Criteria
-            </button>
-          )}
-        </div>
-
-        {criteria.length === 0 ? (
-          <p className="text-xs text-gray-400 italic bg-[#F8F9FA] p-4 rounded-xl border border-gray-100">
-            No demonstration criteria recorded.
-          </p>
-        ) : (
-          <div className="flex flex-col gap-3.5">
-            {criteria.map((item, idx) => (
-              <div
-                key={item.id}
-                className="bg-[#F8F9FA] rounded-2xl p-4 sm:p-5 border border-gray-100 flex flex-col gap-3"
-              >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="flex-1 flex items-center gap-2">
-                    <span className="text-xs font-bold text-gray-400 shrink-0">
-                      #{idx + 1}
-                    </span>
-                    {isReadOnly ? (
-                      <span className="text-xs sm:text-sm font-semibold text-neutral-primary">
-                        {item.title || "Unspecified Criteria"}
-                      </span>
-                    ) : (
-                      <input
-                        type="text"
-                        value={item.title}
-                        onChange={(e) => updateCriteriaTitle(item.id, e.target.value)}
-                        placeholder="Type standard or performance criteria..."
-                        className="w-full bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-xs text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A]"
-                      />
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-2 shrink-0">
-                    <button
-                      type="button"
-                      disabled={isReadOnly}
-                      onClick={() => toggleDemonstrated(item.id)}
-                      className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
-                        item.demonstrated
-                          ? "bg-[#1E7F4C] text-white border-[#1E7F4C]"
-                          : "bg-white text-gray-600 border-gray-200"
-                      }`}
-                    >
-                      {item.demonstrated ? "Demonstrated" : "Not Demonstrated"}
-                    </button>
-
-                    {!isReadOnly && (
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveCriteria(item.id)}
-                        className="text-gray-400 hover:text-rose-600 p-1"
-                      >
-                        <FiTrash2 className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                <textarea
-                  rows={2}
-                  value={item.comments}
-                  disabled={isReadOnly}
-                  onChange={(e) => updateComments(item.id, e.target.value)}
-                  placeholder={isReadOnly ? "No assessor comments." : "Assessor observation comments..."}
-                  className="w-full bg-white border border-gray-200 rounded-xl p-3 text-xs text-neutral-primary placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] resize-none disabled:opacity-80"
-                />
+              <div className="text-xs sm:text-sm font-semibold text-neutral-primary leading-snug">
+                {item.title}
               </div>
-            ))}
-          </div>
-        )}
+
+              <div className="flex items-center justify-between gap-3 bg-white p-2.5 sm:p-3 rounded-xl border border-gray-100">
+                <span className="text-xs font-semibold text-neutral-secondary">
+                  Demonstrated
+                </span>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    disabled={isReadOnly}
+                    onClick={() => toggleDemonstrated(item.id, true)}
+                    className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                      item.demonstrated
+                        ? "bg-[#8A1538] text-white shadow-2xs"
+                        : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                    }`}
+                  >
+                    Yes
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isReadOnly}
+                    onClick={() => toggleDemonstrated(item.id, false)}
+                    className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                      !item.demonstrated
+                        ? "bg-[#8A1538] text-white shadow-2xs"
+                        : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                    }`}
+                  >
+                    No
+                  </button>
+                </div>
+              </div>
+
+              <textarea
+                rows={2}
+                value={item.comments}
+                disabled={isReadOnly}
+                onChange={(e) => updateComments(item.id, e.target.value)}
+                placeholder="Type Comments Here"
+                className="w-full bg-white border border-gray-200 rounded-xl p-3 text-xs text-neutral-primary placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] resize-none disabled:opacity-80"
+              />
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* 4. Overall Decision */}
-      <div className="flex flex-col gap-4">
+      {/* 4. Assessment Decision & Assessor Notes */}
+      <div className="flex flex-col gap-4 sm:gap-5">
         <h3 className="text-sm sm:text-base font-bold text-neutral-primary">
-          Overall Decision &amp; Feedback
+          Assessment Decision &amp; Assessor Notes
         </h3>
 
         <div className="bg-[#F8F9FA] rounded-2xl p-4 sm:p-5 border border-gray-100 flex flex-col gap-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <span className="text-xs sm:text-sm font-semibold text-neutral-primary">
-              Final Competency Verdict:
+              Skills Demonstration Verdict:
             </span>
 
             <div className="flex items-center rounded-lg overflow-hidden border border-gray-200 bg-white p-0.5 shrink-0">
@@ -352,7 +394,7 @@ export const SkillsDemonstrationForm: React.FC<
                 type="button"
                 disabled={isReadOnly}
                 onClick={() => setVerdict("Competent")}
-                className={`px-4 py-1.5 text-xs font-bold rounded-md transition-colors ${
+                className={`px-4 py-1.5 text-xs font-bold rounded-md transition-colors cursor-pointer ${
                   verdict === "Competent"
                     ? "bg-[#8A1538] text-white"
                     : "text-neutral-secondary hover:text-neutral-primary"
@@ -364,7 +406,7 @@ export const SkillsDemonstrationForm: React.FC<
                 type="button"
                 disabled={isReadOnly}
                 onClick={() => setVerdict("Not Competent")}
-                className={`px-4 py-1.5 text-xs font-bold rounded-md transition-colors ${
+                className={`px-4 py-1.5 text-xs font-bold rounded-md transition-colors cursor-pointer ${
                   verdict === "Not Competent"
                     ? "bg-[#8A1538] text-white"
                     : "text-neutral-secondary hover:text-neutral-primary"
@@ -377,11 +419,11 @@ export const SkillsDemonstrationForm: React.FC<
 
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium text-neutral-primary">
-              Assessor Remarks
+              Assessor Detailed Technical Comments &amp; Next Steps
             </label>
             <textarea
               rows={3}
-              placeholder={isReadOnly ? "No remarks recorded." : "Type overall remarks..."}
+              placeholder="Type Here"
               value={assessorComments}
               disabled={isReadOnly}
               onChange={(e) => setAssessorComments(e.target.value)}
@@ -391,8 +433,8 @@ export const SkillsDemonstrationForm: React.FC<
         </div>
       </div>
 
-      {/* 5. Signature Section */}
-      <div className="flex flex-col gap-4">
+      {/* 5. Signature */}
+      <div className="flex flex-col gap-4 sm:gap-5">
         <h3 className="text-sm sm:text-base font-bold text-neutral-primary">
           Signature
         </h3>
@@ -491,7 +533,7 @@ export const SkillsDemonstrationForm: React.FC<
                   <path d="M12 20h9" />
                   <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
                 </svg>
-                Awaiting Candidate Signature
+                Awaiting Signature
               </div>
             )}
           </div>

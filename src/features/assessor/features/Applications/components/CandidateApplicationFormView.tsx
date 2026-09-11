@@ -16,17 +16,46 @@ interface CandidateApplicationFormViewProps {
   trade: string;
   applicationId?: string;
   applicationDetail?: ApplicationDetail | null;
+  isApproved?: boolean;
 }
 
 export const CandidateApplicationFormView: React.FC<
   CandidateApplicationFormViewProps
-> = ({ candidateName, trade, applicationDetail }) => {
+> = ({ candidateName, trade, applicationDetail, isApproved }) => {
   const [feedbackComment, setFeedbackComment] = useState("");
   const [commentsList, setCommentsList] = useState<
     Array<{ text: string; date?: string; version?: number }>
   >([]);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+
+  const appFormStage = (applicationDetail as any)?.stages?.find(
+    (s: any) =>
+      s.stageKey === "application_form" ||
+      s.stageKey === "application_review" ||
+      s.stageKey === "application",
+  );
+
+  const statusStr = String(applicationDetail?.status || "").toLowerCase();
+  const currentStage = String(applicationDetail?.currentStageKey || "").toLowerCase();
+
+  const isApplicationApproved = Boolean(
+    isApproved ??
+      (statusStr === "approved" ||
+        statusStr === "completed" ||
+        statusStr === "successful" ||
+        statusStr === "ongoing" ||
+        appFormStage?.status === "successful" ||
+        (appFormStage?.status as string) === "approved" ||
+        (currentStage &&
+          currentStage !== "application_form" &&
+          currentStage !== "application_review" &&
+          currentStage !== "draft" &&
+          currentStage !== "submitted"))
+  );
+
+  const showFeedbackPanel = !isApplicationApproved;
+  const showSidebar = showFeedbackPanel || commentsList.length > 0;
 
   const handleOpenConfirm = () => {
     if (!feedbackComment.trim()) return;
@@ -57,7 +86,12 @@ export const CandidateApplicationFormView: React.FC<
       {/* Main Grid: Document on Left, Feedback Panels on Right */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Document Column */}
-        <div id="printable-application-card" className="lg:col-span-8 flex flex-col gap-6 printable-application-card">
+        <div
+          id="printable-application-card"
+          className={`${
+            showSidebar ? "lg:col-span-8" : "lg:col-span-12 max-w-4xl mx-auto w-full"
+          } flex flex-col gap-6 printable-application-card`}
+        >
           <CandidateApplicationFormDocument
             candidateName={candidateName}
             trade={trade}
@@ -66,14 +100,20 @@ export const CandidateApplicationFormView: React.FC<
         </div>
 
         {/* Feedback Sidebar Column */}
-        <div className="lg:col-span-4 flex flex-col gap-6 no-print">
-          <SendFeedbackPanel
-            comment={feedbackComment}
-            onCommentChange={setFeedbackComment}
-            onSubmit={handleOpenConfirm}
-          />
-          <PastCommentsPanel comments={commentsList} />
-        </div>
+        {showSidebar && (
+          <div className="lg:col-span-4 flex flex-col gap-6 no-print">
+            {showFeedbackPanel && (
+              <SendFeedbackPanel
+                comment={feedbackComment}
+                onCommentChange={setFeedbackComment}
+                onSubmit={handleOpenConfirm}
+              />
+            )}
+            {commentsList.length > 0 && (
+              <PastCommentsPanel comments={commentsList} />
+            )}
+          </div>
+        )}
       </div>
 
       {/* Confirmation Modal */}

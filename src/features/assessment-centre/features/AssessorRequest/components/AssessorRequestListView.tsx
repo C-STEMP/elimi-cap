@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { FiSearch, FiList, FiGrid, FiCheck, FiX } from "react-icons/fi";
 import { AssessorItem } from "@/features/assessment-centre/types";
+import { Select } from "@/src/components/ui/select";
 import {
   useGetRetainedRequests,
   useApproveRetainedRequest,
@@ -151,6 +152,18 @@ export const AssessorRequestListView: React.FC<
           </div>
 
           <div className="flex items-center justify-end gap-3">
+            <Select
+              size="sm"
+              showPlaceholderOption={false}
+              containerClassName="w-32 shrink-0"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              options={[
+                { label: "All", value: "All" },
+                { label: "Pending", value: "Pending" },
+              ]}
+            />
+
             <div className="flex items-center gap-1.5">
               <button
                 type="button"

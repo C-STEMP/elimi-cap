@@ -5,4 +5,6 @@ export * from "./PracticalObservationForm";
 export * from "./InterviewRecordForm";
 export * from "./ConfirmSubmitFormModal";
 export * from "./FormSubmittedSuccessModal";
+export * from "./AssessorAssessmentFormDocumentView";
 export * from "./AssessorAssessmentFormView";
+export * from "./utils";

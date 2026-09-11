@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { AssessorAssessmentFormLayout } from "./AssessorAssessmentFormLayout";
 import { useToast } from "@/src/components/ui/toast";
+import { Select } from "@/src/components/ui/select";
 import { FiPlus, FiTrash2 } from "react-icons/fi";
 
 export interface UnitMappingItem {
@@ -14,12 +15,15 @@ export interface UnitMappingItem {
   status: "Satisfied" | "Not Satisfied";
 }
 
+import { getAutoFilledUnitTitleCode, getUnitOptions } from "./utils";
+
 interface AssessmentMappingFormProps {
   candidateName: string;
   onBack: () => void;
   onSubmit: (data: Record<string, any>) => void;
   formData?: Record<string, any>;
   isReadOnly?: boolean;
+  applicationTrade?: string;
 }
 
 export const AssessmentMappingForm: React.FC<AssessmentMappingFormProps> = ({
@@ -28,9 +32,11 @@ export const AssessmentMappingForm: React.FC<AssessmentMappingFormProps> = ({
   onSubmit,
   formData,
   isReadOnly = false,
+  applicationTrade,
 }) => {
   const { toast } = useToast();
 
+  const autoUnit = getAutoFilledUnitTitleCode(applicationTrade, "assessment_mapping");
   const [candidateFullName, setCandidateFullName] = useState<string>(
     formData?.candidateFullName ?? candidateName ?? "",
   );
@@ -38,8 +44,22 @@ export const AssessmentMappingForm: React.FC<AssessmentMappingFormProps> = ({
     formData?.assessorName ?? "",
   );
   const [unitTitleCode, setUnitTitleCode] = useState<string>(
-    formData?.unitTitleCode ?? "",
+    formData?.unitTitleCode && formData.unitTitleCode !== "Select"
+      ? formData.unitTitleCode
+      : autoUnit,
   );
+
+  React.useEffect(() => {
+    if (formData?.unitTitleCode && formData.unitTitleCode !== "Select") {
+      setUnitTitleCode(formData.unitTitleCode);
+    } else if (!unitTitleCode && autoUnit) {
+      setUnitTitleCode(autoUnit);
+    }
+  }, [formData?.unitTitleCode, autoUnit]);
+
+  const unitOptions = React.useMemo(() => {
+    return getUnitOptions(unitTitleCode, "assessment_mapping");
+  }, [unitTitleCode]);
   const [dateCollected, setDateCollected] = useState<string>(
     formData?.dateCollected ?? "",
   );
@@ -84,6 +104,11 @@ export const AssessmentMappingForm: React.FC<AssessmentMappingFormProps> = ({
         status: "Satisfied",
       },
     ]);
+    toast({
+      type: "success",
+      title: "Unit Added",
+      description: "A new competency unit has been added to the mapping grid.",
+    });
   };
 
   const handleRemoveUnit = (id: string) => {
@@ -149,13 +174,13 @@ export const AssessmentMappingForm: React.FC<AssessmentMappingFormProps> = ({
       isReadOnly={isReadOnly}
     >
       {/* 1. Personal Details */}
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 sm:gap-5">
         <h3 className="text-sm sm:text-base font-bold text-neutral-primary">
           Personal Details
         </h3>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="flex flex-col gap-1.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+          <div className="flex flex-col gap-2">
             <label className="text-xs font-medium text-neutral-primary">
               Candidate Full Name<span className="text-rose-500">*</span>
             </label>
@@ -165,11 +190,11 @@ export const AssessmentMappingForm: React.FC<AssessmentMappingFormProps> = ({
               disabled={isReadOnly}
               onChange={(e) => setCandidateFullName(e.target.value)}
               placeholder="Candidate Name"
-              className="w-full bg-[#F8F9FA] border border-gray-200 rounded-xl p-3 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80"
+              className="w-full h-11 sm:h-12 bg-[#F8F9FA] border border-gray-200 rounded-xl px-3.5 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80 transition-all"
             />
           </div>
 
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-2">
             <label className="text-xs font-medium text-neutral-primary">
               Assessor&apos;s Full Name<span className="text-rose-500">*</span>
             </label>
@@ -179,25 +204,21 @@ export const AssessmentMappingForm: React.FC<AssessmentMappingFormProps> = ({
               disabled={isReadOnly}
               onChange={(e) => setAssessorName(e.target.value)}
               placeholder="Enter Assessor Name"
-              className="w-full bg-[#F8F9FA] border border-gray-200 rounded-xl p-3 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80"
+              className="w-full h-11 sm:h-12 bg-[#F8F9FA] border border-gray-200 rounded-xl px-3.5 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80 transition-all"
             />
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-neutral-primary">
-              Unit Title &amp; Code
-            </label>
-            <input
-              type="text"
-              value={unitTitleCode}
-              disabled={isReadOnly}
-              onChange={(e) => setUnitTitleCode(e.target.value)}
-              placeholder="e.g. CRP-302: Finishing &amp; Structure"
-              className="w-full bg-[#F8F9FA] border border-gray-200 rounded-xl p-3 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80"
-            />
-          </div>
+          <Select
+            label={<span className="text-xs font-medium text-neutral-primary">Unit Title &amp; Code</span>}
+            placeholder="Select"
+            value={unitTitleCode}
+            disabled={isReadOnly}
+            options={unitOptions}
+            onChange={(e) => setUnitTitleCode(e.target.value || "")}
+            containerClassName="gap-2"
+          />
 
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-2">
             <label className="text-xs font-medium text-neutral-primary">
               Date Collected<span className="text-rose-500">*</span>
             </label>
@@ -206,12 +227,12 @@ export const AssessmentMappingForm: React.FC<AssessmentMappingFormProps> = ({
               value={dateCollected}
               disabled={isReadOnly}
               onChange={(e) => setDateCollected(e.target.value)}
-              className="w-full bg-[#F8F9FA] border border-gray-200 rounded-xl p-3 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80"
+              className="w-full h-11 sm:h-12 bg-[#F8F9FA] border border-gray-200 rounded-xl px-3.5 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80 transition-all"
             />
           </div>
         </div>
 
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-2">
           <label className="text-xs font-medium text-neutral-primary">
             Workplace/Context<span className="text-rose-500">*</span>
           </label>
@@ -221,24 +242,25 @@ export const AssessmentMappingForm: React.FC<AssessmentMappingFormProps> = ({
             value={workplaceContext}
             disabled={isReadOnly}
             onChange={(e) => setWorkplaceContext(e.target.value)}
-            className="w-full bg-[#F8F9FA] border border-gray-200 rounded-xl p-3 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80"
+            className="w-full h-11 sm:h-12 bg-[#F8F9FA] border border-gray-200 rounded-xl px-3.5 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80 transition-all"
           />
         </div>
       </div>
 
       {/* 2. Trade Units & Competency Grid */}
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 pt-4 border-t border-gray-100">
         <div className="flex items-center justify-between">
           <h3 className="text-sm sm:text-base font-bold text-neutral-primary">
-            Occupational Units &amp; Competency Grid
+            Trade
           </h3>
           {!isReadOnly && (
             <button
               type="button"
               onClick={handleAddUnit}
-              className="text-xs font-semibold text-[#FBAB2A] hover:text-[#E89B1F] flex items-center gap-1 cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#8A1538] text-[#8A1538] text-xs font-semibold hover:bg-[#8A1538]/5 transition-colors cursor-pointer"
             >
-              <FiPlus className="w-4 h-4" /> Add Unit
+              <FiPlus className="w-3.5 h-3.5" />
+              Add Another Unit
             </button>
           )}
         </div>
@@ -269,7 +291,7 @@ export const AssessmentMappingForm: React.FC<AssessmentMappingFormProps> = ({
 
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-medium text-neutral-primary">
-                    Occupational Unit Title:
+                    Occupational Unit<span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -284,47 +306,75 @@ export const AssessmentMappingForm: React.FC<AssessmentMappingFormProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-medium text-neutral-primary">
-                      Performance Criteria:
+                      Performance Criteria
                     </label>
-                    <textarea
-                      rows={2}
+                    <input
+                      type="text"
                       value={unit.performanceCriteria}
                       disabled={isReadOnly}
                       onChange={(e) => updateUnitField(unit.id, "performanceCriteria", e.target.value)}
                       placeholder={isReadOnly ? "Not provided" : "Criteria mapped..."}
-                      className="w-full bg-white border border-gray-200 rounded-xl p-2.5 text-xs text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] resize-none disabled:opacity-80"
+                      className="w-full bg-white border border-gray-200 rounded-xl p-2.5 text-xs text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80"
                     />
                   </div>
 
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-medium text-neutral-primary">
-                      Evidence Type / Artifact:
+                      Type of Evidence
                     </label>
-                    <textarea
-                      rows={2}
+                    <input
+                      type="text"
                       value={unit.typeOfEvidence}
                       disabled={isReadOnly}
                       onChange={(e) => updateUnitField(unit.id, "typeOfEvidence", e.target.value)}
                       placeholder={isReadOnly ? "Not provided" : "e.g. Direct Observation, Portfolio, Third Party"}
-                      className="w-full bg-white border border-gray-200 rounded-xl p-2.5 text-xs text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] resize-none disabled:opacity-80"
+                      className="w-full bg-white border border-gray-200 rounded-xl p-2.5 text-xs text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80"
                     />
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between pt-1 border-t border-gray-200/50">
-                  <span className="text-xs font-semibold text-gray-600">Verification Status:</span>
-                  <button
-                    type="button"
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-medium text-neutral-primary">
+                    Description
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={unit.description}
                     disabled={isReadOnly}
-                    onClick={() => toggleUnitStatus(unit.id)}
-                    className={`px-3 py-1 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
-                      unit.status === "Satisfied"
-                        ? "bg-[#1E7F4C] text-white border-[#1E7F4C]"
-                        : "bg-white text-gray-600 border-gray-200"
-                    }`}
-                  >
-                    {unit.status}
-                  </button>
+                    onChange={(e) => updateUnitField(unit.id, "description", e.target.value)}
+                    placeholder={isReadOnly ? "Not provided" : "Type description of evidence and mapping..."}
+                    className="w-full bg-white border border-gray-200 rounded-xl p-2.5 text-xs text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] resize-none disabled:opacity-80"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between pt-2 border-t border-gray-200/50">
+                  <span className="text-xs font-medium text-neutral-primary">Status:</span>
+                  <div className="flex items-center rounded-lg overflow-hidden border border-gray-200 bg-white p-0.5">
+                    <button
+                      type="button"
+                      disabled={isReadOnly}
+                      onClick={() => updateUnitField(unit.id, "status", "Satisfied")}
+                      className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${
+                        unit.status === "Satisfied"
+                          ? "bg-[#1E7F4C] text-white"
+                          : "text-neutral-secondary hover:text-neutral-primary"
+                      } disabled:cursor-not-allowed`}
+                    >
+                      Satisfied
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isReadOnly}
+                      onClick={() => updateUnitField(unit.id, "status", "Not Satisfied")}
+                      className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${
+                        unit.status === "Not Satisfied"
+                          ? "bg-[#8A1538] text-white"
+                          : "text-neutral-secondary hover:text-neutral-primary"
+                      } disabled:cursor-not-allowed`}
+                    >
+                      Not Satisfied
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -333,7 +383,7 @@ export const AssessmentMappingForm: React.FC<AssessmentMappingFormProps> = ({
       </div>
 
       {/* 3. Overall Remarks */}
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 pt-4 border-t border-gray-100">
         <h3 className="text-sm sm:text-base font-bold text-neutral-primary">
           Overall Grid Summary
         </h3>
@@ -348,7 +398,7 @@ export const AssessmentMappingForm: React.FC<AssessmentMappingFormProps> = ({
       </div>
 
       {/* 4. Signature Section */}
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 pt-4 border-t border-gray-100">
         <h3 className="text-sm sm:text-base font-bold text-neutral-primary">
           Signature
         </h3>

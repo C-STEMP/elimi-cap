@@ -7,9 +7,15 @@ import { PracticalObservationForm } from "./PracticalObservationForm";
 import { InterviewRecordForm } from "./InterviewRecordForm";
 import { ConfirmSubmitFormModal } from "./ConfirmSubmitFormModal";
 import { FormSubmittedSuccessModal } from "./FormSubmittedSuccessModal";
+import { AssessorAssessmentFormDocumentView } from "./AssessorAssessmentFormDocumentView";
 
-import { useGetInterviewForms, useUpdateInterviewForm } from "@/src/features/shared/applications/hooks";
+import {
+  useGetInterviewForms,
+  useUpdateInterviewForm,
+  useGetApplicationById,
+} from "@/src/features/shared/applications/hooks";
 import { useToast } from "@/src/components/ui/toast";
+import { useAppSelector } from "@/src/store/hooks";
 
 interface AssessorAssessmentFormViewProps {
   applicationId: string;
@@ -17,6 +23,8 @@ interface AssessorAssessmentFormViewProps {
   candidateName: string;
   onBack: () => void;
   isReadOnly?: boolean;
+  isCandidate?: boolean;
+  applicationTrade?: string;
 }
 
 const FORM_MAP: Record<
@@ -35,11 +43,26 @@ const FORM_MAP: Record<
 
 export const AssessorAssessmentFormView: React.FC<
   AssessorAssessmentFormViewProps
-> = ({ applicationId, formId, candidateName, onBack, isReadOnly = false }) => {
+> = ({
+  applicationId,
+  formId,
+  candidateName,
+  onBack,
+  isReadOnly = false,
+  isCandidate = false,
+  applicationTrade,
+}) => {
   const { toast } = useToast();
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [pendingFormData, setPendingFormData] = useState<Record<string, any> | null>(null);
+
+  const { data: applicationData } = useGetApplicationById(applicationId);
+  const resolvedTrade =
+    applicationTrade ||
+    applicationData?.trade?.name ||
+    (typeof (applicationData as any)?.trade === "string" ? (applicationData as any).trade : "") ||
+    "";
 
   const formType = FORM_MAP[formId] || "records";
   const { data: remoteForms } = useGetInterviewForms(applicationId);
@@ -82,6 +105,25 @@ export const AssessorAssessmentFormView: React.FC<
     onBack();
   };
 
+  const user = useAppSelector((state) => state.auth.user);
+  const isCandidateUser = user?.role?.toLowerCase() === "candidate";
+  const effectiveIsCandidate = isCandidate || isCandidateUser;
+
+  if (effectiveReadOnly || effectiveIsCandidate) {
+    return (
+      <AssessorAssessmentFormDocumentView
+        applicationId={applicationId}
+        formId={formId}
+        candidateName={candidateName}
+        formData={matchedRemoteForm?.data}
+        onBack={onBack}
+        isCandidate={effectiveIsCandidate}
+        formRecord={matchedRemoteForm}
+        applicationTrade={resolvedTrade}
+      />
+    );
+  }
+
   const renderForm = () => {
     switch (formId) {
       case "skills_demo":
@@ -92,6 +134,7 @@ export const AssessorAssessmentFormView: React.FC<
             onSubmit={handleRequestSubmit}
             formData={matchedRemoteForm?.data}
             isReadOnly={effectiveReadOnly}
+            applicationTrade={resolvedTrade}
           />
         );
       case "assessment_mapping":
@@ -102,6 +145,7 @@ export const AssessorAssessmentFormView: React.FC<
             onSubmit={handleRequestSubmit}
             formData={matchedRemoteForm?.data}
             isReadOnly={effectiveReadOnly}
+            applicationTrade={resolvedTrade}
           />
         );
       case "observation_checklist":
@@ -112,6 +156,7 @@ export const AssessorAssessmentFormView: React.FC<
             onSubmit={handleRequestSubmit}
             formData={matchedRemoteForm?.data}
             isReadOnly={effectiveReadOnly}
+            applicationTrade={resolvedTrade}
           />
         );
       case "interview_record":

@@ -75,7 +75,8 @@ export function Navbar() {
             alt="Elimi Logo"
             width={109}
             height={39}
-            className="h-8 w-27 object-cover"
+            className="h-8 w-auto object-contain"
+            style={{ width: "auto" }}
             priority
             loading="eager"
           />

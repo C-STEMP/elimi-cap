@@ -14,11 +14,49 @@ export const downloadFormElement = (elementId: string, formName: string) => {
     return;
   }
 
-  const styles = Array.from(
-    document.querySelectorAll("style, link[rel='stylesheet']")
-  )
-    .map((s) => s.outerHTML)
-    .join("\n");
+  // Clone element to sanitize and convert relative URLs
+  const clone = el.cloneNode(true) as HTMLElement;
+
+  // Remove buttons and non-printable elements from clone
+  clone.querySelectorAll("button, .no-print, [data-no-print='true']").forEach((node) => {
+    node.remove();
+  });
+
+  // Convert all image sources to absolute URLs and remove relative srcsets
+  clone.querySelectorAll("img").forEach((img) => {
+    if (img.src) {
+      img.setAttribute("src", img.src);
+    }
+    if (img.hasAttribute("srcset")) {
+      img.removeAttribute("srcset");
+    }
+    // Prevent unstyled image expansion
+    img.style.maxWidth = "100%";
+    if (
+      img.classList.contains("object-cover") ||
+      img.alt?.toLowerCase().includes("passport") ||
+      img.closest("[class*='border-dashed']")
+    ) {
+      img.style.width = "100%";
+      img.style.height = "100%";
+      img.style.objectFit = "cover";
+    }
+  });
+
+  // Collect full CSS rules from loaded document stylesheets
+  let inlinedCss = "";
+  Array.from(document.styleSheets).forEach((sheet) => {
+    try {
+      const rules = Array.from(sheet.cssRules || []);
+      rules.forEach((rule) => {
+        inlinedCss += rule.cssText + "\n";
+      });
+    } catch {
+      if (sheet.href) {
+        inlinedCss += `@import url("${sheet.href}");\n`;
+      }
+    }
+  });
 
   const safeFileName = formName.replace(/[\\/:*?"<>|]/g, "_").trim();
   const fileName = safeFileName.endsWith(".html")
@@ -31,13 +69,22 @@ export const downloadFormElement = (elementId: string, formName: string) => {
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>${formName}</title>
-  ${styles}
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
+    ${inlinedCss}
+  </style>
+  <style>
+    *, ::before, ::after {
+      box-sizing: border-box;
+    }
     body {
       background-color: #f8fafc;
-      padding: 24px;
+      padding: 32px 16px;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       color: #0f172a;
+      margin: 0;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
     .no-print, button {
       display: none !important;
@@ -45,10 +92,10 @@ export const downloadFormElement = (elementId: string, formName: string) => {
     .printable-container {
       max-width: 960px;
       margin: 0 auto;
-      background: #ffffff;
-      padding: 32px;
-      border-radius: 16px;
-      border: 1px solid #e2e8f0;
+      width: 100%;
+    }
+    img {
+      max-width: 100%;
     }
     @media print {
       body {
@@ -56,8 +103,6 @@ export const downloadFormElement = (elementId: string, formName: string) => {
         padding: 0 !important;
       }
       .printable-container {
-        border: none !important;
-        padding: 0 !important;
         max-width: 100% !important;
       }
     }
@@ -65,7 +110,7 @@ export const downloadFormElement = (elementId: string, formName: string) => {
 </head>
 <body>
   <div class="printable-container">
-    ${el.outerHTML}
+    ${clone.outerHTML}
   </div>
 </body>
 </html>`;

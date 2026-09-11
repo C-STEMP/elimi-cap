@@ -31,15 +31,18 @@ export const CandidateFormCard: React.FC<Props> = ({
   return (
     <div id="printable-application-card" className="lg:col-span-8 xl:col-span-9 flex flex-col gap-6 printable-application-card">
       <div className="bg-white rounded-3xl p-6 sm:p-10 border border-gray-100 shadow-sm flex flex-col gap-8">
-        <div className="flex flex-col items-center text-center gap-3 border-b border-gray-100 pb-6 relative">
-          <div className="flex justify-center mb-1">
-            <Image src={ASSETS_URL.logoIcon2} alt="ELIMI Logo" width={100} height={40} className="w-auto h-8 object-contain" />
+        <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4 border-b border-gray-100 pb-6 w-full">
+          <div className="hidden sm:block w-28 sm:w-32 shrink-0" aria-hidden="true" />
+          <div className="flex flex-col items-center text-center gap-2 flex-1 max-w-lg mx-auto">
+            <div className="flex justify-center mb-0.5">
+              <Image src={ASSETS_URL.logoIcon2} alt="ELIMI Logo" width={100} height={40} className="w-auto h-8 object-contain" style={{ width: "auto", height: "32px" }} />
+            </div>
+            <h2 className="text-base sm:text-lg font-extrabold text-black tracking-tight leading-tight uppercase">
+              NBTE/RPL/ 01 NSQ/RPL/QCF ASSESSMENT CENTRE CANDIDATE APPLICATION FORM
+            </h2>
           </div>
-          <h2 className="text-base sm:text-lg font-extrabold text-black tracking-tight max-w-lg leading-tight uppercase">
-            NBTE/RPL/ 01 NSQ/RPL/QCF ASSESSMENT CENTRE CANDIDATE APPLICATION FORM
-          </h2>
-          <div className="sm:absolute sm:top-0 sm:right-0 mt-4 sm:mt-0">
-            <Avatar src={resolvedPassportUrl} name={formCandidateName} shape="rounded" className="w-28 sm:w-32 h-28 sm:h-32 border-2 border-dashed border-[#a31d38]/20 bg-[#fdf2f5] p-1 shadow-2xs" alt="Candidate Passport" />
+          <div className="w-28 sm:w-32 shrink-0 flex justify-center sm:justify-end">
+            <Avatar src={resolvedPassportUrl} name={formCandidateName} shape="rounded" className="w-28 sm:w-32 h-28 sm:h-32 border-2 border-dashed border-[#a31d38]/20 bg-[#fdf2f5] p-1 shadow-2xs shrink-0" style={{ width: "112px", height: "112px", maxWidth: "112px", maxHeight: "112px" }} alt="Candidate Passport" />
           </div>
         </div>
 

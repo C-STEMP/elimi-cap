@@ -157,9 +157,7 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
   };
 
   return (
-    <motion.header
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
+    <header
       className="w-full bg-[#a31d38] text-white shadow-md select-none transition-all relative"
     >
       <div className="max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 flex flex-col gap-6">
@@ -797,6 +795,6 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
         onClose={() => setIsLogoutOpen(false)}
       />
       </div>
-    </motion.header>
+    </header>
   );
 };

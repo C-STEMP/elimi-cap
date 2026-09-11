@@ -35,24 +35,24 @@ export const FormHeaderActions: React.FC<FormHeaderActionsProps> = ({
   };
 
   return (
-    <div className="flex items-center justify-end gap-3 w-full no-print">
+    <div className="flex items-center justify-end gap-2 sm:gap-3 shrink-0 no-print">
       <a
         href="#"
         download={formName}
         onClick={handleDownload}
-        className="bg-white border border-gray-200 hover:bg-gray-50 text-neutral-primary font-semibold text-xs sm:text-sm px-4 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-2xs"
+        className="bg-white border border-gray-200 hover:bg-gray-50 text-neutral-primary font-semibold text-xs sm:text-sm px-3 sm:px-4 py-2 rounded-xl inline-flex items-center gap-1.5 sm:gap-2 transition-all cursor-pointer shadow-2xs whitespace-nowrap shrink-0"
       >
         <span>Download</span>
-        <FiDownload className="w-4 h-4 text-gray-500" />
+        <FiDownload className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-500" />
       </a>
 
       <button
         type="button"
         onClick={handlePrint}
-        className="bg-white border border-gray-200 hover:bg-gray-50 text-neutral-primary font-semibold text-xs sm:text-sm px-4 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-2xs"
+        className="bg-white border border-gray-200 hover:bg-gray-50 text-neutral-primary font-semibold text-xs sm:text-sm px-3 sm:px-4 py-2 rounded-xl inline-flex items-center gap-1.5 sm:gap-2 transition-all cursor-pointer shadow-2xs whitespace-nowrap shrink-0"
       >
         <span>Print</span>
-        <FiPrinter className="w-4 h-4 text-gray-500" />
+        <FiPrinter className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-500" />
       </button>
     </div>
   );

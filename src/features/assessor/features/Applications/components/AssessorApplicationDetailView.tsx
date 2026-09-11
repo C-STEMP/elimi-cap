@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   AssessorApplicationStagesList,
   AssessorCalendarWidget,
@@ -37,6 +38,8 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/src/components/ui/toast";
 import { useAppSelector } from "@/src/store/hooks";
+import { useGetMeProfile } from "@/src/features/shared/account/hooks";
+import { useGetAssessorProfile } from "@/src/features/assessor/hooks";
 
 export type AssessorDetailSubView =
   | "stages"
@@ -67,6 +70,7 @@ export const AssessorApplicationDetailView: React.FC<
   triggerMarkComplete,
   onResetTriggerMarkComplete,
 }) => {
+  const router = useRouter();
   const { toast } = useToast();
   const { data: appDetail } = useGetApplicationById(application.id);
   const isInterviewStage = Boolean(
@@ -84,6 +88,8 @@ export const AssessorApplicationDetailView: React.FC<
   const resolveAppeal = useResolveAppeal(application.id);
 
   const user = useAppSelector((state) => state.auth.user);
+  const { data: meProfile } = useGetMeProfile();
+  const { data: assessorProfile } = useGetAssessorProfile();
   const { data: interviewPanel } = useGetInterviewPanel(application.id, {
     enabled: isInterviewStage,
   });
@@ -92,33 +98,78 @@ export const AssessorApplicationDetailView: React.FC<
     (a: any) => a.status === "open" || a.status === "pending",
   );
 
-  const isUserIV = Boolean(
-    user?.role?.toLowerCase()?.includes("iv") ||
-      user?.role?.toLowerCase()?.includes("verifier") ||
-      interviewPanel?.members?.some(
-        (m: any) =>
-          Boolean(m.isObserver) &&
-          (m.assessorId === user?.id ||
-            (m as any).userId === user?.id ||
-            (m as any).id === user?.id ||
-            (m as any).email === user?.email),
-      ),
-  );
+  // Compile all known identifiers and aliases for the logged-in assessor
+  const currentUserId = (user?.id || user?.userId || (user as any)?._id || "").toString().toLowerCase().trim();
+  const currentAssessorId = (assessorProfile?.id || (assessorProfile as any)?.assessorId || "").toString().toLowerCase().trim();
+  const currentUserEmail = (
+    user?.email ||
+    meProfile?.contactInformation?.emailAddress ||
+    assessorProfile?.email ||
+    ""
+  )
+    .toLowerCase()
+    .trim();
+
+  const userCandidateNames = [
+    user?.fullName,
+    (user as any)?.name,
+    `${(user as any)?.firstName || ""} ${(user as any)?.lastName || ""}`.trim(),
+    assessorProfile?.name,
+    `${meProfile?.personalDetails?.firstName || ""} ${meProfile?.personalDetails?.lastName || ""}`.trim(),
+  ]
+    .filter(Boolean)
+    .map((n) => (n as string).toLowerCase().trim());
+
+  const isMemberMatch = (m: any) => {
+    if (!m) return false;
+    const mAssessorId = (m.assessorId || m.userId || m.id || "").toString().toLowerCase().trim();
+    const mEmail = (m.email || "").toLowerCase().trim();
+    const mName = (m.name || "").toLowerCase().trim();
+
+    // Match by ID
+    if (currentUserId && (mAssessorId === currentUserId || (m.userId && m.userId.toString().toLowerCase().trim() === currentUserId))) {
+      return true;
+    }
+    if (currentAssessorId && mAssessorId === currentAssessorId) {
+      return true;
+    }
+
+    // Match by email
+    if (currentUserEmail && mEmail && currentUserEmail === mEmail) {
+      return true;
+    }
+
+    // Match by name
+    if (mName && userCandidateNames.some((n) => n === mName || n.includes(mName) || mName.includes(n))) {
+      return true;
+    }
+
+    return false;
+  };
 
   const leadMember = interviewPanel?.members?.find((m: any) => m.isLead);
+  const ivMember = interviewPanel?.members?.find((m: any) => m.isObserver);
 
+  // User is IV if system role is explicitly IV/verifier OR user matches an observer member on the panel
+  const isUserIV = Boolean(
+    user?.role?.toLowerCase() === "iv" ||
+      user?.role?.toLowerCase() === "verifier" ||
+      (ivMember && isMemberMatch(ivMember)),
+  );
+
+  // User is Lead Panelist if:
+  // 1. Explicit match with the lead member on the panel
+  // 2. Application role indicates lead or facilitator
+  // 3. User is an assessor on this application and is not the IV/observer
   const isUserLeadPanelist = Boolean(
-    leadMember &&
-      user?.id &&
-      (leadMember.assessorId === user.id ||
-        (leadMember as any).userId === user.id ||
-        (leadMember as any).id === user.id ||
-        (leadMember as any).email === user.email),
+    (leadMember && isMemberMatch(leadMember)) ||
+      application.role?.toLowerCase()?.includes("lead") ||
+      (!isUserIV && (leadMember ? isMemberMatch(leadMember) : true)) ||
+      (!isUserIV && ivMember ? !isMemberMatch(ivMember) : !isUserIV),
   );
 
   // Assessment forms are to be filled by Lead Panelist & viewed by IV
-  const isAssessmentFormReadOnly =
-    isUserIV || (Boolean(interviewPanel?.members?.length) && !isUserLeadPanelist);
+  const isAssessmentFormReadOnly = isUserIV || !isUserLeadPanelist;
 
   const [internalSubView, setInternalSubView] =
     useState<AssessorDetailSubView>("stages");
@@ -301,12 +352,27 @@ export const AssessorApplicationDetailView: React.FC<
 
 
   if (subView === "application_form") {
+    const isAppApproved = Boolean(
+      (application.status as string)?.toLowerCase() === "approved" ||
+      (application.status as string)?.toLowerCase() === "completed" ||
+      (application.status as string)?.toLowerCase() === "ongoing" ||
+      (appDetail?.status as string)?.toLowerCase() === "approved" ||
+      (appDetail?.status as string)?.toLowerCase() === "completed" ||
+      (appDetail?.status as string)?.toLowerCase() === "ongoing" ||
+      (appDetail?.currentStageKey &&
+        appDetail.currentStageKey !== "application_form" &&
+        appDetail.currentStageKey !== "application_review" &&
+        appDetail.currentStageKey !== "draft" &&
+        appDetail.currentStageKey !== "submitted")
+    );
+
     return (
       <CandidateApplicationFormView
         candidateName={application.candidateName}
         trade={application.trade}
         applicationId={application.id}
         applicationDetail={appDetail}
+        isApproved={isAppApproved}
       />
     );
   }
@@ -333,6 +399,7 @@ export const AssessorApplicationDetailView: React.FC<
         candidateName={application.candidateName}
         onBack={() => setSubView("stages")}
         isReadOnly={isAssessmentFormReadOnly}
+        applicationTrade={application.trade || appDetail?.trade?.name || ""}
       />
     );
   }
@@ -449,11 +516,11 @@ export const AssessorApplicationDetailView: React.FC<
         />
         <AssessorUpcomingEventsWidget event={upcomingEvent} />
         <AssessorAssessmentFormsWidget
+          applicationId={application.id}
           isReadOnly={isAssessmentFormReadOnly}
           remoteForms={remoteForms}
           onViewForm={(form) => {
-            setSelectedAssessmentFormId(form.id);
-            setSubView("assessment_form");
+            router.push(`/applications/${application.id}/assessment-forms/${form.id}`);
           }}
         />
       </div>
