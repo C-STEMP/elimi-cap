@@ -5,7 +5,6 @@ import { AssessorApplicationStageCard } from "./AssessorApplicationStageCard";
 import type {
   ApplicationStageItem,
   AssessorApplicationRecord,
-  ApplicationStageFormToSign,
 } from "../../types/applications.types";
 
 import { ASSETS_URL } from "@/src/assets";
@@ -27,8 +26,6 @@ interface AssessorApplicationStagesListProps {
   onMarkCandidateIncompetent?: () => void;
   onMarkCandidateInconclusive?: () => void;
   onScheduleObservation?: () => void;
-  onAppendSignature?: (formId: string) => void;
-  formsToSign?: ApplicationStageFormToSign[];
   interviewOutcome?:
     | "ongoing"
     | "competent"
@@ -54,8 +51,6 @@ export const AssessorApplicationStagesList: React.FC<
   onMarkCandidateIncompetent,
   onMarkCandidateInconclusive,
   onScheduleObservation,
-  onAppendSignature,
-  formsToSign,
   interviewOutcome = "ongoing",
   interviewFeedback,
 }) => {
@@ -257,8 +252,6 @@ export const AssessorApplicationStagesList: React.FC<
       isCollapsible: false,
       isCollapsed: false,
       assessors: panelMembers,
-      formsToSign: isInterviewStage || interviewOutcome === "awaiting_signature" ? formsToSign : undefined,
-      onAppendSignature: onAppendSignature,
       inconclusiveDetails: interviewFeedback || undefined,
       menuActions: isInterviewDone ? [] : [
         {

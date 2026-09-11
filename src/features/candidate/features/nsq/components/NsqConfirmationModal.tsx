@@ -1,13 +1,19 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import { Modal } from "antd";
 import { Button } from "@/src/components/ui/button";
 import { FiAlertTriangle } from "react-icons/fi";
+import { ASSETS_URL } from "@/assets";
 
 interface NsqConfirmationModalProps {
   isOpen: boolean;
   isLoading?: boolean;
+  title?: string;
+  subtitle?: string;
+  confirmText?: string;
+  cancelText?: string;
   onConfirm: () => void;
   onClose: () => void;
 }
@@ -15,6 +21,10 @@ interface NsqConfirmationModalProps {
 export const NsqConfirmationModal: React.FC<NsqConfirmationModalProps> = ({
   isOpen,
   isLoading = false,
+  title = "Are you sure?",
+  subtitle = "Confirm you want to submit",
+  confirmText = "Yes, Submit",
+  cancelText = "No",
   onConfirm,
   onClose,
 }) => {
@@ -28,25 +38,30 @@ export const NsqConfirmationModal: React.FC<NsqConfirmationModalProps> = ({
       width={420}
       styles={{
         body: {
-          padding: 8,
+          padding: 12,
         },
       }}
     >
-      <div className="flex flex-col items-center justify-center text-center p-2 sm:p-4 gap-5">
-        {/* Warning Icon */}
-        <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-full bg-amber-50 flex items-center justify-center text-amber-500 shadow-inner">
-          <div className="w-14 h-14 rounded-full bg-amber-100 flex items-center justify-center">
-            <FiAlertTriangle className="w-8 h-8 text-amber-600 animate-pulse" />
-          </div>
+      <div className="flex flex-col items-center justify-center text-center p-3 sm:p-5 gap-5">
+        {/* 3D Warning Sign Icon */}
+        <div className="w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center relative shrink-0">
+          <Image
+            src={ASSETS_URL.warningSignIcon}
+            alt="Warning"
+            width={96}
+            height={96}
+            className="w-full h-full object-contain"
+            priority
+          />
         </div>
 
         {/* Text */}
         <div className="flex flex-col gap-1.5">
-          <h3 className="text-xl sm:text-2xl font-extrabold text-neutral-primary tracking-tight">
-            Are you sure?
+          <h3 className="text-xl sm:text-2xl font-extrabold text-[#191918] tracking-tight">
+            {title}
           </h3>
           <p className="text-neutral-secondary text-sm font-normal">
-            Confirm you want to submit
+            {subtitle}
           </p>
         </div>
 
@@ -60,7 +75,7 @@ export const NsqConfirmationModal: React.FC<NsqConfirmationModalProps> = ({
             onClick={onConfirm}
             className="w-full h-12 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-sm cursor-pointer"
           >
-            Yes, Submit
+            {confirmText}
           </Button>
 
           <Button
@@ -71,7 +86,7 @@ export const NsqConfirmationModal: React.FC<NsqConfirmationModalProps> = ({
             onClick={onClose}
             className="w-full h-12 border border-[#fbab2a] text-[#fbab2a] hover:bg-amber-50/50 bg-white font-bold text-sm rounded-xl cursor-pointer"
           >
-            No
+            {cancelText}
           </Button>
         </div>
       </div>

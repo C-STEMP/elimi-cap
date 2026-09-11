@@ -232,53 +232,62 @@ export const AssessorCentreDetailView: React.FC<
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredCandidates.map((c) => (
-                <tr
-                  key={c.id}
-                  className="hover:bg-gray-50/60 transition-colors"
-                >
-                  <td className="p-3.5 text-gray-600 font-medium">{c.role}</td>
-                  <td className="p-3.5 font-bold text-neutral-primary">
-                    {c.candidateName}
-                  </td>
-                  <td className="p-3.5 text-gray-600">{c.trade}</td>
-                  <td className="p-3.5 text-gray-600">{c.assessmentType}</td>
-                  <td className="p-3.5">
-                    <span
-                      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
-                        c.status === "Completed"
-                          ? "bg-emerald-100 text-emerald-700"
-                          : c.status === "Ongoing"
-                          ? "bg-rose-100 text-rose-700"
-                          : "bg-amber-100 text-amber-700"
-                      }`}
-                    >
-                      {c.status}
-                    </span>
-                  </td>
-                  <td className="p-3.5 text-gray-500">{c.assignedAt}</td>
-                  <td className="p-3.5 text-right">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (onSelectApplication) {
-                          onSelectApplication({
-                            id: c.id,
-                            candidateName: c.candidateName,
-                            trade: c.trade,
-                            assessmentType: c.assessmentType,
-                            status: c.status === "Completed" ? "Completed" : c.status === "Ongoing" ? "Ongoing" : "Pending",
-                            submittedAt: c.assignedAt,
-                          });
-                        }
-                      }}
-                      className="font-bold text-xs text-neutral-primary hover:text-primary-solid underline cursor-pointer"
-                    >
-                      View
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {filteredCandidates.map((c) => {
+                const handleViewCandidate = () => {
+                  if (onSelectApplication) {
+                    onSelectApplication({
+                      id: c.id,
+                      candidateName: c.candidateName,
+                      trade: c.trade,
+                      assessmentType: c.assessmentType,
+                      status: c.status === "Completed" ? "Completed" : c.status === "Ongoing" ? "Ongoing" : "Pending",
+                      assignedAt: c.assignedAt,
+                      submittedAt: c.assignedAt,
+                      role: c.role,
+                    });
+                  }
+                };
+                return (
+                  <tr
+                    key={c.id}
+                    onClick={handleViewCandidate}
+                    className="hover:bg-gray-50/60 transition-colors cursor-pointer group"
+                  >
+                    <td className="p-3.5 text-gray-600 font-medium">{c.role}</td>
+                    <td className="p-3.5 font-bold text-neutral-primary group-hover:text-primary-solid transition-colors">
+                      {c.candidateName}
+                    </td>
+                    <td className="p-3.5 text-gray-600">{c.trade}</td>
+                    <td className="p-3.5 text-gray-600">{c.assessmentType}</td>
+                    <td className="p-3.5">
+                      <span
+                        className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
+                          c.status === "Completed"
+                            ? "bg-emerald-100 text-emerald-700"
+                            : c.status === "Ongoing"
+                            ? "bg-rose-100 text-rose-700"
+                            : "bg-amber-100 text-amber-700"
+                        }`}
+                      >
+                        {c.status}
+                      </span>
+                    </td>
+                    <td className="p-3.5 text-gray-500">{c.assignedAt}</td>
+                    <td className="p-3.5 text-right">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleViewCandidate();
+                        }}
+                        className="font-bold text-xs text-neutral-primary hover:text-primary-solid underline cursor-pointer"
+                      >
+                        View
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

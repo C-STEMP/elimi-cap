@@ -166,8 +166,12 @@ export const SittingCandidatesSection: React.FC<Props> = ({
             <tbody className="divide-y divide-gray-100">
               {filteredCandidates.length > 0 ? (
                 filteredCandidates.map((cand) => (
-                  <tr key={cand.id} className="hover:bg-gray-50/70 transition-colors">
-                    <td className="p-4">
+                  <tr
+                    key={cand.id}
+                    onClick={() => onSelectCandidate(cand.candidateName, cand.id)}
+                    className="hover:bg-gray-50/70 transition-colors cursor-pointer group"
+                  >
+                    <td className="p-4" onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
                         checked={selectedCandidateIds.includes(cand.id)}
@@ -175,10 +179,7 @@ export const SittingCandidatesSection: React.FC<Props> = ({
                         className="w-4 h-4 accent-primary rounded cursor-pointer"
                       />
                     </td>
-                    <td
-                      onClick={() => onSelectCandidate(cand.candidateName, cand.id)}
-                      className="p-4 font-semibold text-black cursor-pointer hover:text-primary transition-colors"
-                    >
+                    <td className="p-4 font-semibold text-black group-hover:text-primary transition-colors">
                       {cand.candidateName}
                     </td>
                     <td className="p-4 font-normal text-gray-600">{cand.trade}</td>
@@ -189,7 +190,10 @@ export const SittingCandidatesSection: React.FC<Props> = ({
                     <td className="p-4 text-right">
                       <button
                         type="button"
-                        onClick={() => onSelectCandidate(cand.candidateName, cand.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSelectCandidate(cand.candidateName, cand.id);
+                        }}
                         className="font-semibold text-black underline underline-offset-2 hover:text-primary transition-colors cursor-pointer"
                       >
                         View
@@ -212,12 +216,14 @@ export const SittingCandidatesSection: React.FC<Props> = ({
           {filteredCandidates.map((cand) => (
             <div
               key={cand.id}
-              className="bg-white rounded-2xl p-5 border border-black/20 shadow-2xs hover:shadow-xs transition-all flex flex-col gap-3 relative"
+              onClick={() => onSelectCandidate(cand.candidateName, cand.id)}
+              className="bg-white rounded-2xl p-5 border border-black/20 shadow-2xs hover:shadow-xs transition-all flex flex-col gap-3 relative cursor-pointer group"
             >
               <div className="flex items-start justify-between gap-3">
                 <input
                   type="checkbox"
                   checked={selectedCandidateIds.includes(cand.id)}
+                  onClick={(e) => e.stopPropagation()}
                   onChange={() => toggleSelectRow(cand.id)}
                   className="w-4 h-4 rounded border-gray-300 text-[#a31d38] cursor-pointer"
                 />
@@ -226,10 +232,7 @@ export const SittingCandidatesSection: React.FC<Props> = ({
                 </span>
               </div>
               <div className="flex flex-col gap-1.5">
-                <span
-                  onClick={() => onSelectCandidate(cand.candidateName, cand.id)}
-                  className="font-bold text-sm text-black cursor-pointer hover:text-primary"
-                >
+                <span className="font-bold text-sm text-black group-hover:text-primary transition-colors">
                   {cand.candidateName}
                 </span>
                 <span className="text-xs text-gray-500">
@@ -241,7 +244,10 @@ export const SittingCandidatesSection: React.FC<Props> = ({
               </div>
               <button
                 type="button"
-                onClick={() => onSelectCandidate(cand.candidateName, cand.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSelectCandidate(cand.candidateName, cand.id);
+                }}
                 className="text-xs text-black font-bold underline hover:text-[#a31d38] transition-colors cursor-pointer mt-auto self-start"
               >
                 View

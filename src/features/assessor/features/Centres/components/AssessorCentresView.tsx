@@ -131,9 +131,10 @@ export const AssessorCentresView: React.FC<AssessorCentresViewProps> = ({
               {filteredCentres.map((c) => (
                 <tr
                   key={c.id}
-                  className="hover:bg-gray-50/60 transition-colors"
+                  onClick={() => onSelectCentre(c)}
+                  className="hover:bg-gray-50/60 transition-colors cursor-pointer group"
                 >
-                  <td className="p-3.5 font-medium text-neutral-primary">
+                  <td className="p-3.5 font-medium text-neutral-primary group-hover:text-primary-solid transition-colors">
                     {c.name}
                   </td>
                   <td className="p-3.5 text-gray-600">{c.role}</td>
@@ -155,7 +156,10 @@ export const AssessorCentresView: React.FC<AssessorCentresViewProps> = ({
                   <td className="p-3.5 text-right">
                     <button
                       type="button"
-                      onClick={() => onSelectCentre(c)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelectCentre(c);
+                      }}
                       className="font-bold text-xs text-neutral-primary hover:text-primary-solid underline cursor-pointer"
                     >
                       View

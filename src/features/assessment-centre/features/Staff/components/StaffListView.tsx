@@ -259,18 +259,22 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
               return (
                 <div
                   key={staff.id}
-                  className="bg-white rounded-2xl p-5 border border-black/20 shadow-2xs hover:shadow-xs transition-all flex items-start justify-between relative group"
+                  onClick={() => canViewDetail && handleSelectStaff(staff.id)}
+                  className={`bg-white rounded-2xl p-5 border border-black/20 shadow-2xs hover:shadow-xs transition-all flex items-start justify-between relative ${
+                    canViewDetail ? "cursor-pointer group" : ""
+                  }`}
                 >
                   <div className="flex items-start gap-3">
                     <input
                       type="checkbox"
                       checked={isSelected}
+                      onClick={(e) => e.stopPropagation()}
                       onChange={() => toggleSelectStaff(staff.id)}
                       className="mt-1 w-4 h-4 rounded border-gray-300 text-[#a31d38] focus:ring-0 cursor-pointer place-self-center"
                     />
 
                     <div className="flex flex-col gap-1.5 lg:gap-2">
-                      <span className="font-bold text-sm text-black">
+                      <span className={`font-bold text-sm text-black ${canViewDetail ? "group-hover:text-primary transition-colors" : ""}`}>
                         {displayName}
                       </span>
                       <span className="text-xs text-[#19191880] font-normal">
@@ -290,7 +294,10 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
                     {canViewDetail && (
                       <button
                         type="button"
-                        onClick={() => handleSelectStaff(staff.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSelectStaff(staff.id);
+                        }}
                         className="text-xs lg:text-sm text-black underline hover:text-[#a31d38] transition-colors cursor-pointer mt-2 font-medium"
                       >
                         View
@@ -333,9 +340,12 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
                   return (
                     <tr
                       key={staff.id}
-                      className="hover:bg-gray-50/50 transition-colors"
+                      onClick={() => canViewDetail && handleSelectStaff(staff.id)}
+                      className={`hover:bg-gray-50/50 transition-colors ${
+                        canViewDetail ? "cursor-pointer group" : ""
+                      }`}
                     >
-                      <td className="p-3.5">
+                      <td className="p-3.5" onClick={(e) => e.stopPropagation()}>
                         <input
                           type="checkbox"
                           checked={isSelected}
@@ -343,7 +353,7 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
                           className="w-4 h-4 rounded border-gray-300 text-[#a31d38] focus:ring-0 cursor-pointer"
                         />
                       </td>
-                      <td className="p-3.5 font-bold text-black">
+                      <td className={`p-3.5 font-bold text-black ${canViewDetail ? "group-hover:text-primary transition-colors" : ""}`}>
                         {displayName}
                       </td>
                       <td className="p-3.5 text-black">{staff.email}</td>
@@ -355,7 +365,10 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
                         {canViewDetail ? (
                           <button
                             type="button"
-                            onClick={() => handleSelectStaff(staff.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSelectStaff(staff.id);
+                            }}
                             className="text-black font-bold text-xs underline hover:text-[#a31d38] transition-colors cursor-pointer"
                           >
                             View

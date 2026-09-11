@@ -193,18 +193,20 @@ export const AssessorRequestListView: React.FC<
               return (
                 <div
                   key={item.id}
-                  className="bg-white rounded-2xl p-5 border border-black/20 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between relative group"
+                  onClick={() => onSelectAssessorRequest(item.id)}
+                  className="bg-white rounded-2xl p-5 border border-black/20 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between relative group cursor-pointer"
                 >
                   <div className="flex items-start gap-3">
                     <input
                       type="checkbox"
                       checked={isSelected}
+                      onClick={(e) => e.stopPropagation()}
                       onChange={() => toggleSelectRow(item.id)}
                       className="mt-1 w-4 h-4 rounded border-gray-300 text-[#a31d38] focus:ring-0 cursor-pointer"
                     />
 
                     <div className="flex flex-col gap-2">
-                      <span className="font-bold text-sm text-neutral-primary">
+                      <span className="font-bold text-sm text-neutral-primary group-hover:text-primary transition-colors">
                         {item.name}
                       </span>
                       <span className="text-xs text-gray-500 font-normal">
@@ -224,14 +226,20 @@ export const AssessorRequestListView: React.FC<
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
-                        onClick={() => onSelectAssessorRequest(item.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSelectAssessorRequest(item.id);
+                        }}
                         className="text-xs text-neutral-primary font-bold underline hover:text-[#a31d38] transition-colors cursor-pointer"
                       >
                         View
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleDirectAccept(item.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDirectAccept(item.id);
+                        }}
                         className="px-3 py-1.5 rounded-xl bg-[#fbab2a] hover:bg-[#e89b1f] text-white font-bold text-xs shadow-xs transition-all cursor-pointer flex items-center gap-1"
                       >
                         <FiCheck className="w-3.5 h-3.5" />
@@ -239,7 +247,10 @@ export const AssessorRequestListView: React.FC<
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleDirectDecline(item.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDirectDecline(item.id);
+                        }}
                         className="px-2.5 py-1.5 rounded-xl border border-red-200 text-red-700 hover:bg-red-50 font-semibold text-xs transition-all cursor-pointer"
                       >
                         Decline
@@ -280,9 +291,10 @@ export const AssessorRequestListView: React.FC<
                 {filteredItems.map((item) => (
                   <tr
                     key={item.id}
-                    className="hover:bg-gray-50/50 transition-colors"
+                    onClick={() => onSelectAssessorRequest(item.id)}
+                    className="hover:bg-gray-50/50 transition-colors cursor-pointer group"
                   >
-                    <td className="p-3.5">
+                    <td className="p-3.5" onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
                         checked={selectedIds.includes(item.id)}
@@ -290,7 +302,7 @@ export const AssessorRequestListView: React.FC<
                         className="w-4 h-4 rounded border-gray-300 text-[#a31d38] focus:ring-0 cursor-pointer"
                       />
                     </td>
-                    <td className="p-3.5 font-bold text-neutral-primary">
+                    <td className="p-3.5 font-bold text-neutral-primary group-hover:text-primary transition-colors">
                       {item.name}
                     </td>
                     <td className="p-3.5 text-neutral-secondary">
@@ -307,7 +319,7 @@ export const AssessorRequestListView: React.FC<
                         Pending
                       </span>
                     </td>
-                    <td className="p-3.5 text-right whitespace-nowrap">
+                    <td className="p-3.5 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-2.5">
                         <button
                           type="button"

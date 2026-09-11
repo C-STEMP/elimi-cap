@@ -295,10 +295,11 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
             {filteredApplications.map((app) => (
               <div
                 key={app.id}
-                className="bg-white rounded-2xl p-5 border border-black/20 shadow-2xs hover:shadow-xs transition-all flex items-start justify-between relative group"
+                onClick={() => onViewApplication?.(app.id)}
+                className="bg-white rounded-2xl p-5 border border-black/20 shadow-2xs hover:shadow-xs transition-all flex items-start justify-between relative group cursor-pointer"
               >
                 <div className="flex flex-col gap-2">
-                  <span className="font-bold text-sm text-black">
+                  <span className="font-bold text-sm text-black group-hover:text-primary transition-colors">
                     {app.candidateName}
                   </span>
                   <span className="text-xs text-[#19191880] font-normal">
@@ -314,7 +315,10 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
 
                   <button
                     type="button"
-                    onClick={() => onViewApplication?.(app.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onViewApplication?.(app.id);
+                    }}
                     className="text-xs lg:text-sm text-black underline hover:text-[#a31d38] transition-colors cursor-pointer mt-2"
                   >
                     View
@@ -340,9 +344,10 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
                 {filteredApplications.map((app) => (
                   <tr
                     key={app.id}
-                    className="hover:bg-input-bg transition-colors"
+                    onClick={() => onViewApplication?.(app.id)}
+                    className="hover:bg-input-bg transition-colors cursor-pointer group"
                   >
-                    <td className="p-3.5 text-black">{app.candidateName}</td>
+                    <td className="p-3.5 text-black font-bold group-hover:text-[#a31d38] transition-colors">{app.candidateName}</td>
                     <td className="p-3.5 text-black">{app.trade}</td>
                     <td className="p-3.5 text-black">{app.assessmentType}</td>
                     <td className="p-3.5">{renderStatusBadge(app.status)}</td>
@@ -350,7 +355,10 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
                     <td className="p-3.5 text-right">
                       <button
                         type="button"
-                        onClick={() => onViewApplication?.(app.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onViewApplication?.(app.id);
+                        }}
                         className="text-black text-xs lg:text-base underline hover:text-[#a31d38] transition-colors cursor-pointer"
                       >
                         View

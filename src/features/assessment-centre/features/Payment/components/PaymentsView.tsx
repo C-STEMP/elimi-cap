@@ -125,94 +125,102 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
           </div>
         ) : viewMode === "grid" ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredTransactions.map((tx) => (
-              <div
-                key={tx.id}
-                className="bg-white rounded-2xl p-5 border border-black/20 shadow-2xs hover:shadow-xs transition-all flex items-start justify-between relative group"
-              >
-                <div className="flex flex-col gap-2">
-                  <span className="font-bold text-sm text-neutral-primary">
-                    {tx.candidateName}
-                  </span>
-                  <span className="text-xs text-gray-500 font-normal">
-                    Type: {tx.assessmentType}
-                  </span>
-                  <span className="text-xs text-neutral-primary font-bold">
-                    Amount: {tx.amountPaid}
-                  </span>
-                </div>
-
-                <div className="flex flex-col items-end justify-between h-full gap-4">
-                  {tx.status === "Paid" ? (
-                    <span className="bg-[#1E7F4C]/10 text-[#1E7F4C] font-semibold px-3 py-1 rounded-full text-xs inline-block">
-                      Paid
-                    </span>
-                  ) : (
-                    <span className="bg-[#F9A825]/10 text-[#F9A825] font-semibold px-3 py-1 rounded-full text-xs inline-block">
-                      Pending
-                    </span>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={() => onSelectReceipt(tx)}
-                    className="text-xs lg:text-sm text-neutral-primary font-bold underline hover:text-[#a31d38] transition-colors cursor-pointer mt-2"
-                  >
-                    Receipt
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="w-full overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-175">
-              <thead>
-                <tr className="bg-[#F8F9FA] text-gray-500 text-xs font-semibold uppercase tracking-wider rounded-xl">
-                  <th className="p-3.5 rounded-l-xl">Candidate Name</th>
-                  <th className="p-3.5">Assessment Type</th>
-                  <th className="p-3.5">Amount Paid</th>
-                  <th className="p-3.5">Status</th>
-                  <th className="p-3.5 text-right rounded-r-xl">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 text-xs sm:text-sm font-medium text-neutral-primary">
-                {filteredTransactions.map((tx) => (
-                  <tr
-                    key={tx.id}
-                    className="hover:bg-gray-50/50 transition-colors"
-                  >
-                    <td className="p-3.5 font-bold text-neutral-primary">
+              {filteredTransactions.map((tx) => (
+                <div
+                  key={tx.id}
+                  onClick={() => onSelectReceipt(tx)}
+                  className="bg-white rounded-2xl p-5 border border-black/20 shadow-2xs hover:shadow-xs transition-all flex items-start justify-between relative group cursor-pointer"
+                >
+                  <div className="flex flex-col gap-2">
+                    <span className="font-bold text-sm text-neutral-primary group-hover:text-primary transition-colors">
                       {tx.candidateName}
-                    </td>
-                    <td className="p-3.5 text-neutral-secondary">
-                      {tx.assessmentType}
-                    </td>
-                    <td className="p-3.5 font-bold text-neutral-primary">
-                      {tx.amountPaid}
-                    </td>
-                    <td className="p-3.5">
-                      {tx.status === "Paid" ? (
-                        <span className="bg-[#1E7F4C]/10 text-[#1E7F4C] font-semibold px-3.5 py-1 rounded-full text-xs inline-block">
-                          Paid
-                        </span>
-                      ) : (
-                        <span className="bg-[#F9A825]/10 text-[#F9A825] font-semibold px-3.5 py-1 rounded-full text-xs inline-block">
-                          Pending
-                        </span>
-                      )}
-                    </td>
-                    <td className="p-3.5 text-right">
-                      <button
-                        type="button"
-                        onClick={() => onSelectReceipt(tx)}
-                        className="text-neutral-primary font-bold text-xs underline hover:text-[#a31d38] transition-colors cursor-pointer"
-                      >
-                        Receipt
-                      </button>
-                    </td>
+                    </span>
+                    <span className="text-xs text-gray-500 font-normal">
+                      Type: {tx.assessmentType}
+                    </span>
+                    <span className="text-xs text-neutral-primary font-bold">
+                      Amount: {tx.amountPaid}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col items-end justify-between h-full gap-4">
+                    {tx.status === "Paid" ? (
+                      <span className="bg-[#1E7F4C]/10 text-[#1E7F4C] font-semibold px-3 py-1 rounded-full text-xs inline-block">
+                        Paid
+                      </span>
+                    ) : (
+                      <span className="bg-[#F9A825]/10 text-[#F9A825] font-semibold px-3 py-1 rounded-full text-xs inline-block">
+                        Pending
+                      </span>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelectReceipt(tx);
+                      }}
+                      className="text-xs lg:text-sm text-neutral-primary font-bold underline hover:text-[#a31d38] transition-colors cursor-pointer mt-2"
+                    >
+                      Receipt
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="w-full overflow-x-auto">
+              <table className="w-full text-left border-collapse min-w-175">
+                <thead>
+                  <tr className="bg-[#F8F9FA] text-gray-500 text-xs font-semibold uppercase tracking-wider rounded-xl">
+                    <th className="p-3.5 rounded-l-xl">Candidate Name</th>
+                    <th className="p-3.5">Assessment Type</th>
+                    <th className="p-3.5">Amount Paid</th>
+                    <th className="p-3.5">Status</th>
+                    <th className="p-3.5 text-right rounded-r-xl">Action</th>
                   </tr>
-                ))}
+                </thead>
+                <tbody className="divide-y divide-gray-100 text-xs sm:text-sm font-medium text-neutral-primary">
+                  {filteredTransactions.map((tx) => (
+                    <tr
+                      key={tx.id}
+                      onClick={() => onSelectReceipt(tx)}
+                      className="hover:bg-gray-50/50 transition-colors cursor-pointer group"
+                    >
+                      <td className="p-3.5 font-bold text-neutral-primary group-hover:text-primary transition-colors">
+                        {tx.candidateName}
+                      </td>
+                      <td className="p-3.5 text-neutral-secondary">
+                        {tx.assessmentType}
+                      </td>
+                      <td className="p-3.5 font-bold text-neutral-primary">
+                        {tx.amountPaid}
+                      </td>
+                      <td className="p-3.5">
+                        {tx.status === "Paid" ? (
+                          <span className="bg-[#1E7F4C]/10 text-[#1E7F4C] font-semibold px-3.5 py-1 rounded-full text-xs inline-block">
+                            Paid
+                          </span>
+                        ) : (
+                          <span className="bg-[#F9A825]/10 text-[#F9A825] font-semibold px-3.5 py-1 rounded-full text-xs inline-block">
+                            Pending
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-3.5 text-right">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSelectReceipt(tx);
+                          }}
+                          className="text-neutral-primary font-bold text-xs underline hover:text-[#a31d38] transition-colors cursor-pointer"
+                        >
+                          Receipt
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>

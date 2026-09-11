@@ -243,9 +243,10 @@ export const JobListingDetailView: React.FC<JobListingDetailViewProps> = ({
                 {filteredApplicants.map((app) => (
                   <tr
                     key={app.id}
-                    className="hover:bg-gray-50/50 transition-colors"
+                    onClick={() => onSelectApplicant(app.id)}
+                    className="hover:bg-gray-50/50 transition-colors cursor-pointer group"
                   >
-                    <td className="p-3.5">
+                    <td className="p-3.5" onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
                         checked={selectedApplicantIds.includes(app.id)}
@@ -253,7 +254,7 @@ export const JobListingDetailView: React.FC<JobListingDetailViewProps> = ({
                         className="w-4 h-4 rounded border-gray-300 text-[#a31d38] focus:ring-0 cursor-pointer"
                       />
                     </td>
-                    <td className="p-3.5 font-bold text-neutral-primary">
+                    <td className="p-3.5 font-bold text-neutral-primary group-hover:text-primary transition-colors">
                       {app.name}
                     </td>
                     <td className="p-3.5 text-neutral-secondary">{app.trade}</td>
@@ -278,7 +279,7 @@ export const JobListingDetailView: React.FC<JobListingDetailViewProps> = ({
                         </span>
                       )}
                     </td>
-                    <td className="p-3.5 text-right whitespace-nowrap">
+                    <td className="p-3.5 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-2.5">
                         <button
                           type="button"

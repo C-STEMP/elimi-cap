@@ -32,6 +32,24 @@ const getStatusDisplay = (status: string) => {
       text: "text-gray-700",
       border: "border-gray-300",
     },
+    submitted: {
+      label: "Application Submitted",
+      bg: "bg-[#FFF7ED]",
+      text: "text-[#C2410C]",
+      border: "border-[#FFEDD5]",
+    },
+    pending: {
+      label: "Application Submitted",
+      bg: "bg-[#FFF7ED]",
+      text: "text-[#C2410C]",
+      border: "border-[#FFEDD5]",
+    },
+    approved: {
+      label: "Approved",
+      bg: "bg-emerald-50",
+      text: "text-emerald-700",
+      border: "border-emerald-200",
+    },
     in_progress: {
       label: "In Progress",
       bg: "bg-blue-50",
@@ -154,13 +172,17 @@ export const MyApplicationsPage: React.FC = () => {
   });
 
   const getApplicationTitle = (app: Application) => {
-    const typeLabel = app.type === "NSQ" ? "Standard Assessment" : (app.type || "RPL");
     const rawTrade =
       (app as any).trade?.name ||
       (typeof (app as any).trade === "string" ? (app as any).trade : "");
 
     const tradeTitle = rawTrade && !isRawId(rawTrade) ? rawTrade : "";
 
+    if (app.type === "NSQ") {
+      return tradeTitle || "Carpentry";
+    }
+
+    const typeLabel = app.type || "RPL";
     if (tradeTitle) {
       return `${tradeTitle} (${typeLabel})`;
     }
@@ -168,6 +190,10 @@ export const MyApplicationsPage: React.FC = () => {
   };
 
   const getApplicationSubtitle = (app: Application) => {
+    if (app.type === "NSQ") {
+      return "Standard Assessment (NSQ)";
+    }
+
     const rawSector =
       (app as any).sector?.name ||
       (typeof (app as any).sector === "string" ? (app as any).sector : "");
@@ -197,7 +223,7 @@ export const MyApplicationsPage: React.FC = () => {
       <HeaderBanner
         title="My Applications"
         showCreateButton={true}
-        createButtonText="Start Assessment"
+        createButtonText="Create Application +"
       />
 
       <div className="max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1">
@@ -254,7 +280,7 @@ export const MyApplicationsPage: React.FC = () => {
                     href="/onboarding/assessment-type"
                     className="bg-secondary hover:bg-[#e89b1f] active:scale-95 text-white font-semibold text-sm px-6 py-2.5 rounded-xl shadow-lg transition-all cursor-pointer inline-flex items-center gap-1.5 no-underline select-none"
                   >
-                    <span>Start Assessment</span>
+                    <span>Create Application</span>
                     <FiPlus className="w-4 h-4 stroke-[2.5]" />
                   </Link>
                 </div>

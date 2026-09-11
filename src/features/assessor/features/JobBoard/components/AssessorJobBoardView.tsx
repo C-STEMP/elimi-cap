@@ -176,7 +176,8 @@ export const AssessorJobBoardView: React.FC<AssessorJobBoardViewProps> = ({
           {filteredJobs.map((job) => (
             <div
               key={job.id}
-              className="bg-white rounded-2xl p-5 border border-gray-200/80 shadow-2xs flex flex-col justify-between gap-4 hover:border-gray-300 hover:shadow-xs transition-all"
+              onClick={() => onSelectJob(job)}
+              className="bg-white rounded-2xl p-5 border border-gray-200/80 shadow-2xs flex flex-col justify-between gap-4 hover:border-gray-300 hover:shadow-xs transition-all cursor-pointer group"
             >
               <div className="flex flex-col gap-3">
                 <div className="w-12 h-12 rounded-full overflow-hidden border border-gray-200 bg-white flex items-center justify-center">
@@ -193,7 +194,7 @@ export const AssessorJobBoardView: React.FC<AssessorJobBoardViewProps> = ({
                   <span className="text-[11px] font-bold tracking-wider text-gray-400 uppercase">
                     {job.company}
                   </span>
-                  <h3 className="text-base sm:text-lg font-bold text-neutral-primary">
+                  <h3 className="text-base sm:text-lg font-bold text-neutral-primary group-hover:text-primary transition-colors">
                     {job.title}
                   </h3>
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 w-fit mt-0.5">
@@ -221,7 +222,10 @@ export const AssessorJobBoardView: React.FC<AssessorJobBoardViewProps> = ({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => onSelectJob(job)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSelectJob(job);
+                  }}
                   className="w-full border-gray-200 text-neutral-primary font-bold text-xs rounded-xl hover:bg-gray-50 h-9 cursor-pointer"
                 >
                   View
@@ -229,7 +233,10 @@ export const AssessorJobBoardView: React.FC<AssessorJobBoardViewProps> = ({
                 <Button
                   variant="amber"
                   size="sm"
-                  onClick={() => setSelectedApplyingJobId(job.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedApplyingJobId(job.id);
+                  }}
                   className="w-full bg-[#FBAB2A] hover:bg-[#E89B1F] text-white font-bold text-xs rounded-xl h-9 cursor-pointer"
                 >
                   Apply

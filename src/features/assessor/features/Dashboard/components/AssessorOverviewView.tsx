@@ -180,8 +180,12 @@ export const AssessorOverviewView: React.FC<AssessorOverviewViewProps> = ({
                   "General";
 
                 return (
-                  <tr key={app.id} className="hover:bg-gray-50/60 transition-colors">
-                    <td className="p-3.5 font-medium text-neutral-primary">
+                  <tr
+                    key={app.id}
+                    onClick={() => onSelectApplication(app)}
+                    className="hover:bg-gray-50/60 transition-colors cursor-pointer group"
+                  >
+                    <td className="p-3.5 font-medium text-neutral-primary group-hover:text-primary transition-colors">
                       <div className="flex items-center gap-2.5">
                         <Avatar
                           src={candidatePhoto}
@@ -211,7 +215,10 @@ export const AssessorOverviewView: React.FC<AssessorOverviewViewProps> = ({
                     <td className="p-3.5 text-right">
                       <button
                         type="button"
-                        onClick={() => onSelectApplication(app)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSelectApplication(app);
+                        }}
                         className="font-bold text-xs text-neutral-primary hover:text-primary-solid underline cursor-pointer"
                       >
                         View
