@@ -326,10 +326,8 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
                 </button>
               </div>
 
-              <div className="flex flex-col gap-1.5 pt-4">
-                <span className="text-[10px] uppercase font-bold tracking-wider text-white/50 px-3 mb-1">
-                  Menu & Tabs
-                </span>
+              <div className="flex flex-col gap-1.5 pt-5">
+            
                 {navItems.map((item, i) => {
                   const isActive = activeTab === item.id;
                   return (

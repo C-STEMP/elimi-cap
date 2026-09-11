@@ -8,11 +8,18 @@ import { Button } from "@/src/components/ui/button";
 interface CandidateCompetentSuccessModalProps {
   isOpen: boolean;
   onClose: () => void;
+  title?: string;
+  message?: string;
 }
 
 export const CandidateCompetentSuccessModal: React.FC<
   CandidateCompetentSuccessModalProps
-> = ({ isOpen, onClose }) => {
+> = ({
+  isOpen,
+  onClose,
+  title = "Candidate Marked As Competent",
+  message = "You have successfully marked this candidate as competent",
+}) => {
   if (!isOpen) return null;
 
   return (
@@ -29,10 +36,10 @@ export const CandidateCompetentSuccessModal: React.FC<
         </div>
 
         <h3 className="text-xl sm:text-2xl font-extrabold text-neutral-primary tracking-tight mb-1">
-          Candidate Marked As Competent
+          {title}
         </h3>
         <p className="text-xs sm:text-sm text-neutral-secondary font-normal mb-6">
-          You have successfully marked this candidate as competent
+          {message}
         </p>
 
         <Button

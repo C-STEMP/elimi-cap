@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { useGetApplicationById } from "@/src/features/shared/applications/hooks";
+import { useGetApplicationById, useGetInterviewPanel } from "@/src/features/shared/applications/hooks";
 import { useAppSelector } from "@/src/store/hooks";
 import { AssessorAssessmentFormView } from "@/src/features/assessor/features/Applications/components/assessment-forms";
 import { Loader } from "@/src/components/ui/loader";
@@ -28,6 +28,7 @@ export default function AssessmentFormDedicatedRoutePage() {
 
   const user = useAppSelector((state) => state.auth.user);
   const { data: application, isLoading } = useGetApplicationById(id);
+  const { data: interviewPanel } = useGetInterviewPanel(id);
 
   if (isLoading) {
     return (
@@ -106,9 +107,44 @@ export default function AssessmentFormDedicatedRoutePage() {
        !user?.role?.toLowerCase()?.includes("admin")),
   );
 
+  const leadMember = interviewPanel?.members?.find((m: any) => m.isLead);
+  const ivMember = interviewPanel?.members?.find((m: any) => m.isObserver);
+
+  const isMemberMatch = (m: any) => {
+    if (!m) return false;
+    const mAssessorId = (m.assessorId || m.userId || m.id || "").toString().toLowerCase().trim();
+    const mEmail = (m.email || "").toLowerCase().trim();
+    const mName = (m.name || "").toLowerCase().trim();
+
+    if (currentAssessorId && (mAssessorId === currentAssessorId.toString().toLowerCase().trim())) return true;
+    if (user?.id && (mAssessorId === user.id.toLowerCase().trim())) return true;
+    const userNames = [
+      user?.fullName,
+      (user as any)?.name,
+      (user as any)?.firstName,
+      (user as any)?.lastName,
+    ].filter(Boolean).map((n) => (n as string).toLowerCase().trim());
+
+    if (mName && userNames.some((n) => n === mName || n.includes(mName) || mName.includes(n))) return true;
+    return false;
+  };
+
   const isUserLeadPanelist =
-    !isCandidateUser && (isAssignedLead || (!isAssignedIV && !isGlobalIV));
-  const isUserIV = !isCandidateUser && (isAssignedIV || isGlobalIV);
+    !isCandidateUser &&
+    Boolean(
+      (leadMember && isMemberMatch(leadMember)) ||
+      (!leadMember && isAssignedLead) ||
+      (!leadMember && (application as any).role?.toLowerCase()?.includes("lead"))
+    );
+
+  const isUserIV =
+    !isCandidateUser &&
+    Boolean(
+      (ivMember && isMemberMatch(ivMember)) ||
+      isAssignedIV ||
+      isGlobalIV
+    );
+
   const isReadOnly = isCandidateUser || isUserIV || !isUserLeadPanelist;
 
   const handleBack = () => {

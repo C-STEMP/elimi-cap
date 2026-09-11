@@ -1,8 +1,7 @@
 "use client";
 
 import React from "react";
-import { PersonalDetailsDocumentSection } from "./PersonalDetailsDocumentSection";
-import { WorkExperienceDocumentSection } from "./WorkExperienceDocumentSection";
+import { CandidateFormCard } from "@/src/features/assessment-centre/features/Applications/components/CandidateFormCard";
 import type { ApplicationDetail } from "@/src/features/shared/applications/api";
 
 interface CandidateApplicationFormDocumentProps {
@@ -15,13 +14,10 @@ export const CandidateApplicationFormDocument: React.FC<
   CandidateApplicationFormDocumentProps
 > = ({ candidateName, trade, applicationDetail }) => {
   return (
-    <div className="flex flex-col gap-6 w-full">
-      <PersonalDetailsDocumentSection
-        candidateName={candidateName}
-        trade={trade}
-        applicationDetail={applicationDetail}
-      />
-      <WorkExperienceDocumentSection applicationDetail={applicationDetail} />
-    </div>
+    <CandidateFormCard
+      appDetail={applicationDetail}
+      formCandidateName={candidateName}
+      className="w-full flex flex-col gap-6 printable-application-card"
+    />
   );
 };

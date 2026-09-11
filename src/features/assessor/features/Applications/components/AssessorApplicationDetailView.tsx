@@ -159,16 +159,14 @@ export const AssessorApplicationDetailView: React.FC<
 
   // User is Lead Panelist if:
   // 1. Explicit match with the lead member on the panel
-  // 2. Application role indicates lead or facilitator
-  // 3. User is an assessor on this application and is not the IV/observer
+  // 2. Application role explicitly indicates lead assessor
   const isUserLeadPanelist = Boolean(
-    (leadMember && isMemberMatch(leadMember)) ||
-      application.role?.toLowerCase()?.includes("lead") ||
-      (!isUserIV && (leadMember ? isMemberMatch(leadMember) : true)) ||
-      (!isUserIV && ivMember ? !isMemberMatch(ivMember) : !isUserIV),
+    leadMember
+      ? isMemberMatch(leadMember)
+      : application.role?.toLowerCase()?.includes("lead"),
   );
 
-  // Assessment forms are to be filled by Lead Panelist & viewed by IV
+  // Assessment forms are to be filled by Lead Panelist & viewed by IV, Facilitator, and other panel members
   const isAssessmentFormReadOnly = isUserIV || !isUserLeadPanelist;
 
   const [internalSubView, setInternalSubView] =
@@ -204,6 +202,10 @@ export const AssessorApplicationDetailView: React.FC<
     isCandidateCompetentSuccessOpen,
     setIsCandidateCompetentSuccessOpen,
   ] = useState(false);
+  const [competentSuccessModalConfig, setCompetentSuccessModalConfig] = useState<{
+    title?: string;
+    message?: string;
+  }>({});
 
   // Lead Panelist / Interview Stage Incompetent Modals State
   const [
@@ -282,43 +284,75 @@ export const AssessorApplicationDetailView: React.FC<
     setIsEvCompetentSuccessOpen(true);
   };
 
-  const handleConfirmCandidateCompetent = () => {
-    setIsConfirmCandidateCompetentOpen(false);
-    setIsCandidateCompetentSuccessOpen(true);
+  const handleConfirmCandidateCompetent = async () => {
+    try {
+      const res = await evaluateInterview.mutateAsync({
+        decision: "approve",
+        feedback: "Candidate demonstrated all required competencies.",
+        signatureAssetId: "default",
+      });
+
+      setIsConfirmCandidateCompetentOpen(false);
+
+      const msg = res?.message || "";
+      const isAwaitingSignatures =
+        msg.toLowerCase().includes("awaiting") ||
+        msg.toLowerCase().includes("signature");
+
+      if (isAwaitingSignatures) {
+        setInterviewOutcome("awaiting_signature");
+        setCompetentSuccessModalConfig({
+          title: "Evaluation Recorded",
+          message:
+            msg ||
+            "Interview evaluation recorded; awaiting remaining panel signatures.",
+        });
+      } else {
+        setInterviewOutcome("competent");
+        setCompetentSuccessModalConfig({
+          title: "Candidate Marked As Competent",
+          message:
+            msg || "You have successfully marked this candidate as competent.",
+        });
+      }
+
+      setIsCandidateCompetentSuccessOpen(true);
+    } catch (err: any) {
+      console.error("evaluateInterview error:", err);
+      // useEvaluateInterview's onError already surfaces the error toast
+    }
   };
 
   const handleCandidateCompetentSuccessContinue = () => {
     setIsCandidateCompetentSuccessOpen(false);
-    setInterviewOutcome("competent");
-    evaluateInterview.mutate({
-      decision: "approve",
-      feedback: "Candidate demonstrated all required competencies.",
-      signatureAssetId: "default",
-    });
   };
 
-  const handleConfirmCandidateIncompetent = (data: {
+  const handleConfirmCandidateIncompetent = async (data: {
     reason: string;
     recommendation: string;
   }) => {
-    setInterviewFeedback({
-      title: "Interview Inconclusive",
-      reason: data.reason,
-      recommendation: data.recommendation,
-    });
-    setIsConfirmCandidateIncompetentOpen(false);
-    setIsCandidateIncompetentSuccessOpen(true);
+    try {
+      setInterviewFeedback({
+        title: "Interview Inconclusive",
+        reason: data.reason,
+        recommendation: data.recommendation,
+      });
+      await evaluateInterview.mutateAsync({
+        decision: "reject",
+        outcome: "inconclusive",
+        feedback: data.reason || "Candidate evaluation inconclusive.",
+        signatureAssetId: "default",
+      });
+      setIsConfirmCandidateIncompetentOpen(false);
+      setInterviewOutcome("inconclusive");
+      setIsCandidateIncompetentSuccessOpen(true);
+    } catch (err) {
+      console.error("evaluateInterview incompetent error:", err);
+    }
   };
 
   const handleCandidateIncompetentSuccessContinue = () => {
     setIsCandidateIncompetentSuccessOpen(false);
-    setInterviewOutcome("inconclusive");
-    evaluateInterview.mutate({
-      decision: "reject",
-      outcome: "inconclusive",
-      feedback: interviewFeedback?.reason || "Candidate evaluation inconclusive.",
-      signatureAssetId: "default",
-    });
   };
 
   const handleConfirmCandidateInconclusive = () => {
@@ -414,7 +448,7 @@ export const AssessorApplicationDetailView: React.FC<
   const activeApplicationRecord: AssessorApplicationRecord = {
     ...application,
     candidatePhotoUrl: resolvedCandidatePhoto,
-    status: interviewOutcome === "competent" ? "Completed" : application.status,
+    status: application.status,
   };
 
   const upcomingEvent =
@@ -556,11 +590,14 @@ export const AssessorApplicationDetailView: React.FC<
         isOpen={isConfirmCandidateCompetentOpen}
         onClose={() => setIsConfirmCandidateCompetentOpen(false)}
         onConfirm={handleConfirmCandidateCompetent}
+        isLoading={evaluateInterview.isPending}
       />
 
       <CandidateCompetentSuccessModal
         isOpen={isCandidateCompetentSuccessOpen}
         onClose={handleCandidateCompetentSuccessContinue}
+        title={competentSuccessModalConfig.title}
+        message={competentSuccessModalConfig.message}
       />
 
       {/* Lead Panelist / Interview Stage Incompetent Modals */}
@@ -568,6 +605,7 @@ export const AssessorApplicationDetailView: React.FC<
         isOpen={isConfirmCandidateIncompetentOpen}
         onClose={() => setIsConfirmCandidateIncompetentOpen(false)}
         onConfirm={handleConfirmCandidateIncompetent}
+        isLoading={evaluateInterview.isPending}
       />
 
       <CandidateIncompetentSuccessModal

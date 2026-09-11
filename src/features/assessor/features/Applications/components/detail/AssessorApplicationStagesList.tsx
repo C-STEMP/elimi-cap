@@ -13,7 +13,6 @@ import {
   useGetInterviewPanel,
   useGetApplicationStages,
 } from "@/src/features/shared/applications/hooks";
-import { useGetCentreAssessors } from "@/src/features/shared/centre/hooks";
 import type { AssessorPanelMember } from "../../types/applications.types";
 
 interface AssessorApplicationStagesListProps {
@@ -65,7 +64,6 @@ export const AssessorApplicationStagesList: React.FC<
     )
   );
   const { data: panelData } = useGetInterviewPanel(application.id, { enabled: isInterviewStage });
-  const { data: centreAssessors = [] } = useGetCentreAssessors({ status: "all" });
 
   const panelMembers: AssessorPanelMember[] = React.useMemo(() => {
     if (!panelData?.members || !Array.isArray(panelData.members)) return [];
@@ -78,19 +76,12 @@ export const AssessorApplicationStagesList: React.FC<
     });
 
     return sorted.map((m, idx) => {
-      const match = centreAssessors.find(
-        (a) =>
-          a.id === m.assessorId ||
-          (a as any).assessorId === m.assessorId ||
-          (a as any).userId === m.assessorId,
-      );
       const role = m.isLead
         ? "Lead Panelist"
         : m.isObserver
         ? "Internal Verifier"
         : "Panel Member";
       const name =
-        match?.name ||
         m.name ||
         (m.isLead
           ? "Lead Assessor"
@@ -99,15 +90,12 @@ export const AssessorApplicationStagesList: React.FC<
           : `Panel Member ${idx + 1}`);
       const avatar =
         (m as any)?.photo?.url ||
-        (match as any)?.photo?.url ||
-        (match as any)?.avatar ||
-        (match as any)?.photoUrl ||
+        (m as any)?.avatar ||
+        (m as any)?.photoUrl ||
         undefined;
       const tags = m.sectors?.length
-        ? m.sectors.map((s) => s.name)
-        : match?.sectors?.length
-          ? match.sectors.map((s) => s.name)
-          : [application.trade || "Carpentry", "RPL Coordinator"];
+        ? m.sectors.map((s: any) => s.name || s)
+        : [application.trade || "Carpentry", "RPL Coordinator"];
       return {
         id: m.assessorId,
         name,
@@ -117,7 +105,7 @@ export const AssessorApplicationStagesList: React.FC<
         isHighlighted: Boolean(m.isLead),
       };
     });
-  }, [panelData, centreAssessors, application.trade]);
+  }, [panelData, application.trade]);
 
   const isCompleted = application.status === "Completed";
   const folderStageRow = stagesData?.find(
@@ -144,9 +132,10 @@ export const AssessorApplicationStagesList: React.FC<
       s.stageKey === "observation",
   );
   const isInterviewDone = Boolean(
-    interviewStageRow?.status === "successful" ||
-    interviewOutcome === "competent" ||
-    isCompleted,
+    (interviewStageRow?.status === "successful" || interviewOutcome === "competent") &&
+    interviewOutcome !== "awaiting_signature" &&
+    interviewOutcome !== "incompetent" &&
+    interviewOutcome !== "inconclusive"
   );
 
   const ivStageRow = stagesData?.find(
@@ -159,7 +148,7 @@ export const AssessorApplicationStagesList: React.FC<
   const isIvDone = Boolean(
     ivStageRow?.status === "successful" ||
     (ivStageRow?.status as string) === "completed" ||
-    isCompleted,
+    (isCompleted && (!stagesData || stagesData.length === 0 || stagesData.every((s) => s.status === "successful" || (s.status as string) === "completed")))
   );
 
   const evStageRow = stagesData?.find(
@@ -172,14 +161,13 @@ export const AssessorApplicationStagesList: React.FC<
   const isEvDone = Boolean(
     evStageRow?.status === "successful" ||
     (evStageRow?.status as string) === "completed" ||
-    isCompleted,
+    (isCompleted && (!stagesData || stagesData.length === 0 || stagesData.every((s) => s.status === "successful" || (s.status as string) === "completed")))
   );
 
-  const isInternalVerifierRole =
-    application.role === "Internal Verifier" || isInterviewDone || isCompleted;
-
-  const isExternalVerifierRole =
-    application.role === "External Verifier" || isIvDone || isCompleted;
+  const isUserIv = application.role === "Internal Verifier";
+  const isUserEv = application.role === "External Verifier";
+  const isIvActive = isInterviewDone || isUserIv;
+  const isEvActive = isIvDone || isUserEv;
 
   const currentInterviewStatus = isInterviewDone
     ? "Competent"
@@ -312,16 +300,16 @@ export const AssessorApplicationStagesList: React.FC<
     {
       id: "internal_verifier",
       title: "Internal Verifier",
-      status: isIvDone ? "Completed" : isInternalVerifierRole ? "Under Review" : "Not Started",
-      badgeType: isIvDone ? "completed" : isInternalVerifierRole ? "under_review" : "not_started",
-      badgeText: isIvDone ? "Completed" : isInternalVerifierRole ? "Under Review" : "Not Started",
+      status: isIvDone ? "Completed" : isIvActive ? "Under Review" : "Not Started",
+      badgeType: isIvDone ? "completed" : isIvActive ? "under_review" : "not_started",
+      badgeText: isIvDone ? "Completed" : isIvActive ? "Under Review" : "Not Started",
       dateText: isIvDone
         ? (ivStageRow?.enteredAt ? `Completed on: ${formatFriendlyDate(ivStageRow.enteredAt)}` : `Started on: ${formatFriendlyDate(application.submittedAt || "2026-07-23")}`)
-        : isInternalVerifierRole
+        : isIvActive
           ? `Started on: ${formatFriendlyDate(application.submittedAt || "2026-07-23")}`
           : "---",
       actionButton:
-        !isIvDone && (application.role === "Internal Verifier" || isInternalVerifierRole) && onMarkCompetent
+        !isIvDone && isUserIv && onMarkCompetent
           ? {
               label: "Mark as Competent",
               variant: "amber",
@@ -332,16 +320,16 @@ export const AssessorApplicationStagesList: React.FC<
     {
       id: "external_verifier",
       title: "External Verifier",
-      status: isEvDone ? "Completed" : (isExternalVerifierRole && isIvDone) ? "Under Review" : "Not Started",
-      badgeType: isEvDone ? "completed" : (isExternalVerifierRole && isIvDone) ? "under_review" : "not_started",
-      badgeText: isEvDone ? "Completed" : (isExternalVerifierRole && isIvDone) ? "Under Review" : "Not Started",
+      status: isEvDone ? "Completed" : (isEvActive && isIvDone) ? "Under Review" : "Not Started",
+      badgeType: isEvDone ? "completed" : (isEvActive && isIvDone) ? "under_review" : "not_started",
+      badgeText: isEvDone ? "Completed" : (isEvActive && isIvDone) ? "Under Review" : "Not Started",
       dateText: isEvDone
         ? (evStageRow?.enteredAt ? `Completed on: ${formatFriendlyDate(evStageRow.enteredAt)}` : `Started on: ${formatFriendlyDate(application.submittedAt || "2026-08-15")}`)
-        : (isExternalVerifierRole && isIvDone)
+        : (isEvActive && isIvDone)
           ? `Started on: ${formatFriendlyDate(application.submittedAt || "2026-08-15")}`
           : "---",
       actionButton:
-        !isEvDone && (application.role === "External Verifier" || isExternalVerifierRole) && isIvDone && onMarkEvCompetent
+        !isEvDone && isUserEv && isIvDone && onMarkEvCompetent
           ? {
               label: "Mark as Competent",
               variant: "amber",
@@ -352,10 +340,10 @@ export const AssessorApplicationStagesList: React.FC<
     {
       id: "certification",
       title: "Certification",
-      status: isCompleted || isEvDone ? "Competent" : "Not Started",
-      badgeType: isCompleted || isEvDone ? "competent" : "not_started",
-      badgeText: isCompleted || isEvDone ? "Competent" : "Not Started",
-      dateText: isCompleted || isEvDone ? (application.submittedAt ? `Completed on: ${formatFriendlyDate(application.submittedAt)}` : "—") : "---",
+      status: isCompleted ? "Competent" : isEvDone ? "Under Review" : "Not Started",
+      badgeType: isCompleted ? "competent" : isEvDone ? "under_review" : "not_started",
+      badgeText: isCompleted ? "Competent" : isEvDone ? "Under Review" : "Not Started",
+      dateText: isCompleted ? (application.submittedAt ? `Completed on: ${formatFriendlyDate(application.submittedAt)}` : "—") : "---",
     },
   ];
 

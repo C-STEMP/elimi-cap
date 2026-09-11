@@ -8,6 +8,7 @@ export const FILTER_TABS = [
   "Completed",
   "Archived",
   "Interviews",
+  "Panel",
 ];
 
 export function getStatusBadgeClass(status: string): string {
@@ -91,5 +92,44 @@ export function mapApplicationItem(app: any) {
     submittedAt: rawApp.submittedAt
       ? new Date(rawApp.submittedAt).toLocaleDateString("en-GB")
       : new Date(app.createdAt).toLocaleDateString("en-GB"),
+  };
+}
+
+export interface PanelRowData {
+  id: string;
+  name: string;
+  description?: string;
+  leadAssessor: string;
+  panelMembers: string;
+  internalVerifier: string;
+  assessorsCount: number;
+  createdAt: string;
+  rawPanel?: any;
+}
+
+export function mapPanelItem(panel: any): PanelRowData {
+  const members = panel.members || [];
+  const lead = members.find((m: any) => m.isLead)?.name || "—";
+  const regularMembers = members
+    .filter((m: any) => !m.isLead && !m.isObserver)
+    .map((m: any) => m.name);
+  const iv = members.find((m: any) => m.isObserver)?.name || "—";
+
+  return {
+    id: panel.id,
+    name: panel.name || "Untitled Panel",
+    description: panel.description || "",
+    leadAssessor: lead,
+    panelMembers: regularMembers.length > 0 ? regularMembers.join(", ") : "—",
+    internalVerifier: iv,
+    assessorsCount: members.length || (panel.assessorIds?.length || 0),
+    createdAt: panel.createdAt
+      ? new Date(panel.createdAt).toLocaleDateString("en-US", {
+          month: "2-digit",
+          day: "2-digit",
+          year: "numeric",
+        })
+      : "—",
+    rawPanel: panel,
   };
 }
