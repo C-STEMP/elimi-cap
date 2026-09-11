@@ -55,8 +55,8 @@ export async function getInterviewScheduleApi(
 export async function evaluateInterviewApi(
   id: string,
   payload: EvaluateInterviewPayload,
-): Promise<void> {
-  await capFetch<void>(`/applications/${id}/interview/evaluate`, {
+): Promise<{ message?: string }> {
+  return await capFetch<{ message?: string }>(`/applications/${id}/interview/evaluate`, {
     method: "POST",
     data: payload,
   });

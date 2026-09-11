@@ -6,8 +6,10 @@ import { useApplicationsViewState } from "../hooks/useApplicationsViewState";
 import { AppsFilterBar } from "./AppsFilterBar";
 import { AppListTable } from "./AppListTable";
 import { InterviewListTable } from "./InterviewListTable";
+import { PanelListTable } from "./PanelListTable";
 import { FilterModal } from "./FilterModal";
 import { ViewInterviewDetailModal, type InterviewRowData } from "./ViewInterviewDetailModal";
+import { ViewPanelDetailModal } from "./ViewPanelDetailModal";
 
 interface ApplicationsViewProps {
   onSelectCandidate: (candidateName: string, id?: string) => void;
@@ -53,6 +55,8 @@ export const ApplicationsView: React.FC<ApplicationsViewProps> = ({
         selectedInterviewIds={state.selectedInterviewIds}
         filteredInterviewsLength={state.filteredInterviews.length}
         onDeleteInterviews={state.handleDeleteSelectedInterviews}
+        selectedPanelIds={state.selectedPanelIds}
+        onDeletePanels={state.handleDeleteSelectedPanels}
         onSelectAll={state.toggleSelectAll}
         selectedCount={state.selectedIds.length}
         onBulkCertify={state.handleBulkCertify}
@@ -69,6 +73,16 @@ export const ApplicationsView: React.FC<ApplicationsViewProps> = ({
           onToggleSelect={state.toggleSelectInterviewRow}
           onSelectInterview={onSelectInterview}
           onSetViewing={state.setViewingInterview}
+        />
+      ) : state.activeFilterTab === "Panel" ? (
+        <PanelListTable
+          filteredPanels={state.filteredPanels}
+          isLoadingPanels={state.isLoadingPanels}
+          viewMode={state.viewMode}
+          selectedPanelIds={state.selectedPanelIds}
+          onToggleSelectAll={state.toggleSelectAllPanels}
+          onToggleSelect={state.toggleSelectPanelRow}
+          onSetViewing={state.setViewingPanel}
         />
       ) : (
         <AppListTable
@@ -90,6 +104,11 @@ export const ApplicationsView: React.FC<ApplicationsViewProps> = ({
         isOpen={Boolean(state.viewingInterview)}
         interview={state.viewingInterview}
         onClose={() => state.setViewingInterview(null)}
+      />
+      <ViewPanelDetailModal
+        isOpen={Boolean(state.viewingPanel)}
+        panel={state.viewingPanel}
+        onClose={() => state.setViewingPanel(null)}
       />
     </div>
   );

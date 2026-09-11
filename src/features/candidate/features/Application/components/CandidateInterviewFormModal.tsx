@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import { FiX, FiCheckCircle, FiUpload, FiTrash2, FiFileText } from "react-icons/fi";
+import { FiX, FiCheckCircle, FiUpload, FiTrash2, FiFileText, FiCheck } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
@@ -48,10 +48,12 @@ export const CandidateInterviewFormModal: React.FC<
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
       toast({ type: "error", title: "File Too Large", description: "Signature file size must be less than 5MB." });
+      e.target.value = "";
       return;
     }
     setSelectedFile(file);
     setIsUploading(true);
+    setUploadedAssetId(null);
     try {
       const asset = await uploadMutation.mutateAsync({ file, purpose: "signature" });
       setUploadedAssetId(asset.assetId);
@@ -59,9 +61,18 @@ export const CandidateInterviewFormModal: React.FC<
     } catch {
       toast({ type: "error", title: "Upload Failed", description: "Could not upload signature file. Please try again." });
       setSelectedFile(null);
+      setUploadedAssetId(null);
     } finally {
       setIsUploading(false);
+      e.target.value = "";
     }
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes >= 1024 * 1024) {
+      return `${(bytes / (1024 * 1024)).toFixed(1)} mb`;
+    }
+    return `${Math.round(bytes / 1024)} kb`;
   };
 
   const handleSignoff = async () => {
@@ -142,20 +153,45 @@ export const CandidateInterviewFormModal: React.FC<
                 />
 
                 {selectedFile ? (
-                  <div className="bg-gray-50 rounded-2xl p-4 flex items-center justify-between border border-gray-200">
+                  <div className="bg-gray-50 rounded-2xl p-4 flex items-center justify-between border border-gray-200/80">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-9 h-9 rounded-xl bg-[#fdf2f4] flex items-center justify-center shrink-0 border border-[#fce3e7]">
-                        <FiFileText className="w-4 h-4 text-[#a31d38]" />
+                      <div className="w-9 h-9 rounded-xl bg-[#fdf2f4] text-[#a31d38] flex items-center justify-center shrink-0 border border-[#fce3e7]">
+                        <FiFileText className="w-4 h-4" />
                       </div>
                       <div className="flex flex-col min-w-0">
-                        <span className="text-xs font-bold text-gray-900 truncate">{selectedFile.name}</span>
-                        <span className="text-[11px] text-emerald-600 font-semibold">Ready to submit</span>
+                        <span className="text-xs font-bold text-gray-900 truncate max-w-[240px]">
+                          {selectedFile.name}
+                        </span>
+                        <div className="flex items-center gap-1.5 text-[11px] text-gray-400 mt-0.5">
+                          <span>{formatFileSize(selectedFile.size)}</span>
+                          <span>•</span>
+                          {isUploading ? (
+                            <span className="text-amber-600 font-semibold flex items-center gap-1.5">
+                              <span className="w-3 h-3 border-2 border-amber-500 border-t-transparent rounded-full animate-spin shrink-0" />
+                              Uploading...
+                            </span>
+                          ) : uploadedAssetId ? (
+                            <span className="text-[#047857] font-semibold flex items-center gap-1">
+                              <FiCheck className="w-3.5 h-3.5 stroke-3 text-[#047857]" />
+                              Completed
+                            </span>
+                          ) : (
+                            <span className="text-rose-500 font-semibold">
+                              Upload failed
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <button
                       type="button"
-                      onClick={() => { setSelectedFile(null); setUploadedAssetId(null); }}
-                      className="text-gray-400 hover:text-rose-600 p-1 shrink-0 cursor-pointer transition-colors"
+                      disabled={isUploading}
+                      onClick={() => {
+                        setSelectedFile(null);
+                        setUploadedAssetId(null);
+                      }}
+                      className="text-gray-400 hover:text-rose-600 p-1 shrink-0 cursor-pointer transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                      title="Remove file"
                     >
                       <FiTrash2 className="w-4 h-4" />
                     </button>
@@ -170,7 +206,7 @@ export const CandidateInterviewFormModal: React.FC<
                     </div>
                     <div>
                       <p className="font-semibold text-sm text-[#A31D38]">
-                        {isUploading ? "Uploading..." : "Upload Signature"}
+                        Upload Signature
                       </p>
                       <p className="text-[11px] text-gray-400 mt-0.5">JPG, PNG or PDF · Max 5MB</p>
                     </div>
@@ -193,9 +229,10 @@ export const CandidateInterviewFormModal: React.FC<
                 <Button
                   type="button"
                   size="md"
-                  loading={signoffMutation.isPending || isUploading}
+                  disabled={isUploading || !uploadedAssetId || signoffMutation.isPending}
+                  loading={signoffMutation.isPending}
                   onClick={handleSignoff}
-                  className="w-full h-11 rounded-xl bg-[#FBAB2A]! hover:bg-[#E89B1F]! text-white! font-bold cursor-pointer text-xs sm:text-sm"
+                  className="w-full h-11 rounded-xl bg-[#FBAB2A]! hover:bg-[#E89B1F]! text-white! font-bold cursor-pointer text-xs sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Sign & Submit
                 </Button>

@@ -15,6 +15,8 @@ interface Props {
   selectedInterviewIds: string[];
   filteredInterviewsLength: number;
   onDeleteInterviews: () => void;
+  selectedPanelIds?: string[];
+  onDeletePanels?: () => void;
   onSelectAll: () => void;
   selectedCount?: number;
   onBulkCertify?: () => void;
@@ -24,12 +26,20 @@ interface Props {
 export const AppsFilterBar: React.FC<Props> = ({
   activeFilterTab, onTabChange, searchQuery, onSearchChange,
   onFilterOpen, viewMode, onViewModeChange,
-  selectedInterviewIds, filteredInterviewsLength, onDeleteInterviews, onSelectAll,
+  selectedInterviewIds, filteredInterviewsLength, onDeleteInterviews,
+  selectedPanelIds = [], onDeletePanels,
+  onSelectAll,
   selectedCount, onBulkCertify, isBulkCertifying,
 }) => (
   <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-2xs flex flex-col gap-5">
     <h2 className="text-base sm:text-lg font-bold text-black tracking-tight">
-      {activeFilterTab === "All" ? "Applications" : activeFilterTab === "Interviews" ? "Interviews" : `RPL ${activeFilterTab} Applications`}
+      {activeFilterTab === "All"
+        ? "Applications"
+        : activeFilterTab === "Interviews"
+        ? "Interviews"
+        : activeFilterTab === "Panel"
+        ? "Panels"
+        : `RPL ${activeFilterTab} Applications`}
     </h2>
 
     <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -37,7 +47,13 @@ export const AppsFilterBar: React.FC<Props> = ({
         <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
         <input
           type="text"
-          placeholder="Search candidates..."
+          placeholder={
+            activeFilterTab === "Interviews"
+              ? "Search interviews..."
+              : activeFilterTab === "Panel"
+              ? "Search panels..."
+              : "Search candidates..."
+          }
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
           className="w-full bg-[#F8F9FA] border border-gray-200 rounded-2xl pl-10 pr-4 py-2.5 text-xs sm:text-sm text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#a31d38]/20 transition-all"
@@ -61,6 +77,10 @@ export const AppsFilterBar: React.FC<Props> = ({
       <div className="flex items-center justify-end gap-5 text-xs font-semibold text-gray-500 pt-1">
         <button type="button" disabled={selectedInterviewIds.length !== 1} className="hover:underline cursor-pointer disabled:opacity-40 transition-colors">Edit</button>
         <button type="button" disabled={selectedInterviewIds.length === 0} onClick={onDeleteInterviews} className="hover:underline cursor-pointer text-gray-500 hover:text-red-600 disabled:opacity-40 transition-colors">Delete</button>
+      </div>
+    ) : activeFilterTab === "Panel" ? (
+      <div className="flex items-center justify-end gap-5 text-xs font-semibold text-gray-500 pt-1">
+        <button type="button" disabled={selectedPanelIds.length === 0} onClick={onDeletePanels} className="hover:underline cursor-pointer text-gray-500 hover:text-red-600 disabled:opacity-40 transition-colors">Delete</button>
       </div>
     ) : (
       <div className="flex items-center justify-end gap-4 text-xs font-semibold text-gray-600 pt-1">

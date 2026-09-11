@@ -99,6 +99,21 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
     ),
   );
 
+  const [panelMemberSigned, setPanelMemberSigned] = useState<boolean>(
+    Boolean(
+      formData?.panelMemberSigned ||
+        formData?.panelMemberSignedAt,
+    ),
+  );
+
+  const [internalVerifierSigned, setInternalVerifierSigned] = useState<boolean>(
+    Boolean(
+      formData?.internalVerifierSigned ||
+        formData?.ivSigned ||
+        formData?.internalVerifierSignedAt,
+    ),
+  );
+
   const updateResponse = (id: string, text: string) => {
     if (isReadOnly) return;
     setQuestions((prev) =>
@@ -133,6 +148,26 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
     });
   };
 
+  const handleAppendPanelMemberSignature = () => {
+    if (isReadOnly) return;
+    setPanelMemberSigned(true);
+    toast({
+      type: "success",
+      title: "Signature Appended",
+      description: "Panel member signature recorded successfully.",
+    });
+  };
+
+  const handleAppendIvSignature = () => {
+    if (isReadOnly) return;
+    setInternalVerifierSigned(true);
+    toast({
+      type: "success",
+      title: "Signature Appended",
+      description: "Internal verifier signature recorded successfully.",
+    });
+  };
+
   const handleSubmit = () => {
     if (isReadOnly) return;
     onSubmit({
@@ -146,6 +181,18 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
       leadPanelistSigned,
       leadPanelistSignedAt: leadPanelistSigned
         ? formData?.leadPanelistSignedAt || new Date().toISOString()
+        : undefined,
+      panelMemberSigned,
+      panelMemberSignedAt: panelMemberSigned
+        ? formData?.panelMemberSignedAt || formData?.facilitatorSignedAt || new Date().toISOString()
+        : undefined,
+      facilitatorSigned: panelMemberSigned,
+      facilitatorSignedAt: panelMemberSigned
+        ? formData?.facilitatorSignedAt || formData?.panelMemberSignedAt || new Date().toISOString()
+        : undefined,
+      internalVerifierSigned,
+      internalVerifierSignedAt: internalVerifierSigned
+        ? formData?.internalVerifierSignedAt || new Date().toISOString()
         : undefined,
       assessorSigned: leadPanelistSigned,
       assessorSignedAt: leadPanelistSigned
@@ -373,29 +420,55 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
             )}
           </div>
 
-          {/* Facilitator */}
+          {/* Panel Member */}
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium text-neutral-primary">
-              Facilitator<span className="text-rose-500">*</span>
+              Panel Member<span className="text-rose-500">*</span>
             </label>
-            <div className="h-11 bg-[#FFF8EB] border border-[#FBAB2A]/60 text-[#FBAB2A] font-semibold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2 select-none">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="w-4 h-4 text-[#FBAB2A]"
+            {panelMemberSigned ? (
+              <div className="h-11 bg-[#E6F4EA] border border-[#1E7F4C]/30 text-[#1E7F4C] font-bold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2 select-none shadow-2xs">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="w-4 h-4 text-[#1E7F4C]"
+                >
+                  <path d="M12 20h9" />
+                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                </svg>
+                Signed
+              </div>
+            ) : (
+              <button
+                type="button"
+                disabled={isReadOnly}
+                onClick={handleAppendPanelMemberSignature}
+                className="h-11 bg-[#FFF8EB] border border-[#FBAB2A] hover:bg-[#FDEED5] text-[#FBAB2A] font-bold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs disabled:cursor-not-allowed disabled:opacity-60"
               >
-                <path d="M12 20h9" />
-                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-              </svg>
-              Awaiting Signature
-            </div>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="w-4 h-4 text-[#FBAB2A]"
+                >
+                  <path d="M12 20h9" />
+                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                </svg>
+                Append Signature
+              </button>
+            )}
           </div>
 
           {/* Internal Verifier */}
@@ -403,24 +476,50 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
             <label className="text-xs font-medium text-neutral-primary">
               Internal Verifier<span className="text-rose-500">*</span>
             </label>
-            <div className="h-11 bg-[#FFF8EB] border border-[#FBAB2A]/60 text-[#FBAB2A] font-semibold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2 select-none">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="w-4 h-4 text-[#FBAB2A]"
+            {internalVerifierSigned ? (
+              <div className="h-11 bg-[#E6F4EA] border border-[#1E7F4C]/30 text-[#1E7F4C] font-bold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2 select-none shadow-2xs">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="w-4 h-4 text-[#1E7F4C]"
+                >
+                  <path d="M12 20h9" />
+                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                </svg>
+                Signed
+              </div>
+            ) : (
+              <button
+                type="button"
+                disabled={isReadOnly}
+                onClick={handleAppendIvSignature}
+                className="h-11 bg-[#FFF8EB] border border-[#FBAB2A] hover:bg-[#FDEED5] text-[#FBAB2A] font-bold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs disabled:cursor-not-allowed disabled:opacity-60"
               >
-                <path d="M12 20h9" />
-                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-              </svg>
-              Awaiting Signature
-            </div>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="w-4 h-4 text-[#FBAB2A]"
+                >
+                  <path d="M12 20h9" />
+                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                </svg>
+                Append Signature
+              </button>
+            )}
           </div>
         </div>
       </div>

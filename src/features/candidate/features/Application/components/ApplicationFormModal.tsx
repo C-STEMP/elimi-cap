@@ -1,16 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FiX } from "react-icons/fi";
+import { FiX, FiDownload, FiPrinter } from "react-icons/fi";
 import { Button } from "@/src/components/ui/button";
-import { SelfAssessmentSidebar } from "@/features/candidate/features/self-assessment/components/SelfAssessmentSidebar";
-import { Step1PersonalInfo } from "@/features/candidate/features/self-assessment/components/Step1PersonalInfo";
-import { Step2Competencies } from "@/features/candidate/features/self-assessment/components/Step2Competencies";
-import { Step3Reflection } from "@/features/candidate/features/self-assessment/components/Step3Reflection";
-import { Step4Declaration } from "@/features/candidate/features/self-assessment/components/Step4Declaration";
-import { SelfAssessmentSuccessModal } from "@/features/candidate/features/self-assessment/components/SelfAssessmentSuccessModal";
+import { useGetApplicationById } from "@/src/features/candidate/features/Application/hooks";
+import { Loader } from "@/src/components/ui/loader";
+import { downloadFormElement, printFormElement } from "@/src/lib/formPrintDownload";
+import { CandidateFormCard } from "@/src/features/assessment-centre/features/Applications/components/CandidateFormCard";
 
 interface ApplicationFormModalProps {
   isOpen: boolean;
@@ -23,22 +20,13 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
   onClose,
   applicationId,
 }) => {
-  const router = useRouter();
-  const [currentStep, setCurrentStep] = useState(1);
-  const [isSubmitted, setIsSubmitted] = useState(false);
-
-  const handleClose = () => {
-    setCurrentStep(1);
-    setIsSubmitted(false);
-    onClose();
-  };
-
-  const handleNavigateToVault = () => {
-    handleClose();
-    router.push(`/dashboard/applications/${applicationId}/evidence-vault`);
-  };
+  const { data: apiApp, isLoading } = useGetApplicationById(applicationId);
 
   if (!isOpen) return null;
+
+  const appData = (apiApp as any)?.data || (apiApp as any) || {};
+  const formDownloadName = `Application_Form_${(appData?.candidate?.name || "Candidate").replace(/\s+/g, "_")}`;
+  const formTitle = `Application Form - ${appData?.candidate?.name || "Candidate"}`;
 
   return (
     <AnimatePresence>
@@ -47,56 +35,64 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
           initial={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.96 }}
-          className="bg-white rounded-[28px] max-w-5xl w-full shadow-2xl relative flex flex-col lg:flex-row h-[90vh] lg:h-[82vh] overflow-hidden border border-gray-100"
+          className="bg-[#F8F9FA] rounded-[28px] max-w-5xl w-full shadow-2xl relative flex flex-col max-h-[90vh] overflow-hidden border border-gray-100"
         >
-          <Button
-            type="button"
-            onClick={handleClose}
-            variant="ghost"
-            size="icon"
-            rounded="full"
-            aria-label="Close self-assessment"
-            className="absolute top-5 right-5 z-20 w-8 h-8 bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-black"
-            leftIcon={<FiX className="w-4 h-4 stroke-[2.5]" />}
-          />
+          {/* Header */}
+          <div className="flex items-center justify-between p-5 border-b border-gray-200/80 bg-white shrink-0">
+            <h3 className="text-base sm:text-lg font-bold text-black">
+              Candidate Application Form
+            </h3>
 
-          <SelfAssessmentSidebar currentStep={currentStep} />
+            <div className="flex items-center gap-3">
+              <a
+                href="#"
+                download={formDownloadName}
+                onClick={(e) => {
+                  e.preventDefault();
+                  downloadFormElement("printable-application-card", formDownloadName);
+                }}
+                className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+              >
+                <span>Download</span>
+                <FiDownload className="w-3.5 h-3.5 text-gray-500" />
+              </a>
 
-          <div className="flex-1 flex flex-col min-w-0 bg-white relative overflow-hidden">
-            {currentStep === 1 && (
-              <Step1PersonalInfo
-                onNext={() => setCurrentStep(2)}
-                onBack={handleClose}
+              <button
+                type="button"
+                onClick={() => printFormElement("printable-application-card", formTitle)}
+                className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+              >
+                <span>Print</span>
+                <FiPrinter className="w-3.5 h-3.5 text-gray-500" />
+              </button>
+
+              <Button
+                type="button"
+                onClick={onClose}
+                variant="ghost"
+                size="icon"
+                rounded="full"
+                aria-label="Close"
+                className="w-8 h-8 bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-black cursor-pointer"
+                leftIcon={<FiX className="w-4 h-4 stroke-[2.5]" />}
               />
-            )}
+            </div>
+          </div>
 
-            {currentStep === 2 && (
-              <Step2Competencies
-                onNext={() => setCurrentStep(3)}
-                onBack={() => setCurrentStep(1)}
-              />
-            )}
-
-            {currentStep === 3 && (
-              <Step3Reflection
-                onNext={() => setCurrentStep(4)}
-                onBack={() => setCurrentStep(2)}
-              />
-            )}
-
-            {currentStep === 4 && (
-              <Step4Declaration
-                onSubmit={() => setIsSubmitted(true)}
-                onBack={() => setCurrentStep(3)}
+          {/* Body */}
+          <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
+            {isLoading ? (
+              <div className="min-h-75 flex items-center justify-center">
+                <Loader fullscreen={false} tip="Loading application form..." />
+              </div>
+            ) : (
+              <CandidateFormCard
+                appDetail={appData}
+                className="w-full flex flex-col gap-6 printable-application-card"
               />
             )}
           </div>
         </motion.div>
-
-        <SelfAssessmentSuccessModal
-          isOpen={isSubmitted}
-          onNavigateToVault={handleNavigateToVault}
-        />
       </div>
     </AnimatePresence>
   );

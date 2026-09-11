@@ -50,6 +50,7 @@ export const AssessorApplicationStageCard: React.FC<
       s.includes("days left") ||
       s.includes("ongoing") ||
       s.includes("in progress") ||
+      s.includes("awaiting") ||
       s.includes("awaiting interview") ||
       s.includes("interview scheduled") ||
       s.includes("under review") ||

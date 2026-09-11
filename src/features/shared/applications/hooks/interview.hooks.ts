@@ -45,7 +45,7 @@ export function useEvaluateInterview(id: string) {
       outcome?: "unsuccessful" | "inconclusive";
     }) => evaluateInterviewApi(id, payload),
 
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({
         queryKey: APPLICATION_QUERY_KEYS.detail(id),
       });
@@ -58,7 +58,9 @@ export function useEvaluateInterview(id: string) {
       toast({
         type: "success",
         title: "Evaluation Submitted",
-        description: "Your interview evaluation has been recorded successfully.",
+        description:
+          data?.message ||
+          "Your interview evaluation has been recorded successfully.",
       });
     },
 

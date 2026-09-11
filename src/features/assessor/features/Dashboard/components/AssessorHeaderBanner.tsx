@@ -1,30 +1,29 @@
 "use client";
 
-import React, { useState } from "react";
-import Image from "next/image";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  FiBell,
-  FiLogOut,
-  FiClipboard,
-  FiUser,
-  FiFlag,
-  FiChevronLeft,
-  FiPlus,
-  FiCheck,
-  FiMenu,
-  FiX,
-} from "react-icons/fi";
-import { BiSolidMessageRoundedDetail } from "react-icons/bi";
-import { Logo } from "@/src/components/ui/logo";
-import { Button } from "@/src/components/ui/button";
-import { Avatar } from "@/src/components/ui/avatar";
 import { LogoutModal } from "@/components/LogoutModal";
 import { NotificationDropdown } from "@/features/candidate/features/Dashboard/components/NotificationDropdown";
+import { Avatar } from "@/src/components/ui/avatar";
+import { Button } from "@/src/components/ui/button";
+import { Logo } from "@/src/components/ui/logo";
+import { useGetMeProfile } from "@/src/features/shared/account/hooks";
 import { useAppDispatch, useAppSelector } from "@/src/store/hooks";
 import { logout } from "@/src/store/slices/authSlice";
+import { AnimatePresence, motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { useGetMeProfile } from "@/src/features/shared/account/hooks";
+import React, { useState } from "react";
+import { BiSolidMessageRoundedDetail } from "react-icons/bi";
+import {
+  FiBell,
+  FiCheck,
+  FiChevronLeft,
+  FiClipboard,
+  FiFlag,
+  FiLogOut,
+  FiMenu,
+  FiPlus,
+  FiUser,
+  FiX,
+} from "react-icons/fi";
 import { AssessorApplicationStatsCards } from "../../Applications/components/list";
 
 export type AssessorNavTab =
@@ -157,483 +156,211 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
   };
 
   return (
-    <header
-      className="w-full bg-[#a31d38] text-white shadow-md select-none transition-all relative"
-    >
+    <header className="w-full bg-[#a31d38] text-white shadow-md select-none transition-all relative">
       <div className="max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 flex flex-col gap-6">
         {/* Top Bar */}
         <div className="flex items-center justify-between gap-2 sm:gap-4 border-b border-white/10 pb-5">
-        <div className="shrink-0 cursor-pointer">
-          <Logo theme="light" href="/" />
-        </div>
+          <div className="shrink-0 cursor-pointer">
+            <Logo theme="light" href="/" />
+          </div>
 
-        {/* Desktop Navigation Tabs */}
-        <div className="hidden xl:flex items-center gap-1">
-          {navItems.map((tab) => {
-            const isActive = activeTab === tab;
-            return (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => onSelectTab(tab)}
-                className={`px-3 py-1.5 rounded-full text-xs lg:text-base font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                  isActive
-                    ? "bg-white/15 text-white shadow-xs"
-                    : "text-white hover:bg-white/10"
-                }`}
-              >
-                {tab}
-              </button>
-            );
-          })}
-        </div>
+          {/* Desktop Navigation Tabs */}
+          <div className="hidden xl:flex items-center gap-1">
+            {navItems.map((tab) => {
+              const isActive = activeTab === tab;
+              return (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => onSelectTab(tab)}
+                  className={`px-3 py-1.5 rounded-full text-xs lg:text-base font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                    isActive
+                      ? "bg-white/15 text-white shadow-xs"
+                      : "text-white hover:bg-white/10"
+                  }`}
+                >
+                  {tab}
+                </button>
+              );
+            })}
+          </div>
 
-        {/* Right Action Controls */}
-        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
-          <button
-            type="button"
-            className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/90 transition-all cursor-pointer relative"
-            aria-label="Messages"
-            title="Messages"
-          >
-            <BiSolidMessageRoundedDetail className="w-4 h-4 sm:w-6 sm:h-6" />
-            <span className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-[#fbab2a]" />
-          </button>
-
-          <div className="relative">
+          {/* Right Action Controls */}
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             <button
               type="button"
-              onClick={() => setIsNotifOpen(!isNotifOpen)}
               className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/90 transition-all cursor-pointer relative"
-              aria-label="Notifications"
-              title="Notifications"
+              aria-label="Messages"
+              title="Messages"
             >
-              <FiBell className="w-4 h-4 sm:w-5 sm:h-5" />
+              <BiSolidMessageRoundedDetail className="w-4 h-4 sm:w-6 sm:h-6" />
               <span className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-[#fbab2a]" />
             </button>
 
-            <NotificationDropdown
-              isOpen={isNotifOpen}
-              onClose={() => setIsNotifOpen(false)}
-              maxItems={3}
-            />
-          </div>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsNotifOpen(!isNotifOpen)}
+                className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/90 transition-all cursor-pointer relative"
+                aria-label="Notifications"
+                title="Notifications"
+              >
+                <FiBell className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-[#fbab2a]" />
+              </button>
 
-          <div
-            onClick={() => onSelectTab("Settings")}
-            className="shrink-0 cursor-pointer"
-          >
-            <Avatar
-              src={uploadedAvatar}
-              name={effectiveUserName}
-              className="w-8 h-8 sm:w-10 sm:h-10 border border-white/30"
-              alt={effectiveUserName}
-            />
-          </div>
+              <NotificationDropdown
+                isOpen={isNotifOpen}
+                onClose={() => setIsNotifOpen(false)}
+                maxItems={3}
+              />
+            </div>
 
-          {/* Logout Icon Button on desktop */}
-          <button
-            type="button"
-            aria-label="Log out"
-            title="Log out"
-            onClick={() => setIsLogoutOpen(true)}
-            className="hidden xl:flex w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/10 hover:bg-white/20 items-center justify-center text-white/90 transition-all cursor-pointer"
-          >
-            <FiLogOut className="w-4 h-4 sm:w-5 sm:h-5" />
-          </button>
-
-          {/* Mobile Hamburger Toggle */}
-          <button
-            type="button"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="flex xl:hidden w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/10 hover:bg-white/20 items-center justify-center text-white/90 transition-all cursor-pointer"
-            aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
-          >
-            {isMobileMenuOpen ? (
-              <FiX className="w-4 h-4 sm:w-5 sm:h-5" />
-            ) : (
-              <FiMenu className="w-4 h-4 sm:w-5 sm:h-5" />
-            )}
-          </button>
-        </div>
-      </div>
-
-      {/* Mobile Navigation Drawer Overlay (Does not drag down menu) */}
-      <AnimatePresence>
-        {isMobileMenuOpen && (
-          <div className="fixed inset-0 z-50 flex justify-end xl:hidden">
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-xs"
-            />
-
-            {/* Drawer Panel */}
-            <motion.div
-              initial={{ x: "100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "100%" }}
-              transition={{ type: "spring", damping: 28, stiffness: 300 }}
-              className="relative w-full max-w-70 bg-[#8c1830] border-l border-white/10 text-white h-full shadow-2xl flex flex-col z-10 p-5 overflow-y-auto"
+            <div
+              onClick={() => onSelectTab("Settings")}
+              className="shrink-0 cursor-pointer"
             >
-              <div className="flex items-center justify-between pb-4 border-b border-white/15">
-                <div className="flex items-center gap-3 min-w-0">
-                  <Avatar
-                    src={uploadedAvatar}
-                    name={effectiveUserName}
-                    className="w-9 h-9 sm:w-10 sm:h-10 border border-white/30 shrink-0"
-                    alt={effectiveUserName}
-                  />
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-sm font-bold text-white truncate">{effectiveUserName}</span>
-                    <span className="text-[11px] text-white/70">Assessor</span>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  aria-label="Close menu"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white cursor-pointer transition-colors"
-                >
-                  <FiX className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="flex flex-col gap-1.5 pt-4">
-                <span className="text-[10px] uppercase font-bold tracking-wider text-white/50 px-3 mb-1">
-                  Menu & Tabs
-                </span>
-                {navItems.map((tab, i) => {
-                  const isActive = activeTab === tab;
-                  return (
-                    <motion.div
-                      key={tab}
-                      initial={{ opacity: 0, x: 15 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.03 }}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onSelectTab(tab);
-                          setIsMobileMenuOpen(false);
-                        }}
-                        className={`w-full px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all cursor-pointer text-left flex items-center justify-between ${
-                          isActive
-                            ? "bg-white text-[#a31d38] font-bold shadow-sm"
-                            : "text-white/85 hover:text-white hover:bg-white/10"
-                        }`}
-                      >
-                        <span>{tab}</span>
-                      </button>
-                    </motion.div>
-                  );
-                })}
-              </div>
-
-              {/* Remaining Tabs / Logout in Drawer */}
-              <div className="mt-auto pt-4 border-t border-white/15 flex flex-col gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    setIsLogoutOpen(true);
-                  }}
-                  className="px-3.5 py-2.5 rounded-xl text-sm font-semibold text-red-200 hover:text-white hover:bg-red-500/20 flex items-center gap-2.5 text-left transition-all cursor-pointer"
-                >
-                  <FiLogOut className="w-4 h-4" />
-                  <span>Log out</span>
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Banner Body Content according to Active Tab & Selected Detail */}
-      {activeTab === "Overview" ? (
-        <div className="flex flex-col gap-5 pt-2">
-          <h1 className="text-2xl sm:text-3xl xl:text-[32px] font-extrabold tracking-tight text-white">
-            Welcome Back, {effectiveUserName}
-          </h1>
-
-          {/* Overview Stat Cards Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
-              <div className="flex flex-col">
-                <span className="text-xs sm:text-sm lg:text-lg font-medium text-white/80">
-                  Total Centres
-                </span>
-                <div className="flex items-baseline gap-1.5 mt-1">
-                  <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                    {totalCentresCount}
-                  </span>
-                  <span className="text-xs lg:text-base font-normal text-white">
-                    centres
-                  </span>
-                </div>
-              </div>
-              <div className="w-9 h-9 flex items-center justify-center shrink-0">
-                <FiClipboard className="w-5 h-5 text-white/90" />
-              </div>
+              <Avatar
+                src={uploadedAvatar}
+                name={effectiveUserName}
+                className="w-8 h-8 sm:w-10 sm:h-10 border border-white/30"
+                alt={effectiveUserName}
+              />
             </div>
 
-            <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
-              <div className="flex flex-col">
-                <span className="text-xs sm:text-sm lg:text-lg font-medium text-white/80">
-                  Total Applications
-                </span>
-                <div className="flex items-baseline gap-1.5 mt-1">
-                  <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                    {totalApplicationsCount}
-                  </span>
-                  <span className="text-xs lg:text-base font-normal text-white">
-                    applications
-                  </span>
-                </div>
-              </div>
-              <div className="w-9 h-9 flex items-center justify-center shrink-0">
-                <FiClipboard className="w-5 h-5 text-white/90" />
-              </div>
-            </div>
-
-            <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
-              <div className="flex flex-col">
-                <span className="text-xs sm:text-sm lg:text-lg font-medium text-white/80">
-                  Completed Applications
-                </span>
-                <div className="flex items-baseline gap-1.5 mt-1">
-                  <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                    {completedApplicationsCount}
-                  </span>
-                  <span className="text-xs lg:text-base font-normal text-white">
-                    applications
-                  </span>
-                </div>
-              </div>
-              <div className="w-9 h-9 flex items-center justify-center shrink-0">
-                <FiUser className="w-5 h-5 text-white/90" />
-              </div>
-            </div>
-
-            <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
-              <div className="flex flex-col">
-                <span className="text-xs sm:text-sm lg:text-lg font-medium text-white/80">
-                  Pending Applications
-                </span>
-                <div className="flex items-baseline gap-1.5 mt-1">
-                  <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                    {pendingApplicationsCount}
-                  </span>
-                  <span className="text-xs lg:text-base font-normal text-white">
-                    applications
-                  </span>
-                </div>
-              </div>
-              <div className="w-9 h-9 flex items-center justify-center shrink-0">
-                <FiFlag className="w-5 h-5 text-white/90" />
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : activeTab === "Applications" ? (
-        selectedApplicationName ? (
-          isIvApplication ? (
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
-              <div className="flex flex-col gap-2">
-                <button
-                  type="button"
-                  onClick={onBackFromApplication}
-                  className="flex items-center gap-2 text-white font-bold text-2xl sm:text-3xl hover:opacity-90 transition-opacity w-fit cursor-pointer"
-                >
-                  <FiChevronLeft className="w-6 h-6 stroke-[2.5]" />
-                  <span>
-                    {activeIqamToolTitle ||
-                      "Internal Verifier's Comprehensive Report Form"}
-                  </span>
-                </button>
-                <div className="flex items-center gap-2 text-xs sm:text-sm text-white/90 font-normal">
-                  <span
-                    onClick={onBackFromApplication}
-                    className="hover:underline cursor-pointer"
-                  >
-                    Applications
-                  </span>
-                  <span>&gt;</span>
-                  <span
-                    onClick={onBackFromApplication}
-                    className="hover:underline cursor-pointer"
-                  >
-                    {selectedApplicationName}
-                  </span>
-                  <span>&gt;</span>
-                  <span className="font-semibold text-white">
-                    {activeIqamBreadcrumb ||
-                      activeIqamToolTitle ||
-                      "Internal Verifier's Comprehensive Report Form"}
-                  </span>
-                </div>
-              </div>
-
-              {iqamActionLabel && (
-                <button
-                  type="button"
-                  onClick={onIqamAction}
-                  className="bg-[#FBAB2A] hover:bg-[#E89B1F] text-white font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl shadow-lg cursor-pointer transition-all self-start sm:self-center shrink-0"
-                >
-                  {iqamActionLabel}
-                </button>
-              )}
-            </div>
-          ) : (
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
-              <div className="flex flex-col gap-2">
-              <button
-                type="button"
-                onClick={onBackFromApplication}
-                className="flex items-center gap-2 text-white font-bold text-2xl sm:text-3xl hover:opacity-90 transition-opacity w-fit cursor-pointer"
-              >
-                <FiChevronLeft className="w-6 h-6 stroke-[2.5]" />
-                <span>
-                  {isNsqApplication && nsqSubViewTitle
-                    ? nsqSubViewTitle
-                    : applicationSubView === "evidence_vault"
-                      ? "Evidence Vault"
-                      : applicationSubView === "application_form"
-                        ? "Application Form"
-                        : selectedApplicationName}
-                </span>
-              </button>
-              <div className="flex items-center gap-2 text-xs sm:text-sm text-white/90 font-normal">
-                <span
-                  onClick={onBackFromApplication}
-                  className="hover:underline cursor-pointer"
-                >
-                  Applications
-                </span>
-                <span>&gt;</span>
-                <span
-                  onClick={
-                    (isNsqApplication && nsqSubViewTitle) || applicationSubView !== "stages"
-                      ? onBackFromApplication
-                      : undefined
-                  }
-                  className={
-                    (isNsqApplication && nsqSubViewTitle) || applicationSubView !== "stages"
-                      ? "hover:underline cursor-pointer"
-                      : "font-semibold text-white"
-                  }
-                >
-                  {selectedApplicationName}
-                </span>
-                {isNsqApplication && nsqSubViewTitle && (
-                  <>
-                    <span>&gt;</span>
-                    <span className="font-semibold text-white">
-                      {nsqSubViewTitle}
-                    </span>
-                  </>
-                )}
-                {!isNsqApplication && applicationSubView !== "stages" && (
-                  <>
-                    <span>&gt;</span>
-                    <span className="font-semibold text-white">
-                      {applicationSubView === "evidence_vault"
-                        ? "Evidence Vault"
-                        : "Application Form"}
-                    </span>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* NSQ Move To IQAM Action */}
-            {isNsqApplication && !nsqSubViewTitle && (
-              <button
-                type="button"
-                onClick={onMoveToIqam}
-                className="bg-[#FBAB2A] hover:bg-[#E89B1F] text-white font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl shadow-lg flex items-center gap-1.5 cursor-pointer transition-all self-start sm:self-center shrink-0"
-              >
-                <span>Move To IQAM</span>
-                <FiPlus className="w-4 h-4 stroke-3" />
-              </button>
-            )}
-
-            {/* RPL Mark As Complete Button: only shows when all uploaded evidence are approved */}
-            {!isNsqApplication && applicationSubView === "evidence_vault" && canMarkAsComplete && (
-              <Button
-                type="button"
-                variant="amber"
-                size="md"
-                onClick={onMarkAsComplete}
-                className="bg-[#FBAB2A] hover:bg-[#E89B1F] text-white font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl shadow-lg flex items-center gap-2 cursor-pointer transition-all self-start sm:self-center shrink-0"
-              >
-                <span>Mark As Complete</span>
-                <FiCheck className="w-4 h-4 stroke-3" />
-              </Button>
-            )}
-          </div>
-          )
-        ) : (
-          <div className="flex flex-col gap-5 pt-2">
-            <h1 className="text-2xl sm:text-3xl xl:text-[32px] font-extrabold tracking-tight text-white">
-              Applications
-            </h1>
-
-            <AssessorApplicationStatsCards
-              stats={{
-                total: totalApplicationsCount,
-                pending: pendingApplicationsCount,
-                completed: completedApplicationsCount,
-                archived: archivedApplicationsCount,
-              }}
-            />
-          </div>
-        )
-      ) : activeTab === "Centres" ? (
-        selectedCentreName ? (
-          <div className="flex flex-col gap-2 pt-2">
+            {/* Logout Icon Button on desktop */}
             <button
               type="button"
-              onClick={onBackFromCentre}
-              className="flex items-center gap-2 text-white font-bold text-2xl sm:text-3xl hover:opacity-90 transition-opacity w-fit cursor-pointer"
+              aria-label="Log out"
+              title="Log out"
+              onClick={() => setIsLogoutOpen(true)}
+              className="hidden xl:flex w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/10 hover:bg-white/20 items-center justify-center text-white/90 transition-all cursor-pointer"
             >
-              <FiChevronLeft className="w-6 h-6 stroke-[2.5]" />
-              <span>{selectedCentreName}</span>
+              <FiLogOut className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
-            <div className="flex items-center gap-2 text-xs sm:text-sm text-white/90 font-normal">
-              <span onClick={onBackFromCentre} className="hover:underline cursor-pointer">
-                Centres
-              </span>
-              <span>&gt;</span>
-              <span className="font-semibold text-white">
-                {selectedCentreName}
-              </span>
-            </div>
+
+            {/* Mobile Hamburger Toggle */}
+            <button
+              type="button"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="flex xl:hidden w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/10 hover:bg-white/20 items-center justify-center text-white/90 transition-all cursor-pointer"
+              aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+            >
+              {isMobileMenuOpen ? (
+                <FiX className="w-4 h-4 sm:w-5 sm:h-5" />
+              ) : (
+                <FiMenu className="w-4 h-4 sm:w-5 sm:h-5" />
+              )}
+            </button>
           </div>
-        ) : (
-          <div className="flex flex-col gap-5 pt-2">
-            <div className="flex items-center justify-between gap-4">
-              <h1 className="text-2xl sm:text-3xl xl:text-[32px] font-extrabold tracking-tight text-white">
-                Centres
-              </h1>
+        </div>
 
-              <Button
-                variant="amber"
-                size="md"
-                onClick={onApplyToCentre}
-                rightIcon={<FiPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" />}
-                className="bg-[#FBAB2A] hover:bg-[#E89B1F] text-white font-bold text-[11px] sm:text-sm px-3 py-1.5 sm:px-5 sm:py-2.5 rounded-xl shadow-lg cursor-pointer shrink-0"
+        {/* Mobile Navigation Drawer Overlay (Does not drag down menu) */}
+        <AnimatePresence>
+          {isMobileMenuOpen && (
+            <div className="fixed inset-0 z-50 flex justify-end xl:hidden">
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="fixed inset-0 bg-black/60 backdrop-blur-xs"
+              />
+
+              {/* Drawer Panel */}
+              <motion.div
+                initial={{ x: "100%" }}
+                animate={{ x: 0 }}
+                exit={{ x: "100%" }}
+                transition={{ type: "spring", damping: 28, stiffness: 300 }}
+                className="relative w-full max-w-70 bg-[#8c1830] border-l border-white/10 text-white h-full shadow-2xl flex flex-col z-10 p-5 overflow-y-auto"
               >
-                Apply To Centre
-              </Button>
-            </div>
+                <div className="flex items-center justify-between pb-4 border-b border-white/15">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Avatar
+                      src={uploadedAvatar}
+                      name={effectiveUserName}
+                      className="w-9 h-9 sm:w-10 sm:h-10 border border-white/30 shrink-0"
+                      alt={effectiveUserName}
+                    />
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-sm font-bold text-white truncate">
+                        {effectiveUserName}
+                      </span>
+                      <span className="text-[11px] text-white/70">
+                        Assessor
+                      </span>
+                    </div>
+                  </div>
 
+                  <button
+                    type="button"
+                    aria-label="Close menu"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white cursor-pointer transition-colors"
+                  >
+                    <FiX className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="flex flex-col gap-1.5 pt-5">
+                  {navItems.map((tab, i) => {
+                    const isActive = activeTab === tab;
+                    return (
+                      <motion.div
+                        key={tab}
+                        initial={{ opacity: 0, x: 15 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.03 }}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onSelectTab(tab);
+                            setIsMobileMenuOpen(false);
+                          }}
+                          className={`w-full px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all cursor-pointer text-left flex items-center justify-between ${
+                            isActive
+                              ? "bg-white text-[#a31d38] font-bold shadow-sm"
+                              : "text-white/85 hover:text-white hover:bg-white/10"
+                          }`}
+                        >
+                          <span>{tab}</span>
+                        </button>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+
+                {/* Remaining Tabs / Logout in Drawer */}
+                <div className="mt-auto pt-4 border-t border-white/15 flex flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      setIsLogoutOpen(true);
+                    }}
+                    className="px-3.5 py-2.5 rounded-xl text-sm font-semibold text-red-200 hover:text-white hover:bg-red-500/20 flex items-center gap-2.5 text-left transition-all cursor-pointer"
+                  >
+                    <FiLogOut className="w-4 h-4" />
+                    <span>Log out</span>
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        {/* Banner Body Content according to Active Tab & Selected Detail */}
+        {activeTab === "Overview" ? (
+          <div className="flex flex-col gap-5 pt-2">
+            <h1 className="text-2xl sm:text-3xl xl:text-[32px] font-extrabold tracking-tight text-white">
+              Welcome Back, {effectiveUserName}
+            </h1>
+
+            {/* Overview Stat Cards Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
                 <div className="flex flex-col">
@@ -712,88 +439,373 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
               </div>
             </div>
           </div>
-        )
-      ) : activeTab === "IQAM Tools" ? (
-        activeIqamToolTitle ? (
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
-            <div className="flex flex-col gap-2">
+        ) : activeTab === "Applications" ? (
+          selectedApplicationName ? (
+            isIvApplication ? (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
+                <div className="flex flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={onBackFromApplication}
+                    className="flex items-center gap-2 text-white font-bold text-2xl sm:text-3xl hover:opacity-90 transition-opacity w-fit cursor-pointer"
+                  >
+                    <FiChevronLeft className="w-6 h-6 stroke-[2.5]" />
+                    <span>
+                      {activeIqamToolTitle ||
+                        "Internal Verifier's Comprehensive Report Form"}
+                    </span>
+                  </button>
+                  <div className="flex items-center gap-2 text-xs sm:text-sm text-white/90 font-normal">
+                    <span
+                      onClick={onBackFromApplication}
+                      className="hover:underline cursor-pointer"
+                    >
+                      Applications
+                    </span>
+                    <span>&gt;</span>
+                    <span
+                      onClick={onBackFromApplication}
+                      className="hover:underline cursor-pointer"
+                    >
+                      {selectedApplicationName}
+                    </span>
+                    <span>&gt;</span>
+                    <span className="font-semibold text-white">
+                      {activeIqamBreadcrumb ||
+                        activeIqamToolTitle ||
+                        "Internal Verifier's Comprehensive Report Form"}
+                    </span>
+                  </div>
+                </div>
+
+                {iqamActionLabel && (
+                  <button
+                    type="button"
+                    onClick={onIqamAction}
+                    className="bg-[#FBAB2A] hover:bg-[#E89B1F] text-white font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl shadow-lg cursor-pointer transition-all self-start sm:self-center shrink-0"
+                  >
+                    {iqamActionLabel}
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
+                <div className="flex flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={onBackFromApplication}
+                    className="flex items-center gap-2 text-white font-bold text-2xl sm:text-3xl hover:opacity-90 transition-opacity w-fit cursor-pointer"
+                  >
+                    <FiChevronLeft className="w-6 h-6 stroke-[2.5]" />
+                    <span>
+                      {isNsqApplication && nsqSubViewTitle
+                        ? nsqSubViewTitle
+                        : applicationSubView === "evidence_vault"
+                          ? "Evidence Vault"
+                          : applicationSubView === "application_form"
+                            ? "Application Form"
+                            : selectedApplicationName}
+                    </span>
+                  </button>
+                  <div className="flex items-center gap-2 text-xs sm:text-sm text-white/90 font-normal">
+                    <span
+                      onClick={onBackFromApplication}
+                      className="hover:underline cursor-pointer"
+                    >
+                      Applications
+                    </span>
+                    <span>&gt;</span>
+                    <span
+                      onClick={
+                        (isNsqApplication && nsqSubViewTitle) ||
+                        applicationSubView !== "stages"
+                          ? onBackFromApplication
+                          : undefined
+                      }
+                      className={
+                        (isNsqApplication && nsqSubViewTitle) ||
+                        applicationSubView !== "stages"
+                          ? "hover:underline cursor-pointer"
+                          : "font-semibold text-white"
+                      }
+                    >
+                      {selectedApplicationName}
+                    </span>
+                    {isNsqApplication && nsqSubViewTitle && (
+                      <>
+                        <span>&gt;</span>
+                        <span className="font-semibold text-white">
+                          {nsqSubViewTitle}
+                        </span>
+                      </>
+                    )}
+                    {!isNsqApplication && applicationSubView !== "stages" && (
+                      <>
+                        <span>&gt;</span>
+                        <span className="font-semibold text-white">
+                          {applicationSubView === "evidence_vault"
+                            ? "Evidence Vault"
+                            : "Application Form"}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* NSQ Move To IQAM Action */}
+                {isNsqApplication && !nsqSubViewTitle && (
+                  <button
+                    type="button"
+                    onClick={onMoveToIqam}
+                    className="bg-[#FBAB2A] hover:bg-[#E89B1F] text-white font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl shadow-lg flex items-center gap-1.5 cursor-pointer transition-all self-start sm:self-center shrink-0"
+                  >
+                    <span>Move To IQAM</span>
+                    <FiPlus className="w-4 h-4 stroke-3" />
+                  </button>
+                )}
+
+                {/* RPL Mark As Complete Button: only shows when all uploaded evidence are approved */}
+                {!isNsqApplication &&
+                  applicationSubView === "evidence_vault" &&
+                  canMarkAsComplete && (
+                    <Button
+                      type="button"
+                      variant="amber"
+                      size="md"
+                      onClick={onMarkAsComplete}
+                      className="bg-[#FBAB2A] hover:bg-[#E89B1F] text-white font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl shadow-lg flex items-center gap-2 cursor-pointer transition-all self-start sm:self-center shrink-0"
+                    >
+                      <span>Mark As Complete</span>
+                      <FiCheck className="w-4 h-4 stroke-3" />
+                    </Button>
+                  )}
+              </div>
+            )
+          ) : (
+            <div className="flex flex-col gap-5 pt-2">
+              <h1 className="text-2xl sm:text-3xl xl:text-[32px] font-extrabold tracking-tight text-white">
+                Applications
+              </h1>
+
+              <AssessorApplicationStatsCards
+                stats={{
+                  total: totalApplicationsCount,
+                  pending: pendingApplicationsCount,
+                  completed: completedApplicationsCount,
+                  archived: archivedApplicationsCount,
+                }}
+              />
+            </div>
+          )
+        ) : activeTab === "Centres" ? (
+          selectedCentreName ? (
+            <div className="flex flex-col gap-2 pt-2">
               <button
                 type="button"
-                onClick={onBackFromIqamTool}
+                onClick={onBackFromCentre}
                 className="flex items-center gap-2 text-white font-bold text-2xl sm:text-3xl hover:opacity-90 transition-opacity w-fit cursor-pointer"
               >
                 <FiChevronLeft className="w-6 h-6 stroke-[2.5]" />
-                <span>{activeIqamToolTitle}</span>
+                <span>{selectedCentreName}</span>
               </button>
               <div className="flex items-center gap-2 text-xs sm:text-sm text-white/90 font-normal">
                 <span
-                  onClick={onBackFromIqamTool}
+                  onClick={onBackFromCentre}
                   className="hover:underline cursor-pointer"
                 >
-                  IQAM Tools
+                  Centres
                 </span>
                 <span>&gt;</span>
                 <span className="font-semibold text-white">
-                  {activeIqamBreadcrumb || activeIqamToolTitle}
+                  {selectedCentreName}
                 </span>
               </div>
             </div>
+          ) : (
+            <div className="flex flex-col gap-5 pt-2">
+              <div className="flex items-center justify-between gap-4">
+                <h1 className="text-2xl sm:text-3xl xl:text-[32px] font-extrabold tracking-tight text-white">
+                  Centres
+                </h1>
 
-            {iqamActionLabel && (
+                <Button
+                  variant="amber"
+                  size="md"
+                  onClick={onApplyToCentre}
+                  rightIcon={
+                    <FiPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" />
+                  }
+                  className="bg-[#FBAB2A] hover:bg-[#E89B1F] text-white font-bold text-[11px] sm:text-sm px-3 py-1.5 sm:px-5 sm:py-2.5 rounded-xl shadow-lg cursor-pointer shrink-0"
+                >
+                  Apply To Centre
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
+                  <div className="flex flex-col">
+                    <span className="text-xs sm:text-sm lg:text-lg font-medium text-white/80">
+                      Total Centres
+                    </span>
+                    <div className="flex items-baseline gap-1.5 mt-1">
+                      <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
+                        {totalCentresCount}
+                      </span>
+                      <span className="text-xs lg:text-base font-normal text-white">
+                        centres
+                      </span>
+                    </div>
+                  </div>
+                  <div className="w-9 h-9 flex items-center justify-center shrink-0">
+                    <FiClipboard className="w-5 h-5 text-white/90" />
+                  </div>
+                </div>
+
+                <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
+                  <div className="flex flex-col">
+                    <span className="text-xs sm:text-sm lg:text-lg font-medium text-white/80">
+                      Total Applications
+                    </span>
+                    <div className="flex items-baseline gap-1.5 mt-1">
+                      <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
+                        {totalApplicationsCount}
+                      </span>
+                      <span className="text-xs lg:text-base font-normal text-white">
+                        applications
+                      </span>
+                    </div>
+                  </div>
+                  <div className="w-9 h-9 flex items-center justify-center shrink-0">
+                    <FiClipboard className="w-5 h-5 text-white/90" />
+                  </div>
+                </div>
+
+                <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
+                  <div className="flex flex-col">
+                    <span className="text-xs sm:text-sm lg:text-lg font-medium text-white/80">
+                      Completed Applications
+                    </span>
+                    <div className="flex items-baseline gap-1.5 mt-1">
+                      <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
+                        {completedApplicationsCount}
+                      </span>
+                      <span className="text-xs lg:text-base font-normal text-white">
+                        applications
+                      </span>
+                    </div>
+                  </div>
+                  <div className="w-9 h-9 flex items-center justify-center shrink-0">
+                    <FiUser className="w-5 h-5 text-white/90" />
+                  </div>
+                </div>
+
+                <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
+                  <div className="flex flex-col">
+                    <span className="text-xs sm:text-sm lg:text-lg font-medium text-white/80">
+                      Pending Applications
+                    </span>
+                    <div className="flex items-baseline gap-1.5 mt-1">
+                      <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
+                        {pendingApplicationsCount}
+                      </span>
+                      <span className="text-xs lg:text-base font-normal text-white">
+                        applications
+                      </span>
+                    </div>
+                  </div>
+                  <div className="w-9 h-9 flex items-center justify-center shrink-0">
+                    <FiFlag className="w-5 h-5 text-white/90" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )
+        ) : activeTab === "IQAM Tools" ? (
+          activeIqamToolTitle ? (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
+              <div className="flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={onBackFromIqamTool}
+                  className="flex items-center gap-2 text-white font-bold text-2xl sm:text-3xl hover:opacity-90 transition-opacity w-fit cursor-pointer"
+                >
+                  <FiChevronLeft className="w-6 h-6 stroke-[2.5]" />
+                  <span>{activeIqamToolTitle}</span>
+                </button>
+                <div className="flex items-center gap-2 text-xs sm:text-sm text-white/90 font-normal">
+                  <span
+                    onClick={onBackFromIqamTool}
+                    className="hover:underline cursor-pointer"
+                  >
+                    IQAM Tools
+                  </span>
+                  <span>&gt;</span>
+                  <span className="font-semibold text-white">
+                    {activeIqamBreadcrumb || activeIqamToolTitle}
+                  </span>
+                </div>
+              </div>
+
+              {iqamActionLabel && (
+                <button
+                  type="button"
+                  onClick={onIqamAction}
+                  className="bg-[#FBAB2A] hover:bg-[#E89B1F] text-white font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl shadow-lg cursor-pointer transition-all self-start sm:self-center shrink-0"
+                >
+                  {iqamActionLabel}
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2 pt-2">
+              <h1 className="text-2xl sm:text-3xl xl:text-[32px] font-extrabold tracking-tight text-white">
+                IQAM Assessment Tools
+              </h1>
+            </div>
+          )
+        ) : activeTab === "Job Board" ? (
+          selectedJobTitle ? (
+            <div className="flex flex-col gap-2 pt-2">
               <button
                 type="button"
-                onClick={onIqamAction}
-                className="bg-[#FBAB2A] hover:bg-[#E89B1F] text-white font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl shadow-lg cursor-pointer transition-all self-start sm:self-center shrink-0"
+                onClick={onBackFromJob}
+                className="flex items-center gap-2 text-white font-bold text-2xl sm:text-3xl hover:opacity-90 transition-opacity w-fit cursor-pointer"
               >
-                {iqamActionLabel}
+                <FiChevronLeft className="w-6 h-6 stroke-[2.5]" />
+                <span>Assessor</span>
               </button>
-            )}
-          </div>
-        ) : (
-          <div className="flex flex-col gap-2 pt-2">
-            <h1 className="text-2xl sm:text-3xl xl:text-[32px] font-extrabold tracking-tight text-white">
-              IQAM Assessment Tools
-            </h1>
-          </div>
-        )
-      ) : activeTab === "Job Board" ? (
-        selectedJobTitle ? (
-          <div className="flex flex-col gap-2 pt-2">
-            <button
-              type="button"
-              onClick={onBackFromJob}
-              className="flex items-center gap-2 text-white font-bold text-2xl sm:text-3xl hover:opacity-90 transition-opacity w-fit cursor-pointer"
-            >
-              <FiChevronLeft className="w-6 h-6 stroke-[2.5]" />
-              <span>Assessor</span>
-            </button>
-            <div className="flex items-center gap-2 text-xs sm:text-sm text-white/90 font-normal">
-              <span onClick={onBackFromJob} className="hover:underline cursor-pointer">
-                Job Board
-              </span>
-              <span>&gt;</span>
-              <span className="font-semibold text-white">{selectedJobTitle}</span>
+              <div className="flex items-center gap-2 text-xs sm:text-sm text-white/90 font-normal">
+                <span
+                  onClick={onBackFromJob}
+                  className="hover:underline cursor-pointer"
+                >
+                  Job Board
+                </span>
+                <span>&gt;</span>
+                <span className="font-semibold text-white">
+                  {selectedJobTitle}
+                </span>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="flex flex-col gap-2 pt-2">
+              <h1 className="text-2xl sm:text-3xl xl:text-[32px] font-extrabold tracking-tight text-white">
+                Job Board
+              </h1>
+            </div>
+          )
         ) : (
           <div className="flex flex-col gap-2 pt-2">
             <h1 className="text-2xl sm:text-3xl xl:text-[32px] font-extrabold tracking-tight text-white">
-              Job Board
+              {activeTab}
             </h1>
           </div>
-        )
-      ) : (
-        <div className="flex flex-col gap-2 pt-2">
-          <h1 className="text-2xl sm:text-3xl xl:text-[32px] font-extrabold tracking-tight text-white">
-            {activeTab}
-          </h1>
-        </div>
-      )}
+        )}
 
-      <LogoutModal
-        isOpen={isLogoutOpen}
-        onClose={() => setIsLogoutOpen(false)}
-      />
+        <LogoutModal
+          isOpen={isLogoutOpen}
+          onClose={() => setIsLogoutOpen(false)}
+        />
       </div>
     </header>
   );

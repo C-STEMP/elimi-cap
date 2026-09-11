@@ -9,11 +9,12 @@ interface ConfirmMarkCandidateIncompetentModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: (data: { reason: string; recommendation: string }) => void;
+  isLoading?: boolean;
 }
 
 export const ConfirmMarkCandidateIncompetentModal: React.FC<
   ConfirmMarkCandidateIncompetentModalProps
-> = ({ isOpen, onClose, onConfirm }) => {
+> = ({ isOpen, onClose, onConfirm, isLoading = false }) => {
   const [reason, setReason] = useState("");
   const [recommendation, setRecommendation] = useState("");
 
@@ -105,16 +106,19 @@ export const ConfirmMarkCandidateIncompetentModal: React.FC<
             <Button
               type="submit"
               variant="amber"
+              loading={isLoading}
+              disabled={isLoading}
               fullWidth
               className="h-12 bg-[#FBAB2A] hover:bg-[#E89B1F] text-white font-bold text-sm sm:text-base rounded-xl shadow-md cursor-pointer transition-all"
             >
-              Yes, Mark As Incompetent
+              {isLoading ? "Marking..." : "Yes, Mark As Incompetent"}
             </Button>
 
             <button
               type="button"
               onClick={onClose}
-              className="h-12 w-full border border-[#FBAB2A] text-[#FBAB2A] hover:bg-orange-50/60 font-bold text-sm sm:text-base rounded-xl transition-colors cursor-pointer"
+              disabled={isLoading}
+              className="h-12 w-full border border-[#FBAB2A] text-[#FBAB2A] hover:bg-orange-50/60 font-bold text-sm sm:text-base rounded-xl transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               No
             </button>
