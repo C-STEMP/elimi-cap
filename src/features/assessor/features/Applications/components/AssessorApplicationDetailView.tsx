@@ -25,6 +25,7 @@ import type {
 } from "../types/applications.types";
 import {
   useGetApplicationById,
+  useGetApplicationStages,
   useGetInterviewSchedule,
   useGetInterviewForms,
   useEvaluateInterview,
@@ -73,6 +74,7 @@ export const AssessorApplicationDetailView: React.FC<
   const router = useRouter();
   const { toast } = useToast();
   const { data: appDetail } = useGetApplicationById(application.id);
+  const { data: stagesData } = useGetApplicationStages(application.id);
   const isInterviewStage = Boolean(
     appDetail?.currentStageKey === "interview" ||
     (appDetail as any)?.stage === "interview" ||
@@ -148,6 +150,7 @@ export const AssessorApplicationDetailView: React.FC<
   };
 
   const leadMember = interviewPanel?.members?.find((m: any) => m.isLead);
+  const panelMember = interviewPanel?.members?.find((m: any) => !m.isLead && !m.isObserver);
   const ivMember = interviewPanel?.members?.find((m: any) => m.isObserver);
 
   // User is IV if system role is explicitly IV/verifier OR user matches an observer member on the panel
@@ -166,8 +169,26 @@ export const AssessorApplicationDetailView: React.FC<
       : application.role?.toLowerCase()?.includes("lead"),
   );
 
+  // Check if user matches any non-lead panel member
+  const isMatchingAnyPanelMember = Boolean(
+    interviewPanel?.members?.some((m: any) => !m.isLead && isMemberMatch(m))
+  );
+
+  const isUserPanelMember = Boolean(
+    isMatchingAnyPanelMember ||
+    (!isUserLeadPanelist && (user?.role?.toLowerCase()?.includes("assessor") || application.role?.toLowerCase()?.includes("panel")))
+  );
+
+  // Interview stage status derived from application stages
+  const interviewStageRow = stagesData?.find(
+    (s) =>
+      s.stageKey === "interview" ||
+      s.stageKey === "direct_observation" ||
+      s.stageKey === "observation",
+  );
+
   // Assessment forms are to be filled by Lead Panelist & viewed by IV, Facilitator, and other panel members
-  const isAssessmentFormReadOnly = isUserIV || !isUserLeadPanelist;
+  const isAssessmentFormReadOnly = !isUserLeadPanelist;
 
   const [internalSubView, setInternalSubView] =
     useState<AssessorDetailSubView>("stages");
@@ -178,6 +199,10 @@ export const AssessorApplicationDetailView: React.FC<
   const [interviewOutcome, setInterviewOutcome] = useState<
     "ongoing" | "competent" | "incompetent" | "inconclusive" | "awaiting_signature"
   >(application.status === "Completed" ? "competent" : "ongoing");
+
+  const [pendingSignatures, setPendingSignatures] = useState<
+    Array<{ assessorId: string; name?: string; isLead?: boolean }> | null
+  >(null);
 
   const [interviewFeedback, setInterviewFeedback] = useState<{
     title?: string;
@@ -286,33 +311,55 @@ export const AssessorApplicationDetailView: React.FC<
 
   const handleConfirmCandidateCompetent = async () => {
     try {
-      const res = await evaluateInterview.mutateAsync({
-        decision: "approve",
-        feedback: "Candidate demonstrated all required competencies.",
+      const isLead = isUserLeadPanelist;
+      const uName = user?.fullName || (user as any)?.name || "Assessor";
+      const payload: {
+        feedback: string;
+        signatureAssetId: string;
+        decision?: "approve" | "reject";
+      } = {
+        feedback: isLead
+          ? "Candidate demonstrated all required competencies."
+          : `Interview evaluated and approved by panel member (${uName}).`,
         signatureAssetId: "default",
-      });
+      };
+
+      if (isLead) {
+        payload.decision = "approve";
+      }
+
+      const res = await evaluateInterview.mutateAsync(payload);
 
       setIsConfirmCandidateCompetentOpen(false);
 
       const msg = res?.message || "";
       const isAwaitingSignatures =
+        Boolean(res?.pendingSignatures && res.pendingSignatures.length > 0) ||
         msg.toLowerCase().includes("awaiting") ||
         msg.toLowerCase().includes("signature");
 
+      if (res?.pendingSignatures) {
+        setPendingSignatures(res.pendingSignatures);
+      }
+
       if (isAwaitingSignatures) {
         setInterviewOutcome("awaiting_signature");
+        const pendingNames = res?.pendingSignatures?.map((s: { name?: string }) => s.name).filter(Boolean).join(", ");
+        const detailedMsg = pendingNames
+          ? `Interview evaluation recorded. Awaiting signature from: ${pendingNames}.`
+          : (msg || "Interview evaluation recorded; awaiting remaining panel signatures.");
+
         setCompetentSuccessModalConfig({
           title: "Evaluation Recorded",
-          message:
-            msg ||
-            "Interview evaluation recorded; awaiting remaining panel signatures.",
+          message: detailedMsg,
         });
       } else {
+        setPendingSignatures([]);
         setInterviewOutcome("competent");
         setCompetentSuccessModalConfig({
-          title: "Candidate Marked As Competent",
+          title: isLead ? "Candidate Marked As Competent" : "Interview Evaluation Submitted",
           message:
-            msg || "You have successfully marked this candidate as competent.",
+            msg || (isLead ? "You have successfully marked this candidate as competent." : "Your interview evaluation has been recorded."),
         });
       }
 
@@ -524,23 +571,59 @@ export const AssessorApplicationDetailView: React.FC<
           </div>
         )}
 
-        <AssessorApplicationStagesList
-          application={activeApplicationRecord}
-          interviewOutcome={interviewOutcome}
-          interviewFeedback={interviewFeedback}
-          onViewApplicationForm={() => setSubView("application_form")}
-          onOpenEvidenceVault={() => setSubView("evidence_vault")}
-          onMarkCompetent={() => setIsConfirmCompetentOpen(true)}
-          onMarkEvCompetent={() => setIsConfirmEvCompetentOpen(true)}
-          onMarkCandidateCompetent={() =>
-            setIsConfirmCandidateCompetentOpen(true)
-          }
-          onMarkCandidateIncompetent={() =>
-            setIsConfirmCandidateIncompetentOpen(true)
-          }
-          onMarkCandidateInconclusive={handleConfirmCandidateInconclusive}
-          onScheduleObservation={() => setIsScheduleObservationOpen(true)}
-        />
+        {(() => {
+          const isCurrentUserInPending = Boolean(
+            pendingSignatures &&
+            pendingSignatures.length > 0 &&
+            pendingSignatures.some((ps) => {
+              const psId = (ps.assessorId || "").toString().toLowerCase().trim();
+              const psName = (ps.name || "").toLowerCase().trim();
+              return (
+                (currentAssessorId && psId === currentAssessorId) ||
+                (currentUserId && psId === currentUserId) ||
+                (psName && userCandidateNames.some((n) => n === psName || n.includes(psName) || psName.includes(n)))
+              );
+            })
+          );
+
+          const isInterviewDone = Boolean(
+            (interviewStageRow?.status === "successful" || interviewOutcome === "competent") &&
+            interviewOutcome !== "awaiting_signature" &&
+            interviewOutcome !== "incompetent" &&
+            interviewOutcome !== "inconclusive"
+          );
+
+          const isAwaitingPanelSignatures = Boolean(
+            !isInterviewDone ||
+            interviewOutcome === "awaiting_signature" ||
+            (pendingSignatures && pendingSignatures.length > 0)
+          );
+
+          return (
+            <AssessorApplicationStagesList
+              application={activeApplicationRecord}
+              interviewOutcome={interviewOutcome}
+              interviewFeedback={interviewFeedback}
+              isUserLeadPanelist={isUserLeadPanelist}
+              isUserPanelMember={isUserPanelMember}
+              isUserIV={isUserIV}
+              pendingSignatures={pendingSignatures || undefined}
+              isCurrentUserInPending={isCurrentUserInPending}
+              onViewApplicationForm={() => setSubView("application_form")}
+              onOpenEvidenceVault={() => setSubView("evidence_vault")}
+              onMarkCompetent={() => setIsConfirmCompetentOpen(true)}
+              onMarkEvCompetent={() => setIsConfirmEvCompetentOpen(true)}
+              onMarkCandidateCompetent={() =>
+                setIsConfirmCandidateCompetentOpen(true)
+              }
+              onMarkCandidateIncompetent={() =>
+                setIsConfirmCandidateIncompetentOpen(true)
+              }
+              onMarkCandidateInconclusive={handleConfirmCandidateInconclusive}
+              onScheduleObservation={() => setIsScheduleObservationOpen(true)}
+            />
+          );
+        })()}
       </div>
 
       {/* Right Column: Calendar, Events, and Assessment Forms Widgets */}
@@ -553,6 +636,17 @@ export const AssessorApplicationDetailView: React.FC<
           applicationId={application.id}
           isReadOnly={isAssessmentFormReadOnly}
           remoteForms={remoteForms}
+          isInterviewDone={Boolean(
+            (interviewStageRow?.status === "successful" || interviewOutcome === "competent") &&
+            interviewOutcome !== "awaiting_signature" &&
+            interviewOutcome !== "incompetent" &&
+            interviewOutcome !== "inconclusive"
+          )}
+          isAwaitingPanelSignatures={Boolean(
+            !(interviewStageRow?.status === "successful" || interviewOutcome === "competent") ||
+            interviewOutcome === "awaiting_signature" ||
+            (pendingSignatures && pendingSignatures.length > 0)
+          )}
           onViewForm={(form) => {
             router.push(`/applications/${application.id}/assessment-forms/${form.id}`);
           }}
@@ -591,6 +685,7 @@ export const AssessorApplicationDetailView: React.FC<
         onClose={() => setIsConfirmCandidateCompetentOpen(false)}
         onConfirm={handleConfirmCandidateCompetent}
         isLoading={evaluateInterview.isPending}
+        isLead={isUserLeadPanelist}
       />
 
       <CandidateCompetentSuccessModal

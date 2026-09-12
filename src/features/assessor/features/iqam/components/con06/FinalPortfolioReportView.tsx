@@ -62,96 +62,218 @@ export const FinalPortfolioReportView: React.FC<FinalPortfolioReportViewProps> =
     <div className="w-full flex flex-col gap-6 select-text pb-12 animate-fadeIn">
 
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-6">
-        {/* Banner 3-Column Grid */}
+        {/* Metadata Grid Row 1 (3 Cards) */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 sm:p-5">
+          <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
             <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">REF: CON/06/IQAM</span>
-            <h4 className="text-xs sm:text-sm font-extrabold text-neutral-primary mt-1">
+            <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1">
               Internal Verifiers Final Portfolio / Award Report Form
             </h4>
           </div>
-          <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 sm:p-5">
+          <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
             <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">CANDIDATE NAME</span>
-            <h4 className="text-xs sm:text-sm font-extrabold text-neutral-primary mt-1 truncate">{candidateName}</h4>
+            <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">{candidateName}</h4>
           </div>
-          <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 sm:p-5">
-            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">ENROLMENT / REG NUMBER</span>
-            <h4 className="text-xs sm:text-sm font-extrabold text-neutral-primary mt-1 truncate">{enrolmentNo}</h4>
+          <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
+            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">QUALIFICATION</span>
+            <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">Masonry Level 2</h4>
           </div>
         </div>
 
-        {/* Form Inputs Grid */}
-        <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-gray-100 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-neutral-primary">Title of Qualification<span className="text-rose-500">*</span></label>
-            <input type="text" placeholder="Type here" className="h-11 px-3.5 bg-gray-50 rounded-xl border border-gray-200 text-xs text-neutral-primary outline-none" />
+        {/* Metadata Grid Row 2 (4 Cards) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
+            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">INTERNAL VERIFIER</span>
+            <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">Ogunsakin Jacob</h4>
           </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-neutral-primary">Assessment Location<span className="text-rose-500">*</span></label>
-            <input type="text" placeholder="Type here" className="h-11 px-3.5 bg-gray-50 rounded-xl border border-gray-200 text-xs text-neutral-primary outline-none" />
+          <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
+            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">NAME OF COUNTERSIGNING IV</span>
+            <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1">-</h4>
           </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-neutral-primary">Assessor Internal Verifier<span className="text-rose-500">*</span></label>
-            <input type="text" placeholder="Type here" className="h-11 px-3.5 bg-gray-50 rounded-xl border border-gray-200 text-xs text-neutral-primary outline-none" />
+          <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
+            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">NAME OF ASSESSOR</span>
+            <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">Samson John</h4>
           </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-neutral-primary">Countersigning Assessor (if IV)<span className="text-rose-500">*</span></label>
-            <input type="text" placeholder="Type here" className="h-11 px-3.5 bg-gray-50 rounded-xl border border-gray-200 text-xs text-neutral-primary outline-none" />
+          <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
+            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">COUNTERSIGNING ASSESSOR</span>
+            <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1">-</h4>
           </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-neutral-primary">Internal Verifier (IQA)<span className="text-rose-500">*</span></label>
-            <input type="text" placeholder="Type here" className="h-11 px-3.5 bg-gray-50 rounded-xl border border-gray-200 text-xs text-neutral-primary outline-none" />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-neutral-primary">Countersigning IV (if IV)<span className="text-rose-500">*</span></label>
-            <input type="text" placeholder="Type here" className="h-11 px-3.5 bg-gray-50 rounded-xl border border-gray-200 text-xs text-neutral-primary outline-none" />
-          </div>
-          <div className="md:col-span-2 flex items-center justify-between pt-2 border-t border-gray-100">
-            <span className="text-xs font-bold text-neutral-primary">Full Award Verified</span>
-            <div className="flex items-center gap-1.5">
-              <button type="button" onClick={() => setFullAwardVerified("yes")} className={`px-3 py-1 rounded-lg text-xs font-bold ${fullAwardVerified === "yes" ? "bg-[#a31d38] text-white" : "bg-gray-200 text-gray-700"}`}>Yes</button>
-              <button type="button" onClick={() => setFullAwardVerified("no")} className={`px-3 py-1 rounded-lg text-xs font-bold ${fullAwardVerified === "no" ? "bg-[#a31d38] text-white" : "bg-gray-200 text-gray-700"}`}>No</button>
-            </div>
+        </div>
+
+        {/* Full Award Verified Card */}
+        <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-xs border border-gray-100 flex items-center justify-between gap-4">
+          <span className="text-xs sm:text-sm font-bold text-neutral-primary">Full Award Verified</span>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => setFullAwardVerified("yes")}
+              className={`px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                fullAwardVerified === "yes" ? "bg-[#900B27] text-white" : "bg-white text-gray-700 border border-gray-200"
+              }`}
+            >
+              Yes
+            </button>
+            <button
+              type="button"
+              onClick={() => setFullAwardVerified("no")}
+              className={`px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                fullAwardVerified === "no" ? "bg-[#900B27] text-white" : "bg-white text-gray-700 border border-gray-200"
+              }`}
+            >
+              No
+            </button>
           </div>
         </div>
 
         {/* Comprehensive Portfolio Audit Checkpoints */}
-        <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-5">
+        <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-xs border border-gray-100 flex flex-col gap-5">
           <h3 className="text-sm sm:text-base font-extrabold text-neutral-primary">
             Comprehensive Portfolio Audit Checkpoints (CON/06)
           </h3>
           <div className="flex flex-col gap-4">
             {checkpoints.map((item) => (
-              <div key={item.id} className="p-4 bg-gray-50/70 rounded-2xl border border-gray-100 flex flex-col gap-2.5">
+              <div key={item.id} className="p-4 bg-[#f8f9fa] rounded-2xl border border-gray-100/80 flex flex-col gap-3">
                 <div className="flex items-start justify-between gap-4">
-                  <span className="text-xs font-semibold text-neutral-primary leading-snug">{item.question}</span>
+                  <span className="text-xs sm:text-sm font-medium text-neutral-primary leading-snug">{item.question}</span>
                   <div className="flex items-center gap-1.5 shrink-0">
-                    <button type="button" onClick={() => toggleAnswer(item.id, "yes")} className={`px-3 py-1 rounded-lg text-xs font-bold ${item.answer === "yes" ? "bg-[#a31d38] text-white" : "bg-gray-200 text-gray-700"}`}>Yes</button>
-                    <button type="button" onClick={() => toggleAnswer(item.id, "no")} className={`px-3 py-1 rounded-lg text-xs font-bold ${item.answer === "no" ? "bg-[#a31d38] text-white" : "bg-gray-200 text-gray-700"}`}>No</button>
+                    <button
+                      type="button"
+                      onClick={() => toggleAnswer(item.id, "yes")}
+                      className={`px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                        item.answer === "yes" ? "bg-[#900B27] text-white" : "bg-white text-gray-700 border border-gray-200"
+                      }`}
+                    >
+                      Yes
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleAnswer(item.id, "no")}
+                      className={`px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                        item.answer === "no" ? "bg-[#900B27] text-white" : "bg-white text-gray-700 border border-gray-200"
+                      }`}
+                    >
+                      No
+                    </button>
                   </div>
                 </div>
-                <textarea rows={2} placeholder="Type Comments Here" value={item.comments} onChange={(e) => updateComments(item.id, e.target.value)} className="w-full p-3 bg-white rounded-xl border border-gray-200 text-xs text-neutral-primary outline-none resize-none" />
+                <textarea
+                  rows={2}
+                  placeholder="Type Comments Here"
+                  value={item.comments}
+                  onChange={(e) => updateComments(item.id, e.target.value)}
+                  className="w-full p-3.5 bg-white rounded-xl border border-gray-100 text-xs text-neutral-primary outline-none resize-none focus:border-[#900B27] transition-all"
+                />
               </div>
             ))}
           </div>
         </div>
 
-        {/* Action for Assessor & Plan Achieved */}
-        <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-4">
-          <h4 className="text-xs sm:text-sm font-extrabold text-neutral-primary">Action for Assessor</h4>
-          <textarea rows={3} placeholder="Type here" className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-xs text-neutral-primary outline-none resize-none" />
-
-          <h4 className="text-xs sm:text-sm font-extrabold text-neutral-primary pt-2">Plan achieved</h4>
-          <textarea rows={3} placeholder="Type here" className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-xs text-neutral-primary outline-none resize-none" />
+        {/* Action for Assessor */}
+        <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-xs border border-gray-100 flex flex-col gap-3">
+          <h4 className="text-sm font-bold text-neutral-primary">Action for Assessor</h4>
+          <textarea
+            rows={3}
+            placeholder="Type here"
+            className="w-full p-3.5 bg-[#f8f9fa] rounded-xl border border-gray-100 text-xs text-neutral-primary outline-none resize-none focus:border-[#900B27] transition-all"
+          />
         </div>
 
-        {/* 4-Party Signatures */}
-        <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-5">
+        {/* Plan Achieved */}
+        <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-xs border border-gray-100 flex flex-col gap-3">
+          <h4 className="text-sm font-bold text-neutral-primary">Plan achieved</h4>
+          <textarea
+            rows={3}
+            placeholder="Type here"
+            className="w-full p-3.5 bg-[#f8f9fa] rounded-xl border border-gray-100 text-xs text-neutral-primary outline-none resize-none focus:border-[#900B27] transition-all"
+          />
+        </div>
+
+        {/* Signature & Date */}
+        <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-xs border border-gray-100 flex flex-col gap-5">
           <h3 className="text-sm sm:text-base font-extrabold text-neutral-primary">Signature & Date</h3>
-          <IqamSignatureBlock label="IV Signature" signed={ivSigned} onSign={() => setIvSigned(true)} />
-          <IqamSignatureBlock label="Countersigning IQA (Lead)" signed={countersigningIvaSigned} onSign={() => setCountersigningIvaSigned(true)} />
-          <IqamSignatureBlock label="Assessor Signature" readOnly />
-          <IqamSignatureBlock label="Countersigning Assessor" readOnly />
+          <div className="flex flex-col gap-4">
+            {/* IV Signature */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-neutral-primary">IV Signature*</label>
+                <button
+                  type="button"
+                  onClick={() => setIvSigned(true)}
+                  className="h-11 px-4 bg-[#fffbf0] hover:bg-amber-50 text-[#f59e0b] border border-[#fbab2a]/60 font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer"
+                >
+                  <span>Append Signature</span>
+                </button>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-neutral-primary">Date*</label>
+                <div className="h-11 px-4 bg-[#f8f9fa] rounded-xl border border-gray-100 flex items-center justify-between text-xs text-neutral-primary">
+                  <input type="text" placeholder="Type here" className="w-full bg-transparent outline-none" />
+                  <span className="text-gray-400">📅</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Countersigning IQA (Lead) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-neutral-primary">Countersigning IQA (Lead)*</label>
+                <button
+                  type="button"
+                  onClick={() => setCountersigningIvaSigned(true)}
+                  className="h-11 px-4 bg-[#fffbf0] hover:bg-amber-50 text-[#f59e0b] border border-[#fbab2a]/60 font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer"
+                >
+                  <span>Append Signature</span>
+                </button>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-neutral-primary">Date*</label>
+                <div className="h-11 px-4 bg-[#f8f9fa] rounded-xl border border-gray-100 flex items-center justify-between text-xs text-neutral-primary">
+                  <input type="text" placeholder="Type here" className="w-full bg-transparent outline-none" />
+                  <span className="text-gray-400">📅</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Assessor Signature */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-neutral-primary">Assessor Signature*</label>
+                <button
+                  type="button"
+                  className="h-11 px-4 bg-[#fffbf0] text-[#f59e0b] border border-[#fbab2a]/60 font-bold text-xs rounded-xl flex items-center justify-center gap-2 select-none"
+                >
+                  <span>Awaiting Signature</span>
+                </button>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-neutral-primary">Date*</label>
+                <div className="h-11 px-4 bg-[#f8f9fa] rounded-xl border border-gray-100 flex items-center justify-between text-xs text-neutral-primary">
+                  <input type="text" placeholder="Type here" className="w-full bg-transparent outline-none" />
+                  <span className="text-gray-400">📅</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Countersigning Assessor */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-neutral-primary">Countersigning Assessor*</label>
+                <button
+                  type="button"
+                  className="h-11 px-4 bg-[#fffbf0] text-[#f59e0b] border border-[#fbab2a]/60 font-bold text-xs rounded-xl flex items-center justify-center gap-2 select-none"
+                >
+                  <span>Awaiting Signature</span>
+                </button>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-neutral-primary">Date*</label>
+                <div className="h-11 px-4 bg-[#f8f9fa] rounded-xl border border-gray-100 flex items-center justify-between text-xs text-neutral-primary">
+                  <input type="text" placeholder="Type here" className="w-full bg-transparent outline-none" />
+                  <span className="text-gray-400">📅</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

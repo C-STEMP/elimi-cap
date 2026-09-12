@@ -39,16 +39,16 @@ export const QualificationUnitsList: React.FC<QualificationUnitsListProps> = ({
             className="p-4 bg-gray-50/70 hover:bg-gray-100/70 rounded-2xl border border-gray-100 transition-all cursor-pointer flex items-center justify-between gap-3 group"
           >
             <div className="flex items-center gap-2 flex-1 min-w-0">
-              <span className="text-xs font-bold text-neutral-primary shrink-0">
+              <span className="text-xs sm:text-sm font-bold text-neutral-primary shrink-0">
                 {u.unitNo}:
               </span>
-              <span className="text-xs text-neutral-secondary truncate">
+              <span className="text-xs sm:text-sm text-neutral-secondary truncate">
                 {u.title}
               </span>
             </div>
 
-            <div className="flex items-center gap-2.5 shrink-0">
-              <span className="px-2.5 py-1 bg-gray-200/70 text-gray-700 font-bold text-[11px] rounded-lg">
+            <div className="flex items-center gap-3 shrink-0">
+              <span className="px-3.5 py-1 bg-[#047857] text-white font-medium text-[11px] sm:text-xs rounded-full shadow-2xs">
                 {u.approvedCount}/{u.totalCount} Approved
               </span>
 

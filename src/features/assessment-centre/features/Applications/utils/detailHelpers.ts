@@ -163,7 +163,7 @@ export const computeStageCalculations = (
       : evStage?.status === "not_started"
         ? "Not Started"
         : evStage?.status === "in_progress" || evStage?.status === "under_review" || activeEv
-          ? "In Progress"
+          ? "Under Review"
           : "Not Started";
   const evDate = activeEv?.assignedAt && evStatus !== "Not Started"
     ? new Date(activeEv.assignedAt).toLocaleDateString("en-US")

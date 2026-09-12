@@ -10,12 +10,17 @@ import { ApplicationsStatsCards } from "./ApplicationsStatsCards";
 interface ApplicationsHeaderProps {
   selectedCandidateName: string | null;
   selectedInterviewTitle?: string | null;
+  selectedUnitNumber?: string | null;
+  selectedTradeName?: string | null;
   showSelfAssessmentForm: boolean;
   showEvidenceVault: boolean;
   showCandidateForm: boolean;
   isApplicationApproved?: boolean;
+  isNsqApplication?: boolean;
+  onGenerateLink?: () => void;
   onBackToList: () => void;
   onBackFromInterview?: () => void;
+  onBackFromUnit?: () => void;
   onBackFromSelfAssessment: () => void;
   onBackFromEvidenceVault: () => void;
   onBackFromCandidateForm: () => void;

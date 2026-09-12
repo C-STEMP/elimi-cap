@@ -1,5 +1,6 @@
-import Image from "next/image";
 import { ASSETS_URL } from "@/assets";
+import type { FacilitatorData } from "@/features/candidate/features/Dashboard/components/FacilitatorCard";
+import Image from "next/image";
 import {
   ApplicationFormState,
   Assessor,
@@ -7,7 +8,6 @@ import {
   FormItem,
   StageConfig,
 } from "../types";
-import type { FacilitatorData } from "@/features/candidate/features/Dashboard/components/FacilitatorCard";
 
 export const MOCK_FACILITATOR: FacilitatorData = {
   name: "Ngozi Eze",
@@ -195,18 +195,14 @@ export const getStagesConfig = ({
       s.stageKey === "evidence_vault" ||
       s.stageKey === "evidence",
   );
-  const interviewStageRow = stagesData?.find(
-    (s) => s.stageKey === "interview",
-  );
+  const interviewStageRow = stagesData?.find((s) => s.stageKey === "interview");
   const ivStageRow = stagesData?.find(
     (s) => s.stageKey === "internal_verification",
   );
   const evStageRow = stagesData?.find(
     (s) => s.stageKey === "external_verification",
   );
-  const certStageRow = stagesData?.find(
-    (s) => s.stageKey === "certification",
-  );
+  const certStageRow = stagesData?.find((s) => s.stageKey === "certification");
 
   // ─── Stage 1: Application Form ──────────────────────────────────────────────
   const isAppFormExplicitlyApproved =
@@ -309,17 +305,16 @@ export const getStagesConfig = ({
         : "Make Payment",
     actionVariant: isPaymentPaid ? "outline" : "amber",
     actionSize: "sm",
-    actionLeftIcon:
-      isPaymentPaid ? (
-        <Image
-          src={ASSETS_URL.downloadIcon2}
-          alt="Download Receipt"
-          width={20}
-          height={20}
-          className="w-5 h-5 object-contain"
-          style={{ width: "auto", height: "auto" }}
-        />
-      ) : undefined,
+    actionLeftIcon: isPaymentPaid ? (
+      <Image
+        src={ASSETS_URL.downloadIcon2}
+        alt="Download Receipt"
+        width={20}
+        height={20}
+        className="w-5 h-5 object-contain"
+        style={{ width: "auto", height: "auto" }}
+      />
+    ) : undefined,
     onActionClick: isPaymentPaid ? onDownloadReceipt : onMakePayment,
   };
 
@@ -332,9 +327,13 @@ export const getStagesConfig = ({
     interviewStageRow?.status === "scheduled" ||
     interviewStageRow?.status === "in_progress" ||
     (currentStageKey &&
-      ["interview", "direct_observation", "internal_verification", "external_verification", "certification"].includes(
-        currentStageKey,
-      )),
+      [
+        "interview",
+        "direct_observation",
+        "internal_verification",
+        "external_verification",
+        "certification",
+      ].includes(currentStageKey)),
   );
 
   const isFolderActive = Boolean(
@@ -369,9 +368,10 @@ export const getStagesConfig = ({
         : folderStageRow?.status === "rejected"
           ? "text-[#B3261E]"
           : "text-[#6B7280]",
-    subtext: isFolderActive || isFolderDone
-      ? `Started on: ${folderStageRow?.enteredAt ? new Date(folderStageRow.enteredAt).toLocaleDateString() : formattedSubmittedDate}`
-      : "---",
+    subtext:
+      isFolderActive || isFolderDone
+        ? `Started on: ${folderStageRow?.enteredAt ? new Date(folderStageRow.enteredAt).toLocaleDateString() : formattedSubmittedDate}`
+        : "---",
     actionText: isFolderActive || isFolderDone ? "Evidence Vault" : undefined,
     actionVariant: isFolderDone ? "outline" : "amber",
     actionSize: "sm",
@@ -385,9 +385,11 @@ export const getStagesConfig = ({
     (interviewStageRow?.status as string) === "approved" ||
     interviewCompleted ||
     (currentStageKey &&
-      ["internal_verification", "external_verification", "certification"].includes(
-        currentStageKey,
-      )),
+      [
+        "internal_verification",
+        "external_verification",
+        "certification",
+      ].includes(currentStageKey)),
   );
 
   const isInterviewActive = Boolean(
@@ -405,7 +407,8 @@ export const getStagesConfig = ({
     status: isInterviewDone
       ? "Completed"
       : isInterviewActive
-        ? interviewStageRow?.status === "in_progress" || currentStageKey === "interview"
+        ? interviewStageRow?.status === "in_progress" ||
+          currentStageKey === "interview"
           ? "In Progress"
           : "Awaiting Interview"
         : interviewStageRow?.status === "rejected"
@@ -425,17 +428,21 @@ export const getStagesConfig = ({
         : interviewStageRow?.status === "rejected"
           ? "text-[#B3261E]"
           : "text-[#6B7280]",
-    subtext: isInterviewActive || isInterviewDone
-      ? interviewDateText
-        ? `Scheduled for: ${interviewDateText}`
-        : interviewStageRow?.enteredAt
-          ? `Scheduled for: ${new Date(interviewStageRow.enteredAt).toLocaleDateString()}`
-          : "Scheduled for: 8/15/2026"
-      : "---",
+    subtext:
+      isInterviewActive || isInterviewDone
+        ? interviewDateText
+          ? `Scheduled for: ${interviewDateText}`
+          : interviewStageRow?.enteredAt
+            ? `Scheduled for: ${new Date(interviewStageRow.enteredAt).toLocaleDateString()}`
+            : "Scheduled for: 8/15/2026"
+        : "---",
     isCollapsible: isInterviewActive,
     isCollapsed: isInterviewCollapsed,
     onToggleCollapse: onToggleInterviewCollapse,
-    assessors: isInterviewActive && assessors && assessors.length > 0 ? assessors : undefined,
+    assessors:
+      isInterviewActive && assessors && assessors.length > 0
+        ? assessors
+        : undefined,
     onOpenSignatureModal,
     onOpenFormView,
     inconclusiveBanner:
@@ -487,13 +494,15 @@ export const getStagesConfig = ({
       : isIvActive
         ? "text-[#F9A825]"
         : "text-[#6B7280]",
-    subtext: isIvActive || isIvDone
-      ? `Started on: ${ivStageRow?.enteredAt ? new Date(ivStageRow.enteredAt).toLocaleDateString() : formattedSubmittedDate}`
-      : "---",
+    subtext:
+      isIvActive || isIvDone
+        ? `Started on: ${ivStageRow?.enteredAt ? new Date(ivStageRow.enteredAt).toLocaleDateString() : formattedSubmittedDate}`
+        : "---",
     isCollapsible: isIvActive,
     isCollapsed: true,
     onToggleCollapse: onToggleInterviewCollapse,
-    actionText: isIvActive && !isIvDone ? "Proceed to External Verifier" : undefined,
+    actionText:
+      isIvActive && !isIvDone ? "Proceed to External Verifier" : undefined,
     actionVariant: "amber",
     actionSize: "sm",
     onActionClick: onProceedToExternalVerifier,
@@ -534,16 +543,16 @@ export const getStagesConfig = ({
       : isEvActive
         ? "text-[#F9A825]"
         : "text-[#6B7280]",
-    subtext: isEvActive || isEvDone
-      ? `Started on: ${evStageRow?.enteredAt ? new Date(evStageRow.enteredAt).toLocaleDateString() : formattedSubmittedDate}`
-      : "---",
-    actionText: isEvActive && !isEvDone ? "Proceed to Certification" : undefined,
+    subtext:
+      isEvActive || isEvDone
+        ? `Started on: ${evStageRow?.enteredAt ? new Date(evStageRow.enteredAt).toLocaleDateString() : formattedSubmittedDate}`
+        : "---",
+    actionText: isEvActive && !isEvDone && undefined,
     actionVariant: "amber",
     actionSize: "sm",
     onActionClick: onProceedToCertification,
   };
 
-  // ─── Stage 7: Certification ────────────────────────────────────────────────
   const isCertDone = Boolean(
     certStageRow?.status === "successful" ||
     (certStageRow?.status as string) === "completed" ||
@@ -560,7 +569,11 @@ export const getStagesConfig = ({
   const certificationStage: StageConfig = {
     id: "certification",
     title: "Certification",
-    status: isCertDone ? "Competent" : isCertActive ? "In Progress" : "Not Started",
+    status: isCertDone
+      ? "Competent"
+      : isCertActive
+        ? "In Progress"
+        : "Not Started",
     statusBg: isCertDone
       ? "bg-[#1E7F4C]/10"
       : isCertActive
@@ -571,9 +584,10 @@ export const getStagesConfig = ({
       : isCertActive
         ? "text-[#F9A825]"
         : "text-[#6B7280]",
-    subtext: isCertActive || isCertDone
-      ? `Completed on: ${certStageRow?.enteredAt ? new Date(certStageRow.enteredAt).toLocaleDateString() : formattedSubmittedDate}`
-      : "---",
+    subtext:
+      isCertActive || isCertDone
+        ? `Completed on: ${certStageRow?.enteredAt ? new Date(certStageRow.enteredAt).toLocaleDateString() : formattedSubmittedDate}`
+        : "---",
     isCollapsible: isCertActive,
     isCollapsed: !isCertActive,
     onToggleCollapse: onToggleInterviewCollapse,

@@ -36,6 +36,7 @@ export const ApplicationDetail: React.FC<ApplicationDetailProps> = ({
     <div className="w-full flex flex-col gap-6 select-text">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         <DetailStagesList
+          applicationId={id}
           candidateName={state.resolvedCandidateName}
           candidatePhotoUrl={state.candidatePhotoUrl}
           submittedDate={state.submittedDate}

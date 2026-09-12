@@ -52,7 +52,7 @@ export const ComprehensiveReportView: React.FC<ComprehensiveReportViewProps> = (
             type="button"
             onClick={() => setActiveTab("04A")}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              activeTab === "04A" ? "bg-[#a31d38] text-white shadow-xs" : "text-gray-600 hover:text-neutral-primary"
+              activeTab === "04A" ? "bg-[#900B27] text-white shadow-xs" : "text-gray-600 hover:text-neutral-primary"
             }`}
           >
             CON/04A/IQAM
@@ -61,7 +61,7 @@ export const ComprehensiveReportView: React.FC<ComprehensiveReportViewProps> = (
             type="button"
             onClick={() => setActiveTab("04B")}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              activeTab === "04B" ? "bg-[#a31d38] text-white shadow-xs" : "text-gray-600 hover:text-neutral-primary"
+              activeTab === "04B" ? "bg-[#900B27] text-white shadow-xs" : "text-gray-600 hover:text-neutral-primary"
             }`}
           >
             CON/04B/IQAM
@@ -70,38 +70,15 @@ export const ComprehensiveReportView: React.FC<ComprehensiveReportViewProps> = (
             type="button"
             onClick={() => setActiveTab("04C")}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              activeTab === "04C" ? "bg-[#a31d38] text-white shadow-xs" : "text-gray-600 hover:text-neutral-primary"
+              activeTab === "04C" ? "bg-[#900B27] text-white shadow-xs" : "text-gray-600 hover:text-neutral-primary"
             }`}
           >
             CON/04C/IQAM
           </button>
         </div>
 
-        {/* Section Ref & Candidate Banner */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 sm:p-5">
-            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-              REF: {activeTab === "04A" ? "CON/04A/IQAM" : activeTab === "04B" ? "CON/04B/IQAM" : "CON/04C/IQAM"}
-            </span>
-            <h4 className="text-sm sm:text-base font-extrabold text-neutral-primary mt-1 truncate">
-              {activeTab === "04A" && "Verification Scope & Sampled Units"}
-              {activeTab === "04B" && "Methods Sampled, VACSR Quality & Action Plan"}
-              {activeTab === "04C" && "Verified Unit Outcomes, Appeals & Formal Signoffs"}
-            </h4>
-          </div>
-
-          <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 sm:p-5">
-            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-              CANDIDATE NAME
-            </span>
-            <h4 className="text-sm sm:text-base font-extrabold text-neutral-primary mt-1 truncate">
-              {candidateName}
-            </h4>
-          </div>
-        </div>
-
         {/* Dynamic Section View */}
-        {activeTab === "04A" && <Section04AVerificationScope />}
+        {activeTab === "04A" && <Section04AVerificationScope candidateName={candidateName} />}
         {activeTab === "04B" && <Section04BMethodsQuality />}
         {activeTab === "04C" && <Section04CUnitOutcomes />}
       </div>

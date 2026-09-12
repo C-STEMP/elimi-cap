@@ -13,11 +13,13 @@ const MONTH_NAMES = [
 interface AssessorCalendarWidgetProps {
   panelInterviewDate?: string | Date;
   highlightedDays?: number[];
+  defaultDate?: Date;
 }
 
 export const AssessorCalendarWidget: React.FC<AssessorCalendarWidgetProps> = ({
   panelInterviewDate,
   highlightedDays: propHighlightedDays,
+  defaultDate,
 }) => {
   const parsedInterviewDate = React.useMemo(() => {
     if (!panelInterviewDate) return null;
@@ -25,7 +27,9 @@ export const AssessorCalendarWidget: React.FC<AssessorCalendarWidgetProps> = ({
     return isNaN(d.getTime()) ? null : d;
   }, [panelInterviewDate]);
 
-  const [currentDate, setCurrentDate] = useState(() => parsedInterviewDate || new Date());
+  const [currentDate, setCurrentDate] = useState(
+    () => parsedInterviewDate || defaultDate || new Date(2026, 6, 1)
+  );
   const { data: eventsData } = useGetAssessorEvents();
 
   const highlightedDays = React.useMemo(() => {

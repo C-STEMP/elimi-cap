@@ -55,12 +55,21 @@ export function useEvaluateInterview(id: string) {
       queryClient.invalidateQueries({
         queryKey: ["applications", "interview-forms", id],
       });
+      queryClient.invalidateQueries({
+        queryKey: ["applications", "interview-panel", id],
+      });
+      const message =
+        data?.message ||
+        (data as any)?.data?.message ||
+        "Your interview evaluation has been recorded successfully.";
+      const isAwaiting =
+        message.toLowerCase().includes("awaiting") ||
+        message.toLowerCase().includes("signature");
+
       toast({
         type: "success",
-        title: "Evaluation Submitted",
-        description:
-          data?.message ||
-          "Your interview evaluation has been recorded successfully.",
+        title: isAwaiting ? "Evaluation Recorded" : "Evaluation Submitted",
+        description: message,
       });
     },
 

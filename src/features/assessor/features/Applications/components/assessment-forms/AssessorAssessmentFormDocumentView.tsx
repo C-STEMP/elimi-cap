@@ -10,7 +10,6 @@ import type { InterviewForm } from "@/src/features/shared/applications/api/types
 import {
   useUpdateInterviewForm,
   useGetInterviewPanel,
-  useEvaluateInterview,
 } from "@/src/features/shared/applications/hooks";
 import { useToast } from "@/src/components/ui/toast";
 import { useAppSelector } from "@/src/store/hooks";
@@ -106,7 +105,6 @@ export const AssessorAssessmentFormDocumentView: React.FC<
 
   const { data: interviewPanel } = useGetInterviewPanel(applicationId || "");
   const updateFormMutation = useUpdateInterviewForm(applicationId || "");
-  const evaluateInterview = useEvaluateInterview(applicationId || "");
   const [isSigningRole, setIsSigningRole] = useState<string | null>(null);
 
   const currentAssessorId = (user as any)?.assessorId || (user as any)?.profileId || user?.id;
@@ -164,7 +162,7 @@ export const AssessorAssessmentFormDocumentView: React.FC<
         user?.role?.toLowerCase()?.includes("verifier")
   );
 
-  const handleSignAsRole = async (role: "panel_member" | "lead" | "iv" | "assessor") => {
+  const handleSignAsRole = async (role: "lead" | "assessor") => {
     if (!applicationId) {
       toast({ type: "error", title: "Missing Application", description: "Application ID is required to sign." });
       return;
@@ -175,69 +173,28 @@ export const AssessorAssessmentFormDocumentView: React.FC<
       const uName = user?.fullName || (user as any)?.name || "";
       const updatedData: Record<string, any> = {
         ...(formData || {}),
+        leadPanelistSigned: true,
+        leadPanelistSignedAt: now,
+        assessorSigned: true,
+        assessorSignedAt: now,
       };
 
-      if (role === "panel_member") {
-        updatedData.panelMemberSigned = true;
-        updatedData.panelMemberSignedAt = now;
-        if (uName) {
-          updatedData.panelMemberName = uName;
-        }
-      } else if (role === "iv") {
-        updatedData.internalVerifierSigned = true;
-        updatedData.internalVerifierSignedAt = now;
-        updatedData.ivSigned = true;
-        if (uName) {
-          updatedData.ivName = uName;
-        }
-      } else if (role === "lead" || role === "assessor") {
-        updatedData.leadPanelistSigned = true;
-        updatedData.leadPanelistSignedAt = now;
-        updatedData.assessorSigned = true;
-        updatedData.assessorSignedAt = now;
-        if (uName) {
-          updatedData.leadPanelistName = uName;
-        }
+      if (uName) {
+        updatedData.leadPanelistName = uName;
+        updatedData.assessorName = uName;
       }
 
-      // 1. Submit interview evaluation on backend for panel members or lead
-      if (isInterviewRecord && (role === "panel_member" || role === "lead")) {
-        await evaluateInterview.mutateAsync({
-          decision: "approve",
-          feedback: `Interview assessment signed by ${
-            role === "panel_member" ? "Panel Member" : "Lead Panelist"
-          } (${uName || "Assessor"}).`,
-          signatureAssetId: "default",
-        });
-      }
+      await updateFormMutation.mutateAsync({
+        formType: FORM_BACKEND_MAP[formId] || "records",
+        data: updatedData,
+      });
 
-      // 2. Only lead panelist / general assessor updates the form data document directly
-      if (role === "lead" || role === "assessor") {
-        try {
-          await updateFormMutation.mutateAsync({
-            formType: FORM_BACKEND_MAP[formId] || "records",
-            data: updatedData,
-          });
-        } catch (updateErr) {
-          console.warn("Form update warning:", updateErr);
-        }
-      }
-
-      // 3. Immediately reflect signature in UI state
       setFormData(updatedData);
 
       toast({
         type: "success",
-        title: "Signature Appended",
-        description: `Successfully signed as ${
-          role === "panel_member"
-            ? "Panel Member"
-            : role === "iv"
-            ? "Internal Verifier"
-            : role === "lead"
-            ? "Lead Panelist"
-            : "Assessor"
-        }.`,
+        title: "Form Signed",
+        description: `Successfully signed form as ${isInterviewRecord ? "Lead Panelist" : "Assessor"}.`,
       });
     } catch (err: any) {
       toast({
@@ -379,163 +336,74 @@ export const AssessorAssessmentFormDocumentView: React.FC<
           <h3 className="text-[11px] font-bold text-neutral-primary uppercase tracking-widest border-b border-gray-100 pb-2">
             Signatures & Verification
           </h3>
-          {isInterviewRecord ? (
-            /* Interview Record Form: Matches initial form exactly (Lead Panelist, Panel Member, Internal Verifier) */
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {/* Lead Panelist */}
-              <div className="bg-[#F8F9FA] rounded-2xl p-4 border border-gray-100 flex flex-col gap-2">
-                <span className="text-[11px] font-semibold text-neutral-secondary">Lead Panelist:</span>
-                {formData?.leadPanelistSigned || formData?.assessorSigned || formData?.leadPanelistSignedAt || formData?.assessorSignedAt ? (
-                  <div className="flex items-center gap-2 text-emerald-700 font-bold text-xs bg-emerald-50 border border-emerald-200 px-3 py-2 rounded-xl">
-                    <FiCheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>
-                      Signed
-                      {formData?.leadPanelistName ? ` by ${formData.leadPanelistName}` : ""}
-                      {formData?.leadPanelistSignedAt || formData?.assessorSignedAt ? ` · ${new Date(formData.leadPanelistSignedAt || formData.assessorSignedAt).toLocaleDateString("en-GB")}` : ""}
-                    </span>
-                  </div>
-                ) : canSignLead ? (
-                  <button
-                    type="button"
-                    disabled={Boolean(isSigningRole)}
-                    onClick={() => handleSignAsRole("lead")}
-                    className="h-9 bg-[#FFF8EB] border border-[#FBAB2A] hover:bg-[#FDEED5] text-[#FBAB2A] font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
-                  >
-                    <FiEdit3 className="w-3.5 h-3.5" />
-                    {isSigningRole === "lead" ? "Signing..." : "Sign as Lead Panelist"}
-                  </button>
-                ) : (
-                  <div className="flex items-center gap-2 text-amber-700 font-semibold text-xs bg-amber-50 border border-amber-200 px-3 py-2 rounded-xl">
-                    <FiClock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                    <span>Pending Signature</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Panel Member */}
-              <div className="bg-[#F8F9FA] rounded-2xl p-4 border border-gray-100 flex flex-col gap-2">
-                <span className="text-[11px] font-semibold text-neutral-secondary">Panel Member:</span>
-                {formData?.panelMemberSigned || formData?.panelMemberSignedAt ? (
-                  <div className="flex items-center gap-2 text-emerald-700 font-bold text-xs bg-emerald-50 border border-emerald-200 px-3 py-2 rounded-xl">
-                    <FiCheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>
-                      Signed
-                      {formData?.panelMemberName ? ` by ${formData.panelMemberName}` : ""}
-                      {formData?.panelMemberSignedAt ? ` · ${new Date(formData.panelMemberSignedAt).toLocaleDateString("en-GB")}` : ""}
-                    </span>
-                  </div>
-                ) : canSignPanelMember ? (
-                  <button
-                    type="button"
-                    disabled={Boolean(isSigningRole)}
-                    onClick={() => handleSignAsRole("panel_member")}
-                    className="h-9 bg-[#FFF8EB] border border-[#FBAB2A] hover:bg-[#FDEED5] text-[#FBAB2A] font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
-                  >
-                    <FiEdit3 className="w-3.5 h-3.5" />
-                    {isSigningRole === "panel_member" ? "Signing..." : "Sign as Panel Member"}
-                  </button>
-                ) : (
-                  <div className="flex items-center gap-2 text-amber-700 font-semibold text-xs bg-amber-50 border border-amber-200 px-3 py-2 rounded-xl">
-                    <FiClock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                    <span>Pending Signature</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Internal Verifier */}
-              <div className="bg-[#F8F9FA] rounded-2xl p-4 border border-gray-100 flex flex-col gap-2">
-                <span className="text-[11px] font-semibold text-neutral-secondary">Internal Verifier:</span>
-                {formData?.internalVerifierSigned || formData?.internalVerifierSignedAt || formData?.ivSigned ? (
-                  <div className="flex items-center gap-2 text-emerald-700 font-bold text-xs bg-emerald-50 border border-emerald-200 px-3 py-2 rounded-xl">
-                    <FiCheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>
-                      Signed
-                      {formData?.ivName ? ` by ${formData.ivName}` : ""}
-                      {formData?.internalVerifierSignedAt ? ` · ${new Date(formData.internalVerifierSignedAt).toLocaleDateString("en-GB")}` : ""}
-                    </span>
-                  </div>
-                ) : canSignIV ? (
-                  <button
-                    type="button"
-                    disabled={Boolean(isSigningRole)}
-                    onClick={() => handleSignAsRole("iv")}
-                    className="h-9 bg-[#FFF8EB] border border-[#FBAB2A] hover:bg-[#FDEED5] text-[#FBAB2A] font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
-                  >
-                    <FiEdit3 className="w-3.5 h-3.5" />
-                    {isSigningRole === "iv" ? "Signing..." : "Sign as Internal Verifier"}
-                  </button>
-                ) : (
-                  <div className="flex items-center gap-2 text-amber-700 font-semibold text-xs bg-amber-50 border border-amber-200 px-3 py-2 rounded-xl">
-                    <FiClock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                    <span>Pending Signature</span>
-                  </div>
-                )}
-              </div>
+          {/* Section 3: Signatures & Verification */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Lead Panelist / Assessor */}
+            <div className="bg-[#F8F9FA] rounded-2xl p-4 border border-gray-100 flex flex-col gap-2">
+              <span className="text-[11px] font-semibold text-neutral-secondary">
+                {isInterviewRecord ? "Lead Panelist:" : "Assessor:"}
+              </span>
+              {formData?.leadPanelistSigned || formData?.assessorSigned || formData?.leadPanelistSignedAt || formData?.assessorSignedAt ? (
+                <div className="flex items-center gap-2 text-emerald-700 font-bold text-xs bg-emerald-50 border border-emerald-200 px-3 py-2 rounded-xl">
+                  <FiCheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>
+                    Signed
+                    {formData?.leadPanelistName ? ` by ${formData.leadPanelistName}` : formData?.assessorName ? ` by ${formData.assessorName}` : ""}
+                    {formData?.leadPanelistSignedAt || formData?.assessorSignedAt ? ` · ${new Date(formData.leadPanelistSignedAt || formData.assessorSignedAt).toLocaleDateString("en-GB")}` : ""}
+                  </span>
+                </div>
+              ) : canSignLead ? (
+                <button
+                  type="button"
+                  disabled={Boolean(isSigningRole)}
+                  onClick={() => handleSignAsRole(isInterviewRecord ? "lead" : "assessor")}
+                  className="h-9 bg-[#FFF8EB] border border-[#FBAB2A] hover:bg-[#FDEED5] text-[#FBAB2A] font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  <FiEdit3 className="w-3.5 h-3.5" />
+                  {isSigningRole ? "Signing..." : isInterviewRecord ? "Sign as Lead Panelist" : "Sign as Assessor"}
+                </button>
+              ) : (
+                <div className="flex items-center gap-2 text-amber-700 font-semibold text-xs bg-amber-50 border border-amber-200 px-3 py-2 rounded-xl">
+                  <FiClock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                  <span>Pending Signature</span>
+                </div>
+              )}
             </div>
-          ) : (
-            /* Skills Demo, Assessment Mapping, Observation Checklist: Matches initial forms exactly (Assessor, Candidate) */
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Assessor */}
-              <div className="bg-[#F8F9FA] rounded-2xl p-4 border border-gray-100 flex flex-col gap-2">
-                <span className="text-[11px] font-semibold text-neutral-secondary">Assessor:</span>
-                {formData?.assessorSigned || formData?.assessorSignedAt ? (
-                  <div className="flex items-center gap-2 text-emerald-700 font-bold text-xs bg-emerald-50 border border-emerald-200 px-3 py-2 rounded-xl">
-                    <FiCheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>Signed{formData?.assessorSignedAt ? ` · ${new Date(formData.assessorSignedAt).toLocaleDateString("en-GB")}` : ""}</span>
-                  </div>
-                ) : isAssessorUser ? (
-                  <button
-                    type="button"
-                    disabled={Boolean(isSigningRole)}
-                    onClick={() => handleSignAsRole("assessor")}
-                    className="h-9 bg-[#FFF8EB] border border-[#FBAB2A] hover:bg-[#FDEED5] text-[#FBAB2A] font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
-                  >
-                    <FiEdit3 className="w-3.5 h-3.5" />
-                    {isSigningRole === "assessor" ? "Signing..." : "Sign as Assessor"}
-                  </button>
-                ) : (
-                  <div className="flex items-center gap-2 text-amber-700 font-semibold text-xs bg-amber-50 border border-amber-200 px-3 py-2 rounded-xl">
-                    <FiClock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                    <span>Pending Signature</span>
-                  </div>
-                )}
-              </div>
 
-              {/* Candidate */}
-              <div className="bg-[#F8F9FA] rounded-2xl p-4 border border-gray-100 flex flex-col gap-2">
-                <span className="text-[11px] font-semibold text-neutral-secondary">Candidate:</span>
-                {isCandidateSigned ? (
-                  <div className="flex items-center gap-2 text-emerald-700 font-bold text-xs bg-emerald-50 border border-emerald-200 px-3 py-2 rounded-xl">
-                    <FiCheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>Signed · {new Date(formData?.candidateSignedAt || formRecord?.candidateSignedAt || Date.now()).toLocaleDateString("en-GB")}</span>
-                  </div>
-                ) : isCandidate ? (
-                  <button
-                    type="button"
-                    onClick={() => setIsCandidateSignModalOpen(true)}
-                    className="h-9 bg-[#FFF8EB] border border-[#FBAB2A] hover:bg-[#FDEED5] text-[#FBAB2A] font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-                  >
-                    <FiEdit3 className="w-3.5 h-3.5" />
-                    Sign Document
-                  </button>
-                ) : (
-                  <div className="flex items-center gap-2 text-amber-700 font-semibold text-xs bg-amber-50 border border-amber-200 px-3 py-2 rounded-xl">
-                    <FiClock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                    <span>Awaiting Signature</span>
-                  </div>
-                )}
-              </div>
+            {/* Candidate */}
+            <div className="bg-[#F8F9FA] rounded-2xl p-4 border border-gray-100 flex flex-col gap-2">
+              <span className="text-[11px] font-semibold text-neutral-secondary">Candidate:</span>
+              {isCandidateSigned ? (
+                <div className="flex items-center gap-2 text-emerald-700 font-bold text-xs bg-emerald-50 border border-emerald-200 px-3 py-2 rounded-xl">
+                  <FiCheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>Signed · {new Date(formData?.candidateSignedAt || formRecord?.candidateSignedAt || Date.now()).toLocaleDateString("en-GB")}</span>
+                </div>
+              ) : isCandidate ? (
+                <button
+                  type="button"
+                  onClick={() => setIsCandidateSignModalOpen(true)}
+                  className="h-9 bg-[#FFF8EB] border border-[#FBAB2A] hover:bg-[#FDEED5] text-[#FBAB2A] font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <FiEdit3 className="w-3.5 h-3.5" />
+                  Sign Document
+                </button>
+              ) : (
+                <div className="flex items-center gap-2 text-amber-700 font-semibold text-xs bg-amber-50 border border-amber-200 px-3 py-2 rounded-xl">
+                  <FiClock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                  <span>Awaiting Signature</span>
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       </div>
 
-      {applicationId && !isInterviewRecord && (
+      {applicationId && (
         <CandidateInterviewFormModal
           isOpen={isCandidateSignModalOpen}
           onClose={() => setIsCandidateSignModalOpen(false)}
           applicationId={applicationId}
-          formType={FORM_BACKEND_MAP[formId] || "skill_demonstration"}
+          formType={FORM_BACKEND_MAP[formId] || "records"}
           formTitle={meta.title}
           formRecord={formRecord}
           candidateName={candidateFullName}

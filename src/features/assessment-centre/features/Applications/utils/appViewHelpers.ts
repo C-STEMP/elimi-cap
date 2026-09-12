@@ -56,6 +56,17 @@ export function mapInterviewItem(item: any, remotePanels: any[]): InterviewRowDa
 
 export function mapApplicationItem(app: any) {
   const rawApp = app as any;
+  const formatDate = (dateVal?: any) => {
+    if (!dateVal) return "07/22/2026";
+    const d = new Date(dateVal);
+    if (isNaN(d.getTime())) return "07/22/2026";
+    return d.toLocaleDateString("en-US", {
+      month: "2-digit",
+      day: "2-digit",
+      year: "numeric",
+    });
+  };
+
   return {
     id: app.id,
     candidateName:
@@ -73,7 +84,25 @@ export function mapApplicationItem(app: any) {
       rawApp.assignedFacilitator?.name ||
       (rawApp.facilitator?.firstName
         ? `${rawApp.facilitator.firstName} ${rawApp.facilitator.lastName || ""}`.trim()
-        : null) || "—",
+        : null) ||
+      "—",
+    assessorName:
+      rawApp.assessor?.name ||
+      rawApp.assignedAssessor?.name ||
+      (rawApp.assessor?.firstName
+        ? `${rawApp.assessor.firstName} ${rawApp.assessor.lastName || ""}`.trim()
+        : null) ||
+      rawApp.facilitatorName ||
+      rawApp.facilitator?.name ||
+      "—",
+    internalVerifierName:
+      rawApp.internalVerifier?.name ||
+      rawApp.assignedInternalVerifier?.name ||
+      (rawApp.internalVerifier?.firstName
+        ? `${rawApp.internalVerifier.firstName} ${rawApp.internalVerifier.lastName || ""}`.trim()
+        : null) ||
+      rawApp.verifier?.name ||
+      "—",
     trade: rawApp.trade?.name || app.type || "General",
     assessmentType: app.type || "RPL",
     status:
@@ -89,9 +118,7 @@ export function mapApplicationItem(app: any) {
         ? "Archived"
         : "Pending",
     ivApproved: Boolean(rawApp.ivApproved),
-    submittedAt: rawApp.submittedAt
-      ? new Date(rawApp.submittedAt).toLocaleDateString("en-GB")
-      : new Date(app.createdAt).toLocaleDateString("en-GB"),
+    submittedAt: formatDate(rawApp.submittedAt || app.createdAt),
   };
 }
 

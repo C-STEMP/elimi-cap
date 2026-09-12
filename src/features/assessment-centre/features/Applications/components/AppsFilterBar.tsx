@@ -83,7 +83,7 @@ export const AppsFilterBar: React.FC<Props> = ({
         <button type="button" disabled={selectedPanelIds.length === 0} onClick={onDeletePanels} className="hover:underline cursor-pointer text-gray-500 hover:text-red-600 disabled:opacity-40 transition-colors">Delete</button>
       </div>
     ) : (
-      <div className="flex items-center justify-end gap-4 text-xs font-semibold text-gray-600 pt-1">
+      <div className="flex items-center justify-end gap-5 text-xs font-semibold text-gray-600 pt-1">
         {activeFilterTab === "IV Approved" && onBulkCertify && (
           <button
             type="button"
@@ -96,7 +96,21 @@ export const AppsFilterBar: React.FC<Props> = ({
               : `Bulk Certify ${selectedCount ? `(${selectedCount})` : ""}`}
           </button>
         )}
-        <button type="button" onClick={onSelectAll} className="hover:underline cursor-pointer transition-colors">Select All</button>
+        <button
+          type="button"
+          onClick={onSelectAll}
+          className="hover:underline cursor-pointer transition-colors"
+        >
+          Select All
+        </button>
+        <button
+          type="button"
+          onClick={onBulkCertify}
+          disabled={isBulkCertifying || (selectedCount ?? 0) === 0}
+          className="hover:underline cursor-pointer transition-colors text-gray-600 hover:text-black disabled:opacity-40"
+        >
+          Mark As Complete
+        </button>
       </div>
     )}
   </div>

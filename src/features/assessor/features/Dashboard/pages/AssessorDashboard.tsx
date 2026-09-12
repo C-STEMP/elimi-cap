@@ -263,9 +263,7 @@ export const AssessorDashboard: React.FC = () => {
     onAction?: () => void;
   } | null>(null);
   const [nsqSubViewTitle, setNsqSubViewTitle] = useState<string | null>(null);
-  const [nsqNavState, setNsqNavState] = useState<
-    "overview" | "unit" | "observation_form"
-  >("overview");
+  const [nsqNavState, setNsqNavState] = useState<any>("overview");
   const moveToIqamRef = React.useRef<(() => void) | null>(null);
 
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);

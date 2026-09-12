@@ -45,6 +45,7 @@ export interface AssessorPanelMember {
   avatar?: string | StaticImageData;
   tags: string[];
   isHighlighted?: boolean;
+  isPendingSignature?: boolean;
 }
 
 export interface ApplicationStageMenuAction {
