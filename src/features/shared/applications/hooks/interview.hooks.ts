@@ -55,6 +55,9 @@ export function useEvaluateInterview(id: string) {
       queryClient.invalidateQueries({
         queryKey: ["applications", "interview-forms", id],
       });
+      queryClient.invalidateQueries({
+        queryKey: ["applications", "interview-panel", id],
+      });
       const message =
         data?.message ||
         (data as any)?.data?.message ||

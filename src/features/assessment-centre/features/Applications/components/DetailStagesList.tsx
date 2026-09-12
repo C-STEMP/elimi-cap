@@ -1,10 +1,21 @@
-import React from "react";
-import { FiFlag } from "react-icons/fi";
-import { Button } from "@/src/components/ui/button";
 import { Avatar } from "@/src/components/ui/avatar";
+import { Button } from "@/src/components/ui/button";
+import { useToast } from "@/src/components/ui/toast";
+import { useCreateShareToken } from "@/src/features/shared/centre/hooks";
+import React, { useState } from "react";
+import {
+  FiCheck,
+  FiClipboard,
+  FiCopy,
+  FiExternalLink,
+  FiFlag,
+  FiLink,
+} from "react-icons/fi";
 import { getStatusBadge } from "../utils/detailHelpers";
+import { NotifyAwardingBodyModal } from "./NotifyAwardingBodyModal";
 
 interface DetailStagesListProps {
+  applicationId?: string;
   candidateName?: string;
   candidatePhotoUrl?: string | null;
   submittedDate: string;
@@ -41,6 +52,7 @@ interface DetailStagesListProps {
 }
 
 export const DetailStagesList: React.FC<DetailStagesListProps> = ({
+  applicationId,
   candidateName,
   candidatePhotoUrl,
   submittedDate,
@@ -75,6 +87,107 @@ export const DetailStagesList: React.FC<DetailStagesListProps> = ({
   onOpenAssignVerifier,
   onOpenReviewVerifier,
 }) => {
+  const { toast } = useToast();
+  const [generatedLink, setGeneratedLink] = useState<string>("");
+  const [hasCopiedLink, setHasCopiedLink] = useState<boolean>(false);
+  const [notifiedAwardingBody, setNotifiedAwardingBody] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const [isNotifyAwardingBodyModalOpen, setIsNotifyAwardingBodyModalOpen] =
+    useState<boolean>(false);
+
+  const createShareTokenMutation = useCreateShareToken(applicationId || "");
+
+  const handleGenerateLink = async () => {
+    if (!applicationId) {
+      toast({
+        type: "error",
+        title: "Missing Application ID",
+        description: "Cannot generate link without an application ID.",
+      });
+      return;
+    }
+    try {
+      const res = await createShareTokenMutation.mutateAsync();
+      const origin =
+        typeof window !== "undefined" ? window.location.origin : "";
+      const fullUrl = res?.token
+        ? `${origin}/shared/applications/${res.token}`
+        : `${origin}/applications/${applicationId}?from=centre`;
+      setGeneratedLink(fullUrl);
+      toast({
+        type: "success",
+        title: "Link Generated",
+        description: "Public link to candidate dossier generated successfully.",
+      });
+    } catch {
+      const origin =
+        typeof window !== "undefined" ? window.location.origin : "";
+      const fallbackUrl = `${origin}/applications/${applicationId}?from=centre`;
+      setGeneratedLink(fallbackUrl);
+    }
+  };
+
+  const handlePasteLink = async () => {
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard?.readText) {
+        const text = await navigator.clipboard.readText();
+        if (text) {
+          setGeneratedLink(text.trim());
+          toast({
+            type: "info",
+            title: "Link Pasted",
+            description: "Link pasted from clipboard.",
+          });
+          return;
+        }
+      }
+    } catch {
+      // Clipboard permission denied or not supported
+    }
+    const manual =
+      typeof window !== "undefined"
+        ? window.prompt("Paste your link here:")
+        : null;
+    if (manual) {
+      setGeneratedLink(manual.trim());
+      toast({
+        type: "info",
+        title: "Link Pasted",
+        description: "Link updated successfully.",
+      });
+    }
+  };
+
+  const handleCopyLink = () => {
+    if (!generatedLink) return;
+    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(generatedLink);
+      setHasCopiedLink(true);
+      toast({
+        type: "success",
+        title: "Link Copied",
+        description: "Link copied to clipboard.",
+      });
+      setTimeout(() => setHasCopiedLink(false), 2500);
+    }
+  };
+
+  const handleNotifyBodySuccess = (bodyId: string, bodyName: string) => {
+    setNotifiedAwardingBody({ id: bodyId, name: bodyName });
+    setIsNotifyAwardingBodyModalOpen(false);
+    toast({
+      type: "success",
+      title: "Awarding Body Notified",
+      description: `Successfully notified ${bodyName} with candidate dossier.`,
+    });
+  };
+
+  const isIvDone = ivStatus === "Completed";
+  const isNotifyCompleted = Boolean(
+    notifiedAwardingBody || (isIvDone && generatedLink),
+  );
   return (
     <div className="lg:col-span-8 xl:col-span-9 flex flex-col gap-4">
       {/* Stage 1: Application Form */}
@@ -84,12 +197,18 @@ export const DetailStagesList: React.FC<DetailStagesListProps> = ({
       >
         <div className="flex flex-col gap-1.5 min-w-0">
           <div className="flex items-center gap-3 flex-wrap">
-            <h3 className="text-black font-bold text-base sm:text-lg lg:text-xl tracking-tight group-hover:text-primary transition-colors">Application Form</h3>
-            <span className={`${getStatusBadge(appFormStatus).className} text-xs font-semibold px-3 py-0.5 rounded-full capitalize`}>
+            <h3 className="text-black font-bold text-base sm:text-lg lg:text-xl tracking-tight group-hover:text-primary transition-colors">
+              Application Form
+            </h3>
+            <span
+              className={`${getStatusBadge(appFormStatus).className} text-xs font-semibold px-3 py-0.5 rounded-full capitalize`}
+            >
               {getStatusBadge(appFormStatus).text}
             </span>
           </div>
-          <p className="text-gray-400 text-xs sm:text-sm font-normal">Submitted on: {submittedDate}</p>
+          <p className="text-gray-400 text-xs sm:text-sm font-normal">
+            Submitted on: {submittedDate}
+          </p>
         </div>
         <Button
           type="button"
@@ -109,17 +228,28 @@ export const DetailStagesList: React.FC<DetailStagesListProps> = ({
       <div className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-100 shadow-2xs flex items-center justify-between gap-4">
         <div className="flex flex-col gap-1.5 min-w-0">
           <div className="flex items-center gap-3 flex-wrap">
-            <h3 className="text-black font-bold text-base sm:text-lg lg:text-xl tracking-tight">Payment</h3>
-            <span className={`${getStatusBadge(paymentStatus).className} text-xs font-semibold px-3 py-0.5 rounded-full capitalize`}>
+            <h3 className="text-black font-bold text-base sm:text-lg lg:text-xl tracking-tight">
+              Payment
+            </h3>
+            <span
+              className={`${getStatusBadge(paymentStatus).className} text-xs font-semibold px-3 py-0.5 rounded-full capitalize`}
+            >
               {getStatusBadge(paymentStatus).text}
             </span>
           </div>
           <p className="text-gray-400 text-xs sm:text-sm font-normal">
-            {isPaymentPaid ? `Paid On: ${paymentDate}` : isAppFormExplicitlyApproved ? "Awaiting candidate payment" : "Awaiting centre approval"}
+            {isPaymentPaid
+              ? `Paid On: ${paymentDate}`
+              : isAppFormExplicitlyApproved
+                ? "Awaiting candidate payment"
+                : "Awaiting centre approval"}
           </p>
         </div>
         {paymentStatus === "Successful" ? (
-          activeFacilitator || isAtInterviewStage || isInterviewScheduled || evidenceStatus === "Marked as complete" ? (
+          activeFacilitator ||
+          isAtInterviewStage ||
+          isInterviewScheduled ||
+          evidenceStatus === "Marked as complete" ? (
             <Button
               type="button"
               variant="outline"
@@ -142,7 +272,9 @@ export const DetailStagesList: React.FC<DetailStagesListProps> = ({
             </Button>
           )
         ) : (
-          <span className="text-gray-400 font-bold text-sm shrink-0">{paymentDate}</span>
+          <span className="text-gray-400 font-bold text-sm shrink-0">
+            {paymentDate}
+          </span>
         )}
       </div>
 
@@ -150,18 +282,28 @@ export const DetailStagesList: React.FC<DetailStagesListProps> = ({
       <div className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-100 shadow-2xs flex items-center justify-between gap-4">
         <div className="flex flex-col gap-1.5 min-w-0">
           <div className="flex items-center gap-3 flex-wrap">
-            <h3 className="text-black font-bold text-base sm:text-lg lg:text-xl tracking-tight">Evidence Vault</h3>
+            <h3 className="text-black font-bold text-base sm:text-lg lg:text-xl tracking-tight">
+              Evidence Vault
+            </h3>
             {evidenceStatus === "Under Review" ? (
-              <span className="bg-[#EBF3FF] text-[#1D4ED8] text-xs font-semibold px-3 py-0.5 rounded-full capitalize">Awaiting Feedback</span>
+              <span className="bg-[#EBF3FF] text-[#1D4ED8] text-xs font-semibold px-3 py-0.5 rounded-full capitalize">
+                Awaiting Feedback
+              </span>
             ) : evidenceStatus === "In Progress" ? (
-              <span className="bg-[#FFF4E5] text-[#B45309] border border-[#FDE6B0] text-xs font-semibold px-3 py-0.5 rounded-full capitalize">14 Days Left</span>
+              <span className="bg-[#FFF4E5] text-[#B45309] border border-[#FDE6B0] text-xs font-semibold px-3 py-0.5 rounded-full capitalize">
+                14 Days Left
+              </span>
             ) : (
-              <span className={`${getStatusBadge(evidenceStatus).className} text-xs font-semibold px-3 py-0.5 rounded-full capitalize`}>
+              <span
+                className={`${getStatusBadge(evidenceStatus).className} text-xs font-semibold px-3 py-0.5 rounded-full capitalize`}
+              >
                 {getStatusBadge(evidenceStatus).text}
               </span>
             )}
           </div>
-          <p className="text-gray-400 text-xs sm:text-sm font-normal">Started on: {evidenceDate}</p>
+          <p className="text-gray-400 text-xs sm:text-sm font-normal">
+            Started on: {evidenceDate}
+          </p>
         </div>
         <Button
           type="button"
@@ -179,22 +321,47 @@ export const DetailStagesList: React.FC<DetailStagesListProps> = ({
         <div className="flex items-center justify-between gap-4">
           <div className="flex flex-col gap-1.5 min-w-0">
             <div className="flex items-center gap-3 flex-wrap">
-              <h3 className="text-black font-bold text-base sm:text-lg lg:text-xl tracking-tight">Interview Stage</h3>
-              <span className={`${interviewStatus === "Completed" ? "bg-[#E6F4EA] text-[#1E7F4C]" : isInterviewScheduled || interviewStatus === "In Progress" ? "bg-[#FEF3C7] text-[#92400E]" : "bg-gray-100 text-gray-500"} text-xs font-semibold px-3 py-0.5 rounded-full capitalize`}>
-                {interviewStatus === "Completed" ? "Completed" : isInterviewScheduled ? "Awaiting Interview" : interviewStatus === "In Progress" ? "In Progress" : "Not Started"}
+              <h3 className="text-black font-bold text-base sm:text-lg lg:text-xl tracking-tight">
+                Interview Stage
+              </h3>
+              <span
+                className={`${interviewStatus === "Completed" ? "bg-[#E6F4EA] text-[#1E7F4C]" : isInterviewScheduled || interviewStatus === "In Progress" ? "bg-[#FEF3C7] text-[#92400E]" : "bg-gray-100 text-gray-500"} text-xs font-semibold px-3 py-0.5 rounded-full capitalize`}
+              >
+                {interviewStatus === "Completed"
+                  ? "Completed"
+                  : isInterviewScheduled
+                    ? "Awaiting Interview"
+                    : interviewStatus === "In Progress"
+                      ? "In Progress"
+                      : "Not Started"}
               </span>
             </div>
             <p className="text-gray-400 text-xs sm:text-sm font-normal">
-              {interviewStatus === "Completed" ? `Completed on: ${interviewDate}` : isInterviewScheduled && interviewDateFormatted ? `Scheduled for: ${interviewDateFormatted}` : "Not scheduled yet"}
+              {interviewStatus === "Completed"
+                ? `Completed on: ${interviewDate}`
+                : isInterviewScheduled && interviewDateFormatted
+                  ? `Scheduled for: ${interviewDateFormatted}`
+                  : "Not scheduled yet"}
             </p>
           </div>
 
           {interviewStatus === "Completed" ? (
-            <Button type="button" variant="outline" size="sm" className="bg-white! text-[#fbab2a]! border border-gray-200! hover:bg-gray-50! font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl cursor-pointer shrink-0 shadow-none!">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="bg-white! text-[#fbab2a]! border border-gray-200! hover:bg-gray-50! font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl cursor-pointer shrink-0 shadow-none!"
+            >
               View
             </Button>
           ) : isInterviewScheduled ? (
-            <Button type="button" variant="outline" size="sm" onClick={onOpenRescheduleModal} className="bg-white! text-[#fbab2a]! border border-[#fbab2a]! hover:bg-[#FFFBEB]! font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl cursor-pointer shrink-0 shadow-none!">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onOpenRescheduleModal}
+              className="bg-white! text-[#fbab2a]! border border-[#fbab2a]! hover:bg-[#FFFBEB]! font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl cursor-pointer shrink-0 shadow-none!"
+            >
               Reschedule Interview
             </Button>
           ) : (
@@ -209,25 +376,39 @@ export const DetailStagesList: React.FC<DetailStagesListProps> = ({
               >
                 Schedule Interview
               </Button>
-              {!isPaymentPaid && <span className="text-[10px] text-gray-400 font-medium">Requires completed payment</span>}
+              {!isPaymentPaid && (
+                <span className="text-[10px] text-gray-400 font-medium">
+                  Requires completed payment
+                </span>
+              )}
             </div>
           )}
         </div>
 
         {isInterviewScheduled && (
           <div className="mt-2 pt-3 border-t border-gray-100">
-            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-3">YOUR ASSESORS</span>
+            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-3">
+              YOUR ASSESORS
+            </span>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
               {interviewAssessorsList.slice(0, 3).map((assessor, idx) => (
-                <div key={assessor.id || idx} className={`bg-white rounded-2xl p-4 flex items-center gap-3.5 border transition-all ${idx === 1 || assessor.isHighlighted ? "border-2 border-[#FBAB2A] shadow-xs" : "border-gray-100 shadow-2xs"}`}>
+                <div
+                  key={assessor.id || idx}
+                  className={`bg-white rounded-2xl p-4 flex items-center gap-3.5 border transition-all ${idx === 1 || assessor.isHighlighted ? "border-2 border-[#FBAB2A] shadow-xs" : "border-gray-100 shadow-2xs"}`}
+                >
                   <Avatar
                     src={assessor.avatar}
                     name={assessor.name}
                     className="w-12 h-12 shrink-0 border border-gray-100 rounded-full"
                   />
                   <div className="flex flex-col min-w-0">
-                    <h4 className="text-black font-bold text-sm leading-snug truncate">{assessor.name}</h4>
-                    <p className="text-gray-400 text-xs font-normal truncate mt-0.5">{assessor.role || (idx === 0 ? "Lead Panelist" : "Panel Member")}</p>
+                    <h4 className="text-black font-bold text-sm leading-snug truncate">
+                      {assessor.name}
+                    </h4>
+                    <p className="text-gray-400 text-xs font-normal truncate mt-0.5">
+                      {assessor.role ||
+                        (idx === 0 ? "Lead Panelist" : "Panel Member")}
+                    </p>
                   </div>
                 </div>
               ))}
@@ -240,47 +421,176 @@ export const DetailStagesList: React.FC<DetailStagesListProps> = ({
       <div className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-100 shadow-2xs flex items-center justify-between gap-4">
         <div className="flex flex-col gap-1.5 min-w-0">
           <div className="flex items-center gap-3 flex-wrap">
-            <h3 className="text-black font-bold text-base sm:text-lg lg:text-xl tracking-tight">Internal Verifier</h3>
-            <span className={`${getStatusBadge(ivStatus).className} text-xs font-semibold px-3 py-0.5 rounded-full capitalize`}>
+            <h3 className="text-black font-bold text-base sm:text-lg lg:text-xl tracking-tight">
+              Internal Verifier
+            </h3>
+            <span
+              className={`${getStatusBadge(ivStatus).className} text-xs font-semibold px-3 py-0.5 rounded-full capitalize`}
+            >
               {getStatusBadge(ivStatus).text}
             </span>
           </div>
           <p className="text-gray-400 text-xs sm:text-sm font-normal">
-            {activeIv ? `Assigned to: ${activeIv.name || "Assigned IV"}` : ivStatus === "In Progress" ? "Under review by Internal Verifier" : ivStatus === "Completed" ? "Internal verification completed" : "---"}
+            {activeIv
+              ? `Assigned to: ${activeIv.name || "Assigned IV"}`
+              : ivStatus === "In Progress"
+                ? "Under review by Internal Verifier"
+                : ivStatus === "Completed"
+                  ? "Internal verification completed"
+                  : "---"}
           </p>
         </div>
         <div className="flex items-center gap-3 shrink-0">
-          <span className="text-gray-400 font-bold text-sm hidden sm:inline">{ivDate}</span>
-          {!activeIv && ivStatus !== "Not Started" && ivStatus !== "Completed" && (
-            <Button type="button" variant="amber" size="sm" onClick={() => onOpenAssignVerifier("internal")} className="cursor-pointer text-xs">Assign IV</Button>
-          )}
-          {activeIv && ivStatus !== "Not Started" && ivStatus !== "Completed" && (
-            <Button type="button" variant="amber" size="sm" onClick={() => onOpenReviewVerifier("internal")} className="cursor-pointer text-xs">Mark Competent</Button>
-          )}
+          <span className="text-gray-400 font-bold text-sm hidden sm:inline">
+            {ivDate}
+          </span>
+          {!activeIv &&
+            ivStatus !== "Not Started" &&
+            ivStatus !== "Completed" && (
+              <Button
+                type="button"
+                variant="amber"
+                size="sm"
+                onClick={() => onOpenAssignVerifier("internal")}
+                className="cursor-pointer text-xs"
+              >
+                Assign IV
+              </Button>
+            )}
+          {activeIv &&
+            ivStatus !== "Not Started" &&
+            ivStatus !== "Completed" && (
+              <Button
+                type="button"
+                variant="amber"
+                size="sm"
+                onClick={() => onOpenReviewVerifier("internal")}
+                className="cursor-pointer text-xs"
+              >
+                Mark Competent
+              </Button>
+            )}
         </div>
+      </div>
+
+      {/* Stage: Notify Awarding Body */}
+      <div className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-100 shadow-2xs flex flex-col gap-4">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex flex-col gap-1.5 min-w-0">
+            <div className="flex items-center gap-3 flex-wrap">
+              <h3 className="text-black font-bold text-base sm:text-lg lg:text-xl tracking-tight">
+                Notify Awarding Body
+              </h3>
+              <span
+                className={`${
+                  isNotifyCompleted
+                    ? "bg-[#1E7F4C]/10 text-[#1E7F4C]"
+                    : isIvDone
+                      ? "bg-[#FBAB2A]/10 text-[#D97706]"
+                      : "bg-gray-100 text-gray-400"
+                } text-xs font-semibold px-3 py-0.5 rounded-full capitalize`}
+              >
+                {isNotifyCompleted
+                  ? "Completed"
+                  : isIvDone
+                    ? "Under Review"
+                    : "Not Started"}
+              </span>
+            </div>
+            <p className="text-gray-400 text-xs sm:text-sm font-normal">
+              {notifiedAwardingBody
+                ? `Awarding Body (${notifiedAwardingBody.name}) notified`
+                : isIvDone
+                  ? `Started on: ${ivDate || submittedDate}`
+                  : "---"}
+            </p>
+          </div>
+        </div>
+
+        {/* Generate Link Interactive Section */}
+        {isIvDone && (
+          <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-2 shrink-0 flex-wrap">
+              <Button
+                type="button"
+                onClick={handleGenerateLink}
+                loading={createShareTokenMutation.isPending}
+                disabled={createShareTokenMutation.isPending}
+                variant="amber"
+                size="sm"
+                className="h-9 px-4 text-xs font-bold rounded-xl shadow-xs cursor-pointer inline-flex items-center gap-1.5 shrink-0"
+              >
+                <FiLink className="w-3.5 h-3.5" />
+                <span>
+                  {createShareTokenMutation.isPending
+                    ? "Generating..."
+                    : "Generate Link"}
+                </span>
+              </Button>
+
+              <button
+                type="button"
+                onClick={handlePasteLink}
+                title="Paste from clipboard"
+                className="h-9 px-3.5 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 font-semibold text-xs rounded-xl shadow-2xs transition-colors flex items-center gap-1.5 cursor-pointer shrink-0"
+              >
+                <FiClipboard className="w-3.5 h-3.5 text-gray-500" />
+                <span>Paste</span>
+              </button>
+
+              {generatedLink && (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleCopyLink}
+                    title="Copy link"
+                    className="h-9 px-3.5 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 font-semibold text-xs rounded-xl shadow-2xs transition-colors flex items-center gap-1.5 cursor-pointer shrink-0"
+                  >
+                    {hasCopiedLink ? (
+                      <>
+                        <FiCheck className="w-3.5 h-3.5 text-emerald-600" />
+                        <span className="text-emerald-700">Copied</span>
+                      </>
+                    ) : (
+                      <>
+                        <FiCopy className="w-3.5 h-3.5 text-gray-500" />
+                        <span>Copy</span>
+                      </>
+                    )}
+                  </button>
+
+                  <a
+                    href={generatedLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="h-9 w-9 bg-white hover:bg-gray-50 border border-gray-200 text-gray-600 hover:text-black rounded-xl shadow-2xs transition-colors flex items-center justify-center shrink-0"
+                    title="Open link in new tab"
+                  >
+                    <FiExternalLink className="w-4 h-4" />
+                  </a>
+                </>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Stage 6: External Verifier */}
       <div className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-100 shadow-2xs flex items-center justify-between gap-4">
         <div className="flex flex-col gap-1.5 min-w-0">
           <div className="flex items-center gap-3 flex-wrap">
-            <h3 className="text-black font-bold text-base sm:text-lg lg:text-xl tracking-tight">External Verifier</h3>
-            <span className={`${getStatusBadge(evStatus).className} text-xs font-semibold px-3 py-0.5 rounded-full capitalize`}>
+            <h3 className="text-black font-bold text-base sm:text-lg lg:text-xl tracking-tight">
+              External Verifier
+            </h3>
+            <span
+              className={`${getStatusBadge(evStatus).className} text-xs font-semibold px-3 py-0.5 rounded-full capitalize`}
+            >
               {getStatusBadge(evStatus).text}
             </span>
           </div>
           <p className="text-gray-400 text-xs sm:text-sm font-normal">
-            {activeEv ? `Assigned to: ${activeEv.name || "Assigned EV"}` : evStatus === "In Progress" ? "Under review by External Verifier" : evStatus === "Completed" ? "External verification completed" : "---"}
+            {evStatus}
           </p>
-        </div>
-        <div className="flex items-center gap-3 shrink-0">
-          <span className="text-gray-400 font-bold text-sm hidden sm:inline">{evDate}</span>
-          {!activeEv && evStatus !== "Not Started" && evStatus !== "Completed" && (
-            <Button type="button" variant="amber" size="sm" onClick={() => onOpenAssignVerifier("external")} className="cursor-pointer text-xs">Assign EV</Button>
-          )}
-          {activeEv && evStatus !== "Not Started" && evStatus !== "Completed" && (
-            <Button type="button" variant="amber" size="sm" onClick={() => onOpenReviewVerifier("external")} className="cursor-pointer text-xs">Mark Competent</Button>
-          )}
         </div>
       </div>
 
@@ -288,17 +598,33 @@ export const DetailStagesList: React.FC<DetailStagesListProps> = ({
       <div className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-100 shadow-2xs flex items-center justify-between gap-4">
         <div className="flex flex-col gap-1.5 min-w-0">
           <div className="flex items-center gap-3 flex-wrap">
-            <h3 className="text-black font-bold text-base sm:text-lg lg:text-xl tracking-tight">Certification</h3>
-            <span className={`${getStatusBadge(certStatus).className} text-xs font-semibold px-3 py-0.5 rounded-full capitalize`}>
+            <h3 className="text-black font-bold text-base sm:text-lg lg:text-xl tracking-tight">
+              Certification
+            </h3>
+            <span
+              className={`${getStatusBadge(certStatus).className} text-xs font-semibold px-3 py-0.5 rounded-full capitalize`}
+            >
               {getStatusBadge(certStatus).text}
             </span>
           </div>
           <p className="text-gray-400 text-xs sm:text-sm font-normal">
-            {certStatus === "Competent" ? "All requirements completed. Candidate qualification certified." : certStatus === "In Progress" ? "Certification pending awarding body signoff" : "---"}
+            {certStatus === "Competent"
+              ? "All requirements completed. Candidate qualification certified."
+              : certStatus === "In Progress"
+                ? "Certification pending awarding body signoff"
+                : "---"}
           </p>
         </div>
-        <span className="text-gray-400 font-bold text-sm shrink-0">{certDate}</span>
+        <span className="text-gray-400 font-bold text-sm shrink-0">
+          {certDate}
+        </span>
       </div>
+
+      <NotifyAwardingBodyModal
+        isOpen={isNotifyAwardingBodyModalOpen}
+        onClose={() => setIsNotifyAwardingBodyModalOpen(false)}
+        onSuccess={handleNotifyBodySuccess}
+      />
     </div>
   );
 };

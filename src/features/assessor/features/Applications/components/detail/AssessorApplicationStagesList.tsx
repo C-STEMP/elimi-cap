@@ -38,6 +38,9 @@ interface AssessorApplicationStagesListProps {
   } | null;
   isUserLeadPanelist?: boolean;
   isUserPanelMember?: boolean;
+  isUserIV?: boolean;
+  pendingSignatures?: Array<{ assessorId: string; name?: string; isLead?: boolean }>;
+  isCurrentUserInPending?: boolean;
 }
 
 export const AssessorApplicationStagesList: React.FC<
@@ -56,6 +59,9 @@ export const AssessorApplicationStagesList: React.FC<
   interviewFeedback,
   isUserLeadPanelist = false,
   isUserPanelMember = false,
+  isUserIV = false,
+  pendingSignatures,
+  isCurrentUserInPending = false,
 }) => {
   const { data: stagesData } = useGetApplicationStages(application.id);
   const isInterviewStage = Boolean(
@@ -68,6 +74,8 @@ export const AssessorApplicationStagesList: React.FC<
     )
   );
   const { data: panelData } = useGetInterviewPanel(application.id, { enabled: isInterviewStage });
+
+  const hasPendingSignaturesInfo = Array.isArray(pendingSignatures);
 
   const panelMembers: AssessorPanelMember[] = React.useMemo(() => {
     if (!panelData?.members || !Array.isArray(panelData.members)) return [];
@@ -100,6 +108,20 @@ export const AssessorApplicationStagesList: React.FC<
       const tags = m.sectors?.length
         ? m.sectors.map((s: any) => s.name || s)
         : [application.trade || "Carpentry", "RPL Coordinator"];
+
+      // Check if this assessor is in pendingSignatures
+      let isPendingSignature: boolean | undefined = undefined;
+      if (hasPendingSignaturesInfo) {
+        const mAssessorId = (m.assessorId || (m as any).userId || (m as any).id || "").toString().toLowerCase().trim();
+        const mName = (m.name || "").toLowerCase().trim();
+        const isPending = pendingSignatures.some((ps) => {
+          const psId = (ps.assessorId || "").toString().toLowerCase().trim();
+          const psName = (ps.name || "").toLowerCase().trim();
+          return (psId && psId === mAssessorId) || (psName && mName && (psName === mName || psName.includes(mName) || mName.includes(psName)));
+        });
+        isPendingSignature = isPending;
+      }
+
       return {
         id: m.assessorId,
         name,
@@ -107,9 +129,10 @@ export const AssessorApplicationStagesList: React.FC<
         avatar,
         tags,
         isHighlighted: Boolean(m.isLead),
+        isPendingSignature,
       };
     });
-  }, [panelData, application.trade]);
+  }, [panelData, application.trade, pendingSignatures, hasPendingSignaturesInfo]);
 
   const isCompleted = application.status === "Completed";
   const folderStageRow = stagesData?.find(
@@ -168,7 +191,7 @@ export const AssessorApplicationStagesList: React.FC<
     (isCompleted && (!stagesData || stagesData.length === 0 || stagesData.every((s) => s.status === "successful" || (s.status as string) === "completed")))
   );
 
-  const isUserIv = application.role === "Internal Verifier";
+  const isUserIv = isUserIV || application.role === "Internal Verifier";
   const isUserEv = application.role === "External Verifier";
   const isIvActive = isInterviewDone || isUserIv;
   const isEvActive = isIvDone || isUserEv;
@@ -279,7 +302,9 @@ export const AssessorApplicationStagesList: React.FC<
       badgeText: currentInterviewStatus,
       dateText:
         interviewOutcome === "awaiting_signature"
-          ? "Awaiting remaining panel signatures"
+          ? (pendingSignatures && pendingSignatures.length > 0
+              ? `Awaiting signature from: ${pendingSignatures.map((s) => s.name || "Panel Member").join(", ")}`
+              : "Awaiting remaining panel signatures")
           : "—",
       isCollapsible: false,
       isCollapsed: false,
@@ -287,17 +312,17 @@ export const AssessorApplicationStagesList: React.FC<
       inconclusiveDetails: interviewFeedback || undefined,
       actionButton:
         !isInterviewDone && isUserPanelMember && !isUserLeadPanelist && onMarkCandidateCompetent
-          ? interviewOutcome === "awaiting_signature"
-            ? {
-                label: "Evaluation Recorded",
-                variant: "view",
-                onClick: () => {},
-              }
-            : {
-                label: "Sign Off Interview",
-                variant: "amber",
-                onClick: onMarkCandidateCompetent,
-              }
+          ? (hasPendingSignaturesInfo && !isCurrentUserInPending
+              ? {
+                  label: "Evaluation Recorded",
+                  variant: "view",
+                  onClick: () => {},
+                }
+              : {
+                  label: "Sign Off Interview",
+                  variant: "amber",
+                  onClick: onMarkCandidateCompetent,
+                })
           : undefined,
       menuActions: (isInterviewDone || !isUserLeadPanelist) ? [] : [
         {

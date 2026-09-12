@@ -34,6 +34,8 @@ interface AssessorAssessmentFormsWidgetProps {
   onViewForm?: (form: AssessmentFormItem) => void;
   isReadOnly?: boolean;
   remoteForms?: InterviewForm[];
+  isAwaitingPanelSignatures?: boolean;
+  isInterviewDone?: boolean;
 }
 
 export const AssessorAssessmentFormsWidget: React.FC<
@@ -44,6 +46,8 @@ export const AssessorAssessmentFormsWidget: React.FC<
   onViewForm,
   isReadOnly = false,
   remoteForms,
+  isAwaitingPanelSignatures = false,
+  isInterviewDone = false,
 }) => {
   const router = useRouter();
   const { toast } = useToast();
@@ -76,15 +80,26 @@ export const AssessorAssessmentFormsWidget: React.FC<
           const matchedRemote = remoteForms?.find(
             (rf) => rf.formType === typeKey || rf.formType === form.id,
           );
-          const isSigned = Boolean(matchedRemote?.candidateSignedAt);
-          const isSubmitted = Boolean(
+          const isCandidateSigned = Boolean(matchedRemote?.candidateSignedAt);
+          const isAssessorSigned = Boolean(
             matchedRemote?.assessorSignedAt ||
+              (matchedRemote?.data as any)?.leadPanelistSigned ||
+              (matchedRemote?.data as any)?.assessorSigned,
+          );
+          const isSubmitted = Boolean(
+            isAssessorSigned ||
               matchedRemote?.status === "completed" ||
               (matchedRemote?.data as any)?.submittedAt,
           );
           const hasData = Boolean(
             matchedRemote?.data && Object.keys(matchedRemote.data).length > 0,
           );
+
+          // If candidate signed:
+          // A form is only fully completed/signed when candidate has signed AND interview stage is completed.
+          // While interview stage is ongoing or awaiting panel signatures, it must show "Candidate Signed".
+          const isFullySigned = isCandidateSigned && isInterviewDone && !isAwaitingPanelSignatures;
+          const isPendingPanel = isCandidateSigned && (!isInterviewDone || isAwaitingPanelSignatures);
 
           return (
             <div
@@ -96,9 +111,13 @@ export const AssessorAssessmentFormsWidget: React.FC<
                 <span className="text-xs sm:text-sm font-semibold text-neutral-primary group-hover:text-primary transition-colors truncate">
                   {form.name}
                 </span>
-                {isSigned ? (
+                {isFullySigned ? (
                   <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 shrink-0">
                     Signed
+                  </span>
+                ) : isPendingPanel ? (
+                  <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 shrink-0">
+                    Candidate Signed
                   </span>
                 ) : isSubmitted ? (
                   <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 shrink-0">
@@ -119,7 +138,7 @@ export const AssessorAssessmentFormsWidget: React.FC<
                 }}
                 className="text-[#FBAB2A] hover:text-[#E89B1F] font-semibold text-xs sm:text-sm transition-colors cursor-pointer shrink-0"
               >
-                {isReadOnly || isSigned
+                {isReadOnly || isCandidateSigned
                   ? "View"
                   : isSubmitted
                   ? "Edit"

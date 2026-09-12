@@ -52,11 +52,21 @@ export async function getInterviewScheduleApi(
   }
 }
 
+export interface EvaluateInterviewResponse {
+  message?: string;
+  pendingSignatures?: Array<{
+    assessorId: string;
+    name?: string;
+    isLead?: boolean;
+  }>;
+  missingLeadDecision?: boolean;
+}
+
 export async function evaluateInterviewApi(
   id: string,
   payload: EvaluateInterviewPayload,
-): Promise<{ message?: string }> {
-  return await capFetch<{ message?: string }>(`/applications/${id}/interview/evaluate`, {
+): Promise<EvaluateInterviewResponse> {
+  return await capFetch<EvaluateInterviewResponse>(`/applications/${id}/interview/evaluate`, {
     method: "POST",
     data: payload,
   });
