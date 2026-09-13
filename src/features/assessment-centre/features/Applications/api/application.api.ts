@@ -50,6 +50,7 @@ export async function getCentreApplicationsApi(
     | ApplicationStatus
     | {
         status?: ApplicationStatus;
+        stage?: string;
         ivApproved?: boolean;
         interviewSchedulable?: boolean;
       },

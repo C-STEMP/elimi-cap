@@ -136,6 +136,8 @@ export const AssessorApplicationRouteView: React.FC<{ id: string }> = ({
         {assessorRecord.role === "Internal Verifier" ? (
           <IqamToolsDashboard
             initialToolId="CON/04/IQAM"
+            initialApplicationId={application.id}
+            initialCentreId={application.centreId}
             initialCandidateName={assessorRecord.candidateName}
             onBack={handleBack}
             onUpdateHeader={setIqamHeaderConfig}

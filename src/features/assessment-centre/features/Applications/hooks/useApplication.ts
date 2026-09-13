@@ -38,6 +38,7 @@ export function useGetApplications(
     | ApplicationStatus
     | {
         status?: ApplicationStatus;
+        stage?: string;
         ivApproved?: boolean;
         interviewSchedulable?: boolean;
       },

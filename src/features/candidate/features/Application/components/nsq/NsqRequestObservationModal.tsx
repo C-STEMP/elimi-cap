@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Modal } from "antd";
 import { FiCalendar, FiClock, FiX, FiCheck } from "react-icons/fi";
 import { Input } from "@/src/components/ui/input";
@@ -9,41 +9,50 @@ import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
 import { useCountryStateCity } from "@/src/lib/hooks/useCountryStateCity";
 
+export interface ObservationUnitOption {
+  id: string;
+  label: string;
+}
+
 interface NsqRequestObservationModalProps {
   isOpen: boolean;
   onClose: () => void;
   tradeName?: string;
+  availableUnits: ObservationUnitOption[];
   onRequestSubmitted?: (details: {
-    units: string[];
+    unitIds: string[];
     date: string;
     time: string;
     country: string;
     state: string;
     lga: string;
     address: string;
-  }) => void;
+  }) => Promise<void> | void;
 }
-
-const AVAILABLE_UNITS = [
-  { id: "unit-1", label: "UNIT 1" },
-  { id: "unit-2", label: "UNIT 2" },
-  { id: "unit-3", label: "UNIT 3" },
-  { id: "unit-4", label: "UNIT 4" },
-];
 
 export const NsqRequestObservationModal: React.FC<NsqRequestObservationModalProps> = ({
   isOpen,
   onClose,
   tradeName = "Masonry",
+  availableUnits,
   onRequestSubmitted,
 }) => {
   const { toast } = useToast();
 
-  const [selectedUnits, setSelectedUnits] = useState<string[]>([
-    "UNIT 1",
-    "UNIT 2",
-    "UNIT 3",
-  ]);
+  const [selectedUnitIds, setSelectedUnitIds] = useState<string[]>(() =>
+    availableUnits.slice(0, 3).map((u) => u.id),
+  );
+
+  // availableUnits can arrive after this modal has already mounted (it
+  // depends on the trade's unit list loading) — seed the selection once
+  // real data shows up instead of staying permanently empty.
+  useEffect(() => {
+    if (selectedUnitIds.length === 0 && availableUnits.length > 0) {
+      setSelectedUnitIds(availableUnits.slice(0, 3).map((u) => u.id));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [availableUnits]);
+
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [country, setCountry] = useState("Nigeria");
@@ -72,20 +81,20 @@ export const NsqRequestObservationModal: React.FC<NsqRequestObservationModalProp
     value: c.value,
   }));
 
-  const removeUnit = (u: string) => {
-    setSelectedUnits((prev) => prev.filter((item) => item !== u));
+  const removeUnit = (id: string) => {
+    setSelectedUnitIds((prev) => prev.filter((item) => item !== id));
   };
 
-  const addUnit = (u: string) => {
-    if (!selectedUnits.includes(u)) {
-      setSelectedUnits((prev) => [...prev, u]);
+  const addUnit = (id: string) => {
+    if (!selectedUnitIds.includes(id)) {
+      setSelectedUnitIds((prev) => [...prev, id]);
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (selectedUnits.length === 0) {
+    if (selectedUnitIds.length === 0) {
       toast({
         type: "error",
         title: "Units Required",
@@ -104,16 +113,9 @@ export const NsqRequestObservationModal: React.FC<NsqRequestObservationModalProp
     }
 
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
-      toast({
-        type: "success",
-        title: "Observation Scheduled",
-        description: `Direct observation request for ${tradeName} submitted to your assessor.`,
-      });
-
-      onRequestSubmitted?.({
-        units: selectedUnits,
+    try {
+      await onRequestSubmitted?.({
+        unitIds: selectedUnitIds,
         date,
         time: time || "10:00",
         country,
@@ -121,9 +123,16 @@ export const NsqRequestObservationModal: React.FC<NsqRequestObservationModalProp
         lga,
         address: streetAddress,
       });
-
       onClose();
-    }, 600);
+    } catch (err: any) {
+      toast({
+        type: "error",
+        title: "Request Failed",
+        description: err?.message || "Could not send this observation request. Please try again.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -171,15 +180,15 @@ export const NsqRequestObservationModal: React.FC<NsqRequestObservationModalProp
             </label>
             <div className="min-h-12 w-full px-3 py-2 rounded-xl border border-gray-200 bg-[#f8f9fa] flex items-center justify-between flex-wrap gap-2">
               <div className="flex items-center gap-1.5 flex-wrap">
-                {selectedUnits.map((u) => (
+                {selectedUnitIds.map((id) => (
                   <span
-                    key={u}
+                    key={id}
                     className="inline-flex items-center gap-1 bg-pink-100 text-pink-700 text-[10px] sm:text-xs font-bold px-2 py-1 rounded-md"
                   >
-                    {u}
+                    {availableUnits.find((u) => u.id === id)?.label || id}
                     <button
                       type="button"
-                      onClick={() => removeUnit(u)}
+                      onClick={() => removeUnit(id)}
                       className="hover:text-pink-900 cursor-pointer"
                     >
                       <FiX className="w-3 h-3" />
@@ -190,18 +199,18 @@ export const NsqRequestObservationModal: React.FC<NsqRequestObservationModalProp
 
               {/* Quick Add Options */}
               <div className="flex items-center gap-1">
-                {AVAILABLE_UNITS.filter((u) => !selectedUnits.includes(u.label)).map(
-                  (u) => (
+                {availableUnits
+                  .filter((u) => !selectedUnitIds.includes(u.id))
+                  .map((u) => (
                     <button
                       key={u.id}
                       type="button"
-                      onClick={() => addUnit(u.label)}
+                      onClick={() => addUnit(u.id)}
                       className="text-[10px] font-semibold text-gray-500 bg-white border border-gray-200 hover:bg-gray-100 px-2 py-0.5 rounded cursor-pointer"
                     >
                       + {u.label}
                     </button>
-                  ),
-                )}
+                  ))}
               </div>
             </div>
           </div>

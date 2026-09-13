@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FiChevronLeft } from "react-icons/fi";
 import { NsqAssessorSidebar } from "./NsqAssessorSidebar";
 import {
@@ -19,8 +19,13 @@ import {
   NsqAssessorObservationModal,
   type ObservationRequestDetails,
 } from "./NsqAssessorObservationModal";
+import {
+  useGetUnitCriteria,
+  useReviewUnitEvidence,
+} from "@/src/features/shared/applications/hooks";
 
 interface NsqAssessorUnitDetailViewProps {
+  unitId?: string;
   unitNumber?: string;
   unitTitle?: string;
   candidateName?: string;
@@ -74,19 +79,84 @@ const INITIAL_OUTCOMES: UnitLearningOutcome[] = [
 export const NsqAssessorUnitDetailView: React.FC<
   NsqAssessorUnitDetailViewProps
 > = ({
+  unitId,
   unitNumber = "UNIT 1",
-  candidateName = "Samson David",
-  candidateEmail = "Samsondav@gmail.com",
-  candidatePhone = "+2349123537212",
+  candidateName = "Candidate",
+  candidateEmail,
+  candidatePhone,
   candidatePhotoUrl,
+  applicationId,
   observation,
   onUpdateObservation,
   onBack,
   onFillObservationForm,
 }) => {
+  const resolvedUnitId = unitId || unitNumber.toLowerCase().replace(" ", "-");
+  const { data: remoteCriteriaData } = useGetUnitCriteria(
+    applicationId,
+    resolvedUnitId,
+    { enabled: Boolean(applicationId && resolvedUnitId) },
+  );
+  const { mutateAsync: reviewEvidenceMutation } = useReviewUnitEvidence(
+    applicationId,
+    resolvedUnitId,
+  );
+
   const [learningOutcomes, setLearningOutcomes] = useState<UnitLearningOutcome[]>(INITIAL_OUTCOMES);
   const [expandedLos, setExpandedLos] = useState<Record<string, boolean>>({ "lo-1": true });
   const [expandedPcs, setExpandedPcs] = useState<Record<string, boolean>>({ "pc-1-1": true });
+
+  useEffect(() => {
+    if (remoteCriteriaData?.criteria && remoteCriteriaData.criteria.length > 0) {
+      const groups: Record<string, { title: string; criteria: any[] }> = {};
+      remoteCriteriaData.criteria.forEach((crit) => {
+        const loKey = crit.learningObjectiveCode || "LO 1";
+        const loTitle = crit.learningObjectiveText
+          ? `${loKey}: ${crit.learningObjectiveText}`
+          : `${loKey}: Occupational Criteria`;
+
+        if (!groups[loKey]) {
+          groups[loKey] = { title: loTitle, criteria: [] };
+        }
+
+        const evidences = (crit.history && crit.history.length > 0
+          ? crit.history
+          : crit.latest
+            ? [crit.latest]
+            : []
+        ).map((ev) => ({
+          id: ev.id,
+          name:
+            ev.evidenceType === "WP"
+              ? "Work Product(WP)"
+              : `${ev.evidenceType} Evidence`,
+          type: ev.evidenceType,
+          status: ev.status,
+          feedback: ev.reviewComment || undefined,
+        }));
+
+        groups[loKey].criteria.push({
+          id: `pc-${crit.code.replace(/[^a-zA-Z0-9]/g, "-")}`,
+          code: crit.code.startsWith("PC") ? crit.code : `PC ${crit.code}`,
+          description:
+            crit.text || `Demonstrate occupational standard ${crit.code}`,
+          hasNewUpload: crit.status === "pending",
+          evidences,
+        });
+      });
+
+      const outcomeList = Object.keys(groups).map((key, loIdx) => ({
+        id: `lo-${loIdx + 1}`,
+        title: groups[key].title,
+        hasNewUpload: groups[key].criteria.some((c) => c.hasNewUpload),
+        criteria: groups[key].criteria,
+      }));
+
+      if (outcomeList.length > 0) {
+        setLearningOutcomes(outcomeList);
+      }
+    }
+  }, [remoteCriteriaData]);
 
   const [targetEvidence, setTargetEvidence] = useState<{ loId: string; pcId: string; evidenceId: string } | null>(null);
   const [isConfirmApproveOpen, setIsConfirmApproveOpen] = useState(false);
@@ -103,8 +173,19 @@ export const NsqAssessorUnitDetailView: React.FC<
     setIsConfirmApproveOpen(true);
   };
 
-  const handleConfirmApprove = () => {
+  const handleConfirmApprove = async () => {
     if (!targetEvidence) return;
+    setIsConfirmApproveOpen(false);
+    try {
+      await reviewEvidenceMutation({
+        evidenceId: targetEvidence.evidenceId,
+        payload: { decision: "approve" },
+      });
+    } catch {
+      // useReviewUnitEvidence already surfaced an error toast — don't fake success.
+      return;
+    }
+
     setLearningOutcomes((prev) =>
       prev.map((lo) => lo.id !== targetEvidence.loId ? lo : {
         ...lo,
@@ -114,7 +195,6 @@ export const NsqAssessorUnitDetailView: React.FC<
         }),
       }),
     );
-    setIsConfirmApproveOpen(false);
     setIsApproveSuccessOpen(true);
   };
 
@@ -123,8 +203,19 @@ export const NsqAssessorUnitDetailView: React.FC<
     setIsRejectModalOpen(true);
   };
 
-  const handleConfirmReject = (reason: string) => {
+  const handleConfirmReject = async (reason: string) => {
     if (!targetEvidence) return;
+    setIsRejectModalOpen(false);
+    try {
+      await reviewEvidenceMutation({
+        evidenceId: targetEvidence.evidenceId,
+        payload: { decision: "reject", comment: reason },
+      });
+    } catch {
+      // useReviewUnitEvidence already surfaced an error toast — don't fake success.
+      return;
+    }
+
     setLearningOutcomes((prev) =>
       prev.map((lo) => lo.id !== targetEvidence.loId ? lo : {
         ...lo,
@@ -134,7 +225,6 @@ export const NsqAssessorUnitDetailView: React.FC<
         }),
       }),
     );
-    setIsRejectModalOpen(false);
   };
 
   return (

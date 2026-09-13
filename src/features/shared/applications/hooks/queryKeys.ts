@@ -10,4 +10,13 @@ export const APPLICATION_QUERY_KEYS = {
   selfAssessment: (id: string) => ["applications", "self-assessment", id] as const,
   evidence: (id: string, params?: { cursor?: string; limit?: number }) =>
     ["applications", "evidence", id, params] as const,
+  inductionForm: (id: string) => ["applications", "induction", id] as const,
+  unitCriteria: (id: string, unitId: string) =>
+    ["applications", "units", id, unitId, "criteria"] as const,
+  directObservations: (id: string) =>
+    ["applications", "direct-observations", id] as const,
+  directObservationSession: (id: string, sessionId: string) =>
+    ["applications", "direct-observations", id, sessionId] as const,
+  centreIqam: (id: string, tool: string) =>
+    ["centre", "applications", id, "iqam", tool] as const,
 };

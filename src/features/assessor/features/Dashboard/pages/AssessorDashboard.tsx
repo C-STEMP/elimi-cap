@@ -392,6 +392,7 @@ export const AssessorDashboard: React.FC = () => {
             selectedApplication.role === "Internal Verifier" ? (
               <IqamToolsDashboard
                 initialToolId="CON/04/IQAM"
+                initialApplicationId={selectedApplication.id}
                 initialCandidateName={selectedApplication.candidateName}
                 onBack={handleBackFromApplication}
                 onUpdateHeader={setIqamHeaderConfig}

@@ -3,19 +3,29 @@
 import React from "react";
 import { FiX, FiCheck } from "react-icons/fi";
 import { Button } from "@/src/components/ui/button";
+import type { InductionForm } from "@/src/features/shared/applications/api/types";
 
 interface NsqAssessorInductionModalProps {
   isOpen: boolean;
   onClose: () => void;
   candidateName: string;
   tradeName: string;
-  inductionData?: Record<string, any>;
+  inductionData?: InductionForm;
 }
 
 export const NsqAssessorInductionModal: React.FC<
   NsqAssessorInductionModalProps
 > = ({ isOpen, onClose, candidateName, tradeName, inductionData }) => {
   if (!isOpen) return null;
+
+  const displayCandidateName = inductionData?.data?.firstName
+    ? `${inductionData.data.firstName} ${inductionData.data.lastName || ""}`.trim()
+    : candidateName;
+  const registeredUnits = inductionData?.units?.length
+    ? inductionData.units.map((u) => `${u.referenceNumber}: ${u.title}`)
+    : [];
+  const strengths = inductionData?.data?.learningStrengths?.filter(Boolean) || [];
+  const weaknesses = inductionData?.data?.learningWeaknesses?.filter(Boolean) || [];
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-200 select-text">
@@ -50,7 +60,7 @@ export const NsqAssessorInductionModal: React.FC<
                 CANDIDATE NAME
               </span>
               <span className="font-bold text-neutral-primary text-xs mt-0.5 block">
-                {candidateName}
+                {displayCandidateName}
               </span>
             </div>
             <div>
@@ -58,23 +68,31 @@ export const NsqAssessorInductionModal: React.FC<
                 REGISTERED TRADE
               </span>
               <span className="font-bold text-neutral-primary text-xs mt-0.5 block">
-                {tradeName}
+                {inductionData?.trade?.name || tradeName}
               </span>
             </div>
             <div>
               <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
                 REGISTRATION STATUS
               </span>
-              <span className="text-emerald-700 font-bold text-xs mt-0.5 inline-flex items-center gap-1">
-                <FiCheck className="w-3.5 h-3.5" /> Induction Completed
-              </span>
+              {inductionData?.submittedAt ? (
+                <span className="text-emerald-700 font-bold text-xs mt-0.5 inline-flex items-center gap-1">
+                  <FiCheck className="w-3.5 h-3.5" /> Induction Completed
+                </span>
+              ) : (
+                <span className="text-amber-700 font-bold text-xs mt-0.5 inline-flex items-center gap-1">
+                  Induction Pending
+                </span>
+              )}
             </div>
             <div>
               <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
                 SUBMISSION DATE
               </span>
               <span className="font-medium text-neutral-primary text-xs mt-0.5 block">
-                {inductionData?.submittedAt ? new Date(inductionData.submittedAt).toLocaleDateString("en-GB") : "22/03/2026"}
+                {inductionData?.submittedAt
+                  ? new Date(inductionData.submittedAt).toLocaleDateString("en-GB")
+                  : "—"}
               </span>
             </div>
           </div>
@@ -84,37 +102,47 @@ export const NsqAssessorInductionModal: React.FC<
             <span className="font-bold text-xs text-neutral-primary">
               Registered Qualification Units
             </span>
-            <div className="flex flex-wrap gap-2">
-              {["UNIT 1: Health & Safety Protocols", "UNIT 2: Foundation & Wall Alignment", "UNIT 3: Structural Masonry Finishing"].map((u, i) => (
-                <span
-                  key={i}
-                  className="px-3 py-1.5 bg-rose-50 border border-rose-100 text-[#a31d38] font-bold text-[11px] rounded-xl"
-                >
-                  {u}
-                </span>
-              ))}
-            </div>
+            {registeredUnits.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {registeredUnits.map((u, i) => (
+                  <span
+                    key={i}
+                    className="px-3 py-1.5 bg-rose-50 border border-rose-100 text-[#a31d38] font-bold text-[11px] rounded-xl"
+                  >
+                    {u}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-400 text-xs italic">No units registered yet.</p>
+            )}
           </div>
 
           {/* Candidate Strengths & Weaknesses */}
-          <div className="border border-gray-200 rounded-2xl p-4 flex flex-col gap-3">
-            <div>
-              <span className="font-bold text-xs text-neutral-primary block">
-                Identified Strengths
-              </span>
-              <p className="text-gray-600 text-xs mt-1 leading-relaxed">
-                Strong practical masonry experience, hands-on wall tiling, tool maintenance, and workplace safety compliance.
-              </p>
+          {(strengths.length > 0 || weaknesses.length > 0) && (
+            <div className="border border-gray-200 rounded-2xl p-4 flex flex-col gap-3">
+              {strengths.length > 0 && (
+                <div>
+                  <span className="font-bold text-xs text-neutral-primary block">
+                    Identified Strengths
+                  </span>
+                  <p className="text-gray-600 text-xs mt-1 leading-relaxed">
+                    {strengths.join(", ")}
+                  </p>
+                </div>
+              )}
+              {weaknesses.length > 0 && (
+                <div className={strengths.length > 0 ? "pt-2 border-t border-gray-100" : undefined}>
+                  <span className="font-bold text-xs text-neutral-primary block">
+                    Areas for Development / Training Focus
+                  </span>
+                  <p className="text-gray-600 text-xs mt-1 leading-relaxed">
+                    {weaknesses.join(", ")}
+                  </p>
+                </div>
+              )}
             </div>
-            <div className="pt-2 border-t border-gray-100">
-              <span className="font-bold text-xs text-neutral-primary block">
-                Areas for Development / Training Focus
-              </span>
-              <p className="text-gray-600 text-xs mt-1 leading-relaxed">
-                Advanced architectural blueprint interpretation, structural load-bearing calculation, and laser level calibration.
-              </p>
-            </div>
-          </div>
+          )}
 
           {/* Declaration & Signature */}
           <div className="bg-emerald-50/50 border border-emerald-200 rounded-2xl p-4 flex items-center justify-between gap-4">
@@ -126,8 +154,14 @@ export const NsqAssessorInductionModal: React.FC<
                 Candidate confirmed agreement to NOS assessment requirements and code of conduct.
               </p>
             </div>
-            <span className="px-3 py-1 bg-emerald-600 text-white font-bold text-xs rounded-xl shrink-0">
-              Signed
+            <span
+              className={`px-3 py-1 font-bold text-xs rounded-xl shrink-0 ${
+                inductionData?.signature
+                  ? "bg-emerald-600 text-white"
+                  : "bg-gray-200 text-gray-600"
+              }`}
+            >
+              {inductionData?.signature ? "Signed" : "Not Signed"}
             </span>
           </div>
         </div>

@@ -7,9 +7,11 @@ import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
 import {
   useReviewApplication,
+  useGetPaymentQuote,
   APPLICATION_QUERY_KEYS,
 } from "@/src/features/shared/applications/hooks";
 import { useQueryClient } from "@tanstack/react-query";
+import { formatCurrency } from "@/src/utils/currency";
 
 interface ConfirmNsqDecisionModalProps {
   isOpen: boolean;
@@ -33,11 +35,18 @@ export const ConfirmNsqDecisionModal: React.FC<ConfirmNsqDecisionModalProps> = (
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const reviewMutation = useReviewApplication();
+  const { data: paymentQuote } = useGetPaymentQuote(applicationId, {
+    enabled: Boolean(isOpen && applicationId),
+  });
 
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen) return null;
+
+  const feeText = paymentQuote?.amountMinorUnits
+    ? formatCurrency(paymentQuote.amountMinorUnits, paymentQuote.currency)
+    : "—";
 
   const isApprove = decision === "approve";
 
@@ -70,18 +79,9 @@ export const ConfirmNsqDecisionModal: React.FC<ConfirmNsqDecisionModalProps> = (
 
       onSuccess?.(decision);
       onClose();
-    } catch (err: any) {
-      console.warn("reviewApplication error:", err);
-      // Client-side fallback for mock / demo
-      toast({
-        type: "success",
-        title: isApprove ? "Request Approved" : "Request Rejected",
-        description: isApprove
-          ? `${candidateName}'s application has been approved.`
-          : `${candidateName}'s application request has been rejected.`,
-      });
-      onSuccess?.(decision);
-      onClose();
+    } catch {
+      // useReviewApplication already surfaces an error toast; stay open so
+      // the centre can retry instead of silently reporting a fake success.
     } finally {
       setIsSubmitting(false);
     }
@@ -154,7 +154,7 @@ export const ConfirmNsqDecisionModal: React.FC<ConfirmNsqDecisionModalProps> = (
               <span className="text-gray-400 font-bold uppercase text-[10px] tracking-wider">
                 Standard Fee
               </span>
-              <span className="font-bold text-neutral-primary">₦45,000</span>
+              <span className="font-bold text-neutral-primary">{feeText}</span>
             </div>
           </div>
 

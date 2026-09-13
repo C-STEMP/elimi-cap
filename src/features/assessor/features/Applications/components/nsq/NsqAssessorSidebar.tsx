@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import Image from "next/image";
 import { FiChevronRight, FiUser } from "react-icons/fi";
+import { Avatar } from "@/src/components/ui/avatar";
 import { AssessorCalendarWidget } from "../detail/AssessorCalendarWidget";
 import type { ObservationRequestDetails } from "./NsqAssessorObservationModal";
 
@@ -141,24 +141,22 @@ export const NsqAssessorSidebar: React.FC<NsqAssessorSidebarProps> = ({
         </h4>
 
         <div className="flex items-center gap-3.5 pt-1">
-          <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 relative bg-gray-100 border border-gray-100">
-            <Image
-              src={candidate.photoUrl || "/hero-img-1.jpg"}
-              alt={candidate.name}
-              fill
-              className="object-cover"
-            />
-          </div>
+          <Avatar
+            src={candidate.photoUrl}
+            name={candidate.name}
+            className="w-12 h-12 shrink-0 border border-gray-100"
+            alt={candidate.name}
+          />
 
           <div className="flex flex-col min-w-0">
             <span className="font-bold text-xs sm:text-sm text-neutral-primary truncate">
               {candidate.name}
             </span>
             <span className="text-[11px] text-gray-400 truncate">
-              {candidate.email || "samsondav@gmail.com"}
+              {candidate.email || "—"}
             </span>
             <span className="text-[11px] text-gray-400 truncate mt-0.5">
-              {candidate.phone || "+2349123537212"}
+              {candidate.phone || "—"}
             </span>
           </div>
         </div>

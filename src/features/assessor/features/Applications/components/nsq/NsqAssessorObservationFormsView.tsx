@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { FiChevronLeft } from "react-icons/fi";
 import { ObservationFormHeaderCard } from "./components/observation-forms/ObservationFormHeaderCard";
 import {
@@ -13,11 +13,16 @@ import {
   type Arf04CriteriaState,
 } from "./components/observation-forms/Arf04OralQuestionsRecord";
 import { ObservationSignaturesSection } from "./components/observation-forms/ObservationSignaturesSection";
-import { useToast } from "@/src/components/ui/toast";
+import {
+  useGetDirectObservations,
+  useGetDirectObservationSession,
+  useSaveDirectObservationForm,
+} from "@/src/features/shared/applications/hooks";
 
 interface NsqAssessorObservationFormsViewProps {
   candidateName: string;
   applicationId: string;
+  sessionId?: string;
   unitsAssessed?: string;
   registrationNo?: string;
   onBack: () => void;
@@ -41,19 +46,60 @@ export const NsqAssessorObservationFormsView: React.FC<
 > = ({
   candidateName,
   applicationId,
-  unitsAssessed = "UNIT 1/UNIT 2/UNIT 3",
-  registrationNo = "APP-2026-0894",
+  sessionId,
+  unitsAssessed,
+  registrationNo,
   onBack,
   onSubmitSuccess,
 }) => {
-  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<"arf02a" | "arf04a">("arf02a");
+
+  const { data: directObsList } = useGetDirectObservations(applicationId, {
+    enabled: Boolean(applicationId),
+  });
+  const effectiveSessionId =
+    sessionId || directObsList?.items?.[0]?.id || "session-1";
+
+  // Session detail carries the real per-unit NOS criteria catalogue for this
+  // sitting (`catalogue`) — that's the actual list of PCs to log, not a
+  // generic placeholder set.
+  const { data: sessionDetail } = useGetDirectObservationSession(
+    applicationId,
+    effectiveSessionId,
+    { enabled: Boolean(applicationId && effectiveSessionId) },
+  );
+
+  const { mutateAsync: saveObservationForm } = useSaveDirectObservationForm(
+    applicationId,
+    effectiveSessionId,
+  );
+
+  const normalizeCode = (code: string) => (code.startsWith("PC") ? code : `PC ${code}`);
+
+  // Real criteria + a code -> unitId lookup so submitted rows target the
+  // actual NOS unit instead of a fabricated id.
+  const { criteriaDefs, criterionUnitMap } = useMemo(() => {
+    const catalogue = sessionDetail?.catalogue;
+    if (!catalogue || catalogue.length === 0) {
+      return { criteriaDefs: DEFAULT_PCS, criterionUnitMap: {} as Record<string, string> };
+    }
+    const defs: ObservationCriterionDef[] = [];
+    const unitMap: Record<string, string> = {};
+    catalogue.forEach((unit) => {
+      unit.criteria.forEach((c) => {
+        const code = normalizeCode(c.code);
+        defs.push({ code, desc: c.text });
+        unitMap[code] = unit.unitId;
+      });
+    });
+    return { criteriaDefs: defs, criterionUnitMap: unitMap };
+  }, [sessionDetail]);
 
   // ARF 02A Criteria state
   const [arf02Criteria, setArf02Criteria] = useState<Record<string, Arf02CriteriaState>>(() => {
     const initial: Record<string, Arf02CriteriaState> = {};
-    DEFAULT_PCS.forEach((pc, idx) => {
-      initial[pc.code] = { fulfilled: idx === 0, comment: "" };
+    DEFAULT_PCS.forEach((pc) => {
+      initial[pc.code] = { fulfilled: false, comment: "" };
     });
     return initial;
   });
@@ -61,28 +107,83 @@ export const NsqAssessorObservationFormsView: React.FC<
   // ARF 04A Criteria state
   const [arf04Criteria, setArf04Criteria] = useState<Record<string, Arf04CriteriaState>>(() => {
     const initial: Record<string, Arf04CriteriaState> = {};
-    DEFAULT_PCS.forEach((pc, idx) => {
-      initial[pc.code] = { satisfactory: idx === 0, question: "", answer: "" };
+    DEFAULT_PCS.forEach((pc) => {
+      initial[pc.code] = { satisfactory: false, question: "", answer: "" };
     });
     return initial;
   });
 
+  // Re-seed criteria state once the real catalogue loads.
+  useEffect(() => {
+    if (criteriaDefs === DEFAULT_PCS) return;
+    setArf02Criteria((prev) => {
+      const next: Record<string, Arf02CriteriaState> = {};
+      criteriaDefs.forEach((pc) => {
+        next[pc.code] = prev[pc.code] || { fulfilled: false, comment: "" };
+      });
+      return next;
+    });
+    setArf04Criteria((prev) => {
+      const next: Record<string, Arf04CriteriaState> = {};
+      criteriaDefs.forEach((pc) => {
+        next[pc.code] = prev[pc.code] || { satisfactory: false, question: "", answer: "" };
+      });
+      return next;
+    });
+  }, [criteriaDefs]);
+
   const [isWitnessSigned, setIsWitnessSigned] = useState(false);
 
-  const handleSave = () => {
-    toast({
-      type: "success",
-      title: "Draft Saved",
-      description: "Observation form draft has been safely saved.",
-    });
+  const fallbackUnitId = sessionDetail?.catalogue?.[0]?.unitId || sessionDetail?.unitIds?.[0] || "";
+
+  const handleSave = async () => {
+    const isPhysical = activeTab === "arf02a";
+    const rows = Object.entries(isPhysical ? arf02Criteria : arf04Criteria).map(
+      ([code, val]: [string, any]) => ({
+        unitId: criterionUnitMap[code] || fallbackUnitId,
+        performanceCriteriaCode: code.replace("PC ", ""),
+        met: isPhysical ? Boolean(val.fulfilled) : Boolean(val.satisfactory),
+        comment: isPhysical
+          ? val.comment || ""
+          : `${val.question || ""} - ${val.answer || ""}`,
+      }),
+    );
+
+    try {
+      await saveObservationForm({
+        formKind: isPhysical ? "physical" : "oral",
+        submit: false,
+        rows,
+      });
+    } catch {
+      // useSaveDirectObservationForm already surfaced an error toast.
+    }
   };
 
-  const handleSubmit = () => {
-    toast({
-      type: "success",
-      title: "Observation Form Submitted",
-      description: "You have successfully submitted the physical observation form.",
-    });
+  const handleSubmit = async () => {
+    const isPhysical = activeTab === "arf02a";
+    const rows = Object.entries(isPhysical ? arf02Criteria : arf04Criteria).map(
+      ([code, val]: [string, any]) => ({
+        unitId: criterionUnitMap[code] || fallbackUnitId,
+        performanceCriteriaCode: code.replace("PC ", ""),
+        met: isPhysical ? Boolean(val.fulfilled) : Boolean(val.satisfactory),
+        comment: isPhysical
+          ? val.comment || ""
+          : `${val.question || ""} - ${val.answer || ""}`,
+      }),
+    );
+
+    try {
+      await saveObservationForm({
+        formKind: isPhysical ? "physical" : "oral",
+        submit: true,
+        rows,
+      });
+    } catch {
+      // useSaveDirectObservationForm already surfaced an error toast — stay
+      // on the form so the assessor can retry instead of navigating away.
+      return;
+    }
     onSubmitSuccess?.();
     onBack();
   };

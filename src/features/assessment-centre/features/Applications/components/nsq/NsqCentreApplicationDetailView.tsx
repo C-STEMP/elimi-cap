@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
-import Image from "next/image";
+import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   FiCheck,
@@ -15,6 +14,7 @@ import {
 import { CalendarWidget } from "@/features/candidate/features/Dashboard/components/CalendarWidget";
 import { TransactionReceiptModal } from "@/features/assessment-centre/features/Payment/components/TransactionReceiptModal";
 import type { PaymentTransaction } from "@/features/assessment-centre/types";
+import { Avatar } from "@/src/components/ui/avatar";
 import { ConfirmNsqDecisionModal } from "./ConfirmNsqDecisionModal";
 import { AssignNsqAssessorModal, type NsqRoleType } from "./AssignNsqAssessorModal";
 import {
@@ -24,9 +24,25 @@ import {
   useGetCentres,
   useGetSectors,
 } from "@/src/features/shared/reference/hooks";
+import {
+  useGetInductionForm,
+  useGetDirectObservations,
+  useGetApplicationStages,
+  useGetPaymentQuote,
+  useGetApplicationReceipt,
+} from "@/src/features/shared/applications/hooks";
+import { formatCurrency } from "@/src/utils/currency";
 import { IqamToolsDashboard } from "@/src/features/assessor/features/iqam/IqamToolsDashboard";
 import type { IqamToolId } from "@/src/features/assessor/features/iqam/types/iqam.types";
 import type { ApplicationDetail } from "@/src/features/shared/applications/api/types";
+
+const NSQ_PROGRESS_STEPS = [
+  { key: "induction", label: "Induction Form" },
+  { key: "regular_assessment", label: "QAA" },
+  { key: "internal_verification", label: "IQA" },
+  { key: "external_verification", label: "Awarding Body" },
+  { key: "certification", label: "Certification" },
+] as const;
 
 interface NsqCentreApplicationDetailViewProps {
   application: ApplicationDetail | any;
@@ -62,8 +78,17 @@ export const NsqCentreApplicationDetailView: React.FC<
 > = ({ application, onBack, selectedUnitNumber, onSelectUnit }) => {
   const router = useRouter();
 
+  // NSQ Backend Queries
+  const { data: inductionForm } = useGetInductionForm(application?.id);
+  const { data: directObservationsData } = useGetDirectObservations(
+    application?.id,
+  );
+  const liveObservation = directObservationsData?.items?.[0];
+
   // Unit navigation state (internal + controlled via props)
-  const [internalUnitNumber, setInternalUnitNumber] = useState<string | null>(null);
+  const [internalUnitNumber, setInternalUnitNumber] = useState<string | null>(
+    null,
+  );
   const activeUnitNumber =
     selectedUnitNumber !== undefined ? selectedUnitNumber : internalUnitNumber;
 
@@ -109,7 +134,8 @@ export const NsqCentreApplicationDetailView: React.FC<
     roleType: "QAA",
   });
 
-  // Assigned Staff State (default null matching mockup "No assessor assigned")
+  // Assigned Staff State — no assessor until either assigned this session or
+  // hydrated from real backend data below.
   const [assignedAssessor, setAssignedAssessor] = useState<{
     id: string;
     name: string;
@@ -126,13 +152,34 @@ export const NsqCentreApplicationDetailView: React.FC<
     photoUrl?: string;
   } | null>(null);
 
+  // Hydrate the assigned Internal Verifier from the real ApplicationDetail
+  // field (there is no equivalent read for the QAA/unit assessor yet, so
+  // that side stays session-local until it's assigned from this view).
+  useEffect(() => {
+    if (application?.internalVerifier) {
+      setAssignedIqa({
+        id: application.internalVerifier.assessorId,
+        name: application.internalVerifier.name,
+        qualification: "IQAM Verifier",
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [application?.internalVerifier?.assessorId]);
+
   // Modals for induction, receipt & IQAM form viewer
   const [isInductionModalOpen, setIsInductionModalOpen] = useState(false);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
   const [selectedIqamTool, setSelectedIqamTool] = useState<IqamToolId | null>(null);
-  const [paymentSuccessful, setPaymentSuccessful] = useState<boolean>(false);
-  const [isIqaApproved, setIsIqaApproved] = useState<boolean>(false);
   const [isObservationDetailOpen, setIsObservationDetailOpen] = useState<boolean>(false);
+
+  // Real workflow stages — GET /applications/{id}/stages.
+  const { data: stagesData } = useGetApplicationStages(application?.id || "");
+  const applicationFormStage = stagesData?.find((s) => s.stageKey === "application_form");
+  const paymentStage = stagesData?.find((s) => s.stageKey === "payment");
+  const internalVerificationStage = stagesData?.find(
+    (s) => s.stageKey === "internal_verification",
+  );
+  const isIqaApproved = internalVerificationStage?.status === "successful";
 
   // Resolve ID helper
   const isRawId = (str?: string) => {
@@ -183,7 +230,7 @@ export const NsqCentreApplicationDetailView: React.FC<
   const resolvedCentreName =
     remoteCentres.find((c) => c.id === application?.centreId)?.name ||
     application?.centre?.name ||
-    "Elimi Training & Assessment Centre";
+    "—";
 
   const candidateName =
     application?.candidate?.name ||
@@ -191,16 +238,20 @@ export const NsqCentreApplicationDetailView: React.FC<
       ? `${application.candidate.firstName} ${
           application.candidate.lastName || ""
         }`.trim()
-      : application?.user?.name || application?.candidateName || "Samson David");
+      : application?.user?.name || application?.candidateName || "Candidate");
 
   const candidateEmail =
-    application?.candidate?.email || application?.user?.email || "samsondav@gmail.com";
-  const candidatePhone =
-    application?.candidate?.phone || application?.user?.phone || "+234 812 345 6789";
+    (application as any)?.personalInformation?.contactInformation?.emailAddress ||
+    application?.candidate?.email ||
+    application?.user?.email ||
+    "—";
+  const candidatePhoneNumber = (application as any)?.personalInformation?.contactInformation
+    ?.phoneNumber;
+  const candidatePhone = candidatePhoneNumber?.number
+    ? `${candidatePhoneNumber.countryCode || ""} ${candidatePhoneNumber.number}`.trim()
+    : application?.candidate?.phone || application?.user?.phone || "—";
   const candidatePhoto =
-    application?.candidate?.photo?.url ||
-    application?.candidate?.photoUrl ||
-    "/hero-img-1.jpg";
+    application?.candidate?.photo?.url || application?.candidate?.photoUrl || null;
 
   const levelName =
     (tradeDetail as any)?.level ||
@@ -234,41 +285,75 @@ export const NsqCentreApplicationDetailView: React.FC<
         }))
       : DEFAULT_UNITS;
 
-  // Compute status
+  // Compute status — application_form stage is the source of truth;
+  // localStatus is only an instant-UI override until the stages query refetches.
+  // Note: application.status === "in_progress" just means "submitted, somewhere
+  // in the pipeline" — it stays in_progress through payment/induction/assessment
+  // long after application_form review, so it must NOT be treated as "approved".
   const currentStatus = localStatus || application?.status || "draft";
+  const isDraft = currentStatus === "draft";
   const isApproved =
-    currentStatus === "in_progress" ||
+    applicationFormStage?.status === "successful" ||
     currentStatus === "certified" ||
     currentStatus === "approved";
-  const isRejected = currentStatus === "rejected";
-  const isPending = !isApproved && !isRejected;
+  const isRejected = applicationFormStage?.status === "rejected" || currentStatus === "rejected";
+  // A draft has never been submitted, so it has no backend workflow state yet
+  // — POST /applications/{id}/review would fail with "no workflow state".
+  // Only a submitted (non-draft) application can be pending centre review.
+  const isPending = !isApproved && !isRejected && !isDraft;
 
-  const isPaymentPaid =
-    paymentSuccessful ||
-    application?.paymentStatus === "successful" ||
-    application?.status === "in_progress" ||
-    application?.status === "certified";
+  // Payment — GET /applications/{id}/stages (payment row), readable by centre
+  // staff the same as the receipt/payment-quote endpoints.
+  const isPaymentPaid = paymentStage?.status === "successful";
+  const { data: paymentQuote } = useGetPaymentQuote(application?.id || "", {
+    enabled: Boolean(application?.id && !isPaymentPaid),
+  });
+  const { data: receiptData } = useGetApplicationReceipt(application?.id || "", {
+    enabled: Boolean(application?.id && isPaymentPaid),
+  });
 
-  // Receipt transaction object
+  const paymentAmountText = receiptData?.amount?.amountMinorUnits
+    ? formatCurrency(receiptData.amount.amountMinorUnits, receiptData.amount.currency)
+    : paymentQuote?.amountMinorUnits
+      ? formatCurrency(paymentQuote.amountMinorUnits, paymentQuote.currency)
+      : paymentStage?.amountMinorUnits
+        ? formatCurrency(paymentStage.amountMinorUnits, paymentStage.currency || "NGN")
+        : "—";
+
+  // Assessment Progress timeline nodes, resolved against the real stage rows.
+  const progressSteps = useMemo(
+    () =>
+      NSQ_PROGRESS_STEPS.map((step) => ({
+        ...step,
+        status: stagesData?.find((s) => s.stageKey === step.key)?.status ?? "not_started",
+      })),
+    [stagesData],
+  );
+  const completedStepsCount = progressSteps.filter((s) => s.status === "successful").length;
+  const progressPercent =
+    progressSteps.length > 1 ? (completedStepsCount / (progressSteps.length - 1)) * 100 : 0;
+
+  // Receipt transaction object — GET /applications/{id}/receipt.
   const receiptTransaction: PaymentTransaction = {
-    id: application?.id || "tx-nsq-001",
+    id: receiptData?.paymentId || application?.id || "tx-nsq-001",
     candidateName,
     assessmentType: `NSQ ${resolvedTradeName} (${levelName})`,
-    amountPaid: "45,000",
+    amountPaid: paymentAmountText,
     status: isPaymentPaid ? "Paid" : "Pending",
-    date: application?.submittedAt
-      ? new Date(application.submittedAt).toLocaleDateString("en-GB")
-      : "07/22/2026",
-    transactionId: `TX-NSQ-${(application?.id || "001").slice(0, 8).toUpperCase()}`,
-    paymentMethod: "Bank Card (Online)",
+    date: receiptData?.paidAt
+      ? new Date(receiptData.paidAt).toLocaleDateString("en-GB")
+      : application?.submittedAt
+        ? new Date(application.submittedAt).toLocaleDateString("en-GB")
+        : "—",
+    transactionId:
+      receiptData?.paymentId ||
+      `TX-NSQ-${(application?.id || "001").replace(/-/g, "").slice(0, 8).toUpperCase()}`,
+    paymentMethod: receiptData?.provider || "Paystack",
     description: "NSQ Standard Assessment Fee Payment",
   };
 
   const handleDecisionSuccess = (decision: "approve" | "reject") => {
     setLocalStatus(decision === "approve" ? "approved" : "rejected");
-    if (decision === "approve") {
-      setPaymentSuccessful(true);
-    }
   };
 
   return (
@@ -463,123 +548,56 @@ export const NsqCentreApplicationDetailView: React.FC<
               Assessment Progress
             </h3>
 
+            {/* Steps Progress — driven by GET /applications/{id}/stages.
+                Application Form and Payment have their own cards below, so
+                the timeline covers the remaining five workflow stages. */}
             <div className="relative flex items-center justify-between w-full px-4 sm:px-10">
               {/* Connector line background */}
-              <div className="absolute left-8 right-8 top-3.5 h-[1.5px] bg-gray-200 -z-0" />
-
-              {/* Progress active connector line: Induction -> QAA */}
-              {isPaymentPaid && (
-                <div className="absolute left-8 w-[23%] top-3.5 h-[1.5px] -z-0 bg-[#10b981]" />
-              )}
-
-              {/* Progress active connector line: QAA -> IQA */}
-              {assignedIqa && (
-                <div
-                  className={`absolute left-[29%] w-[22%] top-3.5 h-[1.5px] -z-0 ${
-                    isIqaApproved ? "bg-[#10b981]" : "bg-[#fbab2a]"
-                  }`}
-                />
-              )}
-
-              {/* Step 1: Induction Form */}
-              <div className="flex flex-col items-center gap-2.5 z-10">
-                <div
-                  className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${
-                    isPaymentPaid
-                      ? "bg-[#10b981] shadow-xs"
-                      : "border border-gray-400 bg-white"
-                  }`}
-                >
-                  {isPaymentPaid && (
-                    <div className="w-2.5 h-2.5 rounded-full bg-white" />
-                  )}
-                </div>
-                <span
-                  className={`text-xs text-center font-medium ${
-                    isPaymentPaid
-                      ? "text-[#10b981] font-semibold"
-                      : "text-gray-400"
-                  }`}
-                >
-                  Induction Form
-                </span>
-              </div>
-
-              {/* Step 2: QAA */}
-              <div className="flex flex-col items-center gap-2.5 z-10">
-                <div
-                  className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${
-                    isPaymentPaid
-                      ? "bg-[#10b981] shadow-xs"
-                      : "border border-gray-400 bg-white"
-                  }`}
-                >
-                  {isPaymentPaid && (
-                    <div className="w-2.5 h-2.5 rounded-full bg-white" />
-                  )}
-                </div>
-                <span
-                  className={`text-xs text-center font-medium ${
-                    isPaymentPaid
-                      ? "text-[#10b981] font-semibold"
-                      : "text-gray-400"
-                  }`}
-                >
-                  QAA
-                </span>
-              </div>
-
-              {/* Step 3: IQA */}
+              <div className="absolute left-8 right-8 top-3.5 h-[1.5px] bg-gray-200 z-0" />
               <div
-                onClick={() => {
-                  if (assignedIqa) setIsIqaApproved((prev) => !prev);
-                }}
-                className={`flex flex-col items-center gap-2.5 z-10 ${
-                  assignedIqa ? "cursor-pointer" : ""
-                }`}
-                title={assignedIqa ? "Click to toggle IQA approval status" : undefined}
-              >
-                <div
-                  className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${
-                    assignedIqa
-                      ? isIqaApproved
-                        ? "bg-[#10b981] shadow-xs"
-                        : "bg-[#fbab2a] shadow-xs"
-                      : "border border-gray-400 bg-white"
-                  }`}
-                >
-                  {assignedIqa && (
-                    <div className="w-2.5 h-2.5 rounded-full bg-white" />
-                  )}
-                </div>
-                <span
-                  className={`text-xs text-center font-medium ${
-                    assignedIqa
-                      ? isIqaApproved
-                        ? "text-[#10b981] font-semibold"
-                        : "text-[#fbab2a] font-semibold"
-                      : "text-gray-400"
-                  }`}
-                >
-                  IQA
-                </span>
-              </div>
+                className="absolute left-8 top-3.5 h-[1.5px] z-0 bg-[#10b981] transition-all duration-300"
+                style={{ width: `${progressPercent}%` }}
+              />
 
-              {/* Step 4: Awarding Body */}
-              <div className="flex flex-col items-center gap-2.5 z-10">
-                <div className="w-7 h-7 rounded-full border border-gray-400 bg-white flex items-center justify-center" />
-                <span className="text-xs font-medium text-gray-400 text-center">
-                  Awarding Body
-                </span>
-              </div>
+              {progressSteps.map((step) => {
+                const isComplete = step.status === "successful";
+                const isRejectedStep = step.status === "rejected";
+                const isActive =
+                  !isComplete && !isRejectedStep && step.status !== "not_started";
 
-              {/* Step 5: Certification */}
-              <div className="flex flex-col items-center gap-2.5 z-10">
-                <div className="w-7 h-7 rounded-full border border-gray-400 bg-white flex items-center justify-center" />
-                <span className="text-xs font-medium text-gray-400 text-center">
-                  Certification
-                </span>
-              </div>
+                return (
+                  <div key={step.key} className="flex flex-col items-center gap-2.5 z-10">
+                    <div
+                      className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${
+                        isComplete
+                          ? "bg-[#10b981] shadow-xs"
+                          : isRejectedStep
+                            ? "bg-red-500 shadow-xs"
+                            : isActive
+                              ? "bg-[#fbab2a] shadow-xs"
+                              : "border border-gray-400 bg-white"
+                      }`}
+                    >
+                      {(isComplete || isRejectedStep || isActive) && (
+                        <div className="w-2.5 h-2.5 rounded-full bg-white" />
+                      )}
+                    </div>
+                    <span
+                      className={`text-xs text-center font-medium ${
+                        isComplete
+                          ? "text-[#10b981] font-semibold"
+                          : isRejectedStep
+                            ? "text-red-500 font-semibold"
+                            : isActive
+                              ? "text-[#fbab2a] font-semibold"
+                              : "text-gray-400"
+                      }`}
+                    >
+                      {step.label}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -597,6 +615,10 @@ export const NsqCentreApplicationDetailView: React.FC<
                 ) : isRejected ? (
                   <span className="px-3 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700">
                     Rejected
+                  </span>
+                ) : isDraft ? (
+                  <span className="px-3 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">
+                    Draft — Not Submitted
                   </span>
                 ) : (
                   <span className="px-3 py-0.5 rounded-full text-xs font-semibold bg-[#FEF3C7] text-[#D97706]">
@@ -640,7 +662,7 @@ export const NsqCentreApplicationDetailView: React.FC<
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-2.5">
                 <span className="text-base sm:text-lg font-bold text-gray-900">
-                  ₦45,000
+                  {paymentAmountText}
                 </span>
                 {isPaymentPaid ? (
                   <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#D1FAE5] text-[#059669]">
@@ -657,13 +679,15 @@ export const NsqCentreApplicationDetailView: React.FC<
               </span>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setIsReceiptModalOpen(true)}
-              className="text-sm font-semibold text-[#fbab2a] hover:text-[#e89b1f] hover:underline cursor-pointer select-none shrink-0"
-            >
-              Receipt
-            </button>
+            {isPaymentPaid && (
+              <button
+                type="button"
+                onClick={() => setIsReceiptModalOpen(true)}
+                className="text-sm font-semibold text-[#fbab2a] hover:text-[#e89b1f] hover:underline cursor-pointer select-none shrink-0"
+              >
+                Receipt
+              </button>
+            )}
           </div>
 
           {/* 4. Candidate Induction Form Card */}
@@ -784,14 +808,12 @@ export const NsqCentreApplicationDetailView: React.FC<
                   {/* Left: QAA Assessor Subcard */}
                   {assignedAssessor ? (
                     <div className="bg-[#F8F9FA] rounded-xl p-5 border border-gray-100 flex items-center gap-3.5 min-h-[100px]">
-                      <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 relative bg-white border border-gray-200">
-                        <Image
-                          src={assignedAssessor.photoUrl || "/hero-img-2.jpg"}
-                          alt={assignedAssessor.name}
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
+                      <Avatar
+                        src={assignedAssessor.photoUrl}
+                        name={assignedAssessor.name}
+                        className="w-12 h-12 shrink-0 border border-gray-200"
+                        alt={assignedAssessor.name}
+                      />
                       <div className="flex flex-col min-w-0">
                         <span className="font-bold text-sm text-gray-900 truncate">
                           {assignedAssessor.name}
@@ -825,14 +847,12 @@ export const NsqCentreApplicationDetailView: React.FC<
                   {/* Right: IQA Verifier Subcard */}
                   {assignedIqa ? (
                     <div className="bg-[#F8F9FA] rounded-xl p-5 border border-gray-100 flex items-center gap-3.5 min-h-[100px]">
-                      <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 relative bg-white border border-gray-200">
-                        <Image
-                          src={assignedIqa.photoUrl || "/hero-img-1.jpg"}
-                          alt={assignedIqa.name}
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
+                      <Avatar
+                        src={assignedIqa.photoUrl}
+                        name={assignedIqa.name}
+                        className="w-12 h-12 shrink-0 border border-gray-200"
+                        alt={assignedIqa.name}
+                      />
                       <div className="flex flex-col min-w-0">
                         <span className="font-bold text-sm text-gray-900 truncate">
                           {assignedIqa.name}
@@ -960,48 +980,93 @@ export const NsqCentreApplicationDetailView: React.FC<
           {/* Calendar Widget (Dark Theme matching mockup) */}
           <CalendarWidget />
 
-          {/* Observation Request Card */}
+          {/* Observation Request Card — GET /applications/{id}/direct-observation */}
           <div className="bg-white rounded-2xl p-6 shadow-xs border border-gray-100 flex flex-col gap-4">
             <h4 className="text-sm font-bold text-gray-900">
               Observation Request
             </h4>
 
-            <div className="relative bg-[#F8F9FA] rounded-xl p-4 border border-gray-100 flex items-center justify-between gap-3 overflow-hidden">
-              <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#10b981]" />
+            {liveObservation ? (
+              <>
+                <div className="relative bg-[#F8F9FA] rounded-xl p-4 border border-gray-100 flex items-center justify-between gap-3 overflow-hidden">
+                  <div
+                    className={`absolute left-0 top-0 bottom-0 w-1.5 ${
+                      liveObservation.status === "accepted" ||
+                      liveObservation.status === "completed"
+                        ? "bg-[#10b981]"
+                        : liveObservation.status === "rejected" ||
+                            liveObservation.status === "cancelled"
+                          ? "bg-red-500"
+                          : "bg-[#fbab2a]"
+                    }`}
+                  />
 
-              <div className="flex flex-col gap-1.5 pl-1.5 min-w-0">
-                <span className="self-start px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#D1FAE5] text-[#059669]">
-                  Confirmed
-                </span>
-                <span className="text-xs sm:text-sm font-bold text-gray-900 truncate">
-                  Physically Observation
-                </span>
-                <div className="flex items-center gap-4 text-[11px] text-gray-500 pt-0.5">
-                  <div className="flex flex-col">
-                    <span className="text-[9px] font-bold text-gray-400 uppercase">
-                      TIME
+                  <div className="flex flex-col gap-1.5 pl-1.5 min-w-0">
+                    <span
+                      className={`self-start px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                        liveObservation.status === "accepted" ||
+                        liveObservation.status === "completed"
+                          ? "bg-[#D1FAE5] text-[#059669]"
+                          : liveObservation.status === "rejected" ||
+                              liveObservation.status === "cancelled"
+                            ? "bg-red-50 text-red-600"
+                            : "bg-amber-50 text-amber-700"
+                      }`}
+                    >
+                      {liveObservation.status === "accepted"
+                        ? "Confirmed"
+                        : liveObservation.status === "completed"
+                          ? "Completed"
+                          : liveObservation.status === "rejected"
+                            ? "Rejected"
+                            : liveObservation.status === "cancelled"
+                              ? "Cancelled"
+                              : "Pending Review"}
                     </span>
-                    <span className="font-semibold text-gray-700">12:00PM</span>
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-[9px] font-bold text-gray-400 uppercase">
-                      DATE
+                    <span className="text-xs sm:text-sm font-bold text-gray-900 truncate">
+                      Physically Observation
                     </span>
-                    <span className="font-semibold text-gray-700">22/03/2026</span>
+                    <div className="flex items-center gap-4 text-[11px] text-gray-500 pt-0.5">
+                      <div className="flex flex-col">
+                        <span className="text-[9px] font-bold text-gray-400 uppercase">
+                          TIME
+                        </span>
+                        <span className="font-semibold text-gray-700">
+                          {liveObservation.scheduledAt
+                            ?.split("T")[1]
+                            ?.slice(0, 5) || "—"}
+                        </span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[9px] font-bold text-gray-400 uppercase">
+                          DATE
+                        </span>
+                        <span className="font-semibold text-gray-700">
+                          {liveObservation.scheduledAt?.split("T")[0] || "—"}
+                        </span>
+                      </div>
+                    </div>
                   </div>
+
+                  <FiChevronRight className="w-4 h-4 text-gray-400 shrink-0" />
                 </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsObservationDetailOpen(true)}
+                  className="w-full py-2.5 bg-[#fbab2a] hover:bg-[#e89b1f] text-white font-bold text-xs sm:text-sm rounded-xl cursor-pointer transition-all shadow-xs"
+                >
+                  View
+                </button>
+              </>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-6 text-center gap-2">
+                <span className="text-xs font-bold text-gray-800">No request</span>
+                <p className="text-[11px] text-gray-400 font-medium max-w-[200px]">
+                  The candidate&apos;s scheduled observation will appear here.
+                </p>
               </div>
-
-              <FiChevronRight className="w-4 h-4 text-gray-400 shrink-0" />
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setIsObservationDetailOpen(true)}
-              className="w-full py-2.5 bg-[#fbab2a] hover:bg-[#e89b1f] text-white font-bold text-xs sm:text-sm rounded-xl cursor-pointer transition-all shadow-xs"
-            >
-              View
-            </button>
+            )}
           </div>
 
           {/* Candidate Information Card */}
@@ -1011,14 +1076,12 @@ export const NsqCentreApplicationDetailView: React.FC<
             </h4>
 
             <div className="flex items-center gap-3.5 pt-1">
-              <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 relative bg-gray-100 border border-gray-100">
-                <Image
-                  src={candidatePhoto}
-                  alt={candidateName}
-                  fill
-                  className="object-cover"
-                />
-              </div>
+              <Avatar
+                src={candidatePhoto}
+                name={candidateName}
+                className="w-12 h-12 shrink-0 border border-gray-100"
+                alt={candidateName}
+              />
 
               <div className="flex flex-col min-w-0">
                 <span className="font-bold text-sm text-gray-900 truncate">
@@ -1100,7 +1163,9 @@ export const NsqCentreApplicationDetailView: React.FC<
                     CANDIDATE NAME
                   </span>
                   <span className="font-bold text-neutral-primary text-xs mt-0.5 block">
-                    {candidateName}
+                    {inductionForm?.data?.firstName
+                      ? `${inductionForm.data.firstName} ${inductionForm.data.lastName || ""}`.trim()
+                      : candidateName}
                   </span>
                 </div>
                 <div>
@@ -1108,7 +1173,7 @@ export const NsqCentreApplicationDetailView: React.FC<
                     REGISTERED TRADE
                   </span>
                   <span className="font-bold text-neutral-primary text-xs mt-0.5 block">
-                    {resolvedTradeName}
+                    {inductionForm?.trade?.name || resolvedTradeName}
                   </span>
                 </div>
                 <div>
@@ -1116,7 +1181,10 @@ export const NsqCentreApplicationDetailView: React.FC<
                     REGISTRATION STATUS
                   </span>
                   <span className="text-emerald-700 font-bold text-xs mt-0.5 inline-flex items-center gap-1">
-                    <FiCheck className="w-3.5 h-3.5" /> Induction Completed
+                    <FiCheck className="w-3.5 h-3.5" />{" "}
+                    {inductionForm?.submittedAt
+                      ? "Induction Completed"
+                      : "Induction Form"}
                   </span>
                 </div>
                 <div>
@@ -1124,9 +1192,15 @@ export const NsqCentreApplicationDetailView: React.FC<
                     SUBMISSION DATE
                   </span>
                   <span className="font-medium text-neutral-primary text-xs mt-0.5 block">
-                    {application?.submittedAt
-                      ? new Date(application.submittedAt).toLocaleDateString("en-GB")
-                      : "22/03/2026"}
+                    {inductionForm?.submittedAt
+                      ? new Date(inductionForm.submittedAt).toLocaleDateString(
+                          "en-GB",
+                        )
+                      : application?.submittedAt
+                        ? new Date(application.submittedAt).toLocaleDateString(
+                            "en-GB",
+                          )
+                        : "22/03/2026"}
                   </span>
                 </div>
               </div>
@@ -1136,7 +1210,14 @@ export const NsqCentreApplicationDetailView: React.FC<
                   Registered Qualification Units
                 </span>
                 <div className="flex flex-wrap gap-2">
-                  {unitsList.map((u) => (
+                  {(inductionForm?.units && inductionForm.units.length > 0
+                    ? inductionForm.units.map((u) => ({
+                        id: u.id,
+                        unitNo: u.referenceNumber,
+                        title: u.title,
+                      }))
+                    : unitsList
+                  ).map((u) => (
                     <span
                       key={u.id}
                       className="px-3 py-1.5 bg-rose-50 border border-rose-100 text-[#a31d38] font-bold text-[11px] rounded-xl"
@@ -1228,8 +1309,25 @@ export const NsqCentreApplicationDetailView: React.FC<
             </button>
 
             <div className="flex flex-col gap-1">
-              <span className="self-start px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#D1FAE5] text-[#059669]">
-                Confirmed
+              <span
+                className={`self-start px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                  liveObservation?.status === "accepted" || liveObservation?.status === "completed"
+                    ? "bg-[#D1FAE5] text-[#059669]"
+                    : liveObservation?.status === "rejected" ||
+                        liveObservation?.status === "cancelled"
+                      ? "bg-red-50 text-red-600"
+                      : "bg-amber-50 text-amber-700"
+                }`}
+              >
+                {liveObservation?.status === "accepted"
+                  ? "Confirmed"
+                  : liveObservation?.status === "completed"
+                    ? "Completed"
+                    : liveObservation?.status === "rejected"
+                      ? "Rejected"
+                      : liveObservation?.status === "cancelled"
+                        ? "Cancelled"
+                        : "Pending Review"}
               </span>
               <h3 className="text-lg font-bold text-gray-900 mt-1">
                 Physically Observation
@@ -1247,20 +1345,26 @@ export const NsqCentreApplicationDetailView: React.FC<
               <div className="flex justify-between py-1 border-b border-gray-100">
                 <span className="text-gray-400 font-medium">Assessor</span>
                 <span className="font-bold text-gray-900">
-                  {assignedAssessor?.name || "Ngozi Eze"}
+                  {assignedAssessor?.name || "Not yet assigned"}
                 </span>
               </div>
               <div className="flex justify-between py-1 border-b border-gray-100">
                 <span className="text-gray-400 font-medium">Date</span>
-                <span className="font-bold text-gray-900">22/03/2026</span>
+                <span className="font-bold text-gray-900">
+                  {liveObservation?.scheduledAt?.split("T")[0] || "—"}
+                </span>
               </div>
               <div className="flex justify-between py-1 border-b border-gray-100">
                 <span className="text-gray-400 font-medium">Time</span>
-                <span className="font-bold text-gray-900">12:00 PM</span>
+                <span className="font-bold text-gray-900">
+                  {liveObservation?.scheduledAt?.split("T")[1]?.slice(0, 5) || "—"}
+                </span>
               </div>
               <div className="flex justify-between py-1">
                 <span className="text-gray-400 font-medium">Venue</span>
-                <span className="font-bold text-gray-900">{resolvedCentreName}</span>
+                <span className="font-bold text-gray-900">
+                  {liveObservation?.address || "—"}
+                </span>
               </div>
             </div>
 

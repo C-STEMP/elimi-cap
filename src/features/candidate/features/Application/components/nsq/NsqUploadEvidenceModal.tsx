@@ -72,7 +72,6 @@ export const NsqUploadEvidenceModal: React.FC<NsqUploadEvidenceModalProps> = ({
     setIsUploading(true);
 
     const fileSizeStr = `${(selectedFile.size / (1024 * 1024)).toFixed(1)} mb`;
-    const localBlobUrl = URL.createObjectURL(selectedFile);
 
     try {
       const asset = await uploadMutation.mutateAsync({
@@ -80,9 +79,18 @@ export const NsqUploadEvidenceModal: React.FC<NsqUploadEvidenceModalProps> = ({
         purpose: "evidence",
       });
 
+      if (!asset?.assetId) {
+        toast({
+          type: "error",
+          title: "Upload Failed",
+          description: "Upload did not return a valid file reference. Please try again.",
+        });
+        return;
+      }
+
       onSuccess?.({
-        assetId: asset?.assetId,
-        url: asset?.url || localBlobUrl,
+        assetId: asset.assetId,
+        url: asset.url,
         evidenceType,
         fileName: selectedFile.name,
         fileSize: fileSizeStr,
@@ -91,15 +99,7 @@ export const NsqUploadEvidenceModal: React.FC<NsqUploadEvidenceModalProps> = ({
       setSelectedFile(null);
       onClose();
     } catch {
-      onSuccess?.({
-        url: localBlobUrl,
-        evidenceType,
-        fileName: selectedFile.name,
-        fileSize: fileSizeStr,
-      });
-
-      setSelectedFile(null);
-      onClose();
+      // useUploadFile already surfaced an error toast.
     } finally {
       setIsUploading(false);
     }

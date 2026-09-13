@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { FiChevronLeft, FiPlus } from "react-icons/fi";
 import { NsqAssessorSidebar } from "./NsqAssessorSidebar";
 import { NsqAssessorUnitDetailView } from "./NsqAssessorUnitDetailView";
@@ -25,7 +25,44 @@ import { ComprehensiveReportView } from "../../../iqam/components/con04/Comprehe
 import { ObservationChecklistView } from "../../../iqam/components/con05/ObservationChecklistView";
 import { FinalPortfolioReportView } from "../../../iqam/components/con06/FinalPortfolioReportView";
 import { useToast } from "@/src/components/ui/toast";
+import {
+  useGetApplicationById,
+  useGetInductionForm,
+  useGetDirectObservations,
+  useReviewDirectObservation,
+} from "@/src/features/shared/applications/hooks";
+import {
+  useGetTradeDetail,
+  useGetEvidenceTypesByTrade,
+} from "@/src/features/shared/reference/hooks";
+import type { DirectObservationSession } from "@/src/features/shared/applications/api/types";
 import type { AssessorApplicationRecord } from "../../types/applications.types";
+
+const mapSessionToObservation = (
+  session?: DirectObservationSession | null,
+): ObservationRequestDetails | null => {
+  if (!session) return null;
+  const [datePart, timePart] = (session.scheduledAt || "").split("T");
+  const status: ObservationRequestDetails["status"] =
+    session.status === "accepted" || session.status === "completed"
+      ? "confirmed"
+      : session.status === "requested" || session.status === "pending"
+        ? "pending"
+        : "rejected";
+  return {
+    units: session.unitIds || [],
+    date: datePart || "",
+    time: timePart ? timePart.slice(0, 5) : "",
+    country: "",
+    state: "",
+    lga: "",
+    address: session.address || "",
+    status,
+    requirements: session.requirements,
+    isSigned: Boolean(session.learnerSignature),
+    rejectionReason: session.reviewComment || undefined,
+  };
+};
 
 export type NsqAssessorSubView =
   | "overview"
@@ -77,20 +114,62 @@ export const NsqAssessorApplicationDetailView: React.FC<
     else if (next === "iqam_con06") onSubViewChange?.("Final Portfolio / Award Report Form");
   };
 
-  const [selectedUnit, setSelectedUnit] = useState<QualificationUnitItem | null>(DEFAULT_UNITS[0]);
+  // Full application detail — same query key as the route view that fetched
+  // this application, so it's served from cache rather than refetched.
+  const { data: apiApp } = useGetApplicationById(application.id);
+  const { data: inductionForm } = useGetInductionForm(application.id);
 
-  // Observation Request State
-  const [observation, setObservation] = useState<ObservationRequestDetails | null>({
-    units: ["UNIT 1", "UNIT 2", "UNIT 3"],
-    time: "12:00PM",
-    date: "22/03/2026",
-    country: "Nigeria",
-    state: "Abuja",
-    lga: "Bwari",
-    address: "3 Abbey Street, Kubwa Expressway",
-    status: "confirmed",
-    isSigned: true,
+  const tradeId = apiApp?.tradeId || "";
+  const { data: tradeDetail } = useGetTradeDetail(tradeId);
+  const { data: remoteEvidenceTypes = [] } = useGetEvidenceTypesByTrade(tradeId);
+
+  // Real qualification units — GET /applications/{id} `nsq.units`, already
+  // carrying per-unit evidence counts (criteriaApproved/criteriaTotal) and
+  // the "new upload" signal (criteriaPending > 0). No extra fetch needed.
+  const realUnits: QualificationUnitItem[] | null = apiApp?.nsq?.units?.length
+    ? apiApp.nsq.units.map((u) => ({
+        id: u.id,
+        unitNo: u.referenceNumber,
+        title: u.title,
+        approvedCount: u.criteriaApproved,
+        totalCount: u.criteriaTotal,
+        hasNewUpload: u.criteriaPending > 0,
+      }))
+    : null;
+  const unitsList = realUnits || DEFAULT_UNITS;
+
+  const [selectedUnit, setSelectedUnit] = useState<QualificationUnitItem | null>(null);
+
+  // Keep the selected unit in sync once real units load.
+  useEffect(() => {
+    if (realUnits && realUnits.length > 0 && !selectedUnit) {
+      setSelectedUnit(realUnits[0]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [realUnits]);
+
+  // Direct Observation Queries & Mutation
+  const { data: directObsList } = useGetDirectObservations(application.id, {
+    enabled: Boolean(application.id),
   });
+  const liveObs = directObsList?.items?.[0];
+  const effectiveSessionId = liveObs?.id || "session-1";
+
+  const { mutateAsync: reviewObservationMutation } = useReviewDirectObservation(
+    application.id,
+    effectiveSessionId,
+  );
+
+  // Observation Request State — seeded from the real backend session and
+  // kept as local state only so accept/reject can optimistically update it.
+  const [observation, setObservation] = useState<ObservationRequestDetails | null>(
+    mapSessionToObservation(liveObs),
+  );
+
+  useEffect(() => {
+    setObservation(mapSessionToObservation(liveObs));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [liveObs?.id, liveObs?.status, liveObs?.scheduledAt]);
 
   const [isInductionModalOpen, setIsInductionModalOpen] = useState(false);
   const [isObsModalOpen, setIsObsModalOpen] = useState(false);
@@ -98,14 +177,24 @@ export const NsqAssessorApplicationDetailView: React.FC<
   const [isAcceptObsSuccessOpen, setIsAcceptObsSuccessOpen] = useState(false);
   const [isRejectObsSuccessOpen, setIsRejectObsSuccessOpen] = useState(false);
 
-  const candidateName = application.candidateName || "Samson David";
-  const tradeName = application.trade || "Masonry";
+  const candidateName = application.candidateName || "Candidate";
+  const tradeName = tradeDetail?.name || application.trade || "—";
+  const candidateEmail = apiApp?.personalInformation?.contactInformation?.emailAddress;
+  const candidatePhoneNumber = apiApp?.personalInformation?.contactInformation?.phoneNumber;
+  const candidatePhone = candidatePhoneNumber?.number
+    ? `${candidatePhoneNumber.countryCode || ""} ${candidatePhoneNumber.number}`.trim()
+    : undefined;
+
+  const evidenceTypesText = remoteEvidenceTypes.length > 0 ? remoteEvidenceTypes.join("/") : undefined;
 
   const handleSelectUnit = (unit: QualificationUnitItem) => {
     setSelectedUnit(unit);
     setActiveSubView("unit");
   };
 
+  // No backend "move to IQAM" action exists for NSQ — IV assignment is
+  // centre-driven (POST /applications/{id}/iv). This stays an informational
+  // nudge for the assessor rather than a state-changing call.
   const handleMoveToIqam = () => {
     toast({
       type: "success",
@@ -118,30 +207,46 @@ export const NsqAssessorApplicationDetailView: React.FC<
     onRegisterMoveToIqam?.(handleMoveToIqam);
   }, [onRegisterMoveToIqam, candidateName]);
 
-  const handleFinalConfirmAcceptObs = () => {
-    if (observation) setObservation({ ...observation, status: "confirmed", isSigned: true });
+  const handleFinalConfirmAcceptObs = async () => {
     setIsConfirmAcceptObsOpen(false);
+    try {
+      await reviewObservationMutation({ decision: "accept" });
+    } catch {
+      // useReviewDirectObservation already surfaced an error toast.
+      return;
+    }
+    if (observation) setObservation({ ...observation, status: "confirmed", isSigned: true });
     setIsAcceptObsSuccessOpen(true);
   };
 
-  const handleRejectObservation = () => {
+  const handleRejectObservation = async () => {
+    const reason = "Safety criteria and venue protocol did not meet required standards.";
+    setIsObsModalOpen(false);
+    try {
+      await reviewObservationMutation({ decision: "reject", comment: reason });
+    } catch {
+      // useReviewDirectObservation already surfaced an error toast.
+      return;
+    }
     if (observation) {
       setObservation({
         ...observation,
         status: "rejected",
-        rejectionReason: "Safety criteria and venue protocol did not meet required standards.",
+        rejectionReason: reason,
       });
     }
-    setIsObsModalOpen(false);
     setIsRejectObsSuccessOpen(true);
   };
 
   if (activeSubView === "unit" && selectedUnit) {
     return (
       <NsqAssessorUnitDetailView
+        unitId={selectedUnit.id}
         unitNumber={selectedUnit.unitNo}
         unitTitle={selectedUnit.title}
         candidateName={candidateName}
+        candidateEmail={candidateEmail}
+        candidatePhone={candidatePhone}
         candidatePhotoUrl={application.candidatePhotoUrl}
         applicationId={application.id}
         observation={observation}
@@ -155,9 +260,17 @@ export const NsqAssessorApplicationDetailView: React.FC<
   if (activeSubView === "observation_form") {
     return (
       <NsqAssessorObservationFormsView
+        sessionId={effectiveSessionId}
         candidateName={candidateName}
         applicationId={application.id}
-        unitsAssessed="UNIT 1/UNIT 2/UNIT 3"
+        registrationNo={inductionForm?.data?.registrationNo}
+        unitsAssessed={
+          observation?.units && observation.units.length > 0
+            ? observation.units
+                .map((unitId) => unitsList.find((u) => u.id === unitId)?.unitNo || unitId)
+                .join("/")
+            : undefined
+        }
         onBack={() => setActiveSubView("overview")}
         onSubmitSuccess={() => {
           if (observation) setObservation({ ...observation, status: "confirmed" });
@@ -169,6 +282,7 @@ export const NsqAssessorApplicationDetailView: React.FC<
   if (activeSubView === "iqam_con04") {
     return (
       <ComprehensiveReportView
+        applicationId={application.id}
         candidateName={candidateName}
         onBack={() => setActiveSubView("overview")}
       />
@@ -178,6 +292,7 @@ export const NsqAssessorApplicationDetailView: React.FC<
   if (activeSubView === "iqam_con05") {
     return (
       <ObservationChecklistView
+        applicationId={application.id}
         candidateName={candidateName}
         onBack={() => setActiveSubView("overview")}
       />
@@ -187,6 +302,7 @@ export const NsqAssessorApplicationDetailView: React.FC<
   if (activeSubView === "iqam_con06") {
     return (
       <FinalPortfolioReportView
+        applicationId={application.id}
         candidateName={candidateName}
         onBack={() => setActiveSubView("overview")}
       />
@@ -198,30 +314,61 @@ export const NsqAssessorApplicationDetailView: React.FC<
       <div className="w-full max-w-7xl xl:max-w-360 mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           <div className="lg:col-span-8 flex flex-col gap-6 w-full">
-            <QualificationStandardCard tradeName={tradeName} />
+            <QualificationStandardCard
+              tradeName={tradeName}
+              qualificationCode={unitsList[0]?.unitNo}
+              evidenceTypes={evidenceTypesText}
+              sector={apiApp?.sector?.name}
+              level={
+                apiApp?.nsq?.wishedQualificationLevel
+                  ? `Level ${apiApp.nsq.wishedQualificationLevel.level}`
+                  : undefined
+              }
+            />
             <CandidateInductionTriggerCard onView={() => setIsInductionModalOpen(true)} />
             <QualificationUnitsList
               tradeName={tradeName}
-              units={DEFAULT_UNITS}
+              units={unitsList}
               onSelectUnit={handleSelectUnit}
             />
 
-            {/* 4. IQAM Forms Card */}
+            {/* 4. IQAM Forms Card — status from GET /applications/{id} `iqamForms` */}
             <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-xs border border-gray-100 flex flex-col gap-4">
               <div className="flex items-center gap-2.5">
                 <h3 className="text-base font-extrabold text-neutral-primary tracking-tight">
                   IQAM Forms
                 </h3>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-[#fce7f3] text-[#be185d]">
-                  Attention Required
-                </span>
+                {(() => {
+                  const ivReportSubmitted = Boolean(
+                    apiApp?.iqamForms?.find((f) => f.key === "iv_report")?.submittedAt,
+                  );
+                  const finalPortfolioSubmitted = Boolean(
+                    apiApp?.iqamForms?.find((f) => f.key === "final_portfolio")?.submittedAt,
+                  );
+                  return ivReportSubmitted && finalPortfolioSubmitted ? (
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-[#ecfdf5] text-[#10b981]">
+                      Up to Date
+                    </span>
+                  ) : (
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-[#fce7f3] text-[#be185d]">
+                      Attention Required
+                    </span>
+                  );
+                })()}
               </div>
 
               <div className="flex flex-col gap-3">
                 <div className="p-4 bg-gray-50/70 hover:bg-gray-100/70 rounded-2xl border border-gray-100/80 transition-all flex items-center justify-between gap-3">
-                  <span className="text-xs sm:text-sm font-semibold text-neutral-primary">
-                    Comprehensive Internal Verifier Report Form
-                  </span>
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-xs sm:text-sm font-semibold text-neutral-primary">
+                      Comprehensive Internal Verifier Report Form
+                    </span>
+                    {apiApp?.iqamForms?.find((f) => f.key === "iv_report")?.submittedAt && (
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#ecfdf5] text-[#10b981]">
+                        Submitted
+                      </span>
+                    )}
+                  </div>
                   <button
                     type="button"
                     onClick={() => setActiveSubView("iqam_con04")}
@@ -245,9 +392,16 @@ export const NsqAssessorApplicationDetailView: React.FC<
                 </div>
 
                 <div className="p-4 bg-gray-50/70 hover:bg-gray-100/70 rounded-2xl border border-gray-100/80 transition-all flex items-center justify-between gap-3">
-                  <span className="text-xs sm:text-sm font-semibold text-neutral-primary">
-                    Final Portfolio / Award Report Form
-                  </span>
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-xs sm:text-sm font-semibold text-neutral-primary">
+                      Final Portfolio / Award Report Form
+                    </span>
+                    {apiApp?.iqamForms?.find((f) => f.key === "final_portfolio")?.submittedAt && (
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#ecfdf5] text-[#10b981]">
+                        Submitted
+                      </span>
+                    )}
+                  </div>
                   <button
                     type="button"
                     onClick={() => setActiveSubView("iqam_con06")}
@@ -264,8 +418,8 @@ export const NsqAssessorApplicationDetailView: React.FC<
             <NsqAssessorSidebar
               candidate={{
                 name: candidateName,
-                email: "Samsondav@gmail.com",
-                phone: "+2349123537212",
+                email: candidateEmail,
+                phone: candidatePhone,
                 photoUrl: application.candidatePhotoUrl,
               }}
               observation={observation}
@@ -281,6 +435,7 @@ export const NsqAssessorApplicationDetailView: React.FC<
         onClose={() => setIsInductionModalOpen(false)}
         candidateName={candidateName}
         tradeName={tradeName}
+        inductionData={inductionForm}
       />
 
       {observation && (

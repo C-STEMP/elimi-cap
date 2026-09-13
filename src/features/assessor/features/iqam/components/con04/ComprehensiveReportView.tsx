@@ -1,14 +1,16 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Section04AVerificationScope } from "./sections/Section04AVerificationScope";
 import { Section04BMethodsQuality } from "./sections/Section04BMethodsQuality";
 import { Section04CUnitOutcomes } from "./sections/Section04CUnitOutcomes";
+import { useGetIqamIvReport, usePatchIqamIvReport, useSubmitIqamIvReport } from "../../hooks/useIqam";
+import type { IqamIvReportData } from "../../api/types";
 
 interface ComprehensiveReportViewProps {
+  applicationId: string;
   onBack: () => void;
   candidateName?: string;
-  onSubmit?: () => void;
   onUpdateHeader?: (config: {
     title: string;
     breadcrumb: string;
@@ -19,33 +21,78 @@ interface ComprehensiveReportViewProps {
 
 type TabType = "04A" | "04B" | "04C";
 
+const EMPTY_DATA: IqamIvReportData = { schemaVersion: 1 };
+
 export const ComprehensiveReportView: React.FC<ComprehensiveReportViewProps> = ({
+  applicationId,
   onBack,
-  candidateName = "Samson David",
-  onSubmit,
+  candidateName,
   onUpdateHeader,
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>("04A");
 
-  const handleNextOrSubmit = () => {
+  const { data: report, isLoading } = useGetIqamIvReport(applicationId);
+  const patchReport = usePatchIqamIvReport(applicationId);
+  const submitReport = useSubmitIqamIvReport(applicationId);
+
+  const [formData, setFormData] = useState<IqamIvReportData>(EMPTY_DATA);
+  const [hasHydrated, setHasHydrated] = useState(false);
+
+  useEffect(() => {
+    if (report?.data && !hasHydrated) {
+      setFormData(report.data);
+      setHasHydrated(true);
+    }
+  }, [report, hasHydrated]);
+
+  const isSubmitted = Boolean(report?.submittedAt);
+
+  const handleNextOrSubmit = async () => {
+    if (isSubmitted) {
+      if (activeTab === "04A") setActiveTab("04B");
+      else if (activeTab === "04B") setActiveTab("04C");
+      return;
+    }
+    try {
+      await patchReport.mutateAsync(formData);
+    } catch {
+      return;
+    }
     if (activeTab === "04A") setActiveTab("04B");
     else if (activeTab === "04B") setActiveTab("04C");
-    else onSubmit?.();
+    else await submitReport.mutateAsync();
   };
 
   useEffect(() => {
     onUpdateHeader?.({
       title: "Internal Verifier's Comprehensive Report Form",
       breadcrumb: "Internal Verifier's Comprehensive Report Form",
-      actionLabel: activeTab === "04C" ? "Submit" : "Next",
-      onAction: handleNextOrSubmit,
+      actionLabel: isSubmitted ? (activeTab === "04C" ? undefined : "Next") : activeTab === "04C" ? "Submit" : "Save & Next",
+      onAction: isSubmitted && activeTab === "04C" ? undefined : handleNextOrSubmit,
     });
-  }, [activeTab, onUpdateHeader]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, onUpdateHeader, formData, isSubmitted]);
+
+  if (isLoading) {
+    return (
+      <div className="w-full flex flex-col gap-6 select-text pb-12">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <p className="text-xs text-gray-400 py-6">Loading report…</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full flex flex-col gap-6 select-text pb-12 animate-fadeIn">
 
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-6">
+        {isSubmitted && (
+          <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-xs font-bold text-emerald-800">
+            This report was submitted on {new Date(report!.submittedAt!).toLocaleDateString("en-GB")}. It is now read-only.
+          </div>
+        )}
+
         {/* Navigation Tabs Pill Container */}
         <div className="flex items-center gap-2 p-1.5 bg-slate-100/80 rounded-2xl w-fit">
           <button
@@ -78,9 +125,33 @@ export const ComprehensiveReportView: React.FC<ComprehensiveReportViewProps> = (
         </div>
 
         {/* Dynamic Section View */}
-        {activeTab === "04A" && <Section04AVerificationScope candidateName={candidateName} />}
-        {activeTab === "04B" && <Section04BMethodsQuality />}
-        {activeTab === "04C" && <Section04CUnitOutcomes />}
+        {activeTab === "04A" && (
+          <Section04AVerificationScope
+            candidateName={report?.candidate.name || candidateName}
+            qualificationTitle={report ? `${report.trade.name} Level ${report.qualificationLevel.level}` : undefined}
+            internalVerifierName={report?.internalVerifier.name}
+            unitAssessorName={report?.unitAssessor?.name}
+            data={formData.con04a}
+            readOnly={isSubmitted}
+            onChange={(con04a) => setFormData((prev) => ({ ...prev, con04a }))}
+          />
+        )}
+        {activeTab === "04B" && (
+          <Section04BMethodsQuality
+            availableMethods={report?.methods || []}
+            data={formData.con04b}
+            readOnly={isSubmitted}
+            onChange={(con04b) => setFormData((prev) => ({ ...prev, con04b }))}
+          />
+        )}
+        {activeTab === "04C" && (
+          <Section04CUnitOutcomes
+            units={report?.units || []}
+            data={formData.con04c}
+            readOnly={isSubmitted}
+            onChange={(con04c) => setFormData((prev) => ({ ...prev, con04c }))}
+          />
+        )}
       </div>
     </div>
   );
