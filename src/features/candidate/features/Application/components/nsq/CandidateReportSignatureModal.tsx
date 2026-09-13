@@ -8,11 +8,15 @@ import { useToast } from "@/src/components/ui/toast";
 import { UploadSignatureModal } from "../UploadSignatureModal";
 import { useCandidateProfileSignature } from "@/src/features/shared/onboarding/hooks";
 
+import { signDirectObservationApi } from "@/src/features/shared/applications/api";
+
 interface CandidateReportSignatureModalProps {
   isOpen: boolean;
   onClose: () => void;
   reportTitle?: string;
   verifierName?: string;
+  applicationId?: string;
+  sessionId?: string;
   onSignedSuccess?: () => void;
 }
 
@@ -22,28 +26,32 @@ export const CandidateReportSignatureModal: React.FC<
   isOpen,
   onClose,
   reportTitle = "Internal Verifier Report Form",
-  verifierName = "Ngozi Eze",
+  verifierName = "Assessor",
+  applicationId,
+  sessionId,
   onSignedSuccess,
 }) => {
   const { toast } = useToast();
   const { data: profileSignature } = useCandidateProfileSignature();
   const [isSigned, setIsSigned] = useState(false);
+  const [uploadedAssetId, setUploadedAssetId] = useState<string | null>(null);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleAppendSignature = () => {
-    let hasSaved = Boolean(profileSignature?.assetId || profileSignature?.url);
-    if (!hasSaved) {
+    let localAssetId: string | null = null;
+    if (!profileSignature?.assetId) {
       try {
         const local = localStorage.getItem("user_saved_signature");
         if (local) {
           const parsed = JSON.parse(local);
-          if (parsed?.assetId || parsed?.url) hasSaved = true;
+          if (parsed?.assetId) localAssetId = parsed.assetId;
         }
       } catch {}
     }
 
-    if (hasSaved) {
+    if (profileSignature?.assetId || localAssetId) {
+      setUploadedAssetId(localAssetId);
       setIsSigned(true);
       toast({
         type: "success",
@@ -56,7 +64,7 @@ export const CandidateReportSignatureModal: React.FC<
     setIsUploadModalOpen(true);
   };
 
-  const handleConfirmSubmit = () => {
+  const handleConfirmSubmit = async () => {
     if (!isSigned) {
       toast({
         type: "error",
@@ -67,16 +75,31 @@ export const CandidateReportSignatureModal: React.FC<
     }
 
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      if (applicationId && sessionId) {
+        await signDirectObservationApi(applicationId, sessionId, {
+          role: "learner",
+          signatureMode: profileSignature?.assetId ? "default" : "upload",
+          signatureAssetId: profileSignature?.assetId || uploadedAssetId || undefined,
+          signedAt: new Date().toISOString(),
+        });
+      }
       toast({
         type: "success",
         title: "Report Signed",
-        description: "You have successfully signed the Internal Verifier Report Form.",
+        description: "You have successfully signed the document.",
       });
       onSignedSuccess?.();
       onClose();
-    }, 600);
+    } catch (err: any) {
+      toast({
+        type: "error",
+        title: "Signing Failed",
+        description: err?.message || "Could not sign the document. Please try again.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -162,7 +185,8 @@ export const CandidateReportSignatureModal: React.FC<
       <UploadSignatureModal
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
-        onUploadSuccess={() => {
+        onUploadSuccess={(signature) => {
+          setUploadedAssetId(signature?.assetId || null);
           setIsSigned(true);
           setIsUploadModalOpen(false);
           toast({

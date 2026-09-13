@@ -1,14 +1,18 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { IqamSignatureBlock } from "../common/IqamSignatureBlock";
-import type { ChecklistQuestionItem } from "../../types/iqam.types";
+import {
+  useGetIqamFinalPortfolio,
+  usePatchIqamFinalPortfolio,
+  useSubmitIqamFinalPortfolio,
+} from "../../hooks/useIqam";
+import type { IqamFinalPortfolioData, IqamFinalPortfolioCheckpoint, IqamSignatureStub } from "../../api/types";
 
 interface FinalPortfolioReportViewProps {
+  applicationId: string;
   onBack: () => void;
   candidateName?: string;
-  enrolmentNo?: string;
-  onSubmit?: () => void;
   onUpdateHeader?: (config: {
     title: string;
     breadcrumb: string;
@@ -17,51 +21,102 @@ interface FinalPortfolioReportViewProps {
   } | null) => void;
 }
 
-const CHECKPOINTS: ChecklistQuestionItem[] = [
-  { id: "cp-1", question: "The candidate's details provided on the initial registration form are certified as with the awarding organization", answer: "yes", comments: "" },
-  { id: "cp-2", question: "For unqualified assessors, the assessment decisions have been countersigned", answer: "yes", comments: "" },
-  { id: "cp-3", question: "The records of all meetings between Assessor and Candidate, agreed actions, and sign-offs for the achievement of Unit are available and complete", answer: "yes", comments: "" },
-  { id: "cp-4", question: "There is complete evidence of the assessor perspective for the full assessment cycle", answer: "yes", comments: "" },
-  { id: "cp-5", question: "The Assessment plan continues to reflect the progress of the candidate", answer: "yes", comments: "" },
-  { id: "cp-6", question: "All key documentation is dated and signed", answer: "yes", comments: "" },
-  { id: "cp-7", question: "The Award Summary & Unit records are properly completed", answer: "yes", comments: "" },
-  { id: "cp-8", question: "Assessment process documents are complete and available for the panels", answer: "yes", comments: "" },
-  { id: "cp-9", question: "Internal quality assurance documentation is completed", answer: "yes", comments: "" },
+const DEFAULT_CHECKPOINTS: IqamFinalPortfolioCheckpoint[] = [
+  { id: "cp-1", question: "The candidate's details provided on the initial registration form are certified as with the awarding organization", answer: null, comments: "" },
+  { id: "cp-2", question: "For unqualified assessors, the assessment decisions have been countersigned", answer: null, comments: "" },
+  { id: "cp-3", question: "The records of all meetings between Assessor and Candidate, agreed actions, and sign-offs for the achievement of Unit are available and complete", answer: null, comments: "" },
+  { id: "cp-4", question: "There is complete evidence of the assessor perspective for the full assessment cycle", answer: null, comments: "" },
+  { id: "cp-5", question: "The Assessment plan continues to reflect the progress of the candidate", answer: null, comments: "" },
+  { id: "cp-6", question: "All key documentation is dated and signed", answer: null, comments: "" },
+  { id: "cp-7", question: "The Award Summary & Unit records are properly completed", answer: null, comments: "" },
+  { id: "cp-8", question: "Assessment process documents are complete and available for the panels", answer: null, comments: "" },
+  { id: "cp-9", question: "Internal quality assurance documentation is completed", answer: null, comments: "" },
 ];
 
+const appendedSignature = (): IqamSignatureStub => ({
+  status: "appended",
+  signedAt: new Date().toISOString(),
+  signatureMode: "typed",
+});
+
 export const FinalPortfolioReportView: React.FC<FinalPortfolioReportViewProps> = ({
+  applicationId,
   onBack,
-  candidateName = "Samson David",
-  enrolmentNo = "NBTE/MAQ/2026/10892",
-  onSubmit,
+  candidateName,
   onUpdateHeader,
 }) => {
-  const [fullAwardVerified, setFullAwardVerified] = useState<"yes" | "no">("yes");
-  const [checkpoints, setCheckpoints] = useState(CHECKPOINTS);
-  const [ivSigned, setIvSigned] = useState(false);
-  const [countersigningIvaSigned, setCountersigningIvaSigned] = useState(false);
+  const { data: portfolio, isLoading } = useGetIqamFinalPortfolio(applicationId);
+  const patchPortfolio = usePatchIqamFinalPortfolio(applicationId);
+  const submitPortfolio = useSubmitIqamFinalPortfolio(applicationId);
+
+  const [formData, setFormData] = useState<IqamFinalPortfolioData>({ schemaVersion: 1 });
+  const [hasHydrated, setHasHydrated] = useState(false);
+
+  useEffect(() => {
+    if (portfolio?.data && !hasHydrated) {
+      setFormData(portfolio.data);
+      setHasHydrated(true);
+    }
+  }, [portfolio, hasHydrated]);
+
+  const isSubmitted = Boolean(portfolio?.submittedAt);
+  const checkpoints = formData.checkpoints?.length ? formData.checkpoints : DEFAULT_CHECKPOINTS;
+  const signatures = formData.signatures || {};
+
+  const handleSubmit = async () => {
+    if (isSubmitted) return;
+    try {
+      await patchPortfolio.mutateAsync(formData);
+      await submitPortfolio.mutateAsync();
+    } catch {
+      // Errors already surfaced via toast by the hooks.
+    }
+  };
 
   useEffect(() => {
     onUpdateHeader?.({
       title: "Internal Verifiers Final Portfolio / Award Report Form",
       breadcrumb: "Final Portfolio Report",
-      actionLabel: "Submit",
-      onAction: onSubmit,
+      actionLabel: isSubmitted ? undefined : "Submit",
+      onAction: isSubmitted ? undefined : handleSubmit,
     });
-  }, [onUpdateHeader, onSubmit]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onUpdateHeader, formData, isSubmitted]);
 
   const toggleAnswer = (id: string, ans: "yes" | "no") => {
-    setCheckpoints((prev) => prev.map((c) => (c.id === id ? { ...c, answer: ans } : c)));
+    setFormData((prev) => ({
+      ...prev,
+      checkpoints: checkpoints.map((c) => (c.id === id ? { ...c, answer: ans } : c)),
+    }));
   };
 
   const updateComments = (id: string, text: string) => {
-    setCheckpoints((prev) => prev.map((c) => (c.id === id ? { ...c, comments: text } : c)));
+    setFormData((prev) => ({
+      ...prev,
+      checkpoints: checkpoints.map((c) => (c.id === id ? { ...c, comments: text } : c)),
+    }));
   };
+
+  if (isLoading) {
+    return (
+      <div className="w-full flex flex-col gap-6 select-text pb-12">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <p className="text-xs text-gray-400 py-6">Loading final portfolio…</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full flex flex-col gap-6 select-text pb-12 animate-fadeIn">
 
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-6">
+        {isSubmitted && (
+          <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-xs font-bold text-emerald-800">
+            This report was submitted on {new Date(portfolio!.submittedAt!).toLocaleDateString("en-GB")}. It is now read-only.
+          </div>
+        )}
+
         {/* Metadata Grid Row 1 (3 Cards) */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
@@ -72,11 +127,15 @@ export const FinalPortfolioReportView: React.FC<FinalPortfolioReportViewProps> =
           </div>
           <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
             <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">CANDIDATE NAME</span>
-            <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">{candidateName}</h4>
+            <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">
+              {portfolio?.candidate.name || candidateName || "—"}
+            </h4>
           </div>
           <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
             <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">QUALIFICATION</span>
-            <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">Masonry Level 2</h4>
+            <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">
+              {portfolio ? `${portfolio.trade.name} Level ${portfolio.qualificationLevel.level}` : "—"}
+            </h4>
           </div>
         </div>
 
@@ -84,19 +143,19 @@ export const FinalPortfolioReportView: React.FC<FinalPortfolioReportViewProps> =
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
             <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">INTERNAL VERIFIER</span>
-            <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">Ogunsakin Jacob</h4>
+            <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">{portfolio?.internalVerifier.name || "—"}</h4>
           </div>
           <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
-            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">NAME OF COUNTERSIGNING IV</span>
-            <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1">-</h4>
+            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">CENTRE</span>
+            <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1">{portfolio?.centre.name || "—"}</h4>
           </div>
           <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
             <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">NAME OF ASSESSOR</span>
-            <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">Samson John</h4>
+            <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">{portfolio?.unitAssessor?.name || "—"}</h4>
           </div>
           <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
-            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">COUNTERSIGNING ASSESSOR</span>
-            <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1">-</h4>
+            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">STATUS</span>
+            <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1">{portfolio?.status || "draft"}</h4>
           </div>
         </div>
 
@@ -106,18 +165,20 @@ export const FinalPortfolioReportView: React.FC<FinalPortfolioReportViewProps> =
           <div className="flex items-center gap-1.5 shrink-0">
             <button
               type="button"
-              onClick={() => setFullAwardVerified("yes")}
-              className={`px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
-                fullAwardVerified === "yes" ? "bg-[#900B27] text-white" : "bg-white text-gray-700 border border-gray-200"
+              disabled={isSubmitted}
+              onClick={() => setFormData((prev) => ({ ...prev, fullAwardVerified: true }))}
+              className={`px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer disabled:opacity-60 ${
+                formData.fullAwardVerified === true ? "bg-[#900B27] text-white" : "bg-white text-gray-700 border border-gray-200"
               }`}
             >
               Yes
             </button>
             <button
               type="button"
-              onClick={() => setFullAwardVerified("no")}
-              className={`px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
-                fullAwardVerified === "no" ? "bg-[#900B27] text-white" : "bg-white text-gray-700 border border-gray-200"
+              disabled={isSubmitted}
+              onClick={() => setFormData((prev) => ({ ...prev, fullAwardVerified: false }))}
+              className={`px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer disabled:opacity-60 ${
+                formData.fullAwardVerified === false ? "bg-[#900B27] text-white" : "bg-white text-gray-700 border border-gray-200"
               }`}
             >
               No
@@ -138,8 +199,9 @@ export const FinalPortfolioReportView: React.FC<FinalPortfolioReportViewProps> =
                   <div className="flex items-center gap-1.5 shrink-0">
                     <button
                       type="button"
+                      disabled={isSubmitted}
                       onClick={() => toggleAnswer(item.id, "yes")}
-                      className={`px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                      className={`px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer disabled:opacity-60 ${
                         item.answer === "yes" ? "bg-[#900B27] text-white" : "bg-white text-gray-700 border border-gray-200"
                       }`}
                     >
@@ -147,8 +209,9 @@ export const FinalPortfolioReportView: React.FC<FinalPortfolioReportViewProps> =
                     </button>
                     <button
                       type="button"
+                      disabled={isSubmitted}
                       onClick={() => toggleAnswer(item.id, "no")}
-                      className={`px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                      className={`px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer disabled:opacity-60 ${
                         item.answer === "no" ? "bg-[#900B27] text-white" : "bg-white text-gray-700 border border-gray-200"
                       }`}
                     >
@@ -161,7 +224,8 @@ export const FinalPortfolioReportView: React.FC<FinalPortfolioReportViewProps> =
                   placeholder="Type Comments Here"
                   value={item.comments}
                   onChange={(e) => updateComments(item.id, e.target.value)}
-                  className="w-full p-3.5 bg-white rounded-xl border border-gray-100 text-xs text-neutral-primary outline-none resize-none focus:border-[#900B27] transition-all"
+                  disabled={isSubmitted}
+                  className="w-full p-3.5 bg-white rounded-xl border border-gray-100 text-xs text-neutral-primary outline-none resize-none focus:border-[#900B27] transition-all disabled:opacity-70"
                 />
               </div>
             ))}
@@ -174,7 +238,10 @@ export const FinalPortfolioReportView: React.FC<FinalPortfolioReportViewProps> =
           <textarea
             rows={3}
             placeholder="Type here"
-            className="w-full p-3.5 bg-[#f8f9fa] rounded-xl border border-gray-100 text-xs text-neutral-primary outline-none resize-none focus:border-[#900B27] transition-all"
+            value={formData.actionForAssessor || ""}
+            onChange={(e) => setFormData((prev) => ({ ...prev, actionForAssessor: e.target.value }))}
+            disabled={isSubmitted}
+            className="w-full p-3.5 bg-[#f8f9fa] rounded-xl border border-gray-100 text-xs text-neutral-primary outline-none resize-none focus:border-[#900B27] transition-all disabled:opacity-70"
           />
         </div>
 
@@ -184,7 +251,10 @@ export const FinalPortfolioReportView: React.FC<FinalPortfolioReportViewProps> =
           <textarea
             rows={3}
             placeholder="Type here"
-            className="w-full p-3.5 bg-[#f8f9fa] rounded-xl border border-gray-100 text-xs text-neutral-primary outline-none resize-none focus:border-[#900B27] transition-all"
+            value={formData.planAchieved || ""}
+            onChange={(e) => setFormData((prev) => ({ ...prev, planAchieved: e.target.value }))}
+            disabled={isSubmitted}
+            className="w-full p-3.5 bg-[#f8f9fa] rounded-xl border border-gray-100 text-xs text-neutral-primary outline-none resize-none focus:border-[#900B27] transition-all disabled:opacity-70"
           />
         </div>
 
@@ -192,87 +262,34 @@ export const FinalPortfolioReportView: React.FC<FinalPortfolioReportViewProps> =
         <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-xs border border-gray-100 flex flex-col gap-5">
           <h3 className="text-sm sm:text-base font-extrabold text-neutral-primary">Signature & Date</h3>
           <div className="flex flex-col gap-4">
-            {/* IV Signature */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-neutral-primary">IV Signature*</label>
-                <button
-                  type="button"
-                  onClick={() => setIvSigned(true)}
-                  className="h-11 px-4 bg-[#fffbf0] hover:bg-amber-50 text-[#f59e0b] border border-[#fbab2a]/60 font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer"
-                >
-                  <span>Append Signature</span>
-                </button>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-neutral-primary">Date*</label>
-                <div className="h-11 px-4 bg-[#f8f9fa] rounded-xl border border-gray-100 flex items-center justify-between text-xs text-neutral-primary">
-                  <input type="text" placeholder="Type here" className="w-full bg-transparent outline-none" />
-                  <span className="text-gray-400">📅</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Countersigning IQA (Lead) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-neutral-primary">Countersigning IQA (Lead)*</label>
-                <button
-                  type="button"
-                  onClick={() => setCountersigningIvaSigned(true)}
-                  className="h-11 px-4 bg-[#fffbf0] hover:bg-amber-50 text-[#f59e0b] border border-[#fbab2a]/60 font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer"
-                >
-                  <span>Append Signature</span>
-                </button>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-neutral-primary">Date*</label>
-                <div className="h-11 px-4 bg-[#f8f9fa] rounded-xl border border-gray-100 flex items-center justify-between text-xs text-neutral-primary">
-                  <input type="text" placeholder="Type here" className="w-full bg-transparent outline-none" />
-                  <span className="text-gray-400">📅</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Assessor Signature */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-neutral-primary">Assessor Signature*</label>
-                <button
-                  type="button"
-                  className="h-11 px-4 bg-[#fffbf0] text-[#f59e0b] border border-[#fbab2a]/60 font-bold text-xs rounded-xl flex items-center justify-center gap-2 select-none"
-                >
-                  <span>Awaiting Signature</span>
-                </button>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-neutral-primary">Date*</label>
-                <div className="h-11 px-4 bg-[#f8f9fa] rounded-xl border border-gray-100 flex items-center justify-between text-xs text-neutral-primary">
-                  <input type="text" placeholder="Type here" className="w-full bg-transparent outline-none" />
-                  <span className="text-gray-400">📅</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Countersigning Assessor */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-neutral-primary">Countersigning Assessor*</label>
-                <button
-                  type="button"
-                  className="h-11 px-4 bg-[#fffbf0] text-[#f59e0b] border border-[#fbab2a]/60 font-bold text-xs rounded-xl flex items-center justify-center gap-2 select-none"
-                >
-                  <span>Awaiting Signature</span>
-                </button>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-neutral-primary">Date*</label>
-                <div className="h-11 px-4 bg-[#f8f9fa] rounded-xl border border-gray-100 flex items-center justify-between text-xs text-neutral-primary">
-                  <input type="text" placeholder="Type here" className="w-full bg-transparent outline-none" />
-                  <span className="text-gray-400">📅</span>
-                </div>
-              </div>
-            </div>
+            <IqamSignatureBlock
+              label="IV Signature"
+              signed={signatures.iv?.status === "appended"}
+              dateValue={signatures.iv?.signedAt || ""}
+              readOnly={isSubmitted}
+              onSign={() => setFormData((prev) => ({ ...prev, signatures: { ...signatures, iv: appendedSignature() } }))}
+            />
+            <IqamSignatureBlock
+              label="Countersigning IQA (Lead)"
+              signed={signatures.countersigningIqa?.status === "appended"}
+              dateValue={signatures.countersigningIqa?.signedAt || ""}
+              readOnly={isSubmitted}
+              onSign={() =>
+                setFormData((prev) => ({ ...prev, signatures: { ...signatures, countersigningIqa: appendedSignature() } }))
+              }
+            />
+            <IqamSignatureBlock
+              label="Assessor Signature"
+              signed={signatures.assessor?.status === "appended"}
+              dateValue={signatures.assessor?.signedAt || ""}
+              readOnly
+            />
+            <IqamSignatureBlock
+              label="Countersigning Assessor"
+              signed={signatures.countersigningAssessor?.status === "appended"}
+              dateValue={signatures.countersigningAssessor?.signedAt || ""}
+              readOnly
+            />
           </div>
         </div>
       </div>

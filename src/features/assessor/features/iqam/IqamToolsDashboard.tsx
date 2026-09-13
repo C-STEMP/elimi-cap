@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { FiChevronDown } from "react-icons/fi";
 import { IqaAllocationView } from "./components/con01/IqaAllocationView";
 import { SamplingPlanView } from "./components/con02/SamplingPlanView";
 import { SamplingRecordView } from "./components/con03/SamplingRecordView";
@@ -8,6 +9,8 @@ import { ComprehensiveReportView } from "./components/con04/ComprehensiveReportV
 import { ObservationChecklistView } from "./components/con05/ObservationChecklistView";
 import { FinalPortfolioReportView } from "./components/con06/FinalPortfolioReportView";
 import { CompleteCandidateModal } from "./components/common/CompleteCandidateModal";
+import { useGetIqamCentres, useGetIqamAllocations } from "./hooks/useIqam";
+import { useGetApplicationById } from "@/src/features/shared/applications/hooks";
 import type { IqamToolCard, IqamToolId } from "./types/iqam.types";
 
 const IQAM_TOOLS: IqamToolCard[] = [
@@ -49,10 +52,25 @@ const IQAM_TOOLS: IqamToolCard[] = [
   },
 ];
 
+// Tools scoped to one candidate application (CON04/05/06) or a trade+level
+// matrix that's easiest to reach via a candidate in that matrix (CON02/03).
+const TOOLS_NEEDING_CANDIDATE: IqamToolId[] = [
+  "CON/02/IQAM",
+  "CON/03/IQAM",
+  "CON/04/IQAM",
+  "CON/05/IQAM",
+  "CON/06/IQAM",
+];
+
 interface IqamToolsDashboardProps {
   initialToolId?: IqamToolId | null;
   activeTool?: IqamToolId | null;
   initialCandidateName?: string;
+  /** Seeds the application context directly — used when the caller already
+   * knows exactly which application this dashboard should open into (e.g.
+   * an IV opening IQAM tools from inside one specific application). */
+  initialApplicationId?: string;
+  initialCentreId?: string;
   onToolSelect?: (toolId: IqamToolId | null) => void;
   onBack?: () => void;
   onUpdateHeader?: (config: {
@@ -66,15 +84,47 @@ interface IqamToolsDashboardProps {
 export const IqamToolsDashboard: React.FC<IqamToolsDashboardProps> = ({
   initialToolId = null,
   activeTool: externalActiveTool,
-  initialCandidateName = "Samson David",
+  initialCandidateName,
+  initialApplicationId,
+  initialCentreId,
   onToolSelect,
   onBack,
   onUpdateHeader,
 }) => {
   const [internalActiveTool, setInternalActiveTool] = useState<IqamToolId | null>(initialToolId);
   const effectiveActiveTool = externalActiveTool !== undefined ? externalActiveTool : internalActiveTool;
-  const [selectedCandidate, setSelectedCandidate] = useState<string>(initialCandidateName);
   const [isCandidateModalOpen, setIsCandidateModalOpen] = useState(false);
+
+  // Real centre selection — an IV can operate at more than one centre.
+  const { data: iqamCentres = [], isLoading: isLoadingCentres } = useGetIqamCentres();
+  const [selectedCentreId, setSelectedCentreId] = useState<string | null>(initialCentreId || null);
+
+  useEffect(() => {
+    if (!selectedCentreId && iqamCentres.length > 0) {
+      setSelectedCentreId(iqamCentres[0].centreId);
+    }
+  }, [iqamCentres, selectedCentreId]);
+
+  // The candidate application currently in scope. CON02/03 (trade+level
+  // matrices) and CON04/05/06 (per-application documents) all key off this.
+  const [selectedApplicationId, setSelectedApplicationId] = useState<string | null>(
+    initialApplicationId || null,
+  );
+  const [selectedCandidateName, setSelectedCandidateName] = useState<string>(initialCandidateName || "");
+
+  // Resolve tradeId + wished qualification level for the selected
+  // application — the real params the sampling-plan/record matrix needs.
+  const { data: selectedApp } = useGetApplicationById(selectedApplicationId || "");
+  const selectedTradeId = selectedApp?.tradeId || "";
+  const selectedQualificationLevelId = (selectedApp as any)?.nsq?.wishedQualificationLevel?.id || "";
+
+  const { data: allocations = [] } = useGetIqamAllocations(selectedCentreId || "", {
+    enabled: Boolean(selectedCentreId),
+  });
+  const candidateOptions = useMemo(
+    () => allocations.map((a) => ({ applicationId: a.applicationId, candidateName: a.candidate.name })),
+    [allocations],
+  );
 
   useEffect(() => {
     if (externalActiveTool !== undefined) {
@@ -100,20 +150,49 @@ export const IqamToolsDashboard: React.FC<IqamToolsDashboardProps> = ({
     }
   };
 
+  const handleSelectApplication = (applicationId: string, candidateName: string) => {
+    setSelectedApplicationId(applicationId);
+    setSelectedCandidateName(candidateName);
+  };
+
   const handleOpenTool = (id: IqamToolId) => {
-    if (id === "CON/04/IQAM") {
+    if (id !== "CON/01/IQAM" && TOOLS_NEEDING_CANDIDATE.includes(id) && !selectedApplicationId) {
       setIsCandidateModalOpen(true);
       return;
     }
     handleSelectTool(id);
   };
 
+  if (!selectedCentreId) {
+    return (
+      <div className="w-full flex flex-col gap-5 select-text pb-12 animate-fadeIn">
+        <h3 className="text-sm sm:text-base font-extrabold text-neutral-primary">
+          Assessment Tools
+        </h3>
+        <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 flex flex-col items-center text-center gap-2">
+          {isLoadingCentres ? (
+            <p className="text-xs text-gray-400">Loading your IQAM centres…</p>
+          ) : (
+            <>
+              <p className="text-sm font-bold text-neutral-primary">No IQAM centre found</p>
+              <p className="text-xs text-gray-400 max-w-xs">
+                You need an active IV assignment or retained relationship at a centre to use these
+                tools.
+              </p>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   if (effectiveActiveTool === "CON/01/IQAM") {
     return (
       <IqaAllocationView
+        centreId={selectedCentreId}
         onBack={() => handleSelectTool(null)}
-        onOpenCandidateForm={(cand) => {
-          setSelectedCandidate(cand);
+        onOpenCandidateForm={(applicationId, candidateName) => {
+          handleSelectApplication(applicationId, candidateName);
           handleSelectTool("CON/04/IQAM");
         }}
         onUpdateHeader={onUpdateHeader}
@@ -122,37 +201,56 @@ export const IqamToolsDashboard: React.FC<IqamToolsDashboardProps> = ({
   }
 
   if (effectiveActiveTool === "CON/02/IQAM") {
-    return <SamplingPlanView onBack={() => handleSelectTool(null)} onUpdateHeader={onUpdateHeader} />;
+    return (
+      <SamplingPlanView
+        centreId={selectedCentreId}
+        tradeId={selectedTradeId}
+        qualificationLevelId={selectedQualificationLevelId}
+        onBack={() => handleSelectTool(null)}
+        onUpdateHeader={onUpdateHeader}
+      />
+    );
   }
 
   if (effectiveActiveTool === "CON/03/IQAM") {
-    return <SamplingRecordView onBack={() => handleSelectTool(null)} onUpdateHeader={onUpdateHeader} />;
+    return (
+      <SamplingRecordView
+        centreId={selectedCentreId}
+        tradeId={selectedTradeId}
+        qualificationLevelId={selectedQualificationLevelId}
+        onBack={() => handleSelectTool(null)}
+        onUpdateHeader={onUpdateHeader}
+      />
+    );
   }
 
-  if (effectiveActiveTool === "CON/04/IQAM") {
+  if (effectiveActiveTool === "CON/04/IQAM" && selectedApplicationId) {
     return (
       <ComprehensiveReportView
-        candidateName={selectedCandidate}
+        applicationId={selectedApplicationId}
+        candidateName={selectedCandidateName}
         onBack={() => handleSelectTool(null)}
         onUpdateHeader={onUpdateHeader}
       />
     );
   }
 
-  if (effectiveActiveTool === "CON/05/IQAM") {
+  if (effectiveActiveTool === "CON/05/IQAM" && selectedApplicationId) {
     return (
       <ObservationChecklistView
-        candidateName={selectedCandidate}
+        applicationId={selectedApplicationId}
+        candidateName={selectedCandidateName}
         onBack={() => handleSelectTool(null)}
         onUpdateHeader={onUpdateHeader}
       />
     );
   }
 
-  if (effectiveActiveTool === "CON/06/IQAM") {
+  if (effectiveActiveTool === "CON/06/IQAM" && selectedApplicationId) {
     return (
       <FinalPortfolioReportView
-        candidateName={selectedCandidate}
+        applicationId={selectedApplicationId}
+        candidateName={selectedCandidateName}
         onBack={() => handleSelectTool(null)}
         onUpdateHeader={onUpdateHeader}
       />
@@ -161,18 +259,49 @@ export const IqamToolsDashboard: React.FC<IqamToolsDashboardProps> = ({
 
   return (
     <div className="w-full flex flex-col gap-5 select-text pb-12 animate-fadeIn">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <h3 className="text-sm sm:text-base font-extrabold text-neutral-primary">
           Assessment Tools
         </h3>
-        <span className="px-3 py-1 bg-emerald-100/70 text-emerald-800 text-[11px] font-extrabold rounded-xl">
-          Active
-        </span>
+
+        <div className="flex items-center gap-3">
+          {selectedCandidateName && (
+            <span className="px-3 py-1 bg-slate-100 text-neutral-primary text-[11px] font-bold rounded-xl">
+              Candidate: {selectedCandidateName}
+            </span>
+          )}
+          {iqamCentres.length > 1 ? (
+            <div className="relative">
+              <select
+                value={selectedCentreId}
+                onChange={(e) => {
+                  setSelectedCentreId(e.target.value);
+                  setSelectedApplicationId(null);
+                  setSelectedCandidateName("");
+                }}
+                className="h-9 pl-3 pr-8 bg-white border border-gray-200 rounded-xl text-xs font-bold text-neutral-primary appearance-none cursor-pointer"
+              >
+                {iqamCentres.map((c) => (
+                  <option key={c.centreId} value={c.centreId}>
+                    {c.centreName}
+                  </option>
+                ))}
+              </select>
+              <FiChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+            </div>
+          ) : (
+            <span className="px-3 py-1 bg-emerald-100/70 text-emerald-800 text-[11px] font-extrabold rounded-xl">
+              Active
+            </span>
+          )}
+        </div>
       </div>
 
-        {/* 6 Tool Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {IQAM_TOOLS.map((tool) => (
+      {/* 6 Tool Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        {IQAM_TOOLS.map((tool) => {
+          const needsCandidate = TOOLS_NEEDING_CANDIDATE.includes(tool.id);
+          return (
             <div
               key={tool.id}
               className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col justify-between gap-5 hover:shadow-md transition-shadow"
@@ -194,19 +323,20 @@ export const IqamToolsDashboard: React.FC<IqamToolsDashboardProps> = ({
                 onClick={() => handleOpenTool(tool.id)}
                 className="w-full h-11 bg-[#fbab2a] hover:bg-[#e89b1f] text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition-all cursor-pointer flex items-center justify-center"
               >
-                Open
+                {needsCandidate && !selectedApplicationId ? "Select Candidate" : "Open"}
               </button>
             </div>
-          ))}
-        </div>
+          );
+        })}
+      </div>
 
       <CompleteCandidateModal
         isOpen={isCandidateModalOpen}
         onClose={() => setIsCandidateModalOpen(false)}
-        onComplete={(candidate) => {
-          setSelectedCandidate(candidate);
+        candidates={candidateOptions}
+        onComplete={(applicationId, candidateName) => {
           setIsCandidateModalOpen(false);
-          handleSelectTool("CON/04/IQAM");
+          handleSelectApplication(applicationId, candidateName);
         }}
       />
     </div>

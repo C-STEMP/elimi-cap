@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Modal } from "antd";
 import {
@@ -16,6 +16,12 @@ import {
 import { HeaderBanner } from "@/features/candidate/features/Dashboard/components/HeaderBanner";
 import { Button } from "@/src/components/ui/button";
 import { submitUnitEvidenceApi } from "@/src/features/shared/applications/api";
+import type { NsqCriterion } from "@/src/features/shared/applications/api/types";
+import {
+  useGetUnitCriteria,
+  useSubmitUnitEvidence,
+  useSubmitUnitSignoff,
+} from "@/src/features/shared/applications/hooks";
 import { NsqUploadEvidenceModal } from "./NsqUploadEvidenceModal";
 import { NsqPreviewEvidenceModal } from "./NsqPreviewEvidenceModal";
 
@@ -192,6 +198,78 @@ function parseStructureToLearningOutcomes(
   ];
 }
 
+function parseCriteriaToLearningOutcomes(
+  criteria: NsqCriterion[],
+  tradeName: string = "Trade",
+): LearningOutcome[] {
+  const groups: Record<
+    string,
+    { title: string; criteria: PerformanceCriteria[] }
+  > = {};
+
+  criteria.forEach((crit) => {
+    const loKey = crit.learningObjectiveCode || "LO 1";
+    const loTitle = crit.learningObjectiveText
+      ? `${loKey}: ${crit.learningObjectiveText}`
+      : `${loKey}: Occupational Core Competencies for ${tradeName}`;
+
+    if (!groups[loKey]) {
+      groups[loKey] = {
+        title: loTitle,
+        criteria: [],
+      };
+    }
+
+    const evidences: EvidenceItem[] = (
+      crit.history && crit.history.length > 0
+        ? crit.history
+        : crit.latest
+          ? [crit.latest]
+          : []
+    ).map((item) => ({
+      id: item.id,
+      title:
+        item.evidenceType === "WP"
+          ? "Work Product(WP)"
+          : `${item.evidenceType} Evidence`,
+      evidenceType: item.evidenceType,
+      status:
+        item.status === "approved"
+          ? "approved"
+          : item.status === "rejected"
+            ? "rejected"
+            : "in_review",
+      feedback: item.reviewComment || item.iqaReviewComment || undefined,
+      url: item.evidenceAssetId ? `/api/assets/${item.evidenceAssetId}` : undefined,
+      fileName: `Evidence_${item.performanceCriteriaCode}.${item.evidenceType.toLowerCase()}`,
+    }));
+
+    groups[loKey].criteria.push({
+      id: `pc-${crit.code.replace(/[^a-zA-Z0-9]/g, "-")}`,
+      code: crit.code.startsWith("PC") ? crit.code : `PC ${crit.code}`,
+      description:
+        crit.text || `Demonstrate performance standard for ${crit.code}`,
+      evidences,
+    });
+  });
+
+  const outcomeList = Object.keys(groups).map((key, loIdx) => ({
+    id: `lo-${loIdx + 1}`,
+    title: groups[key].title,
+    criteria: groups[key].criteria,
+  }));
+
+  return outcomeList.length > 0
+    ? outcomeList
+    : [
+        {
+          id: "lo-1",
+          title: `LO 1: Core Occupational Competencies for ${tradeName}`,
+          criteria: [],
+        },
+      ];
+}
+
 export const NsqUnitDetailView: React.FC<NsqUnitDetailViewProps> = ({
   applicationId,
   unitId,
@@ -201,6 +279,20 @@ export const NsqUnitDetailView: React.FC<NsqUnitDetailViewProps> = ({
   structure,
   onBack,
 }) => {
+  const { data: remoteCriteriaData } = useGetUnitCriteria(
+    applicationId || "",
+    unitId || "",
+    { enabled: Boolean(applicationId && unitId) },
+  );
+  const { mutateAsync: submitEvidenceMutation } = useSubmitUnitEvidence(
+    applicationId || "",
+    unitId || "",
+  );
+  const { mutateAsync: submitSignoffMutation } = useSubmitUnitSignoff(
+    applicationId || "",
+    unitId || "",
+  );
+
   const [expandedLoIds, setExpandedLoIds] = useState<string[]>(["lo-1"]);
   const [expandedPcIds, setExpandedPcIds] = useState<string[]>(["pc-1-1"]);
 
@@ -208,6 +300,14 @@ export const NsqUnitDetailView: React.FC<NsqUnitDetailViewProps> = ({
   const [learningOutcomes, setLearningOutcomes] = useState<LearningOutcome[]>(() =>
     parseStructureToLearningOutcomes(structure, tradeName),
   );
+
+  useEffect(() => {
+    if (remoteCriteriaData?.criteria && remoteCriteriaData.criteria.length > 0) {
+      setLearningOutcomes(
+        parseCriteriaToLearningOutcomes(remoteCriteriaData.criteria, tradeName),
+      );
+    }
+  }, [remoteCriteriaData, tradeName]);
 
   // Evidence Delete State
   const [evidenceToDelete, setEvidenceToDelete] = useState<{
@@ -246,6 +346,22 @@ export const NsqUnitDetailView: React.FC<NsqUnitDetailViewProps> = ({
   }) => {
     if (!activePcForUpload) return;
 
+    // Evidence isn't recorded until the backend confirms it — an upload that
+    // never reached storage or failed to attach to this criterion must not
+    // appear as if it succeeded.
+    if (!applicationId || !unitId || !data.assetId) return;
+
+    try {
+      await submitEvidenceMutation({
+        performanceCriteriaCode: activePcForUpload.code.replace("PC ", ""),
+        evidenceType: data.evidenceType,
+        evidenceAssetId: data.assetId,
+      });
+    } catch {
+      // useSubmitUnitEvidence already surfaced an error toast.
+      return;
+    }
+
     const newEvidence: EvidenceItem = {
       id: `ev-${Date.now()}`,
       title: data.evidenceType === "WP" ? "Work Product(WP)" : `${data.evidenceType} Evidence`,
@@ -269,19 +385,6 @@ export const NsqUnitDetailView: React.FC<NsqUnitDetailViewProps> = ({
 
     setShowUploadToast(true);
     setTimeout(() => setShowUploadToast(false), 4000);
-
-    // Asynchronously record evidence against unit performance criteria via CAP API
-    if (applicationId && unitId && data.assetId) {
-      try {
-        await submitUnitEvidenceApi(applicationId, unitId, {
-          performanceCriteriaCode: activePcForUpload.code.replace("PC ", ""),
-          evidenceType: data.evidenceType,
-          evidenceAssetId: data.assetId,
-        });
-      } catch {
-        // Continue gracefully with local UI state
-      }
-    }
   };
 
   const handleConfirmDelete = () => {

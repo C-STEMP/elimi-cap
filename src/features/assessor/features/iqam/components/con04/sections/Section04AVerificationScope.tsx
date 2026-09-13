@@ -1,17 +1,38 @@
 "use client";
 
 import React from "react";
-import { FiCalendar } from "react-icons/fi";
+import type { IqamIvReportData } from "../../../api/types";
+
+type Section04AData = NonNullable<IqamIvReportData["con04a"]>;
 
 interface Section04AVerificationScopeProps {
   candidateName?: string;
   qualificationTitle?: string;
+  internalVerifierName?: string;
+  unitAssessorName?: string;
+  data?: Section04AData;
+  readOnly?: boolean;
+  onChange: (data: Section04AData) => void;
 }
 
+const VISIT_KEYS = ["first", "second", "third", "fourth", "final"] as const;
+
 export const Section04AVerificationScope: React.FC<Section04AVerificationScopeProps> = ({
-  candidateName = "Samson David",
-  qualificationTitle = "Masonry Level 2",
+  candidateName = "—",
+  qualificationTitle = "—",
+  internalVerifierName = "—",
+  unitAssessorName = "—",
+  data,
+  readOnly = false,
+  onChange,
 }) => {
+  const visits = data?.visits || {};
+  const sampledLoEvidence = data?.sampledLoEvidence || ["", "", ""];
+
+  const update = (patch: Partial<Section04AData>) => {
+    onChange({ ...data, ...patch });
+  };
+
   return (
     <div className="flex flex-col gap-5 select-text">
       {/* Scope Disclaimer Box */}
@@ -43,9 +64,13 @@ export const Section04AVerificationScope: React.FC<Section04AVerificationScopePr
           <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
             DATE OF VERIFICATION
           </span>
-          <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1">
-            12/07/2027
-          </h4>
+          <input
+            type="date"
+            value={data?.dateOfVerification || ""}
+            onChange={(e) => update({ dateOfVerification: e.target.value || null })}
+            disabled={readOnly}
+            className="text-xs sm:text-sm font-black text-neutral-primary mt-1 bg-transparent outline-none disabled:opacity-70"
+          />
         </div>
 
         <div className="bg-[#f8f9fa] rounded-2xl p-4 sm:p-5 border border-gray-100/80 flex flex-col justify-between">
@@ -65,7 +90,7 @@ export const Section04AVerificationScope: React.FC<Section04AVerificationScopePr
             INTERNAL VERIFIER
           </span>
           <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">
-            Ogunsakin Jacob
+            {internalVerifierName}
           </h4>
         </div>
 
@@ -73,9 +98,14 @@ export const Section04AVerificationScope: React.FC<Section04AVerificationScopePr
           <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
             NAME OF COUNTERSIGNING IV
           </span>
-          <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1">
-            -
-          </h4>
+          <input
+            type="text"
+            placeholder="Type here"
+            value={data?.countersigningIvName || ""}
+            onChange={(e) => update({ countersigningIvName: e.target.value })}
+            disabled={readOnly}
+            className="text-xs sm:text-sm font-black text-neutral-primary mt-1 bg-transparent outline-none disabled:opacity-70 placeholder:font-normal placeholder:text-gray-400"
+          />
         </div>
 
         <div className="bg-[#f8f9fa] rounded-2xl p-4 sm:p-5 border border-gray-100/80 flex flex-col justify-between">
@@ -83,7 +113,7 @@ export const Section04AVerificationScope: React.FC<Section04AVerificationScopePr
             NAME OF ASSESSOR
           </span>
           <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">
-            Samson John
+            {unitAssessorName}
           </h4>
         </div>
 
@@ -91,9 +121,14 @@ export const Section04AVerificationScope: React.FC<Section04AVerificationScopePr
           <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
             COUNTERSIGNING ASSESSOR
           </span>
-          <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1">
-            -
-          </h4>
+          <input
+            type="text"
+            placeholder="Type here"
+            value={data?.countersigningAssessorName || ""}
+            onChange={(e) => update({ countersigningAssessorName: e.target.value })}
+            disabled={readOnly}
+            className="text-xs sm:text-sm font-black text-neutral-primary mt-1 bg-transparent outline-none disabled:opacity-70 placeholder:font-normal placeholder:text-gray-400"
+          />
         </div>
       </div>
 
@@ -103,15 +138,17 @@ export const Section04AVerificationScope: React.FC<Section04AVerificationScopePr
           Internal verification
         </h4>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-          {["1st", "2nd", "3rd", "4th", "Final"].map((seq) => (
-            <div key={seq} className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-neutral-primary">
-                {seq}
+          {VISIT_KEYS.map((key) => (
+            <div key={key} className="flex flex-col gap-1.5">
+              <label className="text-xs font-semibold text-neutral-primary capitalize">
+                {key}
               </label>
               <input
-                type="text"
-                placeholder="Type here"
-                className="h-11 px-3.5 bg-[#f8f9fa] rounded-xl border border-gray-100 text-xs text-neutral-primary outline-none focus:border-[#900B27] transition-all"
+                type="date"
+                value={visits[key] || ""}
+                onChange={(e) => update({ visits: { ...visits, [key]: e.target.value || null } })}
+                disabled={readOnly}
+                className="h-11 px-3.5 bg-[#f8f9fa] rounded-xl border border-gray-100 text-xs text-neutral-primary outline-none focus:border-[#900B27] transition-all disabled:opacity-70"
               />
             </div>
           ))}
@@ -124,12 +161,19 @@ export const Section04AVerificationScope: React.FC<Section04AVerificationScopePr
           Unit/s LO&apos;s & Criterion Sampled and Reference numbers of evidence sampled
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          {[1, 2, 3].map((box) => (
+          {[0, 1, 2].map((idx) => (
             <textarea
-              key={box}
+              key={idx}
               rows={5}
               placeholder="Type here"
-              className="w-full p-3.5 bg-[#f8f9fa] rounded-xl border border-gray-100 text-xs text-neutral-primary outline-none resize-none focus:border-[#900B27] transition-all"
+              value={sampledLoEvidence[idx] || ""}
+              onChange={(e) => {
+                const next = [...sampledLoEvidence];
+                next[idx] = e.target.value;
+                update({ sampledLoEvidence: next });
+              }}
+              disabled={readOnly}
+              className="w-full p-3.5 bg-[#f8f9fa] rounded-xl border border-gray-100 text-xs text-neutral-primary outline-none resize-none focus:border-[#900B27] transition-all disabled:opacity-70"
             />
           ))}
         </div>
@@ -143,7 +187,10 @@ export const Section04AVerificationScope: React.FC<Section04AVerificationScopePr
         <textarea
           rows={5}
           placeholder="Type here"
-          className="w-full p-3.5 bg-[#f8f9fa] rounded-xl border border-gray-100 text-xs text-neutral-primary outline-none resize-none focus:border-[#900B27] transition-all"
+          value={data?.standardizationNotes || ""}
+          onChange={(e) => update({ standardizationNotes: e.target.value })}
+          disabled={readOnly}
+          className="w-full p-3.5 bg-[#f8f9fa] rounded-xl border border-gray-100 text-xs text-neutral-primary outline-none resize-none focus:border-[#900B27] transition-all disabled:opacity-70"
         />
       </div>
     </div>

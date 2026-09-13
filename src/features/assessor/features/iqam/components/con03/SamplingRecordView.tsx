@@ -1,12 +1,17 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { FiCalendar, FiPlus } from "react-icons/fi";
-import type { SamplingRecordItem } from "../../types/iqam.types";
+import React, { useEffect } from "react";
+import {
+  useGetIqamSamplingRecord,
+  usePatchIqamSamplingRecord,
+  useSubmitIqamSamplingRecord,
+} from "../../hooks/useIqam";
 
 interface SamplingRecordViewProps {
+  centreId: string;
+  tradeId: string;
+  qualificationLevelId: string;
   onBack: () => void;
-  onSubmit?: () => void;
   onUpdateHeader?: (config: {
     title: string;
     breadcrumb: string;
@@ -15,25 +20,57 @@ interface SamplingRecordViewProps {
   } | null) => void;
 }
 
-const INITIAL_LOGS: SamplingRecordItem[] = [
-  { id: "1", assessorName: "Adegbogunmi Samson", status: "Q", assessmentSite: "3 Abbey Street, Kubwa Expressway", candidateName: "Samson David", unitsAssessed: "UNIT 1/UNIT 2/UNIT 3", process: "P/R/F/FC", method: "QA/DO/WP/PS" },
-  { id: "2", assessorName: "Adegbogunmi Samson", status: "NQ", assessmentSite: "3 Abbey Street, Kubwa Expressway", candidateName: "Samson David", unitsAssessed: "UNIT 1/UNIT 2/UNIT 3", process: "P/R/F/FC", method: "QA/DO/WP/PS" },
-  { id: "3", assessorName: "Adegbogunmi Samson", status: "NSQ", assessmentSite: "3 Abbey Street, Kubwa Expressway", candidateName: "Samson David", unitsAssessed: "UNIT 1/UNIT 2/UNIT 3", process: "P/R/F/FC", method: "QA/DO/WP/PS/WT" },
-  { id: "4", assessorName: "Adegbogunmi Samson", status: "NS", assessmentSite: "3 Abbey Street, Kubwa Expressway", candidateName: "Samson David", unitsAssessed: "UNIT 1/UNIT 2/UNIT 3", process: "P/R/F/FC", method: "QA/DO/WP/PS/PCS" },
-  { id: "5", assessorName: "Adegbogunmi Samson", status: "NSNQ", assessmentSite: "3 Abbey Street, Kubwa Expressway", candidateName: "Samson David", unitsAssessed: "UNIT 1/UNIT 2/UNIT 3", process: "P/R/F/FC", method: "QA/DO/WP/PS" },
-];
+const AUDIT_STATUSES = ["Q", "NQ", "NSQ", "NS", "NSNQ"];
+const PROCESSES = ["P", "R", "F", "FC"];
 
-export const SamplingRecordView: React.FC<SamplingRecordViewProps> = ({ onBack, onSubmit, onUpdateHeader }) => {
-  const [logs] = useState<SamplingRecordItem[]>(INITIAL_LOGS);
+export const SamplingRecordView: React.FC<SamplingRecordViewProps> = ({
+  centreId,
+  tradeId,
+  qualificationLevelId,
+  onBack,
+  onUpdateHeader,
+}) => {
+  const hasContext = Boolean(centreId && tradeId && qualificationLevelId);
+
+  const { data: matrix, isLoading } = useGetIqamSamplingRecord(
+    centreId,
+    tradeId,
+    qualificationLevelId,
+    { enabled: hasContext },
+  );
+  const patchRow = usePatchIqamSamplingRecord(centreId, tradeId, qualificationLevelId);
+  const submitRecord = useSubmitIqamSamplingRecord(centreId);
+
+  const handleSubmit = () => {
+    if (!hasContext) return;
+    submitRecord.mutate({ tradeId, qualificationLevelId });
+  };
 
   useEffect(() => {
     onUpdateHeader?.({
       title: "Internal Verification Sampling Record",
       breadcrumb: "Internal Verification Sampling Record",
       actionLabel: "Submit",
-      onAction: onSubmit,
+      onAction: handleSubmit,
     });
-  }, [onUpdateHeader, onSubmit]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onUpdateHeader, hasContext, centreId, tradeId, qualificationLevelId]);
+
+  if (!hasContext) {
+    return (
+      <div className="w-full flex flex-col gap-6 select-text pb-12 animate-fadeIn">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 flex flex-col items-center text-center gap-2">
+            <p className="text-sm font-bold text-neutral-primary">Select a candidate first</p>
+            <p className="text-xs text-gray-400 max-w-xs">
+              Open the IQA Allocation Form (CON/01) and pick a candidate — the sampling record for
+              their trade and qualification level will load here.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full flex flex-col gap-6 select-text pb-12 animate-fadeIn">
@@ -47,26 +84,32 @@ export const SamplingRecordView: React.FC<SamplingRecordViewProps> = ({ onBack, 
           </h4>
         </div>
 
-        {/* 4 Metadata Cards Grid */}
+        {/* Metadata Cards Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
-            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">FOR PERIOD</span>
-            <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1">12/07/2027</h4>
+            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">CENTRE</span>
+            <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">{matrix?.centre.name || "—"}</h4>
           </div>
 
           <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
             <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">QUALIFICATION</span>
-            <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">Masonry Level 2</h4>
+            <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">
+              {matrix ? `${matrix.trade.name} Level ${matrix.qualificationLevel.level}` : "—"}
+            </h4>
           </div>
 
           <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
             <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">INTERNAL VERIFIER</span>
-            <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">Ogunsakin Jacob</h4>
+            <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">
+              {matrix?.internalVerifier.name || "—"}
+            </h4>
           </div>
 
           <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
-            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">NAME OF COUNTERSIGNING IV</span>
-            <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1">-</h4>
+            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">EVIDENCE METHODS</span>
+            <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">
+              {matrix?.methods?.length ? matrix.methods.join("/") : "—"}
+            </h4>
           </div>
         </div>
 
@@ -76,50 +119,86 @@ export const SamplingRecordView: React.FC<SamplingRecordViewProps> = ({ onBack, 
             Internal Verification Audit Log
           </h3>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs min-w-220">
-              <thead>
-                <tr className="border-b border-gray-100 text-gray-500 font-bold text-[11px]">
-                  <th className="py-3 px-2.5">Name Of Assessor</th>
-                  <th className="py-3 px-2.5">Assessment Site</th>
-                  <th className="py-3 px-2.5">Candidate Name</th>
-                  <th className="py-3 px-2.5">Units Assessed</th>
-                  <th className="py-3 px-2.5">Status</th>
-                  <th className="py-3 px-2.5">Process</th>
-                  <th className="py-3 px-2.5">Method</th>
-                  <th className="py-3 px-2.5 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50 font-medium text-neutral-primary">
-                {logs.map((row) => (
-                  <tr key={row.id} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="py-4 px-2.5 text-xs font-semibold text-neutral-primary">{row.assessorName}</td>
-                    <td className="py-4 px-2.5 text-gray-600 text-xs">{row.assessmentSite}</td>
-                    <td className="py-4 px-2.5 text-xs font-semibold text-neutral-primary">{row.candidateName}</td>
-                    <td className="py-4 px-2.5 text-gray-600 text-xs">{row.unitsAssessed}</td>
-                    <td className="py-4 px-2.5">
-                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#f8f9fa] border border-gray-200 rounded-lg text-xs font-semibold text-neutral-primary cursor-pointer hover:bg-gray-100">
-                        <span>{row.status}</span>
-                        <span className="text-gray-400 text-[10px]">▼</span>
-                      </div>
-                    </td>
-                    <td className="py-4 px-2.5">
-                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#f8f9fa] border border-gray-200 rounded-lg text-xs font-semibold text-neutral-primary cursor-pointer hover:bg-gray-100">
-                        <span>{row.process}</span>
-                        <span className="text-gray-400 text-[10px]">▼</span>
-                      </div>
-                    </td>
-                    <td className="py-4 px-2.5 text-gray-600 text-xs">{row.method}</td>
-                    <td className="py-4 px-2.5 text-right">
-                      <span className="text-xs font-bold text-gray-700 hover:text-[#900B27] cursor-pointer transition-colors">
-                        View
-                      </span>
-                    </td>
+          {isLoading ? (
+            <p className="text-xs text-gray-400 py-4">Loading sampling record…</p>
+          ) : !matrix || matrix.data.length === 0 ? (
+            <p className="text-xs text-gray-400 py-4">No candidates found for this trade and level.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs min-w-220">
+                <thead>
+                  <tr className="border-b border-gray-100 text-gray-500 font-bold text-[11px]">
+                    <th className="py-3 px-2.5">Candidate Name</th>
+                    <th className="py-3 px-2.5">Unit Assessor</th>
+                    <th className="py-3 px-2.5">Assessment Site</th>
+                    <th className="py-3 px-2.5">Status</th>
+                    <th className="py-3 px-2.5">Process</th>
+                    <th className="py-3 px-2.5 text-right">Submission</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-gray-50 font-medium text-neutral-primary">
+                  {matrix.data.map((row) => (
+                    <tr key={row.applicationId} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="py-4 px-2.5 text-xs font-semibold text-neutral-primary">{row.candidate.name}</td>
+                      <td className="py-4 px-2.5 text-gray-600 text-xs">{row.unitAssessor?.name || "—"}</td>
+                      <td className="py-4 px-2.5 text-gray-600 text-xs">{row.assessmentSite || "—"}</td>
+                      <td className="py-4 px-2.5">
+                        <select
+                          defaultValue={row.auditStatus || ""}
+                          onChange={(e) =>
+                            patchRow.mutate({
+                              applicationId: row.applicationId,
+                              payload: { auditStatus: e.target.value || null },
+                            })
+                          }
+                          disabled={row.status === "submitted"}
+                          className="h-8 px-2.5 pr-2 bg-[#f8f9fa] border border-gray-200 rounded-lg text-xs font-semibold text-neutral-primary appearance-none cursor-pointer disabled:opacity-60"
+                        >
+                          <option value="">—</option>
+                          {AUDIT_STATUSES.map((s) => (
+                            <option key={s} value={s}>
+                              {s}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="py-4 px-2.5">
+                        <select
+                          defaultValue={row.process || ""}
+                          onChange={(e) =>
+                            patchRow.mutate({
+                              applicationId: row.applicationId,
+                              payload: { process: e.target.value || null },
+                            })
+                          }
+                          disabled={row.status === "submitted"}
+                          className="h-8 px-2.5 pr-2 bg-[#f8f9fa] border border-gray-200 rounded-lg text-xs font-semibold text-neutral-primary appearance-none cursor-pointer disabled:opacity-60"
+                        >
+                          <option value="">—</option>
+                          {PROCESSES.map((p) => (
+                            <option key={p} value={p}>
+                              {p}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="py-4 px-2.5 text-right">
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                            row.status === "submitted"
+                              ? "bg-emerald-50 text-emerald-700"
+                              : "bg-amber-50 text-amber-700"
+                          }`}
+                        >
+                          {row.status === "submitted" ? "Submitted" : "Draft"}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
     </div>

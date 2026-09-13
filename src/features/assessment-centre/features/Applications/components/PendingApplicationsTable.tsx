@@ -13,7 +13,13 @@ export const PendingApplicationsTable: React.FC<TableProps> = ({
   onViewAll,
   onViewApplication,
 }) => {
-  const { data: remotePending } = useGetApplications("draft");
+  // "Pending" means submitted and awaiting centre review — not an
+  // unsubmitted draft, which has no backend workflow state and can't be
+  // reviewed (approving one fails with "Application has no workflow state").
+  const { data: remotePending } = useGetApplications({
+    status: "in_progress",
+    stage: "application_form",
+  });
 
   const pendingList = (remotePending ?? []).map((app) => {
     const rawApp = app as any;

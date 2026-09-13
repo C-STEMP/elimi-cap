@@ -94,10 +94,23 @@ export function useApplicationDetailsState(id?: string) {
     const refParam = searchParams.get("reference") || searchParams.get("trxref");
     if (paymentParam === "success" || refParam) {
       setIsPaymentConfirmed(true);
-      if (id) ["stages", "detail", "receipt", "all"].forEach((k) => queryClient.invalidateQueries({ queryKey: [k, id] }));
+      const refreshPaymentData = () => {
+        if (!id) return;
+        queryClient.invalidateQueries({ queryKey: APPLICATION_QUERY_KEYS.stages(id) });
+        queryClient.invalidateQueries({ queryKey: APPLICATION_QUERY_KEYS.detail(id) });
+        queryClient.invalidateQueries({ queryKey: APPLICATION_QUERY_KEYS.receipt(id) });
+        queryClient.invalidateQueries({ queryKey: APPLICATION_QUERY_KEYS.all });
+      };
+      // Payment completion is processed asynchronously on the backend (a
+      // payment.completed webhook), so it may not be reflected the instant
+      // Paystack redirects back — refetch once now and again shortly after
+      // to catch up once the webhook lands.
+      refreshPaymentData();
+      const retryTimer = setTimeout(refreshPaymentData, 3000);
       setActivePaymentModal("success");
       toast({ type: "success", title: "Payment Confirmed", description: "Your payment was processed successfully via Paystack." });
       if (typeof window !== "undefined" && window.history?.replaceState) window.history.replaceState({}, "", window.location.pathname);
+      return () => clearTimeout(retryTimer);
     } else if (paymentParam === "cancelled" || paymentParam === "failed") {
       setActivePaymentModal("unsuccessful");
       if (typeof window !== "undefined" && window.history?.replaceState) window.history.replaceState({}, "", window.location.pathname);

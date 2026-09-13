@@ -19,6 +19,7 @@ import {
 import {
   createApplicationApi,
   getApplicationsApi,
+  submitApplicationApi,
 } from "@/src/features/shared/applications/api";
 import { APPLICATION_QUERY_KEYS } from "@/src/features/shared/applications/hooks";
 import { NsqConfirmationModal } from "../components/NsqConfirmationModal";
@@ -132,6 +133,7 @@ export const NsqCentreInfo: React.FC = () => {
     setIsSubmitting(true);
     try {
       let appId = "";
+      let needsSubmit = false;
       try {
         const app = await createApplicationApi({
           type: "NSQ",
@@ -140,7 +142,12 @@ export const NsqCentreInfo: React.FC = () => {
           tradeId,
           unitIds: [],
         });
-        if (app?.id) appId = app.id;
+        if (app?.id) {
+          appId = app.id;
+          // POST /applications always creates a DRAFT — it still needs to be
+          // submitted before the centre can see or act on it.
+          needsSubmit = true;
+        }
       } catch (createErr: any) {
         const msg = createErr?.message || "";
         const code = createErr?.code || "";
@@ -157,10 +164,32 @@ export const NsqCentreInfo: React.FC = () => {
                 a.status === "in_progress" ||
                 (a.status as string) === "submitted"),
           );
-          if (match?.id) appId = match.id;
-          else throw createErr;
+          if (match?.id) {
+            appId = match.id;
+            needsSubmit = match.status === "draft";
+          } else throw createErr;
         } else {
           throw createErr;
+        }
+      }
+
+      // A draft has no backend workflow state and isn't visible to the
+      // centre for review — submit is what actually "sends the request".
+      if (needsSubmit) {
+        try {
+          await submitApplicationApi(appId);
+        } catch (submitErr: any) {
+          queryClient.invalidateQueries({ queryKey: APPLICATION_QUERY_KEYS.all });
+          toast({
+            type: "error",
+            title: "Could Not Send Request",
+            description:
+              submitErr?.message ||
+              "Your application was saved as a draft but could not be sent to the centre. Please try again from My Applications.",
+          });
+          setIsConfirmModalOpen(false);
+          router.push("/dashboard/applications");
+          return;
         }
       }
 

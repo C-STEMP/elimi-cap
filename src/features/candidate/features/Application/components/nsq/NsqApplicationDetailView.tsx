@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
   FiChevronRight,
@@ -18,12 +19,19 @@ import { Button } from "@/src/components/ui/button";
 import { Avatar } from "@/src/components/ui/avatar";
 import { ASSETS_URL } from "@/assets";
 import { useToast } from "@/src/components/ui/toast";
-import { StatusModal } from "@/components/status-modal";
 import { TransactionReceiptModal } from "@/features/assessment-centre/features/Payment/components/TransactionReceiptModal";
+import { PaymentModal, type PaymentModalType } from "../PaymentModals";
+import { scheduleDirectObservationApi } from "@/src/features/shared/applications/api";
 import {
-  scheduleDirectObservationApi,
-  initiateApplicationPaymentApi,
-} from "@/src/features/shared/applications/api";
+  useGetInductionForm,
+  useGetDirectObservations,
+  useScheduleDirectObservation,
+  useGetApplicationStages,
+  useInitiateApplicationPayment,
+  useGetPaymentQuote,
+  useGetApplicationReceipt,
+} from "@/src/features/shared/applications/hooks";
+import { APPLICATION_QUERY_KEYS } from "@/src/features/shared/applications/hooks/queryKeys";
 import {
   useGetTradeDetail,
   useGetUnitsByTrade,
@@ -32,11 +40,21 @@ import {
   useGetSectors,
 } from "@/src/features/shared/reference/hooks";
 import { useAppSelector } from "@/src/store/hooks";
+import { formatCurrency } from "@/src/utils/currency";
 import { NsqUnitDetailView } from "./NsqUnitDetailView";
 import { NsqRequestObservationModal } from "./NsqRequestObservationModal";
 import { NsqObservationRequestReviewModal } from "./NsqObservationRequestReviewModal";
 import { NsqObservationSuccessModal } from "./NsqObservationSuccessModal";
 import { CandidateReportSignatureModal } from "./CandidateReportSignatureModal";
+import { NsqCompleteInductionFormModal } from "./NsqCompleteInductionFormModal";
+
+const NSQ_PROGRESS_STEPS = [
+  { key: "induction", label: "Induction Form" },
+  { key: "regular_assessment", label: "QAA" },
+  { key: "internal_verification", label: "IQA" },
+  { key: "external_verification", label: "Awarding Body" },
+  { key: "certification", label: "Certification" },
+] as const;
 
 interface NsqUnitItem {
   id: string;
@@ -54,6 +72,8 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
   application,
 }) => {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
   const { toast } = useToast();
 
   const savedOnboarding = useAppSelector((state) => state.onboarding.nsqApplication);
@@ -64,19 +84,136 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [isReportSignatureModalOpen, setIsReportSignatureModalOpen] = useState(false);
   const [isReportSigned, setIsReportSigned] = useState(false);
-  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
   const [isInductionViewModalOpen, setIsInductionViewModalOpen] = useState(false);
+  const [isInductionFillModalOpen, setIsInductionFillModalOpen] = useState(false);
 
-  // Application payment status
   const appId = application?.id || "nsq";
-  const [isPaid, setIsPaid] = useState<boolean>(() => {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem(`nsq_payment_paid_${appId}`);
-      if (stored === "true") return true;
-    }
-    return true; // Default to true matching media_1789142603340.png where payment is already Successful
+
+  // Real workflow stages from the backend (GET /applications/{id}/stages).
+  const { data: stagesData } = useGetApplicationStages(application?.id || "");
+
+  const applicationFormStage = stagesData?.find((s) => s.stageKey === "application_form");
+  const paymentStage = stagesData?.find((s) => s.stageKey === "payment");
+
+  // Payment status/flow — mirrors the RPL application detail payment integration
+  // (POST /applications/{id}/pay -> Paystack checkoutUrl redirect, confirmed on
+  // return via the `payment`/`reference` query params).
+  const [isPaymentConfirmed, setIsPaymentConfirmed] = useState(false);
+  const [activePaymentModal, setActivePaymentModal] = useState<PaymentModalType>(null);
+  const [paymentErrorInfo, setPaymentErrorInfo] = useState<{
+    title?: string;
+    description?: string;
+  }>({});
+
+  const isPaid = isPaymentConfirmed || paymentStage?.status === "successful";
+  const isAppFormApproved = Boolean(
+    applicationFormStage?.status === "successful" ||
+      (application?.currentStageKey &&
+        !["application_form", "draft"].includes(application.currentStageKey)),
+  );
+  const isPaymentUnlocked = isAppFormApproved || isPaid;
+
+  const { data: paymentQuote } = useGetPaymentQuote(application?.id || "", {
+    enabled: Boolean(application?.id && !isPaid),
   });
+  const { data: receiptData } = useGetApplicationReceipt(application?.id || "", {
+    enabled: Boolean(application?.id && isPaid),
+  });
+  const initiatePayment = useInitiateApplicationPayment();
+
+  const paymentAmountText = receiptData?.amount?.amountMinorUnits
+    ? formatCurrency(receiptData.amount.amountMinorUnits, receiptData.amount.currency)
+    : paymentQuote?.amountMinorUnits
+      ? formatCurrency(paymentQuote.amountMinorUnits, paymentQuote.currency)
+      : paymentStage?.amountMinorUnits
+        ? formatCurrency(paymentStage.amountMinorUnits, paymentStage.currency || "NGN")
+        : "—";
+
+  // Assessment Progress timeline nodes, resolved against the real stage rows.
+  const progressSteps = useMemo(
+    () =>
+      NSQ_PROGRESS_STEPS.map((step) => ({
+        ...step,
+        status: stagesData?.find((s) => s.stageKey === step.key)?.status ?? "not_started",
+      })),
+    [stagesData],
+  );
+  const completedStepsCount = progressSteps.filter((s) => s.status === "successful").length;
+  const progressPercent =
+    progressSteps.length > 1 ? (completedStepsCount / (progressSteps.length - 1)) * 100 : 0;
+
+  const applicationStatusBadge =
+    applicationFormStage?.status === "successful" || isAppFormApproved ? (
+      <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-[#ecfdf5] text-[#10b981]">
+        Approved
+      </span>
+    ) : applicationFormStage?.status === "rejected" ? (
+      <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-red-50 text-red-600">
+        Rejected
+      </span>
+    ) : applicationFormStage?.status === "under_review" ||
+      applicationFormStage?.status === "in_progress" ? (
+      <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-[#FFF7ED] text-[#C2410C]">
+        Under Review
+      </span>
+    ) : (
+      <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-[#FFF7ED] text-[#C2410C]">
+        Application Submitted
+      </span>
+    );
+
+  const paymentStatusBadge = isPaid ? (
+    <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-[#ecfdf5] text-[#10b981]">
+      Successful
+    </span>
+  ) : paymentStage?.status === "awaiting_payment" || paymentStage?.status === "in_progress" ? (
+    <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-amber-50 text-amber-700">
+      Pending
+    </span>
+  ) : (
+    <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-gray-100 text-gray-600">
+      Not Started
+    </span>
+  );
+
+  // Handle Paystack redirect back to this page.
+  useEffect(() => {
+    const paymentParam = searchParams.get("payment");
+    const refParam = searchParams.get("reference") || searchParams.get("trxref");
+    if (!application?.id) return;
+
+    if (paymentParam === "success" || refParam) {
+      setIsPaymentConfirmed(true);
+      const refreshPaymentData = () => {
+        queryClient.invalidateQueries({ queryKey: APPLICATION_QUERY_KEYS.stages(application.id) });
+        queryClient.invalidateQueries({ queryKey: APPLICATION_QUERY_KEYS.receipt(application.id) });
+        queryClient.invalidateQueries({ queryKey: APPLICATION_QUERY_KEYS.detail(application.id) });
+      };
+      // Payment completion is processed asynchronously on the backend (a
+      // payment.completed webhook), so it may not be reflected the instant
+      // Paystack redirects back — refetch now and again shortly after to
+      // catch up once the webhook lands.
+      refreshPaymentData();
+      const retryTimer = setTimeout(refreshPaymentData, 3000);
+      setActivePaymentModal("success");
+      toast({
+        type: "success",
+        title: "Payment Confirmed",
+        description: "Your NSQ assessment fee payment has been confirmed.",
+      });
+      if (typeof window !== "undefined" && window.history?.replaceState) {
+        window.history.replaceState({}, "", window.location.pathname);
+      }
+      return () => clearTimeout(retryTimer);
+    } else if (paymentParam === "cancelled" || paymentParam === "failed") {
+      setActivePaymentModal("unsuccessful");
+      if (typeof window !== "undefined" && window.history?.replaceState) {
+        window.history.replaceState({}, "", window.location.pathname);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, application?.id]);
 
   const [successModalInfo, setSuccessModalInfo] = useState({
     title: "Direct Observation Request Sent",
@@ -124,7 +261,14 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
   const { data: remoteCentres = [] } = useGetCentres();
   const { data: remoteSectors = [] } = useGetSectors();
 
+  // NSQ Backend Queries & Mutations
+  const { data: inductionForm } = useGetInductionForm(application?.id);
+  const { data: directObservationsData } = useGetDirectObservations(application?.id);
+  const { mutateAsync: scheduleObservationMutation } =
+    useScheduleDirectObservation(application?.id);
+
   const [scheduledObservation, setScheduledObservation] = useState<{
+    id?: string;
     units?: string[];
     date: string;
     time: string;
@@ -150,6 +294,22 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
         }
       : null,
   );
+
+  const liveSitting = directObservationsData?.items?.[0];
+  const activeObservation = liveSitting
+    ? {
+        id: liveSitting.id,
+        units: liveSitting.unitIds || ["UNIT 1"],
+        date: liveSitting.scheduledAt?.split("T")[0] || "22/03/2026",
+        time:
+          liveSitting.scheduledAt?.split("T")[1]?.slice(0, 5) || "12:00PM",
+        address: liveSitting.address,
+        status: (liveSitting.status === "requested"
+          ? "attention_required"
+          : liveSitting.status) as any,
+        isSigned: Boolean(liveSitting.learnerSignature),
+      }
+    : scheduledObservation;
 
   const resolvedTradeName =
     tradeDetail?.name ||
@@ -181,7 +341,10 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
 
   const levelName = application?.level || "Level 3";
 
-  // Dynamic Units list matching mockup (media_1789142603340.png)
+  const assignedFacilitator = (application as any)?.facilitator || null;
+
+  // Real units for this trade — GET /trades/{id}/units. No fake placeholder
+  // rows when this hasn't loaded yet; the empty state is rendered instead.
   const unitsList: NsqUnitItem[] =
     remoteUnits && remoteUnits.length > 0
       ? remoteUnits.map((u, idx) => ({
@@ -191,72 +354,58 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
           status: "Not Started" as const,
           structure: u.structure,
         }))
-      : [
-          {
-            id: "unit-01",
-            unitNo: "UNIT 1",
-            title: "Lorem ipsum dolor dolor satuir",
-            status: "Not Started" as const,
-          },
-          {
-            id: "unit-02",
-            unitNo: "UNIT 2",
-            title: "Lorem ipsum dolor dolor satuir",
-            status: "Not Started" as const,
-          },
-          {
-            id: "unit-03",
-            unitNo: "UNIT 3",
-            title: "Lorem ipsum dolor dolor satuir",
-            status: "Not Started" as const,
-          },
-          {
-            id: "unit-04",
-            unitNo: "UNIT 4",
-            title: "Lorem ipsum dolor dolor satuir",
-            status: "Not Started" as const,
-          },
-        ];
+      : [];
 
   const qualificationCode =
     remoteUnits[0]?.referenceNumber ||
     (tradeDetail?.activeNosDocument as any)?.qualificationLevels?.[0]?.slug ||
     (tradeDetail?.activeNosDocument as any)?.title ||
-    "CON/MS001/L1";
+    "—";
 
   const evidenceTypesText =
     remoteEvidenceTypes && remoteEvidenceTypes.length > 0
       ? remoteEvidenceTypes.join("/")
-      : "DO/QA/WT/WP/ASS";
+      : "—";
 
-  // Handle Make Payment action
-  const handleMakePayment = async () => {
-    setIsProcessingPayment(true);
+  // Handle Make Payment action — initiates a real checkout via
+  // POST /applications/{id}/pay and redirects to the returned Paystack
+  // checkoutUrl (same flow as the RPL application detail page).
+  const handleMakePayment = () => {
+    if (!application?.id) return;
 
-    try {
-      if (application?.id && isRawId(application.id)) {
-        try {
-          await initiateApplicationPaymentApi(application.id);
-        } catch {
-          // Fallback simulation for payment demo
-        }
-      }
-    } catch {
-      // Ignore network errors for mock transition
+    if (!isPaymentUnlocked) {
+      toast({
+        type: "error",
+        title: "Centre Approval Required",
+        description: "Your centre must approve your application before payment.",
+      });
+      return;
     }
 
-    setTimeout(() => {
-      setIsProcessingPayment(false);
-      setIsPaid(true);
-      if (typeof window !== "undefined") {
-        localStorage.setItem(`nsq_payment_paid_${appId}`, "true");
-      }
-      toast({
-        type: "success",
-        title: "Payment Successful",
-        description: "Your NSQ assessment fee payment has been confirmed.",
-      });
-    }, 2200);
+    setActivePaymentModal("processing");
+    setPaymentErrorInfo({});
+
+    initiatePayment.mutate(application.id, {
+      onSuccess: (data: any) => {
+        const checkoutUrl = data?.checkoutUrl || data?.data?.checkoutUrl;
+        if (checkoutUrl) {
+          window.location.href = checkoutUrl;
+        } else {
+          setIsPaymentConfirmed(true);
+          setActivePaymentModal("success");
+          queryClient.invalidateQueries({
+            queryKey: APPLICATION_QUERY_KEYS.stages(application.id),
+          });
+        }
+      },
+      onError: (err: any) => {
+        setPaymentErrorInfo({
+          title: "Payment Unsuccessful",
+          description: err?.message || "Payment was not successful. Please try again.",
+        });
+        setActivePaymentModal("unsuccessful");
+      },
+    });
   };
 
   // If a unit is selected, show the Unit Detail View
@@ -276,7 +425,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
   }
 
   const handleObservationRequestSubmitted = async (details: {
-    units: string[];
+    unitIds: string[];
     date: string;
     time: string;
     country: string;
@@ -284,8 +433,33 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
     lga: string;
     address: string;
   }) => {
+    if (!application?.id) {
+      throw new Error("Application not loaded yet. Please try again.");
+    }
+
+    // Attempt the real request first — only show success once the backend
+    // actually confirms it, instead of unconditionally announcing "sent".
+    const isoDate = `${details.date}T${details.time || "10:00"}:00Z`;
+    const fullAddress = [details.address, details.lga, details.state, details.country]
+      .filter(Boolean)
+      .join(", ");
+    await scheduleObservationMutation({
+      unitIds: details.unitIds,
+      scheduledAt: isoDate,
+      address: fullAddress || details.address || "Centre Workshop",
+    });
+
+    const unitLabels = details.unitIds.map(
+      (id) => unitsList.find((u) => u.id === id)?.unitNo || id,
+    );
     setScheduledObservation({
-      ...details,
+      units: unitLabels,
+      date: details.date,
+      time: details.time,
+      country: details.country,
+      state: details.state,
+      lga: details.lga,
+      address: details.address,
       status: "attention_required",
       isSigned: false,
     });
@@ -294,15 +468,6 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
       subtitle: "You have successfully sent your direct observation request",
     });
     setIsSuccessModalOpen(true);
-
-    if (application?.id && details.date) {
-      try {
-        const isoDate = `${details.date}T${details.time || "10:00"}:00Z`;
-        await scheduleDirectObservationApi(application.id, isoDate);
-      } catch {
-        // Continue with local UI state
-      }
-    }
   };
 
   const handleConfirmSchedule = (updated: any) => {
@@ -350,58 +515,56 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                 Assessment Progress
               </h3>
 
-              {/* Steps Progress */}
+              {/* Steps Progress — driven by GET /applications/{id}/stages.
+                  Application Form and Payment have their own cards below,
+                  so the timeline covers the remaining five workflow stages. */}
               <div className="relative flex items-center justify-between w-full px-2 sm:px-6">
                 {/* Horizontal Background Line */}
                 <div className="absolute left-6 right-6 top-3 h-0.5 bg-gray-200 -z-0" />
                 <div
                   className="absolute left-6 top-3 h-0.5 -z-0 bg-emerald-500 transition-all duration-300"
-                  style={{ width: isPaid ? "25%" : "0%" }}
+                  style={{ width: `${progressPercent}%` }}
                 />
 
-                {/* Step 1: Induction Form */}
-                <div className="flex flex-col items-center gap-2 z-10">
-                  <div className="w-6 h-6 rounded-full bg-[#10b981] flex items-center justify-center shadow-xs">
-                    <div className="w-2 h-2 rounded-full bg-white" />
-                  </div>
-                  <span className="text-[11px] font-bold text-[#10b981] text-center">
-                    Induction Form
-                  </span>
-                </div>
+                {progressSteps.map((step) => {
+                  const isComplete = step.status === "successful";
+                  const isRejected = step.status === "rejected";
+                  const isActive =
+                    !isComplete && !isRejected && step.status !== "not_started";
 
-                {/* Step 2: QAA */}
-                <div className="flex flex-col items-center gap-2 z-10">
-                  <div className="w-6 h-6 rounded-full bg-[#fbab2a] flex items-center justify-center shadow-xs">
-                    <div className="w-2 h-2 rounded-full bg-white" />
-                  </div>
-                  <span className="text-[11px] font-bold text-[#fbab2a] text-center">
-                    QAA
-                  </span>
-                </div>
-
-                {/* Step 3: IQA */}
-                <div className="flex flex-col items-center gap-2 z-10">
-                  <div className="w-6 h-6 rounded-full border border-gray-300 bg-white flex items-center justify-center" />
-                  <span className="text-[11px] font-medium text-gray-400 text-center">
-                    IQA
-                  </span>
-                </div>
-
-                {/* Step 4: Awarding Body */}
-                <div className="flex flex-col items-center gap-2 z-10">
-                  <div className="w-6 h-6 rounded-full border border-gray-300 bg-white flex items-center justify-center" />
-                  <span className="text-[11px] font-medium text-gray-400 text-center">
-                    Awarding Body
-                  </span>
-                </div>
-
-                {/* Step 5: Certification */}
-                <div className="flex flex-col items-center gap-2 z-10">
-                  <div className="w-6 h-6 rounded-full border border-gray-300 bg-white flex items-center justify-center" />
-                  <span className="text-[11px] font-medium text-gray-400 text-center">
-                    Certification
-                  </span>
-                </div>
+                  return (
+                    <div key={step.key} className="flex flex-col items-center gap-2 z-10">
+                      {isComplete || isActive || isRejected ? (
+                        <div
+                          className={`w-6 h-6 rounded-full flex items-center justify-center shadow-xs ${
+                            isComplete
+                              ? "bg-[#10b981]"
+                              : isRejected
+                                ? "bg-red-500"
+                                : "bg-[#fbab2a]"
+                          }`}
+                        >
+                          <div className="w-2 h-2 rounded-full bg-white" />
+                        </div>
+                      ) : (
+                        <div className="w-6 h-6 rounded-full border border-gray-300 bg-white flex items-center justify-center" />
+                      )}
+                      <span
+                        className={`text-[11px] text-center ${
+                          isComplete
+                            ? "font-bold text-[#10b981]"
+                            : isRejected
+                              ? "font-bold text-red-500"
+                              : isActive
+                                ? "font-bold text-[#fbab2a]"
+                                : "font-medium text-gray-400"
+                        }`}
+                      >
+                        {step.label}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -412,15 +575,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                   <h4 className="text-base sm:text-lg font-extrabold text-neutral-primary tracking-tight">
                     Application Status
                   </h4>
-                  {isPaid ? (
-                    <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-[#ecfdf5] text-[#10b981]">
-                      Approved
-                    </span>
-                  ) : (
-                    <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-[#FFF7ED] text-[#C2410C]">
-                      Application Submitted
-                    </span>
-                  )}
+                  {applicationStatusBadge}
                 </div>
               </div>
               <p className="text-xs sm:text-sm text-neutral-secondary font-medium">
@@ -433,17 +588,9 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
               <div className="flex flex-col gap-1">
                 <div className="flex items-center gap-2.5">
                   <span className="text-lg sm:text-xl font-black text-neutral-primary">
-                    ₦45,000
+                    {paymentAmountText}
                   </span>
-                  {isPaid ? (
-                    <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-[#ecfdf5] text-[#10b981]">
-                      Successful
-                    </span>
-                  ) : (
-                    <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-gray-100 text-gray-600">
-                      Not Started
-                    </span>
-                  )}
+                  {paymentStatusBadge}
                 </div>
                 <span className="text-xs sm:text-sm text-neutral-secondary font-medium">
                   NSQ Standard Assessment Fee
@@ -462,7 +609,8 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                 <button
                   type="button"
                   onClick={handleMakePayment}
-                  className="text-sm font-extrabold text-[#fbab2a] hover:text-[#e89b1f] hover:underline cursor-pointer select-none shrink-0"
+                  disabled={initiatePayment.isPending}
+                  className="text-sm font-extrabold text-[#fbab2a] hover:text-[#e89b1f] hover:underline cursor-pointer select-none shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Make Payment
                 </button>
@@ -477,10 +625,14 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
 
               <button
                 type="button"
-                onClick={() => setIsInductionViewModalOpen(true)}
+                onClick={() =>
+                  inductionForm?.submittedAt
+                    ? setIsInductionViewModalOpen(true)
+                    : setIsInductionFillModalOpen(true)
+                }
                 className="text-sm font-extrabold text-[#fbab2a] hover:text-[#e89b1f] hover:underline cursor-pointer select-none shrink-0"
               >
-                View
+                {inductionForm?.submittedAt ? "View" : "Complete Form"}
               </button>
             </div>
 
@@ -565,29 +717,35 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
               </h3>
 
               <div className="flex flex-col gap-3">
-                {unitsList.map((unit) => (
-                  <div
-                    key={unit.id}
-                    onClick={() => setSelectedUnit(unit)}
-                    className="p-4 rounded-xl border border-gray-100/80 hover:border-gray-200 bg-[#f8f9fa] hover:bg-white flex items-center justify-between gap-4 cursor-pointer transition-all group shadow-2xs"
-                  >
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 min-w-0">
-                      <span className="font-extrabold text-xs sm:text-sm text-neutral-primary uppercase shrink-0">
-                        {unit.unitNo}:
-                      </span>
-                      <span className="text-xs sm:text-sm text-gray-700 font-medium truncate">
-                        {unit.title}
-                      </span>
-                    </div>
+                {unitsList.length > 0 ? (
+                  unitsList.map((unit) => (
+                    <div
+                      key={unit.id}
+                      onClick={() => setSelectedUnit(unit)}
+                      className="p-4 rounded-xl border border-gray-100/80 hover:border-gray-200 bg-[#f8f9fa] hover:bg-white flex items-center justify-between gap-4 cursor-pointer transition-all group shadow-2xs"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 min-w-0">
+                        <span className="font-extrabold text-xs sm:text-sm text-neutral-primary uppercase shrink-0">
+                          {unit.unitNo}:
+                        </span>
+                        <span className="text-xs sm:text-sm text-gray-700 font-medium truncate">
+                          {unit.title}
+                        </span>
+                      </div>
 
-                    <div className="flex items-center gap-2.5 shrink-0">
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold bg-gray-200/80 text-gray-600">
-                        {unit.status}
-                      </span>
-                      <FiChevronRight className="w-4 h-4 text-gray-400 group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
+                      <div className="flex items-center gap-2.5 shrink-0">
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold bg-gray-200/80 text-gray-600">
+                          {unit.status}
+                        </span>
+                        <FiChevronRight className="w-4 h-4 text-gray-400 group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <p className="text-xs text-gray-400 font-medium py-2">
+                    Units will appear here once your qualification standard is loaded.
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -603,13 +761,13 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                 Observation Request
               </h4>
 
-              {scheduledObservation ? (
+              {activeObservation ? (
                 <div className="flex flex-col gap-2">
                   <div
                     onClick={() => setIsReviewModalOpen(true)}
                     className={`bg-[#f8f9fa] hover:bg-white border border-gray-100 hover:border-gray-200 rounded-xl p-4 flex items-center justify-between gap-3 cursor-pointer transition-all group shadow-2xs select-none border-l-[5px] ${
-                      scheduledObservation.status === "scheduled" ||
-                      scheduledObservation.status === "completed"
+                      activeObservation.status === "scheduled" ||
+                      activeObservation.status === "completed"
                         ? "border-l-emerald-500"
                         : "border-l-[#fbab2a]"
                     }`}
@@ -618,19 +776,19 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                       {/* Status Badge */}
                       <span
                         className={`self-start text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                          scheduledObservation.status === "scheduled" ||
-                          scheduledObservation.status === "completed"
+                          activeObservation.status === "scheduled" ||
+                          activeObservation.status === "completed"
                             ? "bg-emerald-100 text-emerald-800"
-                            : scheduledObservation.status === "pending"
+                            : activeObservation.status === "pending"
                               ? "bg-amber-100 text-amber-800"
                               : "bg-pink-100 text-pink-700"
                         }`}
                       >
-                        {scheduledObservation.status === "scheduled"
+                        {activeObservation.status === "scheduled"
                           ? "Scheduled"
-                          : scheduledObservation.status === "completed"
+                          : activeObservation.status === "completed"
                             ? "Completed"
-                            : scheduledObservation.status === "pending"
+                            : activeObservation.status === "pending"
                               ? "Pending"
                               : "Attention Required"}
                       </span>
@@ -646,7 +804,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                             Time
                           </span>
                           <span className="text-xs font-bold text-neutral-primary">
-                            {scheduledObservation.time || "12:00PM"}
+                            {activeObservation.time || "12:00PM"}
                           </span>
                         </div>
 
@@ -655,13 +813,13 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                             Date
                           </span>
                           <span className="text-xs font-bold text-neutral-primary">
-                            {scheduledObservation.date || "22/03/2026"}
+                            {activeObservation.date || "22/03/2026"}
                           </span>
                         </div>
                       </div>
                     </div>
 
-                    {scheduledObservation.status === "scheduled" ? (
+                    {activeObservation.status === "scheduled" ? (
                       <button
                         type="button"
                         onClick={(e) => {
@@ -673,13 +831,13 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                       >
                         <FiClock className="w-4 h-4" />
                       </button>
-                    ) : scheduledObservation.status === "completed" ? null : (
+                    ) : activeObservation.status === "completed" ? null : (
                       <FiChevronRight className="w-5 h-5 text-gray-400 group-hover:text-primary group-hover:translate-x-1 transition-all shrink-0" />
                     )}
                   </div>
 
                   {/* View Form Button for Completed status */}
-                  {scheduledObservation.status === "completed" && (
+                  {activeObservation.status === "completed" && (
                     <Button
                       type="button"
                       variant="amber"
@@ -706,32 +864,53 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
               )}
             </div>
 
-            {/* Assessor Profile Card (Ngozi Eze) */}
-            <div className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-100 shadow-sm flex items-center gap-3.5">
-              <Avatar
-                src={(application as any)?.verifier?.photo?.url || (application as any)?.assessor?.photo?.url || null}
-                name={(application as any)?.assessor?.name || "Ngozi Eze"}
-                className="w-14 h-14 shrink-0 rounded-full border border-gray-100"
-                alt="Assessor"
-              />
+            {/* Assessor / Facilitator Card — real GET /applications/{id}
+                `facilitator` field, not a fabricated identity. */}
+            {assignedFacilitator ? (
+              <div className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-100 shadow-sm flex items-center gap-3.5">
+                <Avatar
+                  src={assignedFacilitator.photo?.url || null}
+                  name={assignedFacilitator.name}
+                  className="w-14 h-14 shrink-0 rounded-full border border-gray-100"
+                  alt="Assessor"
+                />
 
-              <div className="flex flex-col min-w-0">
-                <span className="font-extrabold text-sm text-neutral-primary truncate">
-                  {(application as any)?.assessor?.name || "Ngozi Eze"}
-                </span>
-                <span className="text-[11px] text-neutral-secondary font-medium truncate mt-0.5">
-                  Assessor • {resolvedTradeName} ({levelName})
-                </span>
-                <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-rose-50 text-rose-600">
-                    {resolvedTradeName}
+                <div className="flex flex-col min-w-0">
+                  <span className="font-extrabold text-sm text-neutral-primary truncate">
+                    {assignedFacilitator.name}
                   </span>
-                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-rose-50 text-rose-600">
-                    RPL Coordinator
+                  <span className="text-[11px] text-neutral-secondary font-medium truncate mt-0.5">
+                    {assignedFacilitator.role || "Assessor"} • {resolvedTradeName} ({levelName})
+                  </span>
+                  {assignedFacilitator.tags && assignedFacilitator.tags.length > 0 && (
+                    <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                      {assignedFacilitator.tags.map((tag: string) => (
+                        <span
+                          key={tag}
+                          className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-rose-50 text-rose-600"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-100 shadow-sm flex items-center gap-3.5">
+                <div className="w-14 h-14 shrink-0 rounded-full bg-gray-50 flex items-center justify-center text-gray-300">
+                  <FiUser className="w-6 h-6" />
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <span className="font-bold text-sm text-neutral-primary">
+                    No assessor assigned yet
+                  </span>
+                  <span className="text-[11px] text-neutral-secondary font-medium mt-0.5">
+                    You&apos;ll see your assessor&apos;s details here once one is assigned.
                   </span>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
@@ -741,6 +920,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
         isOpen={isObservationModalOpen}
         onClose={() => setIsObservationModalOpen(false)}
         tradeName={resolvedTradeName}
+        availableUnits={unitsList.map((u) => ({ id: u.id, label: u.unitNo }))}
         onRequestSubmitted={handleObservationRequestSubmitted}
       />
 
@@ -748,7 +928,8 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
       <NsqObservationRequestReviewModal
         isOpen={isReviewModalOpen}
         onClose={() => setIsReviewModalOpen(false)}
-        details={scheduledObservation}
+        details={activeObservation}
+        applicationId={application?.id}
         onConfirmSchedule={handleConfirmSchedule}
       />
 
@@ -764,24 +945,69 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
       <CandidateReportSignatureModal
         isOpen={isReportSignatureModalOpen}
         onClose={() => setIsReportSignatureModalOpen(false)}
+        applicationId={application?.id}
+        sessionId={activeObservation?.id}
         onSignedSuccess={() => setIsReportSigned(true)}
       />
 
-      {/* Transaction Receipt Modal */}
+      {/* Transaction Receipt Modal — backed by GET /applications/{id}/receipt */}
       <TransactionReceiptModal
         isOpen={isReceiptModalOpen}
         onClose={() => setIsReceiptModalOpen(false)}
         transaction={{
-          id: appId,
-          candidateName: application?.candidate?.name || application?.user?.name || "Candidate",
+          id: receiptData?.paymentId || appId,
+          candidateName:
+            receiptData?.candidateName ||
+            application?.candidate?.name ||
+            application?.user?.name ||
+            "Candidate",
           assessmentType: "NSQ Standard",
           description: "NSQ Standard Assessment Fee",
-          amountPaid: "₦45,000",
-          date: new Date().toLocaleDateString("en-GB"),
-          paymentMethod: "Online Card",
+          amountPaid: paymentAmountText,
+          date: receiptData?.paidAt
+            ? new Date(receiptData.paidAt).toLocaleDateString("en-GB")
+            : new Date().toLocaleDateString("en-GB"),
+          paymentMethod: receiptData?.provider || "Paystack",
           status: "Paid",
-          transactionId: `TXN-${appId.slice(0, 8).toUpperCase()}`,
+          transactionId:
+            receiptData?.paymentId ||
+            `TXN-${appId.replace(/-/g, "").slice(0, 10).toUpperCase()}`,
         }}
+      />
+
+      {/* Candidate Induction Form — fill/submit (real POST /applications/{id}/induction-form) */}
+      <NsqCompleteInductionFormModal
+        isOpen={isInductionFillModalOpen}
+        onClose={() => setIsInductionFillModalOpen(false)}
+        applicationId={appId}
+        tradeName={resolvedTradeName}
+        levelName={levelName}
+        qualificationLevels={inductionForm?.options?.qualificationLevels || []}
+        defaultQualificationLevelId={
+          (application as any)?.nsq?.wishedQualificationLevel?.id ||
+          inductionForm?.qualificationLevel?.id
+        }
+        candidateName={
+          application?.candidate?.name || application?.user?.name || ""
+        }
+        availableUnits={
+          inductionForm?.options?.units && inductionForm.options.units.length > 0
+            ? inductionForm.options.units.map((u) => ({
+                id: u.id,
+                unitNo: u.referenceNumber,
+                title: u.title,
+                qualificationLevelId: u.qualificationLevelId,
+              }))
+            : unitsList.map((u) => ({
+                id: u.id,
+                unitNo: u.unitNo,
+                title: u.title,
+              }))
+        }
+        defaultSelectedUnitIds={
+          (application as any)?.nsq?.wishedUnitIds ||
+          (application as any)?.nsq?.units?.map((u: any) => u.id)
+        }
       />
 
       {/* Candidate Induction View Modal */}
@@ -815,7 +1041,11 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                     CANDIDATE NAME
                   </span>
                   <span className="font-bold text-neutral-primary text-xs mt-0.5 block">
-                    {application?.candidate?.name || application?.user?.name || "Candidate"}
+                    {inductionForm?.data?.firstName
+                      ? `${inductionForm.data.firstName} ${inductionForm.data.lastName || ""}`.trim()
+                      : application?.candidate?.name ||
+                        application?.user?.name ||
+                        "Candidate"}
                   </span>
                 </div>
                 <div>
@@ -823,7 +1053,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                     REGISTERED TRADE
                   </span>
                   <span className="font-bold text-neutral-primary text-xs mt-0.5 block">
-                    {resolvedTradeName}
+                    {inductionForm?.trade?.name || resolvedTradeName}
                   </span>
                 </div>
                 <div>
@@ -831,7 +1061,10 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                     REGISTRATION STATUS
                   </span>
                   <span className="text-emerald-700 font-bold text-xs mt-0.5 inline-flex items-center gap-1">
-                    <FiCheck className="w-3.5 h-3.5" /> Induction Completed
+                    <FiCheck className="w-3.5 h-3.5" />{" "}
+                    {inductionForm?.submittedAt
+                      ? "Induction Completed"
+                      : "Induction Form"}
                   </span>
                 </div>
                 <div>
@@ -839,7 +1072,15 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                     SUBMISSION DATE
                   </span>
                   <span className="font-medium text-neutral-primary text-xs mt-0.5 block">
-                    {application?.submittedAt ? new Date(application.submittedAt).toLocaleDateString("en-GB") : "22/03/2026"}
+                    {inductionForm?.submittedAt
+                      ? new Date(inductionForm.submittedAt).toLocaleDateString(
+                          "en-GB",
+                        )
+                      : application?.submittedAt
+                        ? new Date(application.submittedAt).toLocaleDateString(
+                            "en-GB",
+                          )
+                        : "22/03/2026"}
                   </span>
                 </div>
               </div>
@@ -849,7 +1090,14 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                   Registered Qualification Units
                 </span>
                 <div className="flex flex-wrap gap-2">
-                  {unitsList.map((u) => (
+                  {(inductionForm?.units && inductionForm.units.length > 0
+                    ? inductionForm.units.map((u) => ({
+                        id: u.id,
+                        unitNo: u.referenceNumber,
+                        title: u.title,
+                      }))
+                    : unitsList
+                  ).map((u) => (
                     <span
                       key={u.id}
                       className="px-3 py-1.5 bg-rose-50 border border-rose-100 text-[#a31d38] font-bold text-[11px] rounded-xl"
@@ -889,12 +1137,15 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
         </div>
       )}
 
-      {/* Processing Payment Modal */}
-      <StatusModal
-        isOpen={isProcessingPayment}
-        variant="processing-payment"
-        title="Processing Payment"
-        description="Please wait while we process your payment"
+      {/* Payment status modals (processing / success / cancelled / unsuccessful) —
+          same flow as the RPL application detail payment integration. */}
+      <PaymentModal
+        isOpen={Boolean(activePaymentModal)}
+        type={activePaymentModal}
+        title={paymentErrorInfo.title}
+        description={paymentErrorInfo.description}
+        onClose={() => setActivePaymentModal(null)}
+        onAction={() => setActivePaymentModal(null)}
       />
     </div>
   );

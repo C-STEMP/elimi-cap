@@ -129,6 +129,39 @@ export interface AssessmentDeclaration {
   agreesToTermsAndPrivacyPolicy?: boolean;
 }
 
+export interface NsqScopeUnit {
+  id: string;
+  referenceNumber: string;
+  title: string;
+  isMandatory: boolean;
+  qualificationLevelId: string;
+  qualificationLevel: number;
+  wished: boolean;
+  criteriaTotal: number;
+  criteriaPending: number;
+  criteriaRejected: number;
+  criteriaApproved: number;
+  status: "not_started" | "in_progress" | "approved";
+}
+
+export interface NsqScope {
+  wishedQualificationLevel?: { id: string; level: number } | null;
+  wishedUnitIds: string[];
+  units: NsqScopeUnit[];
+  directObservationSessions?: unknown[];
+}
+
+export interface IqamFormSummaryItem {
+  key:
+    | "sampling_plan"
+    | "sampling_record"
+    | "iv_report"
+    | "assessor_outcomes"
+    | "final_portfolio";
+  status: string;
+  submittedAt?: string | null;
+}
+
 export interface ApplicationDetail extends Application {
   unitIds?: string[];
   identityVerified?: boolean;
@@ -164,6 +197,8 @@ export interface ApplicationDetail extends Application {
     trade?: string;
     assignedAt?: string;
   } | null;
+  nsq?: NsqScope | null;
+  iqamForms?: IqamFormSummaryItem[] | null;
 }
 
 export interface ApplicationVersion {
@@ -362,17 +397,214 @@ export interface SaveSelfAssessmentPayload {
   submit?: boolean;
 }
 
+export interface InductionFormOptionUnit {
+  id: string;
+  referenceNumber: string;
+  title: string;
+  isMandatory: boolean;
+  qualificationLevelId: string;
+}
+
+export interface InductionFormOptionLevel {
+  id: string;
+  level: number;
+  slug?: string;
+  purpose?: string;
+}
+
+export interface InductionFormOptions {
+  qualificationLevels: InductionFormOptionLevel[];
+  units: InductionFormOptionUnit[];
+}
+
+export interface InductionFormData {
+  firstName?: string;
+  lastName?: string;
+  middleName?: string;
+  registrationNo?: string;
+  qualificationLevelId?: string;
+  assessmentType?: string;
+  courseStartDate?: string;
+  unitIds?: string[];
+  relevantQualification?: string;
+  hasImpairment?: boolean;
+  impairment?: string;
+  learningStrengths?: string[];
+  learningWeaknesses?: string[];
+  passportAssetId?: string;
+  signatureAssetId?: string;
+  [key: string]: unknown;
+}
+
 export interface InductionForm {
   applicationId: string;
-  data: Record<string, unknown>;
+  data: InductionFormData;
   submittedAt?: string | null;
+  trade?: { id: string; name: string };
+  qualificationLevel?: InductionFormOptionLevel | null;
+  units?: InductionFormOptionUnit[];
+  passport?: { assetId?: string; url?: string | null } | null;
+  signature?: { assetId?: string; url?: string | null } | null;
+  options?: InductionFormOptions;
+}
+
+export interface InductionFormWritePayload {
+  submit?: boolean;
+  data?: InductionFormData;
+  tradeId?: string;
+  firstName?: string;
+  lastName?: string;
+  middleName?: string;
+  registrationNo?: string;
+  qualificationLevelId?: string;
+  assessmentType?: string;
+  courseStartDate?: string;
+  unitIds?: string[];
+  relevantQualification?: string;
+  hasImpairment?: boolean;
+  impairment?: string;
+  learningStrengths?: string[];
+  learningWeaknesses?: string[];
+  passportAssetId?: string;
+  signatureAssetId?: string;
+}
+
+export interface NsqEvidenceThreadItem {
+  id: string;
+  performanceCriteriaCode: string;
+  evidenceType: string;
+  evidenceAssetId: string;
+  evidenceRefPage?: string | null;
+  status: "pending" | "approved" | "rejected";
+  reviewComment?: string | null;
+  reviewedBy?: string | null;
+  reviewedAt?: string | null;
+  iqaReviewStatus?: "pending" | "approved" | "rejected";
+  iqaReviewComment?: string | null;
+  iqaReviewedBy?: string | null;
+  iqaReviewedAt?: string | null;
+  createdAt: string;
+}
+
+export interface NsqCriterion {
+  code: string;
+  text?: string | null;
+  learningObjectiveCode?: string | null;
+  learningObjectiveText?: string | null;
+  unmatched: boolean;
+  status: "none" | "pending" | "rejected" | "approved";
+  pendingCount: number;
+  latest?: NsqEvidenceThreadItem | null;
+  history: NsqEvidenceThreadItem[];
+}
+
+export interface NsqUnitCriteria {
+  applicationId: string;
+  unitId: string;
+  referenceNumber: string;
+  title: string;
+  criteria: NsqCriterion[];
+}
+
+export interface ReviewUnitEvidencePayload {
+  decision: "approve" | "reject";
+  comment?: string;
+}
+
+export interface DirectObservationRow {
+  unitId: string;
+  performanceCriteriaCode: string;
+  comment?: string;
+  met: boolean;
+}
+
+export interface DirectObservationFormPayload {
+  status: "draft" | "submitted";
+  submittedAt?: string | null;
+  rows: DirectObservationRow[];
+}
+
+export interface DirectObservationSignature {
+  signedBy: string;
+  signedAt: string;
+  signatureMode: "upload" | "default" | "typed";
+  signatureAssetId?: string | null;
+  typedName?: string | null;
+}
+
+export interface DirectObservationCatalogueCriterion {
+  code: string;
+  text: string;
+  learningObjectiveCode?: string | null;
+  learningObjectiveText?: string | null;
+}
+
+export interface DirectObservationCatalogueUnit {
+  unitId: string;
+  referenceNumber: string;
+  title: string;
+  criteria: DirectObservationCatalogueCriterion[];
 }
 
 export interface DirectObservationSession {
   id: string;
   applicationId: string;
+  assessorId?: string;
+  requestedBy?: string;
   scheduledAt: string;
-  status: "scheduled" | "completed" | "cancelled";
+  address?: string;
+  unitIds?: string[];
+  requirements?: string[];
+  status:
+    | "requested"
+    | "rejected"
+    | "accepted"
+    | "completed"
+    | "cancelled"
+    | "pending"
+    | "scheduled";
+  reviewComment?: string | null;
+  reviewedBy?: string | null;
+  reviewedAt?: string | null;
+  physicalStatus?: string;
+  oralStatus?: string;
+  physicalForm?: DirectObservationFormPayload | null;
+  oralForm?: DirectObservationFormPayload | null;
+  assessorSignature?: DirectObservationSignature | null;
+  learnerSignature?: DirectObservationSignature | null;
+  catalogue?: DirectObservationCatalogueUnit[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface DirectObservationSessionList {
+  items: DirectObservationSession[];
+}
+
+export interface ScheduleObservationPayload {
+  unitIds: string[];
+  scheduledAt: string;
+  address: string;
+}
+
+export interface ReviewObservationPayload {
+  decision: "accept" | "reject";
+  requirements?: string[];
+  comment?: string;
+}
+
+export interface SaveObservationFormPayload {
+  formKind: "physical" | "oral";
+  submit?: boolean;
+  rows: DirectObservationRow[];
+}
+
+export interface SignObservationPayload {
+  role: "unit_assessor" | "learner" | "iqa";
+  signatureMode: "upload" | "default" | "typed";
+  signatureAssetId?: string;
+  typedName?: string;
+  signedAt: string;
 }
 
 export interface PostUnitEvidencePayload {
@@ -386,4 +618,76 @@ export interface PostUnitSignoffPayload {
   role: "learner" | "unit_assessor" | "iqa" | "eqa";
   signatureAssetId?: string;
   signedAt: string;
+}
+
+export interface CentreIqamSamplingPlan {
+  applicationId: string;
+  candidateName?: string;
+  tradeName?: string;
+  levelName?: string;
+  termType?: string;
+  plannedDate?: string;
+  units?: Array<{
+    id: string;
+    referenceNumber: string;
+    title: string;
+    sampled?: boolean;
+  }>;
+  assessor?: { id: string; name: string } | null;
+  verifier?: { id: string; name: string } | null;
+  status?: string;
+  [key: string]: unknown;
+}
+
+export interface CentreIqamSamplingRecord {
+  applicationId: string;
+  candidateName?: string;
+  auditStatus?: string;
+  process?: string;
+  assessmentSite?: string;
+  unitsAssessed?: string;
+  method?: string;
+  assessor?: { id: string; name: string } | null;
+  status?: string;
+  [key: string]: unknown;
+}
+
+export interface CentreIqamIvReport {
+  applicationId: string;
+  candidateName?: string;
+  scope?: Record<string, unknown>;
+  qualityFeedback?: string;
+  outcomes?: Record<string, unknown>;
+  agreedActions?: Array<{
+    id: string;
+    action: string;
+    byWho: string;
+    timeline: string;
+  }>;
+  verifierSignature?: Record<string, unknown>;
+  status?: string;
+  [key: string]: unknown;
+}
+
+export interface CentreIqamAssessorOutcomes {
+  applicationId: string;
+  candidateName?: string;
+  checklist?: Array<{
+    id: string;
+    question: string;
+    answer?: "yes" | "no";
+    comments?: string;
+  }>;
+  feedback?: string;
+  [key: string]: unknown;
+}
+
+export interface CentreIqamFinalPortfolio {
+  applicationId: string;
+  candidateName?: string;
+  tradeName?: string;
+  overallStatus?: string;
+  unitsSummary?: Array<Record<string, unknown>>;
+  signatures?: Record<string, unknown>;
+  [key: string]: unknown;
 }

@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { CompleteCandidateModal } from "../common/CompleteCandidateModal";
-import type { CandidateAllocationItem } from "../../types/iqam.types";
+import React, { useEffect } from "react";
+import { useGetIqamCentre, useGetIqamAllocations } from "../../hooks/useIqam";
 
 interface IqaAllocationViewProps {
+  centreId: string;
   onBack: () => void;
-  onOpenCandidateForm?: (candidateName: string) => void;
+  onOpenCandidateForm?: (applicationId: string, candidateName: string) => void;
   onUpdateHeader?: (config: {
     title: string;
     breadcrumb: string;
@@ -15,20 +15,16 @@ interface IqaAllocationViewProps {
   } | null) => void;
 }
 
-const DEFAULT_ALLOCATIONS: CandidateAllocationItem[] = [
-  { id: "1", assessorName: "Adegbogunmi Samson", candidateName: "Samson David", level: "Level 1", units: "UNIT 1/UNIT 2/UNIT 3" },
-  { id: "2", assessorName: "Adegbogunmi Samson", candidateName: "Oguntade James", level: "Level 3", units: "UNIT 1/UNIT 2/UNIT 3" },
-  { id: "3", assessorName: "Adegbogunmi Samson", candidateName: "Favour Smith", level: "Level 4", units: "UNIT 1/UNIT 2/UNIT 3" },
-  { id: "4", assessorName: "Adegbogunmi Samson", candidateName: "Samson David", level: "Level 2", units: "UNIT 1/UNIT 2/UNIT 3" },
-  { id: "5", assessorName: "Adegbogunmi Samson", candidateName: "Oriade Sophie", level: "Level 1", units: "UNIT 1/UNIT 2/UNIT 3" },
-];
-
 export const IqaAllocationView: React.FC<IqaAllocationViewProps> = ({
+  centreId,
   onBack,
   onOpenCandidateForm,
   onUpdateHeader,
 }) => {
-  const [selectedCandidateForModal, setSelectedCandidateForModal] = useState<string | null>(null);
+  const { data: centre } = useGetIqamCentre(centreId, { enabled: Boolean(centreId) });
+  const { data: allocations = [], isLoading } = useGetIqamAllocations(centreId, {
+    enabled: Boolean(centreId),
+  });
 
   useEffect(() => {
     onUpdateHeader?.({
@@ -48,7 +44,7 @@ export const IqaAllocationView: React.FC<IqaAllocationViewProps> = ({
               NAME OF CENTRE
             </span>
             <h4 className="text-sm sm:text-base font-extrabold text-neutral-primary mt-1">
-              CSTEMP TVET Centre
+              {centre?.centreName || "—"}
             </h4>
           </div>
 
@@ -57,7 +53,7 @@ export const IqaAllocationView: React.FC<IqaAllocationViewProps> = ({
               TOTAL NO. OF ASSIGNED CANDIDATE
             </span>
             <h4 className="text-sm sm:text-base font-extrabold text-neutral-primary mt-1">
-              10
+              {centre?.assignedCount ?? allocations.length}
             </h4>
           </div>
         </div>
@@ -68,56 +64,65 @@ export const IqaAllocationView: React.FC<IqaAllocationViewProps> = ({
             Assessment Tools
           </h3>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs min-w-150">
-              <thead>
-                <tr className="border-b border-gray-100 text-gray-500 font-bold text-[11px]">
-                  <th className="py-3 px-3">Name Of Assessor</th>
-                  <th className="py-3 px-3">Candidate Name</th>
-                  <th className="py-3 px-3">Level</th>
-                  <th className="py-3 px-3">Units</th>
-                  <th className="py-3 px-3 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {DEFAULT_ALLOCATIONS.map((row) => (
-                  <tr
-                    key={row.id}
-                    onClick={() => setSelectedCandidateForModal(row.candidateName)}
-                    className="hover:bg-gray-50/50 transition-colors font-medium text-neutral-primary cursor-pointer group"
-                  >
-                    <td className="py-3.5 px-3">{row.assessorName}</td>
-                    <td className="py-3.5 px-3 font-semibold group-hover:text-primary transition-colors">{row.candidateName}</td>
-                    <td className="py-3.5 px-3 text-gray-600">{row.level}</td>
-                    <td className="py-3.5 px-3 text-gray-600">{row.units}</td>
-                    <td className="py-3.5 px-3 text-right">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedCandidateForModal(row.candidateName);
-                        }}
-                        className="text-xs font-bold text-gray-600 hover:text-[#a31d38] underline transition-colors cursor-pointer"
-                      >
-                        View
-                      </button>
-                    </td>
+          {isLoading ? (
+            <p className="text-xs text-gray-400 py-4">Loading allocations…</p>
+          ) : allocations.length === 0 ? (
+            <p className="text-xs text-gray-400 py-4">
+              No in-progress NSQ candidates are currently allocated to you at this centre.
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs min-w-150">
+                <thead>
+                  <tr className="border-b border-gray-100 text-gray-500 font-bold text-[11px]">
+                    <th className="py-3 px-3">Candidate Name</th>
+                    <th className="py-3 px-3">Unit Assessor (QAA)</th>
+                    <th className="py-3 px-3">Level</th>
+                    <th className="py-3 px-3">Units</th>
+                    <th className="py-3 px-3 text-right">Action</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {allocations.map((row) => (
+                    <tr
+                      key={row.applicationId}
+                      onClick={() => onOpenCandidateForm?.(row.applicationId, row.candidate.name)}
+                      className="hover:bg-gray-50/50 transition-colors font-medium text-neutral-primary cursor-pointer group"
+                    >
+                      <td className="py-3.5 px-3 font-semibold group-hover:text-primary transition-colors">
+                        {row.candidate.name}
+                      </td>
+                      <td className="py-3.5 px-3 text-gray-600">
+                        {row.unitAssessor?.name || "Not yet assigned"}
+                      </td>
+                      <td className="py-3.5 px-3 text-gray-600">
+                        {row.wishedQualificationLevel ? `Level ${row.wishedQualificationLevel.level}` : "—"}
+                      </td>
+                      <td className="py-3.5 px-3 text-gray-600">
+                        {row.wishedUnits.length > 0
+                          ? row.wishedUnits.map((u) => u.referenceNumber).join("/")
+                          : "—"}
+                      </td>
+                      <td className="py-3.5 px-3 text-right">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onOpenCandidateForm?.(row.applicationId, row.candidate.name);
+                          }}
+                          className="text-xs font-bold text-gray-600 hover:text-[#a31d38] underline transition-colors cursor-pointer"
+                        >
+                          View
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
-
-      <CompleteCandidateModal
-        isOpen={Boolean(selectedCandidateForModal)}
-        onClose={() => setSelectedCandidateForModal(null)}
-        onComplete={(cand) => {
-          setSelectedCandidateForModal(null);
-          onOpenCandidateForm?.(cand);
-        }}
-      />
     </div>
   );
 };

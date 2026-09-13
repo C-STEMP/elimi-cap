@@ -7,6 +7,7 @@ import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
 import { UploadSignatureModal } from "../UploadSignatureModal";
 import { useCandidateProfileSignature } from "@/src/features/shared/onboarding/hooks";
+import { signDirectObservationApi } from "@/src/features/shared/applications/api";
 
 export type ObservationStatus =
   | "pending"
@@ -15,6 +16,7 @@ export type ObservationStatus =
   | "completed";
 
 export interface ObservationDetails {
+  id?: string;
   units?: string[];
   date: string;
   time: string;
@@ -30,15 +32,17 @@ interface NsqObservationRequestReviewModalProps {
   isOpen: boolean;
   onClose: () => void;
   details: ObservationDetails | null;
+  applicationId?: string;
   onConfirmSchedule: (updatedDetails: ObservationDetails) => void;
 }
 
 export const NsqObservationRequestReviewModal: React.FC<
   NsqObservationRequestReviewModalProps
-> = ({ isOpen, onClose, details, onConfirmSchedule }) => {
+> = ({ isOpen, onClose, details, applicationId, onConfirmSchedule }) => {
   const { toast } = useToast();
   const { data: profileSignature } = useCandidateProfileSignature();
   const [isSigned, setIsSigned] = useState(details?.isSigned ?? false);
+  const [uploadedAssetId, setUploadedAssetId] = useState<string | null>(null);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -51,18 +55,19 @@ export const NsqObservationRequestReviewModal: React.FC<
       : ["UNIT 1", "UNIT 2", "UNIT 3"];
 
   const handleAppendSignature = () => {
-    let hasSaved = Boolean(profileSignature?.assetId || profileSignature?.url);
-    if (!hasSaved) {
+    let localAssetId: string | null = null;
+    if (!profileSignature?.assetId) {
       try {
         const local = localStorage.getItem("user_saved_signature");
         if (local) {
           const parsed = JSON.parse(local);
-          if (parsed?.assetId || parsed?.url) hasSaved = true;
+          if (parsed?.assetId) localAssetId = parsed.assetId;
         }
       } catch {}
     }
 
-    if (hasSaved) {
+    if (profileSignature?.assetId || localAssetId) {
+      setUploadedAssetId(localAssetId);
       setIsSigned(true);
       toast({
         type: "success",
@@ -75,7 +80,8 @@ export const NsqObservationRequestReviewModal: React.FC<
     setIsSignatureModalOpen(true);
   };
 
-  const handleSignatureUploadSuccess = () => {
+  const handleSignatureUploadSuccess = (signature?: { assetId: string; url?: string }) => {
+    setUploadedAssetId(signature?.assetId || null);
     setIsSigned(true);
     toast({
       type: "success",
@@ -89,10 +95,17 @@ export const NsqObservationRequestReviewModal: React.FC<
     setIsConfirmModalOpen(true);
   };
 
-  const handleFinalConfirm = () => {
+  const handleFinalConfirm = async () => {
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      if (applicationId && details.id) {
+        await signDirectObservationApi(applicationId, details.id, {
+          role: "learner",
+          signatureMode: profileSignature?.assetId ? "default" : "upload",
+          signatureAssetId: profileSignature?.assetId || uploadedAssetId || undefined,
+          signedAt: new Date().toISOString(),
+        });
+      }
       setIsConfirmModalOpen(false);
       onConfirmSchedule({
         ...details,
@@ -100,7 +113,15 @@ export const NsqObservationRequestReviewModal: React.FC<
         status: "scheduled",
       });
       onClose();
-    }, 400);
+    } catch (err: any) {
+      toast({
+        type: "error",
+        title: "Confirmation Failed",
+        description: err?.message || "Could not confirm this schedule. Please try again.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const statusLabel =
