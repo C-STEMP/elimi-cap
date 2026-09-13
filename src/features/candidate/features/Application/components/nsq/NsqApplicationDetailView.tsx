@@ -46,6 +46,7 @@ import { NsqRequestObservationModal } from "./NsqRequestObservationModal";
 import { NsqObservationRequestReviewModal } from "./NsqObservationRequestReviewModal";
 import { NsqObservationSuccessModal } from "./NsqObservationSuccessModal";
 import { CandidateReportSignatureModal } from "./CandidateReportSignatureModal";
+import { NsqCompleteInductionFormModal } from "./NsqCompleteInductionFormModal";
 
 const NSQ_PROGRESS_STEPS = [
   { key: "induction", label: "Induction Form" },
@@ -85,6 +86,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
   const [isReportSigned, setIsReportSigned] = useState(false);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
   const [isInductionViewModalOpen, setIsInductionViewModalOpen] = useState(false);
+  const [isInductionFillModalOpen, setIsInductionFillModalOpen] = useState(false);
 
   const appId = application?.id || "nsq";
 
@@ -339,7 +341,10 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
 
   const levelName = application?.level || "Level 3";
 
-  // Dynamic Units list matching mockup (media_1789142603340.png)
+  const assignedFacilitator = (application as any)?.facilitator || null;
+
+  // Real units for this trade — GET /trades/{id}/units. No fake placeholder
+  // rows when this hasn't loaded yet; the empty state is rendered instead.
   const unitsList: NsqUnitItem[] =
     remoteUnits && remoteUnits.length > 0
       ? remoteUnits.map((u, idx) => ({
@@ -349,43 +354,18 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
           status: "Not Started" as const,
           structure: u.structure,
         }))
-      : [
-          {
-            id: "unit-01",
-            unitNo: "UNIT 1",
-            title: "Lorem ipsum dolor dolor satuir",
-            status: "Not Started" as const,
-          },
-          {
-            id: "unit-02",
-            unitNo: "UNIT 2",
-            title: "Lorem ipsum dolor dolor satuir",
-            status: "Not Started" as const,
-          },
-          {
-            id: "unit-03",
-            unitNo: "UNIT 3",
-            title: "Lorem ipsum dolor dolor satuir",
-            status: "Not Started" as const,
-          },
-          {
-            id: "unit-04",
-            unitNo: "UNIT 4",
-            title: "Lorem ipsum dolor dolor satuir",
-            status: "Not Started" as const,
-          },
-        ];
+      : [];
 
   const qualificationCode =
     remoteUnits[0]?.referenceNumber ||
     (tradeDetail?.activeNosDocument as any)?.qualificationLevels?.[0]?.slug ||
     (tradeDetail?.activeNosDocument as any)?.title ||
-    "CON/MS001/L1";
+    "—";
 
   const evidenceTypesText =
     remoteEvidenceTypes && remoteEvidenceTypes.length > 0
       ? remoteEvidenceTypes.join("/")
-      : "DO/QA/WT/WP/ASS";
+      : "—";
 
   // Handle Make Payment action — initiates a real checkout via
   // POST /applications/{id}/pay and redirects to the returned Paystack
@@ -645,10 +625,14 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
 
               <button
                 type="button"
-                onClick={() => setIsInductionViewModalOpen(true)}
+                onClick={() =>
+                  inductionForm?.submittedAt
+                    ? setIsInductionViewModalOpen(true)
+                    : setIsInductionFillModalOpen(true)
+                }
                 className="text-sm font-extrabold text-[#fbab2a] hover:text-[#e89b1f] hover:underline cursor-pointer select-none shrink-0"
               >
-                View
+                {inductionForm?.submittedAt ? "View" : "Complete Form"}
               </button>
             </div>
 
@@ -733,29 +717,35 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
               </h3>
 
               <div className="flex flex-col gap-3">
-                {unitsList.map((unit) => (
-                  <div
-                    key={unit.id}
-                    onClick={() => setSelectedUnit(unit)}
-                    className="p-4 rounded-xl border border-gray-100/80 hover:border-gray-200 bg-[#f8f9fa] hover:bg-white flex items-center justify-between gap-4 cursor-pointer transition-all group shadow-2xs"
-                  >
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 min-w-0">
-                      <span className="font-extrabold text-xs sm:text-sm text-neutral-primary uppercase shrink-0">
-                        {unit.unitNo}:
-                      </span>
-                      <span className="text-xs sm:text-sm text-gray-700 font-medium truncate">
-                        {unit.title}
-                      </span>
-                    </div>
+                {unitsList.length > 0 ? (
+                  unitsList.map((unit) => (
+                    <div
+                      key={unit.id}
+                      onClick={() => setSelectedUnit(unit)}
+                      className="p-4 rounded-xl border border-gray-100/80 hover:border-gray-200 bg-[#f8f9fa] hover:bg-white flex items-center justify-between gap-4 cursor-pointer transition-all group shadow-2xs"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 min-w-0">
+                        <span className="font-extrabold text-xs sm:text-sm text-neutral-primary uppercase shrink-0">
+                          {unit.unitNo}:
+                        </span>
+                        <span className="text-xs sm:text-sm text-gray-700 font-medium truncate">
+                          {unit.title}
+                        </span>
+                      </div>
 
-                    <div className="flex items-center gap-2.5 shrink-0">
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold bg-gray-200/80 text-gray-600">
-                        {unit.status}
-                      </span>
-                      <FiChevronRight className="w-4 h-4 text-gray-400 group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
+                      <div className="flex items-center gap-2.5 shrink-0">
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold bg-gray-200/80 text-gray-600">
+                          {unit.status}
+                        </span>
+                        <FiChevronRight className="w-4 h-4 text-gray-400 group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <p className="text-xs text-gray-400 font-medium py-2">
+                    Units will appear here once your qualification standard is loaded.
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -874,32 +864,53 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
               )}
             </div>
 
-            {/* Assessor Profile Card (Ngozi Eze) */}
-            <div className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-100 shadow-sm flex items-center gap-3.5">
-              <Avatar
-                src={(application as any)?.verifier?.photo?.url || (application as any)?.assessor?.photo?.url || null}
-                name={(application as any)?.assessor?.name || "Ngozi Eze"}
-                className="w-14 h-14 shrink-0 rounded-full border border-gray-100"
-                alt="Assessor"
-              />
+            {/* Assessor / Facilitator Card — real GET /applications/{id}
+                `facilitator` field, not a fabricated identity. */}
+            {assignedFacilitator ? (
+              <div className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-100 shadow-sm flex items-center gap-3.5">
+                <Avatar
+                  src={assignedFacilitator.photo?.url || null}
+                  name={assignedFacilitator.name}
+                  className="w-14 h-14 shrink-0 rounded-full border border-gray-100"
+                  alt="Assessor"
+                />
 
-              <div className="flex flex-col min-w-0">
-                <span className="font-extrabold text-sm text-neutral-primary truncate">
-                  {(application as any)?.assessor?.name || "Ngozi Eze"}
-                </span>
-                <span className="text-[11px] text-neutral-secondary font-medium truncate mt-0.5">
-                  Assessor • {resolvedTradeName} ({levelName})
-                </span>
-                <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-rose-50 text-rose-600">
-                    {resolvedTradeName}
+                <div className="flex flex-col min-w-0">
+                  <span className="font-extrabold text-sm text-neutral-primary truncate">
+                    {assignedFacilitator.name}
                   </span>
-                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-rose-50 text-rose-600">
-                    RPL Coordinator
+                  <span className="text-[11px] text-neutral-secondary font-medium truncate mt-0.5">
+                    {assignedFacilitator.role || "Assessor"} • {resolvedTradeName} ({levelName})
+                  </span>
+                  {assignedFacilitator.tags && assignedFacilitator.tags.length > 0 && (
+                    <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                      {assignedFacilitator.tags.map((tag: string) => (
+                        <span
+                          key={tag}
+                          className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-rose-50 text-rose-600"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-100 shadow-sm flex items-center gap-3.5">
+                <div className="w-14 h-14 shrink-0 rounded-full bg-gray-50 flex items-center justify-center text-gray-300">
+                  <FiUser className="w-6 h-6" />
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <span className="font-bold text-sm text-neutral-primary">
+                    No assessor assigned yet
+                  </span>
+                  <span className="text-[11px] text-neutral-secondary font-medium mt-0.5">
+                    You&apos;ll see your assessor&apos;s details here once one is assigned.
                   </span>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
@@ -962,6 +973,41 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
             receiptData?.paymentId ||
             `TXN-${appId.replace(/-/g, "").slice(0, 10).toUpperCase()}`,
         }}
+      />
+
+      {/* Candidate Induction Form — fill/submit (real POST /applications/{id}/induction-form) */}
+      <NsqCompleteInductionFormModal
+        isOpen={isInductionFillModalOpen}
+        onClose={() => setIsInductionFillModalOpen(false)}
+        applicationId={appId}
+        tradeName={resolvedTradeName}
+        levelName={levelName}
+        qualificationLevels={inductionForm?.options?.qualificationLevels || []}
+        defaultQualificationLevelId={
+          (application as any)?.nsq?.wishedQualificationLevel?.id ||
+          inductionForm?.qualificationLevel?.id
+        }
+        candidateName={
+          application?.candidate?.name || application?.user?.name || ""
+        }
+        availableUnits={
+          inductionForm?.options?.units && inductionForm.options.units.length > 0
+            ? inductionForm.options.units.map((u) => ({
+                id: u.id,
+                unitNo: u.referenceNumber,
+                title: u.title,
+                qualificationLevelId: u.qualificationLevelId,
+              }))
+            : unitsList.map((u) => ({
+                id: u.id,
+                unitNo: u.unitNo,
+                title: u.title,
+              }))
+        }
+        defaultSelectedUnitIds={
+          (application as any)?.nsq?.wishedUnitIds ||
+          (application as any)?.nsq?.units?.map((u: any) => u.id)
+        }
       />
 
       {/* Candidate Induction View Modal */}

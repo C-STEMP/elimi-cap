@@ -82,12 +82,6 @@ export interface NsqAssessorApplicationDetailViewProps {
   onSubViewNavStateChange?: (state: NsqAssessorSubView) => void;
 }
 
-const DEFAULT_UNITS: QualificationUnitItem[] = [
-  { id: "unit-1", unitNo: "UNIT 1", title: "Lorem ipsum dolor dolor satuir", approvedCount: 0, totalCount: 10, hasNewUpload: false },
-  { id: "unit-2", unitNo: "UNIT 2", title: "Lorem ipsum dolor dolor satuir", approvedCount: 10, totalCount: 10, hasNewUpload: false },
-  { id: "unit-3", unitNo: "UNIT 3", title: "Lorem ipsum dolor dolor satuir", approvedCount: 10, totalCount: 10, hasNewUpload: false },
-];
-
 export const NsqAssessorApplicationDetailView: React.FC<
   NsqAssessorApplicationDetailViewProps
 > = ({
@@ -136,7 +130,7 @@ export const NsqAssessorApplicationDetailView: React.FC<
         hasNewUpload: u.criteriaPending > 0,
       }))
     : null;
-  const unitsList = realUnits || DEFAULT_UNITS;
+  const unitsList = realUnits || [];
 
   const [selectedUnit, setSelectedUnit] = useState<QualificationUnitItem | null>(null);
 

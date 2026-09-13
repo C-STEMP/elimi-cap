@@ -56,14 +56,9 @@ interface QualificationUnitItem {
   unitNo: string;
   title: string;
   status: "Not Started" | "In Progress" | "Completed" | "Approved";
+  criteriaApproved?: number;
+  criteriaTotal?: number;
 }
-
-const DEFAULT_UNITS: QualificationUnitItem[] = [
-  { id: "unit-1", unitNo: "UNIT 1", title: "Lorem ipsum dolor dolor satui", status: "Not Started" },
-  { id: "unit-2", unitNo: "UNIT 2", title: "Lorem ipsum dolor dolor satui", status: "Not Started" },
-  { id: "unit-3", unitNo: "UNIT 3", title: "Lorem ipsum dolor dolor satui", status: "Not Started" },
-  { id: "unit-4", unitNo: "UNIT 4", title: "Lorem ipsum dolor dolor satui", status: "Not Started" },
-];
 
 const IQAM_FORMS_LIST: { id: IqamToolId; title: string }[] = [
   { id: "CON/02/IQAM", title: "Internal Verification Sampling Plan" },
@@ -176,10 +171,6 @@ export const NsqCentreApplicationDetailView: React.FC<
   const { data: stagesData } = useGetApplicationStages(application?.id || "");
   const applicationFormStage = stagesData?.find((s) => s.stageKey === "application_form");
   const paymentStage = stagesData?.find((s) => s.stageKey === "payment");
-  const internalVerificationStage = stagesData?.find(
-    (s) => s.stageKey === "internal_verification",
-  );
-  const isIqaApproved = internalVerificationStage?.status === "successful";
 
   // Resolve ID helper
   const isRawId = (str?: string) => {
@@ -261,7 +252,7 @@ export const NsqCentreApplicationDetailView: React.FC<
   const qualificationCode =
     (tradeDetail as any)?.code ||
     (typeof application?.trade === "object" && (application.trade as any)?.code) ||
-    "CON/MS001/L1";
+    "—";
 
   const evidenceTypesText =
     remoteEvidenceTypes.length > 0
@@ -272,18 +263,33 @@ export const NsqCentreApplicationDetailView: React.FC<
           .filter(Boolean)
           .slice(0, 5)
           .join("/")
-      : "DO/QA/WT/WP/ASS";
+      : "—";
 
-  // Units list
-  const unitsList: QualificationUnitItem[] =
-    remoteUnits.length > 0
+  // Units list — prefer the application-specific units (real per-unit
+  // evidence progress from GET /applications/{id} `nsq.units`) over the
+  // generic trade catalogue, which has no progress data.
+  const unitsList: QualificationUnitItem[] = application?.nsq?.units?.length
+    ? application.nsq.units.map((u: any) => ({
+        id: u.id,
+        unitNo: u.referenceNumber,
+        title: u.title,
+        status:
+          u.status === "approved"
+            ? "Approved"
+            : u.status === "in_progress"
+              ? "In Progress"
+              : "Not Started",
+        criteriaApproved: u.criteriaApproved,
+        criteriaTotal: u.criteriaTotal,
+      }))
+    : remoteUnits.length > 0
       ? (remoteUnits as any[]).map((u: any, i: number) => ({
           id: u.id,
           unitNo: u.referenceNumber || u.code || `UNIT ${i + 1}`,
-          title: u.title || u.name || "Lorem ipsum dolor dolor satui",
-          status: "Not Started",
+          title: u.title || u.name || `Unit ${i + 1}`,
+          status: "Not Started" as const,
         }))
-      : DEFAULT_UNITS;
+      : [];
 
   // Compute status — application_form stage is the source of truth;
   // localStatus is only an instant-UI override until the stages query refetches.
@@ -907,13 +913,24 @@ export const NsqCentreApplicationDetailView: React.FC<
                 </h3>
 
                 <div className="flex flex-col gap-2.5">
+                  {unitsList.length === 0 && (
+                    <p className="text-xs text-gray-400 font-medium py-2">
+                      Units will appear here once the candidate&apos;s qualification standard is loaded.
+                    </p>
+                  )}
                   {unitsList.map((unit, index) => {
-                    const badgeText = isIqaApproved
-                      ? "10/10 Approved"
-                      : "10/10 Pending";
-                    const badgeClass = isIqaApproved
-                      ? "bg-[#10753A] text-white"
-                      : "bg-[#FEF3C7] text-[#D97706]";
+                    const hasCounts =
+                      typeof unit.criteriaApproved === "number" &&
+                      typeof unit.criteriaTotal === "number";
+                    const badgeText = hasCounts
+                      ? `${unit.criteriaApproved}/${unit.criteriaTotal} Approved`
+                      : unit.status === "Approved"
+                        ? "Approved"
+                        : "Pending";
+                    const badgeClass =
+                      unit.status === "Approved"
+                        ? "bg-[#10753A] text-white"
+                        : "bg-[#FEF3C7] text-[#D97706]";
                     return (
                       <div
                         key={unit.id}

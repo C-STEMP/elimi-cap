@@ -32,6 +32,11 @@ export const QualificationUnitsList: React.FC<QualificationUnitsListProps> = ({
       </h3>
 
       <div className="flex flex-col gap-3">
+        {units.length === 0 && (
+          <p className="text-xs text-gray-400 font-medium py-2">
+            Units will appear here once the candidate&apos;s qualification standard is loaded.
+          </p>
+        )}
         {units.map((u) => (
           <div
             key={u.id}
