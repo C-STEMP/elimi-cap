@@ -171,8 +171,9 @@ export const NsqCentreApplicationDetailView: React.FC<
     "pc-1-1": true,
   });
 
+  // Accordion behavior: opening one LO collapses any other open LO.
   const toggleLo = (id: string) => {
-    setExpandedLos((prev) => ({ ...prev, [id]: !prev[id] }));
+    setExpandedLos((prev) => (prev[id] ? {} : { [id]: true }));
   };
 
   const togglePc = (id: string) => {

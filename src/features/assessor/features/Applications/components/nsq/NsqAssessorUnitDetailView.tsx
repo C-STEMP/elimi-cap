@@ -241,7 +241,11 @@ export const NsqAssessorUnitDetailView: React.FC<
                 key={lo.id}
                 learningOutcome={lo}
                 isExpanded={Boolean(expandedLos[lo.id])}
-                onToggle={() => setExpandedLos((prev) => ({ ...prev, [lo.id]: !prev[lo.id] }))}
+                onToggle={() =>
+                  setExpandedLos((prev) =>
+                    prev[lo.id] ? {} : { [lo.id]: true },
+                  )
+                }
                 expandedPcs={expandedPcs}
                 onTogglePc={(pcId) => setExpandedPcs((prev) => ({ ...prev, [pcId]: !prev[pcId] }))}
                 onApproveEvidence={handleInitiateApprove}
