@@ -318,10 +318,9 @@ export const NsqUnitDetailView: React.FC<NsqUnitDetailViewProps> = ({
   // Floating Upload Success Banner
   const [showUploadToast, setShowUploadToast] = useState(false);
 
+  // Accordion behavior: opening one LO collapses any other open LO.
   const toggleLo = (id: string) => {
-    setExpandedLoIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
-    );
+    setExpandedLoIds((prev) => (prev.includes(id) ? [] : [id]));
   };
 
   const togglePc = (id: string) => {
