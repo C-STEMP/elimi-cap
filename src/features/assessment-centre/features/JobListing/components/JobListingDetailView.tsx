@@ -227,7 +227,7 @@ export const JobListingDetailView: React.FC<JobListingDetailViewProps> = ({
         {/* Applicants Table */}
         {isLoadingApps ? (
           <div className="w-full overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[700px]">
+            <table className="w-full text-left border-collapse min-w-175">
               <tbody className="divide-y divide-gray-100">
                 {Array.from({ length: 4 }).map((_, i) => (
                   <tr key={i} className="animate-pulse">
@@ -249,7 +249,7 @@ export const JobListingDetailView: React.FC<JobListingDetailViewProps> = ({
           </div>
         ) : (
           <div className="w-full overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[700px]">
+            <table className="w-full text-left border-collapse min-w-175">
               <thead>
                 <tr className="bg-[#F8F9FA] text-gray-500 text-xs font-semibold uppercase tracking-wider rounded-xl">
                   <th className="p-3.5 rounded-l-xl w-10">
@@ -301,7 +301,7 @@ export const JobListingDetailView: React.FC<JobListingDetailViewProps> = ({
                           Rejected
                         </span>
                       ) : (
-                        <span className="bg-[#F9A825]/10 text-[#F9A825] font-semibold px-3 py-1 rounded-full text-xs inline-block">
+                        <span className="bg-secondary/10 text-secondary font-semibold px-3 py-1 rounded-full text-xs inline-block">
                           Pending
                         </span>
                       )}

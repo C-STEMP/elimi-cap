@@ -1,30 +1,28 @@
 "use client";
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
-import {
-  useGetApplicationById,
-  useReviewApplication,
-  APPLICATION_QUERY_KEYS,
-} from "@/src/features/shared/applications/hooks";
-import { useQueryClient } from "@tanstack/react-query";
-import { AssessmentCentreHeader } from "@/src/features/assessment-centre/features/Dashboard/components/AssessmentCentreHeader";
-import { ApplicationsHeader } from "@/src/features/assessment-centre/features/Applications/components/ApplicationsHeader";
+import { useToast } from "@/src/components/ui/toast";
 import { ApplicationDetail } from "@/src/features/assessment-centre/features/Applications/components/ApplicationDetail";
+import { ApplicationsHeader } from "@/src/features/assessment-centre/features/Applications/components/ApplicationsHeader";
 import { CandidateFormView } from "@/src/features/assessment-centre/features/Applications/components/CandidateFormView";
+import { CreateInterviewModal } from "@/src/features/assessment-centre/features/Applications/components/CreateInterviewModal";
 import { EvidenceVaultView } from "@/src/features/assessment-centre/features/Applications/components/EvidenceVaultView";
-import { SelfAssessmentFormView } from "@/src/features/assessment-centre/features/Applications/components/SelfAssessmentFormView";
 import { PromptCreatePanelModal } from "@/src/features/assessment-centre/features/Applications/components/PromptCreatePanelModal";
 import { ScheduleInterviewModal } from "@/src/features/assessment-centre/features/Applications/components/ScheduleInterviewModal";
-import { CreateInterviewModal } from "@/src/features/assessment-centre/features/Applications/components/CreateInterviewModal";
+import { SelfAssessmentFormView } from "@/src/features/assessment-centre/features/Applications/components/SelfAssessmentFormView";
+import { AssessmentCentreHeader } from "@/src/features/assessment-centre/features/Dashboard/components/AssessmentCentreHeader";
 import {
-  useGetCentrePanels,
+  APPLICATION_QUERY_KEYS,
+  useGetApplicationById,
+  useReviewApplication,
+} from "@/src/features/shared/applications/hooks";
+import {
   useGetCentreInterviews,
+  useGetCentrePanels,
 } from "@/src/features/shared/centre/hooks";
+import { useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import React, { useState } from "react";
 import { NsqCentreApplicationDetailView } from "./nsq/NsqCentreApplicationDetailView";
-import { GenerateLinkSuccessModal } from "./nsq/GenerateLinkSuccessModal";
-import { useToast } from "@/src/components/ui/toast";
-
 export const CentreApplicationRouteView: React.FC<{ id: string }> = ({
   id,
 }) => {
@@ -43,102 +41,41 @@ export const CentreApplicationRouteView: React.FC<{ id: string }> = ({
     useState(false);
   const [isCreateInterviewModalOpen, setIsCreateInterviewModalOpen] =
     useState(false);
-  const [isGenerateLinkModalOpen, setIsGenerateLinkModalOpen] = useState(false);
-  const [selectedUnitNumber, setSelectedUnitNumber] = useState<string | null>(null);
+  const [selectedUnitNumber, setSelectedUnitNumber] = useState<string | null>(
+    null,
+  );
 
   const { data: centrePanels = [] } = useGetCentrePanels();
   const { data: centreInterviews = [] } = useGetCentreInterviews();
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen w-full bg-[#f8f9fb] flex flex-col select-text">
-        <div className="max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1 flex flex-col gap-6 sm:gap-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            <div className="lg:col-span-8 xl:col-span-9 flex flex-col gap-4">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-100 shadow-2xs flex items-center justify-between gap-4 animate-pulse"
-                >
-                  <div className="flex flex-col gap-2 min-w-0 w-full">
-                    <div className="h-4 bg-gray-200 rounded w-40" />
-                    <div className="h-3 bg-gray-100 rounded w-56" />
-                  </div>
-                  <div className="h-8 bg-gray-100 rounded-xl w-20 shrink-0" />
-                </div>
-              ))}
-            </div>
-            <div className="lg:col-span-4 xl:col-span-3 flex flex-col gap-4">
-              <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-2xs h-64 animate-pulse" />
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const candidateName = application
+    ? application.candidate?.name ||
+      (application.candidate?.firstName
+        ? `${application.candidate.firstName} ${
+            application.candidate.lastName || ""
+          }`.trim()
+        : application.candidateId || "Candidate")
+    : null;
 
-  if (!application) {
-    return (
-      <div className="w-full min-h-[60vh] flex flex-col items-center justify-center gap-4 text-center p-6">
-        <h3 className="text-lg font-bold text-gray-800">
-          Application Not Found
-        </h3>
-        <p className="text-sm text-gray-500 max-w-sm">
-          The application you are trying to view does not exist or has been
-          removed.
-        </p>
-        <button
-          type="button"
-          onClick={() =>
-            router.push("/assessment-centre/dashboard/applications")
-          }
-          className="px-4 py-2 bg-[#8A1538] text-white text-xs font-bold rounded-xl cursor-pointer"
-        >
-          Back to Applications
-        </button>
-      </div>
-    );
-  }
+  const isSelectedAppApproved = application
+    ? application.status === "in_progress" || application.status === "certified"
+    : false;
 
-  const candidateName =
-    application.candidate?.name ||
-    (application.candidate?.firstName
-      ? `${application.candidate.firstName} ${
-          application.candidate.lastName || ""
-        }`.trim()
-      : application.candidateId || "Candidate");
+  const isNsqApplication = application
+    ? application.type === "NSQ" ||
+      (application as any)?.assessmentType === "NSQ"
+    : false;
 
-  const isSelectedAppApproved =
-    application.status === "in_progress" ||
-    application.status === "certified";
-
-  const isNsqApplication =
-    application.type === "NSQ" ||
-    (application as any)?.assessmentType === "NSQ";
-
-  const tradeName =
-    (typeof application.trade === "object" ? (application.trade as any)?.name : null) ||
-    (typeof application.trade === "string" && !/^[0-9A-Z]{20,}$/.test(application.trade)
-      ? application.trade
-      : null) ||
-    "Masonry";
-
-  const handleGenerateLink = () => {
-    setIsGenerateLinkModalOpen(true);
-  };
-
-  const handleCopyGeneratedLink = () => {
-    if (typeof window !== "undefined") {
-      const shareUrl = `${window.location.origin}/applications/${id}?from=centre`;
-      navigator.clipboard.writeText(shareUrl);
-      setIsGenerateLinkModalOpen(false);
-      toast({
-        type: "success",
-        title: "Link Copied",
-        description: "You have successfully copied a link",
-      });
-    }
-  };
+  const tradeName = application
+    ? (typeof application.trade === "object"
+        ? (application.trade as any)?.name
+        : null) ||
+      (typeof application.trade === "string" &&
+      !/^[0-9A-Z]{20,}$/.test(application.trade)
+        ? application.trade
+        : null) ||
+      "Masonry"
+    : "Masonry";
 
   const handleOpenScheduleInterview = () => {
     const hasPanels =
@@ -170,7 +107,6 @@ export const CentreApplicationRouteView: React.FC<{ id: string }> = ({
           showCandidateForm={showCandidateForm}
           isApplicationApproved={isSelectedAppApproved}
           isNsqApplication={isNsqApplication}
-          onGenerateLink={handleGenerateLink}
           onBackToList={handleBackToList}
           onBackFromInterview={handleBackToList}
           onBackFromUnit={() => setSelectedUnitNumber(null)}
@@ -205,23 +141,62 @@ export const CentreApplicationRouteView: React.FC<{ id: string }> = ({
       </AssessmentCentreHeader>
 
       <div className="max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1 flex flex-col gap-6 sm:gap-8">
-        {showSelfAssessmentForm ? (
+        {isLoading ? (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start animate-pulse">
+            <div className="lg:col-span-8 xl:col-span-9 flex flex-col gap-4">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-100 shadow-2xs flex items-center justify-between gap-4"
+                >
+                  <div className="flex flex-col gap-2 min-w-0 w-full">
+                    <div className="h-4 bg-gray-200 rounded w-40" />
+                    <div className="h-3 bg-gray-100 rounded w-56" />
+                  </div>
+                  <div className="h-8 bg-gray-100 rounded-xl w-20 shrink-0" />
+                </div>
+              ))}
+            </div>
+            <div className="lg:col-span-4 xl:col-span-3 flex flex-col gap-4">
+              <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-2xs h-64" />
+            </div>
+          </div>
+        ) : !application ? (
+          <div className="w-full min-h-[60vh] flex flex-col items-center justify-center gap-4 text-center p-6">
+            <h3 className="text-lg font-bold text-gray-800">
+              Application Not Found
+            </h3>
+            <p className="text-sm text-gray-500 max-w-sm">
+              The application you are trying to view does not exist or has been
+              removed.
+            </p>
+            <button
+              type="button"
+              onClick={() =>
+                router.push("/assessment-centre/dashboard/applications")
+              }
+              className="px-4 py-2 bg-[#8A1538] text-white text-xs font-bold rounded-xl cursor-pointer"
+            >
+              Back to Applications
+            </button>
+          </div>
+        ) : showSelfAssessmentForm ? (
           <SelfAssessmentFormView
             id={id}
-            candidateName={candidateName}
+            candidateName={candidateName ?? undefined}
             onBack={() => setShowSelfAssessmentForm(false)}
           />
         ) : showEvidenceVault ? (
           <EvidenceVaultView
             id={id}
-            candidateName={candidateName}
+            candidateName={candidateName ?? undefined}
             onBack={() => setShowEvidenceVault(false)}
             onOpenSelfAssessmentForm={() => setShowSelfAssessmentForm(true)}
           />
         ) : showCandidateForm ? (
           <CandidateFormView
             id={id}
-            candidateName={candidateName}
+            candidateName={candidateName ?? undefined}
             onBack={() => setShowCandidateForm(false)}
           />
         ) : isNsqApplication ? (
@@ -234,7 +209,7 @@ export const CentreApplicationRouteView: React.FC<{ id: string }> = ({
         ) : (
           <ApplicationDetail
             id={id}
-            candidateName={candidateName}
+            candidateName={candidateName ?? undefined}
             onBack={handleBackToList}
             onOpenCandidateForm={() => setShowCandidateForm(true)}
             onOpenEvidenceVault={() => setShowEvidenceVault(true)}
@@ -258,11 +233,6 @@ export const CentreApplicationRouteView: React.FC<{ id: string }> = ({
       <CreateInterviewModal
         isOpen={isCreateInterviewModalOpen}
         onClose={() => setIsCreateInterviewModalOpen(false)}
-      />
-      <GenerateLinkSuccessModal
-        isOpen={isGenerateLinkModalOpen}
-        onClose={() => setIsGenerateLinkModalOpen(false)}
-        onCopyLink={handleCopyGeneratedLink}
       />
     </div>
   );

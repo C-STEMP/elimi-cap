@@ -92,7 +92,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: -8 }}
             transition={{ duration: 0.18, ease: "easeOut" }}
-            className="fixed left-3 right-3 top-18 sm:absolute sm:left-auto sm:right-0 sm:top-12 z-50 w-auto sm:w-96 max-w-[calc(100vw-24px)] bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden text-[#1e1e1e] select-none"
+            className="fixed left-3 right-3 top-18 sm:absolute sm:left-auto sm:right-0 sm:top-12 z-50 w-auto sm:w-96 max-w-[calc(100vw-24px)] bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden text-text-dark select-none"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 bg-[#a31d38] text-white">
@@ -119,7 +119,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
             </div>
 
             {/* Notification Preview List (Max Items) */}
-            <div className="divide-y divide-gray-100 max-h-[320px] overflow-y-auto">
+            <div className="divide-y divide-gray-100 max-h-80 overflow-y-auto">
               {isLoading ? (
                 <div className="py-8 text-center text-xs text-gray-400">
                   Loading notifications...
@@ -158,7 +158,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                       {/* Body Content */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
-                          <h4 className="text-xs font-bold text-[#1e1e1e] truncate">
+                          <h4 className="text-xs font-bold text-text-dark truncate">
                             {itemTitle}
                           </h4>
                           <span className="text-[10px] text-gray-400 font-medium shrink-0">

@@ -216,7 +216,7 @@ export const AssessorCentreDetailView: React.FC<
       {/* Candidates Table or Empty View */}
       {isLoading ? (
         <div className="w-full overflow-x-auto max-w-full rounded-2xl border border-gray-100">
-          <table className="w-full text-left text-xs sm:text-sm border-collapse min-w-[650px]">
+          <table className="w-full text-left text-xs sm:text-sm border-collapse min-w-162.5">
             <thead>
               <tr className="bg-gray-50/70 text-gray-500 font-semibold border-b border-gray-100">
                 <th className="p-3.5 rounded-l-xl">Role</th>
@@ -243,7 +243,7 @@ export const AssessorCentreDetailView: React.FC<
         </div>
       ) : filteredCandidates.length > 0 ? (
         <div className="w-full overflow-x-auto max-w-full rounded-2xl border border-gray-100">
-          <table className="w-full text-left text-xs sm:text-sm border-collapse min-w-[650px]">
+          <table className="w-full text-left text-xs sm:text-sm border-collapse min-w-162.5">
             <thead>
               <tr className="bg-gray-50/70 text-gray-500 font-semibold border-b border-gray-100">
                 <th className="p-3.5 rounded-l-xl">Role</th>

@@ -424,7 +424,7 @@ export const AssessorProfileDetailView: React.FC<
                       Completed
                     </span>
                   ) : (
-                    <span className="bg-[#F9A825]/10 text-[#F9A825] font-semibold px-3 py-1 rounded-full text-xs inline-block">
+                    <span className="bg-secondary/10 text-secondary font-semibold px-3 py-1 rounded-full text-xs inline-block">
                       Ongoing
                     </span>
                   )}
@@ -482,7 +482,7 @@ export const AssessorProfileDetailView: React.FC<
                           Completed
                         </span>
                       ) : (
-                        <span className="bg-[#F9A825]/10 text-[#F9A825] font-semibold px-3 py-1 rounded-full text-xs inline-block">
+                        <span className="bg-secondary/10 text-secondary font-semibold px-3 py-1 rounded-full text-xs inline-block">
                           Ongoing
                         </span>
                       )}

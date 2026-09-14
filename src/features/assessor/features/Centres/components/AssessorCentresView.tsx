@@ -118,7 +118,7 @@ export const AssessorCentresView: React.FC<AssessorCentresViewProps> = ({
       {/* Table Content */}
       {isLoading ? (
         <div className="w-full overflow-x-auto max-w-full rounded-2xl border border-gray-100">
-          <table className="w-full text-left text-xs sm:text-sm border-collapse min-w-[650px]">
+          <table className="w-full text-left text-xs sm:text-sm border-collapse min-w-162.5">
             <thead>
               <tr className="bg-gray-50/70 text-gray-500 font-semibold border-b border-gray-100">
                 <th className="p-3.5 rounded-l-xl">Centre Name</th>
@@ -144,7 +144,7 @@ export const AssessorCentresView: React.FC<AssessorCentresViewProps> = ({
         </div>
       ) : filteredCentres.length > 0 ? (
         <div className="w-full overflow-x-auto max-w-full rounded-2xl border border-gray-100">
-          <table className="w-full text-left text-xs sm:text-sm border-collapse min-w-[650px]">
+          <table className="w-full text-left text-xs sm:text-sm border-collapse min-w-162.5">
             <thead>
               <tr className="bg-gray-50/70 text-gray-500 font-semibold border-b border-gray-100">
                 <th className="p-3.5 rounded-l-xl">Centre Name</th>
@@ -204,7 +204,7 @@ export const AssessorCentresView: React.FC<AssessorCentresViewProps> = ({
             <FiList className="w-6 h-6 stroke-[1.75]" />
           </div>
           <h5 className="text-sm font-bold text-neutral-primary">No centres joined yet</h5>
-          <p className="text-xs text-neutral-secondary mt-1 max-w-[240px] leading-relaxed">
+          <p className="text-xs text-neutral-secondary mt-1 max-w-60 leading-relaxed">
             Apply to an assessment centre to start assessing candidates
           </p>
         </div>

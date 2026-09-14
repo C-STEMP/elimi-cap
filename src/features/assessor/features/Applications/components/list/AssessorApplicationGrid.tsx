@@ -62,7 +62,7 @@ export const AssessorApplicationGrid: React.FC<
                   Completed
                 </span>
               ) : isOngoing ? (
-                <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#F9A825]/10 text-[#F9A825]">
+                <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-secondary/10 text-secondary">
                   Ongoing
                 </span>
               ) : (

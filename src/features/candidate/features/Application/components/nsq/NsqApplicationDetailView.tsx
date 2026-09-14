@@ -535,9 +535,9 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                   so the timeline covers the remaining five workflow stages. */}
               <div className="relative flex items-center justify-between w-full px-2 sm:px-6">
                 {/* Horizontal Background Line */}
-                <div className="absolute left-6 right-6 top-3 h-0.5 bg-gray-200 -z-0" />
+                <div className="absolute left-6 right-6 top-3 h-0.5 bg-gray-200 z-0" />
                 <div
-                  className="absolute left-6 top-3 h-0.5 -z-0 bg-emerald-500 transition-all duration-300"
+                  className="absolute left-6 top-3 h-0.5 z-0 bg-emerald-500 transition-all duration-300"
                   style={{ width: `${progressPercent}%` }}
                 />
 
@@ -896,7 +896,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                   <span className="text-xs font-bold text-neutral-primary">
                     No request
                   </span>
-                  <p className="text-[11px] text-gray-400 font-medium max-w-[200px]">
+                  <p className="text-[11px] text-gray-400 font-medium max-w-50">
                     Your scheduled events will appear here
                   </p>
                 </div>

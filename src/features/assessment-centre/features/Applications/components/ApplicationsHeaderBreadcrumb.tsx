@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { FiLink } from "react-icons/fi";
 
 interface Props {
   selectedCandidateName: string | null;
@@ -13,7 +12,6 @@ interface Props {
   showCandidateForm: boolean;
   isApplicationApproved?: boolean;
   isNsqApplication?: boolean;
-  onGenerateLink?: () => void;
   onBackToList: () => void;
   onBackFromInterview?: () => void;
   onBackFromUnit?: () => void;
@@ -33,7 +31,6 @@ export const ApplicationsHeaderBreadcrumb: React.FC<Props> = ({
   showCandidateForm,
   isApplicationApproved,
   isNsqApplication,
-  onGenerateLink,
   onBackToList,
   onBackFromInterview,
   onBackFromUnit,
@@ -66,17 +63,6 @@ export const ApplicationsHeaderBreadcrumb: React.FC<Props> = ({
             <span className="font-semibold text-white">{selectedUnitNumber}</span>
           </div>
         </div>
-
-        {onGenerateLink && (
-          <button
-            type="button"
-            onClick={onGenerateLink}
-            className="bg-[#d97706] hover:bg-[#b45309] text-white font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-xs shrink-0 self-start sm:self-auto"
-          >
-            <span>Generate Link</span>
-            <FiLink className="w-4 h-4" />
-          </button>
-        )}
       </div>
     );
   }
@@ -204,17 +190,6 @@ export const ApplicationsHeaderBreadcrumb: React.FC<Props> = ({
             <span className="font-semibold text-white">{displayName}</span>
           </div>
         </div>
-
-        {isNsqApplication && onGenerateLink && (
-          <button
-            type="button"
-            onClick={onGenerateLink}
-            className="bg-[#d97706] hover:bg-[#b45309] text-white font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-xs shrink-0 self-start sm:self-auto"
-          >
-            <span>Generate Link</span>
-            <FiLink className="w-4 h-4" />
-          </button>
-        )}
       </div>
     );
   }

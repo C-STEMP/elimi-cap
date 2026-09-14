@@ -124,7 +124,7 @@ export const AssessorOverviewView: React.FC<AssessorOverviewViewProps> = ({
         </div>
       ) : null}
 
-      <div className="w-full bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col min-h-[420px]">
+      <div className="w-full bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col min-h-105">
         <div className="flex items-center justify-between border-b border-gray-100 pb-4 mb-4">
           <h2 className="text-lg font-bold text-neutral-primary">Applications</h2>
           <button
@@ -139,7 +139,7 @@ export const AssessorOverviewView: React.FC<AssessorOverviewViewProps> = ({
 
       {isLoading ? (
         <div className="w-full overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[700px]">
+          <table className="w-full text-left border-collapse min-w-175">
             <thead>
               <tr className="border-b border-gray-100 text-xs font-semibold text-gray-400 uppercase tracking-wider">
                 <th className="p-3.5">Candidate Name</th>
@@ -175,7 +175,7 @@ export const AssessorOverviewView: React.FC<AssessorOverviewViewProps> = ({
         </div>
       ) : applications.length > 0 ? (
         <div className="w-full overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[700px]">
+          <table className="w-full text-left border-collapse min-w-175">
             <thead>
               <tr className="border-b border-gray-100 text-xs font-semibold text-gray-400 uppercase tracking-wider">
                 <th className="p-3.5">Candidate Name</th>

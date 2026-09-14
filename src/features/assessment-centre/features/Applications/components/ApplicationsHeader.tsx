@@ -17,7 +17,6 @@ interface ApplicationsHeaderProps {
   showCandidateForm: boolean;
   isApplicationApproved?: boolean;
   isNsqApplication?: boolean;
-  onGenerateLink?: () => void;
   onBackToList: () => void;
   onBackFromInterview?: () => void;
   onBackFromUnit?: () => void;

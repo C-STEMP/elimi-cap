@@ -8,6 +8,8 @@ import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
 import { useGetCentreAssessors } from "@/src/features/shared/centre/hooks";
 import { assignFacilitatorApi } from "@/src/features/shared/applications/api/application.api";
+import { APPLICATION_QUERY_KEYS } from "@/src/features/shared/applications/hooks";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface AssignFacilitatorModalProps {
   isOpen: boolean;
@@ -25,10 +27,10 @@ export const AssignFacilitatorModal: React.FC<AssignFacilitatorModalProps> = ({
   onSuccess,
 }) => {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const { data: centreAssessors = [], isLoading: isLoadingAssessors } =
     useGetCentreAssessors({ status: "approved" });
 
-  const [selectedTrade, setSelectedTrade] = useState(tradeName);
   const [selectedAssessorId, setSelectedAssessorId] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
@@ -38,18 +40,11 @@ export const AssignFacilitatorModal: React.FC<AssignFacilitatorModalProps> = ({
 
   if (!isOpen && !isSuccessOpen) return null;
 
-  // Options for approved assessors
-  const assessorOptions =
-    centreAssessors.length > 0
-      ? centreAssessors.map((a) => ({
-          label: a.name || "Assessor",
-          value: a.id || (a as any).assessorId || (a as any).userId,
-        }))
-      : [
-          { label: "Ngozi Eze", value: "assessor-1" },
-          { label: "Chidi Okonkwo", value: "assessor-2" },
-          { label: "Amina Bello", value: "assessor-3" },
-        ];
+  // Real, approved centre assessors only — no fabricated fallback names.
+  const assessorOptions = centreAssessors.map((a) => ({
+    label: a.name || "Assessor",
+    value: a.id || (a as any).assessorId || (a as any).userId,
+  }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,42 +59,26 @@ export const AssignFacilitatorModal: React.FC<AssignFacilitatorModalProps> = ({
 
     const assessor = assessorOptions.find((opt) => opt.value === selectedAssessorId);
     const facilitatorName = assessor?.label || "Assessor";
-    const facilitatorPayload = {
-      id: selectedAssessorId,
-      name: facilitatorName,
-      trade: selectedTrade || tradeName,
-      role: `Facilitator · ${selectedTrade || tradeName}`,
-      tags: [selectedTrade || tradeName, "RPL Coordinator"],
-      assignedAt: new Date().toISOString(),
-    };
 
-    if (typeof window !== "undefined" && applicationId) {
-      try {
-        localStorage.setItem(
-          `elimi_assigned_facilitator_${applicationId}`,
-          JSON.stringify(facilitatorPayload),
-        );
-        localStorage.removeItem(`elimi_assigned_facilitator_active`);
-      } catch (e) {
-        console.error("Storage error:", e);
-      }
-    }
-
+    setIsSubmitting(true);
     try {
-      setIsSubmitting(true);
-      if (applicationId && !selectedAssessorId.startsWith("assessor-")) {
-        try {
-          await assignFacilitatorApi(applicationId, selectedAssessorId);
-        } catch (apiErr: any) {
-          console.warn("Backend assign facilitator warning:", apiErr?.message || apiErr);
-        }
-      }
+      await assignFacilitatorApi(applicationId, selectedAssessorId);
+
+      await queryClient.invalidateQueries({
+        queryKey: APPLICATION_QUERY_KEYS.detail(applicationId),
+      });
+      await queryClient.invalidateQueries({
+        queryKey: APPLICATION_QUERY_KEYS.all,
+      });
+
       setAssignedInfo({ id: selectedAssessorId, name: facilitatorName });
       setIsSuccessOpen(true);
     } catch (err: any) {
-      console.warn("Assign facilitator fallback:", err);
-      setAssignedInfo({ id: selectedAssessorId, name: facilitatorName });
-      setIsSuccessOpen(true);
+      toast({
+        type: "error",
+        title: "Assignment Failed",
+        description: err?.message || "Unable to assign this facilitator. Please try again.",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -143,28 +122,27 @@ export const AssignFacilitatorModal: React.FC<AssignFacilitatorModalProps> = ({
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4 text-left">
-                <Select
-                  label="Trade"
-                  placeholder="Select"
-                  value={selectedTrade}
-                  onChange={(e) => setSelectedTrade(e.target.value)}
-                  options={[
-                    selectedTrade || tradeName,
-                    "Carpentry",
-                    "Masonry",
-                    "Plumbing",
-                    "Painting",
-                    "Electrician",
-                  ].filter((v, i, a) => Boolean(v) && a.indexOf(v) === i)}
-                />
+                {/* Read-only — this assignment is scoped to the application's own trade */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-gray-700">Trade</label>
+                  <div className="w-full bg-[#F8F9FA] border border-gray-200 rounded-xl px-4 py-3 text-xs text-gray-800 font-medium">
+                    {tradeName}
+                  </div>
+                </div>
 
-                <Select
-                  label="Select Facilitator"
-                  placeholder={isLoadingAssessors ? "Loading Assessors..." : "Select"}
-                  value={selectedAssessorId}
-                  onChange={(e) => setSelectedAssessorId(e.target.value)}
-                  options={assessorOptions}
-                />
+                {!isLoadingAssessors && assessorOptions.length === 0 ? (
+                  <div className="w-full bg-[#F8F9FA] border border-gray-200 rounded-xl px-4 py-3 text-xs text-gray-400">
+                    No approved retained assessors at this centre yet.
+                  </div>
+                ) : (
+                  <Select
+                    label="Select Facilitator"
+                    placeholder={isLoadingAssessors ? "Loading Assessors..." : "Select"}
+                    value={selectedAssessorId}
+                    onChange={(e) => setSelectedAssessorId(e.target.value)}
+                    options={assessorOptions}
+                  />
+                )}
 
                 <Button
                   type="submit"
@@ -192,7 +170,7 @@ export const AssignFacilitatorModal: React.FC<AssignFacilitatorModalProps> = ({
               className="bg-white rounded-[28px] p-8 sm:p-10 max-w-md w-full flex flex-col items-center text-center shadow-2xl relative border border-gray-100"
             >
               <div className="w-20 h-20 rounded-full bg-[#48C046] flex items-center justify-center text-white mb-6 shadow-md">
-                <FiCheck className="w-10 h-10 stroke-[3]" />
+                <FiCheck className="w-10 h-10 stroke-3" />
               </div>
 
               <h3 className="text-xl sm:text-2xl font-extrabold text-black tracking-tight mb-2">
