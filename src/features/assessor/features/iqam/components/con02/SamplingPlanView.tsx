@@ -105,7 +105,35 @@ export const SamplingPlanView: React.FC<SamplingPlanViewProps> = ({
           <h3 className="text-sm sm:text-base font-extrabold text-neutral-primary">Assessment Tools</h3>
 
           {isLoading ? (
-            <p className="text-xs text-gray-400 py-4">Loading sampling plan…</p>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs min-w-220">
+                <thead>
+                  <tr className="border-b border-gray-100 text-gray-500 font-bold text-[11px]">
+                    <th className="py-3 px-2">Candidate Name</th>
+                    <th className="py-3 px-2">Unit Assessor</th>
+                    <th className="py-3 px-2">Term Type</th>
+                    <th className="py-3 px-2">Planned Date</th>
+                    {Array.from({ length: 4 }).map((_, i) => (
+                      <th key={i} className="py-3 px-2 text-center">
+                        <div className="h-3 bg-gray-100 rounded w-8 mx-auto" />
+                      </th>
+                    ))}
+                    <th className="py-3 px-2 text-right">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <tr key={i} className="animate-pulse">
+                      {Array.from({ length: 8 }).map((__, j) => (
+                        <td key={j} className="py-3.5 px-2">
+                          <div className="h-3 bg-gray-200 rounded w-14" />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           ) : !matrix || matrix.data.length === 0 ? (
             <p className="text-xs text-gray-400 py-4">No candidates found for this trade and level.</p>
           ) : (

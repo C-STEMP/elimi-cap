@@ -9,7 +9,6 @@ import {
   useApproveRetainedRequest,
   useRejectRetainedRequest,
 } from "@/src/features/shared/centre/hooks";
-import { Loader } from "@/src/components/ui/loader";
 import {
   AssessorRequestModal,
   AssessorRequestModalMode,
@@ -130,8 +129,21 @@ export const AssessorRequestListView: React.FC<
 
   if (isLoading) {
     return (
-      <div className="w-full bg-white rounded-3xl p-12 flex items-center justify-center">
-        <Loader fullscreen={false} size="small" tip="Loading requests..." />
+      <div className="w-full flex flex-col gap-6 select-text">
+        <div className="bg-white rounded-3xl p-6 shadow-2xs border border-gray-100/80 flex flex-col gap-6 animate-pulse">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+            <div className="h-10 bg-gray-100 rounded-xl flex-1 max-w-sm" />
+            <div className="flex items-center gap-1.5">
+              <div className="w-9 h-9 rounded-full bg-gray-100" />
+              <div className="w-9 h-9 rounded-full bg-gray-100" />
+            </div>
+          </div>
+          <div className="flex flex-col gap-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="h-14 bg-gray-100 rounded-xl" />
+            ))}
+          </div>
+        </div>
       </div>
     );
   }

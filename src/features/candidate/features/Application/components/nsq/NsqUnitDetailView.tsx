@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Modal } from "antd";
 import {
   FiChevronDown,
   FiChevronUp,
@@ -10,11 +9,9 @@ import {
   FiCheck,
   FiCheckCircle,
   FiFileText,
-  FiAlertTriangle,
   FiX,
 } from "react-icons/fi";
 import { HeaderBanner } from "@/features/candidate/features/Dashboard/components/HeaderBanner";
-import { Button } from "@/src/components/ui/button";
 import { submitUnitEvidenceApi } from "@/src/features/shared/applications/api";
 import type { NsqCriterion } from "@/src/features/shared/applications/api/types";
 import {
@@ -297,6 +294,10 @@ export const NsqUnitDetailView: React.FC<NsqUnitDetailViewProps> = ({
   const [expandedPcIds, setExpandedPcIds] = useState<string[]>(["pc-1-1"]);
 
   const [activePcForUpload, setActivePcForUpload] = useState<PerformanceCriteria | null>(null);
+  // Set only when re-uploading to replace an existing evidence row — seeds
+  // the modal's evidence type with the type being replaced instead of
+  // defaulting to a fresh upload's default.
+  const [replacingEvidenceType, setReplacingEvidenceType] = useState<string | undefined>(undefined);
   const [learningOutcomes, setLearningOutcomes] = useState<LearningOutcome[]>(() =>
     parseStructureToLearningOutcomes(structure, tradeName),
   );
@@ -308,13 +309,6 @@ export const NsqUnitDetailView: React.FC<NsqUnitDetailViewProps> = ({
       );
     }
   }, [remoteCriteriaData, tradeName]);
-
-  // Evidence Delete State
-  const [evidenceToDelete, setEvidenceToDelete] = useState<{
-    pcId: string;
-    evidenceId: string;
-  } | null>(null);
-  const [isDeleteSuccessModalOpen, setIsDeleteSuccessModalOpen] = useState(false);
 
   // Evidence Preview State
   const [previewEvidenceItem, setPreviewEvidenceItem] = useState<{
@@ -385,29 +379,6 @@ export const NsqUnitDetailView: React.FC<NsqUnitDetailViewProps> = ({
 
     setShowUploadToast(true);
     setTimeout(() => setShowUploadToast(false), 4000);
-  };
-
-  const handleConfirmDelete = () => {
-    if (!evidenceToDelete) return;
-
-    setLearningOutcomes((prev) =>
-      prev.map((lo) => ({
-        ...lo,
-        criteria: lo.criteria.map((pc) =>
-          pc.id === evidenceToDelete.pcId
-            ? {
-                ...pc,
-                evidences: pc.evidences.filter(
-                  (ev) => ev.id !== evidenceToDelete.evidenceId,
-                ),
-              }
-            : pc,
-        ),
-      })),
-    );
-
-    setEvidenceToDelete(null);
-    setIsDeleteSuccessModalOpen(true);
   };
 
   return (
@@ -548,7 +519,10 @@ export const NsqUnitDetailView: React.FC<NsqUnitDetailViewProps> = ({
                                 {/* Dotted Upload Evidence Trigger */}
                                 <button
                                   type="button"
-                                  onClick={() => setActivePcForUpload(pc)}
+                                  onClick={() => {
+                                    setActivePcForUpload(pc);
+                                    setReplacingEvidenceType(undefined);
+                                  }}
                                   className="w-full border-2 border-dashed border-[#a31d38]/30 hover:border-[#a31d38]/60 bg-[#fdf2f5] hover:bg-[#fbe8ed] rounded-xl p-3.5 flex items-center justify-center gap-2 text-xs font-bold text-[#a31d38] transition-all cursor-pointer select-none"
                                 >
                                   <FiUpload className="w-4 h-4" />
@@ -583,22 +557,13 @@ export const NsqUnitDetailView: React.FC<NsqUnitDetailViewProps> = ({
                                         <div className="flex items-center gap-3">
                                           <button
                                             type="button"
-                                            onClick={() => setActivePcForUpload(pc)}
+                                            onClick={() => {
+                                              setActivePcForUpload(pc);
+                                              setReplacingEvidenceType(ev.evidenceType);
+                                            }}
                                             className="text-xs font-semibold text-neutral-800 hover:text-black cursor-pointer"
                                           >
-                                            Upload
-                                          </button>
-                                          <button
-                                            type="button"
-                                            onClick={() =>
-                                              setEvidenceToDelete({
-                                                pcId: pc.id,
-                                                evidenceId: ev.id,
-                                              })
-                                            }
-                                            className="text-xs font-semibold text-red-700 hover:text-red-900 cursor-pointer"
-                                          >
-                                            Delete
+                                            Re-upload
                                           </button>
                                         </div>
                                       </div>
@@ -665,22 +630,13 @@ export const NsqUnitDetailView: React.FC<NsqUnitDetailViewProps> = ({
                                           <div className="flex items-center gap-3">
                                             <button
                                               type="button"
-                                              onClick={() => setActivePcForUpload(pc)}
+                                              onClick={() => {
+                                                setActivePcForUpload(pc);
+                                                setReplacingEvidenceType(ev.evidenceType);
+                                              }}
                                               className="text-xs font-semibold text-neutral-800 hover:text-black cursor-pointer"
                                             >
-                                              Upload
-                                            </button>
-                                            <button
-                                              type="button"
-                                              onClick={() =>
-                                                setEvidenceToDelete({
-                                                  pcId: pc.id,
-                                                  evidenceId: ev.id,
-                                                })
-                                              }
-                                              className="text-xs font-semibold text-red-700 hover:text-red-900 cursor-pointer"
-                                            >
-                                              Delete
+                                              Re-upload
                                             </button>
                                           </div>
                                         </div>
@@ -713,109 +669,16 @@ export const NsqUnitDetailView: React.FC<NsqUnitDetailViewProps> = ({
       {/* Upload Evidence Modal */}
       <NsqUploadEvidenceModal
         isOpen={Boolean(activePcForUpload)}
-        onClose={() => setActivePcForUpload(null)}
+        onClose={() => {
+          setActivePcForUpload(null);
+          setReplacingEvidenceType(undefined);
+        }}
         pcCode={activePcForUpload?.code}
         pcDescription={activePcForUpload?.description}
+        initialEvidenceType={replacingEvidenceType}
+        isReplace={Boolean(replacingEvidenceType)}
         onSuccess={handleEvidenceUploaded}
       />
-
-      {/* Evidence Delete Confirmation Modal */}
-      <Modal
-        open={Boolean(evidenceToDelete)}
-        onCancel={() => setEvidenceToDelete(null)}
-        footer={null}
-        centered
-        closable={false}
-        width={420}
-        styles={{
-          body: {
-            padding: 16,
-          },
-        }}
-      >
-        <div className="flex flex-col items-center justify-center text-center p-2 sm:p-4 gap-5">
-          <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-full bg-amber-50 flex items-center justify-center text-amber-500 shadow-inner">
-            <div className="w-14 h-14 rounded-full bg-amber-100 flex items-center justify-center">
-              <FiAlertTriangle className="w-8 h-8 text-amber-600 animate-pulse" />
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <h3 className="text-xl sm:text-2xl font-extrabold text-neutral-primary tracking-tight">
-              Are You sure?
-            </h3>
-            <p className="text-neutral-secondary text-sm font-normal">
-              Confirm you want to delete this evidence
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-3 w-full pt-2">
-            <Button
-              type="button"
-              variant="amber"
-              size="lg"
-              onClick={handleConfirmDelete}
-              className="w-full h-12 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-sm cursor-pointer"
-            >
-              Yes, Delete
-            </Button>
-
-            <Button
-              type="button"
-              variant="secondary"
-              size="lg"
-              onClick={() => setEvidenceToDelete(null)}
-              className="w-full h-12 border border-[#fbab2a] text-[#fbab2a] hover:bg-amber-50/50 bg-white font-bold text-sm rounded-xl cursor-pointer"
-            >
-              No
-            </Button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Evidence Deleted Success Modal */}
-      <Modal
-        open={isDeleteSuccessModalOpen}
-        onCancel={() => setIsDeleteSuccessModalOpen(false)}
-        footer={null}
-        centered
-        closable={false}
-        width={420}
-        styles={{
-          body: {
-            padding: 16,
-          },
-        }}
-      >
-        <div className="flex flex-col items-center justify-center text-center p-2 sm:p-4 gap-5">
-          <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-full bg-emerald-50 flex items-center justify-center shadow-inner">
-            <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-emerald-600 to-green-500 flex items-center justify-center shadow-lg shadow-green-500/20">
-              <FiCheck className="w-8 h-8 text-white stroke-[3]" />
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <h3 className="text-xl sm:text-2xl font-extrabold text-neutral-primary tracking-tight">
-              Evidence Deleted
-            </h3>
-            <p className="text-neutral-secondary text-sm font-normal">
-              You have successfully deleted an evidence
-            </p>
-          </div>
-
-          <div className="w-full pt-2">
-            <Button
-              type="button"
-              variant="amber"
-              size="lg"
-              onClick={() => setIsDeleteSuccessModalOpen(false)}
-              className="w-full h-12 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-md cursor-pointer"
-            >
-              Continue
-            </Button>
-          </div>
-        </div>
-      </Modal>
 
       {/* Preview Evidence Document Modal */}
       <NsqPreviewEvidenceModal

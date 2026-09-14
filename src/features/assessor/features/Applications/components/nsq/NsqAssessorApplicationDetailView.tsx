@@ -110,7 +110,7 @@ export const NsqAssessorApplicationDetailView: React.FC<
 
   // Full application detail — same query key as the route view that fetched
   // this application, so it's served from cache rather than refetched.
-  const { data: apiApp } = useGetApplicationById(application.id);
+  const { data: apiApp, isLoading: isLoadingApp } = useGetApplicationById(application.id);
   const { data: inductionForm } = useGetInductionForm(application.id);
 
   const tradeId = apiApp?.tradeId || "";
@@ -324,6 +324,7 @@ export const NsqAssessorApplicationDetailView: React.FC<
               tradeName={tradeName}
               units={unitsList}
               onSelectUnit={handleSelectUnit}
+              isLoading={isLoadingApp}
             />
 
             {/* 4. IQAM Forms Card — status from GET /applications/{id} `iqamForms` */}

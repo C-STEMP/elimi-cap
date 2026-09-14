@@ -196,7 +196,7 @@ export const NsqCentreApplicationDetailView: React.FC<
 
   // Dynamic reference data
   const { data: tradeDetail } = useGetTradeDetail(tradeId);
-  const { data: remoteUnits = [] } = useGetUnitsByTrade(tradeId);
+  const { data: remoteUnits = [], isLoading: isLoadingUnits } = useGetUnitsByTrade(tradeId);
   const { data: remoteEvidenceTypes = [] } = useGetEvidenceTypesByTrade(tradeId);
   const { data: remoteCentres = [] } = useGetCentres();
   const { data: remoteSectors = [] } = useGetSectors();
@@ -913,12 +913,24 @@ export const NsqCentreApplicationDetailView: React.FC<
                 </h3>
 
                 <div className="flex flex-col gap-2.5">
-                  {unitsList.length === 0 && (
-                    <p className="text-xs text-gray-400 font-medium py-2">
-                      Units will appear here once the candidate&apos;s qualification standard is loaded.
-                    </p>
-                  )}
-                  {unitsList.map((unit, index) => {
+                  {isLoadingUnits && !application?.nsq?.units?.length ? (
+                    Array.from({ length: 3 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="p-4 rounded-xl bg-[#F8F9FA] flex items-center justify-between gap-4 animate-pulse"
+                      >
+                        <div className="h-3.5 bg-gray-200 rounded w-2/3" />
+                        <div className="h-5 bg-gray-200 rounded-full w-20 shrink-0" />
+                      </div>
+                    ))
+                  ) : (
+                    <>
+                      {unitsList.length === 0 && (
+                        <p className="text-xs text-gray-400 font-medium py-2">
+                          Units will appear here once the candidate&apos;s qualification standard is loaded.
+                        </p>
+                      )}
+                      {unitsList.map((unit, index) => {
                     const hasCounts =
                       typeof unit.criteriaApproved === "number" &&
                       typeof unit.criteriaTotal === "number";
@@ -926,11 +938,15 @@ export const NsqCentreApplicationDetailView: React.FC<
                       ? `${unit.criteriaApproved}/${unit.criteriaTotal} Approved`
                       : unit.status === "Approved"
                         ? "Approved"
-                        : "Pending";
+                        : unit.status === "In Progress"
+                          ? "In Progress"
+                          : "Not Started";
                     const badgeClass =
                       unit.status === "Approved"
                         ? "bg-[#10753A] text-white"
-                        : "bg-[#FEF3C7] text-[#D97706]";
+                        : unit.status === "In Progress"
+                          ? "bg-[#FEF3C7] text-[#D97706]"
+                          : "bg-gray-200/80 text-gray-600";
                     return (
                       <div
                         key={unit.id}
@@ -955,8 +971,10 @@ export const NsqCentreApplicationDetailView: React.FC<
                           <FiChevronRight className="w-4 h-4 text-gray-400" />
                         </div>
                       </div>
-                    );
-                  })}
+                        );
+                      })}
+                    </>
+                  )}
                 </div>
               </div>
 

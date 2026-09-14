@@ -4,7 +4,6 @@ import React from "react";
 import { FiDownload, FiFileText } from "react-icons/fi";
 import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
-import { Loader } from "@/src/components/ui/loader";
 import type { EvidenceRecord } from "@/src/features/shared/evidence-vault/utils/evidenceConstants";
 
 interface Props {
@@ -99,8 +98,22 @@ export const EvidenceItemsList: React.FC<Props> = ({
         </h2>
 
         {isLoadingEvidence ? (
-          <div className="p-8 flex justify-center">
-            <Loader tip="Loading evidence items..." />
+          <div className="flex flex-col gap-4">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div
+                key={i}
+                className="bg-white rounded-2xl p-5 border border-gray-100 shadow-2xs flex items-center justify-between gap-4 animate-pulse"
+              >
+                <div className="flex items-center gap-4 min-w-0 w-full">
+                  <div className="w-12 h-12 rounded-xl bg-gray-100 shrink-0" />
+                  <div className="flex flex-col gap-2 min-w-0 w-full">
+                    <div className="h-4 bg-gray-200 rounded w-48" />
+                    <div className="h-3 bg-gray-100 rounded w-32" />
+                  </div>
+                </div>
+                <div className="h-8 bg-gray-100 rounded-xl w-16 shrink-0" />
+              </div>
+            ))}
           </div>
         ) : evidenceItems.length > 0 ? (
           evidenceItems.map((item, idx) => {

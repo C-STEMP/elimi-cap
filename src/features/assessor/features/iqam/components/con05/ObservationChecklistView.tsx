@@ -111,9 +111,38 @@ export const ObservationChecklistView: React.FC<ObservationChecklistViewProps> =
 
   if (isLoading) {
     return (
-      <div className="w-full flex flex-col gap-6 select-text pb-12">
-        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-xs text-gray-400 py-6">Loading checklist…</p>
+      <div className="w-full flex flex-col gap-6 select-text pb-12 animate-pulse">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-6">
+          {/* Banner skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {Array.from({ length: 2 }).map((_, i) => (
+              <div key={i} className="bg-slate-50 border border-slate-100 rounded-2xl p-4 sm:p-5">
+                <div className="h-2.5 bg-gray-200 rounded w-24" />
+                <div className="h-4 bg-gray-200 rounded w-36 mt-2" />
+              </div>
+            ))}
+          </div>
+
+          {/* Section skeleton */}
+          {Array.from({ length: 2 }).map((_, sectionIdx) => (
+            <div
+              key={sectionIdx}
+              className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-5"
+            >
+              <div className="h-4 bg-gray-200 rounded w-40" />
+              <div className="flex flex-col gap-4">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="p-4 bg-gray-50/70 rounded-2xl border border-gray-100 flex flex-col gap-2.5">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="h-3 bg-gray-200 rounded w-3/4" />
+                      <div className="h-6 bg-gray-200 rounded-lg w-20 shrink-0" />
+                    </div>
+                    <div className="h-10 bg-gray-100 rounded-xl w-full" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );

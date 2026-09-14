@@ -28,7 +28,6 @@ interface ApplicationsHeaderProps {
   onScheduleInterview?: () => void;
   onCreateInterview?: () => void;
   onCreatePanel?: () => void;
-  onShareApplication?: () => void;
 }
 
 export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = (props) => {

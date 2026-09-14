@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FiChevronRight, FiFolder, FiPlus } from "react-icons/fi";
 import { Button } from "@/src/components/ui/button";
-import { Loader } from "@/src/components/ui/loader";
 
 export interface ApplicationItem {
   id: string;
@@ -50,7 +49,23 @@ export const ApplicationsList: React.FC<ApplicationsListProps> = ({
       </div>
 
       {isLoading ? (
-        <Loader fullscreen={false} size="small" tip="Loading applications..." className="py-8" />
+        <div className="flex flex-col gap-3.5 w-full">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div
+              key={i}
+              className="bg-[#f8f9fa] rounded-xl p-4 flex items-center justify-between border-l-[5px] border-gray-200 shadow-2xs animate-pulse"
+            >
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-3">
+                  <div className="h-4 bg-gray-200 rounded w-32" />
+                  <div className="h-4 bg-gray-200 rounded-full w-20" />
+                </div>
+                <div className="h-3 bg-gray-100 rounded w-40" />
+              </div>
+              <div className="w-5 h-5 bg-gray-200 rounded shrink-0" />
+            </div>
+          ))}
+        </div>
       ) : !hasApplications ? (
         <div className="flex flex-col items-center justify-center py-10 text-center">
           <div className="w-30 h-30 rounded-full bg-input-bg flex items-center justify-center mb-4">

@@ -17,7 +17,6 @@ import {
 import { useGetApplications } from "@/src/features/candidate/features/Application/hooks";
 import { useCandidateProfile } from "@/src/features/shared/onboarding/hooks";
 import { markVerified } from "@/store/slices/authSlice";
-import { Loader } from "@/src/components/ui/loader";
 
 type FilterTab = "All" | "Ongoing" | "Completed" | "Draft";
 
@@ -256,12 +255,23 @@ export const MyApplicationsPage: React.FC = () => {
               </div>
 
               {isLoading ? (
-                <Loader
-                  fullscreen={false}
-                  size="small"
-                  tip="Loading applications..."
-                  className="py-16"
-                />
+                <div className="flex flex-col gap-3.5 flex-1 justify-start pt-4 pb-2">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="bg-input-bg rounded-xl p-4 flex items-center justify-between border-l-[5px] border-gray-200 shadow-2xs animate-pulse"
+                    >
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-3">
+                          <div className="h-5 bg-gray-200 rounded w-36" />
+                          <div className="h-4 bg-gray-200 rounded-full w-24" />
+                        </div>
+                        <div className="h-3 bg-gray-100 rounded w-44" />
+                      </div>
+                      <div className="w-5 h-5 bg-gray-200 rounded shrink-0" />
+                    </div>
+                  ))}
+                </div>
               ) : filteredApplications.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center py-10 text-center">
                   <div className="w-30 h-30 rounded-full bg-input-bg flex items-center justify-center mb-4">

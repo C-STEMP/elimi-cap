@@ -17,6 +17,7 @@ interface QualificationUnitsListProps {
   level?: string;
   units: QualificationUnitItem[];
   onSelectUnit: (unit: QualificationUnitItem) => void;
+  isLoading?: boolean;
 }
 
 export const QualificationUnitsList: React.FC<QualificationUnitsListProps> = ({
@@ -24,6 +25,7 @@ export const QualificationUnitsList: React.FC<QualificationUnitsListProps> = ({
   level = "Level 3",
   units,
   onSelectUnit,
+  isLoading = false,
 }) => {
   return (
     <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-4 select-text">
@@ -32,12 +34,28 @@ export const QualificationUnitsList: React.FC<QualificationUnitsListProps> = ({
       </h3>
 
       <div className="flex flex-col gap-3">
-        {units.length === 0 && (
+        {isLoading && (
+          <div className="flex flex-col gap-3 animate-pulse">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div
+                key={i}
+                className="p-4 bg-gray-50/70 rounded-2xl border border-gray-100 flex items-center justify-between gap-3"
+              >
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <div className="h-3.5 bg-gray-200 rounded w-14 shrink-0" />
+                  <div className="h-3.5 bg-gray-200 rounded w-48" />
+                </div>
+                <div className="h-5 bg-gray-200 rounded-full w-24 shrink-0" />
+              </div>
+            ))}
+          </div>
+        )}
+        {!isLoading && units.length === 0 && (
           <p className="text-xs text-gray-400 font-medium py-2">
             Units will appear here once the candidate&apos;s qualification standard is loaded.
           </p>
         )}
-        {units.map((u) => (
+        {!isLoading && units.map((u) => (
           <div
             key={u.id}
             onClick={() => onSelectUnit(u)}

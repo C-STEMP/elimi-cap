@@ -3,7 +3,6 @@
 import React, { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useGetApplicationById } from "@/src/features/shared/applications/hooks";
-import { Loader } from "@/src/components/ui/loader";
 import { AssessorHeaderBanner } from "@/src/features/assessor/features/Dashboard/components/AssessorHeaderBanner";
 import {
   AssessorApplicationDetailView,
@@ -32,8 +31,43 @@ export const AssessorApplicationRouteView: React.FC<{ id: string }> = ({
 
   if (isLoading) {
     return (
-      <div className="w-full min-h-[60vh] flex items-center justify-center">
-        <Loader tip="Loading application details..." />
+      <div className="min-h-screen w-full bg-[#f8f9fb] flex flex-col select-text animate-pulse">
+        {/* Header banner skeleton */}
+        <div className="w-full bg-white border-b border-gray-100 px-4 sm:px-6 lg:px-8 py-5">
+          <div className="max-w-7xl xl:max-w-360 mx-auto flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gray-200 rounded-lg" />
+              <div className="h-4 bg-gray-200 rounded w-40" />
+            </div>
+            <div className="h-9 bg-gray-100 rounded-xl w-32" />
+          </div>
+        </div>
+
+        {/* Main content skeleton */}
+        <div className="max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1 flex flex-col gap-6">
+          <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            <div className="lg:col-span-8 flex flex-col gap-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="h-4 bg-gray-200 rounded w-32" />
+                    <div className="h-5 bg-gray-200 rounded-full w-20" />
+                  </div>
+                  <div className="h-3 bg-gray-100 rounded w-48" />
+                </div>
+              ))}
+            </div>
+            <div className="lg:col-span-4 flex flex-col gap-6">
+              {Array.from({ length: 2 }).map((_, i) => (
+                <div key={i} className="bg-white rounded-3xl p-6 shadow-xs border border-gray-100 h-40 flex flex-col gap-3">
+                  <div className="h-4 bg-gray-200 rounded w-28" />
+                  <div className="h-3 bg-gray-100 rounded w-36" />
+                  <div className="h-3 bg-gray-100 rounded w-24" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

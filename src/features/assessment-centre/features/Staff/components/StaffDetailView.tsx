@@ -11,7 +11,6 @@ import {
 } from "@/src/features/shared/centre/hooks";
 import { StaffStatusModal, StaffStatusModalMode } from "./StaffStatusModal";
 import { ASSETS_URL } from "@/assets";
-import { Loader } from "@/src/components/ui/loader";
 
 interface StaffDetailViewProps {
   staffId: string;
@@ -131,12 +130,21 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
 
   if (isLoadingStaff) {
     return (
-      <Loader
-        fullscreen={false}
-        size="small"
-        tip="Loading staff details..."
-        className="py-20"
-      />
+      <div className="w-full flex flex-col gap-6 select-text">
+        <div className="bg-white rounded-3xl p-6 shadow-2xs border border-gray-100/80 flex items-start gap-4 animate-pulse">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gray-200 shrink-0" />
+          <div className="flex flex-col gap-2 flex-1">
+            <div className="h-5 bg-gray-200 rounded w-40" />
+            <div className="h-3 bg-gray-100 rounded w-56" />
+          </div>
+        </div>
+        <div className="bg-white rounded-3xl p-6 shadow-2xs border border-gray-100/80 flex flex-col gap-4 animate-pulse">
+          <div className="h-5 bg-gray-200 rounded w-32" />
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="h-14 bg-gray-100 rounded-xl" />
+          ))}
+        </div>
+      </div>
     );
   }
 
@@ -280,12 +288,11 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
         </div>
 
         {isLoadingApps ? (
-          <Loader
-            fullscreen={false}
-            size="small"
-            tip="Loading applications..."
-            className="py-12"
-          />
+          <div className="flex flex-col gap-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="h-14 bg-gray-100 rounded-xl animate-pulse" />
+            ))}
+          </div>
         ) : filteredApplications.length === 0 ? (
           <div className="py-16 flex flex-col items-center justify-center text-center">
             <p className="text-gray-400 font-normal">No applications found.</p>

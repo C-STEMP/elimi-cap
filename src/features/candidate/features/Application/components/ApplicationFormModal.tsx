@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { FiX, FiDownload, FiPrinter } from "react-icons/fi";
 import { Button } from "@/src/components/ui/button";
 import { useGetApplicationById } from "@/src/features/candidate/features/Application/hooks";
-import { Loader } from "@/src/components/ui/loader";
 import { downloadFormElement, printFormElement } from "@/src/lib/formPrintDownload";
 import { CandidateFormCard } from "@/src/features/assessment-centre/features/Applications/components/CandidateFormCard";
 
@@ -82,8 +81,25 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
           {/* Body */}
           <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
             {isLoading ? (
-              <div className="min-h-75 flex items-center justify-center">
-                <Loader fullscreen={false} tip="Loading application form..." />
+              <div className="bg-white rounded-3xl p-6 sm:p-10 border border-gray-100 shadow-sm flex flex-col gap-8 animate-pulse">
+                <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4 border-b border-gray-100 pb-6 w-full">
+                  <div className="hidden sm:block w-28 sm:w-32 shrink-0" />
+                  <div className="flex flex-col items-center gap-3 flex-1 max-w-lg mx-auto w-full">
+                    <div className="h-8 w-24 bg-gray-200 rounded" />
+                    <div className="h-4 w-3/4 bg-gray-200 rounded" />
+                  </div>
+                  <div className="w-28 sm:w-32 h-28 sm:h-32 rounded-2xl bg-gray-200 shrink-0" />
+                </div>
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="flex flex-col gap-3">
+                    <div className="h-4 w-48 bg-gray-200 rounded" />
+                    <div className="flex flex-col gap-2.5">
+                      {Array.from({ length: 3 }).map((_, j) => (
+                        <div key={j} className="h-3 bg-gray-100 rounded w-full max-w-md" />
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : (
               <CandidateFormCard

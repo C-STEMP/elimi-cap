@@ -6,7 +6,6 @@ import { Button } from "@/src/components/ui/button";
 import { useGetAssessorApplications } from "@/src/features/assessor/features/Applications/hooks";
 import { useGetAssessorProfile } from "@/src/features/assessor/hooks";
 import type { Application } from "@/src/features/shared/applications/api";
-import { Loader } from "@/src/components/ui/loader";
 import { Avatar } from "@/src/components/ui/avatar";
 
 interface AssessorOverviewViewProps {
@@ -139,8 +138,40 @@ export const AssessorOverviewView: React.FC<AssessorOverviewViewProps> = ({
         </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader />
+        <div className="w-full overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[700px]">
+            <thead>
+              <tr className="border-b border-gray-100 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                <th className="p-3.5">Candidate Name</th>
+                <th className="p-3.5">Trade</th>
+                <th className="p-3.5">Assessment Type</th>
+                <th className="p-3.5">Status</th>
+                <th className="p-3.5">Stage</th>
+                <th className="p-3.5">Date</th>
+                <th className="p-3.5 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50 text-xs sm:text-sm">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <tr key={i} className="animate-pulse">
+                  <td className="p-3.5">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 rounded-full bg-gray-200 shrink-0" />
+                      <div className="h-3.5 bg-gray-200 rounded w-24" />
+                    </div>
+                  </td>
+                  {Array.from({ length: 5 }).map((__, j) => (
+                    <td key={j} className="p-3.5">
+                      <div className="h-3.5 bg-gray-100 rounded w-16" />
+                    </td>
+                  ))}
+                  <td className="p-3.5 text-right">
+                    <div className="h-3.5 bg-gray-100 rounded w-10 ml-auto" />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       ) : applications.length > 0 ? (
         <div className="w-full overflow-x-auto">

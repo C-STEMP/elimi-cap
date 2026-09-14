@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { HeaderBanner } from "@/features/candidate/features/Dashboard/components/HeaderBanner";
 import { Button } from "@/src/components/ui/button";
-import { Loader } from "@/src/components/ui/loader";
 import { FiEdit2, FiLock } from "react-icons/fi";
 import { ApplicationDetailsPageProps } from "../types";
 import { useApplicationDetailsState } from "../hooks";
@@ -19,7 +18,40 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({ 
   const state = useApplicationDetailsState(id);
 
   if (state.isLoading) {
-    return <Loader fullscreen={false} tip="Loading application details..." className="min-h-[60vh]" />;
+    return (
+      <div className="w-full flex flex-col min-h-screen">
+        <div className="max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            <div className="lg:col-span-8 xl:col-span-9 flex flex-col gap-4 bg-white rounded-2xl p-4 shadow-2xs animate-pulse">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="bg-[#F8F9FA] rounded-[20px] p-4 sm:p-6 border border-gray-100/70 flex flex-col gap-3"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="h-4 bg-gray-200 rounded w-40" />
+                    <div className="h-5 bg-gray-200 rounded-full w-20" />
+                  </div>
+                  <div className="h-3 bg-gray-100 rounded w-3/4" />
+                </div>
+              ))}
+            </div>
+
+            <div className="lg:col-span-4 xl:col-span-3 flex flex-col gap-6 animate-pulse">
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-2xs p-4">
+                <div className="h-4 bg-gray-200 rounded w-24 mb-4" />
+                <div className="h-40 bg-gray-100 rounded" />
+              </div>
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-2xs p-4">
+                <div className="h-4 bg-gray-200 rounded w-32 mb-3" />
+                <div className="h-3 bg-gray-100 rounded w-full mb-2" />
+                <div className="h-3 bg-gray-100 rounded w-2/3" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (state.apiApp?.type === "NSQ" || (state.application as any)?.type === "NSQ" || id === "nsq") {

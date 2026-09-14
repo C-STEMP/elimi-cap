@@ -26,12 +26,14 @@ interface AssessorCentresViewProps {
   centres: AssessorCentreItem[];
   onSelectCentre: (centre: AssessorCentreItem) => void;
   onApplyToCentre: () => void;
+  isLoading?: boolean;
 }
 
 export const AssessorCentresView: React.FC<AssessorCentresViewProps> = ({
   centres,
   onSelectCentre,
   onApplyToCentre,
+  isLoading = false,
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -114,7 +116,33 @@ export const AssessorCentresView: React.FC<AssessorCentresViewProps> = ({
       </div>
 
       {/* Table Content */}
-      {filteredCentres.length > 0 ? (
+      {isLoading ? (
+        <div className="w-full overflow-x-auto max-w-full rounded-2xl border border-gray-100">
+          <table className="w-full text-left text-xs sm:text-sm border-collapse min-w-[650px]">
+            <thead>
+              <tr className="bg-gray-50/70 text-gray-500 font-semibold border-b border-gray-100">
+                <th className="p-3.5 rounded-l-xl">Centre Name</th>
+                <th className="p-3.5">Role</th>
+                <th className="p-3.5">Candidate Assigned</th>
+                <th className="p-3.5">Status</th>
+                <th className="p-3.5">Joined at</th>
+                <th className="p-3.5 rounded-r-xl text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <tr key={i} className="animate-pulse">
+                  {Array.from({ length: 6 }).map((__, j) => (
+                    <td key={j} className="p-3.5">
+                      <div className="h-3.5 bg-gray-200 rounded w-20" />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : filteredCentres.length > 0 ? (
         <div className="w-full overflow-x-auto max-w-full rounded-2xl border border-gray-100">
           <table className="w-full text-left text-xs sm:text-sm border-collapse min-w-[650px]">
             <thead>

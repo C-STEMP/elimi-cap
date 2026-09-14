@@ -75,9 +75,25 @@ export const ComprehensiveReportView: React.FC<ComprehensiveReportViewProps> = (
 
   if (isLoading) {
     return (
-      <div className="w-full flex flex-col gap-6 select-text pb-12">
-        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-xs text-gray-400 py-6">Loading report…</p>
+      <div className="w-full flex flex-col gap-6 select-text pb-12 animate-pulse">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-6">
+          {/* Tabs skeleton */}
+          <div className="flex items-center gap-2 p-1.5 bg-slate-100/80 rounded-2xl w-fit">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-8 bg-gray-200 rounded-xl w-28" />
+            ))}
+          </div>
+
+          {/* Content skeleton */}
+          <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-5">
+            <div className="h-4 bg-gray-200 rounded w-48" />
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="p-4 bg-gray-50/70 rounded-2xl border border-gray-100 flex flex-col gap-2.5">
+                <div className="h-3 bg-gray-200 rounded w-3/4" />
+                <div className="h-10 bg-gray-100 rounded-xl w-full" />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
