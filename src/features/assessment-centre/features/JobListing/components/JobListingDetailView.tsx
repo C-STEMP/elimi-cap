@@ -12,7 +12,6 @@ import {
 } from "react-icons/fi";
 import { Button } from "@/src/components/ui/button";
 import { Select } from "@/src/components/ui/select";
-import { Loader } from "@/src/components/ui/loader";
 import { useToast } from "@/src/components/ui/toast";
 import {
   useGetJobPostingDetail,
@@ -89,12 +88,24 @@ export const JobListingDetailView: React.FC<JobListingDetailViewProps> = ({
 
   if (isLoadingJob) {
     return (
-      <div className="w-full bg-white rounded-3xl p-16 flex items-center justify-center min-h-80 shadow-2xs border border-gray-100/80">
-        <Loader
-          fullscreen={false}
-          size="small"
-          tip="Loading job details..."
-        />
+      <div className="w-full flex flex-col gap-6 select-text">
+        <div className="bg-white rounded-3xl p-6 shadow-2xs border border-gray-100/80 flex flex-col gap-2 animate-pulse">
+          <div className="h-5 bg-gray-200 rounded w-32" />
+          <div className="h-3 bg-gray-100 rounded w-full max-w-2xl mt-2" />
+          <div className="h-3 bg-gray-100 rounded w-3/4" />
+        </div>
+        <div className="bg-white rounded-3xl p-6 shadow-2xs border border-gray-100/80 flex flex-col gap-3 animate-pulse">
+          <div className="h-5 bg-gray-200 rounded w-28" />
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="h-12 bg-gray-100 rounded-2xl" />
+          ))}
+        </div>
+        <div className="bg-white rounded-3xl p-6 shadow-2xs border border-gray-100/80 flex flex-col gap-4 animate-pulse">
+          <div className="h-5 bg-gray-200 rounded w-24" />
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-14 bg-gray-100 rounded-xl" />
+          ))}
+        </div>
       </div>
     );
   }
@@ -214,7 +225,23 @@ export const JobListingDetailView: React.FC<JobListingDetailViewProps> = ({
         </div>
 
         {/* Applicants Table */}
-        {filteredApplicants.length === 0 ? (
+        {isLoadingApps ? (
+          <div className="w-full overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-[700px]">
+              <tbody className="divide-y divide-gray-100">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <tr key={i} className="animate-pulse">
+                    {Array.from({ length: 7 }).map((__, j) => (
+                      <td key={j} className="p-3.5">
+                        <div className="h-3.5 bg-gray-200 rounded w-20" />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : filteredApplicants.length === 0 ? (
           <div className="py-12 flex flex-col items-center justify-center text-center">
             <p className="text-gray-400 font-normal">
               No applicants found for this job posting.

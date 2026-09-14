@@ -2,7 +2,6 @@
 
 import React from "react";
 import { FiDownload, FiPrinter } from "react-icons/fi";
-import { Loader } from "@/src/components/ui/loader";
 import { downloadFormElement, printFormElement } from "@/src/lib/formPrintDownload";
 import { useCandidateFormState } from "../hooks/useCandidateFormState";
 import { CandidateFormCard } from "./CandidateFormCard";
@@ -21,8 +20,16 @@ export const CandidateFormView: React.FC<Props> = (props) => {
 
   if (s.isLoadingDetail && !s.appDetail) {
     return (
-      <div className="w-full min-h-100 flex items-center justify-center">
-        <Loader tip="Loading application form..." />
+      <div className="w-full flex flex-col gap-6 select-text">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          <div className="lg:col-span-8 bg-white rounded-3xl p-6 shadow-2xs border border-gray-100/80 flex flex-col gap-4 animate-pulse">
+            <div className="h-5 bg-gray-200 rounded w-48" />
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="h-4 bg-gray-100 rounded w-full max-w-md" />
+            ))}
+          </div>
+          <div className="lg:col-span-4 bg-white rounded-3xl p-6 shadow-2xs border border-gray-100/80 h-80 animate-pulse" />
+        </div>
       </div>
     );
   }

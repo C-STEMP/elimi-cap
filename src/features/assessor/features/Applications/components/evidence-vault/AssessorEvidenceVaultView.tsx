@@ -48,7 +48,7 @@ export const AssessorEvidenceVaultView: React.FC<
 }) => {
   const { toast } = useToast();
 
-  const { data: remoteEvidence } = useGetEvidenceVault(applicationId || "");
+  const { data: remoteEvidence, isLoading: isLoadingEvidence } = useGetEvidenceVault(applicationId || "");
   const { data: selfAssessmentData } = useGetSelfAssessment(applicationId || "");
   const { data: thirdPartyReportData } = useGetThirdPartyReport(applicationId || "");
   const reviewMutation = useReviewApplication();
@@ -491,6 +491,7 @@ export const AssessorEvidenceVaultView: React.FC<
             onView={handleViewEvidence}
             onSendFeedback={handleOpenSendFeedback}
             onApprove={handleOpenApprove}
+            isLoading={isLoadingEvidence}
           />
         </div>
 

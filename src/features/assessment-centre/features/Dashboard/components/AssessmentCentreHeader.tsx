@@ -178,7 +178,7 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="w-full bg-[#a31d38] text-white shadow-md select-none transition-all relative">
+    <header className="w-full bg-[#900B27] text-white shadow-md select-none transition-all relative">
       <div className="max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 flex flex-col gap-6">
         <div className="flex items-center justify-between gap-2 xl:gap-3 2xl:gap-4 border-b border-white/10 pb-5 min-w-0">
           <div className="shrink-0 cursor-pointer">

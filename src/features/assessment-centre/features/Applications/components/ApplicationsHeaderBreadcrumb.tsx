@@ -21,7 +21,6 @@ interface Props {
   onBackFromEvidenceVault: () => void;
   onBackFromCandidateForm: () => void;
   onAcceptApplication?: () => void;
-  onShareApplication?: () => void;
 }
 
 export const ApplicationsHeaderBreadcrumb: React.FC<Props> = ({
@@ -42,7 +41,6 @@ export const ApplicationsHeaderBreadcrumb: React.FC<Props> = ({
   onBackFromEvidenceVault,
   onBackFromCandidateForm,
   onAcceptApplication,
-  onShareApplication,
 }) => {
   if (selectedUnitNumber) {
     return (
@@ -207,45 +205,15 @@ export const ApplicationsHeaderBreadcrumb: React.FC<Props> = ({
           </div>
         </div>
 
-        {isNsqApplication ? (
-          onGenerateLink && (
-            <button
-              type="button"
-              onClick={onGenerateLink}
-              className="bg-[#d97706] hover:bg-[#b45309] text-white font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-xs shrink-0 self-start sm:self-auto"
-            >
-              <span>Generate Link</span>
-              <FiLink className="w-4 h-4" />
-            </button>
-          )
-        ) : (
-          onShareApplication && (
-            <button
-              type="button"
-              onClick={onShareApplication}
-              className="bg-white/15 hover:bg-white/25 border border-white/30 text-white font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-xs shrink-0 self-start sm:self-auto"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="w-4 h-4"
-              >
-                <circle cx="18" cy="5" r="3" />
-                <circle cx="6" cy="12" r="3" />
-                <circle cx="18" cy="19" r="3" />
-                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-              </svg>
-              <span>Share Dossier</span>
-            </button>
-          )
+        {isNsqApplication && onGenerateLink && (
+          <button
+            type="button"
+            onClick={onGenerateLink}
+            className="bg-[#d97706] hover:bg-[#b45309] text-white font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-xs shrink-0 self-start sm:self-auto"
+          >
+            <span>Generate Link</span>
+            <FiLink className="w-4 h-4" />
+          </button>
         )}
       </div>
     );

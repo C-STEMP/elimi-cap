@@ -256,7 +256,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
 
   // Fetch dynamic Trade Detail, Units, Centres, and Sectors
   const { data: tradeDetail } = useGetTradeDetail(tradeId);
-  const { data: remoteUnits = [] } = useGetUnitsByTrade(tradeId);
+  const { data: remoteUnits = [], isLoading: isLoadingUnits } = useGetUnitsByTrade(tradeId);
   const { data: remoteEvidenceTypes = [] } = useGetEvidenceTypesByTrade(tradeId);
   const { data: remoteCentres = [] } = useGetCentres();
   const { data: remoteSectors = [] } = useGetSectors();
@@ -343,17 +343,32 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
 
   const assignedFacilitator = (application as any)?.facilitator || null;
 
-  // Real units for this trade — GET /trades/{id}/units. No fake placeholder
-  // rows when this hasn't loaded yet; the empty state is rendered instead.
+  // Real units for this trade — GET /trades/{id}/units — merged with this
+  // application's actual per-unit progress from GET /applications/{id}
+  // `nsq.units` (criteria approved/pending drive the status badge). No fake
+  // placeholder rows when this hasn't loaded yet; the empty state is
+  // rendered instead.
+  const nsqUnitsById = new Map(
+    ((application as any)?.nsq?.units || []).map((u: any) => [u.id, u]),
+  );
   const unitsList: NsqUnitItem[] =
     remoteUnits && remoteUnits.length > 0
-      ? remoteUnits.map((u, idx) => ({
-          id: u.id,
-          unitNo: u.referenceNumber || `UNIT ${idx + 1}`,
-          title: u.title,
-          status: "Not Started" as const,
-          structure: u.structure,
-        }))
+      ? remoteUnits.map((u, idx) => {
+          const progress = nsqUnitsById.get(u.id) as any;
+          const status: NsqUnitItem["status"] =
+            progress?.status === "approved"
+              ? "Approved"
+              : progress?.status === "in_progress" || progress?.criteriaPending > 0
+                ? "In Progress"
+                : "Not Started";
+          return {
+            id: u.id,
+            unitNo: u.referenceNumber || `UNIT ${idx + 1}`,
+            title: u.title,
+            status,
+            structure: u.structure,
+          };
+        })
       : [];
 
   const qualificationCode =
@@ -717,7 +732,23 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
               </h3>
 
               <div className="flex flex-col gap-3">
-                {unitsList.length > 0 ? (
+                {isLoadingUnits ? (
+                  Array.from({ length: 4 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="p-4 rounded-xl border border-gray-100/80 bg-[#f8f9fa] flex items-center justify-between gap-4 animate-pulse"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 min-w-0 flex-1">
+                        <div className="h-3.5 bg-gray-200 rounded w-16 shrink-0" />
+                        <div className="h-3.5 bg-gray-200 rounded w-48" />
+                      </div>
+                      <div className="flex items-center gap-2.5 shrink-0">
+                        <div className="h-5 bg-gray-200 rounded-full w-20" />
+                        <div className="w-4 h-4 bg-gray-200 rounded" />
+                      </div>
+                    </div>
+                  ))
+                ) : unitsList.length > 0 ? (
                   unitsList.map((unit) => (
                     <div
                       key={unit.id}
@@ -734,7 +765,15 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                       </div>
 
                       <div className="flex items-center gap-2.5 shrink-0">
-                        <span className="px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold bg-gray-200/80 text-gray-600">
+                        <span
+                          className={`px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold ${
+                            unit.status === "Approved"
+                              ? "bg-[#ecfdf5] text-[#10b981]"
+                              : unit.status === "In Progress"
+                                ? "bg-amber-50 text-amber-700"
+                                : "bg-gray-200/80 text-gray-600"
+                          }`}
+                        >
                           {unit.status}
                         </span>
                         <FiChevronRight className="w-4 h-4 text-gray-400 group-hover:text-primary group-hover:translate-x-0.5 transition-all" />

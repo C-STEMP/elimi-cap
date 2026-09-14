@@ -8,6 +8,7 @@ import { TradeChart } from "./TradeChart";
 import { GenderChart } from "./GenderChart";
 import { StaffActivityLogCard } from "./StaffActivityLogCard";
 import { AssessmentCentreEmptyView } from "./AssessmentCentreEmptyView";
+import { AssessmentCentreOverviewSkeleton } from "./AssessmentCentreOverviewSkeleton";
 import { AssessmentStageCard } from "../../Applications/components/AssessmentStageCard";
 import { PendingApplicationsTable } from "../../Applications/components/PendingApplicationsTable";
 import { RoleType, canViewPayments } from "../../../utils/rbac";
@@ -16,6 +17,7 @@ interface OverviewTabProps {
   activeRole: RoleType;
   centreProfile?: any;
   hasActivity: boolean;
+  isLoading?: boolean;
   onNavigateToApplications: (appId?: string) => void;
 }
 
@@ -23,6 +25,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
   activeRole,
   centreProfile,
   hasActivity,
+  isLoading = false,
   onNavigateToApplications,
 }) => {
   const [isApprovalDismissed, setIsApprovalDismissed] = useState(() => {
@@ -118,7 +121,9 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
         </div>
       ) : null}
 
-      {hasActivity ? (
+      {isLoading ? (
+        <AssessmentCentreOverviewSkeleton />
+      ) : hasActivity ? (
         <>
           <div
             className={`grid grid-cols-1 ${

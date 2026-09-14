@@ -16,7 +16,7 @@ export const PendingApplicationsTable: React.FC<TableProps> = ({
   // "Pending" means submitted and awaiting centre review — not an
   // unsubmitted draft, which has no backend workflow state and can't be
   // reviewed (approving one fails with "Application has no workflow state").
-  const { data: remotePending } = useGetApplications({
+  const { data: remotePending, isLoading } = useGetApplications({
     status: "in_progress",
     stage: "application_form",
   });
@@ -74,7 +74,17 @@ export const PendingApplicationsTable: React.FC<TableProps> = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 text-xs sm:text-sm font-medium">
-            {pendingList.length > 0 ? (
+            {isLoading ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                <tr key={i} className="animate-pulse">
+                  {Array.from({ length: 6 }).map((__, j) => (
+                    <td key={j} className="p-3.5">
+                      <div className="h-3.5 bg-gray-200 rounded w-24" />
+                    </td>
+                  ))}
+                </tr>
+              ))
+            ) : pendingList.length > 0 ? (
               pendingList.map((app) => (
                 <tr
                   key={app.id}

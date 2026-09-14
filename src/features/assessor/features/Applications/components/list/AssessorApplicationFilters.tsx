@@ -25,7 +25,7 @@ export const AssessorApplicationFilters: React.FC<
   onFilterChange,
   viewMode,
   onViewModeChange,
-  availableTrades = ["Masonry", "Carpentry", "Plumbing", "Painting"],
+  availableTrades = [],
   availableTypes = ["RPL", "NSQ"],
 }) => {
   return (
@@ -44,18 +44,24 @@ export const AssessorApplicationFilters: React.FC<
 
       {/* Filter Dropdowns and View Mode Switcher */}
       <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
-        {/* Trade Filter */}
+        {/* Trade Filter — options are the trades actually present in the table */}
         <div className="w-28">
           <Select
             size="sm"
-            placeholder="Trade"
-            value={filterCriteria.trade || ""}
-            onChange={(e) => onFilterChange({ trade: e.target.value })}
-            options={availableTrades.map((trade) => ({
-              label: trade,
-              value: trade,
-            }))}
-            allowClear
+            showPlaceholderOption={false}
+            value={filterCriteria.trade || "All"}
+            onChange={(e) =>
+              onFilterChange({
+                trade: e.target.value === "All" ? "" : e.target.value,
+              })
+            }
+            options={[
+              { label: "All", value: "All" },
+              ...availableTrades.map((trade) => ({
+                label: trade,
+                value: trade,
+              })),
+            ]}
           />
         </div>
 

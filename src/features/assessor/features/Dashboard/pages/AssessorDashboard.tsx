@@ -151,7 +151,7 @@ export const AssessorDashboard: React.FC = () => {
   const isOverviewActive = activeTab === "Overview";
 
   const { data: summaryData } = useGetAssessorSummary();
-  const { data: centresData } = useGetAssessorCentres(undefined, {
+  const { data: centresData, isLoading: isLoadingCentres } = useGetAssessorCentres(undefined, {
     enabled: isCentresActive || isOverviewActive,
   });
   const { data: applicationsData = [] } = useGetAssessorApplications(
@@ -385,6 +385,7 @@ export const AssessorDashboard: React.FC = () => {
               centres={centres}
               onSelectCentre={(c) => setSelectedCentre(c)}
               onApplyToCentre={() => setIsApplyModalOpen(true)}
+              isLoading={isLoadingCentres}
             />
           )
         ) : activeTab === "Applications" ? (

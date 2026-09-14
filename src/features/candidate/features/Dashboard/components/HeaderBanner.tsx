@@ -91,7 +91,7 @@ export const HeaderBanner: React.FC<HeaderBannerProps> = ({
   }, [isMobileMenuOpen]);
 
   return (
-    <header className="w-full bg-[#a31d38] text-white shadow-md relative">
+    <header className="w-full bg-[#900B27] text-white shadow-md relative">
       <div className="max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 py-5">
         <div className="flex items-center justify-between border-b border-white/10 pb-5">
           <Logo theme="light" width={80} href="/" />

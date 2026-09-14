@@ -8,14 +8,12 @@ import {
   APPLICATION_QUERY_KEYS,
 } from "@/src/features/shared/applications/hooks";
 import { useQueryClient } from "@tanstack/react-query";
-import { Loader } from "@/src/components/ui/loader";
 import { AssessmentCentreHeader } from "@/src/features/assessment-centre/features/Dashboard/components/AssessmentCentreHeader";
 import { ApplicationsHeader } from "@/src/features/assessment-centre/features/Applications/components/ApplicationsHeader";
 import { ApplicationDetail } from "@/src/features/assessment-centre/features/Applications/components/ApplicationDetail";
 import { CandidateFormView } from "@/src/features/assessment-centre/features/Applications/components/CandidateFormView";
 import { EvidenceVaultView } from "@/src/features/assessment-centre/features/Applications/components/EvidenceVaultView";
 import { SelfAssessmentFormView } from "@/src/features/assessment-centre/features/Applications/components/SelfAssessmentFormView";
-import { ShareApplicationModal } from "@/src/features/assessment-centre/features/Applications/components/ShareApplicationModal";
 import { PromptCreatePanelModal } from "@/src/features/assessment-centre/features/Applications/components/PromptCreatePanelModal";
 import { ScheduleInterviewModal } from "@/src/features/assessment-centre/features/Applications/components/ScheduleInterviewModal";
 import { CreateInterviewModal } from "@/src/features/assessment-centre/features/Applications/components/CreateInterviewModal";
@@ -39,7 +37,6 @@ export const CentreApplicationRouteView: React.FC<{ id: string }> = ({
   const [showCandidateForm, setShowCandidateForm] = useState(false);
   const [showEvidenceVault, setShowEvidenceVault] = useState(false);
   const [showSelfAssessmentForm, setShowSelfAssessmentForm] = useState(false);
-  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isPromptCreatePanelModalOpen, setIsPromptCreatePanelModalOpen] =
     useState(false);
   const [isScheduleInterviewModalOpen, setIsScheduleInterviewModalOpen] =
@@ -54,8 +51,28 @@ export const CentreApplicationRouteView: React.FC<{ id: string }> = ({
 
   if (isLoading) {
     return (
-      <div className="w-full min-h-[60vh] flex items-center justify-center">
-        <Loader tip="Loading application details..." />
+      <div className="min-h-screen w-full bg-[#f8f9fb] flex flex-col select-text">
+        <div className="max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1 flex flex-col gap-6 sm:gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            <div className="lg:col-span-8 xl:col-span-9 flex flex-col gap-4">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-100 shadow-2xs flex items-center justify-between gap-4 animate-pulse"
+                >
+                  <div className="flex flex-col gap-2 min-w-0 w-full">
+                    <div className="h-4 bg-gray-200 rounded w-40" />
+                    <div className="h-3 bg-gray-100 rounded w-56" />
+                  </div>
+                  <div className="h-8 bg-gray-100 rounded-xl w-20 shrink-0" />
+                </div>
+              ))}
+            </div>
+            <div className="lg:col-span-4 xl:col-span-3 flex flex-col gap-4">
+              <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-2xs h-64 animate-pulse" />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -183,7 +200,6 @@ export const CentreApplicationRouteView: React.FC<{ id: string }> = ({
             );
           }}
           onCreateInterview={() => setIsCreateInterviewModalOpen(true)}
-          onShareApplication={() => setIsShareModalOpen(true)}
           onScheduleInterview={handleOpenScheduleInterview}
         />
       </AssessmentCentreHeader>
@@ -226,11 +242,6 @@ export const CentreApplicationRouteView: React.FC<{ id: string }> = ({
         )}
       </div>
 
-      <ShareApplicationModal
-        isOpen={isShareModalOpen}
-        onClose={() => setIsShareModalOpen(false)}
-        applicationId={id}
-      />
       <PromptCreatePanelModal
         isOpen={isPromptCreatePanelModalOpen}
         onClose={() => setIsPromptCreatePanelModalOpen(false)}

@@ -65,7 +65,30 @@ export const IqaAllocationView: React.FC<IqaAllocationViewProps> = ({
           </h3>
 
           {isLoading ? (
-            <p className="text-xs text-gray-400 py-4">Loading allocations…</p>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs min-w-150">
+                <thead>
+                  <tr className="border-b border-gray-100 text-gray-500 font-bold text-[11px]">
+                    <th className="py-3 px-3">Candidate Name</th>
+                    <th className="py-3 px-3">Unit Assessor (QAA)</th>
+                    <th className="py-3 px-3">Level</th>
+                    <th className="py-3 px-3">Units</th>
+                    <th className="py-3 px-3 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <tr key={i} className="animate-pulse">
+                      {Array.from({ length: 5 }).map((__, j) => (
+                        <td key={j} className="py-3.5 px-3">
+                          <div className="h-3 bg-gray-200 rounded w-20" />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           ) : allocations.length === 0 ? (
             <p className="text-xs text-gray-400 py-4">
               No in-progress NSQ candidates are currently allocated to you at this centre.

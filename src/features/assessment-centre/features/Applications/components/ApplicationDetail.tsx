@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { Loader } from "@/src/components/ui/loader";
 import { useApplicationDetailState } from "../hooks/useApplicationDetailState";
 import { DetailStagesList } from "./DetailStagesList";
 import { DetailSidebar } from "./DetailSidebar";
@@ -26,8 +25,26 @@ export const ApplicationDetail: React.FC<ApplicationDetailProps> = ({
 
   if (state.isLoadingDetail && !state.appDetail) {
     return (
-      <div className="w-full min-h-100 flex items-center justify-center">
-        <Loader tip="Loading application details..." />
+      <div className="w-full flex flex-col gap-6 select-text">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          <div className="lg:col-span-8 xl:col-span-9 flex flex-col gap-4">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div
+                key={i}
+                className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-100 shadow-2xs flex items-center justify-between gap-4 animate-pulse"
+              >
+                <div className="flex flex-col gap-2 min-w-0 w-full">
+                  <div className="h-4 bg-gray-200 rounded w-40" />
+                  <div className="h-3 bg-gray-100 rounded w-56" />
+                </div>
+                <div className="h-8 bg-gray-100 rounded-xl w-20 shrink-0" />
+              </div>
+            ))}
+          </div>
+          <div className="lg:col-span-4 xl:col-span-3 flex flex-col gap-4">
+            <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-2xs h-64 animate-pulse" />
+          </div>
+        </div>
       </div>
     );
   }

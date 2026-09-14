@@ -12,7 +12,6 @@ import type { AssessorCentreItem } from "./AssessorCentresView";
 import { useGetAssessorApplications } from "../../Applications/hooks";
 import { useGetAssessorCentreApplications } from "../hooks";
 import type { AssessorApplicationRecord } from "../../Applications/components/AssessorApplicationsView";
-import { Loader } from "@/src/components/ui/loader";
 
 interface AssessorCentreDetailViewProps {
   centre: AssessorCentreItem;
@@ -216,7 +215,32 @@ export const AssessorCentreDetailView: React.FC<
 
       {/* Candidates Table or Empty View */}
       {isLoading ? (
-        <Loader fullscreen={false} size="small" tip="Loading assigned candidates..." className="p-8" />
+        <div className="w-full overflow-x-auto max-w-full rounded-2xl border border-gray-100">
+          <table className="w-full text-left text-xs sm:text-sm border-collapse min-w-[650px]">
+            <thead>
+              <tr className="bg-gray-50/70 text-gray-500 font-semibold border-b border-gray-100">
+                <th className="p-3.5 rounded-l-xl">Role</th>
+                <th className="p-3.5">Candidate Name</th>
+                <th className="p-3.5">Trade</th>
+                <th className="p-3.5">Assessment Type</th>
+                <th className="p-3.5">Status</th>
+                <th className="p-3.5">Assigned at</th>
+                <th className="p-3.5 rounded-r-xl text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <tr key={i} className="animate-pulse">
+                  {Array.from({ length: 7 }).map((__, j) => (
+                    <td key={j} className="p-3.5">
+                      <div className="h-3.5 bg-gray-200 rounded w-20" />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       ) : filteredCandidates.length > 0 ? (
         <div className="w-full overflow-x-auto max-w-full rounded-2xl border border-gray-100">
           <table className="w-full text-left text-xs sm:text-sm border-collapse min-w-[650px]">

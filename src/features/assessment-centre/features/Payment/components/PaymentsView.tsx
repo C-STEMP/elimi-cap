@@ -6,7 +6,6 @@ import { Select } from "@/src/components/ui/select";
 import { PaymentTransaction } from "@/features/assessment-centre/types";
 import { formatCurrency } from "@/src/utils/currency";
 import { useGetCentrePayments } from "@/src/features/shared/centre/hooks";
-import { Loader } from "@/src/components/ui/loader";
 
 interface PaymentsViewProps {
   onWithdrawFunds: () => void;
@@ -50,8 +49,22 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
 
   if (isLoading) {
     return (
-      <div className="w-full bg-white rounded-3xl p-12 flex items-center justify-center">
-        <Loader fullscreen={false} size="small" tip="Loading payments..." />
+      <div className="w-full flex flex-col gap-6 select-text">
+        <div className="bg-white rounded-3xl p-6 shadow-2xs border border-gray-100/80 flex flex-col gap-6 animate-pulse">
+          <div className="h-5 bg-gray-200 rounded w-40" />
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+            <div className="h-10 bg-gray-100 rounded-xl flex-1 max-w-sm" />
+            <div className="flex items-center gap-1.5">
+              <div className="w-9 h-9 rounded-full bg-gray-100" />
+              <div className="w-9 h-9 rounded-full bg-gray-100" />
+            </div>
+          </div>
+          <div className="flex flex-col gap-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="h-14 bg-gray-100 rounded-xl" />
+            ))}
+          </div>
+        </div>
       </div>
     );
   }

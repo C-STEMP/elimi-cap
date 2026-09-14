@@ -64,12 +64,6 @@ const TransactionReceiptModal = dynamic(() =>
     (m) => m.TransactionReceiptModal,
   ),
 );
-const ShareApplicationModal = dynamic(() =>
-  import("../features/Applications/components/ShareApplicationModal").then(
-    (m) => m.ShareApplicationModal,
-  ),
-);
-
 import { OverviewTab } from "../features/Dashboard/components/OverviewTab";
 
 const StaffTab = dynamic(
@@ -197,7 +191,7 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
     router.push(`/assessment-centre/dashboard/${tab}`);
   };
 
-  const { data: dashboardData } = useGetCentreDashboard();
+  const { data: dashboardData, isLoading: isDashboardLoading } = useGetCentreDashboard();
   const isApplicationsTab = activeTab === "applications";
   const { data: centreProfile } = useGetCentreProfile({
     enabled: activeTab === "overview",
@@ -233,8 +227,6 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
   const [selectedApplicationId, setSelectedApplicationId] = useState<
     string | null
   >(null);
-  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-
   const queryClient = useQueryClient();
   const { data: selectedAppDetail } = useGetApplicationById(
     selectedApplicationId || "",
@@ -373,7 +365,6 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
             }}
             onCreatePanel={() => setIsCreatePanelModalOpen(true)}
             onCreateInterview={() => setIsCreateInterviewModalOpen(true)}
-            onShareApplication={() => setIsShareModalOpen(true)}
             onScheduleInterview={handleOpenScheduleInterview}
           />
         );
@@ -452,6 +443,7 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
             activeRole={activeRole}
             centreProfile={centreProfile}
             hasActivity={hasActivity}
+            isLoading={isDashboardLoading}
             onNavigateToApplications={(appId) => {
               if (appId) {
                 router.push(`/applications/${appId}?from=centre`);
@@ -610,14 +602,6 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
         <BroadcastModal
           isOpen={isBroadcastModalOpen}
           onClose={() => setIsBroadcastModalOpen(false)}
-        />
-      )}
-      {isShareModalOpen && (
-        <ShareApplicationModal
-          isOpen={isShareModalOpen}
-          onClose={() => setIsShareModalOpen(false)}
-          applicationId={selectedApplicationId || ""}
-          candidateName={selectedCandidateName || "Candidate"}
         />
       )}
     </div>

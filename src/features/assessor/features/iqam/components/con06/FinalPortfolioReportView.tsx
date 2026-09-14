@@ -99,9 +99,38 @@ export const FinalPortfolioReportView: React.FC<FinalPortfolioReportViewProps> =
 
   if (isLoading) {
     return (
-      <div className="w-full flex flex-col gap-6 select-text pb-12">
-        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-xs text-gray-400 py-6">Loading final portfolio…</p>
+      <div className="w-full flex flex-col gap-6 select-text pb-12 animate-pulse">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-6">
+          {/* Metadata cards skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5">
+                <div className="h-2.5 bg-gray-200 rounded w-24" />
+                <div className="h-4 bg-gray-200 rounded w-32 mt-2" />
+              </div>
+            ))}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5">
+                <div className="h-2.5 bg-gray-200 rounded w-20" />
+                <div className="h-4 bg-gray-200 rounded w-28 mt-2" />
+              </div>
+            ))}
+          </div>
+
+          {/* Checkpoints skeleton */}
+          <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-xs border border-gray-100 flex flex-col gap-5">
+            <div className="h-4 bg-gray-200 rounded w-56" />
+            <div className="flex flex-col gap-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="p-4 bg-[#f8f9fa] rounded-2xl border border-gray-100/80 flex flex-col gap-3">
+                  <div className="h-3 bg-gray-200 rounded w-3/4" />
+                  <div className="h-10 bg-gray-100 rounded-xl w-full" />
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     );

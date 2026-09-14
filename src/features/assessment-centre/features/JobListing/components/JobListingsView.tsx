@@ -3,7 +3,6 @@
 import React, { useState, useMemo } from "react";
 import { FiSearch, FiList, FiGrid } from "react-icons/fi";
 import { useGetJobPostings } from "@/features/assessment-centre/features/JobListing/hooks";
-import { Loader } from "@/src/components/ui/loader";
 
 interface JobListingsViewProps {
   onSelectJob: (jobId: string) => void;
@@ -44,12 +43,22 @@ export const JobListingsView: React.FC<JobListingsViewProps> = ({
 
   if (isLoading) {
     return (
-      <Loader
-        fullscreen={false}
-        size="small"
-        tip="Loading job listings..."
-        className="py-20"
-      />
+      <div className="w-full flex flex-col gap-6 select-text">
+        <div className="bg-white rounded-3xl p-6 shadow-2xs border border-gray-100/80 flex flex-col gap-6 animate-pulse">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+            <div className="h-10 bg-gray-100 rounded-xl flex-1 max-w-sm" />
+            <div className="flex items-center gap-1.5">
+              <div className="w-9 h-9 rounded-full bg-gray-100" />
+              <div className="w-9 h-9 rounded-full bg-gray-100" />
+            </div>
+          </div>
+          <div className="flex flex-col gap-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="h-14 bg-gray-100 rounded-xl" />
+            ))}
+          </div>
+        </div>
+      </div>
     );
   }
 
