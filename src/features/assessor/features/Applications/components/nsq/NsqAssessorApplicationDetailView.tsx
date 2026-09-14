@@ -120,8 +120,20 @@ export const NsqAssessorApplicationDetailView: React.FC<
   // Real qualification units — GET /applications/{id} `nsq.units`, already
   // carrying per-unit evidence counts (criteriaApproved/criteriaTotal) and
   // the "new upload" signal (criteriaPending > 0). No extra fetch needed.
-  const realUnits: QualificationUnitItem[] | null = apiApp?.nsq?.units?.length
-    ? apiApp.nsq.units.map((u) => ({
+  //
+  // `nsq.units` intentionally spans every active-NOS unit on the trade
+  // across all qualification levels (evidence may target any of them) —
+  // per the API contract, the UI default is the induction wish-list level,
+  // so we filter down to that here instead of listing all three levels'
+  // units stacked on top of each other.
+  const wishedQualificationLevel = apiApp?.nsq?.wishedQualificationLevel;
+  const nsqUnitsForLevel = wishedQualificationLevel
+    ? apiApp?.nsq?.units?.filter(
+        (u) => u.qualificationLevelId === wishedQualificationLevel.id,
+      )
+    : apiApp?.nsq?.units;
+  const realUnits: QualificationUnitItem[] | null = nsqUnitsForLevel?.length
+    ? nsqUnitsForLevel.map((u) => ({
         id: u.id,
         unitNo: u.referenceNumber,
         title: u.title,
