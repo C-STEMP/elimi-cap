@@ -339,39 +339,61 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
     savedOnboarding?.centreName ||
     "CStemp Tvet Centre";
 
-  const levelName = application?.level || "Level 3";
+  const nsqData = (application as any)?.nsq;
+  const wishedQualificationLevel = nsqData?.wishedQualificationLevel;
+  const levelName = wishedQualificationLevel
+    ? `Level ${wishedQualificationLevel.level}`
+    : "";
 
   const assignedFacilitator = (application as any)?.facilitator || null;
 
-  // Real units for this trade — GET /trades/{id}/units — merged with this
-  // application's actual per-unit progress from GET /applications/{id}
-  // `nsq.units` (criteria approved/pending drive the status badge). No fake
-  // placeholder rows when this hasn't loaded yet; the empty state is
-  // rendered instead.
-  const nsqUnitsById = new Map(
-    ((application as any)?.nsq?.units || []).map((u: any) => [u.id, u]),
-  );
+  // Real units for this application — GET /applications/{id} `nsq.units`
+  // (same source the assessor/centre views already use) is application-scoped
+  // and already carries this application's actual per-unit progress
+  // (criteriaApproved/criteriaTotal/criteriaPending). Prefer it over the
+  // generic trade catalogue (GET /trades/{id}/units), which is only a
+  // fallback for when `nsq` hasn't populated yet. No fake placeholder rows
+  // when neither has loaded yet; the empty state is rendered instead.
+  //
+  // `nsq.units` intentionally spans every active-NOS unit on the trade
+  // across all qualification levels (evidence may target any of them) —
+  // per the API contract, the UI default is the induction wish-list level,
+  // so we filter down to that here instead of listing all three levels'
+  // units stacked on top of each other.
+  const nsqUnitsAll: any[] = nsqData?.units || [];
+  const nsqUnits = wishedQualificationLevel
+    ? nsqUnitsAll.filter(
+        (u) => u.qualificationLevelId === wishedQualificationLevel.id,
+      )
+    : nsqUnitsAll;
   const unitsList: NsqUnitItem[] =
-    remoteUnits && remoteUnits.length > 0
-      ? remoteUnits.map((u, idx) => {
-          const progress = nsqUnitsById.get(u.id) as any;
+    nsqUnits.length > 0
+      ? nsqUnits.map((u) => {
           const status: NsqUnitItem["status"] =
-            progress?.status === "approved"
+            u.status === "approved"
               ? "Approved"
-              : progress?.status === "in_progress" || progress?.criteriaPending > 0
+              : u.status === "in_progress" || u.criteriaPending > 0
                 ? "In Progress"
                 : "Not Started";
           return {
             id: u.id,
-            unitNo: u.referenceNumber || `UNIT ${idx + 1}`,
+            unitNo: u.referenceNumber,
             title: u.title,
             status,
-            structure: u.structure,
           };
         })
-      : [];
+      : remoteUnits && remoteUnits.length > 0
+        ? remoteUnits.map((u, idx) => ({
+            id: u.id,
+            unitNo: u.referenceNumber || `UNIT ${idx + 1}`,
+            title: u.title,
+            status: "Not Started" as const,
+            structure: u.structure,
+          }))
+        : [];
 
   const qualificationCode =
+    nsqUnits[0]?.referenceNumber ||
     remoteUnits[0]?.referenceNumber ||
     (tradeDetail?.activeNosDocument as any)?.qualificationLevels?.[0]?.slug ||
     (tradeDetail?.activeNosDocument as any)?.title ||
@@ -728,7 +750,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
             {/* 6. Units List */}
             <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-4">
               <h3 className="text-base sm:text-lg font-extrabold text-neutral-primary tracking-tight">
-                {resolvedTradeName} {levelName}
+                {levelName ? `${resolvedTradeName} ${levelName}` : resolvedTradeName}
               </h3>
 
               <div className="flex flex-col gap-3">
@@ -919,7 +941,8 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                     {assignedFacilitator.name}
                   </span>
                   <span className="text-[11px] text-neutral-secondary font-medium truncate mt-0.5">
-                    {assignedFacilitator.role || "Assessor"} • {resolvedTradeName} ({levelName})
+                    {assignedFacilitator.role || "Assessor"} • {resolvedTradeName}
+                    {levelName ? ` (${levelName})` : ""}
                   </span>
                   {assignedFacilitator.tags && assignedFacilitator.tags.length > 0 && (
                     <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">

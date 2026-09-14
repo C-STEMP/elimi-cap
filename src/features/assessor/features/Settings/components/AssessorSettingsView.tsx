@@ -10,6 +10,7 @@ import {
   FiUpload,
   FiAlertCircle,
   FiFileText,
+  FiRefreshCw,
 } from "react-icons/fi";
 import { Input } from "@/src/components/ui/input";
 import { Select } from "@/src/components/ui/select";
@@ -65,6 +66,61 @@ export const AssessorSettingsView: React.FC = () => {
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [previewCertificate, setPreviewCertificate] =
     useState<CertificatePreviewData | null>(null);
+
+  // Replace-in-place for an existing certification (qaa/iqm/ev) — the only
+  // kinds AssessorSelfProfilePatch.certifications accepts.
+  type ReplaceableCertKind = "qaa" | "iqm" | "ev";
+  const replaceFileInputRef = useRef<HTMLInputElement>(null);
+  const [pendingReplaceKind, setPendingReplaceKind] =
+    useState<ReplaceableCertKind | null>(null);
+  const [replacingKind, setReplacingKind] =
+    useState<ReplaceableCertKind | null>(null);
+
+  const triggerReplaceCertificate = (kind: ReplaceableCertKind) => {
+    setPendingReplaceKind(kind);
+    replaceFileInputRef.current?.click();
+  };
+
+  const handleReplaceCertificateFile = async (
+    kind: ReplaceableCertKind,
+    file: File,
+  ) => {
+    setReplacingKind(kind);
+    try {
+      const asset = await uploadFileMutation.mutateAsync({
+        file,
+        purpose: "certificate",
+      });
+      if (!asset?.assetId) {
+        toast({
+          type: "error",
+          title: "Upload Failed",
+          description: `Failed to upload ${kind.toUpperCase()} certificate.`,
+        });
+        return;
+      }
+      await patchAssessorProfileMutation.mutateAsync({
+        certifications: { [kind]: { certificateAssetId: asset.assetId } },
+      });
+    } catch {
+      // uploadFileMutation / patchAssessorProfileMutation already surface
+      // their own error toasts on failure.
+    } finally {
+      setReplacingKind(null);
+    }
+  };
+
+  const onReplaceCertificateFileChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    const kind = pendingReplaceKind;
+    setPendingReplaceKind(null);
+    if (file && kind) {
+      handleReplaceCertificateFile(kind, file);
+    }
+  };
 
   const authUser = useAppSelector((state) => state.auth.user);
   const assessorPersonalInfo = useAppSelector(
@@ -849,47 +905,65 @@ export const AssessorSettingsView: React.FC = () => {
                             </div>
                           </div>
 
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setPreviewCertificate({
-                                title: meta.title,
-                                subtitle: meta.subtitle,
-                                url: cert.url || undefined,
-                                assetId: cert.assetId || undefined,
-                              })
-                            }
-                            className="w-9 h-9 rounded-xl bg-gray-200/70 hover:bg-[#FCE8EC] text-gray-600 hover:text-[#a31d38] flex items-center justify-center transition-colors cursor-pointer shrink-0 shadow-2xs"
-                            title="Preview Certificate"
-                            aria-label="Preview Certificate"
-                          >
-                            <FiEye className="w-4.5 h-4.5" />
-                          </button>
+                          <div className="flex items-center gap-2 shrink-0">
+                            {(["qaa", "iqm", "ev"] as const).includes(
+                              kindKey as ReplaceableCertKind,
+                            ) && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  triggerReplaceCertificate(
+                                    kindKey as ReplaceableCertKind,
+                                  )
+                                }
+                                disabled={replacingKind === kindKey}
+                                className="w-9 h-9 rounded-xl bg-gray-200/70 hover:bg-amber-50 text-gray-600 hover:text-[#FBAB2A] flex items-center justify-center transition-colors cursor-pointer shadow-2xs disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="Replace Certificate"
+                                aria-label="Replace Certificate"
+                              >
+                                <FiRefreshCw
+                                  className={`w-4.5 h-4.5 ${
+                                    replacingKind === kindKey
+                                      ? "animate-spin"
+                                      : ""
+                                  }`}
+                                />
+                              </button>
+                            )}
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setPreviewCertificate({
+                                  title: meta.title,
+                                  subtitle: meta.subtitle,
+                                  url: cert.url || undefined,
+                                  assetId: cert.assetId || undefined,
+                                })
+                              }
+                              className="w-9 h-9 rounded-xl bg-gray-200/70 hover:bg-[#FCE8EC] text-gray-600 hover:text-[#a31d38] flex items-center justify-center transition-colors cursor-pointer shadow-2xs"
+                              title="Preview Certificate"
+                              aria-label="Preview Certificate"
+                            >
+                              <FiEye className="w-4.5 h-4.5" />
+                            </button>
+                          </div>
                         </div>
                       );
                     });
                   })()}
                 </div>
+
+                <input
+                  ref={replaceFileInputRef}
+                  type="file"
+                  accept=".jpg,.png,.pdf,.doc,.docx,.mp4,.webp"
+                  className="hidden"
+                  onChange={onReplaceCertificateFileChange}
+                />
               </div>
 
-              <div className="flex items-center justify-between mt-2 flex-wrap gap-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="md"
-                  leftIcon={<FiUpload className="w-4 h-4" />}
-                  onClick={() =>
-                    toast({
-                      type: "info",
-                      title: "Upload Certificate",
-                      description: "Select a certificate file to upload.",
-                    })
-                  }
-                  className="border-[#FBAB2A] text-[#FBAB2A] font-bold text-sm h-11 px-6 rounded-xl hover:bg-amber-50 cursor-pointer"
-                >
-                  Upload Certificate
-                </Button>
-
+              <div className="flex items-center justify-end mt-2 flex-wrap gap-4">
                 <Button
                   type="button"
                   onClick={handleSaveAssessorDetails}

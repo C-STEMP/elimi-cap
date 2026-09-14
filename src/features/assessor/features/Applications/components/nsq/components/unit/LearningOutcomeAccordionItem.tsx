@@ -46,11 +46,6 @@ export const LearningOutcomeAccordionItem: React.FC<
           <h3 className="text-sm sm:text-base font-extrabold text-neutral-primary">
             {learningOutcome.title}
           </h3>
-          {learningOutcome.hasNewUpload && (
-            <span className="px-2.5 py-0.5 bg-rose-50 text-[#a31d38] font-bold text-[10px] rounded-md border border-rose-100">
-              New Upload
-            </span>
-          )}
         </div>
         {isExpanded ? (
           <FiChevronUp className="w-5 h-5 text-gray-500" />

@@ -17,6 +17,8 @@ import { ASSESSOR_ROUTES } from "@/src/features/assessor/utils/assessorRoutes";
 import { useAssessorOnboarding } from "../hooks/useOnboarding";
 import { verifyIdentityApi } from "@/src/features/shared/onboarding/api";
 import { validateNIN } from "@/src/lib/validation";
+import { usePatchAssessorProfile } from "@/src/features/shared/assessor/hooks/useAssessor";
+import type { AssessorQualification } from "@/src/features/shared/assessor/api/assessor.api";
 
 export const AssessorVerifyIdentity: React.FC = () => {
   const router = useRouter();
@@ -24,6 +26,8 @@ export const AssessorVerifyIdentity: React.FC = () => {
   const { toast } = useToast();
   const { saveOnboarding, submitOnboarding } = useAssessorOnboarding();
   const saved = useAppSelector((s) => s.onboarding.assessorIdentity);
+  const assessorDetails = useAppSelector((s) => s.onboarding.assessorDetails);
+  const patchAssessorProfile = usePatchAssessorProfile();
 
   const [nin, setNin] = useState(saved.nin || "");
   const [error, setError] = useState<string | undefined>(undefined);
@@ -100,7 +104,28 @@ export const AssessorVerifyIdentity: React.FC = () => {
 
   const handleContinue = () => {
     submitOnboarding.mutate(undefined, {
-      onSuccess: () => {
+      onSuccess: async () => {
+        // The onboarding payload only carries which certificates were
+        // uploaded (assessorDetails.certifications), not `qualifications` —
+        // that field lives solely on AssessorProfile and is only settable
+        // via PATCH /assessor/profile. Sync it here from the certificates
+        // actually uploaded during onboarding so newly-onboarded assessors
+        // are immediately discoverable by qualification (e.g. GET
+        // /centre/assessors?qualification=QAA), instead of sitting with an
+        // empty `qualifications` array until someone visits Settings.
+        const qualifications: AssessorQualification[] = [];
+        if (assessorDetails.qaaCertificateAssetId) qualifications.push("QAA");
+        if (assessorDetails.iqmCertificateAssetId) qualifications.push("IQM");
+
+        if (qualifications.length > 0) {
+          try {
+            await patchAssessorProfile.mutateAsync({ qualifications });
+          } catch {
+            // Onboarding itself already succeeded; the profile-sync retry
+            // can happen later from Settings, so don't block completion.
+          }
+        }
+
         saveOnboardedStatus(true);
         router.push("/onboarding/success?role=assessor");
       },

@@ -475,7 +475,10 @@ export interface NsqEvidenceThreadItem {
   evidenceType: string;
   evidenceAssetId: string;
   evidenceRefPage?: string | null;
-  status: "pending" | "approved" | "rejected";
+  // Per the CAP API contract, the QAA decision on this row lives in
+  // `reviewStatus` (there is no plain `status` field on evidence rows —
+  // that name belongs to NsqCriterion, one level up).
+  reviewStatus: "pending" | "approved" | "rejected";
   reviewComment?: string | null;
   reviewedBy?: string | null;
   reviewedAt?: string | null;

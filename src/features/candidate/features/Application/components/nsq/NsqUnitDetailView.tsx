@@ -230,9 +230,9 @@ function parseCriteriaToLearningOutcomes(
           : `${item.evidenceType} Evidence`,
       evidenceType: item.evidenceType,
       status:
-        item.status === "approved"
+        item.reviewStatus === "approved"
           ? "approved"
-          : item.status === "rejected"
+          : item.reviewStatus === "rejected"
             ? "rejected"
             : "in_review",
       feedback: item.reviewComment || item.iqaReviewComment || undefined,

@@ -322,6 +322,11 @@ export const NsqAssessorApplicationDetailView: React.FC<
             <CandidateInductionTriggerCard onView={() => setIsInductionModalOpen(true)} />
             <QualificationUnitsList
               tradeName={tradeName}
+              level={
+                apiApp?.nsq?.wishedQualificationLevel
+                  ? `Level ${apiApp.nsq.wishedQualificationLevel.level}`
+                  : undefined
+              }
               units={unitsList}
               onSelectUnit={handleSelectUnit}
               isLoading={isLoadingApp}
