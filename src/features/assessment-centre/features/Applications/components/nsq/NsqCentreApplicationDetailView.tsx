@@ -116,9 +116,9 @@ function groupCriteriaForCentreView(
               ? "Work Product(WP)"
               : `${crit.latest.evidenceType} Evidence`,
           status:
-            crit.latest.status === "approved"
+            crit.latest.reviewStatus === "approved"
               ? "approved"
-              : crit.latest.status === "rejected"
+              : crit.latest.reviewStatus === "rejected"
                 ? "rejected"
                 : "in_review",
           feedback: crit.latest.reviewComment || crit.latest.iqaReviewComment,

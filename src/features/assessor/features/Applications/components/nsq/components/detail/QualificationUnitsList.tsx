@@ -22,7 +22,7 @@ interface QualificationUnitsListProps {
 
 export const QualificationUnitsList: React.FC<QualificationUnitsListProps> = ({
   tradeName,
-  level = "Level 3",
+  level,
   units,
   onSelectUnit,
   isLoading = false,
@@ -30,7 +30,7 @@ export const QualificationUnitsList: React.FC<QualificationUnitsListProps> = ({
   return (
     <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-4 select-text">
       <h3 className="text-base font-extrabold text-neutral-primary tracking-tight">
-        {tradeName} {level}
+        {level ? `${tradeName} ${level}` : tradeName}
       </h3>
 
       <div className="flex flex-col gap-3">
@@ -74,12 +74,6 @@ export const QualificationUnitsList: React.FC<QualificationUnitsListProps> = ({
               <span className="px-3.5 py-1 bg-[#047857] text-white font-medium text-[11px] sm:text-xs rounded-full shadow-2xs">
                 {u.approvedCount}/{u.totalCount} Approved
               </span>
-
-              {u.hasNewUpload && (
-                <span className="px-2.5 py-1 bg-rose-600 text-white font-bold text-[11px] rounded-lg shadow-2xs">
-                  New Upload
-                </span>
-              )}
 
               <FiChevronRight className="w-4 h-4 text-gray-400 group-hover:text-neutral-primary transition-colors" />
             </div>

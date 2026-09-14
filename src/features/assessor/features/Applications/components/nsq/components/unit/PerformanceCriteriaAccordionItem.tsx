@@ -46,11 +46,6 @@ export const PerformanceCriteriaAccordionItem: React.FC<
           <span className="text-xs font-semibold text-neutral-primary truncate">
             {criterion.description}
           </span>
-          {criterion.hasNewUpload && (
-            <span className="px-2 py-0.5 bg-rose-50 text-[#a31d38] font-bold text-[9px] rounded-md shrink-0">
-              New Upload
-            </span>
-          )}
         </div>
         {isExpanded ? (
           <FiChevronUp className="w-4 h-4 text-gray-400 shrink-0" />
