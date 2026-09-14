@@ -315,10 +315,12 @@ export const NsqCentreApplicationDetailView: React.FC<
   const candidatePhoto =
     application?.candidate?.photo?.url || application?.candidate?.photoUrl || null;
 
-  const levelName =
-    (tradeDetail as any)?.level ||
-    (typeof application?.trade === "object" && (application.trade as any)?.level) ||
-    "Level 1";
+  const wishedQualificationLevel = (application as any)?.nsq?.wishedQualificationLevel;
+  const levelName = wishedQualificationLevel
+    ? `Level ${wishedQualificationLevel.level}`
+    : (tradeDetail as any)?.level ||
+      (typeof application?.trade === "object" && (application.trade as any)?.level) ||
+      "";
 
   const qualificationCode =
     (tradeDetail as any)?.code ||
@@ -339,8 +341,19 @@ export const NsqCentreApplicationDetailView: React.FC<
   // Units list — prefer the application-specific units (real per-unit
   // evidence progress from GET /applications/{id} `nsq.units`) over the
   // generic trade catalogue, which has no progress data.
-  const unitsList: QualificationUnitItem[] = application?.nsq?.units?.length
-    ? application.nsq.units.map((u: any) => ({
+  //
+  // `nsq.units` intentionally spans every active-NOS unit on the trade
+  // across all qualification levels (evidence may target any of them) —
+  // per the API contract, the UI default is the induction wish-list level,
+  // so we filter down to that here instead of listing all three levels'
+  // units stacked on top of each other.
+  const nsqUnitsForLevel = wishedQualificationLevel
+    ? (application?.nsq?.units || []).filter(
+        (u: any) => u.qualificationLevelId === wishedQualificationLevel.id,
+      )
+    : application?.nsq?.units;
+  const unitsList: QualificationUnitItem[] = nsqUnitsForLevel?.length
+    ? nsqUnitsForLevel.map((u: any) => ({
         id: u.id,
         unitNo: u.referenceNumber,
         title: u.title,
@@ -428,7 +441,9 @@ export const NsqCentreApplicationDetailView: React.FC<
   const receiptTransaction: PaymentTransaction = {
     id: receiptData?.paymentId || application?.id || "tx-nsq-001",
     candidateName,
-    assessmentType: `NSQ ${resolvedTradeName} (${levelName})`,
+    assessmentType: levelName
+      ? `NSQ ${resolvedTradeName} (${levelName})`
+      : `NSQ ${resolvedTradeName}`,
     amountPaid: paymentAmountText,
     status: isPaymentPaid ? "Paid" : "Pending",
     date: receiptData?.paidAt
@@ -941,7 +956,7 @@ export const NsqCentreApplicationDetailView: React.FC<
               {/* 8. Qualification Units Card */}
               <div className="bg-white rounded-2xl p-6 shadow-xs border border-gray-100 flex flex-col gap-4">
                 <h3 className="text-base font-bold text-gray-900">
-                  {resolvedTradeName} {levelName}
+                  {levelName ? `${resolvedTradeName} ${levelName}` : resolvedTradeName}
                 </h3>
 
                 <div className="flex flex-col gap-2.5">
