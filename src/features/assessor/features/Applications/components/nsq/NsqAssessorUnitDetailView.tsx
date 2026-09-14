@@ -119,12 +119,12 @@ export const NsqAssessorUnitDetailView: React.FC<
           groups[loKey] = { title: loTitle, criteria: [] };
         }
 
-        const evidences = (crit.history && crit.history.length > 0
-          ? crit.history
-          : crit.latest
-            ? [crit.latest]
-            : []
-        ).map((ev) => ({
+        // Per the backend contract, `latest` is the single live row for this
+        // criterion — `history` holds already-superseded submissions. Only
+        // the live row should be actionable here; rendering the full
+        // history would surface stale, already-reviewed rows as if they
+        // still needed a decision.
+        const evidences = (crit.latest ? [crit.latest] : []).map((ev) => ({
           id: ev.id,
           name:
             ev.evidenceType === "WP"

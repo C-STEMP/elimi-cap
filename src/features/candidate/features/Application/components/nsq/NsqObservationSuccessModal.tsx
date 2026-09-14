@@ -35,8 +35,8 @@ export const NsqObservationSuccessModal: React.FC<NsqObservationSuccessModalProp
       <div className="flex flex-col items-center justify-center text-center p-3 sm:p-5 gap-6">
         {/* Green Success Checkmark Icon (Image 5) */}
         <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-full bg-emerald-50 flex items-center justify-center shadow-inner">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-emerald-600 to-green-500 flex items-center justify-center shadow-lg shadow-green-500/25">
-            <FiCheck className="w-9 h-9 text-white stroke-[3]" />
+          <div className="w-16 h-16 rounded-full bg-linear-to-tr from-emerald-600 to-green-500 flex items-center justify-center shadow-lg shadow-green-500/25">
+            <FiCheck className="w-9 h-9 text-white stroke-3" />
           </div>
         </div>
 

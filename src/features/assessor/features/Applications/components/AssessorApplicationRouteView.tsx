@@ -29,100 +29,39 @@ export const AssessorApplicationRouteView: React.FC<{ id: string }> = ({
   const [iqamHeaderConfig, setIqamHeaderConfig] = useState<any>(null);
   const moveToIqamRef = useRef<(() => void) | null>(null);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen w-full bg-[#f8f9fb] flex flex-col select-text animate-pulse">
-        {/* Header banner skeleton */}
-        <div className="w-full bg-white border-b border-gray-100 px-4 sm:px-6 lg:px-8 py-5">
-          <div className="max-w-7xl xl:max-w-360 mx-auto flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gray-200 rounded-lg" />
-              <div className="h-4 bg-gray-200 rounded w-40" />
-            </div>
-            <div className="h-9 bg-gray-100 rounded-xl w-32" />
-          </div>
-        </div>
+  const candidateName = application
+    ? application.candidate?.name ||
+      (application.candidate?.firstName
+        ? `${application.candidate.firstName} ${
+            application.candidate.lastName || ""
+          }`.trim()
+        : application.candidateId || "Candidate")
+    : undefined;
 
-        {/* Main content skeleton */}
-        <div className="max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1 flex flex-col gap-6">
-          <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            <div className="lg:col-span-8 flex flex-col gap-4">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="h-4 bg-gray-200 rounded w-32" />
-                    <div className="h-5 bg-gray-200 rounded-full w-20" />
-                  </div>
-                  <div className="h-3 bg-gray-100 rounded w-48" />
-                </div>
-              ))}
-            </div>
-            <div className="lg:col-span-4 flex flex-col gap-6">
-              {Array.from({ length: 2 }).map((_, i) => (
-                <div key={i} className="bg-white rounded-3xl p-6 shadow-xs border border-gray-100 h-40 flex flex-col gap-3">
-                  <div className="h-4 bg-gray-200 rounded w-28" />
-                  <div className="h-3 bg-gray-100 rounded w-36" />
-                  <div className="h-3 bg-gray-100 rounded w-24" />
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!application) {
-    return (
-      <div className="w-full min-h-[60vh] flex flex-col items-center justify-center gap-4 text-center p-6">
-        <h3 className="text-lg font-bold text-gray-800">
-          Application Not Found
-        </h3>
-        <p className="text-sm text-gray-500 max-w-sm">
-          The application you are trying to view does not exist or has been
-          removed.
-        </p>
-        <button
-          type="button"
-          onClick={() => router.push("/assessor/dashboard/applications")}
-          className="px-4 py-2 bg-[#8A1538] text-white text-xs font-bold rounded-xl cursor-pointer"
-        >
-          Back to Applications
-        </button>
-      </div>
-    );
-  }
-
-  const candidateName =
-    application.candidate?.name ||
-    (application.candidate?.firstName
-      ? `${application.candidate.firstName} ${
-          application.candidate.lastName || ""
-        }`.trim()
-      : application.candidateId || "Candidate");
-
-  const assessorRecord: AssessorApplicationRecord = {
-    id: application.id,
-    candidateName,
-    trade:
-      application.trade?.name ||
-      application.tradeId ||
-      (application.type === "NSQ" ? "Standard Assessment" : "RPL"),
-    assessmentType: application.type,
-    status:
-      application.status === "certified"
-        ? "Completed"
-        : application.status === "in_progress"
-        ? "Ongoing"
-        : "Pending",
-    submittedAt: application.createdAt,
-    candidatePhotoUrl:
-      application.candidate?.photo?.url ||
-      (application.candidate as any)?.photoAssetId ||
-      (application.candidate as any)?.avatar ||
-      null,
-    role: (application as any).role || "Assessor",
-  };
+  const assessorRecord: AssessorApplicationRecord | null = application
+    ? {
+        id: application.id,
+        candidateName: candidateName as string,
+        trade:
+          application.trade?.name ||
+          application.tradeId ||
+          (application.type === "NSQ" ? "Standard Assessment" : "RPL"),
+        assessmentType: application.type,
+        status:
+          application.status === "certified"
+            ? "Completed"
+            : application.status === "in_progress"
+            ? "Ongoing"
+            : "Pending",
+        submittedAt: application.createdAt,
+        candidatePhotoUrl:
+          application.candidate?.photo?.url ||
+          (application.candidate as any)?.photoAssetId ||
+          (application.candidate as any)?.avatar ||
+          null,
+        role: (application as any).role || "Assessor",
+      }
+    : null;
 
   const handleBack = () => {
     if (applicationSubView !== "stages") {
@@ -153,21 +92,61 @@ export const AssessorApplicationRouteView: React.FC<{ id: string }> = ({
           router.push(`/assessor/dashboard/${tabSlugMap[tab] || "overview"}`);
         }}
         selectedApplicationName={candidateName}
-        isNsqApplication={application.type === "NSQ"}
+        isNsqApplication={application?.type === "NSQ"}
         nsqSubViewTitle={nsqSubViewTitle}
         onMoveToIqam={() => moveToIqamRef.current?.()}
         applicationSubView={applicationSubView}
         canMarkAsComplete={canMarkAsComplete}
         onMarkAsComplete={() => setTriggerMarkComplete(true)}
         onBackFromApplication={handleBack}
-        isIvApplication={assessorRecord.role === "Internal Verifier"}
+        isIvApplication={assessorRecord?.role === "Internal Verifier"}
         activeIqamToolTitle={iqamHeaderConfig?.title}
         activeIqamBreadcrumb={iqamHeaderConfig?.breadcrumb}
         onBackFromIqamTool={() => setIqamHeaderConfig(null)}
       />
 
       <div className="max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1 flex flex-col gap-6">
-        {assessorRecord.role === "Internal Verifier" ? (
+        {isLoading ? (
+          <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-6 items-start animate-pulse">
+            <div className="lg:col-span-8 flex flex-col gap-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="h-4 bg-gray-200 rounded w-32" />
+                    <div className="h-5 bg-gray-200 rounded-full w-20" />
+                  </div>
+                  <div className="h-3 bg-gray-100 rounded w-48" />
+                </div>
+              ))}
+            </div>
+            <div className="lg:col-span-4 flex flex-col gap-6">
+              {Array.from({ length: 2 }).map((_, i) => (
+                <div key={i} className="bg-white rounded-3xl p-6 shadow-xs border border-gray-100 h-40 flex flex-col gap-3">
+                  <div className="h-4 bg-gray-200 rounded w-28" />
+                  <div className="h-3 bg-gray-100 rounded w-36" />
+                  <div className="h-3 bg-gray-100 rounded w-24" />
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : !application || !assessorRecord ? (
+          <div className="w-full min-h-[60vh] flex flex-col items-center justify-center gap-4 text-center p-6">
+            <h3 className="text-lg font-bold text-gray-800">
+              Application Not Found
+            </h3>
+            <p className="text-sm text-gray-500 max-w-sm">
+              The application you are trying to view does not exist or has
+              been removed.
+            </p>
+            <button
+              type="button"
+              onClick={() => router.push("/assessor/dashboard/applications")}
+              className="px-4 py-2 bg-[#8A1538] text-white text-xs font-bold rounded-xl cursor-pointer"
+            >
+              Back to Applications
+            </button>
+          </div>
+        ) : assessorRecord.role === "Internal Verifier" ? (
           <IqamToolsDashboard
             initialToolId="CON/04/IQAM"
             initialApplicationId={application.id}

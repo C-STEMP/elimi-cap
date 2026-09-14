@@ -293,7 +293,7 @@ export const AssessorApplicantProfileView: React.FC<
               Revoked
             </span>
           ) : (
-            <span className="bg-[#F9A825]/10 text-[#F9A825] font-semibold px-4 py-1.5 rounded-full text-xs inline-block">
+            <span className="bg-secondary/10 text-secondary font-semibold px-4 py-1.5 rounded-full text-xs inline-block">
               Pending
             </span>
           )}

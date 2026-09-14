@@ -31,7 +31,7 @@ export const AssessorApplicationTable: React.FC<
 
   return (
     <div className="w-full overflow-x-auto max-w-full">
-      <table className="w-full text-left text-xs sm:text-sm border-collapse min-w-[700px]">
+      <table className="w-full text-left text-xs sm:text-sm border-collapse min-w-175">
         <thead>
           <tr className="border-b border-gray-100 text-gray-600 font-semibold">
             <th className="py-3 px-4">Role</th>
@@ -81,7 +81,7 @@ export const AssessorApplicationTable: React.FC<
                       Completed
                     </span>
                   ) : isOngoing ? (
-                    <span className="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-semibold bg-[#F9A825]/10 text-[#F9A825]">
+                    <span className="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-semibold bg-secondary/10 text-secondary">
                       Ongoing
                     </span>
                   ) : (

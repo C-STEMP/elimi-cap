@@ -162,7 +162,7 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
                         Paid
                       </span>
                     ) : (
-                      <span className="bg-[#F9A825]/10 text-[#F9A825] font-semibold px-3 py-1 rounded-full text-xs inline-block">
+                      <span className="bg-secondary/10 text-secondary font-semibold px-3 py-1 rounded-full text-xs inline-block">
                         Pending
                       </span>
                     )}
@@ -215,7 +215,7 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
                             Paid
                           </span>
                         ) : (
-                          <span className="bg-[#F9A825]/10 text-[#F9A825] font-semibold px-3.5 py-1 rounded-full text-xs inline-block">
+                          <span className="bg-secondary/10 text-secondary font-semibold px-3.5 py-1 rounded-full text-xs inline-block">
                             Pending
                           </span>
                         )}

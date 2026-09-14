@@ -217,13 +217,12 @@ function parseCriteriaToLearningOutcomes(
       };
     }
 
-    const evidences: EvidenceItem[] = (
-      crit.history && crit.history.length > 0
-        ? crit.history
-        : crit.latest
-          ? [crit.latest]
-          : []
-    ).map((item) => ({
+    // Per the backend contract, `latest` is the single live row for this
+    // criterion — everything else in `history` has been superseded by a
+    // newer submission. Only the live row should render as "the" evidence;
+    // showing the full history here would make every re-upload look like
+    // it added a duplicate instead of replacing the prior submission.
+    const evidences: EvidenceItem[] = (crit.latest ? [crit.latest] : []).map((item) => ({
       id: item.id,
       title:
         item.evidenceType === "WP"
@@ -366,12 +365,15 @@ export const NsqUnitDetailView: React.FC<NsqUnitDetailViewProps> = ({
       fileSize: data.fileSize,
     };
 
+    // Replace, not append — this submission is now the single live row for
+    // the criterion (matches the backend's latest/history model above), so
+    // a re-upload must visually replace the evidence it's superseding.
     setLearningOutcomes((prev) =>
       prev.map((lo) => ({
         ...lo,
         criteria: lo.criteria.map((pc) =>
           pc.id === activePcForUpload.id
-            ? { ...pc, evidences: [newEvidence, ...pc.evidences] }
+            ? { ...pc, evidences: [newEvidence] }
             : pc,
         ),
       })),
@@ -393,7 +395,7 @@ export const NsqUnitDetailView: React.FC<NsqUnitDetailViewProps> = ({
             className="fixed top-6 right-6 z-50 bg-white border border-gray-100 shadow-xl rounded-2xl p-4 flex items-center gap-3.5 max-w-sm"
           >
             <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
-              <FiCheck className="w-5 h-5 stroke-[3]" />
+              <FiCheck className="w-5 h-5 stroke-3" />
             </div>
             <div className="flex flex-col">
               <span className="text-xs sm:text-sm font-extrabold text-neutral-primary">
@@ -588,7 +590,7 @@ export const NsqUnitDetailView: React.FC<NsqUnitDetailViewProps> = ({
                                               {ev.title}
                                             </span>
                                             <span className="bg-emerald-700 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                                              <FiCheck className="w-2.5 h-2.5 stroke-[3]" />
+                                              <FiCheck className="w-2.5 h-2.5 stroke-3" />
                                               Approved
                                             </span>
                                           </div>

@@ -20,6 +20,15 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({ 
   if (state.isLoading) {
     return (
       <div className="w-full flex flex-col min-h-screen">
+        <HeaderBanner
+          backHref="/dashboard/applications"
+          backTitle="Application"
+          breadcrumbs={[
+            { label: "My Applications", href: "/dashboard/applications" },
+            { label: "Application" },
+          ]}
+          showCreateButton={false}
+        />
         <div className="max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             <div className="lg:col-span-8 xl:col-span-9 flex flex-col gap-4 bg-white rounded-2xl p-4 shadow-2xs animate-pulse">
@@ -60,14 +69,25 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({ 
 
   if (!state.application) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center text-center gap-4 p-6">
-        <p className="text-gray-700 text-lg font-bold">Application Not Found</p>
-        <p className="text-gray-400 text-sm max-w-md">
-          This application could not be found or you do not have permission to view it.
-        </p>
-        <Button onClick={() => router.push("/dashboard/applications")} className="mt-2">
-          Back to My Applications
-        </Button>
+      <div className="w-full flex flex-col min-h-screen">
+        <HeaderBanner
+          backHref="/dashboard/applications"
+          backTitle="Application"
+          breadcrumbs={[
+            { label: "My Applications", href: "/dashboard/applications" },
+            { label: "Application" },
+          ]}
+          showCreateButton={false}
+        />
+        <div className="min-h-[60vh] flex flex-col items-center justify-center text-center gap-4 p-6">
+          <p className="text-gray-700 text-lg font-bold">Application Not Found</p>
+          <p className="text-gray-400 text-sm max-w-md">
+            This application could not be found or you do not have permission to view it.
+          </p>
+          <Button onClick={() => router.push("/dashboard/applications")} className="mt-2">
+            Back to My Applications
+          </Button>
+        </div>
       </div>
     );
   }

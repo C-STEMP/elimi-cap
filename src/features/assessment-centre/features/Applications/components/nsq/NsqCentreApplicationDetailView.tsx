@@ -30,11 +30,12 @@ import {
   useGetApplicationStages,
   useGetPaymentQuote,
   useGetApplicationReceipt,
+  useGetUnitCriteria,
 } from "@/src/features/shared/applications/hooks";
 import { formatCurrency } from "@/src/utils/currency";
 import { IqamToolsDashboard } from "@/src/features/assessor/features/iqam/IqamToolsDashboard";
 import type { IqamToolId } from "@/src/features/assessor/features/iqam/types/iqam.types";
-import type { ApplicationDetail } from "@/src/features/shared/applications/api/types";
+import type { ApplicationDetail, NsqCriterion } from "@/src/features/shared/applications/api/types";
 
 const NSQ_PROGRESS_STEPS = [
   { key: "induction", label: "Induction Form" },
@@ -67,6 +68,76 @@ const IQAM_FORMS_LIST: { id: IqamToolId; title: string }[] = [
   { id: "CON/05/IQAM", title: "IV Observation & Questioning Checklist" },
   { id: "CON/06/IQAM", title: "Final Portfolio / Award Report Form" },
 ];
+
+interface CentreUnitEvidenceItem {
+  id: string;
+  title: string;
+  status: "approved" | "rejected" | "in_review";
+  feedback?: string | null;
+}
+
+interface CentreUnitCriterion {
+  code: string;
+  description: string;
+  evidence: CentreUnitEvidenceItem | null;
+}
+
+interface CentreUnitLearningOutcome {
+  id: string;
+  title: string;
+  criteria: CentreUnitCriterion[];
+}
+
+// Groups the real per-criterion evidence thread (GET /applications/{id}/units/{unitId}/criteria)
+// into LO -> PC cards for the read-only centre view. Only `latest` is shown
+// per criterion — per the backend contract it's the single live row, and
+// `history` is already-superseded submissions (same rule applied on the
+// candidate/assessor evidence views).
+function groupCriteriaForCentreView(
+  criteria: NsqCriterion[],
+): CentreUnitLearningOutcome[] {
+  const groups: Record<string, { title: string; criteria: CentreUnitCriterion[] }> = {};
+
+  criteria.forEach((crit) => {
+    const loKey = crit.learningObjectiveCode || "LO 1";
+    const loTitle = crit.learningObjectiveText
+      ? `${loKey}: ${crit.learningObjectiveText}`
+      : loKey;
+
+    if (!groups[loKey]) {
+      groups[loKey] = { title: loTitle, criteria: [] };
+    }
+
+    const evidence: CentreUnitEvidenceItem | null = crit.latest
+      ? {
+          id: crit.latest.id,
+          title:
+            crit.latest.evidenceType === "WP"
+              ? "Work Product(WP)"
+              : `${crit.latest.evidenceType} Evidence`,
+          status:
+            crit.latest.status === "approved"
+              ? "approved"
+              : crit.latest.status === "rejected"
+                ? "rejected"
+                : "in_review",
+          feedback: crit.latest.reviewComment || crit.latest.iqaReviewComment,
+        }
+      : null;
+
+    groups[loKey].criteria.push({
+      code: crit.code.startsWith("PC") ? crit.code : `PC ${crit.code}`,
+      description: crit.text || `Demonstrate performance standard for ${crit.code}`,
+      evidence,
+    });
+  });
+
+  return Object.keys(groups).map((key, idx) => ({
+    id: `lo-${idx + 1}`,
+    title: groups[key].title,
+    criteria: groups[key].criteria,
+  }));
+}
 
 export const NsqCentreApplicationDetailView: React.FC<
   NsqCentreApplicationDetailViewProps
@@ -291,6 +362,20 @@ export const NsqCentreApplicationDetailView: React.FC<
         }))
       : [];
 
+  // Real per-criterion evidence for the unit currently drilled into — GET
+  // /applications/{id}/units/{unitId}/criteria. This view is read-only for
+  // the centre (evidence review is the QAA/assessor's job), it just shows
+  // the real submitted evidence instead of a fixed mock LO/PC layout.
+  const activeUnit = unitsList.find((u) => u.unitNo === activeUnitNumber) || null;
+  const { data: unitCriteriaData, isLoading: isLoadingUnitCriteria } = useGetUnitCriteria(
+    application?.id || "",
+    activeUnit?.id || "",
+    { enabled: Boolean(application?.id && activeUnit?.id) },
+  );
+  const unitLearningOutcomes = unitCriteriaData?.criteria
+    ? groupCriteriaForCentreView(unitCriteriaData.criteria)
+    : [];
+
   // Compute status — application_form stage is the source of truth;
   // localStatus is only an instant-UI override until the stages query refetches.
   // Note: application.status === "in_progress" just means "submitted, somewhere
@@ -367,184 +452,131 @@ export const NsqCentreApplicationDetailView: React.FC<
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Main Column */}
         {activeUnitNumber ? (
-          /* Unit Detail View (matching media_1789153528869.png) */
+          /* Unit Detail View — real per-criterion evidence from
+             GET /applications/{id}/units/{unitId}/criteria (read-only for
+             the centre; evidence review belongs to the QAA/assessor). */
           <div className="lg:col-span-8 flex flex-col gap-4">
-            {/* LO 1 Card */}
-            <div className="bg-white rounded-2xl p-6 shadow-xs border border-gray-100 flex flex-col gap-4">
-              <div
-                onClick={() => toggleLo("lo-1")}
-                className="flex items-center justify-between cursor-pointer select-none"
-              >
-                <h3 className="text-base font-bold text-gray-900">
-                  LO 1: Maintain personal health and hygiene
-                </h3>
-                {expandedLos["lo-1"] ? (
-                  <FiChevronUp className="w-5 h-5 text-gray-500" />
-                ) : (
-                  <FiChevronDown className="w-5 h-5 text-gray-500" />
-                )}
+            {isLoadingUnitCriteria ? (
+              Array.from({ length: 3 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="bg-white rounded-2xl p-6 shadow-xs border border-gray-100 flex flex-col gap-3 animate-pulse"
+                >
+                  <div className="h-4 bg-gray-200 rounded w-64" />
+                  <div className="h-3 bg-gray-100 rounded w-full" />
+                  <div className="h-3 bg-gray-100 rounded w-3/4" />
+                </div>
+              ))
+            ) : unitLearningOutcomes.length === 0 ? (
+              <div className="bg-white rounded-2xl p-6 shadow-xs border border-gray-100 text-sm text-gray-400 italic">
+                No criteria found for this unit yet.
               </div>
-
-              {expandedLos["lo-1"] && (
-                <div className="flex flex-col gap-3 pt-1">
-                  {/* PC 1.1 Accordion */}
-                  <div className="border border-gray-100 bg-[#F8F9FA] rounded-xl p-4 flex flex-col gap-3">
-                    <div
-                      onClick={() => togglePc("pc-1-1")}
-                      className="flex items-center justify-between cursor-pointer select-none gap-2"
-                    >
-                      <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                        <span className="px-2 py-0.5 bg-[#FDF2F4] text-[#E11D48] font-bold text-xs rounded-md shrink-0">
-                          PC 1.1
-                        </span>
-                        <span className="text-xs sm:text-sm font-semibold text-gray-900 truncate">
-                          Wear Clean, Smart And Appropriate Personal Protective Equipment.
-                        </span>
-                      </div>
-                      {expandedPcs["pc-1-1"] ? (
-                        <FiChevronUp className="w-4 h-4 text-gray-400 shrink-0" />
-                      ) : (
-                        <FiChevronDown className="w-4 h-4 text-gray-400 shrink-0" />
-                      )}
-                    </div>
-
-                    {expandedPcs["pc-1-1"] && (
-                      <div className="flex flex-col gap-3 pt-1">
-                        {/* Evidence 1: Approved */}
-                        <div className="rounded-xl p-3.5 flex items-center justify-between border border-[#A7F3D0] bg-[#ECFDF5] gap-3">
-                          <div className="flex items-center gap-2 text-xs font-semibold text-[#065F46] min-w-0">
-                            <FiFileText className="w-4 h-4 text-[#059669] shrink-0" />
-                            <span className="truncate">Work Product(WP)</span>
-                          </div>
-                          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#10753A] text-white flex items-center gap-1.5 shrink-0">
-                            <span className="w-1.5 h-1.5 rounded-full bg-white" />
-                            <span>Approved</span>
-                          </span>
-                        </div>
-
-                        {/* Evidence 2: Rejected */}
-                        <div className="rounded-xl p-3.5 flex flex-col gap-2.5 border border-[#FECDD3] bg-[#FFF1F2]">
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-2 text-xs font-semibold text-[#9F1239] min-w-0">
-                              <FiFileText className="w-4 h-4 text-[#E11D48] shrink-0" />
-                              <span className="truncate">Work Product(WP)</span>
-                            </div>
-                            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#DC2626] text-white flex items-center gap-1.5 shrink-0">
-                              <span className="w-1.5 h-1.5 rounded-full bg-white" />
-                              <span>Rejected</span>
-                            </span>
-                          </div>
-                          <div className="bg-white rounded-lg p-3 text-xs text-[#E11D48] font-normal leading-relaxed">
-                            The uploaded photograph does not show compulsory eye shield/goggles while operating
-                          </div>
-                        </div>
-
-                        {/* Evidence 3: In Review */}
-                        <div className="rounded-xl p-3.5 flex items-center justify-between border border-[#FDE68A] bg-[#FFFBEB] gap-3">
-                          <div className="flex items-center gap-2 text-xs font-semibold text-[#92400E] min-w-0">
-                            <FiFileText className="w-4 h-4 text-[#D97706] shrink-0" />
-                            <span className="truncate">Work Product(WP)</span>
-                          </div>
-                          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#D97706] text-white flex items-center gap-1.5 shrink-0">
-                            <span className="w-1.5 h-1.5 rounded-full bg-white" />
-                            <span>In Review</span>
-                          </span>
-                        </div>
-                      </div>
+            ) : (
+              unitLearningOutcomes.map((lo) => (
+                <div
+                  key={lo.id}
+                  className="bg-white rounded-2xl p-6 shadow-xs border border-gray-100 flex flex-col gap-4"
+                >
+                  <div
+                    onClick={() => toggleLo(lo.id)}
+                    className="flex items-center justify-between cursor-pointer select-none"
+                  >
+                    <h3 className="text-base font-bold text-gray-900">{lo.title}</h3>
+                    {expandedLos[lo.id] ? (
+                      <FiChevronUp className="w-5 h-5 text-gray-500" />
+                    ) : (
+                      <FiChevronDown className="w-5 h-5 text-gray-500" />
                     )}
                   </div>
 
-                  {/* PCs 1.2 to 1.9 (collapsed accordions) */}
-                  {[
-                    "PC 1.2",
-                    "PC 1.3",
-                    "PC 1.4",
-                    "PC 1.5",
-                    "PC 1.6",
-                    "PC 1.7",
-                    "PC 1.8",
-                    "PC 1.9",
-                  ].map((pcCode) => {
-                    const pcKey = pcCode.toLowerCase().replace(" ", "-");
-                    const isExpanded = Boolean(expandedPcs[pcKey]);
-                    return (
-                      <div
-                        key={pcCode}
-                        className="bg-[#F8F9FA] rounded-xl p-4 flex flex-col gap-2 transition-all border border-transparent hover:border-gray-200"
-                      >
-                        <div
-                          onClick={() => togglePc(pcKey)}
-                          className="flex items-center justify-between cursor-pointer select-none gap-2"
-                        >
-                          <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                            <span className="px-2 py-0.5 bg-[#FDF2F4] text-[#E11D48] font-bold text-xs rounded-md shrink-0">
-                              {pcCode}
-                            </span>
-                            <span className="text-xs sm:text-sm text-gray-700 font-normal truncate">
-                              Wear Clean, Smart And Appropriate Personal Protective Equipment.
-                            </span>
-                          </div>
-                          {isExpanded ? (
-                            <FiChevronUp className="w-4 h-4 text-gray-400 shrink-0" />
-                          ) : (
-                            <FiChevronDown className="w-4 h-4 text-gray-400 shrink-0" />
-                          )}
-                        </div>
-                        {isExpanded && (
-                          <div className="pt-2 text-xs text-gray-400 italic">
-                            No evidence submitted for this criterion yet.
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+                  {expandedLos[lo.id] && (
+                    <div className="flex flex-col gap-3 pt-1">
+                      {lo.criteria.map((pc) => {
+                        const pcKey = `${lo.id}-${pc.code}`;
+                        const isExpanded = Boolean(expandedPcs[pcKey]);
+                        return (
+                          <div
+                            key={pcKey}
+                            className="border border-gray-100 bg-[#F8F9FA] rounded-xl p-4 flex flex-col gap-3"
+                          >
+                            <div
+                              onClick={() => togglePc(pcKey)}
+                              className="flex items-center justify-between cursor-pointer select-none gap-2"
+                            >
+                              <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                                <span className="px-2 py-0.5 bg-[#FDF2F4] text-[#E11D48] font-bold text-xs rounded-md shrink-0">
+                                  {pc.code}
+                                </span>
+                                <span className="text-xs sm:text-sm font-semibold text-gray-900 truncate">
+                                  {pc.description}
+                                </span>
+                              </div>
+                              {isExpanded ? (
+                                <FiChevronUp className="w-4 h-4 text-gray-400 shrink-0" />
+                              ) : (
+                                <FiChevronDown className="w-4 h-4 text-gray-400 shrink-0" />
+                              )}
+                            </div>
 
-            {/* LO 2 Card */}
-            <div className="bg-white rounded-2xl p-6 shadow-xs border border-gray-100 flex flex-col gap-4">
-              <div
-                onClick={() => toggleLo("lo-2")}
-                className="flex items-center justify-between cursor-pointer select-none"
-              >
-                <h3 className="text-base font-bold text-gray-900">
-                  LO 2: Maintain a hygienic, safe and hazard free workplace.
-                </h3>
-                {expandedLos["lo-2"] ? (
-                  <FiChevronUp className="w-5 h-5 text-gray-500" />
-                ) : (
-                  <FiChevronDown className="w-5 h-5 text-gray-500" />
-                )}
-              </div>
-              {expandedLos["lo-2"] && (
-                <div className="pt-2 text-xs text-gray-400 italic">
-                  Criteria list will appear here.
+                            {isExpanded && (
+                              pc.evidence ? (
+                                <div className="flex flex-col gap-3 pt-1">
+                                  {pc.evidence.status === "approved" ? (
+                                    <div className="rounded-xl p-3.5 flex items-center justify-between border border-[#A7F3D0] bg-[#ECFDF5] gap-3">
+                                      <div className="flex items-center gap-2 text-xs font-semibold text-[#065F46] min-w-0">
+                                        <FiFileText className="w-4 h-4 text-[#059669] shrink-0" />
+                                        <span className="truncate">{pc.evidence.title}</span>
+                                      </div>
+                                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#10753A] text-white flex items-center gap-1.5 shrink-0">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                                        <span>Approved</span>
+                                      </span>
+                                    </div>
+                                  ) : pc.evidence.status === "rejected" ? (
+                                    <div className="rounded-xl p-3.5 flex flex-col gap-2.5 border border-[#FECDD3] bg-[#FFF1F2]">
+                                      <div className="flex items-center justify-between gap-3">
+                                        <div className="flex items-center gap-2 text-xs font-semibold text-[#9F1239] min-w-0">
+                                          <FiFileText className="w-4 h-4 text-[#E11D48] shrink-0" />
+                                          <span className="truncate">{pc.evidence.title}</span>
+                                        </div>
+                                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#DC2626] text-white flex items-center gap-1.5 shrink-0">
+                                          <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                                          <span>Rejected</span>
+                                        </span>
+                                      </div>
+                                      {pc.evidence.feedback && (
+                                        <div className="bg-white rounded-lg p-3 text-xs text-[#E11D48] font-normal leading-relaxed">
+                                          {pc.evidence.feedback}
+                                        </div>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <div className="rounded-xl p-3.5 flex items-center justify-between border border-[#FDE68A] bg-[#FFFBEB] gap-3">
+                                      <div className="flex items-center gap-2 text-xs font-semibold text-[#92400E] min-w-0">
+                                        <FiFileText className="w-4 h-4 text-[#D97706] shrink-0" />
+                                        <span className="truncate">{pc.evidence.title}</span>
+                                      </div>
+                                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#D97706] text-white flex items-center gap-1.5 shrink-0">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                                        <span>In Review</span>
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="pt-2 text-xs text-gray-400 italic">
+                                  No evidence submitted for this criterion yet.
+                                </div>
+                              )
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-
-            {/* LO 3 Card */}
-            <div className="bg-white rounded-2xl p-6 shadow-xs border border-gray-100 flex flex-col gap-4">
-              <div
-                onClick={() => toggleLo("lo-3")}
-                className="flex items-center justify-between cursor-pointer select-none"
-              >
-                <h3 className="text-base font-bold text-gray-900">
-                  LO 3: Maintain a hygienic, safe and secure workplace
-                </h3>
-                {expandedLos["lo-3"] ? (
-                  <FiChevronUp className="w-5 h-5 text-gray-500" />
-                ) : (
-                  <FiChevronDown className="w-5 h-5 text-gray-500" />
-                )}
-              </div>
-              {expandedLos["lo-3"] && (
-                <div className="pt-2 text-xs text-gray-400 italic">
-                  Criteria list will appear here.
-                </div>
-              )}
-            </div>
+              ))
+            )}
           </div>
         ) : (
           <div className="lg:col-span-8 flex flex-col gap-5">
@@ -813,7 +845,7 @@ export const NsqCentreApplicationDetailView: React.FC<
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Left: QAA Assessor Subcard */}
                   {assignedAssessor ? (
-                    <div className="bg-[#F8F9FA] rounded-xl p-5 border border-gray-100 flex items-center gap-3.5 min-h-[100px]">
+                    <div className="bg-[#F8F9FA] rounded-xl p-5 border border-gray-100 flex items-center gap-3.5 min-h-25">
                       <Avatar
                         src={assignedAssessor.photoUrl}
                         name={assignedAssessor.name}
@@ -830,7 +862,7 @@ export const NsqCentreApplicationDetailView: React.FC<
                       </div>
                     </div>
                   ) : (
-                    <div className="bg-[#F8F9FA] rounded-xl p-5 border border-gray-100 flex flex-col items-center text-center justify-center gap-1.5 min-h-[100px]">
+                    <div className="bg-[#F8F9FA] rounded-xl p-5 border border-gray-100 flex flex-col items-center text-center justify-center gap-1.5 min-h-25">
                       <span className="font-bold text-sm text-gray-800">
                         No assessor assigned
                       </span>
@@ -852,7 +884,7 @@ export const NsqCentreApplicationDetailView: React.FC<
 
                   {/* Right: IQA Verifier Subcard */}
                   {assignedIqa ? (
-                    <div className="bg-[#F8F9FA] rounded-xl p-5 border border-gray-100 flex items-center gap-3.5 min-h-[100px]">
+                    <div className="bg-[#F8F9FA] rounded-xl p-5 border border-gray-100 flex items-center gap-3.5 min-h-25">
                       <Avatar
                         src={assignedIqa.photoUrl}
                         name={assignedIqa.name}
@@ -869,7 +901,7 @@ export const NsqCentreApplicationDetailView: React.FC<
                       </div>
                     </div>
                   ) : (
-                    <div className="bg-[#F8F9FA] rounded-xl p-5 border border-gray-100 flex flex-col items-center text-center justify-center gap-1.5 min-h-[100px]">
+                    <div className="bg-[#F8F9FA] rounded-xl p-5 border border-gray-100 flex flex-col items-center text-center justify-center gap-1.5 min-h-25">
                       <span className="font-bold text-sm text-gray-800">
                         No assessor assigned
                       </span>
@@ -1097,7 +1129,7 @@ export const NsqCentreApplicationDetailView: React.FC<
             ) : (
               <div className="flex flex-col items-center justify-center py-6 text-center gap-2">
                 <span className="text-xs font-bold text-gray-800">No request</span>
-                <p className="text-[11px] text-gray-400 font-medium max-w-[200px]">
+                <p className="text-[11px] text-gray-400 font-medium max-w-50">
                   The candidate&apos;s scheduled observation will appear here.
                 </p>
               </div>

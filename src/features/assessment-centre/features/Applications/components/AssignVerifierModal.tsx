@@ -32,8 +32,16 @@ export const AssignVerifierModal: React.FC<AssignVerifierModalProps> = ({
 }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  // Scoped to the qualification this verifier role actually requires — the
+  // spec calls this out explicitly ("panel/IV picker uses qualification=IV"),
+  // and EV assignment needs the EV credential the same way. Without this,
+  // the picker offers assessors the backend will then reject with a
+  // "qualification required" error on submit.
   const { data: centreAssessors = [], isLoading: isLoadingAssessors } =
-    useGetCentreAssessors({ status: "approved" });
+    useGetCentreAssessors({
+      status: "approved",
+      qualification: verifierType === "internal" ? "IV" : "EV",
+    });
 
   const [selectedAssessorId, setSelectedAssessorId] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -47,17 +55,10 @@ export const AssignVerifierModal: React.FC<AssignVerifierModalProps> = ({
   const verifierLabel =
     verifierType === "internal" ? "Internal Verifier" : "External Verifier";
 
-  const assessorOptions =
-    centreAssessors.length > 0
-      ? centreAssessors.map((a) => ({
-          label: a.name || "Assessor",
-          value: a.id || (a as any).assessorId || (a as any).userId,
-        }))
-      : [
-          { label: "Ngozi Eze", value: "assessor-1" },
-          { label: "Chidi Okonkwo", value: "assessor-2" },
-          { label: "Amina Bello", value: "assessor-3" },
-        ];
+  const assessorOptions = centreAssessors.map((a) => ({
+    label: a.name || "Assessor",
+    value: a.id || (a as any).assessorId || (a as any).userId,
+  }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,12 +97,12 @@ export const AssignVerifierModal: React.FC<AssignVerifierModalProps> = ({
       onSuccess?.(info);
       setIsSuccessOpen(true);
     } catch (err: any) {
-      console.warn(`assign${verifierType === "internal" ? "Iv" : "Ev"}Api error:`, err);
-      // Fallback update for user experience if demo environment
-      const info = { id: selectedAssessorId, name: verifierName };
-      setAssignedInfo(info);
-      onSuccess?.(info);
-      setIsSuccessOpen(true);
+      toast({
+        type: "error",
+        title: "Assignment Failed",
+        description:
+          err?.message || `Unable to assign this ${verifierLabel.toLowerCase()}. Please try again.`,
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -142,16 +143,23 @@ export const AssignVerifierModal: React.FC<AssignVerifierModalProps> = ({
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
-                <Select
-                  label="Select Assessor"
-                  placeholder={
-                    isLoadingAssessors ? "Loading Assessors..." : "Select an assessor"
-                  }
-                  value={selectedAssessorId}
-                  onChange={(e) => setSelectedAssessorId(e.target.value)}
-                  options={assessorOptions}
-                  required
-                />
+                {!isLoadingAssessors && assessorOptions.length === 0 ? (
+                  <div className="w-full bg-[#F8F9FA] border border-gray-200 rounded-xl px-4 py-3 text-xs text-gray-400">
+                    No approved {verifierType === "internal" ? "IV" : "EV"}-qualified
+                    assessors at this centre yet.
+                  </div>
+                ) : (
+                  <Select
+                    label="Select Assessor"
+                    placeholder={
+                      isLoadingAssessors ? "Loading Assessors..." : "Select an assessor"
+                    }
+                    value={selectedAssessorId}
+                    onChange={(e) => setSelectedAssessorId(e.target.value)}
+                    options={assessorOptions}
+                    required
+                  />
+                )}
               </div>
 
               <div className="bg-[#FFFBEB] border border-[#FDE68A] p-4 rounded-xl flex flex-col gap-1 text-xs">

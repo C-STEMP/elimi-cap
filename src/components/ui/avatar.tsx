@@ -136,7 +136,7 @@ export const Avatar: React.FC<AvatarProps> = ({
   // Case 3: Offline / both images errored -> graceful colorful initials / icon fallback
   return (
     <div
-      className={`relative overflow-hidden bg-gradient-to-tr ${gradientClass} text-white font-bold flex items-center justify-center shrink-0 shadow-2xs ${shapeClasses} ${className}`}
+      className={`relative overflow-hidden bg-linear-to-tr ${gradientClass} text-white font-bold flex items-center justify-center shrink-0 shadow-2xs ${shapeClasses} ${className}`}
       style={{ ...sizeStyles, ...style }}
     >
       {initials ? (

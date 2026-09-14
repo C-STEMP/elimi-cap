@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiX, FiCheck, FiUser, FiSearch, FiAward } from "react-icons/fi";
 import { Button } from "@/src/components/ui/button";
+import { Select } from "@/src/components/ui/select";
 import { useToast } from "@/src/components/ui/toast";
 import { useGetCentreAssessors } from "@/src/features/shared/centre/hooks";
 import { assignIvApi } from "@/src/features/shared/applications/api/verification.api";
@@ -46,9 +47,17 @@ export const AssignNsqAssessorModal: React.FC<AssignNsqAssessorModalProps> = ({
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Real centre assessor roster — GET /centre/assessors?status=approved.
+  // Real centre assessor roster — GET /centre/assessors?status=approved,
+  // scoped to whichever qualification this role actually requires so the
+  // backend's own "qualification required" check can never be hit here.
+  // QAA assignment needs the QAA credential; NSQ's Internal Verifier
+  // assignment is the IQAM role, whose credential is IQM (the spec ties
+  // "IQAM / IQM" directly to "NSQ IV").
   const { data: remoteAssessors = [], isLoading: isLoadingAssessors } =
-    useGetCentreAssessors({ status: "approved" });
+    useGetCentreAssessors({
+      status: "approved",
+      qualification: roleType === "QAA" ? "QAA" : "IQM",
+    });
 
   const [selectedAssessorId, setSelectedAssessorId] = useState<string>(
     currentAssignedId || "",
@@ -199,22 +208,15 @@ export const AssignNsqAssessorModal: React.FC<AssignNsqAssessorModalProps> = ({
                       No approved retained assessors at this centre yet.
                     </div>
                   ) : (
-                    <div className="relative">
-                      <select
-                        value={selectedAssessorId}
-                        onChange={(e) => setSelectedAssessorId(e.target.value)}
-                        className="w-full bg-[#F8F9FA] border border-gray-200 rounded-xl px-4 py-3 text-xs text-gray-800 font-medium focus:outline-hidden focus:ring-2 focus:ring-amber-500/20 appearance-none cursor-pointer"
-                      >
-                        {assessorsPool.map((assessor) => (
-                          <option key={assessor.id} value={assessor.id}>
-                            {assessor.name}
-                          </option>
-                        ))}
-                      </select>
-                      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 text-xs">
-                        ▼
-                      </div>
-                    </div>
+                    <Select
+                      value={selectedAssessorId}
+                      onChange={(e) => setSelectedAssessorId(e.target.value)}
+                      options={assessorsPool.map((assessor) => ({
+                        label: assessor.name,
+                        value: assessor.id,
+                      }))}
+                      placeholder="Select an assessor"
+                    />
                   )}
                 </div>
               </div>
@@ -235,8 +237,8 @@ export const AssignNsqAssessorModal: React.FC<AssignNsqAssessorModalProps> = ({
           ) : (
             /* Success View (matching Image 2) */
             <div className="flex flex-col items-center text-center py-6 gap-4">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-[#10B981] to-[#34D399] flex items-center justify-center shadow-lg shadow-emerald-500/30 text-white mb-1">
-                <FiCheck className="w-10 h-10 stroke-[3]" />
+              <div className="w-20 h-20 rounded-full bg-linear-to-tr from-[#10B981] to-[#34D399] flex items-center justify-center shadow-lg shadow-emerald-500/30 text-white mb-1">
+                <FiCheck className="w-10 h-10 stroke-3" />
               </div>
 
               <div className="flex flex-col items-center">

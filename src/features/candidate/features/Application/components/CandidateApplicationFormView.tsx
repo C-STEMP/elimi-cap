@@ -32,6 +32,15 @@ export const CandidateApplicationFormView: React.FC<
   if (isLoading) {
     return (
       <div className="w-full flex flex-col min-h-screen bg-[#F8F9FA]">
+        <HeaderBanner
+          backHref={`/dashboard/applications/${applicationId}`}
+          backTitle="Application Form"
+          breadcrumbs={[
+            { label: "My Applications", href: "/dashboard/applications" },
+            { label: "Application Form" },
+          ]}
+          showCreateButton={false}
+        />
         <div className="max-w-4xl xl:max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex flex-col gap-6">
           <div className="bg-white rounded-3xl p-6 sm:p-10 border border-gray-100 shadow-sm flex flex-col gap-8 animate-pulse">
             <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4 border-b border-gray-100 pb-6 w-full">

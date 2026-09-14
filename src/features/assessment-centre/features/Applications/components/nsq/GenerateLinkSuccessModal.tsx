@@ -31,8 +31,8 @@ export const GenerateLinkSuccessModal: React.FC<
           className="bg-white rounded-3xl p-8 sm:p-9 max-w-md w-full shadow-2xl relative border border-gray-100 flex flex-col items-center text-center gap-4"
         >
           {/* Glowing Green Circular Icon */}
-          <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-[#10B981] to-[#34D399] flex items-center justify-center shadow-lg shadow-emerald-500/30 text-white mb-1">
-            <FiCheck className="w-10 h-10 stroke-[3]" />
+          <div className="w-20 h-20 rounded-full bg-linear-to-tr from-[#10B981] to-[#34D399] flex items-center justify-center shadow-lg shadow-emerald-500/30 text-white mb-1">
+            <FiCheck className="w-10 h-10 stroke-3" />
           </div>
 
           <div className="flex flex-col items-center gap-1">
