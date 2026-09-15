@@ -21,7 +21,6 @@ import { ASSETS_URL } from "@/assets";
 import { useToast } from "@/src/components/ui/toast";
 import { TransactionReceiptModal } from "@/features/assessment-centre/features/Payment/components/TransactionReceiptModal";
 import { PaymentModal, type PaymentModalType } from "../PaymentModals";
-import { scheduleDirectObservationApi } from "@/src/features/shared/applications/api";
 import {
   useGetInductionForm,
   useGetDirectObservations,
@@ -45,7 +44,6 @@ import { NsqUnitDetailView } from "./NsqUnitDetailView";
 import { NsqRequestObservationModal } from "./NsqRequestObservationModal";
 import { NsqObservationRequestReviewModal } from "./NsqObservationRequestReviewModal";
 import { NsqObservationSuccessModal } from "./NsqObservationSuccessModal";
-import { CandidateReportSignatureModal } from "./CandidateReportSignatureModal";
 import { NsqCompleteInductionFormModal } from "./NsqCompleteInductionFormModal";
 
 const NSQ_PROGRESS_STEPS = [
@@ -102,8 +100,6 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
   const [isObservationModalOpen, setIsObservationModalOpen] = useState(false);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
-  const [isReportSignatureModalOpen, setIsReportSignatureModalOpen] = useState(false);
-  const [isReportSigned, setIsReportSigned] = useState(false);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
   const [isInductionViewModalOpen, setIsInductionViewModalOpen] = useState(false);
   const [isInductionFillModalOpen, setIsInductionFillModalOpen] = useState(false);
@@ -1068,15 +1064,6 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
         onClose={() => setIsSuccessModalOpen(false)}
         title={successModalInfo.title}
         subtitle={successModalInfo.subtitle}
-      />
-
-      {/* Internal Verifier Report Signature Modal */}
-      <CandidateReportSignatureModal
-        isOpen={isReportSignatureModalOpen}
-        onClose={() => setIsReportSignatureModalOpen(false)}
-        applicationId={application?.id}
-        sessionId={activeObservation?.id}
-        onSignedSuccess={() => setIsReportSigned(true)}
       />
 
       {/* Transaction Receipt Modal — backed by GET /applications/{id}/receipt */}
