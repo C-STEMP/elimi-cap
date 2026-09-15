@@ -475,9 +475,6 @@ export interface NsqEvidenceThreadItem {
   evidenceType: string;
   evidenceAssetId: string;
   evidenceRefPage?: string | null;
-  // Per the CAP API contract, the QAA decision on this row lives in
-  // `reviewStatus` (there is no plain `status` field on evidence rows —
-  // that name belongs to NsqCriterion, one level up).
   reviewStatus: "pending" | "approved" | "rejected";
   reviewComment?: string | null;
   reviewedBy?: string | null;
@@ -571,11 +568,6 @@ export interface DirectObservationSession {
   reviewedAt?: string | null;
   physicalStatus?: string;
   oralStatus?: string;
-  // Per the API contract these are `physical`/`oral` and a nested
-  // `signatures` object — not `physicalForm`/`oralForm`/`assessorSignature`/
-  // `learnerSignature`. Those wrong names meant every read of them was
-  // silently `undefined` at runtime (draft forms never resumed, "signed"
-  // status never actually reflected a real signature).
   physical?: DirectObservationFormPayload | null;
   oral?: DirectObservationFormPayload | null;
   signatures?: {
