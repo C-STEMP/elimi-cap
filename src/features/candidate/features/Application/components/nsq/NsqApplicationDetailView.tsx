@@ -79,10 +79,6 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
 
   const [selectedUnit, setSelectedUnit] = useState<NsqUnitItem | null>(null);
 
-  // Keep the selected unit in the URL (?unit=<id>) so a refresh (or a shared
-  // link / back-button navigation) lands back on the unit page instead of
-  // silently dropping to the application overview — selectedUnit alone is
-  // just component state and doesn't survive a remount.
   const handleSelectUnit = (unit: NsqUnitItem) => {
     setSelectedUnit(unit);
     const params = new URLSearchParams(searchParams.toString());
@@ -318,10 +314,6 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
   );
 
   const liveSitting = directObservationsData?.items?.[0];
-  // Map the real sitting status enum (requested/rejected/accepted/completed/
-  // cancelled) onto the card's display states — "accepted" was previously
-  // passed through unchanged and fell into the default "Attention Required"
-  // badge instead of the correct green "Scheduled" one.
   const mapSittingStatus = (
     status: string,
   ): "pending" | "attention_required" | "scheduled" | "completed" | "rejected" | "cancelled" => {
@@ -389,19 +381,6 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
 
   const assignedFacilitator = (application as any)?.facilitator || null;
 
-  // Real units for this application — GET /applications/{id} `nsq.units`
-  // (same source the assessor/centre views already use) is application-scoped
-  // and already carries this application's actual per-unit progress
-  // (criteriaApproved/criteriaTotal/criteriaPending). Prefer it over the
-  // generic trade catalogue (GET /trades/{id}/units), which is only a
-  // fallback for when `nsq` hasn't populated yet. No fake placeholder rows
-  // when neither has loaded yet; the empty state is rendered instead.
-  //
-  // `nsq.units` intentionally spans every active-NOS unit on the trade
-  // across all qualification levels (evidence may target any of them) —
-  // per the API contract, the UI default is the induction wish-list level,
-  // so we filter down to that here instead of listing all three levels'
-  // units stacked on top of each other.
   const nsqUnitsAll: any[] = nsqData?.units || [];
   const nsqUnits = wishedQualificationLevel
     ? nsqUnitsAll.filter(
@@ -434,8 +413,6 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
           }))
         : [];
 
-  // Restore the selected unit from the URL on load/refresh, once the real
-  // units list has come in.
   useEffect(() => {
     if (selectedUnit) return;
     const unitParam = searchParams.get("unit");

@@ -98,8 +98,6 @@ export const NsqAssessorUnitDetailView: React.FC<
               ? "Work Product(WP)"
               : `${ev.evidenceType} Evidence`,
           type: ev.evidenceType,
-          // The API's `reviewStatus` is "pending" while UnitEvidenceRecord's
-          // UI states use "in_review" for the same not-yet-decided state.
           status: ev.reviewStatus === "pending" ? "in_review" : ev.reviewStatus,
           feedback: ev.reviewComment || undefined,
         }));
@@ -123,9 +121,6 @@ export const NsqAssessorUnitDetailView: React.FC<
 
       if (outcomeList.length > 0) {
         setLearningOutcomes(outcomeList);
-        // Expand the first outcome (and its first criterion) by default,
-        // same as the previous fixture-driven behavior, now against
-        // whatever the live data's first group actually is.
         setExpandedLos((prev) =>
           Object.keys(prev).length > 0 ? prev : { [outcomeList[0].id]: true },
         );
@@ -309,8 +304,6 @@ export const NsqAssessorUnitDetailView: React.FC<
           try {
             await onAcceptObservation(pendingAcceptRequirements);
           } catch {
-            // onAcceptObservation's underlying mutation already surfaced an
-            // error toast.
             return;
           }
           setIsAcceptObsSuccessOpen(true);

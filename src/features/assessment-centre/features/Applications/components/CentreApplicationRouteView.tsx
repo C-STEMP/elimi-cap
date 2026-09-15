@@ -43,9 +43,6 @@ export const CentreApplicationRouteView: React.FC<{ id: string }> = ({
     useState(false);
   const [isCreateInterviewModalOpen, setIsCreateInterviewModalOpen] =
     useState(false);
-  // Backed by the ?unit= URL param so a refresh (or a shared/bookmarked
-  // link) lands back on the same unit page instead of dropping to the
-  // application overview — plain useState alone resets on remount.
   const [selectedUnitNumber, setInternalSelectedUnitNumber] = useState<
     string | null
   >(() => searchParams.get("unit"));

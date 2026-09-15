@@ -318,14 +318,10 @@ export const NsqUnitDetailView: React.FC<NsqUnitDetailViewProps> = ({
   // Floating Upload Success Banner
   const [showUploadToast, setShowUploadToast] = useState(false);
 
-  // Accordion behavior: opening one LO collapses any other open LO.
   const toggleLo = (id: string) => {
     setExpandedLoIds((prev) => (prev.includes(id) ? [] : [id]));
   };
 
-  // Accordion behavior: opening one PC collapses any other open PC — with
-  // up to ~6 PCs per LO, letting all of them stay expanded at once made the
-  // page unreasonably long to scroll.
   const togglePc = (id: string) => {
     setExpandedPcIds((prev) => (prev.includes(id) ? [] : [id]));
   };

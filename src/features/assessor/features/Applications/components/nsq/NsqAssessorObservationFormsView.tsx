@@ -115,9 +115,6 @@ export const NsqAssessorObservationFormsView: React.FC<
     return initial;
   });
 
-  // Re-seed criteria state once the real catalogue loads, resuming from
-  // whatever was already saved on this sitting (draft or submitted) instead
-  // of always starting blank — `sessionDetail.physical`/`.oral` carry that.
   useEffect(() => {
     if (criteriaDefs === DEFAULT_PCS) return;
 
@@ -149,9 +146,6 @@ export const NsqAssessorObservationFormsView: React.FC<
       criteriaDefs.forEach((pc) => {
         const saved = oralByCode.get(pc.code);
         if (saved) {
-          // Oral rows serialize question/answer into one `comment` string
-          // (see handleSave/handleSubmit below) since the API has no
-          // separate fields for them.
           const [question, answer] = (saved.comment || "").split(" - ");
           next[pc.code] = {
             satisfactory: saved.met,
@@ -168,8 +162,6 @@ export const NsqAssessorObservationFormsView: React.FC<
 
   const [isWitnessSigned, setIsWitnessSigned] = useState(false);
 
-  // Assessor (unit_assessor) sign-off — only reachable once both forms are
-  // submitted, per the API contract.
   const authUser = useAppSelector((state) => state.auth.user);
   const assessorDisplayName =
     authUser?.fullName || authUser?.email?.split("@")[0] || "Assessor";
@@ -187,7 +179,7 @@ export const NsqAssessorObservationFormsView: React.FC<
         signedAt: new Date().toISOString(),
       });
     } catch {
-      // useSignDirectObservation already surfaced an error toast.
+      /* empty */
     }
   };
 

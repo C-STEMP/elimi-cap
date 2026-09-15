@@ -61,12 +61,6 @@ const mapSessionToObservation = (
     address: session.address || "",
     status,
     requirements: session.requirements,
-    // Not seeded from the backend: this reflects the assessor appending
-    // their own signature to *this* accept action inside
-    // NsqAssessorObservationModal (there is no signature field on the
-    // review payload) — it should always start fresh, not be tied to the
-    // candidate's unrelated learner signature (which also wouldn't exist
-    // yet at accept/reject time regardless).
     rejectionReason: session.reviewComment || undefined,
   };
 };
@@ -130,12 +124,6 @@ export const NsqAssessorApplicationDetailView: React.FC<
   // Real qualification units — GET /applications/{id} `nsq.units`, already
   // carrying per-unit evidence counts (criteriaApproved/criteriaTotal) and
   // the "new upload" signal (criteriaPending > 0). No extra fetch needed.
-  //
-  // `nsq.units` intentionally spans every active-NOS unit on the trade
-  // across all qualification levels (evidence may target any of them) —
-  // per the API contract, the UI default is the induction wish-list level,
-  // so we filter down to that here instead of listing all three levels'
-  // units stacked on top of each other.
   const wishedQualificationLevel = apiApp?.nsq?.wishedQualificationLevel;
   const nsqUnitsForLevel = wishedQualificationLevel
     ? apiApp?.nsq?.units?.filter(
@@ -156,10 +144,6 @@ export const NsqAssessorApplicationDetailView: React.FC<
 
   const [selectedUnit, setSelectedUnit] = useState<QualificationUnitItem | null>(null);
 
-  // Keep the selected unit in sync once real units load — restoring from the
-  // ?unit= URL param (so refresh/deep-link lands back on the same unit page
-  // instead of dropping to the overview) if present, defaulting to the first
-  // unit otherwise.
   useEffect(() => {
     if (!realUnits || realUnits.length === 0) return;
     const unitParam = searchParams.get("unit");
@@ -255,9 +239,6 @@ export const NsqAssessorApplicationDetailView: React.FC<
     onRegisterMoveToIqam?.(handleMoveToIqam);
   }, [onRegisterMoveToIqam, candidateName]);
 
-  // Shared with the unit-detail screen (passed down as props) so both entry
-  // points to the same observation card hit the real API instead of one of
-  // them silently updating local state only.
   const acceptObservation = async (requirements: string[]) => {
     await reviewObservationMutation({
       decision: "accept",
