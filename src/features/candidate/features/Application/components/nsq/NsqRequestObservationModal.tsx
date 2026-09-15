@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Modal } from "antd";
 import { FiCalendar, FiClock, FiX, FiCheck } from "react-icons/fi";
 import { Input } from "@/src/components/ui/input";
@@ -39,19 +39,9 @@ export const NsqRequestObservationModal: React.FC<NsqRequestObservationModalProp
 }) => {
   const { toast } = useToast();
 
-  const [selectedUnitIds, setSelectedUnitIds] = useState<string[]>(() =>
-    availableUnits.slice(0, 3).map((u) => u.id),
-  );
-
-  // availableUnits can arrive after this modal has already mounted (it
-  // depends on the trade's unit list loading) — seed the selection once
-  // real data shows up instead of staying permanently empty.
-  useEffect(() => {
-    if (selectedUnitIds.length === 0 && availableUnits.length > 0) {
-      setSelectedUnitIds(availableUnits.slice(0, 3).map((u) => u.id));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [availableUnits]);
+  // No default selection — which units to request observation for is the
+  // candidate's choice, not something to guess on their behalf.
+  const [selectedUnitIds, setSelectedUnitIds] = useState<string[]>([]);
 
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
@@ -311,7 +301,7 @@ export const NsqRequestObservationModal: React.FC<NsqRequestObservationModalProp
             />
           </div>
 
-          {/* Schedule Interview Button */}
+          {/* Submit Button */}
           <Button
             type="submit"
             variant="amber"
@@ -319,7 +309,7 @@ export const NsqRequestObservationModal: React.FC<NsqRequestObservationModalProp
             loading={isSubmitting}
             className="w-full h-12 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-md mt-3 cursor-pointer"
           >
-            Schedule Interview
+            Send Request
           </Button>
         </form>
       </div>
