@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
@@ -72,6 +72,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
   application,
 }) => {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -79,6 +80,25 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
   const savedOnboarding = useAppSelector((state) => state.onboarding.nsqApplication);
 
   const [selectedUnit, setSelectedUnit] = useState<NsqUnitItem | null>(null);
+
+  // Keep the selected unit in the URL (?unit=<id>) so a refresh (or a shared
+  // link / back-button navigation) lands back on the unit page instead of
+  // silently dropping to the application overview — selectedUnit alone is
+  // just component state and doesn't survive a remount.
+  const handleSelectUnit = (unit: NsqUnitItem) => {
+    setSelectedUnit(unit);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("unit", unit.id);
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+
+  const handleBackFromUnit = () => {
+    setSelectedUnit(null);
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("unit");
+    const query = params.toString();
+    router.push(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  };
   const [isObservationModalOpen, setIsObservationModalOpen] = useState(false);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
@@ -392,6 +412,17 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
           }))
         : [];
 
+  // Restore the selected unit from the URL on load/refresh, once the real
+  // units list has come in.
+  useEffect(() => {
+    if (selectedUnit) return;
+    const unitParam = searchParams.get("unit");
+    if (!unitParam || unitsList.length === 0) return;
+    const match = unitsList.find((u) => u.id === unitParam);
+    if (match) setSelectedUnit(match);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, unitsList.length]);
+
   const qualificationCode =
     nsqUnits[0]?.referenceNumber ||
     remoteUnits[0]?.referenceNumber ||
@@ -456,7 +487,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
         tradeName={resolvedTradeName}
         currentStageKey={application?.currentStageKey}
         structure={selectedUnit.structure}
-        onBack={() => setSelectedUnit(null)}
+        onBack={handleBackFromUnit}
       />
     );
   }
@@ -774,7 +805,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                   unitsList.map((unit) => (
                     <div
                       key={unit.id}
-                      onClick={() => setSelectedUnit(unit)}
+                      onClick={() => handleSelectUnit(unit)}
                       className="p-4 rounded-xl border border-gray-100/80 hover:border-gray-200 bg-[#f8f9fa] hover:bg-white flex items-center justify-between gap-4 cursor-pointer transition-all group shadow-2xs"
                     >
                       <div className="flex flex-col sm:flex-row sm:items-center gap-2 min-w-0">
