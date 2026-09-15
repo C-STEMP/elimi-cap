@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { FiChevronLeft, FiPlus } from "react-icons/fi";
 import { NsqAssessorSidebar } from "./NsqAssessorSidebar";
 import { NsqAssessorUnitDetailView } from "./NsqAssessorUnitDetailView";
@@ -94,6 +95,9 @@ export const NsqAssessorApplicationDetailView: React.FC<
   onSubViewNavStateChange,
 }) => {
   const { toast } = useToast();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [internalSubView, setInternalSubView] = useState<NsqAssessorSubView>("overview");
   const activeSubView = externalNavState || internalSubView;
 
@@ -146,13 +150,30 @@ export const NsqAssessorApplicationDetailView: React.FC<
 
   const [selectedUnit, setSelectedUnit] = useState<QualificationUnitItem | null>(null);
 
-  // Keep the selected unit in sync once real units load.
+  // Keep the selected unit in sync once real units load — restoring from the
+  // ?unit= URL param (so refresh/deep-link lands back on the same unit page
+  // instead of dropping to the overview) if present, defaulting to the first
+  // unit otherwise.
   useEffect(() => {
-    if (realUnits && realUnits.length > 0 && !selectedUnit) {
+    if (!realUnits || realUnits.length === 0) return;
+    const unitParam = searchParams.get("unit");
+    if (unitParam) {
+      const match = realUnits.find((u) => u.id === unitParam);
+      if (match) {
+        if (selectedUnit?.id !== match.id) setSelectedUnit(match);
+        if (activeSubView !== "unit") {
+          setInternalSubView("unit");
+          onSubViewNavStateChange?.("unit");
+          onSubViewChange?.(match.unitNo);
+        }
+      }
+      return;
+    }
+    if (!selectedUnit) {
       setSelectedUnit(realUnits[0]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [realUnits]);
+  }, [realUnits, searchParams]);
 
   // Direct Observation Queries & Mutation
   const { data: directObsList } = useGetDirectObservations(application.id, {
@@ -196,6 +217,17 @@ export const NsqAssessorApplicationDetailView: React.FC<
   const handleSelectUnit = (unit: QualificationUnitItem) => {
     setSelectedUnit(unit);
     setActiveSubView("unit");
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("unit", unit.id);
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+
+  const handleBackFromUnit = () => {
+    setActiveSubView("overview");
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("unit");
+    const query = params.toString();
+    router.push(query ? `${pathname}?${query}` : pathname, { scroll: false });
   };
 
   // No backend "move to IQAM" action exists for NSQ — IV assignment is
@@ -257,7 +289,7 @@ export const NsqAssessorApplicationDetailView: React.FC<
         applicationId={application.id}
         observation={observation}
         onUpdateObservation={setObservation}
-        onBack={() => setActiveSubView("overview")}
+        onBack={handleBackFromUnit}
         onFillObservationForm={() => setActiveSubView("observation_form")}
       />
     );

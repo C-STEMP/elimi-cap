@@ -20,13 +20,15 @@ import {
   useGetCentrePanels,
 } from "@/src/features/shared/centre/hooks";
 import { useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import React, { useState } from "react";
 import { NsqCentreApplicationDetailView } from "./nsq/NsqCentreApplicationDetailView";
 export const CentreApplicationRouteView: React.FC<{ id: string }> = ({
   id,
 }) => {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { data: application, isLoading } = useGetApplicationById(id);
@@ -41,9 +43,21 @@ export const CentreApplicationRouteView: React.FC<{ id: string }> = ({
     useState(false);
   const [isCreateInterviewModalOpen, setIsCreateInterviewModalOpen] =
     useState(false);
-  const [selectedUnitNumber, setSelectedUnitNumber] = useState<string | null>(
-    null,
-  );
+  // Backed by the ?unit= URL param so a refresh (or a shared/bookmarked
+  // link) lands back on the same unit page instead of dropping to the
+  // application overview — plain useState alone resets on remount.
+  const [selectedUnitNumber, setInternalSelectedUnitNumber] = useState<
+    string | null
+  >(() => searchParams.get("unit"));
+
+  const setSelectedUnitNumber = (unitNo: string | null) => {
+    setInternalSelectedUnitNumber(unitNo);
+    const params = new URLSearchParams(searchParams.toString());
+    if (unitNo) params.set("unit", unitNo);
+    else params.delete("unit");
+    const query = params.toString();
+    router.push(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  };
 
   const { data: centrePanels = [] } = useGetCentrePanels();
   const { data: centreInterviews = [] } = useGetCentreInterviews();
