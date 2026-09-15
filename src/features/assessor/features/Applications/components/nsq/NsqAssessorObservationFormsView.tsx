@@ -17,7 +17,9 @@ import {
   useGetDirectObservations,
   useGetDirectObservationSession,
   useSaveDirectObservationForm,
+  useSignDirectObservation,
 } from "@/src/features/shared/applications/hooks";
+import { useAppSelector } from "@/src/store/hooks";
 
 interface NsqAssessorObservationFormsViewProps {
   candidateName: string;
@@ -113,26 +115,81 @@ export const NsqAssessorObservationFormsView: React.FC<
     return initial;
   });
 
-  // Re-seed criteria state once the real catalogue loads.
+  // Re-seed criteria state once the real catalogue loads, resuming from
+  // whatever was already saved on this sitting (draft or submitted) instead
+  // of always starting blank — `sessionDetail.physical`/`.oral` carry that.
   useEffect(() => {
     if (criteriaDefs === DEFAULT_PCS) return;
+
+    const physicalByCode = new Map(
+      (sessionDetail?.physical?.rows || []).map((r) => [
+        normalizeCode(r.performanceCriteriaCode),
+        r,
+      ]),
+    );
+    const oralByCode = new Map(
+      (sessionDetail?.oral?.rows || []).map((r) => [
+        normalizeCode(r.performanceCriteriaCode),
+        r,
+      ]),
+    );
+
     setArf02Criteria((prev) => {
       const next: Record<string, Arf02CriteriaState> = {};
       criteriaDefs.forEach((pc) => {
-        next[pc.code] = prev[pc.code] || { fulfilled: false, comment: "" };
+        const saved = physicalByCode.get(pc.code);
+        next[pc.code] = saved
+          ? { fulfilled: saved.met, comment: saved.comment || "" }
+          : prev[pc.code] || { fulfilled: false, comment: "" };
       });
       return next;
     });
     setArf04Criteria((prev) => {
       const next: Record<string, Arf04CriteriaState> = {};
       criteriaDefs.forEach((pc) => {
-        next[pc.code] = prev[pc.code] || { satisfactory: false, question: "", answer: "" };
+        const saved = oralByCode.get(pc.code);
+        if (saved) {
+          // Oral rows serialize question/answer into one `comment` string
+          // (see handleSave/handleSubmit below) since the API has no
+          // separate fields for them.
+          const [question, answer] = (saved.comment || "").split(" - ");
+          next[pc.code] = {
+            satisfactory: saved.met,
+            question: question || "",
+            answer: answer || "",
+          };
+        } else {
+          next[pc.code] = prev[pc.code] || { satisfactory: false, question: "", answer: "" };
+        }
       });
       return next;
     });
-  }, [criteriaDefs]);
+  }, [criteriaDefs, sessionDetail?.physical, sessionDetail?.oral]);
 
   const [isWitnessSigned, setIsWitnessSigned] = useState(false);
+
+  // Assessor (unit_assessor) sign-off — only reachable once both forms are
+  // submitted, per the API contract.
+  const authUser = useAppSelector((state) => state.auth.user);
+  const assessorDisplayName =
+    authUser?.fullName || authUser?.email?.split("@")[0] || "Assessor";
+  const { mutateAsync: signObservation, isPending: isSigningAsAssessor } =
+    useSignDirectObservation(applicationId, effectiveSessionId);
+  const bothFormsSubmitted =
+    sessionDetail?.physicalStatus === "submitted" &&
+    sessionDetail?.oralStatus === "submitted";
+  const handleSignAsAssessor = async () => {
+    try {
+      await signObservation({
+        role: "unit_assessor",
+        signatureMode: "typed",
+        typedName: assessorDisplayName,
+        signedAt: new Date().toISOString(),
+      });
+    } catch {
+      // useSignDirectObservation already surfaced an error toast.
+    }
+  };
 
   const fallbackUnitId = sessionDetail?.catalogue?.[0]?.unitId || sessionDetail?.unitIds?.[0] || "";
 
@@ -261,7 +318,7 @@ export const NsqAssessorObservationFormsView: React.FC<
 
           {activeTab === "arf02a" ? (
             <Arf02MatrixLog
-              criteriaDefs={DEFAULT_PCS}
+              criteriaDefs={criteriaDefs}
               criteriaState={arf02Criteria}
               onToggleFulfilled={(code) =>
                 setArf02Criteria((prev) => ({
@@ -278,7 +335,7 @@ export const NsqAssessorObservationFormsView: React.FC<
             />
           ) : (
             <Arf04OralQuestionsRecord
-              criteriaDefs={DEFAULT_PCS}
+              criteriaDefs={criteriaDefs}
               criteriaState={arf04Criteria}
               onToggleSatisfactory={(code) =>
                 setArf04Criteria((prev) => ({
@@ -306,6 +363,11 @@ export const NsqAssessorObservationFormsView: React.FC<
             activeTab={activeTab}
             isWitnessSigned={isWitnessSigned}
             onToggleWitnessSigned={() => setIsWitnessSigned(!isWitnessSigned)}
+            learnerSigned={Boolean(sessionDetail?.signatures?.learner)}
+            assessorSigned={Boolean(sessionDetail?.signatures?.unitAssessor)}
+            canSignAsAssessor={bothFormsSubmitted}
+            onSignAsAssessor={handleSignAsAssessor}
+            isSigningAsAssessor={isSigningAsAssessor}
           />
 
           {/* Bottom Navigation */}

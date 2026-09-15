@@ -475,9 +475,6 @@ export interface NsqEvidenceThreadItem {
   evidenceType: string;
   evidenceAssetId: string;
   evidenceRefPage?: string | null;
-  // Per the CAP API contract, the QAA decision on this row lives in
-  // `reviewStatus` (there is no plain `status` field on evidence rows —
-  // that name belongs to NsqCriterion, one level up).
   reviewStatus: "pending" | "approved" | "rejected";
   reviewComment?: string | null;
   reviewedBy?: string | null;
@@ -571,10 +568,13 @@ export interface DirectObservationSession {
   reviewedAt?: string | null;
   physicalStatus?: string;
   oralStatus?: string;
-  physicalForm?: DirectObservationFormPayload | null;
-  oralForm?: DirectObservationFormPayload | null;
-  assessorSignature?: DirectObservationSignature | null;
-  learnerSignature?: DirectObservationSignature | null;
+  physical?: DirectObservationFormPayload | null;
+  oral?: DirectObservationFormPayload | null;
+  signatures?: {
+    unitAssessor?: DirectObservationSignature | null;
+    learner?: DirectObservationSignature | null;
+    iqa?: null;
+  };
   catalogue?: DirectObservationCatalogueUnit[];
   createdAt?: string;
   updatedAt?: string;

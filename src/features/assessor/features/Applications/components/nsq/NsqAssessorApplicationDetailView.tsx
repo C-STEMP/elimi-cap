@@ -61,7 +61,12 @@ const mapSessionToObservation = (
     address: session.address || "",
     status,
     requirements: session.requirements,
-    isSigned: Boolean(session.learnerSignature),
+    // Not seeded from the backend: this reflects the assessor appending
+    // their own signature to *this* accept action inside
+    // NsqAssessorObservationModal (there is no signature field on the
+    // review payload) — it should always start fresh, not be tied to the
+    // candidate's unrelated learner signature (which also wouldn't exist
+    // yet at accept/reject time regardless).
     rejectionReason: session.reviewComment || undefined,
   };
 };

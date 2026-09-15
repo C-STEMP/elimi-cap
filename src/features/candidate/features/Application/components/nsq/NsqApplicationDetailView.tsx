@@ -21,7 +21,6 @@ import { ASSETS_URL } from "@/assets";
 import { useToast } from "@/src/components/ui/toast";
 import { TransactionReceiptModal } from "@/features/assessment-centre/features/Payment/components/TransactionReceiptModal";
 import { PaymentModal, type PaymentModalType } from "../PaymentModals";
-import { scheduleDirectObservationApi } from "@/src/features/shared/applications/api";
 import {
   useGetInductionForm,
   useGetDirectObservations,
@@ -45,7 +44,6 @@ import { NsqUnitDetailView } from "./NsqUnitDetailView";
 import { NsqRequestObservationModal } from "./NsqRequestObservationModal";
 import { NsqObservationRequestReviewModal } from "./NsqObservationRequestReviewModal";
 import { NsqObservationSuccessModal } from "./NsqObservationSuccessModal";
-import { CandidateReportSignatureModal } from "./CandidateReportSignatureModal";
 import { NsqCompleteInductionFormModal } from "./NsqCompleteInductionFormModal";
 
 const NSQ_PROGRESS_STEPS = [
@@ -102,8 +100,6 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
   const [isObservationModalOpen, setIsObservationModalOpen] = useState(false);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
-  const [isReportSignatureModalOpen, setIsReportSignatureModalOpen] = useState(false);
-  const [isReportSigned, setIsReportSigned] = useState(false);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
   const [isInductionViewModalOpen, setIsInductionViewModalOpen] = useState(false);
   const [isInductionFillModalOpen, setIsInductionFillModalOpen] = useState(false);
@@ -296,7 +292,13 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
     state?: string;
     lga?: string;
     address?: string;
-    status?: "pending" | "attention_required" | "scheduled" | "completed";
+    status?:
+      | "pending"
+      | "attention_required"
+      | "scheduled"
+      | "completed"
+      | "rejected"
+      | "cancelled";
     isSigned?: boolean;
   } | null>(
     application?.directObservation
@@ -316,6 +318,28 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
   );
 
   const liveSitting = directObservationsData?.items?.[0];
+  // Map the real sitting status enum (requested/rejected/accepted/completed/
+  // cancelled) onto the card's display states — "accepted" was previously
+  // passed through unchanged and fell into the default "Attention Required"
+  // badge instead of the correct green "Scheduled" one.
+  const mapSittingStatus = (
+    status: string,
+  ): "pending" | "attention_required" | "scheduled" | "completed" | "rejected" | "cancelled" => {
+    switch (status) {
+      case "requested":
+        return "attention_required";
+      case "accepted":
+        return "scheduled";
+      case "rejected":
+        return "rejected";
+      case "cancelled":
+        return "cancelled";
+      case "completed":
+        return "completed";
+      default:
+        return (status as any) || "pending";
+    }
+  };
   const activeObservation = liveSitting
     ? {
         id: liveSitting.id,
@@ -324,10 +348,8 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
         time:
           liveSitting.scheduledAt?.split("T")[1]?.slice(0, 5) || "12:00PM",
         address: liveSitting.address,
-        status: (liveSitting.status === "requested"
-          ? "attention_required"
-          : liveSitting.status) as any,
-        isSigned: Boolean(liveSitting.learnerSignature),
+        status: mapSittingStatus(liveSitting.status),
+        isSigned: Boolean(liveSitting.signatures?.learner),
       }
     : scheduledObservation;
 
@@ -861,7 +883,10 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                       activeObservation.status === "scheduled" ||
                       activeObservation.status === "completed"
                         ? "border-l-emerald-500"
-                        : "border-l-[#fbab2a]"
+                        : activeObservation.status === "rejected" ||
+                            activeObservation.status === "cancelled"
+                          ? "border-l-rose-500"
+                          : "border-l-[#fbab2a]"
                     }`}
                   >
                     <div className="flex flex-col gap-2">
@@ -873,7 +898,10 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                             ? "bg-emerald-100 text-emerald-800"
                             : activeObservation.status === "pending"
                               ? "bg-amber-100 text-amber-800"
-                              : "bg-pink-100 text-pink-700"
+                              : activeObservation.status === "rejected" ||
+                                  activeObservation.status === "cancelled"
+                                ? "bg-rose-100 text-rose-700"
+                                : "bg-pink-100 text-pink-700"
                         }`}
                       >
                         {activeObservation.status === "scheduled"
@@ -882,7 +910,11 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                             ? "Completed"
                             : activeObservation.status === "pending"
                               ? "Pending"
-                              : "Attention Required"}
+                              : activeObservation.status === "rejected"
+                                ? "Rejected"
+                                : activeObservation.status === "cancelled"
+                                  ? "Cancelled"
+                                  : "Attention Required"}
                       </span>
 
                       <h5 className="font-extrabold text-xs sm:text-sm text-neutral-primary tracking-tight">
@@ -1032,15 +1064,6 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
         onClose={() => setIsSuccessModalOpen(false)}
         title={successModalInfo.title}
         subtitle={successModalInfo.subtitle}
-      />
-
-      {/* Internal Verifier Report Signature Modal */}
-      <CandidateReportSignatureModal
-        isOpen={isReportSignatureModalOpen}
-        onClose={() => setIsReportSignatureModalOpen(false)}
-        applicationId={application?.id}
-        sessionId={activeObservation?.id}
-        onSignedSuccess={() => setIsReportSigned(true)}
       />
 
       {/* Transaction Receipt Modal — backed by GET /applications/{id}/receipt */}

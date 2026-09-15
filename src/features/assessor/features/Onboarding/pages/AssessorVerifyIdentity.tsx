@@ -105,14 +105,6 @@ export const AssessorVerifyIdentity: React.FC = () => {
   const handleContinue = () => {
     submitOnboarding.mutate(undefined, {
       onSuccess: async () => {
-        // The onboarding payload only carries which certificates were
-        // uploaded (assessorDetails.certifications), not `qualifications` —
-        // that field lives solely on AssessorProfile and is only settable
-        // via PATCH /assessor/profile. Sync it here from the certificates
-        // actually uploaded during onboarding so newly-onboarded assessors
-        // are immediately discoverable by qualification (e.g. GET
-        // /centre/assessors?qualification=QAA), instead of sitting with an
-        // empty `qualifications` array until someone visits Settings.
         const qualifications: AssessorQualification[] = [];
         if (assessorDetails.qaaCertificateAssetId) qualifications.push("QAA");
         if (assessorDetails.iqmCertificateAssetId) qualifications.push("IQM");
@@ -121,8 +113,7 @@ export const AssessorVerifyIdentity: React.FC = () => {
           try {
             await patchAssessorProfile.mutateAsync({ qualifications });
           } catch {
-            // Onboarding itself already succeeded; the profile-sync retry
-            // can happen later from Settings, so don't block completion.
+            /* empty */
           }
         }
 
