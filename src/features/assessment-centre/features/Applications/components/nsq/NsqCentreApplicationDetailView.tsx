@@ -171,12 +171,16 @@ export const NsqCentreApplicationDetailView: React.FC<
     "pc-1-1": true,
   });
 
+  // Accordion behavior: opening one LO collapses any other open LO.
   const toggleLo = (id: string) => {
-    setExpandedLos((prev) => ({ ...prev, [id]: !prev[id] }));
+    setExpandedLos((prev) => (prev[id] ? {} : { [id]: true }));
   };
 
+  // Accordion behavior: opening one PC collapses any other open PC — with
+  // up to ~6 PCs per LO, letting all of them stay expanded at once made the
+  // page unreasonably long to scroll.
   const togglePc = (id: string) => {
-    setExpandedPcs((prev) => ({ ...prev, [id]: !prev[id] }));
+    setExpandedPcs((prev) => (prev[id] ? {} : { [id]: true }));
   };
 
   // Local approval state for instant UI update

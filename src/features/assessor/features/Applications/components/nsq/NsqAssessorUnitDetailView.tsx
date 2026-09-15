@@ -34,7 +34,8 @@ interface NsqAssessorUnitDetailViewProps {
   candidatePhotoUrl?: string | null;
   applicationId: string;
   observation: ObservationRequestDetails | null;
-  onUpdateObservation: (updated: ObservationRequestDetails) => void;
+  onAcceptObservation: (requirements: string[]) => Promise<void>;
+  onRejectObservation: (reason: string) => Promise<void>;
   onBack: () => void;
   onFillObservationForm: () => void;
 }
@@ -50,7 +51,8 @@ export const NsqAssessorUnitDetailView: React.FC<
   candidatePhotoUrl,
   applicationId,
   observation,
-  onUpdateObservation,
+  onAcceptObservation,
+  onRejectObservation,
   onBack,
   onFillObservationForm,
 }) => {
@@ -146,8 +148,12 @@ export const NsqAssessorUnitDetailView: React.FC<
 
   const [isObsModalOpen, setIsObsModalOpen] = useState(false);
   const [isConfirmAcceptObsOpen, setIsConfirmAcceptObsOpen] = useState(false);
+  const [isRejectObsReasonOpen, setIsRejectObsReasonOpen] = useState(false);
   const [isAcceptObsSuccessOpen, setIsAcceptObsSuccessOpen] = useState(false);
   const [isRejectObsSuccessOpen, setIsRejectObsSuccessOpen] = useState(false);
+  const [pendingAcceptRequirements, setPendingAcceptRequirements] = useState<
+    string[]
+  >([]);
 
   const handleInitiateApprove = (loId: string, pcId: string, evidenceId: string) => {
     setTargetEvidence({ loId, pcId, evidenceId });
@@ -241,9 +247,17 @@ export const NsqAssessorUnitDetailView: React.FC<
                 key={lo.id}
                 learningOutcome={lo}
                 isExpanded={Boolean(expandedLos[lo.id])}
-                onToggle={() => setExpandedLos((prev) => ({ ...prev, [lo.id]: !prev[lo.id] }))}
+                onToggle={() =>
+                  setExpandedLos((prev) =>
+                    prev[lo.id] ? {} : { [lo.id]: true },
+                  )
+                }
                 expandedPcs={expandedPcs}
-                onTogglePc={(pcId) => setExpandedPcs((prev) => ({ ...prev, [pcId]: !prev[pcId] }))}
+                onTogglePc={(pcId) =>
+                  setExpandedPcs((prev) =>
+                    prev[pcId] ? {} : { [pcId]: true },
+                  )
+                }
                 onApproveEvidence={handleInitiateApprove}
                 onRejectEvidence={handleInitiateReject}
               />
@@ -275,14 +289,14 @@ export const NsqAssessorUnitDetailView: React.FC<
           isOpen={isObsModalOpen}
           onClose={() => setIsObsModalOpen(false)}
           details={observation}
-          onAccept={() => {
+          onAccept={(payload) => {
+            setPendingAcceptRequirements(payload.requirements);
             setIsObsModalOpen(false);
             setIsConfirmAcceptObsOpen(true);
           }}
           onReject={() => {
-            onUpdateObservation({ ...observation, status: "rejected", rejectionReason: "Safety criteria not satisfied." });
             setIsObsModalOpen(false);
-            setIsRejectObsSuccessOpen(true);
+            setIsRejectObsReasonOpen(true);
           }}
         />
       )}
@@ -290,11 +304,33 @@ export const NsqAssessorUnitDetailView: React.FC<
       <ConfirmAcceptObservationModal
         isOpen={isConfirmAcceptObsOpen}
         onClose={() => setIsConfirmAcceptObsOpen(false)}
-        onConfirm={() => {
-          if (observation) onUpdateObservation({ ...observation, status: "confirmed", isSigned: true });
+        onConfirm={async () => {
           setIsConfirmAcceptObsOpen(false);
+          try {
+            await onAcceptObservation(pendingAcceptRequirements);
+          } catch {
+            // onAcceptObservation's underlying mutation already surfaced an
+            // error toast.
+            return;
+          }
           setIsAcceptObsSuccessOpen(true);
         }}
+      />
+      <RejectEvidenceModal
+        isOpen={isRejectObsReasonOpen}
+        onClose={() => setIsRejectObsReasonOpen(false)}
+        onSubmit={async (reason) => {
+          setIsRejectObsReasonOpen(false);
+          try {
+            await onRejectObservation(reason);
+          } catch {
+            return;
+          }
+          setIsRejectObsSuccessOpen(true);
+        }}
+        title="Reject Observation Request"
+        subtitle="Let the candidate know why this request is being rejected"
+        submitLabel="Reject Request"
       />
       <ObservationAcceptedSuccessModal isOpen={isAcceptObsSuccessOpen} onClose={() => setIsAcceptObsSuccessOpen(false)} />
       <ObservationRejectedSuccessModal isOpen={isRejectObsSuccessOpen} onClose={() => setIsRejectObsSuccessOpen(false)} />

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { FiChevronLeft, FiPlus } from "react-icons/fi";
 import { NsqAssessorSidebar } from "./NsqAssessorSidebar";
 import { NsqAssessorUnitDetailView } from "./NsqAssessorUnitDetailView";
@@ -20,6 +21,7 @@ import {
   ConfirmAcceptObservationModal,
   ObservationAcceptedSuccessModal,
   ObservationRejectedSuccessModal,
+  RejectEvidenceModal,
 } from "./NsqAssessorModals";
 import { ComprehensiveReportView } from "../../../iqam/components/con04/ComprehensiveReportView";
 import { ObservationChecklistView } from "../../../iqam/components/con05/ObservationChecklistView";
@@ -94,6 +96,9 @@ export const NsqAssessorApplicationDetailView: React.FC<
   onSubViewNavStateChange,
 }) => {
   const { toast } = useToast();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [internalSubView, setInternalSubView] = useState<NsqAssessorSubView>("overview");
   const activeSubView = externalNavState || internalSubView;
 
@@ -146,13 +151,30 @@ export const NsqAssessorApplicationDetailView: React.FC<
 
   const [selectedUnit, setSelectedUnit] = useState<QualificationUnitItem | null>(null);
 
-  // Keep the selected unit in sync once real units load.
+  // Keep the selected unit in sync once real units load — restoring from the
+  // ?unit= URL param (so refresh/deep-link lands back on the same unit page
+  // instead of dropping to the overview) if present, defaulting to the first
+  // unit otherwise.
   useEffect(() => {
-    if (realUnits && realUnits.length > 0 && !selectedUnit) {
+    if (!realUnits || realUnits.length === 0) return;
+    const unitParam = searchParams.get("unit");
+    if (unitParam) {
+      const match = realUnits.find((u) => u.id === unitParam);
+      if (match) {
+        if (selectedUnit?.id !== match.id) setSelectedUnit(match);
+        if (activeSubView !== "unit") {
+          setInternalSubView("unit");
+          onSubViewNavStateChange?.("unit");
+          onSubViewChange?.(match.unitNo);
+        }
+      }
+      return;
+    }
+    if (!selectedUnit) {
       setSelectedUnit(realUnits[0]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [realUnits]);
+  }, [realUnits, searchParams]);
 
   // Direct Observation Queries & Mutation
   const { data: directObsList } = useGetDirectObservations(application.id, {
@@ -180,8 +202,12 @@ export const NsqAssessorApplicationDetailView: React.FC<
   const [isInductionModalOpen, setIsInductionModalOpen] = useState(false);
   const [isObsModalOpen, setIsObsModalOpen] = useState(false);
   const [isConfirmAcceptObsOpen, setIsConfirmAcceptObsOpen] = useState(false);
+  const [isRejectObsReasonOpen, setIsRejectObsReasonOpen] = useState(false);
   const [isAcceptObsSuccessOpen, setIsAcceptObsSuccessOpen] = useState(false);
   const [isRejectObsSuccessOpen, setIsRejectObsSuccessOpen] = useState(false);
+  const [pendingAcceptRequirements, setPendingAcceptRequirements] = useState<
+    string[]
+  >([]);
 
   const candidateName = application.candidateName || "Candidate";
   const tradeName = tradeDetail?.name || application.trade || "—";
@@ -196,6 +222,17 @@ export const NsqAssessorApplicationDetailView: React.FC<
   const handleSelectUnit = (unit: QualificationUnitItem) => {
     setSelectedUnit(unit);
     setActiveSubView("unit");
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("unit", unit.id);
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+
+  const handleBackFromUnit = () => {
+    setActiveSubView("overview");
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("unit");
+    const query = params.toString();
+    router.push(query ? `${pathname}?${query}` : pathname, { scroll: false });
   };
 
   // No backend "move to IQAM" action exists for NSQ — IV assignment is
@@ -213,33 +250,49 @@ export const NsqAssessorApplicationDetailView: React.FC<
     onRegisterMoveToIqam?.(handleMoveToIqam);
   }, [onRegisterMoveToIqam, candidateName]);
 
-  const handleFinalConfirmAcceptObs = async () => {
-    setIsConfirmAcceptObsOpen(false);
-    try {
-      await reviewObservationMutation({ decision: "accept" });
-    } catch {
-      // useReviewDirectObservation already surfaced an error toast.
-      return;
-    }
-    if (observation) setObservation({ ...observation, status: "confirmed", isSigned: true });
-    setIsAcceptObsSuccessOpen(true);
-  };
-
-  const handleRejectObservation = async () => {
-    const reason = "Safety criteria and venue protocol did not meet required standards.";
-    setIsObsModalOpen(false);
-    try {
-      await reviewObservationMutation({ decision: "reject", comment: reason });
-    } catch {
-      // useReviewDirectObservation already surfaced an error toast.
-      return;
-    }
+  // Shared with the unit-detail screen (passed down as props) so both entry
+  // points to the same observation card hit the real API instead of one of
+  // them silently updating local state only.
+  const acceptObservation = async (requirements: string[]) => {
+    await reviewObservationMutation({
+      decision: "accept",
+      requirements: requirements.length > 0 ? requirements : undefined,
+    });
     if (observation) {
       setObservation({
         ...observation,
-        status: "rejected",
-        rejectionReason: reason,
+        status: "confirmed",
+        isSigned: true,
+        requirements,
       });
+    }
+  };
+
+  const rejectObservation = async (reason: string) => {
+    await reviewObservationMutation({ decision: "reject", comment: reason });
+    if (observation) {
+      setObservation({ ...observation, status: "rejected", rejectionReason: reason });
+    }
+  };
+
+  const handleFinalConfirmAcceptObs = async () => {
+    setIsConfirmAcceptObsOpen(false);
+    try {
+      await acceptObservation(pendingAcceptRequirements);
+    } catch {
+      // useReviewDirectObservation already surfaced an error toast.
+      return;
+    }
+    setIsAcceptObsSuccessOpen(true);
+  };
+
+  const handleRejectObservation = async (reason: string) => {
+    setIsRejectObsReasonOpen(false);
+    try {
+      await rejectObservation(reason);
+    } catch {
+      // useReviewDirectObservation already surfaced an error toast.
+      return;
     }
     setIsRejectObsSuccessOpen(true);
   };
@@ -256,8 +309,9 @@ export const NsqAssessorApplicationDetailView: React.FC<
         candidatePhotoUrl={application.candidatePhotoUrl}
         applicationId={application.id}
         observation={observation}
-        onUpdateObservation={setObservation}
-        onBack={() => setActiveSubView("overview")}
+        onAcceptObservation={acceptObservation}
+        onRejectObservation={rejectObservation}
+        onBack={handleBackFromUnit}
         onFillObservationForm={() => setActiveSubView("observation_form")}
       />
     );
@@ -455,11 +509,15 @@ export const NsqAssessorApplicationDetailView: React.FC<
           isOpen={isObsModalOpen}
           onClose={() => setIsObsModalOpen(false)}
           details={observation}
-          onAccept={() => {
+          onAccept={(payload) => {
+            setPendingAcceptRequirements(payload.requirements);
             setIsObsModalOpen(false);
             setIsConfirmAcceptObsOpen(true);
           }}
-          onReject={handleRejectObservation}
+          onReject={() => {
+            setIsObsModalOpen(false);
+            setIsRejectObsReasonOpen(true);
+          }}
         />
       )}
 
@@ -467,6 +525,15 @@ export const NsqAssessorApplicationDetailView: React.FC<
         isOpen={isConfirmAcceptObsOpen}
         onClose={() => setIsConfirmAcceptObsOpen(false)}
         onConfirm={handleFinalConfirmAcceptObs}
+      />
+
+      <RejectEvidenceModal
+        isOpen={isRejectObsReasonOpen}
+        onClose={() => setIsRejectObsReasonOpen(false)}
+        onSubmit={handleRejectObservation}
+        title="Reject Observation Request"
+        subtitle="Let the candidate know why this request is being rejected"
+        submitLabel="Reject Request"
       />
 
       <ObservationAcceptedSuccessModal
