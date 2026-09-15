@@ -247,7 +247,11 @@ export const NsqAssessorUnitDetailView: React.FC<
                   )
                 }
                 expandedPcs={expandedPcs}
-                onTogglePc={(pcId) => setExpandedPcs((prev) => ({ ...prev, [pcId]: !prev[pcId] }))}
+                onTogglePc={(pcId) =>
+                  setExpandedPcs((prev) =>
+                    prev[pcId] ? {} : { [pcId]: true },
+                  )
+                }
                 onApproveEvidence={handleInitiateApprove}
                 onRejectEvidence={handleInitiateReject}
               />

@@ -323,10 +323,11 @@ export const NsqUnitDetailView: React.FC<NsqUnitDetailViewProps> = ({
     setExpandedLoIds((prev) => (prev.includes(id) ? [] : [id]));
   };
 
+  // Accordion behavior: opening one PC collapses any other open PC — with
+  // up to ~6 PCs per LO, letting all of them stay expanded at once made the
+  // page unreasonably long to scroll.
   const togglePc = (id: string) => {
-    setExpandedPcIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
-    );
+    setExpandedPcIds((prev) => (prev.includes(id) ? [] : [id]));
   };
 
   const handleEvidenceUploaded = async (data: {
