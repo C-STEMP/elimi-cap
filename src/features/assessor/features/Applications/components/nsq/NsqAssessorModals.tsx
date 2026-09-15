@@ -107,17 +107,24 @@ export const EvidenceApprovedSuccessModal: React.FC<
   );
 };
 
-// ─── 3. Reject Evidence Modal ────────────────────────────────────────────────
+// ─── 3. Reject Evidence Modal (also reused for observation-request reject —
+// same "capture a required reason" shape, different copy) ───────────────────
 interface RejectEvidenceModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (reason: string) => void;
+  title?: string;
+  subtitle?: string;
+  submitLabel?: string;
 }
 
 export const RejectEvidenceModal: React.FC<RejectEvidenceModalProps> = ({
   isOpen,
   onClose,
   onSubmit,
+  title = "Reject Evidence",
+  subtitle = "Send a feedback on this evidence",
+  submitLabel = "Reject Evidence",
 }) => {
   const [comment, setComment] = React.useState("");
 
@@ -142,10 +149,10 @@ export const RejectEvidenceModal: React.FC<RejectEvidenceModalProps> = ({
         </button>
 
         <h3 className="text-xl sm:text-2xl font-extrabold text-neutral-primary tracking-tight mb-1">
-          Reject Evidence
+          {title}
         </h3>
         <p className="text-xs sm:text-sm text-neutral-secondary font-normal mb-6">
-          Send a feedback on this evidence
+          {subtitle}
         </p>
 
         <form onSubmit={handleSubmit} className="w-full flex flex-col items-start gap-4">
@@ -170,7 +177,7 @@ export const RejectEvidenceModal: React.FC<RejectEvidenceModalProps> = ({
             disabled={!comment.trim()}
             className="h-12 bg-[#FBAB2A] hover:bg-[#E89B1F] text-white font-bold text-sm sm:text-base rounded-xl shadow-md cursor-pointer transition-all disabled:opacity-50"
           >
-            Reject Evidence
+            {submitLabel}
           </Button>
         </form>
       </div>

@@ -21,6 +21,7 @@ import {
   ConfirmAcceptObservationModal,
   ObservationAcceptedSuccessModal,
   ObservationRejectedSuccessModal,
+  RejectEvidenceModal,
 } from "./NsqAssessorModals";
 import { ComprehensiveReportView } from "../../../iqam/components/con04/ComprehensiveReportView";
 import { ObservationChecklistView } from "../../../iqam/components/con05/ObservationChecklistView";
@@ -201,8 +202,12 @@ export const NsqAssessorApplicationDetailView: React.FC<
   const [isInductionModalOpen, setIsInductionModalOpen] = useState(false);
   const [isObsModalOpen, setIsObsModalOpen] = useState(false);
   const [isConfirmAcceptObsOpen, setIsConfirmAcceptObsOpen] = useState(false);
+  const [isRejectObsReasonOpen, setIsRejectObsReasonOpen] = useState(false);
   const [isAcceptObsSuccessOpen, setIsAcceptObsSuccessOpen] = useState(false);
   const [isRejectObsSuccessOpen, setIsRejectObsSuccessOpen] = useState(false);
+  const [pendingAcceptRequirements, setPendingAcceptRequirements] = useState<
+    string[]
+  >([]);
 
   const candidateName = application.candidateName || "Candidate";
   const tradeName = tradeDetail?.name || application.trade || "—";
@@ -245,33 +250,49 @@ export const NsqAssessorApplicationDetailView: React.FC<
     onRegisterMoveToIqam?.(handleMoveToIqam);
   }, [onRegisterMoveToIqam, candidateName]);
 
-  const handleFinalConfirmAcceptObs = async () => {
-    setIsConfirmAcceptObsOpen(false);
-    try {
-      await reviewObservationMutation({ decision: "accept" });
-    } catch {
-      // useReviewDirectObservation already surfaced an error toast.
-      return;
-    }
-    if (observation) setObservation({ ...observation, status: "confirmed", isSigned: true });
-    setIsAcceptObsSuccessOpen(true);
-  };
-
-  const handleRejectObservation = async () => {
-    const reason = "Safety criteria and venue protocol did not meet required standards.";
-    setIsObsModalOpen(false);
-    try {
-      await reviewObservationMutation({ decision: "reject", comment: reason });
-    } catch {
-      // useReviewDirectObservation already surfaced an error toast.
-      return;
-    }
+  // Shared with the unit-detail screen (passed down as props) so both entry
+  // points to the same observation card hit the real API instead of one of
+  // them silently updating local state only.
+  const acceptObservation = async (requirements: string[]) => {
+    await reviewObservationMutation({
+      decision: "accept",
+      requirements: requirements.length > 0 ? requirements : undefined,
+    });
     if (observation) {
       setObservation({
         ...observation,
-        status: "rejected",
-        rejectionReason: reason,
+        status: "confirmed",
+        isSigned: true,
+        requirements,
       });
+    }
+  };
+
+  const rejectObservation = async (reason: string) => {
+    await reviewObservationMutation({ decision: "reject", comment: reason });
+    if (observation) {
+      setObservation({ ...observation, status: "rejected", rejectionReason: reason });
+    }
+  };
+
+  const handleFinalConfirmAcceptObs = async () => {
+    setIsConfirmAcceptObsOpen(false);
+    try {
+      await acceptObservation(pendingAcceptRequirements);
+    } catch {
+      // useReviewDirectObservation already surfaced an error toast.
+      return;
+    }
+    setIsAcceptObsSuccessOpen(true);
+  };
+
+  const handleRejectObservation = async (reason: string) => {
+    setIsRejectObsReasonOpen(false);
+    try {
+      await rejectObservation(reason);
+    } catch {
+      // useReviewDirectObservation already surfaced an error toast.
+      return;
     }
     setIsRejectObsSuccessOpen(true);
   };
@@ -288,7 +309,8 @@ export const NsqAssessorApplicationDetailView: React.FC<
         candidatePhotoUrl={application.candidatePhotoUrl}
         applicationId={application.id}
         observation={observation}
-        onUpdateObservation={setObservation}
+        onAcceptObservation={acceptObservation}
+        onRejectObservation={rejectObservation}
         onBack={handleBackFromUnit}
         onFillObservationForm={() => setActiveSubView("observation_form")}
       />
@@ -487,11 +509,15 @@ export const NsqAssessorApplicationDetailView: React.FC<
           isOpen={isObsModalOpen}
           onClose={() => setIsObsModalOpen(false)}
           details={observation}
-          onAccept={() => {
+          onAccept={(payload) => {
+            setPendingAcceptRequirements(payload.requirements);
             setIsObsModalOpen(false);
             setIsConfirmAcceptObsOpen(true);
           }}
-          onReject={handleRejectObservation}
+          onReject={() => {
+            setIsObsModalOpen(false);
+            setIsRejectObsReasonOpen(true);
+          }}
         />
       )}
 
@@ -499,6 +525,15 @@ export const NsqAssessorApplicationDetailView: React.FC<
         isOpen={isConfirmAcceptObsOpen}
         onClose={() => setIsConfirmAcceptObsOpen(false)}
         onConfirm={handleFinalConfirmAcceptObs}
+      />
+
+      <RejectEvidenceModal
+        isOpen={isRejectObsReasonOpen}
+        onClose={() => setIsRejectObsReasonOpen(false)}
+        onSubmit={handleRejectObservation}
+        title="Reject Observation Request"
+        subtitle="Let the candidate know why this request is being rejected"
+        submitLabel="Reject Request"
       />
 
       <ObservationAcceptedSuccessModal
