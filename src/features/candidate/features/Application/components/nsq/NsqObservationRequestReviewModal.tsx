@@ -8,12 +8,15 @@ import { useToast } from "@/src/components/ui/toast";
 import { UploadSignatureModal } from "../UploadSignatureModal";
 import { useCandidateProfileSignature } from "@/src/features/shared/onboarding/hooks";
 import { signDirectObservationApi } from "@/src/features/shared/applications/api";
+import { useGetDirectObservationSession } from "@/src/features/shared/applications/hooks";
 
 export type ObservationStatus =
   | "pending"
   | "attention_required"
   | "scheduled"
-  | "completed";
+  | "completed"
+  | "rejected"
+  | "cancelled";
 
 export interface ObservationDetails {
   id?: string;
@@ -41,6 +44,16 @@ export const NsqObservationRequestReviewModal: React.FC<
 > = ({ isOpen, onClose, details, applicationId, onConfirmSchedule }) => {
   const { toast } = useToast();
   const { data: profileSignature } = useCandidateProfileSignature();
+  // The real filled-in ARF 02A/04A content — shown so the candidate signs
+  // off on what was actually recorded, not "blind" on logistics alone.
+  const { data: sessionDetail } = useGetDirectObservationSession(
+    applicationId || "",
+    details?.id || "",
+    { enabled: Boolean(applicationId && details?.id && isOpen) },
+  );
+  const bothFormsSubmitted =
+    sessionDetail?.physicalStatus === "submitted" &&
+    sessionDetail?.oralStatus === "submitted";
   const [isSigned, setIsSigned] = useState(details?.isSigned ?? false);
   const [uploadedAssetId, setUploadedAssetId] = useState<string | null>(null);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
@@ -131,9 +144,14 @@ export const NsqObservationRequestReviewModal: React.FC<
         ? "Scheduled"
         : details.status === "completed"
           ? "Completed"
-          : "Attention Required";
+          : details.status === "rejected"
+            ? "Rejected"
+            : details.status === "cancelled"
+              ? "Cancelled"
+              : "Attention Required";
 
   const isAttentionRequired = details.status === "attention_required";
+  const isClosed = details.status === "rejected" || details.status === "cancelled";
 
   return (
     <>
@@ -198,7 +216,9 @@ export const NsqObservationRequestReviewModal: React.FC<
                   ? "bg-pink-100 text-pink-700"
                   : details.status === "scheduled" || details.status === "completed"
                     ? "bg-emerald-100 text-emerald-800"
-                    : "bg-amber-100 text-amber-800"
+                    : isClosed
+                      ? "bg-rose-100 text-rose-700"
+                      : "bg-amber-100 text-amber-800"
               }`}
             >
               {statusLabel}
@@ -266,44 +286,104 @@ export const NsqObservationRequestReviewModal: React.FC<
             </div>
           </div>
 
-          {/* Signature Section */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-text-dark font-medium text-xs leading-[1.4] select-none">
-              Signature<span className="text-primary-solid ml-0.5">*</span>
-            </label>
-
-            {isSigned ? (
-              <div className="w-full h-12 rounded-xl border border-emerald-500 bg-[#f2faf5] text-emerald-700 flex items-center justify-center gap-2 font-bold text-sm shadow-2xs">
-                <FiCheck className="w-4 h-4 stroke-[3]" />
-                <span>Signed</span>
+          {/* Recorded Observation Results — what the candidate is actually
+              attesting to, not just the sitting's logistics. */}
+          {!isClosed && (sessionDetail?.physical || sessionDetail?.oral) && (
+            <div className="flex flex-col gap-2">
+              <span className="text-xs font-bold text-neutral-primary">
+                Recorded Observation Results
+              </span>
+              <div className="bg-[#f8f9fa] border border-gray-100 rounded-2xl p-4 flex flex-col gap-3 max-h-48 overflow-y-auto">
+                {[
+                  { label: "Physical (ARF 02A)", form: sessionDetail?.physical },
+                  { label: "Oral (ARF 04A)", form: sessionDetail?.oral },
+                ].map(
+                  ({ label, form }) =>
+                    form && form.rows.length > 0 && (
+                      <div key={label} className="flex flex-col gap-1.5">
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">
+                          {label}
+                        </span>
+                        {form.rows.map((row, idx) => (
+                          <div
+                            key={`${row.performanceCriteriaCode}-${idx}`}
+                            className="flex items-start justify-between gap-3 text-xs"
+                          >
+                            <span className="font-semibold text-neutral-primary">
+                              PC {row.performanceCriteriaCode}
+                              {row.comment ? ` — ${row.comment}` : ""}
+                            </span>
+                            <span
+                              className={`shrink-0 font-bold px-2 py-0.5 rounded-full text-[10px] ${
+                                row.met
+                                  ? "bg-emerald-100 text-emerald-800"
+                                  : "bg-rose-100 text-rose-700"
+                              }`}
+                            >
+                              {row.met ? "Met" : "Not Met"}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ),
+                )}
               </div>
-            ) : (
-              <button
-                type="button"
-                onClick={handleAppendSignature}
-                className="w-full h-12 rounded-xl border border-[#fbab2a] bg-[#fefbf6] hover:bg-amber-50/70 text-[#fbab2a] flex items-center justify-center gap-2 font-bold text-sm cursor-pointer transition-colors"
-              >
-                <FiEdit3 className="w-4 h-4" />
-                <span>Append Signature</span>
-              </button>
-            )}
-          </div>
+            </div>
+          )}
+
+          {/* Signature Section — only reachable once the assessor has
+              actually submitted both forms; signing off on an incomplete
+              or nonexistent record isn't meaningful. */}
+          {isClosed ? (
+            <div className="w-full rounded-xl border border-rose-200 bg-rose-50/60 p-4 text-center text-xs font-semibold text-rose-700">
+              This observation request was {statusLabel.toLowerCase()}.
+            </div>
+          ) : !bothFormsSubmitted ? (
+            <div className="w-full rounded-xl border border-amber-200 bg-amber-50/60 p-4 text-center text-xs font-semibold text-amber-700">
+              Waiting for your assessor to complete and submit the
+              observation forms before you can review and sign.
+            </div>
+          ) : (
+            <div className="flex flex-col gap-1.5">
+              <label className="text-text-dark font-medium text-xs leading-[1.4] select-none">
+                Signature<span className="text-primary-solid ml-0.5">*</span>
+              </label>
+
+              {isSigned ? (
+                <div className="w-full h-12 rounded-xl border border-emerald-500 bg-[#f2faf5] text-emerald-700 flex items-center justify-center gap-2 font-bold text-sm shadow-2xs">
+                  <FiCheck className="w-4 h-4 stroke-[3]" />
+                  <span>Signed</span>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleAppendSignature}
+                  className="w-full h-12 rounded-xl border border-[#fbab2a] bg-[#fefbf6] hover:bg-amber-50/70 text-[#fbab2a] flex items-center justify-center gap-2 font-bold text-sm cursor-pointer transition-colors"
+                >
+                  <FiEdit3 className="w-4 h-4" />
+                  <span>Append Signature</span>
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Action Button */}
-          <Button
-            type="button"
-            variant="amber"
-            size="lg"
-            disabled={!isSigned}
-            onClick={handleOpenConfirmDialog}
-            className={`w-full h-12 font-bold text-sm rounded-xl shadow-md transition-all mt-1 ${
-              isSigned
-                ? "bg-[#fbab2a] hover:bg-[#e89b1f] text-white cursor-pointer"
-                : "bg-[#fbab2a]/40 text-white/90 cursor-not-allowed border-0"
-            }`}
-          >
-            Confirm Schedule
-          </Button>
+          {!isClosed && bothFormsSubmitted && (
+            <Button
+              type="button"
+              variant="amber"
+              size="lg"
+              disabled={!isSigned}
+              onClick={handleOpenConfirmDialog}
+              className={`w-full h-12 font-bold text-sm rounded-xl shadow-md transition-all mt-1 ${
+                isSigned
+                  ? "bg-[#fbab2a] hover:bg-[#e89b1f] text-white cursor-pointer"
+                  : "bg-[#fbab2a]/40 text-white/90 cursor-not-allowed border-0"
+              }`}
+            >
+              Sign &amp; Confirm Report
+            </Button>
+          )}
         </div>
       </Modal>
 
@@ -335,7 +415,7 @@ export const NsqObservationRequestReviewModal: React.FC<
               Are You sure?
             </h3>
             <p className="text-neutral-secondary text-sm font-normal">
-              Confirm you want to confirm this schedule
+              Confirm you want to sign and finalize this observation report
             </p>
           </div>
 
@@ -349,7 +429,7 @@ export const NsqObservationRequestReviewModal: React.FC<
               onClick={handleFinalConfirm}
               className="w-full h-12 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-sm cursor-pointer"
             >
-              Yes, Confrim
+              Yes, Confirm
             </Button>
 
             <Button

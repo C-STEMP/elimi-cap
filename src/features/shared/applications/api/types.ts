@@ -571,10 +571,18 @@ export interface DirectObservationSession {
   reviewedAt?: string | null;
   physicalStatus?: string;
   oralStatus?: string;
-  physicalForm?: DirectObservationFormPayload | null;
-  oralForm?: DirectObservationFormPayload | null;
-  assessorSignature?: DirectObservationSignature | null;
-  learnerSignature?: DirectObservationSignature | null;
+  // Per the API contract these are `physical`/`oral` and a nested
+  // `signatures` object — not `physicalForm`/`oralForm`/`assessorSignature`/
+  // `learnerSignature`. Those wrong names meant every read of them was
+  // silently `undefined` at runtime (draft forms never resumed, "signed"
+  // status never actually reflected a real signature).
+  physical?: DirectObservationFormPayload | null;
+  oral?: DirectObservationFormPayload | null;
+  signatures?: {
+    unitAssessor?: DirectObservationSignature | null;
+    learner?: DirectObservationSignature | null;
+    iqa?: null;
+  };
   catalogue?: DirectObservationCatalogueUnit[];
   createdAt?: string;
   updatedAt?: string;
