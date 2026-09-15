@@ -67,8 +67,6 @@ export const AssessorSettingsView: React.FC = () => {
   const [previewCertificate, setPreviewCertificate] =
     useState<CertificatePreviewData | null>(null);
 
-  // Replace-in-place for an existing certification (qaa/iqm/ev) — the only
-  // kinds AssessorSelfProfilePatch.certifications accepts.
   type ReplaceableCertKind = "qaa" | "iqm" | "ev";
   const replaceFileInputRef = useRef<HTMLInputElement>(null);
   const [pendingReplaceKind, setPendingReplaceKind] =
@@ -103,8 +101,7 @@ export const AssessorSettingsView: React.FC = () => {
         certifications: { [kind]: { certificateAssetId: asset.assetId } },
       });
     } catch {
-      // uploadFileMutation / patchAssessorProfileMutation already surface
-      // their own error toasts on failure.
+      /* empty */
     } finally {
       setReplacingKind(null);
     }

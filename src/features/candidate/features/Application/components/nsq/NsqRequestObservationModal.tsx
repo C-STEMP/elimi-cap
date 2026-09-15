@@ -39,8 +39,6 @@ export const NsqRequestObservationModal: React.FC<NsqRequestObservationModalProp
 }) => {
   const { toast } = useToast();
 
-  // No default selection — which units to request observation for is the
-  // candidate's choice, not something to guess on their behalf.
   const [selectedUnitIds, setSelectedUnitIds] = useState<string[]>([]);
 
   const [date, setDate] = useState("");

@@ -171,14 +171,10 @@ export const NsqCentreApplicationDetailView: React.FC<
     "pc-1-1": true,
   });
 
-  // Accordion behavior: opening one LO collapses any other open LO.
   const toggleLo = (id: string) => {
     setExpandedLos((prev) => (prev[id] ? {} : { [id]: true }));
   };
 
-  // Accordion behavior: opening one PC collapses any other open PC — with
-  // up to ~6 PCs per LO, letting all of them stay expanded at once made the
-  // page unreasonably long to scroll.
   const togglePc = (id: string) => {
     setExpandedPcs((prev) => (prev[id] ? {} : { [id]: true }));
   };
@@ -345,12 +341,6 @@ export const NsqCentreApplicationDetailView: React.FC<
   // Units list — prefer the application-specific units (real per-unit
   // evidence progress from GET /applications/{id} `nsq.units`) over the
   // generic trade catalogue, which has no progress data.
-  //
-  // `nsq.units` intentionally spans every active-NOS unit on the trade
-  // across all qualification levels (evidence may target any of them) —
-  // per the API contract, the UI default is the induction wish-list level,
-  // so we filter down to that here instead of listing all three levels'
-  // units stacked on top of each other.
   const nsqUnitsForLevel = wishedQualificationLevel
     ? (application?.nsq?.units || []).filter(
         (u: any) => u.qualificationLevelId === wishedQualificationLevel.id,

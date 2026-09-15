@@ -107,8 +107,7 @@ export const EvidenceApprovedSuccessModal: React.FC<
   );
 };
 
-// ─── 3. Reject Evidence Modal (also reused for observation-request reject —
-// same "capture a required reason" shape, different copy) ───────────────────
+// ─── 3. Reject Evidence Modal ────────────────────────────────────────────────
 interface RejectEvidenceModalProps {
   isOpen: boolean;
   onClose: () => void;

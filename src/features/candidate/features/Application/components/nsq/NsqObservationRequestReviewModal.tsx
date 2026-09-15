@@ -44,8 +44,6 @@ export const NsqObservationRequestReviewModal: React.FC<
 > = ({ isOpen, onClose, details, applicationId, onConfirmSchedule }) => {
   const { toast } = useToast();
   const { data: profileSignature } = useCandidateProfileSignature();
-  // The real filled-in ARF 02A/04A content — shown so the candidate signs
-  // off on what was actually recorded, not "blind" on logistics alone.
   const { data: sessionDetail } = useGetDirectObservationSession(
     applicationId || "",
     details?.id || "",
