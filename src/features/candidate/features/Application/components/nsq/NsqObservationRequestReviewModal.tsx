@@ -351,7 +351,7 @@ export const NsqObservationRequestReviewModal: React.FC<
 
               {isSigned ? (
                 <div className="w-full h-12 rounded-xl border border-emerald-500 bg-[#f2faf5] text-emerald-700 flex items-center justify-center gap-2 font-bold text-sm shadow-2xs">
-                  <FiCheck className="w-4 h-4 stroke-[3]" />
+                  <FiCheck className="w-4 h-4 stroke-3" />
                   <span>Signed</span>
                 </div>
               ) : (
