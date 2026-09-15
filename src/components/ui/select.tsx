@@ -106,19 +106,19 @@ export const Select: React.FC<SelectProps> = ({
       Boolean(searchPlaceholder) ||
       (showSearch !== false && normalizedOptions.length >= 6));
 
-  const filteredOptions: SelectOption[] = React.useMemo(() => {
-    if (filterOption === false) return normalizedOptions;
-    if (!shouldShowSearch || !dropdownSearch.trim()) return normalizedOptions;
-    const q = dropdownSearch.trim().toLowerCase();
-    return normalizedOptions.filter((opt) => {
+  const antFilterOption = React.useCallback(
+    (input: string, option?: SelectOption) => {
+      if (filterOption === false) return true;
       if (typeof filterOption === "function") {
-        return filterOption(q, opt);
+        return filterOption(input, option);
       }
-      const labelStr = (opt.label || "").toLowerCase();
-      const valStr = (opt.value || "").toLowerCase();
+      const labelStr = (option?.label || "").toLowerCase();
+      const valStr = (option?.value || "").toLowerCase();
+      const q = input.toLowerCase();
       return labelStr.includes(q) || valStr.includes(q);
-    });
-  }, [normalizedOptions, dropdownSearch, shouldShowSearch, filterOption]);
+    },
+    [filterOption],
+  );
 
   const handleChange = (newVal: string | string[] | undefined) => {
     if (!onChange) return;
@@ -201,6 +201,7 @@ export const Select: React.FC<SelectProps> = ({
         disabled={disabled}
         loading={loading}
         showSearch={false}
+        searchValue={shouldShowSearch ? dropdownSearch : undefined}
         allowClear={allowClear}
         onOpenChange={(open) => {
           if (!open) {
@@ -286,7 +287,7 @@ export const Select: React.FC<SelectProps> = ({
           "data-form-type": "other",
           "aria-autocomplete": "none",
         } as Record<string, string>)}
-        filterOption={false}
+        filterOption={shouldShowSearch ? antFilterOption : false}
         maxTagCount={
           maxTagCount !== undefined
             ? maxTagCount
@@ -363,7 +364,7 @@ export const Select: React.FC<SelectProps> = ({
           )
         }
         onChange={handleChange}
-        options={filteredOptions}
+        options={normalizedOptions}
         className={`w-full ${className}`}
         popupMatchSelectWidth={
           popupMatchSelectWidth !== undefined
