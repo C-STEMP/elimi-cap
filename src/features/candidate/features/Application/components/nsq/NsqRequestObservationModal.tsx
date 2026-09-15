@@ -186,7 +186,7 @@ export const NsqRequestObservationModal: React.FC<NsqRequestObservationModalProp
               </div>
 
               {/* Quick Add Options */}
-              <div className="flex items-center gap-1">
+              <div className="flex items-center flex-wrap gap-1">
                 {availableUnits
                   .filter((u) => !selectedUnitIds.includes(u.id))
                   .map((u) => (
