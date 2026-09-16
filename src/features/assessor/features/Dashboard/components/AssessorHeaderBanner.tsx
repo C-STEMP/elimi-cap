@@ -11,7 +11,6 @@ import { logout } from "@/src/store/slices/authSlice";
 import { AnimatePresence, motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
-import { BiSolidMessageRoundedDetail } from "react-icons/bi";
 import {
   FiBell,
   FiCheck,
@@ -45,6 +44,9 @@ interface AssessorHeaderBannerProps {
   isNsqApplication?: boolean;
   nsqSubViewTitle?: string | null;
   onMoveToIqam?: () => void;
+  /** Once the QAA stage is already marked complete, the action shouldn't
+   * be offered again — moving to IQAM isn't reversible from here. */
+  hasMovedToIqam?: boolean;
   applicationSubView?:
     | "stages"
     | "application_form"
@@ -79,6 +81,7 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
   isNsqApplication = false,
   nsqSubViewTitle = null,
   onMoveToIqam,
+  hasMovedToIqam = false,
   applicationSubView = "stages",
   canMarkAsComplete = false,
   onMarkAsComplete,
@@ -187,16 +190,6 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
 
           {/* Right Action Controls */}
           <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
-            <button
-              type="button"
-              className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/90 transition-all cursor-pointer relative"
-              aria-label="Messages"
-              title="Messages"
-            >
-              <BiSolidMessageRoundedDetail className="w-4 h-4 sm:w-6 sm:h-6" />
-              <span className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-[#fbab2a]" />
-            </button>
-
             <div className="relative">
               <button
                 type="button"
@@ -553,7 +546,7 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
                 </div>
 
                 {/* NSQ Move To IQAM Action */}
-                {isNsqApplication && !nsqSubViewTitle && (
+                {isNsqApplication && !nsqSubViewTitle && !hasMovedToIqam && (
                   <button
                     type="button"
                     onClick={onMoveToIqam}

@@ -171,13 +171,13 @@ export const NsqRequestObservationModal: React.FC<NsqRequestObservationModalProp
                 {selectedUnitIds.map((id) => (
                   <span
                     key={id}
-                    className="inline-flex items-center gap-1 bg-pink-100 text-pink-700 text-[10px] sm:text-xs font-bold px-2 py-1 rounded-md"
+                    className="inline-flex items-center gap-1 bg-primary/10 text-primary text-[10px] sm:text-xs font-bold px-2.5 py-1 rounded-md"
                   >
                     {availableUnits.find((u) => u.id === id)?.label || id}
                     <button
                       type="button"
                       onClick={() => removeUnit(id)}
-                      className="hover:text-pink-900 cursor-pointer"
+                      className="hover:opacity-75 cursor-pointer"
                     >
                       <FiX className="w-3 h-3" />
                     </button>

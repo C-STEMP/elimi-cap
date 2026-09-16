@@ -27,6 +27,7 @@ export const AssessorApplicationRouteView: React.FC<{ id: string }> = ({
   const [nsqNavState, setNsqNavState] = useState<any>("overview");
   const [nsqSubViewTitle, setNsqSubViewTitle] = useState<string | null>(null);
   const [iqamHeaderConfig, setIqamHeaderConfig] = useState<any>(null);
+  const [hasMovedToIqam, setHasMovedToIqam] = useState(false);
   const moveToIqamRef = useRef<(() => void) | null>(null);
 
   const candidateName = application
@@ -95,6 +96,7 @@ export const AssessorApplicationRouteView: React.FC<{ id: string }> = ({
         isNsqApplication={application?.type === "NSQ"}
         nsqSubViewTitle={nsqSubViewTitle}
         onMoveToIqam={() => moveToIqamRef.current?.()}
+        hasMovedToIqam={hasMovedToIqam}
         applicationSubView={applicationSubView}
         canMarkAsComplete={canMarkAsComplete}
         onMarkAsComplete={() => setTriggerMarkComplete(true)}
@@ -165,6 +167,7 @@ export const AssessorApplicationRouteView: React.FC<{ id: string }> = ({
             onRegisterMoveToIqam={(fn) => {
               moveToIqamRef.current = fn;
             }}
+            onMoveToIqamStatusChange={setHasMovedToIqam}
           />
         ) : (
           <AssessorApplicationDetailView

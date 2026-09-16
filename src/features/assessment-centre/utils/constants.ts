@@ -5,8 +5,6 @@ import {
   StaffActivity,
   StageItem,
   TradeItem,
-  ChatContact,
-  ChatMessage,
   StaffMember,
   JobListing,
   AssessorApplicant,
@@ -159,63 +157,6 @@ export const MOCK_PENDING_APPLICATIONS: PendingApplication[] = [
     submittedAt: "07/22/2026",
   },
 ];
-
-export const MOCK_CONTACTS: ChatContact[] = [
-  {
-    id: "c-1",
-    name: "Oguntade Smason",
-    avatar: ASSETS_URL.userAvatar.src,
-    lastMessage: "Excellent progress, Samuel!! I'm looking...",
-    unread: true,
-    online: true,
-  },
-  {
-    id: "c-2",
-    name: "CSTEMP Admin",
-    avatar: ASSETS_URL.faviconIcon.src,
-    lastMessage: "We are currently working on you resch...",
-    unread: true,
-    isBroadcast: true,
-    online: true,
-  },
-];
-
-export const MOCK_CHAT_MESSAGES: Record<string, ChatMessage[]> = {
-  "c-1": [
-    {
-      id: "m-1",
-      senderId: "c-1",
-      senderName: "Oguntade Smason",
-      text: "lorem ipsum dolor lorem ipsum dolor lorem ipsum dolor lorem ipsum dolor lorem ipsum dolor lorem ipsum dolor lorem ipsum dolor",
-      timestamp: "2:32 PM",
-    },
-    {
-      id: "m-2",
-      senderId: "self",
-      senderName: "Me",
-      text: "lorem ipsum dolor lorem ipsum dolor lorem ipsum dolor lorem ipsum dolor lorem ipsum dolor lorem ipsum dolor lorem ipsum dolor",
-      timestamp: "2:32 PM",
-      isSelf: true,
-    },
-    {
-      id: "m-3",
-      senderId: "c-1",
-      senderName: "Oguntade Smason",
-      text: "lorem ipsum dolor lorem ipsum dolor lorem ipsum dolor lorem ipsum dolor lorem ipsum dolor lorem ipsum dolor lorem ipsum dolor",
-      timestamp: "2:32 PM",
-    },
-  ],
-  "c-2": [
-    {
-      id: "m-1",
-      senderId: "c-2",
-      senderName: "CSTEMP Admin",
-      text: "lorem ipsum dolor lorem ipsum dolor lorem ipsum dolor lorem ipsum dolor lorem ipsum dolor lorem ipsum dolor lorem ipsum dolor",
-      timestamp: "2:32 PM",
-      isBroadcast: true,
-    },
-  ],
-};
 
 export const MOCK_STAFF_MEMBERS: StaffMember[] = [
   {

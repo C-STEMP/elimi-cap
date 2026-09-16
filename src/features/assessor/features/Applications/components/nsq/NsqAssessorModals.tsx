@@ -184,6 +184,109 @@ export const RejectEvidenceModal: React.FC<RejectEvidenceModalProps> = ({
   );
 };
 
+// ─── 3b. Unit Signoff Confirmation Modal ─────────────────────────────────────
+interface ConfirmSignoffUnitModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  unitLabel?: string;
+}
+
+export const ConfirmSignoffUnitModal: React.FC<
+  ConfirmSignoffUnitModalProps
+> = ({ isOpen, onClose, onConfirm, unitLabel }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+      <div className="bg-white rounded-3xl max-w-sm w-full p-8 shadow-2xl flex flex-col items-center text-center animate-in zoom-in-95 duration-200 select-text">
+        <div className="w-24 h-24 mb-4 flex items-center justify-center">
+          <Image
+            src={ASSETS_URL.validationWarningIcon}
+            alt="Warning"
+            width={96}
+            height={96}
+            className="w-24 h-24 object-contain"
+          />
+        </div>
+
+        <h3 className="text-xl sm:text-2xl font-extrabold text-neutral-primary tracking-tight mb-1">
+          Sign Off {unitLabel || "This Unit"}?
+        </h3>
+        <p className="text-xs sm:text-sm text-neutral-secondary font-normal mb-6">
+          You&apos;re confirming every criterion in this unit has been reviewed and its
+          evidence approved. This cannot be undone.
+        </p>
+
+        <div className="flex flex-col gap-3 w-full">
+          <Button
+            type="button"
+            onClick={onConfirm}
+            variant="amber"
+            fullWidth
+            className="h-12 bg-[#FBAB2A] hover:bg-[#E89B1F] text-white font-bold text-sm sm:text-base rounded-xl shadow-md cursor-pointer transition-all"
+          >
+            Yes, Sign Off Unit
+          </Button>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="h-12 w-full border border-[#FBAB2A] text-[#FBAB2A] hover:bg-orange-50/60 font-bold text-sm sm:text-base rounded-xl transition-colors cursor-pointer"
+          >
+            No
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── 3c. Unit Signed Off Success Modal ───────────────────────────────────────
+interface UnitSignedOffSuccessModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export const UnitSignedOffSuccessModal: React.FC<
+  UnitSignedOffSuccessModalProps
+> = ({ isOpen, onClose }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+      <div className="bg-white rounded-3xl max-w-sm w-full p-8 shadow-2xl flex flex-col items-center text-center animate-in zoom-in-95 duration-200 select-text">
+        <div className="w-24 h-24 mb-4 flex items-center justify-center">
+          <Image
+            src={ASSETS_URL.successCheckmarkImg}
+            alt="Success"
+            width={96}
+            height={96}
+            className="w-24 h-24 object-contain"
+          />
+        </div>
+
+        <h3 className="text-xl sm:text-2xl font-extrabold text-neutral-primary tracking-tight mb-1">
+          Unit Signed Off
+        </h3>
+        <p className="text-xs sm:text-sm text-neutral-secondary font-normal mb-6">
+          Your verification for this unit has been recorded.
+        </p>
+
+        <Button
+          type="button"
+          onClick={onClose}
+          variant="amber"
+          fullWidth
+          className="h-12 bg-[#FBAB2A] hover:bg-[#E89B1F] text-white font-bold text-sm sm:text-base rounded-xl shadow-md cursor-pointer transition-all"
+        >
+          Continue
+        </Button>
+      </div>
+    </div>
+  );
+};
+
 // ─── 4. Accept Observation Confirmation Modal ────────────────────────────────
 interface ConfirmAcceptObservationModalProps {
   isOpen: boolean;

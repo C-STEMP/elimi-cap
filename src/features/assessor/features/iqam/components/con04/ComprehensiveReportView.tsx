@@ -76,7 +76,7 @@ export const ComprehensiveReportView: React.FC<ComprehensiveReportViewProps> = (
   if (isLoading) {
     return (
       <div className="w-full flex flex-col gap-6 select-text pb-12 animate-pulse">
-        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-6">
+        <div className="w-full max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-6">
           {/* Tabs skeleton */}
           <div className="flex items-center gap-2 p-1.5 bg-slate-100/80 rounded-2xl w-fit">
             {Array.from({ length: 3 }).map((_, i) => (
@@ -102,7 +102,7 @@ export const ComprehensiveReportView: React.FC<ComprehensiveReportViewProps> = (
   return (
     <div className="w-full flex flex-col gap-6 select-text pb-12 animate-fadeIn">
 
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-6">
+      <div className="w-full max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-6">
         {isSubmitted && (
           <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-xs font-bold text-emerald-800">
             This report was submitted on {new Date(report!.submittedAt!).toLocaleDateString("en-GB")}. It is now read-only.

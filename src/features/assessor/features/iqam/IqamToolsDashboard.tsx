@@ -101,7 +101,12 @@ export const IqamToolsDashboard: React.FC<IqamToolsDashboardProps> = ({
 
   useEffect(() => {
     if (!selectedCentreId && iqamCentres.length > 0) {
-      setSelectedCentreId(iqamCentres[0].centreId);
+      // The endpoint returns every centre the assessor has any IQAM-related
+      // permission at, with no role field to disambiguate — so default to
+      // the one that actually has candidates allocated for IQA, not just
+      // whichever centre happened to come back first.
+      const centreWithAllocations = iqamCentres.find((c) => c.assignedCount > 0);
+      setSelectedCentreId((centreWithAllocations || iqamCentres[0]).centreId);
     }
   }, [iqamCentres, selectedCentreId]);
 

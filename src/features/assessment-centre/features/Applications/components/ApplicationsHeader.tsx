@@ -17,6 +17,10 @@ interface ApplicationsHeaderProps {
   showCandidateForm: boolean;
   isApplicationApproved?: boolean;
   isNsqApplication?: boolean;
+  applicationId?: string;
+  isNsqIqaComplete?: boolean;
+  isNsqIqaFormsComplete?: boolean;
+  isNsqIvApproved?: boolean;
   onBackToList: () => void;
   onBackFromInterview?: () => void;
   onBackFromUnit?: () => void;

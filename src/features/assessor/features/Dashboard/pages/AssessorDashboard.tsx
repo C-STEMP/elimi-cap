@@ -264,6 +264,7 @@ export const AssessorDashboard: React.FC = () => {
   } | null>(null);
   const [nsqSubViewTitle, setNsqSubViewTitle] = useState<string | null>(null);
   const [nsqNavState, setNsqNavState] = useState<any>("overview");
+  const [hasMovedToIqam, setHasMovedToIqam] = useState(false);
   const moveToIqamRef = React.useRef<(() => void) | null>(null);
 
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
@@ -338,6 +339,7 @@ export const AssessorDashboard: React.FC = () => {
         isNsqApplication={selectedApplication?.assessmentType === "NSQ"}
         nsqSubViewTitle={nsqSubViewTitle}
         onMoveToIqam={() => moveToIqamRef.current?.()}
+        hasMovedToIqam={hasMovedToIqam}
         applicationSubView={applicationSubView}
         canMarkAsComplete={canMarkAsComplete}
         onMarkAsComplete={handleTriggerMarkComplete}
@@ -408,6 +410,7 @@ export const AssessorDashboard: React.FC = () => {
                 onRegisterMoveToIqam={(fn) => {
                   moveToIqamRef.current = fn;
                 }}
+                onMoveToIqamStatusChange={setHasMovedToIqam}
               />
             ) : (
               <AssessorApplicationDetailView

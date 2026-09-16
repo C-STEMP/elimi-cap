@@ -140,8 +140,6 @@ export interface IqamIvReportData {
       secondLineIqa?: IqamSignatureStub | null;
       iv?: IqamSignatureStub | null;
       countersigningIqa?: IqamSignatureStub | null;
-      assessor?: IqamSignatureStub | null;
-      countersigningAssessor?: IqamSignatureStub | null;
     };
   };
 }
@@ -196,8 +194,6 @@ export interface IqamFinalPortfolioData {
   signatures?: {
     iv?: IqamSignatureStub | null;
     countersigningIqa?: IqamSignatureStub | null;
-    assessor?: IqamSignatureStub | null;
-    countersigningAssessor?: IqamSignatureStub | null;
   };
   [key: string]: unknown;
 }

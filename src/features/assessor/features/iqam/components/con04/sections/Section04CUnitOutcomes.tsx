@@ -142,18 +142,6 @@ export const Section04CUnitOutcomes: React.FC<Section04CUnitOutcomesProps> = ({
           readOnly={readOnly}
           onSign={() => update({ signatures: { ...signatures, countersigningIqa: appendedSignature() } })}
         />
-        <IqamSignatureBlock
-          label="Assessor Signature"
-          signed={signatures.assessor?.status === "appended"}
-          dateValue={signatures.assessor?.signedAt || ""}
-          readOnly
-        />
-        <IqamSignatureBlock
-          label="Countersigning Assessor"
-          signed={signatures.countersigningAssessor?.status === "appended"}
-          dateValue={signatures.countersigningAssessor?.signedAt || ""}
-          readOnly
-        />
       </div>
     </div>
   );

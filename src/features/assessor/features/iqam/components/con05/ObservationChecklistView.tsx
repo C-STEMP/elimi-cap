@@ -112,7 +112,7 @@ export const ObservationChecklistView: React.FC<ObservationChecklistViewProps> =
   if (isLoading) {
     return (
       <div className="w-full flex flex-col gap-6 select-text pb-12 animate-pulse">
-        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-6">
+        <div className="w-full max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-6">
           {/* Banner skeleton */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {Array.from({ length: 2 }).map((_, i) => (
@@ -151,7 +151,7 @@ export const ObservationChecklistView: React.FC<ObservationChecklistViewProps> =
   return (
     <div className="w-full flex flex-col gap-6 select-text pb-12 animate-fadeIn">
 
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-6">
+      <div className="w-full max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-6">
         {isSubmitted && (
           <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-xs font-bold text-emerald-800">
             This checklist was submitted on {new Date(outcomes!.submittedAt!).toLocaleDateString("en-GB")}. It is now read-only.
@@ -159,18 +159,20 @@ export const ObservationChecklistView: React.FC<ObservationChecklistViewProps> =
         )}
 
         {/* Banner */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 sm:p-5">
-            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">REF: CON/05/IQAM</span>
-            <h4 className="text-sm sm:text-base font-extrabold text-neutral-primary mt-1">
-              IV Observation & Questioning Checklist
-            </h4>
-          </div>
-          <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 sm:p-5">
-            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">CANDIDATE NAME</span>
-            <h4 className="text-sm sm:text-base font-extrabold text-neutral-primary mt-1">
-              {outcomes?.candidate.name || candidateName || "—"}
-            </h4>
+        <div className="bg-white rounded-3xl p-4 sm:p-5 shadow-xs border border-gray-100">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
+              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">REF: CON/05/IQAM</span>
+              <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1">
+                IV Observation & Questioning Checklist
+              </h4>
+            </div>
+            <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
+              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">CANDIDATE NAME</span>
+              <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">
+                {outcomes?.candidate.name || candidateName || "—"}
+              </h4>
+            </div>
           </div>
         </div>
 
@@ -215,7 +217,6 @@ export const ObservationChecklistView: React.FC<ObservationChecklistViewProps> =
         {/* Signatures */}
         <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-5">
           <h3 className="text-sm sm:text-base font-extrabold text-neutral-primary">Signature & Date</h3>
-          <IqamSignatureBlock label="Assessor Signature" readOnly />
           <IqamSignatureBlock
             label="IV Signature"
             signed={formData.ivSignature?.status === "appended"}
