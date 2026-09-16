@@ -87,6 +87,7 @@ export function mapApplicationItem(app: any) {
         : null) ||
       "—",
     assessorName:
+      rawApp.unitAssessor?.name ||
       rawApp.assessor?.name ||
       rawApp.assignedAssessor?.name ||
       (rawApp.assessor?.firstName

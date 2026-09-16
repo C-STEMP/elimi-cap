@@ -38,20 +38,26 @@ export const QualificationStandardCard: React.FC<
         </div>
 
         <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100">
-          <div>
+          <div className="min-w-0">
             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
               QUALIFICATION CODE
             </span>
-            <span className="text-xs sm:text-sm font-black text-neutral-primary mt-1 block">
+            <span
+              className="text-xs sm:text-sm font-black text-neutral-primary mt-1 block truncate"
+              title={qualificationCode}
+            >
               {qualificationCode}
             </span>
           </div>
 
-          <div>
+          <div className="min-w-0">
             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
               EVIDENCE TYPE
             </span>
-            <span className="text-xs sm:text-sm font-black text-neutral-primary mt-1 block">
+            <span
+              className="text-xs sm:text-sm font-black text-neutral-primary mt-1 block truncate"
+              title={evidenceTypes}
+            >
               {evidenceTypes}
             </span>
           </div>

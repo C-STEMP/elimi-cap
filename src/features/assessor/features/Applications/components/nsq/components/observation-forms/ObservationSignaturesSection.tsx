@@ -12,6 +12,9 @@ interface ObservationSignaturesSectionProps {
   canSignAsAssessor: boolean;
   onSignAsAssessor: () => void;
   isSigningAsAssessor?: boolean;
+  canSignAsCandidate?: boolean;
+  onSignAsCandidate?: () => void;
+  isSigningAsCandidate?: boolean;
 }
 
 export const ObservationSignaturesSection: React.FC<
@@ -25,6 +28,9 @@ export const ObservationSignaturesSection: React.FC<
   canSignAsAssessor,
   onSignAsAssessor,
   isSigningAsAssessor,
+  canSignAsCandidate,
+  onSignAsCandidate,
+  isSigningAsCandidate,
 }) => {
   const CandidateSignatureBox = (
     <div className="flex flex-col gap-1.5">
@@ -32,10 +38,20 @@ export const ObservationSignaturesSection: React.FC<
         Candidate Signature<span className="text-rose-500">*</span>
       </span>
       {learnerSigned ? (
-        <div className="h-11 border-2 border-emerald-500 bg-emerald-50/50 text-emerald-700 rounded-xl flex items-center justify-center gap-2 text-xs font-bold select-none">
+        <div className="h-11 border-2 border-[#1E7F4C] bg-[#1E7F4C]/10 text-[#1E7F4C] rounded-xl flex items-center justify-center gap-2 text-xs font-bold select-none">
           <FiCheck className="w-4 h-4" />
           <span>Signed</span>
         </div>
+      ) : canSignAsCandidate ? (
+        <button
+          type="button"
+          onClick={onSignAsCandidate}
+          disabled={isSigningAsCandidate}
+          className="h-11 border border-[#FBAB2A] bg-amber-50/30 hover:bg-amber-50 text-[#FBAB2A] rounded-xl flex items-center justify-center gap-2 text-xs font-bold cursor-pointer transition-colors disabled:opacity-60"
+        >
+          <FiEdit3 className="w-4 h-4" />
+          <span>{isSigningAsCandidate ? "Signing..." : "Append Signature"}</span>
+        </button>
       ) : (
         <div className="h-11 border border-[#FBAB2A] bg-amber-50/30 text-[#FBAB2A] rounded-xl flex items-center justify-center gap-2 text-xs font-bold select-none">
           <FiEdit3 className="w-4 h-4" />
@@ -51,7 +67,7 @@ export const ObservationSignaturesSection: React.FC<
         Assessor Signature<span className="text-rose-500">*</span>
       </span>
       {assessorSigned ? (
-        <div className="h-11 border-2 border-emerald-500 bg-emerald-50/50 text-emerald-700 rounded-xl flex items-center justify-center gap-2 text-xs font-bold select-none">
+        <div className="h-11 border-2 border-[#1E7F4C] bg-[#1E7F4C]/10 text-[#1E7F4C] rounded-xl flex items-center justify-center gap-2 text-xs font-bold select-none">
           <FiCheck className="w-4 h-4" />
           <span>Signed</span>
         </div>
@@ -94,7 +110,7 @@ export const ObservationSignaturesSection: React.FC<
               onClick={onToggleWitnessSigned}
               className={`h-11 border rounded-xl flex items-center justify-center gap-2 text-xs font-bold cursor-pointer transition-colors ${
                 isWitnessSigned
-                  ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+                  ? "border-2 border-[#1E7F4C] bg-[#1E7F4C]/10 text-[#1E7F4C]"
                   : "border-[#FBAB2A] bg-amber-50/30 text-[#FBAB2A] hover:bg-amber-50"
               }`}
             >

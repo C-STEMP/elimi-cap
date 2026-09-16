@@ -33,7 +33,8 @@ import {
   useGetUnitCriteria,
 } from "@/src/features/shared/applications/hooks";
 import { formatCurrency } from "@/src/utils/currency";
-import { IqamToolsDashboard } from "@/src/features/assessor/features/iqam/IqamToolsDashboard";
+import { NsqAssessorObservationFormsView } from "@/src/features/assessor/features/Applications/components/nsq/NsqAssessorObservationFormsView";
+import { CentreIqamFormViewer } from "./CentreIqamFormViewer";
 import type { IqamToolId } from "@/src/features/assessor/features/iqam/types/iqam.types";
 import type { ApplicationDetail, NsqCriterion } from "@/src/features/shared/applications/api/types";
 
@@ -149,7 +150,17 @@ export const NsqCentreApplicationDetailView: React.FC<
   const { data: directObservationsData } = useGetDirectObservations(
     application?.id,
   );
-  const liveObservation = directObservationsData?.items?.[0];
+  const rawSessions =
+    (directObservationsData as any)?.sessions ||
+    (directObservationsData as any)?.items ||
+    (application as any)?.nsq?.directObservationSessions ||
+    [];
+  const sortedSessions = rawSessions.slice().sort((a: any, b: any) => {
+    const timeA = new Date(a.createdAt || a.scheduledAt || 0).getTime();
+    const timeB = new Date(b.createdAt || b.scheduledAt || 0).getTime();
+    return timeB - timeA;
+  });
+  const liveObservation = sortedSessions[0];
 
   // Unit navigation state (internal + controlled via props)
   const [internalUnitNumber, setInternalUnitNumber] = useState<string | null>(
@@ -218,9 +229,25 @@ export const NsqCentreApplicationDetailView: React.FC<
     photoUrl?: string;
   } | null>(null);
 
-  // Hydrate the assigned Internal Verifier from the real ApplicationDetail
-  // field (there is no equivalent read for the QAA/unit assessor yet, so
-  // that side stays session-local until it's assigned from this view).
+  // Hydrate the assigned QAA / Unit Assessor and Internal Verifier from the real ApplicationDetail
+  useEffect(() => {
+    const unitAssessor =
+      (application as any)?.unitAssessor ||
+      (application as any)?.facilitator;
+    if (unitAssessor) {
+      setAssignedAssessor({
+        id: unitAssessor.assessorId || unitAssessor.id,
+        name: unitAssessor.name,
+        qualification:
+          unitAssessor.qualifications?.join(", ") || "QAA Assessor",
+        photoUrl: unitAssessor.photo?.url,
+      });
+    }
+  }, [
+    (application as any)?.unitAssessor?.assessorId,
+    (application as any)?.facilitator?.assessorId,
+  ]);
+
   useEffect(() => {
     if (application?.internalVerifier) {
       setAssignedIqa({
@@ -236,7 +263,7 @@ export const NsqCentreApplicationDetailView: React.FC<
   const [isInductionModalOpen, setIsInductionModalOpen] = useState(false);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
   const [selectedIqamTool, setSelectedIqamTool] = useState<IqamToolId | null>(null);
-  const [isObservationDetailOpen, setIsObservationDetailOpen] = useState<boolean>(false);
+  const [isObservationFormOpen, setIsObservationFormOpen] = useState<boolean>(false);
 
   // Real workflow stages — GET /applications/{id}/stages.
   const { data: stagesData } = useGetApplicationStages(application?.id || "");
@@ -598,7 +625,7 @@ export const NsqCentreApplicationDetailView: React.FC<
             {/* Steps Progress — driven by GET /applications/{id}/stages.
                 Application Form and Payment have their own cards below, so
                 the timeline covers the remaining five workflow stages. */}
-            <div className="relative flex items-center justify-between w-full px-4 sm:px-10">
+            <div className="relative flex items-start justify-between w-full px-4 sm:px-10">
               {/* Connector line background */}
               <div className="absolute left-8 right-8 top-3.5 h-[1.5px] bg-gray-200 z-0" />
               <div
@@ -613,9 +640,12 @@ export const NsqCentreApplicationDetailView: React.FC<
                   !isComplete && !isRejectedStep && step.status !== "not_started";
 
                 return (
-                  <div key={step.key} className="flex flex-col items-center gap-2.5 z-10">
+                  <div
+                    key={step.key}
+                    className="flex flex-col items-center gap-2.5 z-10 flex-1 min-w-0 px-0.5"
+                  >
                     <div
-                      className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${
+                      className={`w-7 h-7 rounded-full flex items-center justify-center transition-all shrink-0 ${
                         isComplete
                           ? "bg-[#10b981] shadow-xs"
                           : isRejectedStep
@@ -630,7 +660,7 @@ export const NsqCentreApplicationDetailView: React.FC<
                       )}
                     </div>
                     <span
-                      className={`text-xs text-center font-medium ${
+                      className={`w-full text-[10px] sm:text-xs text-center font-medium leading-tight wrap-break-word ${
                         isComplete
                           ? "text-[#10b981] font-semibold"
                           : isRejectedStep
@@ -769,20 +799,26 @@ export const NsqCentreApplicationDetailView: React.FC<
                   </div>
 
                   <div className="grid grid-cols-2 gap-3 pt-2">
-                    <div className="flex flex-col">
+                    <div className="flex flex-col min-w-0">
                       <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">
                         QUALIFICATION CODE
                       </span>
-                      <span className="text-xs sm:text-sm font-bold text-gray-900 truncate mt-0.5">
+                      <span
+                        className="text-xs sm:text-sm font-bold text-gray-900 truncate mt-0.5"
+                        title={qualificationCode}
+                      >
                         {qualificationCode}
                       </span>
                     </div>
 
-                    <div className="flex flex-col">
+                    <div className="flex flex-col min-w-0">
                       <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">
                         EVIDENCE TYPE
                       </span>
-                      <span className="text-xs sm:text-sm font-bold text-gray-900 truncate mt-0.5">
+                      <span
+                        className="text-xs sm:text-sm font-bold text-gray-900 truncate mt-0.5"
+                        title={evidenceTypesText}
+                      >
                         {evidenceTypesText}
                       </span>
                     </div>
@@ -1069,7 +1105,7 @@ export const NsqCentreApplicationDetailView: React.FC<
                     className={`absolute left-0 top-0 bottom-0 w-1.5 ${
                       liveObservation.status === "accepted" ||
                       liveObservation.status === "completed"
-                        ? "bg-[#10b981]"
+                        ? "bg-[#1E7F4C]"
                         : liveObservation.status === "rejected" ||
                             liveObservation.status === "cancelled"
                           ? "bg-red-500"
@@ -1082,7 +1118,7 @@ export const NsqCentreApplicationDetailView: React.FC<
                       className={`self-start px-2 py-0.5 rounded-full text-[10px] font-bold ${
                         liveObservation.status === "accepted" ||
                         liveObservation.status === "completed"
-                          ? "bg-[#D1FAE5] text-[#059669]"
+                          ? "bg-[#1E7F4C]/10 text-[#1E7F4C]"
                           : liveObservation.status === "rejected" ||
                               liveObservation.status === "cancelled"
                             ? "bg-red-50 text-red-600"
@@ -1129,7 +1165,7 @@ export const NsqCentreApplicationDetailView: React.FC<
 
                 <button
                   type="button"
-                  onClick={() => setIsObservationDetailOpen(true)}
+                  onClick={() => setIsObservationFormOpen(true)}
                   className="w-full py-2.5 bg-[#fbab2a] hover:bg-[#e89b1f] text-white font-bold text-xs sm:text-sm rounded-xl cursor-pointer transition-all shadow-xs"
                 >
                   View
@@ -1362,98 +1398,55 @@ export const NsqCentreApplicationDetailView: React.FC<
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-              <IqamToolsDashboard
-                initialToolId={selectedIqamTool}
-                initialCandidateName={candidateName}
-                onBack={() => setSelectedIqamTool(null)}
+              <CentreIqamFormViewer toolId={selectedIqamTool} applicationId={application?.id || ""} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Observation Form Viewer Modal (read-only) */}
+      {isObservationFormOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-xs select-text">
+          <div className="bg-white rounded-3xl w-full max-w-6xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden border border-gray-100">
+            <div className="p-4 sm:p-5 border-b border-gray-100 flex items-center justify-between bg-[#F8F9FA]">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">
+                  National Skills Qualification (NSQ)
+                </span>
+                <h3 className="text-base sm:text-lg font-bold text-gray-900">
+                  Physical Observation Form
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsObservationFormOpen(false)}
+                className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-200 transition-all cursor-pointer"
+              >
+                <FiX className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+              <NsqAssessorObservationFormsView
+                sessionId={liveObservation?.id}
+                candidateName={candidateName}
+                applicationId={application?.id || ""}
+                registrationNo={inductionForm?.data?.registrationNo}
+                unitsAssessed={
+                  liveObservation?.unitIds && liveObservation.unitIds.length > 0
+                    ? liveObservation.unitIds
+                        .map((unitId: string) => unitsList.find((u) => u.id === unitId)?.unitNo || unitId)
+                        .join("/")
+                    : undefined
+                }
+                readOnly
+                onBack={() => setIsObservationFormOpen(false)}
               />
             </div>
           </div>
         </div>
       )}
 
-      {/* Observation Request Detail Modal */}
-      {isObservationDetailOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs select-text">
-          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl relative border border-gray-100 flex flex-col gap-5">
-            <button
-              type="button"
-              onClick={() => setIsObservationDetailOpen(false)}
-              className="absolute top-6 right-6 p-2 rounded-xl bg-[#FDF2F4] text-[#E11D48] hover:bg-rose-100 transition-all cursor-pointer"
-            >
-              <FiX className="w-4 h-4" />
-            </button>
-
-            <div className="flex flex-col gap-1">
-              <span
-                className={`self-start px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                  liveObservation?.status === "accepted" || liveObservation?.status === "completed"
-                    ? "bg-[#D1FAE5] text-[#059669]"
-                    : liveObservation?.status === "rejected" ||
-                        liveObservation?.status === "cancelled"
-                      ? "bg-red-50 text-red-600"
-                      : "bg-amber-50 text-amber-700"
-                }`}
-              >
-                {liveObservation?.status === "accepted"
-                  ? "Confirmed"
-                  : liveObservation?.status === "completed"
-                    ? "Completed"
-                    : liveObservation?.status === "rejected"
-                      ? "Rejected"
-                      : liveObservation?.status === "cancelled"
-                        ? "Cancelled"
-                        : "Pending Review"}
-              </span>
-              <h3 className="text-lg font-bold text-gray-900 mt-1">
-                Physically Observation
-              </h3>
-              <p className="text-xs text-gray-500">
-                Scheduled observation session details
-              </p>
-            </div>
-
-            <div className="bg-[#F8F9FA] rounded-2xl p-4 flex flex-col gap-3 text-xs border border-gray-100">
-              <div className="flex justify-between py-1 border-b border-gray-100">
-                <span className="text-gray-400 font-medium">Candidate</span>
-                <span className="font-bold text-gray-900">{candidateName}</span>
-              </div>
-              <div className="flex justify-between py-1 border-b border-gray-100">
-                <span className="text-gray-400 font-medium">Assessor</span>
-                <span className="font-bold text-gray-900">
-                  {assignedAssessor?.name || "Not yet assigned"}
-                </span>
-              </div>
-              <div className="flex justify-between py-1 border-b border-gray-100">
-                <span className="text-gray-400 font-medium">Date</span>
-                <span className="font-bold text-gray-900">
-                  {liveObservation?.scheduledAt?.split("T")[0] || "—"}
-                </span>
-              </div>
-              <div className="flex justify-between py-1 border-b border-gray-100">
-                <span className="text-gray-400 font-medium">Time</span>
-                <span className="font-bold text-gray-900">
-                  {liveObservation?.scheduledAt?.split("T")[1]?.slice(0, 5) || "—"}
-                </span>
-              </div>
-              <div className="flex justify-between py-1">
-                <span className="text-gray-400 font-medium">Venue</span>
-                <span className="font-bold text-gray-900">
-                  {liveObservation?.address || "—"}
-                </span>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setIsObservationDetailOpen(false)}
-              className="w-full py-3 bg-[#fbab2a] hover:bg-[#e89b1f] text-white font-bold text-xs rounded-xl cursor-pointer transition-all shadow-xs"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

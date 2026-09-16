@@ -100,7 +100,7 @@ export const FinalPortfolioReportView: React.FC<FinalPortfolioReportViewProps> =
   if (isLoading) {
     return (
       <div className="w-full flex flex-col gap-6 select-text pb-12 animate-pulse">
-        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-6">
+        <div className="w-full max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-6">
           {/* Metadata cards skeleton */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {Array.from({ length: 3 }).map((_, i) => (
@@ -139,7 +139,7 @@ export const FinalPortfolioReportView: React.FC<FinalPortfolioReportViewProps> =
   return (
     <div className="w-full flex flex-col gap-6 select-text pb-12 animate-fadeIn">
 
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-6">
+      <div className="w-full max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-6">
         {isSubmitted && (
           <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-xs font-bold text-emerald-800">
             This report was submitted on {new Date(portfolio!.submittedAt!).toLocaleDateString("en-GB")}. It is now read-only.
@@ -147,44 +147,48 @@ export const FinalPortfolioReportView: React.FC<FinalPortfolioReportViewProps> =
         )}
 
         {/* Metadata Grid Row 1 (3 Cards) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
-            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">REF: CON/06/IQAM</span>
-            <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1">
-              Internal Verifiers Final Portfolio / Award Report Form
-            </h4>
-          </div>
-          <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
-            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">CANDIDATE NAME</span>
-            <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">
-              {portfolio?.candidate.name || candidateName || "—"}
-            </h4>
-          </div>
-          <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
-            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">QUALIFICATION</span>
-            <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">
-              {portfolio ? `${portfolio.trade.name} Level ${portfolio.qualificationLevel.level}` : "—"}
-            </h4>
+        <div className="bg-white rounded-3xl p-4 sm:p-5 shadow-xs border border-gray-100">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
+              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">REF: CON/06/IQAM</span>
+              <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1">
+                Internal Verifiers Final Portfolio / Award Report Form
+              </h4>
+            </div>
+            <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
+              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">CANDIDATE NAME</span>
+              <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">
+                {portfolio?.candidate.name || candidateName || "—"}
+              </h4>
+            </div>
+            <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
+              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">QUALIFICATION</span>
+              <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">
+                {portfolio ? `${portfolio.trade.name} Level ${portfolio.qualificationLevel.level}` : "—"}
+              </h4>
+            </div>
           </div>
         </div>
 
         {/* Metadata Grid Row 2 (4 Cards) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
-            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">INTERNAL VERIFIER</span>
-            <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">{portfolio?.internalVerifier.name || "—"}</h4>
-          </div>
-          <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
-            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">CENTRE</span>
-            <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1">{portfolio?.centre.name || "—"}</h4>
-          </div>
-          <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
-            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">NAME OF ASSESSOR</span>
-            <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">{portfolio?.unitAssessor?.name || "—"}</h4>
-          </div>
-          <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
-            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">STATUS</span>
-            <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1">{portfolio?.status || "draft"}</h4>
+        <div className="bg-white rounded-3xl p-4 sm:p-5 shadow-xs border border-gray-100">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
+              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">INTERNAL VERIFIER</span>
+              <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">{portfolio?.internalVerifier.name || "—"}</h4>
+            </div>
+            <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
+              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">CENTRE</span>
+              <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1">{portfolio?.centre.name || "—"}</h4>
+            </div>
+            <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
+              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">NAME OF ASSESSOR</span>
+              <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">{portfolio?.unitAssessor?.name || "—"}</h4>
+            </div>
+            <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
+              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">STATUS</span>
+              <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1">{portfolio?.status || "draft"}</h4>
+            </div>
           </div>
         </div>
 
@@ -306,18 +310,6 @@ export const FinalPortfolioReportView: React.FC<FinalPortfolioReportViewProps> =
               onSign={() =>
                 setFormData((prev) => ({ ...prev, signatures: { ...signatures, countersigningIqa: appendedSignature() } }))
               }
-            />
-            <IqamSignatureBlock
-              label="Assessor Signature"
-              signed={signatures.assessor?.status === "appended"}
-              dateValue={signatures.assessor?.signedAt || ""}
-              readOnly
-            />
-            <IqamSignatureBlock
-              label="Countersigning Assessor"
-              signed={signatures.countersigningAssessor?.status === "appended"}
-              dateValue={signatures.countersigningAssessor?.signedAt || ""}
-              readOnly
             />
           </div>
         </div>

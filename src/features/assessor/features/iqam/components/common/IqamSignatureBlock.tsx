@@ -48,7 +48,7 @@ export const IqamSignatureBlock: React.FC<IqamSignatureBlockProps> = ({
       </div>
 
       {/* Date Box */}
-      <div className="w-full sm:w-48 md:w-56 flex flex-col gap-1.5">
+      <div className="flex-1 flex flex-col gap-1.5">
         <label className="text-[11px] sm:text-xs font-bold text-neutral-primary">
           Date
           {required && <span className="text-rose-500 ml-0.5">*</span>}

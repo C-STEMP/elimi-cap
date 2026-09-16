@@ -2,6 +2,7 @@
 
 import React, { useEffect } from "react";
 import { FiCalendar } from "react-icons/fi";
+import { Select } from "@/src/components/ui/select";
 import {
   useGetIqamSamplingPlan,
   usePatchIqamSamplingPlan,
@@ -45,20 +46,26 @@ export const SamplingPlanView: React.FC<SamplingPlanViewProps> = ({
     submitPlan.mutate({ tradeId, qualificationLevelId });
   };
 
+  // Once every candidate row on this matrix has already been submitted,
+  // there's nothing left to submit — don't offer the action again.
+  const allSubmitted = Boolean(
+    matrix?.data && matrix.data.length > 0 && matrix.data.every((r) => r.status === "submitted"),
+  );
+
   useEffect(() => {
     onUpdateHeader?.({
       title: "Internal Verification Sampling Plan",
       breadcrumb: "Internal Verification Sampling Plan",
-      actionLabel: "Submit",
-      onAction: handleSubmit,
+      actionLabel: allSubmitted ? undefined : "Submit",
+      onAction: allSubmitted ? undefined : handleSubmit,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onUpdateHeader, hasContext, centreId, tradeId, qualificationLevelId]);
+  }, [onUpdateHeader, hasContext, centreId, tradeId, qualificationLevelId, allSubmitted]);
 
   if (!hasContext) {
     return (
       <div className="w-full flex flex-col gap-6 select-text pb-12 animate-fadeIn">
-        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 flex flex-col items-center text-center gap-2">
             <p className="text-sm font-bold text-neutral-primary">Select a candidate first</p>
             <p className="text-xs text-gray-400 max-w-xs">
@@ -80,23 +87,24 @@ export const SamplingPlanView: React.FC<SamplingPlanViewProps> = ({
 
   return (
     <div className="w-full flex flex-col gap-6 select-text pb-12 animate-fadeIn">
-
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-6">
+      <div className="w-full max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-6">
         {/* Top Summary Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4">
-            <span className="text-[10px] font-bold tracking-wider text-gray-500 uppercase">NAME OF CENTRE</span>
-            <h4 className="text-xs sm:text-sm font-extrabold text-neutral-primary mt-1 truncate">{matrix?.centre.name || "—"}</h4>
-          </div>
-          <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4">
-            <span className="text-[10px] font-bold tracking-wider text-gray-500 uppercase">TRADE</span>
-            <h4 className="text-xs sm:text-sm font-extrabold text-neutral-primary mt-1 truncate">{matrix?.trade.name || "—"}</h4>
-          </div>
-          <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4">
-            <span className="text-[10px] font-bold tracking-wider text-gray-500 uppercase">QUALIFICATION LEVEL</span>
-            <h4 className="text-xs sm:text-sm font-extrabold text-neutral-primary mt-1 truncate">
-              {matrix ? `Level ${matrix.qualificationLevel.level}` : "—"}
-            </h4>
+        <div className="bg-white rounded-3xl p-4 sm:p-5 shadow-xs border border-gray-100">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
+              <span className="text-[10px] font-bold tracking-wider text-gray-500 uppercase">NAME OF CENTRE</span>
+              <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">{matrix?.centre.name || "—"}</h4>
+            </div>
+            <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
+              <span className="text-[10px] font-bold tracking-wider text-gray-500 uppercase">TRADE</span>
+              <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">{matrix?.trade.name || "—"}</h4>
+            </div>
+            <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
+              <span className="text-[10px] font-bold tracking-wider text-gray-500 uppercase">QUALIFICATION LEVEL</span>
+              <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">
+                {matrix ? `Level ${matrix.qualificationLevel.level}` : "—"}
+              </h4>
+            </div>
           </div>
         </div>
 
@@ -105,27 +113,27 @@ export const SamplingPlanView: React.FC<SamplingPlanViewProps> = ({
           <h3 className="text-sm sm:text-base font-extrabold text-neutral-primary">Assessment Tools</h3>
 
           {isLoading ? (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs min-w-220">
+            <div className="w-full overflow-x-auto max-w-full rounded-2xl border border-gray-100">
+              <table className="w-full text-left text-xs sm:text-sm border-collapse min-w-220">
                 <thead>
-                  <tr className="border-b border-gray-100 text-gray-500 font-bold text-[11px]">
-                    <th className="py-3 px-2">Candidate Name</th>
-                    <th className="py-3 px-2">Unit Assessor</th>
-                    <th className="py-3 px-2">Term Type</th>
-                    <th className="py-3 px-2">Planned Date</th>
+                  <tr className="bg-gray-50/70 text-gray-500 font-semibold border-b border-gray-100">
+                    <th className="p-3.5 rounded-l-xl">Candidate Name</th>
+                    <th className="p-3.5">Unit Assessor</th>
+                    <th className="p-3.5">Term Type</th>
+                    <th className="p-3.5">Planned Date</th>
                     {Array.from({ length: 4 }).map((_, i) => (
-                      <th key={i} className="py-3 px-2 text-center">
+                      <th key={i} className="p-3.5 text-center">
                         <div className="h-3 bg-gray-100 rounded w-8 mx-auto" />
                       </th>
                     ))}
-                    <th className="py-3 px-2 text-right">Status</th>
+                    <th className="p-3.5 text-right rounded-r-xl">Status</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50">
+                <tbody className="divide-y divide-gray-100">
                   {Array.from({ length: 4 }).map((_, i) => (
                     <tr key={i} className="animate-pulse">
                       {Array.from({ length: 8 }).map((__, j) => (
-                        <td key={j} className="py-3.5 px-2">
+                        <td key={j} className="p-3.5">
                           <div className="h-3 bg-gray-200 rounded w-14" />
                         </td>
                       ))}
@@ -137,48 +145,49 @@ export const SamplingPlanView: React.FC<SamplingPlanViewProps> = ({
           ) : !matrix || matrix.data.length === 0 ? (
             <p className="text-xs text-gray-400 py-4">No candidates found for this trade and level.</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs min-w-220">
+            <div className="w-full overflow-x-auto max-w-full rounded-2xl border border-gray-100">
+              <table className="w-full text-left text-xs sm:text-sm border-collapse min-w-220">
                 <thead>
-                  <tr className="border-b border-gray-100 text-gray-500 font-bold text-[11px]">
-                    <th className="py-3 px-2">Candidate Name</th>
-                    <th className="py-3 px-2">Unit Assessor</th>
-                    <th className="py-3 px-2">Term Type</th>
-                    <th className="py-3 px-2">Planned Date</th>
+                  <tr className="bg-gray-50/70 text-gray-500 font-semibold border-b border-gray-100">
+                    <th className="p-3.5 rounded-l-xl">Candidate Name</th>
+                    <th className="p-3.5">Unit Assessor</th>
+                    <th className="p-3.5">Term Type</th>
+                    <th className="p-3.5">Planned Date</th>
                     {matrix.units.map((u) => (
-                      <th key={u.id} className="py-3 px-2 text-center" title={u.title}>
+                      <th key={u.id} className="p-3.5 text-center" title={u.title}>
                         {u.referenceNumber}
                       </th>
                     ))}
-                    <th className="py-3 px-2 text-right">Status</th>
+                    <th className="p-3.5 text-right rounded-r-xl">Status</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50">
+                <tbody className="divide-y divide-gray-100">
                   {matrix.data.map((row) => (
-                    <tr key={row.applicationId} className="hover:bg-gray-50/50 transition-colors font-medium text-neutral-primary">
-                      <td className="py-3.5 px-2 text-xs">{row.candidate.name}</td>
-                      <td className="py-3.5 px-2 text-xs text-gray-600">{row.unitAssessor?.name || "—"}</td>
-                      <td className="py-3.5 px-2">
-                        <select
-                          defaultValue={row.termType || ""}
-                          onChange={(e) =>
-                            patchRow.mutate({
-                              applicationId: row.applicationId,
-                              payload: { termType: e.target.value || null },
-                            })
-                          }
-                          disabled={row.status === "submitted"}
-                          className="w-28 h-8 px-2.5 pr-2 bg-slate-50 border border-slate-200 rounded-lg text-[11px] text-gray-700 font-medium appearance-none focus:outline-none focus:border-[#a31d38] disabled:opacity-60"
-                        >
-                          <option value="">Select</option>
-                          {TERM_TYPES.map((t) => (
-                            <option key={t} value={t}>
-                              {t.charAt(0).toUpperCase() + t.slice(1)}
-                            </option>
-                          ))}
-                        </select>
+                    <tr key={row.applicationId} className="hover:bg-gray-50/60 transition-colors font-medium text-neutral-primary">
+                      <td className="p-3.5 text-xs">{row.candidate.name}</td>
+                      <td className="p-3.5 text-xs text-gray-600">{row.unitAssessor?.name || "—"}</td>
+                      <td className="p-3.5">
+                        <div className="w-28">
+                          <Select
+                            size="sm"
+                            value={row.termType || ""}
+                            onChange={(e) =>
+                              patchRow.mutate({
+                                applicationId: row.applicationId,
+                                payload: { termType: e.target.value || null },
+                              })
+                            }
+                            disabled={row.status === "submitted"}
+                            showPlaceholderOption={false}
+                            options={TERM_TYPES.map((t) => ({
+                              label: t.charAt(0).toUpperCase() + t.slice(1),
+                              value: t,
+                            }))}
+                            placeholder="Select"
+                          />
+                        </div>
                       </td>
-                      <td className="py-3.5 px-2">
+                      <td className="p-3.5">
                         <div className="h-8 w-36 px-2.5 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between text-[11px] text-gray-700 focus-within:bg-white focus-within:border-[#a31d38]">
                           <input
                             type="date"
@@ -196,7 +205,7 @@ export const SamplingPlanView: React.FC<SamplingPlanViewProps> = ({
                         </div>
                       </td>
                       {matrix.units.map((u) => (
-                        <td key={u.id} className="py-3.5 px-2 text-center">
+                        <td key={u.id} className="p-3.5 text-center">
                           <input
                             type="checkbox"
                             checked={row.sampledUnitIds.includes(u.id)}
@@ -206,7 +215,7 @@ export const SamplingPlanView: React.FC<SamplingPlanViewProps> = ({
                           />
                         </td>
                       ))}
-                      <td className="py-3.5 px-2 text-right">
+                      <td className="p-3.5 text-right">
                         <span
                           className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                             row.status === "submitted"

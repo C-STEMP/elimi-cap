@@ -49,26 +49,6 @@ export interface PendingApplication {
   submittedAt: string;
 }
 
-export interface ChatContact {
-  id: string;
-  name: string;
-  avatar: string;
-  lastMessage: string;
-  unread?: boolean;
-  isBroadcast?: boolean;
-  online?: boolean;
-}
-
-export interface ChatMessage {
-  id: string;
-  senderId: string;
-  senderName: string;
-  text: string;
-  timestamp: string;
-  isSelf?: boolean;
-  isBroadcast?: boolean;
-}
-
 export interface StaffMember {
   id: string;
   name: string;

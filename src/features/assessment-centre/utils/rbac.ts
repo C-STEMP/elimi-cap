@@ -20,7 +20,7 @@ export function getPermittedTabs(roleStr?: string | null): AssessmentCentreTab[]
   const role = normalizeRole(roleStr);
 
   if (role === "admin") {
-    // Regular Admin: Overview, Applications, Assessor Request, Assessors, Job Listing, Staff, Settings
+    // Regular Admin: Overview, Applications, Assessor Request, Assessors, Job Listing, Staff, Messages, Settings
     return [
       "overview",
       "applications",
@@ -28,13 +28,14 @@ export function getPermittedTabs(roleStr?: string | null): AssessmentCentreTab[]
       "assessors",
       "job-listing",
       "staff",
+      "messages",
       "settings",
     ];
   }
 
   if (role === "staff") {
-    // Regular Staff: Overview, Applications, Assessors, Staff, Settings
-    return ["overview", "applications", "assessors", "staff", "settings"];
+    // Regular Staff: Overview, Applications, Assessors, Staff, Messages, Settings
+    return ["overview", "applications", "assessors", "staff", "messages", "settings"];
   }
 
   // Centre / Super Admin: All tabs
@@ -46,6 +47,7 @@ export function getPermittedTabs(roleStr?: string | null): AssessmentCentreTab[]
     "job-listing",
     "staff",
     "payments",
+    "messages",
     "settings",
   ];
 }

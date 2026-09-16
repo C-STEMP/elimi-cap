@@ -47,12 +47,6 @@ export const AssignNsqAssessorModal: React.FC<AssignNsqAssessorModalProps> = ({
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Real centre assessor roster — GET /centre/assessors?status=approved,
-  // scoped to whichever qualification this role actually requires so the
-  // backend's own "qualification required" check can never be hit here.
-  // QAA assignment needs the QAA credential; NSQ's Internal Verifier
-  // assignment is the IQAM role, whose credential is IQM (the spec ties
-  // "IQAM / IQM" directly to "NSQ IV").
   const { data: remoteAssessors = [], isLoading: isLoadingAssessors } =
     useGetCentreAssessors({
       status: "approved",

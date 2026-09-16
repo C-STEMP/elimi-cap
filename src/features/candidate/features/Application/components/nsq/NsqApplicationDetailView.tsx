@@ -313,7 +313,69 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
       : null,
   );
 
-  const liveSitting = directObservationsData?.items?.[0];
+  const nsqData = (application as any)?.nsq;
+  const wishedQualificationLevel = nsqData?.wishedQualificationLevel;
+  const levelName = wishedQualificationLevel
+    ? `Level ${wishedQualificationLevel.level}`
+    : "";
+
+  const nsqUnitsAll: any[] = nsqData?.units || [];
+  const nsqUnits = wishedQualificationLevel
+    ? nsqUnitsAll.filter(
+        (u) => u.qualificationLevelId === wishedQualificationLevel.id,
+      )
+    : nsqUnitsAll;
+  const unitsList: NsqUnitItem[] =
+    nsqUnits.length > 0
+      ? nsqUnits.map((u) => {
+          const status: NsqUnitItem["status"] =
+            u.status === "approved"
+              ? "Approved"
+              : u.status === "in_progress" || u.criteriaPending > 0
+                ? "In Progress"
+                : "Not Started";
+          return {
+            id: u.id,
+            unitNo: u.referenceNumber,
+            title: u.title,
+            status,
+          };
+        })
+      : remoteUnits && remoteUnits.length > 0
+        ? remoteUnits.map((u, idx) => ({
+            id: u.id,
+            unitNo: u.referenceNumber || `UNIT ${idx + 1}`,
+            title: u.title,
+            status: "Not Started" as const,
+            structure: u.structure,
+          }))
+        : [];
+
+  const resolveUnitLabel = (id: string, index: number) => {
+    const match =
+      unitsList.find((u) => u.id === id) ||
+      remoteUnits.find((u) => u.id === id) ||
+      (application as any)?.nsq?.units?.find((u: any) => u.id === id);
+    if (match) {
+      return match.unitNo || match.referenceNumber || match.title || `UNIT ${index + 1}`;
+    }
+    if (id && id.length >= 20) {
+      return `UNIT ${index + 1}`;
+    }
+    return id;
+  };
+
+  const rawSessions =
+    (directObservationsData as any)?.sessions ||
+    (directObservationsData as any)?.items ||
+    (application as any)?.nsq?.directObservationSessions ||
+    [];
+  const sortedSessions = rawSessions.slice().sort((a: any, b: any) => {
+    const timeA = new Date(a.createdAt || a.scheduledAt || 0).getTime();
+    const timeB = new Date(b.createdAt || b.scheduledAt || 0).getTime();
+    return timeB - timeA;
+  });
+  const liveSitting = sortedSessions[0];
   const mapSittingStatus = (
     status: string,
   ): "pending" | "attention_required" | "scheduled" | "completed" | "rejected" | "cancelled" => {
@@ -335,7 +397,9 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
   const activeObservation = liveSitting
     ? {
         id: liveSitting.id,
-        units: liveSitting.unitIds || ["UNIT 1"],
+        units: liveSitting.unitIds?.length
+          ? liveSitting.unitIds.map(resolveUnitLabel)
+          : ["UNIT 1"],
         date: liveSitting.scheduledAt?.split("T")[0] || "22/03/2026",
         time:
           liveSitting.scheduledAt?.split("T")[1]?.slice(0, 5) || "12:00PM",
@@ -373,45 +437,27 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
     savedOnboarding?.centreName ||
     "CStemp Tvet Centre";
 
-  const nsqData = (application as any)?.nsq;
-  const wishedQualificationLevel = nsqData?.wishedQualificationLevel;
-  const levelName = wishedQualificationLevel
-    ? `Level ${wishedQualificationLevel.level}`
-    : "";
+  const rawAssessor =
+    (application as any)?.unitAssessor ||
+    (application as any)?.facilitator ||
+    (application as any)?.assessor ||
+    null;
 
-  const assignedFacilitator = (application as any)?.facilitator || null;
-
-  const nsqUnitsAll: any[] = nsqData?.units || [];
-  const nsqUnits = wishedQualificationLevel
-    ? nsqUnitsAll.filter(
-        (u) => u.qualificationLevelId === wishedQualificationLevel.id,
-      )
-    : nsqUnitsAll;
-  const unitsList: NsqUnitItem[] =
-    nsqUnits.length > 0
-      ? nsqUnits.map((u) => {
-          const status: NsqUnitItem["status"] =
-            u.status === "approved"
-              ? "Approved"
-              : u.status === "in_progress" || u.criteriaPending > 0
-                ? "In Progress"
-                : "Not Started";
-          return {
-            id: u.id,
-            unitNo: u.referenceNumber,
-            title: u.title,
-            status,
-          };
-        })
-      : remoteUnits && remoteUnits.length > 0
-        ? remoteUnits.map((u, idx) => ({
-            id: u.id,
-            unitNo: u.referenceNumber || `UNIT ${idx + 1}`,
-            title: u.title,
-            status: "Not Started" as const,
-            structure: u.structure,
-          }))
-        : [];
+  const assignedFacilitator = rawAssessor
+    ? {
+        name: rawAssessor.name,
+        role:
+          rawAssessor.role ||
+          (rawAssessor.qualifications?.length
+            ? `${rawAssessor.qualifications.join(", ")} Assessor`
+            : "Unit Assessor"),
+        photo: rawAssessor.photo || null,
+        tags:
+          rawAssessor.tags ||
+          rawAssessor.qualifications ||
+          ["QAA"],
+      }
+    : null;
 
   useEffect(() => {
     if (selectedUnit) return;
@@ -585,7 +631,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
               {/* Steps Progress — driven by GET /applications/{id}/stages.
                   Application Form and Payment have their own cards below,
                   so the timeline covers the remaining five workflow stages. */}
-              <div className="relative flex items-center justify-between w-full px-2 sm:px-6">
+              <div className="relative flex items-start justify-between w-full px-2 sm:px-6">
                 {/* Horizontal Background Line */}
                 <div className="absolute left-6 right-6 top-3 h-0.5 bg-gray-200 z-0" />
                 <div
@@ -600,10 +646,13 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                     !isComplete && !isRejected && step.status !== "not_started";
 
                   return (
-                    <div key={step.key} className="flex flex-col items-center gap-2 z-10">
+                    <div
+                      key={step.key}
+                      className="flex flex-col items-center gap-2 z-10 flex-1 min-w-0 px-0.5"
+                    >
                       {isComplete || isActive || isRejected ? (
                         <div
-                          className={`w-6 h-6 rounded-full flex items-center justify-center shadow-xs ${
+                          className={`w-6 h-6 rounded-full flex items-center justify-center shadow-xs shrink-0 ${
                             isComplete
                               ? "bg-[#10b981]"
                               : isRejected
@@ -614,10 +663,10 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                           <div className="w-2 h-2 rounded-full bg-white" />
                         </div>
                       ) : (
-                        <div className="w-6 h-6 rounded-full border border-gray-300 bg-white flex items-center justify-center" />
+                        <div className="w-6 h-6 rounded-full border border-gray-300 bg-white flex items-center justify-center shrink-0" />
                       )}
                       <span
-                        className={`text-[11px] text-center ${
+                        className={`w-full text-[9px] sm:text-[11px] leading-tight text-center wrap-break-word ${
                           isComplete
                             ? "font-bold text-[#10b981]"
                             : isRejected
@@ -717,20 +766,26 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-200/40">
-                  <div className="flex flex-col">
+                  <div className="flex flex-col min-w-0">
                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">
                       Qualification Code
                     </span>
-                    <span className="text-xs sm:text-sm font-extrabold text-neutral-primary truncate mt-0.5">
+                    <span
+                      className="text-xs sm:text-sm font-extrabold text-neutral-primary truncate mt-0.5"
+                      title={qualificationCode}
+                    >
                       {qualificationCode}
                     </span>
                   </div>
 
-                  <div className="flex flex-col">
+                  <div className="flex flex-col min-w-0">
                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">
                       Evidence Type
                     </span>
-                    <span className="text-xs sm:text-sm font-extrabold text-neutral-primary truncate mt-0.5">
+                    <span
+                      className="text-xs sm:text-sm font-extrabold text-neutral-primary truncate mt-0.5"
+                      title={evidenceTypesText}
+                    >
                       {evidenceTypesText}
                     </span>
                   </div>
@@ -856,29 +911,33 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                 <div className="flex flex-col gap-2">
                   <div
                     onClick={() => setIsReviewModalOpen(true)}
-                    className={`bg-[#f8f9fa] hover:bg-white border border-gray-100 hover:border-gray-200 rounded-xl p-4 flex items-center justify-between gap-3 cursor-pointer transition-all group shadow-2xs select-none border-l-[5px] ${
-                      activeObservation.status === "scheduled" ||
-                      activeObservation.status === "completed"
-                        ? "border-l-emerald-500"
-                        : activeObservation.status === "rejected" ||
-                            activeObservation.status === "cancelled"
-                          ? "border-l-rose-500"
-                          : "border-l-[#fbab2a]"
+                    className={`hover:bg-white border border-gray-100 hover:border-gray-200 rounded-xl p-4 flex items-center justify-between gap-3 cursor-pointer transition-all group shadow-2xs select-none border-l-[5px] ${
+                      activeObservation.status === "attention_required"
+                        ? "bg-input-bg border-l-[#fbab2a]"
+                        : activeObservation.status === "scheduled" ||
+                            activeObservation.status === "completed"
+                          ? "bg-[#f8f9fa] border-l-[#1E7F4C]"
+                          : activeObservation.status === "rejected" ||
+                              activeObservation.status === "cancelled"
+                            ? "bg-[#f8f9fa] border-l-rose-500"
+                            : "bg-input-bg border-l-[#fbab2a]"
                     }`}
                   >
                     <div className="flex flex-col gap-2">
                       {/* Status Badge */}
                       <span
                         className={`self-start text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                          activeObservation.status === "scheduled" ||
-                          activeObservation.status === "completed"
-                            ? "bg-emerald-100 text-emerald-800"
-                            : activeObservation.status === "pending"
-                              ? "bg-amber-100 text-amber-800"
-                              : activeObservation.status === "rejected" ||
-                                  activeObservation.status === "cancelled"
-                                ? "bg-rose-100 text-rose-700"
-                                : "bg-pink-100 text-pink-700"
+                          activeObservation.status === "attention_required"
+                            ? "bg-primary/10 text-primary"
+                            : activeObservation.status === "scheduled" ||
+                                activeObservation.status === "completed"
+                              ? "bg-[#1E7F4C]/10 text-[#1E7F4C]"
+                              : activeObservation.status === "pending"
+                                ? "bg-amber-100 text-amber-800"
+                                : activeObservation.status === "rejected" ||
+                                    activeObservation.status === "cancelled"
+                                  ? "bg-rose-100 text-rose-700"
+                                  : "bg-primary/10 text-primary"
                         }`}
                       >
                         {activeObservation.status === "scheduled"
@@ -887,11 +946,13 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                             ? "Completed"
                             : activeObservation.status === "pending"
                               ? "Pending"
-                              : activeObservation.status === "rejected"
-                                ? "Rejected"
-                                : activeObservation.status === "cancelled"
-                                  ? "Cancelled"
-                                  : "Attention Required"}
+                              : activeObservation.status === "attention_required"
+                                ? "Attention Required"
+                                : activeObservation.status === "rejected"
+                                  ? "Rejected"
+                                  : activeObservation.status === "cancelled"
+                                    ? "Cancelled"
+                                    : "Attention Required"}
                       </span>
 
                       <h5 className="font-extrabold text-xs sm:text-sm text-neutral-primary tracking-tight">
@@ -936,19 +997,6 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                       <FiChevronRight className="w-5 h-5 text-gray-400 group-hover:text-primary group-hover:translate-x-1 transition-all shrink-0" />
                     )}
                   </div>
-
-                  {/* View Form Button for Completed status */}
-                  {activeObservation.status === "completed" && (
-                    <Button
-                      type="button"
-                      variant="amber"
-                      size="md"
-                      onClick={() => setIsReviewModalOpen(true)}
-                      className="w-full h-11 text-white font-bold text-xs sm:text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-md cursor-pointer mt-1 flex items-center justify-center"
-                    >
-                      View Form
-                    </Button>
-                  )}
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-6 text-center gap-2">
@@ -1032,6 +1080,12 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
         onClose={() => setIsReviewModalOpen(false)}
         details={activeObservation}
         applicationId={application?.id}
+        availableUnits={unitsList.map((u, idx) => ({
+          id: u.id,
+          label: u.unitNo || u.title || `UNIT ${idx + 1}`,
+          unitNo: u.unitNo,
+          title: u.title,
+        }))}
         onConfirmSchedule={handleConfirmSchedule}
       />
 

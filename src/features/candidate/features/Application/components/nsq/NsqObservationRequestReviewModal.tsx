@@ -36,12 +36,20 @@ interface NsqObservationRequestReviewModalProps {
   onClose: () => void;
   details: ObservationDetails | null;
   applicationId?: string;
+  availableUnits?: Array<{ id: string; label: string; title?: string; unitNo?: string }>;
   onConfirmSchedule: (updatedDetails: ObservationDetails) => void;
 }
 
 export const NsqObservationRequestReviewModal: React.FC<
   NsqObservationRequestReviewModalProps
-> = ({ isOpen, onClose, details, applicationId, onConfirmSchedule }) => {
+> = ({
+  isOpen,
+  onClose,
+  details,
+  applicationId,
+  availableUnits,
+  onConfirmSchedule,
+}) => {
   const { toast } = useToast();
   const { data: profileSignature } = useCandidateProfileSignature();
   const { data: sessionDetail } = useGetDirectObservationSession(
@@ -64,6 +72,25 @@ export const NsqObservationRequestReviewModal: React.FC<
     details.units && details.units.length > 0
       ? details.units
       : ["UNIT 1", "UNIT 2", "UNIT 3"];
+
+  const resolveUnitName = (unitIdOrName: string, index: number) => {
+    const match =
+      availableUnits?.find((u) => u.id === unitIdOrName) ||
+      sessionDetail?.catalogue?.find((c) => c.unitId === unitIdOrName);
+    if (match) {
+      return (
+        (match as any).unitNo ||
+        (match as any).referenceNumber ||
+        (match as any).label ||
+        (match as any).title ||
+        `UNIT ${index + 1}`
+      );
+    }
+    if (unitIdOrName && unitIdOrName.length >= 20) {
+      return `UNIT ${index + 1}`;
+    }
+    return unitIdOrName;
+  };
 
   const handleAppendSignature = () => {
     let localAssetId: string | null = null;
@@ -194,26 +221,26 @@ export const NsqObservationRequestReviewModal: React.FC<
               Units For Assessment
             </span>
             <div className="flex items-center gap-2 flex-wrap">
-              {units.map((unit) => (
+              {units.map((unit, idx) => (
                 <span
                   key={unit}
-                  className="bg-pink-50 text-pink-700 text-xs font-bold px-3 py-1.5 rounded-md"
+                  className="bg-primary/10 text-primary text-xs font-bold px-3 py-1.5 rounded-md"
                 >
-                  {unit}
+                  {resolveUnitName(unit, idx)}
                 </span>
               ))}
             </div>
           </div>
 
           {/* Details Card */}
-          <div className="bg-[#f8f9fa] border border-gray-100 rounded-2xl p-4 sm:p-5 flex flex-col gap-3.5">
+          <div className="bg-input-bg border border-gray-100 rounded-2xl p-4 sm:p-5 flex flex-col gap-3.5">
             {/* Status Badge */}
             <span
               className={`self-start text-[10px] font-bold px-2.5 py-0.5 rounded-md uppercase tracking-wide ${
                 isAttentionRequired
-                  ? "bg-pink-100 text-pink-700"
+                  ? "bg-primary/10 text-primary"
                   : details.status === "scheduled" || details.status === "completed"
-                    ? "bg-emerald-100 text-emerald-800"
+                    ? "bg-[#1E7F4C]/10 text-[#1E7F4C]"
                     : isClosed
                       ? "bg-rose-100 text-rose-700"
                       : "bg-amber-100 text-amber-800"
@@ -314,7 +341,7 @@ export const NsqObservationRequestReviewModal: React.FC<
                             <span
                               className={`shrink-0 font-bold px-2 py-0.5 rounded-full text-[10px] ${
                                 row.met
-                                  ? "bg-emerald-100 text-emerald-800"
+                                  ? "bg-[#1E7F4C]/10 text-[#1E7F4C]"
                                   : "bg-rose-100 text-rose-700"
                               }`}
                             >
@@ -348,7 +375,7 @@ export const NsqObservationRequestReviewModal: React.FC<
               </label>
 
               {isSigned ? (
-                <div className="w-full h-12 rounded-xl border border-emerald-500 bg-[#f2faf5] text-emerald-700 flex items-center justify-center gap-2 font-bold text-sm shadow-2xs">
+                <div className="w-full h-12 rounded-xl border-2 border-[#1E7F4C] bg-[#1E7F4C]/10 text-[#1E7F4C] flex items-center justify-center gap-2 font-bold text-sm shadow-2xs">
                   <FiCheck className="w-4 h-4 stroke-3" />
                   <span>Signed</span>
                 </div>

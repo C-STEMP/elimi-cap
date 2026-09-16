@@ -41,94 +41,98 @@ export const Section04AVerificationScope: React.FC<Section04AVerificationScopePr
       </div>
 
       {/* Row 1: 4 Metadata Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-[#f8f9fa] rounded-2xl p-4 sm:p-5 border border-gray-100/80 flex flex-col justify-between">
-          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-            REF: CON/04A/IQAM
-          </span>
-          <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1">
-            Verification Scope & Sampled Units
-          </h4>
-        </div>
+      <div className="bg-white rounded-3xl p-4 sm:p-5 shadow-xs border border-gray-100">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-[#f8f9fa] rounded-2xl p-4 sm:p-5 border border-gray-100/80 flex flex-col justify-between">
+            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+              REF: CON/04A/IQAM
+            </span>
+            <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1">
+              Verification Scope & Sampled Units
+            </h4>
+          </div>
 
-        <div className="bg-[#f8f9fa] rounded-2xl p-4 sm:p-5 border border-gray-100/80 flex flex-col justify-between">
-          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-            Candidate Name
-          </span>
-          <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">
-            {candidateName}
-          </h4>
-        </div>
+          <div className="bg-[#f8f9fa] rounded-2xl p-4 sm:p-5 border border-gray-100/80 flex flex-col justify-between">
+            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+              Candidate Name
+            </span>
+            <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">
+              {candidateName}
+            </h4>
+          </div>
 
-        <div className="bg-[#f8f9fa] rounded-2xl p-4 sm:p-5 border border-gray-100/80 flex flex-col justify-between">
-          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-            DATE OF VERIFICATION
-          </span>
-          <input
-            type="date"
-            value={data?.dateOfVerification || ""}
-            onChange={(e) => update({ dateOfVerification: e.target.value || null })}
-            disabled={readOnly}
-            className="text-xs sm:text-sm font-black text-neutral-primary mt-1 bg-transparent outline-none disabled:opacity-70"
-          />
-        </div>
+          <div className="bg-[#f8f9fa] rounded-2xl p-4 sm:p-5 border border-gray-100/80 flex flex-col justify-between">
+            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+              DATE OF VERIFICATION
+            </span>
+            <input
+              type="date"
+              value={data?.dateOfVerification || ""}
+              onChange={(e) => update({ dateOfVerification: e.target.value || null })}
+              disabled={readOnly}
+              className="text-xs sm:text-sm font-black text-neutral-primary mt-1 bg-transparent outline-none disabled:opacity-70"
+            />
+          </div>
 
-        <div className="bg-[#f8f9fa] rounded-2xl p-4 sm:p-5 border border-gray-100/80 flex flex-col justify-between">
-          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-            QUALIFICATION
-          </span>
-          <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1">
-            {qualificationTitle}
-          </h4>
+          <div className="bg-[#f8f9fa] rounded-2xl p-4 sm:p-5 border border-gray-100/80 flex flex-col justify-between">
+            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+              QUALIFICATION
+            </span>
+            <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1">
+              {qualificationTitle}
+            </h4>
+          </div>
         </div>
       </div>
 
       {/* Row 2: 4 Metadata Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-[#f8f9fa] rounded-2xl p-4 sm:p-5 border border-gray-100/80 flex flex-col justify-between">
-          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-            INTERNAL VERIFIER
-          </span>
-          <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">
-            {internalVerifierName}
-          </h4>
-        </div>
+      <div className="bg-white rounded-3xl p-4 sm:p-5 shadow-xs border border-gray-100">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-[#f8f9fa] rounded-2xl p-4 sm:p-5 border border-gray-100/80 flex flex-col justify-between">
+            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+              INTERNAL VERIFIER
+            </span>
+            <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">
+              {internalVerifierName}
+            </h4>
+          </div>
 
-        <div className="bg-[#f8f9fa] rounded-2xl p-4 sm:p-5 border border-gray-100/80 flex flex-col justify-between">
-          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-            NAME OF COUNTERSIGNING IV
-          </span>
-          <input
-            type="text"
-            placeholder="Type here"
-            value={data?.countersigningIvName || ""}
-            onChange={(e) => update({ countersigningIvName: e.target.value })}
-            disabled={readOnly}
-            className="text-xs sm:text-sm font-black text-neutral-primary mt-1 bg-transparent outline-none disabled:opacity-70 placeholder:font-normal placeholder:text-gray-400"
-          />
-        </div>
+          <div className="bg-[#f8f9fa] rounded-2xl p-4 sm:p-5 border border-gray-100/80 flex flex-col justify-between">
+            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+              NAME OF COUNTERSIGNING IV
+            </span>
+            <input
+              type="text"
+              placeholder="Type here"
+              value={data?.countersigningIvName || ""}
+              onChange={(e) => update({ countersigningIvName: e.target.value })}
+              disabled={readOnly}
+              className="text-xs sm:text-sm font-black text-neutral-primary mt-1 bg-transparent outline-none disabled:opacity-70 placeholder:font-normal placeholder:text-gray-400"
+            />
+          </div>
 
-        <div className="bg-[#f8f9fa] rounded-2xl p-4 sm:p-5 border border-gray-100/80 flex flex-col justify-between">
-          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-            NAME OF ASSESSOR
-          </span>
-          <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">
-            {unitAssessorName}
-          </h4>
-        </div>
+          <div className="bg-[#f8f9fa] rounded-2xl p-4 sm:p-5 border border-gray-100/80 flex flex-col justify-between">
+            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+              NAME OF ASSESSOR
+            </span>
+            <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">
+              {unitAssessorName}
+            </h4>
+          </div>
 
-        <div className="bg-[#f8f9fa] rounded-2xl p-4 sm:p-5 border border-gray-100/80 flex flex-col justify-between">
-          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-            COUNTERSIGNING ASSESSOR
-          </span>
-          <input
-            type="text"
-            placeholder="Type here"
-            value={data?.countersigningAssessorName || ""}
-            onChange={(e) => update({ countersigningAssessorName: e.target.value })}
-            disabled={readOnly}
-            className="text-xs sm:text-sm font-black text-neutral-primary mt-1 bg-transparent outline-none disabled:opacity-70 placeholder:font-normal placeholder:text-gray-400"
-          />
+          <div className="bg-[#f8f9fa] rounded-2xl p-4 sm:p-5 border border-gray-100/80 flex flex-col justify-between">
+            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+              COUNTERSIGNING ASSESSOR
+            </span>
+            <input
+              type="text"
+              placeholder="Type here"
+              value={data?.countersigningAssessorName || ""}
+              onChange={(e) => update({ countersigningAssessorName: e.target.value })}
+              disabled={readOnly}
+              className="text-xs sm:text-sm font-black text-neutral-primary mt-1 bg-transparent outline-none disabled:opacity-70 placeholder:font-normal placeholder:text-gray-400"
+            />
+          </div>
         </div>
       </div>
 

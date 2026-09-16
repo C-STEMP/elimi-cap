@@ -13,6 +13,7 @@ import { AssessmentCentreHeader } from "@/src/features/assessment-centre/feature
 import {
   APPLICATION_QUERY_KEYS,
   useGetApplicationById,
+  useGetApplicationStages,
   useReviewApplication,
 } from "@/src/features/shared/applications/hooks";
 import {
@@ -32,6 +33,7 @@ export const CentreApplicationRouteView: React.FC<{ id: string }> = ({
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { data: application, isLoading } = useGetApplicationById(id);
+  const { data: stagesData } = useGetApplicationStages(id);
   const reviewMutation = useReviewApplication();
 
   const [showCandidateForm, setShowCandidateForm] = useState(false);
@@ -77,6 +79,17 @@ export const CentreApplicationRouteView: React.FC<{ id: string }> = ({
       (application as any)?.assessmentType === "NSQ"
     : false;
 
+  const isNsqIqaComplete =
+    stagesData?.find((s) => s.stageKey === "internal_verification")?.status ===
+    "successful";
+
+  const isNsqIqaFormsComplete = Boolean(
+    application?.iqamForms?.length &&
+      application.iqamForms.every((f) => f.status === "submitted"),
+  );
+
+  const isNsqIvApproved = Boolean((application as any)?.ivApproved);
+
   const tradeName = application
     ? (typeof application.trade === "object"
         ? (application.trade as any)?.name
@@ -118,6 +131,10 @@ export const CentreApplicationRouteView: React.FC<{ id: string }> = ({
           showCandidateForm={showCandidateForm}
           isApplicationApproved={isSelectedAppApproved}
           isNsqApplication={isNsqApplication}
+          applicationId={id}
+          isNsqIqaComplete={isNsqIqaComplete}
+          isNsqIqaFormsComplete={isNsqIqaFormsComplete}
+          isNsqIvApproved={isNsqIvApproved}
           onBackToList={handleBackToList}
           onBackFromInterview={handleBackToList}
           onBackFromUnit={() => setSelectedUnitNumber(null)}

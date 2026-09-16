@@ -71,10 +71,10 @@ export const NsqAssessorSidebar: React.FC<NsqAssessorSidebarProps> = ({
           <div className="flex flex-col gap-3">
             <div
               onClick={onOpenObservationModal}
-              className="border-l-4 border-emerald-500 bg-gray-50/70 hover:bg-gray-100/70 p-3.5 rounded-xl transition-all cursor-pointer flex items-center justify-between"
+              className="border-l-4 border-[#1E7F4C] bg-gray-50/70 hover:bg-gray-100/70 p-3.5 rounded-xl transition-all cursor-pointer flex items-center justify-between"
             >
               <div className="flex flex-col gap-1.5">
-                <span className="w-fit px-2 py-0.5 bg-[#ecfdf5] text-[#10b981] font-bold text-[10px] rounded-md">
+                <span className="w-fit px-2 py-0.5 bg-[#1E7F4C]/10 text-[#1E7F4C] font-bold text-[10px] rounded-md">
                   Confirmed
                 </span>
                 <span className="font-bold text-xs text-neutral-primary">

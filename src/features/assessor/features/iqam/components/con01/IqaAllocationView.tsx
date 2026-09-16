@@ -36,25 +36,27 @@ export const IqaAllocationView: React.FC<IqaAllocationViewProps> = ({
   return (
     <div className="w-full flex flex-col gap-6 select-text pb-12 animate-fadeIn">
 
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-6">
+      <div className="w-full max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-6">
         {/* Top Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5">
-            <span className="text-[11px] font-bold tracking-wider text-gray-500 uppercase">
-              NAME OF CENTRE
-            </span>
-            <h4 className="text-sm sm:text-base font-extrabold text-neutral-primary mt-1">
-              {centre?.centreName || "—"}
-            </h4>
-          </div>
+        <div className="bg-white rounded-3xl p-4 sm:p-5 shadow-xs border border-gray-100">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
+              <span className="text-[10px] font-bold tracking-wider text-gray-500 uppercase">
+                NAME OF CENTRE
+              </span>
+              <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1">
+                {centre?.centreName || "—"}
+              </h4>
+            </div>
 
-          <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5">
-            <span className="text-[11px] font-bold tracking-wider text-gray-500 uppercase">
-              TOTAL NO. OF ASSIGNED CANDIDATE
-            </span>
-            <h4 className="text-sm sm:text-base font-extrabold text-neutral-primary mt-1">
-              {centre?.assignedCount ?? allocations.length}
-            </h4>
+            <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
+              <span className="text-[10px] font-bold tracking-wider text-gray-500 uppercase">
+                TOTAL NO. OF ASSIGNED CANDIDATE
+              </span>
+              <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1">
+                {centre?.assignedCount ?? allocations.length}
+              </h4>
+            </div>
           </div>
         </div>
 
@@ -68,12 +70,12 @@ export const IqaAllocationView: React.FC<IqaAllocationViewProps> = ({
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs min-w-150">
                 <thead>
-                  <tr className="border-b border-gray-100 text-gray-500 font-bold text-[11px]">
+                  <tr className="bg-gray-50 text-gray-500 font-bold text-[11px]">
+                    <th className="py-3 px-3 rounded-l-lg">Name Of Assessor</th>
                     <th className="py-3 px-3">Candidate Name</th>
-                    <th className="py-3 px-3">Unit Assessor (QAA)</th>
                     <th className="py-3 px-3">Level</th>
                     <th className="py-3 px-3">Units</th>
-                    <th className="py-3 px-3 text-right">Action</th>
+                    <th className="py-3 px-3 text-right rounded-r-lg">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
@@ -97,12 +99,12 @@ export const IqaAllocationView: React.FC<IqaAllocationViewProps> = ({
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs min-w-150">
                 <thead>
-                  <tr className="border-b border-gray-100 text-gray-500 font-bold text-[11px]">
+                  <tr className="bg-gray-50 text-gray-500 font-bold text-[11px]">
+                    <th className="py-3 px-3 rounded-l-lg">Name Of Assessor</th>
                     <th className="py-3 px-3">Candidate Name</th>
-                    <th className="py-3 px-3">Unit Assessor (QAA)</th>
                     <th className="py-3 px-3">Level</th>
                     <th className="py-3 px-3">Units</th>
-                    <th className="py-3 px-3 text-right">Action</th>
+                    <th className="py-3 px-3 text-right rounded-r-lg">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
@@ -112,16 +114,23 @@ export const IqaAllocationView: React.FC<IqaAllocationViewProps> = ({
                       onClick={() => onOpenCandidateForm?.(row.applicationId, row.candidate.name)}
                       className="hover:bg-gray-50/50 transition-colors font-medium text-neutral-primary cursor-pointer group"
                     >
+                      <td className="py-3.5 px-3 text-gray-600">
+                        {row.unitAssessor?.name || "Not yet assigned"}
+                      </td>
                       <td className="py-3.5 px-3 font-semibold group-hover:text-primary transition-colors">
                         {row.candidate.name}
                       </td>
                       <td className="py-3.5 px-3 text-gray-600">
-                        {row.unitAssessor?.name || "Not yet assigned"}
-                      </td>
-                      <td className="py-3.5 px-3 text-gray-600">
                         {row.wishedQualificationLevel ? `Level ${row.wishedQualificationLevel.level}` : "—"}
                       </td>
-                      <td className="py-3.5 px-3 text-gray-600">
+                      <td
+                        className="py-3.5 px-3 text-gray-600 max-w-50 truncate"
+                        title={
+                          row.wishedUnits.length > 0
+                            ? row.wishedUnits.map((u) => u.referenceNumber).join("/")
+                            : undefined
+                        }
+                      >
                         {row.wishedUnits.length > 0
                           ? row.wishedUnits.map((u) => u.referenceNumber).join("/")
                           : "—"}

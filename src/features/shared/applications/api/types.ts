@@ -176,6 +176,17 @@ export interface ApplicationDetail extends Application {
   };
   currentOccupation?: CurrentOccupation | null;
   frozenProfile?: Record<string, unknown> | null;
+  unitAssessor?: {
+    assessorId: string;
+    name: string;
+    qualifications?: string[];
+    assignedAt?: string;
+    photoAssetId?: string | null;
+    photo?: {
+      assetId?: string;
+      url?: string | null;
+    } | null;
+  } | null;
   internalVerifier?: {
     assessorId: string;
     name: string;
@@ -581,7 +592,8 @@ export interface DirectObservationSession {
 }
 
 export interface DirectObservationSessionList {
-  items: DirectObservationSession[];
+  sessions?: DirectObservationSession[];
+  items?: DirectObservationSession[];
 }
 
 export interface ScheduleObservationPayload {
@@ -623,74 +635,115 @@ export interface PostUnitSignoffPayload {
   signedAt: string;
 }
 
+export interface CentreIqamUnitRef {
+  id: string;
+  referenceNumber: string;
+  title: string;
+}
+
 export interface CentreIqamSamplingPlan {
   applicationId: string;
-  candidateName?: string;
-  tradeName?: string;
-  levelName?: string;
-  termType?: string;
-  plannedDate?: string;
-  units?: Array<{
-    id: string;
-    referenceNumber: string;
-    title: string;
-    sampled?: boolean;
-  }>;
-  assessor?: { id: string; name: string } | null;
-  verifier?: { id: string; name: string } | null;
-  status?: string;
+  candidate: { id: string; name: string };
+  unitAssessor: { assessorId: string; name: string } | null;
+  centre: { id: string; name: string };
+  trade: { id: string; name: string };
+  qualificationLevel: { id: string; level: number };
+  units: CentreIqamUnitRef[];
+  termType: string | null;
+  plannedDate: string | null;
+  sampledUnitIds: string[];
+  status: string;
+  submittedAt: string | null;
   [key: string]: unknown;
 }
 
 export interface CentreIqamSamplingRecord {
   applicationId: string;
-  candidateName?: string;
-  auditStatus?: string;
-  process?: string;
-  assessmentSite?: string;
-  unitsAssessed?: string;
-  method?: string;
-  assessor?: { id: string; name: string } | null;
-  status?: string;
+  candidate: { id: string; name: string };
+  unitAssessor: { assessorId: string; name: string } | null;
+  centre: { id: string; name: string };
+  trade: { id: string; name: string };
+  qualificationLevel: { id: string; level: number };
+  methods: string[];
+  assessmentSite: string | null;
+  auditStatus: string | null;
+  process: string | null;
+  status: string;
+  submittedAt: string | null;
+  [key: string]: unknown;
+}
+
+export interface CentreIqamIvReportData {
+  con04a?: {
+    dateOfVerification?: string | null;
+    countersigningIvName?: string | null;
+    countersigningAssessorName?: string | null;
+    sampledLoEvidence?: string[];
+    standardizationNotes?: string | null;
+  };
+  con04b?: {
+    methodsSampled?: string[];
+    ivSummary?: string | null;
+    actions?: Array<{ id: string; actionRequired: string; byWho: string; timeline?: string | null; achieved?: boolean | null }>;
+    actionConfirmation?: string | null;
+  };
+  con04c?: {
+    verifiedUnitIds?: string[];
+    fullQualificationAchievedAt?: string | null;
+    accessProblems?: string | null;
+    appealsAndOutcomes?: string | null;
+    secondLineFeedback?: string | null;
+  };
   [key: string]: unknown;
 }
 
 export interface CentreIqamIvReport {
   applicationId: string;
-  candidateName?: string;
-  scope?: Record<string, unknown>;
-  qualityFeedback?: string;
-  outcomes?: Record<string, unknown>;
-  agreedActions?: Array<{
-    id: string;
-    action: string;
-    byWho: string;
-    timeline: string;
-  }>;
-  verifierSignature?: Record<string, unknown>;
-  status?: string;
+  candidate: { id: string; name: string };
+  unitAssessor: { assessorId: string; name: string } | null;
+  internalVerifier: { assessorId: string; name: string };
+  centre: { id: string; name: string };
+  trade: { id: string; name: string };
+  qualificationLevel: { id: string; level: number };
+  units: CentreIqamUnitRef[];
+  methods: string[];
+  data: CentreIqamIvReportData;
+  status: string;
+  submittedAt: string | null;
   [key: string]: unknown;
 }
 
 export interface CentreIqamAssessorOutcomes {
   applicationId: string;
-  candidateName?: string;
-  checklist?: Array<{
-    id: string;
-    question: string;
-    answer?: "yes" | "no";
-    comments?: string;
-  }>;
-  feedback?: string;
+  candidate: { id: string; name: string };
+  unitAssessor: { assessorId: string; name: string } | null;
+  internalVerifier: { assessorId: string; name: string };
+  centre: { id: string; name: string };
+  data: {
+    questions?: Array<{ id: string; question: string; answer?: "yes" | "no" | null; comments?: string }>;
+    [key: string]: unknown;
+  };
+  status: string;
+  submittedAt: string | null;
   [key: string]: unknown;
 }
 
 export interface CentreIqamFinalPortfolio {
   applicationId: string;
-  candidateName?: string;
-  tradeName?: string;
-  overallStatus?: string;
-  unitsSummary?: Array<Record<string, unknown>>;
-  signatures?: Record<string, unknown>;
+  candidate: { id: string; name: string };
+  unitAssessor: { assessorId: string; name: string } | null;
+  internalVerifier: { assessorId: string; name: string };
+  centre: { id: string; name: string };
+  trade: { id: string; name: string };
+  qualificationLevel: { id: string; level: number };
+  data: {
+    fullAwardVerified?: boolean | null;
+    checkpoints?: Array<{ id: string; question: string; answer?: "yes" | "no" | null; comments?: string }>;
+    actionForAssessor?: string | null;
+    planAchieved?: string | null;
+    [key: string]: unknown;
+  };
+  status: string;
+  submittedAt: string | null;
   [key: string]: unknown;
 }

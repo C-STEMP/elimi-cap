@@ -208,7 +208,7 @@ export const NsqAssessorObservationModal: React.FC<
           </label>
 
           {isSigned ? (
-            <div className="w-full h-11 border-2 border-emerald-500 bg-emerald-50/60 rounded-xl flex items-center justify-center gap-2 text-emerald-700 font-bold text-xs select-none">
+            <div className="w-full h-11 border-2 border-[#1E7F4C] bg-[#1E7F4C]/10 rounded-xl flex items-center justify-center gap-2 text-[#1E7F4C] font-bold text-xs select-none">
               <FiCheck className="w-4 h-4" />
               <span>Signed</span>
             </div>

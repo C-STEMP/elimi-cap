@@ -18,6 +18,7 @@ import {
   useMarkAllNotificationsRead,
 } from "@/src/features/shared/notifications/hooks";
 import { NotificationItem } from "@/src/features/shared/notifications/api";
+import { useAppSelector } from "@/src/store/hooks";
 
 interface NotificationDropdownProps {
   isOpen: boolean;
@@ -31,6 +32,10 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
   maxItems = 3,
 }) => {
   const router = useRouter();
+  const user = useAppSelector((state) => state.auth.user);
+  const notificationsHref = user?.role?.toLowerCase().includes("assessor")
+    ? "/assessor/dashboard/notifications"
+    : "/dashboard/notifications";
   const { data: remoteNotifications = [], isLoading } = useGetNotifications(
     undefined,
     { enabled: isOpen },
@@ -52,13 +57,13 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
     }
     if (notif.link || notif.actionUrl) {
       onClose();
-      router.push(notif.link || notif.actionUrl || "/dashboard/notifications");
+      router.push(notif.link || notif.actionUrl || notificationsHref);
     }
   };
 
   const handleViewMore = () => {
     onClose();
-    router.push("/dashboard/notifications");
+    router.push(notificationsHref);
   };
 
   const getCategoryIcon = (category?: string) => {

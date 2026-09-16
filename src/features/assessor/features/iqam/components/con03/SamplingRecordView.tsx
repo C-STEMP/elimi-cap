@@ -46,20 +46,26 @@ export const SamplingRecordView: React.FC<SamplingRecordViewProps> = ({
     submitRecord.mutate({ tradeId, qualificationLevelId });
   };
 
+  // Once every candidate row in this record has already been submitted,
+  // there's nothing left to submit — don't offer the action again.
+  const allSubmitted = Boolean(
+    matrix?.data && matrix.data.length > 0 && matrix.data.every((r) => r.status === "submitted"),
+  );
+
   useEffect(() => {
     onUpdateHeader?.({
       title: "Internal Verification Sampling Record",
       breadcrumb: "Internal Verification Sampling Record",
-      actionLabel: "Submit",
-      onAction: handleSubmit,
+      actionLabel: allSubmitted ? undefined : "Submit",
+      onAction: allSubmitted ? undefined : handleSubmit,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onUpdateHeader, hasContext, centreId, tradeId, qualificationLevelId]);
+  }, [onUpdateHeader, hasContext, centreId, tradeId, qualificationLevelId, allSubmitted]);
 
   if (!hasContext) {
     return (
       <div className="w-full flex flex-col gap-6 select-text pb-12 animate-fadeIn">
-        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 flex flex-col items-center text-center gap-2">
             <p className="text-sm font-bold text-neutral-primary">Select a candidate first</p>
             <p className="text-xs text-gray-400 max-w-xs">
@@ -75,7 +81,7 @@ export const SamplingRecordView: React.FC<SamplingRecordViewProps> = ({
   return (
     <div className="w-full flex flex-col gap-6 select-text pb-12 animate-fadeIn">
 
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-6">
+      <div className="w-full max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-6">
         {/* Subheader Banner */}
         <div className="bg-white border border-gray-100/80 rounded-3xl p-5 sm:p-6 shadow-xs flex flex-col gap-1">
           <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">CON/03/IQAM</span>
@@ -85,31 +91,33 @@ export const SamplingRecordView: React.FC<SamplingRecordViewProps> = ({
         </div>
 
         {/* Metadata Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
-            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">CENTRE</span>
-            <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">{matrix?.centre.name || "—"}</h4>
-          </div>
+        <div className="bg-white rounded-3xl p-4 sm:p-5 shadow-xs border border-gray-100">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
+              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">CENTRE</span>
+              <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">{matrix?.centre.name || "—"}</h4>
+            </div>
 
-          <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
-            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">QUALIFICATION</span>
-            <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">
-              {matrix ? `${matrix.trade.name} Level ${matrix.qualificationLevel.level}` : "—"}
-            </h4>
-          </div>
+            <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
+              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">QUALIFICATION</span>
+              <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">
+                {matrix ? `${matrix.trade.name} Level ${matrix.qualificationLevel.level}` : "—"}
+              </h4>
+            </div>
 
-          <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
-            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">INTERNAL VERIFIER</span>
-            <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">
-              {matrix?.internalVerifier.name || "—"}
-            </h4>
-          </div>
+            <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
+              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">INTERNAL VERIFIER</span>
+              <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">
+                {matrix?.internalVerifier.name || "—"}
+              </h4>
+            </div>
 
-          <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
-            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">EVIDENCE METHODS</span>
-            <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">
-              {matrix?.methods?.length ? matrix.methods.join("/") : "—"}
-            </h4>
+            <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
+              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">EVIDENCE METHODS</span>
+              <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">
+                {matrix?.methods?.length ? matrix.methods.join("/") : "—"}
+              </h4>
+            </div>
           </div>
         </div>
 

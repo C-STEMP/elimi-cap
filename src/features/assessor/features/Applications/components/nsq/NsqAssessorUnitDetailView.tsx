@@ -1,28 +1,31 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { FiChevronLeft } from "react-icons/fi";
-import { NsqAssessorSidebar } from "./NsqAssessorSidebar";
+import {
+  useGetUnitCriteria,
+  useReviewUnitEvidence,
+  useSubmitUnitSignoff,
+} from "@/src/features/shared/applications/hooks";
+import React, { useEffect, useState } from "react";
+import { FiCheckCircle } from "react-icons/fi";
 import {
   LearningOutcomeAccordionItem,
   type UnitLearningOutcome,
 } from "./components/unit/LearningOutcomeAccordionItem";
 import {
-  ConfirmApproveEvidenceModal,
-  EvidenceApprovedSuccessModal,
-  RejectEvidenceModal,
   ConfirmAcceptObservationModal,
+  ConfirmApproveEvidenceModal,
+  ConfirmSignoffUnitModal,
+  EvidenceApprovedSuccessModal,
   ObservationAcceptedSuccessModal,
   ObservationRejectedSuccessModal,
+  RejectEvidenceModal,
+  UnitSignedOffSuccessModal,
 } from "./NsqAssessorModals";
 import {
   NsqAssessorObservationModal,
   type ObservationRequestDetails,
 } from "./NsqAssessorObservationModal";
-import {
-  useGetUnitCriteria,
-  useReviewUnitEvidence,
-} from "@/src/features/shared/applications/hooks";
+import { NsqAssessorSidebar } from "./NsqAssessorSidebar";
 
 interface NsqAssessorUnitDetailViewProps {
   unitId?: string;
@@ -68,13 +71,20 @@ export const NsqAssessorUnitDetailView: React.FC<
     applicationId,
     resolvedUnitId,
   );
+  const { mutateAsync: submitSignoffMutation, isPending: isSubmittingSignoff } =
+    useSubmitUnitSignoff(applicationId, resolvedUnitId);
 
-  const [learningOutcomes, setLearningOutcomes] = useState<UnitLearningOutcome[]>([]);
+  const [learningOutcomes, setLearningOutcomes] = useState<
+    UnitLearningOutcome[]
+  >([]);
   const [expandedLos, setExpandedLos] = useState<Record<string, boolean>>({});
   const [expandedPcs, setExpandedPcs] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    if (remoteCriteriaData?.criteria && remoteCriteriaData.criteria.length > 0) {
+    if (
+      remoteCriteriaData?.criteria &&
+      remoteCriteriaData.criteria.length > 0
+    ) {
       const groups: Record<string, { title: string; criteria: any[] }> = {};
       remoteCriteriaData.criteria.forEach((crit) => {
         const loKey = crit.learningObjectiveCode || "LO 1";
@@ -86,11 +96,6 @@ export const NsqAssessorUnitDetailView: React.FC<
           groups[loKey] = { title: loTitle, criteria: [] };
         }
 
-        // Per the backend contract, `latest` is the single live row for this
-        // criterion — `history` holds already-superseded submissions. Only
-        // the live row should be actionable here; rendering the full
-        // history would surface stale, already-reviewed rows as if they
-        // still needed a decision.
         const evidences = (crit.latest ? [crit.latest] : []).map((ev) => ({
           id: ev.id,
           name:
@@ -127,19 +132,45 @@ export const NsqAssessorUnitDetailView: React.FC<
         const firstCriterion = outcomeList[0].criteria[0];
         if (firstCriterion) {
           setExpandedPcs((prev) =>
-            Object.keys(prev).length > 0
-              ? prev
-              : { [firstCriterion.id]: true },
+            Object.keys(prev).length > 0 ? prev : { [firstCriterion.id]: true },
           );
         }
       }
     }
   }, [remoteCriteriaData]);
 
-  const [targetEvidence, setTargetEvidence] = useState<{ loId: string; pcId: string; evidenceId: string } | null>(null);
+  const [targetEvidence, setTargetEvidence] = useState<{
+    loId: string;
+    pcId: string;
+    evidenceId: string;
+  } | null>(null);
   const [isConfirmApproveOpen, setIsConfirmApproveOpen] = useState(false);
   const [isApproveSuccessOpen, setIsApproveSuccessOpen] = useState(false);
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
+
+  const allEvidence = learningOutcomes.flatMap((lo) =>
+    lo.criteria.flatMap((pc) => pc.evidences),
+  );
+  const hasEvidence = allEvidence.length > 0;
+  const allEvidenceApproved =
+    hasEvidence && allEvidence.every((ev) => ev.status === "approved");
+  const [isUnitSignedOff, setIsUnitSignedOff] = useState(false);
+  const [isConfirmSignoffOpen, setIsConfirmSignoffOpen] = useState(false);
+  const [isSignoffSuccessOpen, setIsSignoffSuccessOpen] = useState(false);
+
+  const handleConfirmSignoff = async () => {
+    setIsConfirmSignoffOpen(false);
+    try {
+      await submitSignoffMutation({
+        role: "unit_assessor",
+        signedAt: new Date().toISOString(),
+      });
+    } catch {
+      return;
+    }
+    setIsUnitSignedOff(true);
+    setIsSignoffSuccessOpen(true);
+  };
 
   const [isObsModalOpen, setIsObsModalOpen] = useState(false);
   const [isConfirmAcceptObsOpen, setIsConfirmAcceptObsOpen] = useState(false);
@@ -150,7 +181,11 @@ export const NsqAssessorUnitDetailView: React.FC<
     string[]
   >([]);
 
-  const handleInitiateApprove = (loId: string, pcId: string, evidenceId: string) => {
+  const handleInitiateApprove = (
+    loId: string,
+    pcId: string,
+    evidenceId: string,
+  ) => {
     setTargetEvidence({ loId, pcId, evidenceId });
     setIsConfirmApproveOpen(true);
   };
@@ -169,18 +204,34 @@ export const NsqAssessorUnitDetailView: React.FC<
     }
 
     setLearningOutcomes((prev) =>
-      prev.map((lo) => lo.id !== targetEvidence.loId ? lo : {
-        ...lo,
-        criteria: lo.criteria.map((pc) => pc.id !== targetEvidence.pcId ? pc : {
-          ...pc,
-          evidences: pc.evidences.map((ev) => ev.id === targetEvidence.evidenceId ? { ...ev, status: "approved" as const } : ev),
-        }),
-      }),
+      prev.map((lo) =>
+        lo.id !== targetEvidence.loId
+          ? lo
+          : {
+              ...lo,
+              criteria: lo.criteria.map((pc) =>
+                pc.id !== targetEvidence.pcId
+                  ? pc
+                  : {
+                      ...pc,
+                      evidences: pc.evidences.map((ev) =>
+                        ev.id === targetEvidence.evidenceId
+                          ? { ...ev, status: "approved" as const }
+                          : ev,
+                      ),
+                    },
+              ),
+            },
+      ),
     );
     setIsApproveSuccessOpen(true);
   };
 
-  const handleInitiateReject = (loId: string, pcId: string, evidenceId: string) => {
+  const handleInitiateReject = (
+    loId: string,
+    pcId: string,
+    evidenceId: string,
+  ) => {
     setTargetEvidence({ loId, pcId, evidenceId });
     setIsRejectModalOpen(true);
   };
@@ -199,13 +250,29 @@ export const NsqAssessorUnitDetailView: React.FC<
     }
 
     setLearningOutcomes((prev) =>
-      prev.map((lo) => lo.id !== targetEvidence.loId ? lo : {
-        ...lo,
-        criteria: lo.criteria.map((pc) => pc.id !== targetEvidence.pcId ? pc : {
-          ...pc,
-          evidences: pc.evidences.map((ev) => ev.id === targetEvidence.evidenceId ? { ...ev, status: "rejected" as const, feedback: reason } : ev),
-        }),
-      }),
+      prev.map((lo) =>
+        lo.id !== targetEvidence.loId
+          ? lo
+          : {
+              ...lo,
+              criteria: lo.criteria.map((pc) =>
+                pc.id !== targetEvidence.pcId
+                  ? pc
+                  : {
+                      ...pc,
+                      evidences: pc.evidences.map((ev) =>
+                        ev.id === targetEvidence.evidenceId
+                          ? {
+                              ...ev,
+                              status: "rejected" as const,
+                              feedback: reason,
+                            }
+                          : ev,
+                      ),
+                    },
+              ),
+            },
+      ),
     );
   };
 
@@ -249,20 +316,63 @@ export const NsqAssessorUnitDetailView: React.FC<
                 }
                 expandedPcs={expandedPcs}
                 onTogglePc={(pcId) =>
-                  setExpandedPcs((prev) =>
-                    prev[pcId] ? {} : { [pcId]: true },
-                  )
+                  setExpandedPcs((prev) => (prev[pcId] ? {} : { [pcId]: true }))
                 }
                 onApproveEvidence={handleInitiateApprove}
                 onRejectEvidence={handleInitiateReject}
               />
             ))}
+
+          
+            {!isLoadingCriteria && !isCriteriaError && hasEvidence && (
+              <div
+                className={`rounded-2xl p-5 border flex items-center justify-between gap-4 ${
+                  isUnitSignedOff
+                    ? "bg-[#1E7F4C]/5 border-[#1E7F4C]/30"
+                    : "bg-white border-gray-100 shadow-xs"
+                }`}
+              >
+                <div className="flex flex-col gap-0.5">
+                  <h4 className="text-sm font-bold text-neutral-primary">
+                    {isUnitSignedOff ? "Unit Signed Off" : "Unit Sign-Off"}
+                  </h4>
+                  <p className="text-xs text-neutral-secondary">
+                    {isUnitSignedOff
+                      ? "You've verified this unit's evidence as the assigned assessor."
+                      : allEvidenceApproved
+                        ? "All evidence in this unit is approved — confirm your sign-off to verify it."
+                        : "All evidence must be approved before this unit can be signed off."}
+                  </p>
+                </div>
+
+                {isUnitSignedOff ? (
+                  <span className="flex items-center gap-1.5 text-[#1E7F4C] font-bold text-xs shrink-0">
+                    <FiCheckCircle className="w-4 h-4" />
+                    Signed
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={!allEvidenceApproved || isSubmittingSignoff}
+                    onClick={() => setIsConfirmSignoffOpen(true)}
+                    className="px-5 py-2.5 bg-[#fbab2a] hover:bg-[#e89b1f] disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-xs sm:text-sm rounded-xl shadow-md cursor-pointer transition-all shrink-0"
+                  >
+                    Sign Off Unit
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Right Column: Reusable Sidebar */}
           <div className="lg:col-span-4 w-full">
             <NsqAssessorSidebar
-              candidate={{ name: candidateName, email: candidateEmail, phone: candidatePhone, photoUrl: candidatePhotoUrl }}
+              candidate={{
+                name: candidateName,
+                email: candidateEmail,
+                phone: candidatePhone,
+                photoUrl: candidatePhotoUrl,
+              }}
               observation={observation}
               onOpenObservationModal={() => setIsObsModalOpen(true)}
               onFillObservationForm={onFillObservationForm}
@@ -276,8 +386,26 @@ export const NsqAssessorUnitDetailView: React.FC<
         onClose={() => setIsConfirmApproveOpen(false)}
         onConfirm={handleConfirmApprove}
       />
-      <EvidenceApprovedSuccessModal isOpen={isApproveSuccessOpen} onClose={() => setIsApproveSuccessOpen(false)} />
-      <RejectEvidenceModal isOpen={isRejectModalOpen} onClose={() => setIsRejectModalOpen(false)} onSubmit={handleConfirmReject} />
+      <EvidenceApprovedSuccessModal
+        isOpen={isApproveSuccessOpen}
+        onClose={() => setIsApproveSuccessOpen(false)}
+      />
+      <RejectEvidenceModal
+        isOpen={isRejectModalOpen}
+        onClose={() => setIsRejectModalOpen(false)}
+        onSubmit={handleConfirmReject}
+      />
+
+      <ConfirmSignoffUnitModal
+        isOpen={isConfirmSignoffOpen}
+        onClose={() => setIsConfirmSignoffOpen(false)}
+        onConfirm={handleConfirmSignoff}
+        unitLabel={unitNumber}
+      />
+      <UnitSignedOffSuccessModal
+        isOpen={isSignoffSuccessOpen}
+        onClose={() => setIsSignoffSuccessOpen(false)}
+      />
 
       {observation && (
         <NsqAssessorObservationModal
@@ -325,8 +453,14 @@ export const NsqAssessorUnitDetailView: React.FC<
         subtitle="Let the candidate know why this request is being rejected"
         submitLabel="Reject Request"
       />
-      <ObservationAcceptedSuccessModal isOpen={isAcceptObsSuccessOpen} onClose={() => setIsAcceptObsSuccessOpen(false)} />
-      <ObservationRejectedSuccessModal isOpen={isRejectObsSuccessOpen} onClose={() => setIsRejectObsSuccessOpen(false)} />
+      <ObservationAcceptedSuccessModal
+        isOpen={isAcceptObsSuccessOpen}
+        onClose={() => setIsAcceptObsSuccessOpen(false)}
+      />
+      <ObservationRejectedSuccessModal
+        isOpen={isRejectObsSuccessOpen}
+        onClose={() => setIsRejectObsSuccessOpen(false)}
+      />
     </div>
   );
 };
