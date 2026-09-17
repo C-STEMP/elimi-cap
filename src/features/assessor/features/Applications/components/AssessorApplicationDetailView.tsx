@@ -20,6 +20,7 @@ import {
 import { CandidateApplicationFormView } from "./CandidateApplicationFormView";
 import { AssessorEvidenceVaultView } from "./evidence-vault";
 import { AssessorAssessmentFormView } from "./assessment-forms";
+import { SelfAssessmentFormView } from "@/src/features/assessment-centre/features/Applications/components/SelfAssessmentFormView";
 import type {
   AssessorApplicationRecord,
 } from "../types/applications.types";
@@ -47,7 +48,8 @@ export type AssessorDetailSubView =
   | "stages"
   | "application_form"
   | "evidence_vault"
-  | "assessment_form";
+  | "assessment_form"
+  | "self_assessment_form";
 
 interface AssessorApplicationDetailViewProps {
   application: AssessorApplicationRecord;
@@ -488,6 +490,7 @@ export const AssessorApplicationDetailView: React.FC<
         applicationId={application.id}
         candidateName={application.candidateName}
         onBack={() => setSubView("stages")}
+        onViewSelfAssessment={() => setSubView("self_assessment_form")}
         onAllApprovedChange={onAllApprovedChange}
         onMarkAsComplete={onMarkAsComplete}
         triggerMarkComplete={triggerMarkComplete}
@@ -507,6 +510,18 @@ export const AssessorApplicationDetailView: React.FC<
         isReadOnly={isAssessmentFormReadOnly}
         applicationTrade={application.trade || appDetail?.trade?.name || ""}
       />
+    );
+  }
+
+  if (subView === "self_assessment_form") {
+    return (
+      <div className="w-full max-w-5xl mx-auto py-6 px-4 sm:px-6">
+        <SelfAssessmentFormView
+          id={application.id}
+          candidateName={application.candidateName}
+          onBack={() => setSubView("evidence_vault")}
+        />
+      </div>
     );
   }
 
@@ -673,7 +688,7 @@ export const AssessorApplicationDetailView: React.FC<
             (pendingSignatures && pendingSignatures.length > 0)
           )}
           onViewForm={(form) => {
-            router.push(`/applications/${application.id}/assessment-forms/${form.id}`);
+            router.push(`/applications/${application.id}/assessment-forms/${form.id}?from=assessor`);
           }}
         />
       </div>

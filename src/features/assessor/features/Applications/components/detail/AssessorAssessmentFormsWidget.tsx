@@ -56,7 +56,7 @@ export const AssessorAssessmentFormsWidget: React.FC<
     if (onViewForm) {
       onViewForm(form);
     } else if (applicationId) {
-      router.push(`/applications/${applicationId}/assessment-forms/${form.id}`);
+      router.push(`/applications/${applicationId}/assessment-forms/${form.id}?from=assessor`);
     } else {
       toast({
         type: "info",

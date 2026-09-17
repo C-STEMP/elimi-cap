@@ -87,7 +87,15 @@ export const AssessorEvidenceVaultView: React.FC<
     const combined: any[] = [];
     const seen = new Set<string>();
 
-    (remoteEvidence || []).forEach((e: any) => {
+    // Self-assessment and third-party report records are structured form
+    // data, not uploaded files — they have no resolvable URL/assetId and no
+    // matching GeneralEvidence record, so previewing/approving them here
+    // always fails. They're already surfaced via the Resources section above.
+    const isGeneralEvidence = (e: any) =>
+      e.kind === "general" ||
+      (!e.kind && (e.documentName || e.name || e.assetId));
+
+    (remoteEvidence || []).filter(isGeneralEvidence).forEach((e: any) => {
       const docName =
         e.documentName ||
         e.name ||
@@ -101,7 +109,7 @@ export const AssessorEvidenceVaultView: React.FC<
       }
     });
 
-    localItems.forEach((e: any) => {
+    localItems.filter(isGeneralEvidence).forEach((e: any) => {
       const docName =
         e.documentName ||
         e.name ||
@@ -123,11 +131,7 @@ export const AssessorEvidenceVaultView: React.FC<
           e.title ||
           e.filename ||
           e.originalName ||
-          (e.kind === "self_assessment"
-            ? "Self-Assessment Document"
-            : e.kind === "third_party_report"
-              ? "Third Party Report"
-              : `Evidence Item ${idx + 1}`);
+          `Evidence Item ${idx + 1}`;
 
         const itemKey = e.id || e.assetId || docName;
         const extraFeedback =
