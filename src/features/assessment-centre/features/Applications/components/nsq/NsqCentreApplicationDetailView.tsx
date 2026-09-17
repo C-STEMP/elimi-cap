@@ -31,6 +31,7 @@ import {
   useGetPaymentQuote,
   useGetApplicationReceipt,
   useGetUnitCriteria,
+  APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
 } from "@/src/features/shared/applications/hooks";
 import { formatCurrency } from "@/src/utils/currency";
 import { NsqAssessorObservationFormsView } from "@/src/features/assessor/features/Applications/components/nsq/NsqAssessorObservationFormsView";
@@ -266,7 +267,9 @@ export const NsqCentreApplicationDetailView: React.FC<
   const [isObservationFormOpen, setIsObservationFormOpen] = useState<boolean>(false);
 
   // Real workflow stages — GET /applications/{id}/stages.
-  const { data: stagesData } = useGetApplicationStages(application?.id || "");
+  const { data: stagesData } = useGetApplicationStages(application?.id || "", {
+    refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
+  });
   const applicationFormStage = stagesData?.find((s) => s.stageKey === "application_form");
   const paymentStage = stagesData?.find((s) => s.stageKey === "payment");
 

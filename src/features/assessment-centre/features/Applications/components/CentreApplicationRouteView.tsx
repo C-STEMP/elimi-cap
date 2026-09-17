@@ -12,6 +12,7 @@ import { SelfAssessmentFormView } from "@/src/features/assessment-centre/feature
 import { AssessmentCentreHeader } from "@/src/features/assessment-centre/features/Dashboard/components/AssessmentCentreHeader";
 import {
   APPLICATION_QUERY_KEYS,
+  APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
   useGetApplicationById,
   useGetApplicationStages,
   useReviewApplication,
@@ -32,8 +33,12 @@ export const CentreApplicationRouteView: React.FC<{ id: string }> = ({
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { data: application, isLoading } = useGetApplicationById(id);
-  const { data: stagesData } = useGetApplicationStages(id);
+  const { data: application, isLoading } = useGetApplicationById(id, {
+    refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
+  });
+  const { data: stagesData } = useGetApplicationStages(id, {
+    refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
+  });
   const reviewMutation = useReviewApplication();
 
   const [showCandidateForm, setShowCandidateForm] = useState(false);

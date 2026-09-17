@@ -36,7 +36,10 @@ import {
   useReviewDirectObservation,
   useReviewApplication,
 } from "@/src/features/shared/applications/hooks";
-import { APPLICATION_QUERY_KEYS } from "@/src/features/shared/applications/hooks/queryKeys";
+import {
+  APPLICATION_QUERY_KEYS,
+  APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
+} from "@/src/features/shared/applications/hooks/queryKeys";
 import { submitUnitSignoffApi } from "@/src/features/shared/applications/api";
 import {
   useGetTradeDetail,
@@ -134,7 +137,9 @@ export const NsqAssessorApplicationDetailView: React.FC<
 
   // Full application detail — same query key as the route view that fetched
   // this application, so it's served from cache rather than refetched.
-  const { data: apiApp, isLoading: isLoadingApp } = useGetApplicationById(application.id);
+  const { data: apiApp, isLoading: isLoadingApp } = useGetApplicationById(application.id, {
+    refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
+  });
   const { data: inductionForm } = useGetInductionForm(application.id);
 
   const tradeId = apiApp?.tradeId || "";

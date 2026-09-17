@@ -10,7 +10,10 @@ import {
   useGetPaymentQuote, useGetApplicationReceipt,
 } from "./useApplication";
 import { useGetInterviewSchedule, useGetInterviewPanel, useGetInterviewForms } from "@/src/features/shared/applications/hooks";
-import { APPLICATION_QUERY_KEYS } from "@/src/features/shared/applications/hooks/useApplication";
+import {
+  APPLICATION_QUERY_KEYS,
+  APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
+} from "@/src/features/shared/applications/hooks/useApplication";
 import { getFolderArrangementStatus, getFormStatus, getStagesConfig } from "../utils/constants";
 import {
   statusToFormState, resolveTradeName, buildFacilitatorData,
@@ -42,8 +45,12 @@ export function useApplicationDetailsState(id?: string) {
   const [isAppealModalOpen, setIsAppealModalOpen] = useState(false);
 
   const authUser = useAppSelector((state) => state.auth.user);
-  const { data: apiApp, isLoading } = useGetApplicationById(id || "");
-  const { data: stagesData } = useGetApplicationStages(id || "");
+  const { data: apiApp, isLoading } = useGetApplicationById(id || "", {
+    refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
+  });
+  const { data: stagesData } = useGetApplicationStages(id || "", {
+    refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
+  });
 
   const paymentStage = stagesData?.find((s) => s.stageKey === "payment" || s.stageKey === "payment_quote");
   const isPaymentPaid = isPaymentConfirmed || paymentStage?.status === "successful" || Boolean((apiApp as any)?.paymentCompleted);

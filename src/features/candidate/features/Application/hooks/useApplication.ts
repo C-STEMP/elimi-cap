@@ -23,16 +23,22 @@ export function useGetApplications(status?: ApplicationStatus) {
   return useSharedGetApplications(status);
 }
 
-export function useGetApplicationById(id: string) {
-  return useSharedGetApplicationById(id);
+export function useGetApplicationById(
+  id: string,
+  options?: { refetchInterval?: number | false },
+) {
+  return useSharedGetApplicationById(id, options);
 }
 
 export function useSubmitApplication() {
   return useSharedSubmitApplication();
 }
 
-export function useGetApplicationStages(id: string) {
-  return useSharedGetApplicationStages(id);
+export function useGetApplicationStages(
+  id: string,
+  options?: { refetchInterval?: number | false },
+) {
+  return useSharedGetApplicationStages(id, options);
 }
 
 export function useInitiateApplicationPayment() {

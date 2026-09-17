@@ -136,6 +136,9 @@ export function useSubmitUnitEvidence(applicationId: string, unitId: string) {
       queryClient.invalidateQueries({
         queryKey: APPLICATION_QUERY_KEYS.detail(applicationId),
       });
+      queryClient.invalidateQueries({
+        queryKey: APPLICATION_QUERY_KEYS.stages(applicationId),
+      });
       toast({
         type: "success",
         title: "Evidence Recorded",
@@ -177,6 +180,12 @@ export function useReviewUnitEvidence(applicationId: string, unitId: string) {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: APPLICATION_QUERY_KEYS.unitCriteria(applicationId, unitId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: APPLICATION_QUERY_KEYS.detail(applicationId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: APPLICATION_QUERY_KEYS.stages(applicationId),
       });
       toast({
         type: "success",
@@ -223,6 +232,9 @@ export function useSubmitUnitSignoff(applicationId: string, unitId: string) {
       queryClient.invalidateQueries({
         queryKey: APPLICATION_QUERY_KEYS.detail(applicationId),
       });
+      queryClient.invalidateQueries({
+        queryKey: APPLICATION_QUERY_KEYS.stages(applicationId),
+      });
       toast({
         type: "success",
         title: "Unit Signed Off",
@@ -260,6 +272,9 @@ export function useAssignUnitAssessor(applicationId: string, unitId: string) {
       queryClient.invalidateQueries({
         queryKey: APPLICATION_QUERY_KEYS.detail(applicationId),
       });
+      queryClient.invalidateQueries({
+        queryKey: APPLICATION_QUERY_KEYS.stages(applicationId),
+      });
       toast({
         type: "success",
         title: "Unit Assessor Assigned",
@@ -296,6 +311,9 @@ export function useAssignNsqAssessor(applicationId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: APPLICATION_QUERY_KEYS.detail(applicationId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: APPLICATION_QUERY_KEYS.stages(applicationId),
       });
       toast({
         type: "success",
@@ -368,6 +386,9 @@ export function useScheduleDirectObservation(applicationId: string) {
       queryClient.invalidateQueries({
         queryKey: APPLICATION_QUERY_KEYS.detail(applicationId),
       });
+      queryClient.invalidateQueries({
+        queryKey: APPLICATION_QUERY_KEYS.stages(applicationId),
+      });
       toast({
         type: "success",
         title: "Observation Scheduled",
@@ -416,6 +437,9 @@ export function useReviewDirectObservation(
       });
       queryClient.invalidateQueries({
         queryKey: APPLICATION_QUERY_KEYS.detail(applicationId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: APPLICATION_QUERY_KEYS.stages(applicationId),
       });
       toast({
         type: "success",
@@ -512,6 +536,12 @@ export function useSignDirectObservation(
       });
       queryClient.invalidateQueries({
         queryKey: APPLICATION_QUERY_KEYS.directObservations(applicationId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: APPLICATION_QUERY_KEYS.detail(applicationId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: APPLICATION_QUERY_KEYS.stages(applicationId),
       });
       toast({
         type: "success",

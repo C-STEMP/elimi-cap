@@ -8,6 +8,7 @@ import {
   useGetApplicationHistory,
   useGetInterviewSchedule,
   useGetInterviewPanel,
+  APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
 } from "@/src/features/shared/applications/hooks";
 import {
   useGetCentreAssessors,
@@ -20,8 +21,12 @@ import { computeStageCalculations } from "../utils/detailHelpers";
 export function useApplicationDetailState(id: string, candidateNameProp = "Candidate") {
   const { toast } = useToast();
 
-  const { data: appDetail, isLoading: isLoadingDetail } = useGetApplicationById(id);
-  const { data: stages = [] } = useGetApplicationStages(id);
+  const { data: appDetail, isLoading: isLoadingDetail } = useGetApplicationById(id, {
+    refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
+  });
+  const { data: stages = [] } = useGetApplicationStages(id, {
+    refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
+  });
 
   const isInterviewStage = Boolean(
     appDetail?.currentStageKey === "interview" ||

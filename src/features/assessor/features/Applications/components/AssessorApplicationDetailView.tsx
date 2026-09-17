@@ -31,6 +31,7 @@ import {
   useEvaluateInterview,
   useGetInterviewPanel,
   useResolveAppeal,
+  APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
 } from "@/src/features/shared/applications/hooks";
 import {
   reviewIvApi,
@@ -73,8 +74,12 @@ export const AssessorApplicationDetailView: React.FC<
 }) => {
   const router = useRouter();
   const { toast } = useToast();
-  const { data: appDetail } = useGetApplicationById(application.id);
-  const { data: stagesData } = useGetApplicationStages(application.id);
+  const { data: appDetail } = useGetApplicationById(application.id, {
+    refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
+  });
+  const { data: stagesData } = useGetApplicationStages(application.id, {
+    refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
+  });
   const isInterviewStage = Boolean(
     appDetail?.currentStageKey === "interview" ||
     (appDetail as any)?.stage === "interview" ||

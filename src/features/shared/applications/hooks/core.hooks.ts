@@ -72,11 +72,15 @@ export function useGetApplications(
   });
 }
 
-export function useGetApplicationById(id: string) {
+export function useGetApplicationById(
+  id: string,
+  options?: { refetchInterval?: number | false },
+) {
   return useQuery({
     queryKey: APPLICATION_QUERY_KEYS.detail(id),
     queryFn: () => getApplicationByIdApi(id),
     enabled: Boolean(id),
+    refetchInterval: options?.refetchInterval,
   });
 }
 
@@ -90,6 +94,9 @@ export function useSubmitApplication() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({
         queryKey: APPLICATION_QUERY_KEYS.detail(data.id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: APPLICATION_QUERY_KEYS.stages(data.id),
       });
       queryClient.invalidateQueries({ queryKey: APPLICATION_QUERY_KEYS.all });
       toast({
@@ -146,11 +153,15 @@ export function useGetApplicationHistory(id: string) {
   });
 }
 
-export function useGetApplicationStages(id: string) {
+export function useGetApplicationStages(
+  id: string,
+  options?: { refetchInterval?: number | false },
+) {
   return useQuery({
     queryKey: APPLICATION_QUERY_KEYS.stages(id),
     queryFn: () => getApplicationStagesApi(id),
     enabled: Boolean(id),
+    refetchInterval: options?.refetchInterval,
   });
 }
 
