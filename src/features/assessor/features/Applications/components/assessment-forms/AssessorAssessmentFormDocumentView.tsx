@@ -24,6 +24,11 @@ interface AssessorAssessmentFormDocumentViewProps {
   isCandidate?: boolean;
   formRecord?: InterviewForm | null;
   applicationTrade?: string;
+  // Signing is an "interview stage" action on the backend — once the
+  // application has moved past that stage, signing always fails. Defaults
+  // to true so callers that don't track stage (e.g. the public shared
+  // dossier view) keep their existing behaviour.
+  isInterviewStage?: boolean;
 }
 
 const FORM_TITLES: Record<string, { title: string; subtitle: string; code: string }> = {
@@ -94,6 +99,7 @@ export const AssessorAssessmentFormDocumentView: React.FC<
   isCandidate = false,
   formRecord,
   applicationTrade,
+  isInterviewStage = true,
 }) => {
   const { toast } = useToast();
   const user = useAppSelector((state) => state.auth.user);
@@ -147,15 +153,15 @@ export const AssessorAssessmentFormDocumentView: React.FC<
   const isMatchIV = Boolean(ivMember && isMemberMatch(ivMember));
   const isMatchPanelMember = Boolean(panelMember && isMemberMatch(panelMember));
 
-  const canSignLead = isAssessorUser && (
+  const canSignLead = isAssessorUser && isInterviewStage && (
     leadMember ? isMatchLead : true
   );
 
-  const canSignPanelMember = isAssessorUser && (
+  const canSignPanelMember = isAssessorUser && isInterviewStage && (
     panelMember ? isMatchPanelMember : (!isMatchLead && !isMatchIV)
   );
 
-  const canSignIV = isAssessorUser && (
+  const canSignIV = isAssessorUser && isInterviewStage && (
     ivMember
       ? isMatchIV
       : user?.role?.toLowerCase()?.includes("iv") ||
@@ -254,7 +260,7 @@ export const AssessorAssessmentFormDocumentView: React.FC<
         </button>
 
         <div className="flex items-center gap-2 sm:gap-3 shrink-0 flex-wrap justify-end">
-          {isCandidate && !isCandidateSigned && (
+          {isCandidate && !isCandidateSigned && isInterviewStage && (
             <button
               type="button"
               onClick={() => setIsCandidateSignModalOpen(true)}
@@ -378,7 +384,7 @@ export const AssessorAssessmentFormDocumentView: React.FC<
                   <FiCheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                   <span>Signed · {new Date(formData?.candidateSignedAt || formRecord?.candidateSignedAt || Date.now()).toLocaleDateString("en-GB")}</span>
                 </div>
-              ) : isCandidate ? (
+              ) : isCandidate && isInterviewStage ? (
                 <button
                   type="button"
                   onClick={() => setIsCandidateSignModalOpen(true)}

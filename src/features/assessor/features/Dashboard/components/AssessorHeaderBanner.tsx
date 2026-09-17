@@ -51,7 +51,8 @@ interface AssessorHeaderBannerProps {
     | "stages"
     | "application_form"
     | "evidence_vault"
-    | "assessment_form";
+    | "assessment_form"
+    | "self_assessment_form";
   canMarkAsComplete?: boolean;
   onMarkAsComplete?: () => void;
   onBackFromApplication?: () => void;
@@ -497,7 +498,9 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
                           ? "Evidence Vault"
                           : applicationSubView === "application_form"
                             ? "Application Form"
-                            : selectedApplicationName}
+                            : applicationSubView === "self_assessment_form"
+                              ? "Self-Assessment Form"
+                              : selectedApplicationName}
                     </span>
                   </button>
                   <div className="flex items-center gap-2 text-xs sm:text-sm text-white/90 font-normal">
@@ -538,7 +541,9 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
                         <span className="font-semibold text-white">
                           {applicationSubView === "evidence_vault"
                             ? "Evidence Vault"
-                            : "Application Form"}
+                            : applicationSubView === "self_assessment_form"
+                              ? "Self-Assessment Form"
+                              : "Application Form"}
                         </span>
                       </>
                     )}

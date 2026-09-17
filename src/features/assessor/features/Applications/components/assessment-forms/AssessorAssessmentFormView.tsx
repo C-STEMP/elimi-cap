@@ -64,6 +64,11 @@ export const AssessorAssessmentFormView: React.FC<
     (typeof (applicationData as any)?.trade === "string" ? (applicationData as any).trade : "") ||
     "";
 
+  // Signing these forms is an "interview stage" action on the backend — once
+  // the application has moved on (e.g. to external verification), signing
+  // always fails, so the sign controls must not be offered any more.
+  const isInterviewStage = applicationData?.currentStageKey === "interview";
+
   const formType = FORM_MAP[formId] || "records";
   const { data: remoteForms } = useGetInterviewForms(applicationId);
   const updateFormMutation = useUpdateInterviewForm(applicationId);
@@ -120,6 +125,7 @@ export const AssessorAssessmentFormView: React.FC<
         isCandidate={effectiveIsCandidate}
         formRecord={matchedRemoteForm}
         applicationTrade={resolvedTrade}
+        isInterviewStage={isInterviewStage}
       />
     );
   }

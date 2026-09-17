@@ -92,7 +92,8 @@ export default function AssessmentFormDedicatedRoutePage() {
 
   const fromParam = searchParams.get("from");
   const isCandidateUser = Boolean(
-    fromParam === "candidate" ||
+    fromParam !== "assessor" &&
+    (fromParam === "candidate" ||
     user?.role?.toLowerCase() === "candidate" ||
       (application &&
         ((application.candidateId && user?.id === application.candidateId) ||
@@ -104,7 +105,7 @@ export default function AssessmentFormDedicatedRoutePage() {
       (!user?.role?.toLowerCase()?.includes("assessor") &&
        !user?.role?.toLowerCase()?.includes("centre") &&
        !user?.role?.toLowerCase()?.includes("center") &&
-       !user?.role?.toLowerCase()?.includes("admin")),
+       !user?.role?.toLowerCase()?.includes("admin"))),
   );
 
   const leadMember = interviewPanel?.members?.find((m: any) => m.isLead);
@@ -148,6 +149,10 @@ export default function AssessmentFormDedicatedRoutePage() {
   const isReadOnly = isCandidateUser || isUserIV || !isUserLeadPanelist;
 
   const handleBack = () => {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+      return;
+    }
     if (isCandidateUser || fromParam === "candidate") {
       router.push(`/applications/${id}`);
     } else {
