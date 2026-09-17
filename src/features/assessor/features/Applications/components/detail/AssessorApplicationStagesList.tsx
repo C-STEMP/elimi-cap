@@ -7,8 +7,6 @@ import type {
   AssessorApplicationRecord,
 } from "../../types/applications.types";
 
-import { ASSETS_URL } from "@/src/assets";
-import { Avatar } from "@/src/components/ui/avatar";
 import {
   useGetInterviewPanel,
   useGetApplicationStages,
@@ -196,8 +194,22 @@ export const AssessorApplicationStagesList: React.FC<
 
   const isUserIv = isUserIV || application.role === "Internal Verifier";
   const isUserEv = application.role === "External Verifier";
-  const isIvActive = isInterviewDone || isUserIv;
-  const isEvActive = isIvDone || isUserEv;
+  const isIvActive = ivStageRow
+    ? ivStageRow.status !== "not_started"
+    : isInterviewDone;
+  const isEvActive = evStageRow
+    ? evStageRow.status !== "not_started"
+    : isIvDone;
+
+  const rawInterviewStatus = interviewStageRow?.status;
+  const hasRecordedOutcome = interviewOutcome !== "ongoing";
+  const isInterviewNotStarted = !hasRecordedOutcome && rawInterviewStatus === "not_started";
+  const isInterviewOnlyScheduled = !hasRecordedOutcome && rawInterviewStatus === "scheduled";
+  const isInterviewNotYetActionable = Boolean(
+    interviewStageRow &&
+    (rawInterviewStatus === "not_started" || rawInterviewStatus === "scheduled") &&
+    !hasRecordedOutcome,
+  );
 
   const currentInterviewStatus = isInterviewDone
     ? "Competent"
@@ -207,7 +219,11 @@ export const AssessorApplicationStagesList: React.FC<
         ? "Inconclusive"
         : interviewOutcome === "awaiting_signature"
           ? "Awaiting Signature"
-          : "Ongoing";
+          : isInterviewNotStarted
+            ? "Not Started"
+            : isInterviewOnlyScheduled
+              ? "Interview Scheduled"
+              : "Ongoing";
 
   const currentInterviewBadgeType = isInterviewDone
     ? "competent"
@@ -217,7 +233,11 @@ export const AssessorApplicationStagesList: React.FC<
         ? "inconclusive"
         : interviewOutcome === "awaiting_signature"
           ? "awaiting_signature"
-          : "ongoing";
+          : isInterviewNotStarted
+            ? "not_started"
+            : isInterviewOnlyScheduled
+              ? "interview_scheduled"
+              : "ongoing";
 
   const formatFriendlyDate = (dateStr?: string | null): string => {
     if (!dateStr) return "";
@@ -314,7 +334,7 @@ export const AssessorApplicationStagesList: React.FC<
       assessors: panelMembers,
       inconclusiveDetails: interviewFeedback || undefined,
       actionButton:
-        !isInterviewDone && isUserPanelMember && !isUserLeadPanelist && onMarkCandidateCompetent
+        !isInterviewDone && !isInterviewNotYetActionable && isUserPanelMember && !isUserLeadPanelist && onMarkCandidateCompetent
           ? (hasPendingSignaturesInfo && !isCurrentUserInPending
               ? {
                   label: "Evaluation Recorded",
@@ -358,7 +378,7 @@ export const AssessorApplicationStagesList: React.FC<
           ? `Started on: ${formatFriendlyDate(application.submittedAt || "2026-07-23")}`
           : "---",
       actionButton:
-        !isIvDone && isUserIv && onMarkCompetent
+        !isIvDone && isIvActive && isUserIv && onMarkCompetent
           ? {
               label: "Mark as Competent",
               variant: "amber",
@@ -378,7 +398,7 @@ export const AssessorApplicationStagesList: React.FC<
           ? `Started on: ${formatFriendlyDate(application.submittedAt || "2026-08-15")}`
           : "---",
       actionButton:
-        !isEvDone && isUserEv && isIvDone && onMarkEvCompetent
+        !isEvDone && isEvActive && isIvDone && isUserEv && onMarkEvCompetent
           ? {
               label: "Mark as Competent",
               variant: "amber",
