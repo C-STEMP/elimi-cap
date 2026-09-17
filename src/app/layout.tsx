@@ -3,6 +3,8 @@ import { Inter, Work_Sans } from "next/font/google";
 import { AntdRegistry } from "@ant-design/nextjs-registry";
 import { AntdProvider } from "@/src/components/ui/antd-provider";
 import { ToastProvider } from "@/src/components/ui/toast";
+import { UpdateBanner } from "@/src/components/ui/update-banner";
+import { NetworkStatusBanner } from "@/src/components/ui/network-status-banner";
 import { ReduxProvider } from "@/store/provider";
 import { RouteGuard } from "@/src/components/auth/RouteGuard";
 import "./globals.css";
@@ -147,6 +149,10 @@ export default function RootLayout({
         className="min-h-screen flex flex-col bg-white font-sans text-dark"
         suppressHydrationWarning
       >
+        <div className="sticky top-0 z-[70] flex flex-col">
+          <NetworkStatusBanner />
+          <UpdateBanner />
+        </div>
         <ReduxProvider>
           <AntdRegistry>
             <AntdProvider>
