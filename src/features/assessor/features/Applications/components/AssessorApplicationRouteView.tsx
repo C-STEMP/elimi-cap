@@ -2,7 +2,10 @@
 
 import React, { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { useGetApplicationById } from "@/src/features/shared/applications/hooks";
+import {
+  useGetApplicationById,
+  APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
+} from "@/src/features/shared/applications/hooks";
 import { AssessorHeaderBanner } from "@/src/features/assessor/features/Dashboard/components/AssessorHeaderBanner";
 import {
   AssessorApplicationDetailView,
@@ -18,7 +21,9 @@ export const AssessorApplicationRouteView: React.FC<{ id: string }> = ({
 }) => {
   const router = useRouter();
   const user = useAppSelector((state) => state.auth.user);
-  const { data: application, isLoading } = useGetApplicationById(id);
+  const { data: application, isLoading } = useGetApplicationById(id, {
+    refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
+  });
 
   const [applicationSubView, setApplicationSubView] =
     useState<AssessorDetailSubView>("stages");

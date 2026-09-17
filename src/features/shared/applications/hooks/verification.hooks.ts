@@ -67,6 +67,9 @@ export function useResolveAppeal(id: string) {
       queryClient.invalidateQueries({
         queryKey: APPLICATION_QUERY_KEYS.detail(id),
       });
+      queryClient.invalidateQueries({
+        queryKey: APPLICATION_QUERY_KEYS.stages(id),
+      });
       toast({
         type: "success",
         title: "Appeal Resolved",
@@ -110,6 +113,9 @@ export function useCloseRecommendations(id: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: APPLICATION_QUERY_KEYS.detail(id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: APPLICATION_QUERY_KEYS.stages(id),
       });
       toast({
         type: "success",

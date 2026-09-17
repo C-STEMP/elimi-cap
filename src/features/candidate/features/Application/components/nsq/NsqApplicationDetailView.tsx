@@ -30,7 +30,10 @@ import {
   useGetPaymentQuote,
   useGetApplicationReceipt,
 } from "@/src/features/shared/applications/hooks";
-import { APPLICATION_QUERY_KEYS } from "@/src/features/shared/applications/hooks/queryKeys";
+import {
+  APPLICATION_QUERY_KEYS,
+  APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
+} from "@/src/features/shared/applications/hooks/queryKeys";
 import {
   useGetTradeDetail,
   useGetUnitsByTrade,
@@ -103,7 +106,9 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
   const appId = application?.id || "nsq";
 
   // Real workflow stages from the backend (GET /applications/{id}/stages).
-  const { data: stagesData } = useGetApplicationStages(application?.id || "");
+  const { data: stagesData } = useGetApplicationStages(application?.id || "", {
+    refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
+  });
 
   const applicationFormStage = stagesData?.find((s) => s.stageKey === "application_form");
   const paymentStage = stagesData?.find((s) => s.stageKey === "payment");

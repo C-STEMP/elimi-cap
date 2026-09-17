@@ -12,6 +12,7 @@ import { Avatar } from "@/src/components/ui/avatar";
 import {
   useGetInterviewPanel,
   useGetApplicationStages,
+  APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
 } from "@/src/features/shared/applications/hooks";
 import type { AssessorPanelMember } from "../../types/applications.types";
 
@@ -63,7 +64,9 @@ export const AssessorApplicationStagesList: React.FC<
   pendingSignatures,
   isCurrentUserInPending = false,
 }) => {
-  const { data: stagesData } = useGetApplicationStages(application.id);
+  const { data: stagesData } = useGetApplicationStages(application.id, {
+    refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
+  });
   const isInterviewStage = Boolean(
     application.currentStageKey === "interview" ||
     (application as any).stage === "interview" ||
