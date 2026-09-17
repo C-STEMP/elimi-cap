@@ -17,6 +17,7 @@ import { validateNIN } from "@/src/lib/validation";
 import { useOnboarding } from "@/src/features/candidate/features/Onboarding/hooks";
 import { saveCandidateOnboardingApi } from "@/src/features/candidate/features/Onboarding/api";
 import { verifyIdentityApi } from "@/src/features/shared/onboarding/api";
+import { useGetMe } from "@/src/features/shared/account/hooks";
 
 export const CandidateVerifyIdentity: React.FC = () => {
   const router = useRouter();
@@ -24,6 +25,8 @@ export const CandidateVerifyIdentity: React.FC = () => {
   const { toast } = useToast();
   const { submitOnboarding } = useOnboarding();
   const saved = useAppSelector((s) => s.onboarding.rplIdentity);
+  const authUser = useAppSelector((s) => s.auth.user);
+  const { data: meData } = useGetMe();
 
   const [nin, setNin] = useState(saved.nin || "");
   const [error, setError] = useState<string | undefined>(undefined);
@@ -44,6 +47,21 @@ export const CandidateVerifyIdentity: React.FC = () => {
       setIsVerified(saved.isVerified);
     }
   }, [saved]);
+
+  // The account may already have a verified identity from a different
+  // persona (e.g. a centre owner onboarding as an assessor) — in that case
+  // NIN verification has already happened and must not be repeated.
+  const isIdentityAlreadyVerified = Boolean(
+    meData?.identityVerified || authUser?.isVerified,
+  );
+  useEffect(() => {
+    if (isIdentityAlreadyVerified) {
+      dispatch(setRPLIdentity({ isVerified: true }));
+      dispatch(markVerified());
+    }
+  }, [isIdentityAlreadyVerified, dispatch]);
+
+  const effectiveIsVerified = isVerified || isIdentityAlreadyVerified;
 
   const handleStartVerification = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -167,7 +185,7 @@ export const CandidateVerifyIdentity: React.FC = () => {
           National Identification Number
         </label>
 
-        {isVerified ? (
+        {effectiveIsVerified ? (
           <div className="w-full p-4 bg-[#E8F5E9] border border-[#A5D6A7] rounded-radius-200 flex items-center justify-between transition-all">
             <span className="text-sm xl:text-base font-semibold text-[#2E7D32]">
               Identity Verified
@@ -236,7 +254,7 @@ export const CandidateVerifyIdentity: React.FC = () => {
           <Button
             type="button"
             onClick={handleContinue}
-            disabled={!isVerified}
+            disabled={!effectiveIsVerified}
             variant="amber"
             size="md"
             rightIcon={<FiArrowRight className="w-4.5 h-4.5" />}

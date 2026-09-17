@@ -21,8 +21,22 @@ export function useSaveOnboarding() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: (payload: CandidateOnboardingPayload) =>
-      saveCandidateOnboardingApi(payload),
+    mutationFn: async (payload: CandidateOnboardingPayload) => {
+      try {
+        return await saveCandidateOnboardingApi(payload);
+      } catch (error) {
+        const isIdentityLockedError =
+          error instanceof ApiError &&
+          error.details?.some((d) => d.issue === "identity_fields_locked");
+
+        if (isIdentityLockedError && payload.personalDetails) {
+          const rest = { ...payload };
+          delete rest.personalDetails;
+          return saveCandidateOnboardingApi(rest);
+        }
+        throw error;
+      }
+    },
 
     onSuccess: () => {
       queryClient.invalidateQueries({

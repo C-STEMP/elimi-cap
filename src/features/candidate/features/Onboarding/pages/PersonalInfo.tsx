@@ -46,6 +46,10 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
   const authUser = useAppSelector((s) => s.auth.user);
   const savedPersonalInfo = useAppSelector((s) => s.onboarding.personalInfo);
 
+  // Identity fields (name/dob/gender/nationality) are locked by the backend
+  // once the candidate's NIN has been verified on the next step.
+  const isIdentityLocked = Boolean(authUser?.isVerified);
+
   const initialEmail =
     savedPersonalInfo.email || authUser?.email || "";
 
@@ -134,6 +138,13 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
       setForm((prev) => ({ ...prev, email: authUser.email || "" }));
     }
   }, [getOnboarding.data, authUser?.email]);
+
+  // Onboarding has already been submitted — this step is done, send them to the dashboard.
+  useEffect(() => {
+    if (getOnboarding.data?.status === "completed") {
+      router.replace("/dashboard");
+    }
+  }, [getOnboarding.data?.status, router]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [passportFile, setPassportFile] = useState<File | null>(null);
@@ -341,14 +352,20 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
 
     saveOnboarding.mutate(
       {
-        personalDetails: {
-          firstName: form.firstName,
-          lastName: form.lastName,
-          middleName: form.middleName?.trim() || undefined,
-          dob: formatToIsoDate(form.dob),
-          gender: form.gender,
-          nationality: form.nationality,
-        },
+        // Identity fields are locked server-side once NIN verification has
+        // run; resending them trips an "identity_fields_locked" save error.
+        ...(isIdentityLocked
+          ? {}
+          : {
+              personalDetails: {
+                firstName: form.firstName,
+                lastName: form.lastName,
+                middleName: form.middleName?.trim() || undefined,
+                dob: formatToIsoDate(form.dob),
+                gender: form.gender,
+                nationality: form.nationality,
+              },
+            }),
         contactInformation: {
           emailAddress: form.email || authUser?.email || "",
           phoneNumber: {
@@ -382,6 +399,10 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
       },
     );
   };
+
+  if (getOnboarding.data?.status === "completed") {
+    return null;
+  }
 
   return (
     <motion.div
@@ -475,6 +496,9 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
             value={form.firstName}
             error={errors.firstName}
             onChange={(e) => update("firstName", e.target.value)}
+            disabled={isIdentityLocked}
+            className={isIdentityLocked ? "bg-gray-100/70 cursor-not-allowed opacity-80" : undefined}
+            helperText={isIdentityLocked ? "Locked after identity verification." : undefined}
           />
 
           <Input
@@ -488,6 +512,9 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
             value={form.lastName}
             error={errors.lastName}
             onChange={(e) => update("lastName", e.target.value)}
+            disabled={isIdentityLocked}
+            className={isIdentityLocked ? "bg-gray-100/70 cursor-not-allowed opacity-80" : undefined}
+            helperText={isIdentityLocked ? "Locked after identity verification." : undefined}
           />
 
           <Input
@@ -496,6 +523,9 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
             placeholder="Other names"
             value={form.middleName}
             onChange={(e) => update("middleName", e.target.value)}
+            disabled={isIdentityLocked}
+            className={isIdentityLocked ? "bg-gray-100/70 cursor-not-allowed opacity-80" : undefined}
+            helperText={isIdentityLocked ? "Locked after identity verification." : undefined}
           />
 
           <DatePicker
@@ -510,6 +540,8 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
             value={form.dob}
             error={errors.dob}
             onChange={(val) => update("dob", val)}
+            disabled={isIdentityLocked}
+            helperText={isIdentityLocked ? "Locked after identity verification." : undefined}
           />
 
           <Select
@@ -523,6 +555,8 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
             value={form.gender}
             error={errors.gender}
             onChange={(e) => update("gender", e.target.value)}
+            disabled={isIdentityLocked}
+            helperText={isIdentityLocked ? "Locked after identity verification." : undefined}
           />
 
           <Select
@@ -537,6 +571,8 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
             value={form.nationality}
             error={errors.nationality}
             onChange={(e) => update("nationality", e.target.value)}
+            disabled={isIdentityLocked}
+            helperText={isIdentityLocked ? "Locked after identity verification." : undefined}
           />
         </div>
 
