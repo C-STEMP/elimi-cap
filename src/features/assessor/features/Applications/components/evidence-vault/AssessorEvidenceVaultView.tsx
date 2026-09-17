@@ -32,6 +32,7 @@ interface AssessorEvidenceVaultViewProps {
   onMarkAsComplete?: () => void;
   triggerMarkComplete?: boolean;
   onResetTriggerMarkComplete?: () => void;
+  isStageAlreadyComplete?: boolean;
 }
 
 export const AssessorEvidenceVaultView: React.FC<
@@ -45,6 +46,7 @@ export const AssessorEvidenceVaultView: React.FC<
   onMarkAsComplete,
   triggerMarkComplete,
   onResetTriggerMarkComplete,
+  isStageAlreadyComplete = false,
 }) => {
   const { toast } = useToast();
 
@@ -197,6 +199,7 @@ export const AssessorEvidenceVaultView: React.FC<
     useState(false);
 
   const allApproved =
+    !isStageAlreadyComplete &&
     evidenceItems.length > 0 &&
     evidenceItems.every((item) =>
       item.status?.toLowerCase().includes("approv"),

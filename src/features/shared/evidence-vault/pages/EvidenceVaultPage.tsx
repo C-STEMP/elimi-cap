@@ -93,7 +93,18 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
   const [itemToDelete, setItemToDelete] = useState<EvidenceRecord | null>(null);
   const [previewItem, setPreviewItem] = useState<EvidenceRecord | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [isEvidenceSubmitted, setIsEvidenceSubmitted] = useState(false);
+  const [isEvidenceSubmitted, setIsEvidenceSubmitted] = useState(() => {
+    if (typeof window === "undefined" || !applicationId) return false;
+    try {
+      return (
+        localStorage.getItem(
+          `elimi_evidence_vault_submitted_${applicationId}`,
+        ) === "true"
+      );
+    } catch {
+      return false;
+    }
+  });
 
   const persistedEvidence: any[] = React.useMemo(() => {
     if (typeof window === "undefined" || !applicationId) return [];
@@ -262,6 +273,15 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
       evidenceType: item.evidenceType || item.type || "PS",
     };
   });
+
+  // Evidence already submitted (or approved) on the backend — no need to
+  // resurface the submit action.
+  const allEvidenceSubmitted =
+    evidences.length > 0 &&
+    evidences.every((item) => {
+      const s = item.status.toLowerCase();
+      return s.includes("submit") || s.includes("approv") || s.includes("complet");
+    });
 
   const handleUploadSubmit = async (
     docName: string,
@@ -484,17 +504,19 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
               }}
               onOpenUploadModal={() => setIsUploadModalOpen(true)}
             />
-            <div className="flex flex-col items-end gap-2">
-              <Button
-                variant="secondary"
-                size="lg"
-                className="w-55! cursor-pointer place-self-end disabled:opacity-50 disabled:cursor-not-allowed"
-                onClick={handleSubmit}
-                disabled={evidences.length === 0 || isUploading || isEvidenceSubmitted}
-              >
-                {isEvidenceSubmitted ? "Submitted" : "Submit Evidence"}
-              </Button>
-            </div>
+            {!(isEvidenceSubmitted || allEvidenceSubmitted) && (
+              <div className="flex flex-col items-end gap-2">
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  className="w-55! cursor-pointer place-self-end disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={handleSubmit}
+                  disabled={evidences.length === 0 || isUploading}
+                >
+                  Submit Evidence
+                </Button>
+              </div>
+            )}
           </div>
 
           <div className="lg:col-span-4 xl:col-span-3 flex flex-col gap-6">

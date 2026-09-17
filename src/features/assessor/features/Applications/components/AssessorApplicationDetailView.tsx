@@ -192,6 +192,25 @@ export const AssessorApplicationDetailView: React.FC<
       s.stageKey === "observation",
   );
 
+  // Folder arrangement (evidence vault) stage — once already passed, the
+  // assessor shouldn't be able to "Mark as complete" it again.
+  const folderStageRow = stagesData?.find(
+    (s) =>
+      s.stageKey === "folder_arrangement" ||
+      s.stageKey === "evidence_vault" ||
+      s.stageKey === "evidence",
+  );
+  const isFolderArrangementDone = Boolean(
+    folderStageRow?.status === "successful" ||
+    (folderStageRow?.status as string) === "completed" ||
+    stagesData?.some(
+      (s) =>
+        (s.stageKey === "interview" || s.stageKey === "direct_observation") &&
+        (s.status === "scheduled" || s.status === "in_progress" || s.status === "successful")
+    ) ||
+    application.status === "Completed",
+  );
+
   // Assessment forms are to be filled by Lead Panelist & viewed by IV, Facilitator, and other panel members
   const isAssessmentFormReadOnly = !isUserLeadPanelist;
 
@@ -473,6 +492,7 @@ export const AssessorApplicationDetailView: React.FC<
         onMarkAsComplete={onMarkAsComplete}
         triggerMarkComplete={triggerMarkComplete}
         onResetTriggerMarkComplete={onResetTriggerMarkComplete}
+        isStageAlreadyComplete={isFolderArrangementDone}
       />
     );
   }

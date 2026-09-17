@@ -17,6 +17,7 @@ import { useOnboarding } from "@/features/assessment-centre/features/Onboarding/
 import { useAppDispatch, useAppSelector } from "@/src/store/hooks";
 import { setCentreIdentity } from "@/src/store/slices/onboardingSlice";
 import { markVerified } from "@/src/store/slices/authSlice";
+import { useGetMe } from "@/src/features/shared/account/hooks";
 
 export const CenterVerifyIdentity: React.FC = () => {
   const router = useRouter();
@@ -33,6 +34,8 @@ export const CenterVerifyIdentity: React.FC = () => {
   const centrePersonalInfo = useAppSelector(
     (s) => s.onboarding.centrePersonalInfo,
   );
+  const authUser = useAppSelector((s) => s.auth.user);
+  const { data: meData } = useGetMe();
 
   const [nin, setNin] = useState(savedCentreIdentity.nin || "");
   const [ninError, setNinError] = useState<string | undefined>(undefined);
@@ -61,6 +64,22 @@ export const CenterVerifyIdentity: React.FC = () => {
       }
     }
   }, [getOnboarding.data, dispatch]);
+
+  // This account may already have a verified identity from a different
+  // persona (e.g. this owner already verified their NIN as a candidate or
+  // assessor) — re-submitting the same NIN here would be rejected as a
+  // duplicate, so treat the account-level flag as authoritative.
+  const isIdentityAlreadyVerified = Boolean(
+    meData?.identityVerified || authUser?.isVerified,
+  );
+  React.useEffect(() => {
+    if (isIdentityAlreadyVerified) {
+      dispatch(setCentreIdentity({ isVerified: true }));
+      dispatch(markVerified());
+    }
+  }, [isIdentityAlreadyVerified, dispatch]);
+
+  const effectiveIsVerified = isVerified || isIdentityAlreadyVerified;
 
   const handleStartVerification = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -159,7 +178,7 @@ export const CenterVerifyIdentity: React.FC = () => {
   };
 
   const handleContinue = () => {
-    if (!isVerified) {
+    if (!effectiveIsVerified) {
       toast({
         type: "error",
         title: "Verification Required",
@@ -231,7 +250,7 @@ export const CenterVerifyIdentity: React.FC = () => {
           National Identification Number
         </label>
 
-        {isVerified ? (
+        {effectiveIsVerified ? (
           <div className="w-full p-4 bg-[#E8F5E9] border border-[#A5D6A7] rounded-xl flex items-center justify-between transition-all">
             <span className="text-sm xl:text-base font-semibold text-[#2E7D32]">
               Identity Verified
@@ -305,7 +324,7 @@ export const CenterVerifyIdentity: React.FC = () => {
           <Button
             type="button"
             onClick={handleContinue}
-            disabled={!isVerified}
+            disabled={!effectiveIsVerified}
             variant="amber"
             size="md"
             rightIcon={<FiArrowRight className="w-4.5 h-4.5" />}

@@ -19,6 +19,7 @@ import { verifyIdentityApi } from "@/src/features/shared/onboarding/api";
 import { validateNIN } from "@/src/lib/validation";
 import { usePatchAssessorProfile } from "@/src/features/shared/assessor/hooks/useAssessor";
 import type { AssessorQualification } from "@/src/features/shared/assessor/api/assessor.api";
+import { useGetMe } from "@/src/features/shared/account/hooks";
 
 export const AssessorVerifyIdentity: React.FC = () => {
   const router = useRouter();
@@ -27,7 +28,9 @@ export const AssessorVerifyIdentity: React.FC = () => {
   const { saveOnboarding, submitOnboarding } = useAssessorOnboarding();
   const saved = useAppSelector((s) => s.onboarding.assessorIdentity);
   const assessorDetails = useAppSelector((s) => s.onboarding.assessorDetails);
+  const authUser = useAppSelector((s) => s.auth.user);
   const patchAssessorProfile = usePatchAssessorProfile();
+  const { data: meData } = useGetMe();
 
   const [nin, setNin] = useState(saved.nin || "");
   const [error, setError] = useState<string | undefined>(undefined);
@@ -48,6 +51,21 @@ export const AssessorVerifyIdentity: React.FC = () => {
       setIsVerified(saved.isVerified);
     }
   }, [saved]);
+
+  // This account may already have a verified identity from a different
+  // persona (e.g. this rep already verified their NIN as a centre owner) —
+  // re-submitting the same NIN here would be rejected as a duplicate.
+  const isIdentityAlreadyVerified = Boolean(
+    meData?.identityVerified || authUser?.isVerified,
+  );
+  useEffect(() => {
+    if (isIdentityAlreadyVerified) {
+      dispatch(setAssessorIdentity({ isVerified: true }));
+      dispatch(markVerified());
+    }
+  }, [isIdentityAlreadyVerified, dispatch]);
+
+  const effectiveIsVerified = isVerified || isIdentityAlreadyVerified;
 
   const handleStartVerification = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -188,7 +206,7 @@ export const AssessorVerifyIdentity: React.FC = () => {
           National Identification Number
         </label>
 
-        {isVerified ? (
+        {effectiveIsVerified ? (
           <div className="w-full p-4 bg-[#E8F5E9] border border-[#A5D6A7] rounded-radius-200 flex items-center justify-between transition-all">
             <span className="text-sm xl:text-base font-semibold text-[#2E7D32]">
               Identity Verified
@@ -257,7 +275,7 @@ export const AssessorVerifyIdentity: React.FC = () => {
           <Button
             type="button"
             onClick={handleContinue}
-            disabled={!isVerified}
+            disabled={!effectiveIsVerified}
             variant="amber"
             size="md"
             rightIcon={<FiArrowRight className="w-4.5 h-4.5" />}
