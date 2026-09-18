@@ -46,9 +46,12 @@ export const AssessorCalendarWidget: React.FC<AssessorCalendarWidgetProps> = ({
     if (eventsData && eventsData.length > 0) {
       const days: number[] = [];
       eventsData.forEach((evt) => {
-        if (evt.createdAt) {
-          const d = new Date(evt.createdAt);
+        const rawDate =
+          evt.eventAt || (evt as any).scheduledAt || evt.createdAt;
+        if (rawDate) {
+          const d = new Date(rawDate);
           if (
+            !isNaN(d.getTime()) &&
             d.getMonth() === currentDate.getMonth() &&
             d.getFullYear() === currentDate.getFullYear()
           ) {

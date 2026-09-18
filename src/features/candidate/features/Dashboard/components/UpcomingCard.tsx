@@ -34,7 +34,20 @@ export const UpcomingCard: React.FC<UpcomingCardProps> = ({
   forms,
   onOpenForm,
 }) => {
-  const showEvents = Boolean(interview && (interview.date || interview.time));
+  const hasValidDate = Boolean(
+    interview?.date &&
+      interview.date !== "—" &&
+      interview.date.trim() !== "",
+  );
+  const hasValidTime = Boolean(
+    interview?.time &&
+      interview.time !== "—" &&
+      interview.time.trim() !== "",
+  );
+
+  const showEvents = Boolean(
+    interview && hasValidDate && (interview.time ? hasValidTime : true),
+  );
   const isOnline =
     interview?.mode === "online" ||
     interview?.mode === "virtual" ||

@@ -1,12 +1,14 @@
 "use client";
 
 import React from "react";
-import { FiDownload, FiFileText } from "react-icons/fi";
+import { FiDownload, FiFileText, FiLoader } from "react-icons/fi";
 import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
 import type { EvidenceRecord } from "@/src/features/shared/evidence-vault/utils/evidenceConstants";
+import { useThirdPartyReportDownload } from "@/src/features/shared/evidence-vault/hooks/useThirdPartyReportDownload";
 
 interface Props {
+  applicationId?: string;
   selfAssessment: any;
   onOpenSelfAssessmentForm: () => void;
   isLoadingEvidence: boolean;
@@ -15,6 +17,7 @@ interface Props {
 }
 
 export const EvidenceItemsList: React.FC<Props> = ({
+  applicationId,
   selfAssessment,
   onOpenSelfAssessmentForm,
   isLoadingEvidence,
@@ -22,6 +25,13 @@ export const EvidenceItemsList: React.FC<Props> = ({
   onSelectPreview,
 }) => {
   const { toast } = useToast();
+  const {
+    handleDownload: handleDownloadThirdParty,
+    isDownloading,
+    hasUploadedReport,
+    downloadUrl,
+    reportData,
+  } = useThirdPartyReportDownload(applicationId);
 
   return (
     <div className="lg:col-span-8 xl:col-span-9 flex flex-col gap-8">
@@ -68,26 +78,62 @@ export const EvidenceItemsList: React.FC<Props> = ({
               <FiFileText className="w-6 h-6 text-[#a31d38]" />
             </div>
             <div className="flex flex-col gap-1 min-w-0">
-              <h3 className="text-base sm:text-lg font-bold text-black tracking-tight truncate">
-                Third Party Reports
-              </h3>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-base sm:text-lg font-bold text-black tracking-tight truncate">
+                  Third Party Reports
+                </h3>
+                <span
+                  className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                    hasUploadedReport
+                      ? "bg-[#E8F5E9] text-[#2E7D32]"
+                      : "bg-black/10 text-black"
+                  }`}
+                >
+                  {hasUploadedReport ? "Submitted" : "Not Uploaded"}
+                </span>
+              </div>
               <span className="text-xs text-gray-400 font-normal">Employer &amp; Supervisor References</span>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={() =>
-              toast({
-                type: "info",
-                title: "Third Party Reports",
-                description: "No third party report document attached.",
-              })
-            }
-            className="bg-[#F8F9FA] border border-gray-200 hover:bg-gray-100 text-gray-700 font-semibold text-xs sm:text-sm px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-2xs shrink-0"
-          >
-            <span>Download</span>
-            <FiDownload className="w-4 h-4 text-gray-500" />
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            {hasUploadedReport && (
+              <Button
+                type="button"
+                onClick={() =>
+                  onSelectPreview({
+                    id: reportData?.assetId || "third-party-report",
+                    name: "Third Party Report",
+                    size: "PDF",
+                    status: "Submitted",
+                    statusBg: "bg-[#D1FAE5]",
+                    statusText: "text-[#047857]",
+                    url: downloadUrl || undefined,
+                    assetId: reportData?.assetId || undefined,
+                    evidenceType: "TPR",
+                  })
+                }
+                variant="outline"
+                size="sm"
+                className="bg-white! text-[#fbab2a]! border border-gray-200! hover:bg-gray-50! font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl transition-all cursor-pointer shadow-none! shrink-0"
+              >
+                View
+              </Button>
+            )}
+
+            <button
+              type="button"
+              onClick={handleDownloadThirdParty}
+              disabled={isDownloading}
+              className="bg-[#F8F9FA] border border-gray-200 hover:bg-gray-100 text-gray-700 font-semibold text-xs sm:text-sm px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-2xs shrink-0 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <span>{isDownloading ? "Downloading..." : "Download"}</span>
+              {isDownloading ? (
+                <FiLoader className="w-4 h-4 text-gray-500 animate-spin" />
+              ) : (
+                <FiDownload className="w-4 h-4 text-gray-500" />
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
