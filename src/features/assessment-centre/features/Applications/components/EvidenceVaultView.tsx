@@ -23,6 +23,7 @@ export const EvidenceVaultView: React.FC<Props> = ({
     <div className="w-full flex flex-col gap-6 select-text">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         <EvidenceItemsList
+          applicationId={id}
           selfAssessment={s.selfAssessment}
           onOpenSelfAssessmentForm={onOpenSelfAssessmentForm}
           isLoadingEvidence={s.isLoadingEvidence}

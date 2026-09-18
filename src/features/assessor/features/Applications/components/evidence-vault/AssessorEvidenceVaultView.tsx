@@ -486,13 +486,31 @@ export const AssessorEvidenceVaultView: React.FC<
     onMarkAsComplete?.();
   };
 
+  const handleViewThirdPartyReport = () => {
+    setPreviewItem({
+      id: thirdPartyReportData?.assetId || "third-party-report",
+      name: "Third Party Report",
+      size: "PDF",
+      status: "Submitted",
+      statusBg: "bg-[#D1FAE5]",
+      statusText: "text-[#047857]",
+      url: (thirdPartyReportData as any)?.url || undefined,
+      assetId: thirdPartyReportData?.assetId || undefined,
+      evidenceType: "TPR",
+    });
+  };
+
   return (
     <div className="w-full flex flex-col gap-6 select-text">
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Column: Resources and Evidence Items */}
         <div className="lg:col-span-8 flex flex-col gap-8">
-          <ResourcesSection onViewSelfAssessment={onViewSelfAssessment} />
+          <ResourcesSection
+            applicationId={applicationId}
+            onViewSelfAssessment={onViewSelfAssessment}
+            onViewThirdPartyReport={handleViewThirdPartyReport}
+          />
           <EvidenceListSection
             items={evidenceItems}
             onView={handleViewEvidence}
@@ -505,7 +523,7 @@ export const AssessorEvidenceVaultView: React.FC<
         {/* Right Column: Calendar and Events Widgets */}
         <div className="lg:col-span-4 flex flex-col gap-6">
           <AssessorCalendarWidget />
-          <AssessorUpcomingEventsWidget />
+          <AssessorUpcomingEventsWidget applicationId={applicationId} />
         </div>
       </div>
 

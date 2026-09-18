@@ -62,15 +62,20 @@ export interface CreateApplicationPayload {
 export interface ApplicationEvent {
   id: string;
   applicationId: string;
-  stageKey: string;
-  actorPersona: string;
+  name?: string;
+  eventAt?: string;
+  link?: string | null;
+  location?: string | null;
+  eventType?: "interview" | "other" | string;
+  stageKey?: string;
+  actorPersona?: string;
   actorUserId?: string;
-  action: string;
+  action?: string;
   fromStatus?: string;
   toStatus?: string;
   comment?: string;
   metadata?: Record<string, unknown>;
-  createdAt: string;
+  createdAt?: string;
 }
 
 export interface ApplicationStage {
