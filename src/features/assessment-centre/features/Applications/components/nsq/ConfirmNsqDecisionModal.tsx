@@ -10,6 +10,7 @@ import {
   useGetPaymentQuote,
   APPLICATION_QUERY_KEYS,
 } from "@/src/features/shared/applications/hooks";
+import { submitApplicationApi } from "@/src/features/shared/applications/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatCurrency } from "@/src/utils/currency";
 
@@ -53,14 +54,47 @@ export const ConfirmNsqDecisionModal: React.FC<ConfirmNsqDecisionModalProps> = (
   const handleConfirm = async () => {
     setIsSubmitting(true);
     try {
-      await reviewMutation.mutateAsync({
-        id: applicationId,
-        payload: {
-          decision: isApprove ? "approve" : "reject",
-          stageKey: "application_form",
-          feedback: notes || (isApprove ? "Approved by Assessment Centre" : "Rejected by Assessment Centre"),
-        },
-      });
+      try {
+        await reviewMutation.mutateAsync({
+          id: applicationId,
+          payload: {
+            decision: isApprove ? "approve" : "reject",
+            stageKey: "application_form",
+            feedback:
+              notes ||
+              (isApprove
+                ? "Approved by Assessment Centre"
+                : "Rejected by Assessment Centre"),
+          },
+        });
+      } catch (reviewErr: any) {
+        const errMsg = String(
+          reviewErr?.message || reviewErr?.details?.[0]?.message || "",
+        ).toLowerCase();
+        // If the workflow state hasn't been initialized yet, submit first to seed workflow stages then retry
+        if (
+          errMsg.includes("workflow") ||
+          errMsg.includes("draft") ||
+          errMsg.includes("not submitted") ||
+          errMsg.includes("submit")
+        ) {
+          await submitApplicationApi(applicationId);
+          await reviewMutation.mutateAsync({
+            id: applicationId,
+            payload: {
+              decision: isApprove ? "approve" : "reject",
+              stageKey: "application_form",
+              feedback:
+                notes ||
+                (isApprove
+                  ? "Approved by Assessment Centre"
+                  : "Rejected by Assessment Centre"),
+            },
+          });
+        } else {
+          throw reviewErr;
+        }
+      }
 
       await queryClient.invalidateQueries({
         queryKey: APPLICATION_QUERY_KEYS.all,
@@ -68,13 +102,14 @@ export const ConfirmNsqDecisionModal: React.FC<ConfirmNsqDecisionModalProps> = (
       await queryClient.invalidateQueries({
         queryKey: APPLICATION_QUERY_KEYS.detail(applicationId),
       });
-
-      toast({
-        type: "success",
-        title: isApprove ? "Request Approved" : "Request Rejected",
-        description: isApprove
-          ? `${candidateName}'s application has been approved. The candidate can now proceed to payment.`
-          : `${candidateName}'s application request has been rejected.`,
+      await queryClient.invalidateQueries({
+        queryKey: APPLICATION_QUERY_KEYS.stages(applicationId),
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["centre-applications"],
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["centre"],
       });
 
       onSuccess?.(decision);

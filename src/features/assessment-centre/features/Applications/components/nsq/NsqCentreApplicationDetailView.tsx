@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import {
   FiCheck,
   FiChevronRight,
@@ -145,11 +145,13 @@ export const NsqCentreApplicationDetailView: React.FC<
   NsqCentreApplicationDetailViewProps
 > = ({ application, onBack, selectedUnitNumber, onSelectUnit }) => {
   const router = useRouter();
+  const params = useParams();
+  const effectiveAppId = application?.id || (params?.id as string) || "";
 
   // NSQ Backend Queries
-  const { data: inductionForm } = useGetInductionForm(application?.id);
+  const { data: inductionForm } = useGetInductionForm(effectiveAppId);
   const { data: directObservationsData } = useGetDirectObservations(
-    application?.id,
+    effectiveAppId,
   );
   const rawSessions =
     (directObservationsData as any)?.sessions ||
@@ -267,7 +269,7 @@ export const NsqCentreApplicationDetailView: React.FC<
   const [isObservationFormOpen, setIsObservationFormOpen] = useState<boolean>(false);
 
   // Real workflow stages — GET /applications/{id}/stages.
-  const { data: stagesData } = useGetApplicationStages(application?.id || "", {
+  const { data: stagesData } = useGetApplicationStages(effectiveAppId, {
     refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
   });
   const applicationFormStage = stagesData?.find((s) => s.stageKey === "application_form");
@@ -405,9 +407,9 @@ export const NsqCentreApplicationDetailView: React.FC<
   // the real submitted evidence instead of a fixed mock LO/PC layout.
   const activeUnit = unitsList.find((u) => u.unitNo === activeUnitNumber) || null;
   const { data: unitCriteriaData, isLoading: isLoadingUnitCriteria } = useGetUnitCriteria(
-    application?.id || "",
+    effectiveAppId,
     activeUnit?.id || "",
-    { enabled: Boolean(application?.id && activeUnit?.id) },
+    { enabled: Boolean(effectiveAppId && activeUnit?.id) },
   );
   const unitLearningOutcomes = unitCriteriaData?.criteria
     ? groupCriteriaForCentreView(unitCriteriaData.criteria)
@@ -415,29 +417,51 @@ export const NsqCentreApplicationDetailView: React.FC<
 
   // Compute status — application_form stage is the source of truth;
   // localStatus is only an instant-UI override until the stages query refetches.
-  // Note: application.status === "in_progress" just means "submitted, somewhere
-  // in the pipeline" — it stays in_progress through payment/induction/assessment
-  // long after application_form review, so it must NOT be treated as "approved".
   const currentStatus = localStatus || application?.status || "draft";
-  const isDraft = currentStatus === "draft";
+
   const isApproved =
+    localStatus === "approved" ||
     applicationFormStage?.status === "successful" ||
+    (applicationFormStage?.status as string) === "approved" ||
     currentStatus === "certified" ||
-    currentStatus === "approved";
-  const isRejected = applicationFormStage?.status === "rejected" || currentStatus === "rejected";
-  // A draft has never been submitted, so it has no backend workflow state yet
-  // — POST /applications/{id}/review would fail with "no workflow state".
-  // Only a submitted (non-draft) application can be pending centre review.
-  const isPending = !isApproved && !isRejected && !isDraft;
+    currentStatus === "approved" ||
+    paymentStage?.status === "successful" ||
+    (application?.currentStageKey &&
+      !["application_form", "application_review", "draft", "submitted"].includes(
+        application.currentStageKey,
+      ));
+
+  const isRejected =
+    localStatus === "rejected" ||
+    applicationFormStage?.status === "rejected" ||
+    currentStatus === "rejected";
+
+  const isSubmitted = Boolean(
+    (application as any)?.submittedAt ||
+      (stagesData && stagesData.length > 0) ||
+      (application?.currentStageKey && application.currentStageKey !== "draft") ||
+      currentStatus === "submitted" ||
+      currentStatus === "in_progress" ||
+      currentStatus === "under_review",
+  );
+
+  const isExplicitDraft =
+    currentStatus === "draft" &&
+    !(application as any)?.submittedAt &&
+    (!stagesData || stagesData.length === 0) &&
+    (!application?.currentStageKey || application.currentStageKey === "draft");
+
+  const isPending = !isApproved && !isRejected && !isExplicitDraft;
+  const isDraft = !isApproved && !isRejected && isExplicitDraft;
 
   // Payment — GET /applications/{id}/stages (payment row), readable by centre
   // staff the same as the receipt/payment-quote endpoints.
   const isPaymentPaid = paymentStage?.status === "successful";
-  const { data: paymentQuote } = useGetPaymentQuote(application?.id || "", {
-    enabled: Boolean(application?.id && !isPaymentPaid),
+  const { data: paymentQuote } = useGetPaymentQuote(effectiveAppId, {
+    enabled: Boolean(effectiveAppId && !isPaymentPaid),
   });
-  const { data: receiptData } = useGetApplicationReceipt(application?.id || "", {
-    enabled: Boolean(application?.id && isPaymentPaid),
+  const { data: receiptData } = useGetApplicationReceipt(effectiveAppId, {
+    enabled: Boolean(effectiveAppId && isPaymentPaid),
   });
 
   const paymentAmountText = receiptData?.amount?.amountMinorUnits
@@ -1218,7 +1242,7 @@ export const NsqCentreApplicationDetailView: React.FC<
       <ConfirmNsqDecisionModal
         isOpen={decisionModal.isOpen}
         onClose={() => setDecisionModal({ ...decisionModal, isOpen: false })}
-        applicationId={application?.id || "app-nsq"}
+        applicationId={effectiveAppId}
         candidateName={candidateName}
         tradeName={resolvedTradeName}
         decision={decisionModal.decision}
@@ -1229,7 +1253,7 @@ export const NsqCentreApplicationDetailView: React.FC<
       <AssignNsqAssessorModal
         isOpen={assignModal.isOpen}
         onClose={() => setAssignModal({ ...assignModal, isOpen: false })}
-        applicationId={application?.id || "app-nsq"}
+        applicationId={effectiveAppId}
         roleType={assignModal.roleType}
         tradeName={resolvedTradeName}
         unitIds={unitsList.map((u) => u.id)}

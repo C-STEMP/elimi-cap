@@ -238,7 +238,7 @@ export const ApplicationsHeaderBreadcrumb: React.FC<Props> = ({
   if (selectedCandidateName) {
     const isNsq = Boolean(isNsqApplication);
     const displayName = isNsq ? (selectedTradeName || "Masonry") : selectedCandidateName;
-    const parentLabel = isNsq ? "My Applications" : "Applications";
+    const parentLabel = "Applications";
 
     return (
       <>

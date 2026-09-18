@@ -75,8 +75,21 @@ export const CentreApplicationRouteView: React.FC<{ id: string }> = ({
         : application.candidateId || "Candidate")
     : null;
 
+  const isAppFormApproved = Boolean(
+    stagesData?.find(
+      (s) => s.stageKey === "application_form" || s.stageKey === "application_review",
+    )?.status === "successful" ||
+      (application?.currentStageKey &&
+        !["application_form", "application_review", "draft", "submitted"].includes(
+          application.currentStageKey,
+        )),
+  );
+
   const isSelectedAppApproved = application
-    ? application.status === "in_progress" || application.status === "certified"
+    ? application.status === "in_progress" ||
+      application.status === "certified" ||
+      (application.status as string) === "approved" ||
+      isAppFormApproved
     : false;
 
   const isNsqApplication = application
@@ -163,6 +176,12 @@ export const CentreApplicationRouteView: React.FC<{ id: string }> = ({
                   });
                   queryClient.invalidateQueries({
                     queryKey: APPLICATION_QUERY_KEYS.detail(id),
+                  });
+                  queryClient.invalidateQueries({
+                    queryKey: APPLICATION_QUERY_KEYS.stages(id),
+                  });
+                  queryClient.invalidateQueries({
+                    queryKey: ["centre-applications"],
                   });
                 },
               },
