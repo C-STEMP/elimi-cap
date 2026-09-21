@@ -20,6 +20,8 @@ import {
   setCurrentApplication,
   updateApplicationStatus,
 } from "@/store/slices/applicationSlice";
+import { setPersonalInfo } from "@/store/slices/onboardingSlice";
+import { getOnboardingPersonaApi } from "@/src/features/shared/onboarding/api";
 import { formatToIsoDate } from "@/src/lib/validation";
 
 export function useRplApplicationSubmission() {
@@ -150,13 +152,66 @@ export function useRplApplicationSubmission() {
     );
   };
 
+  const getHydratedPersonalInfo = async () => {
+    let current = { ...personalInfo };
+    if (
+      !current.phoneNumber ||
+      !current.state ||
+      !current.streetAddress ||
+      !current.firstName
+    ) {
+      try {
+        const obRes = await getOnboardingPersonaApi("candidate");
+        const obData = obRes?.data as any;
+        if (obData) {
+          const pd = obData.personalDetails;
+          const ci = obData.contactInformation;
+          const ra = obData.residentialAddress;
+          const acc = obData.accessibility;
+          const hydrated = {
+            firstName: current.firstName || pd?.firstName || "",
+            lastName: current.lastName || pd?.lastName || "",
+            middleName: current.middleName || pd?.middleName || "",
+            dob: current.dob || pd?.dob || "",
+            gender: current.gender || pd?.gender || "",
+            nationality: current.nationality || pd?.nationality || "",
+            email:
+              current.email ||
+              ci?.emailAddress ||
+              authUser?.email ||
+              "",
+            phoneNumber:
+              current.phoneNumber ||
+              ci?.phoneNumber?.number ||
+              "",
+            country:
+              current.country || ra?.country || "Nigeria",
+            state: current.state || ra?.state || "",
+            lga: current.lga || ra?.lga || "",
+            streetAddress:
+              current.streetAddress || ra?.address || "",
+            impairment:
+              current.impairment || acc?.impairment || "",
+          };
+          dispatch(setPersonalInfo(hydrated));
+          current = { ...current, ...hydrated };
+        }
+      } catch {
+        // Fall back to in-memory current
+      }
+    }
+    return current;
+  };
+
   /**
    * Builds the comprehensive patch payload from current form state
    */
   const buildPatchPayload = (
     customDeclarations?: Record<string, boolean>,
     includePersonalDetails = true,
+    overridePersonalInfo?: typeof personalInfo,
   ) => {
+    const info = overridePersonalInfo || personalInfo;
     const rawYears = rplExp.yearsOfExperience;
     let yearsNum = 0;
     if (typeof rawYears === "number") {
@@ -171,30 +226,51 @@ export function useRplApplicationSubmission() {
       rplIdentity?.isVerified
     );
 
-    const personalInformation: Record<string, unknown> = {
-      contactInformation: {
-        emailAddress: personalInfo.email || authUser?.email || "",
+    const hasPhone = Boolean(
+      info.phoneNumber && info.phoneNumber.trim().length > 0,
+    );
+    const hasAddress = Boolean(
+      info.state &&
+      info.streetAddress &&
+      info.state.trim().length > 0 &&
+      info.streetAddress.trim().length > 0,
+    );
+
+    const personalInformation: Record<string, unknown> = {};
+
+    if (hasPhone) {
+      personalInformation.contactInformation = {
+        emailAddress: info.email || authUser?.email || "",
         phoneNumber: {
           countryCode: "+234",
-          number: personalInfo.phoneNumber || "",
+          number: info.phoneNumber.trim(),
         },
-      },
-      residentialAddress: {
-        country: personalInfo.country || "Nigeria",
-        state: personalInfo.state || "",
-        lga: personalInfo.lga || undefined,
-        address: personalInfo.streetAddress || "",
-      },
-    };
+      };
+    }
 
-    if (includePersonalDetails && !isIdentityLocked && personalInfo.firstName) {
+    if (hasAddress) {
+      personalInformation.residentialAddress = {
+        country: info.country || "Nigeria",
+        state: info.state.trim(),
+        lga: info.lga?.trim() || undefined,
+        address: info.streetAddress.trim(),
+      };
+    }
+
+    if (
+      includePersonalDetails &&
+      !isIdentityLocked &&
+      info.firstName &&
+      info.lastName &&
+      info.dob
+    ) {
       personalInformation.personalDetails = {
-        firstName: personalInfo.firstName,
-        lastName: personalInfo.lastName,
-        middleName: personalInfo.middleName || undefined,
-        dob: formatToIsoDate(personalInfo.dob) || undefined,
-        gender: personalInfo.gender || undefined,
-        nationality: personalInfo.nationality || undefined,
+        firstName: info.firstName.trim(),
+        lastName: info.lastName.trim(),
+        middleName: info.middleName?.trim() || undefined,
+        dob: formatToIsoDate(info.dob),
+        gender: info.gender || "male",
+        nationality: info.nationality || "Nigerian",
       };
     }
 
@@ -225,8 +301,7 @@ export function useRplApplicationSubmission() {
       });
     }
 
-    return {
-      personalInformation,
+    const payload: Record<string, unknown> = {
       experienceAndTrade: {
         unitIds: validUnitIds,
         currentOccupation: {
@@ -305,6 +380,12 @@ export function useRplApplicationSubmission() {
         ),
       },
     };
+
+    if (Object.keys(personalInformation).length > 0) {
+      payload.personalInformation = personalInformation;
+    }
+
+    return payload;
   };
 
   /**
@@ -312,7 +393,8 @@ export function useRplApplicationSubmission() {
    */
   const saveDraft = async () => {
     const appId = await ensureDraftApplicationId();
-    const payload = buildPatchPayload();
+    const hydratedInfo = await getHydratedPersonalInfo();
+    const payload = buildPatchPayload(undefined, true, hydratedInfo);
 
     try {
       await patchApplicationDraftApi(appId, payload);
@@ -322,7 +404,7 @@ export function useRplApplicationSubmission() {
         msg.includes("identity_fields_locked") ||
         err?.details?.some?.((d: any) => d.issue === "identity_fields_locked")
       ) {
-        const retryPayload = buildPatchPayload(undefined, false);
+        const retryPayload = buildPatchPayload(undefined, false, hydratedInfo);
         await patchApplicationDraftApi(appId, retryPayload).catch(() => {});
       } else {
         const issues = err?.details
@@ -350,7 +432,8 @@ export function useRplApplicationSubmission() {
    */
   const submitApplication = async (declarations?: Record<string, boolean>) => {
     const appId = await ensureDraftApplicationId();
-    const payload = buildPatchPayload(declarations);
+    const hydratedInfo = await getHydratedPersonalInfo();
+    const payload = buildPatchPayload(declarations, true, hydratedInfo);
 
     try {
       await patchApplicationDraftApi(appId, payload);
@@ -360,7 +443,7 @@ export function useRplApplicationSubmission() {
         msg.includes("identity_fields_locked") ||
         err?.details?.some?.((d: any) => d.issue === "identity_fields_locked")
       ) {
-        const retryPayload = buildPatchPayload(declarations, false);
+        const retryPayload = buildPatchPayload(declarations, false, hydratedInfo);
         await patchApplicationDraftApi(appId, retryPayload).catch(() => {});
       } else {
         const issues = err?.details

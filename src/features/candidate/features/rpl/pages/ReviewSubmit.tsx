@@ -17,6 +17,7 @@ import { StatusModal } from "@/components/status-modal";
 
 import { useCandidateProfile } from "@/src/features/shared/onboarding/hooks";
 import { markVerified } from "@/store/slices/authSlice";
+import { setPersonalInfo } from "@/store/slices/onboardingSlice";
 import { useRplApplicationSubmission } from "../hooks/useRplApplicationSubmission";
 
 export interface RPLReviewSubmitProps {
@@ -33,7 +34,7 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { toast } = useToast();
-  const { submitOnboarding } = useOnboarding();
+  const { getOnboarding, submitOnboarding } = useOnboarding();
   const { data: candidateProfile } = useCandidateProfile(true);
 
   const user = useAppSelector((s) => s.auth.user);
@@ -41,8 +42,11 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
   const rplExp = useAppSelector((s) => s.onboarding.rplExperienceTrade);
   const rplId = useAppSelector((s) => s.onboarding.rplIdentity);
 
+  const obData = (getOnboarding.data?.data || (candidateProfile as any)?.onboarding?.data) as any;
+  const effectiveFirstName = personalInfo.firstName || obData?.personalDetails?.firstName;
+  const effectiveLastName = personalInfo.lastName || obData?.personalDetails?.lastName;
   const personalInfoCompleted = Boolean(
-    personalInfo.firstName && personalInfo.lastName,
+    effectiveFirstName && effectiveLastName,
   );
   const expCompleted = Boolean(
     rplExp.occupation ||
@@ -53,6 +57,34 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
     user?.isVerified ||
     candidateProfile?.identityVerified
   );
+
+  React.useEffect(() => {
+    if (obData) {
+      const pd = obData.personalDetails;
+      const ci = obData.contactInformation;
+      const ra = obData.residentialAddress;
+      const acc = obData.accessibility;
+
+      const patch: Record<string, any> = {};
+      if (!personalInfo.firstName && pd?.firstName) patch.firstName = pd.firstName;
+      if (!personalInfo.lastName && pd?.lastName) patch.lastName = pd.lastName;
+      if (!personalInfo.middleName && pd?.middleName) patch.middleName = pd.middleName;
+      if (!personalInfo.dob && pd?.dob) patch.dob = pd.dob;
+      if (!personalInfo.gender && pd?.gender) patch.gender = pd.gender;
+      if (!personalInfo.nationality && pd?.nationality) patch.nationality = pd.nationality;
+      if (!personalInfo.phoneNumber && ci?.phoneNumber?.number) patch.phoneNumber = ci.phoneNumber.number;
+      if (!personalInfo.email && (ci?.emailAddress || user?.email)) patch.email = ci?.emailAddress || user?.email;
+      if (!personalInfo.country && ra?.country) patch.country = ra.country;
+      if (!personalInfo.state && ra?.state) patch.state = ra.state;
+      if (!personalInfo.lga && ra?.lga) patch.lga = ra.lga;
+      if (!personalInfo.streetAddress && ra?.address) patch.streetAddress = ra.address;
+      if (!personalInfo.impairment && acc?.impairment) patch.impairment = acc.impairment;
+
+      if (Object.keys(patch).length > 0) {
+        dispatch(setPersonalInfo(patch));
+      }
+    }
+  }, [obData, personalInfo, user?.email, dispatch]);
 
   React.useEffect(() => {
     if (identityVerified && !user?.isVerified) {
