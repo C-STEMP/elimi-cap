@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/src/components/ui/toast";
-import { ApiError } from "@/src/lib/api/client";
+import { resolveApiError } from "@/src/utils/apiError";
 import {
   getAssessorSummaryApi,
   getAssessorEventsApi,
@@ -171,19 +171,11 @@ export function useApplyToJobPosting() {
     },
 
     onError: (error: Error) => {
-      if (error instanceof ApiError) {
-        toast({
-          type: "error",
-          title: "Application Failed",
-          description: error.message,
-        });
-      } else {
-        toast({
-          type: "error",
-          title: "Network Error",
-          description: "Unable to apply for job posting. Please try again.",
-        });
-      }
+      const { title, description } = resolveApiError(error, {
+        title: "Application Failed",
+        description: "Unable to apply for job posting. Please try again.",
+      });
+      toast({ type: "error", title, description });
     },
   });
 }
@@ -226,19 +218,11 @@ export function useRequestRetainedAssessor() {
     },
 
     onError: (error: Error) => {
-      if (error instanceof ApiError) {
-        toast({
-          type: "error",
-          title: "Request Failed",
-          description: error.message,
-        });
-      } else {
-        toast({
-          type: "error",
-          title: "Network Error",
-          description: "Unable to send request. Please try again.",
-        });
-      }
+      const { title, description } = resolveApiError(error, {
+        title: "Request Failed",
+        description: "Unable to send request. Please try again.",
+      });
+      toast({ type: "error", title, description });
     },
   });
 }
@@ -271,19 +255,11 @@ export function usePatchAssessorProfile() {
     },
 
     onError: (error: Error) => {
-      if (error instanceof ApiError) {
-        toast({
-          type: "error",
-          title: "Update Failed",
-          description: error.message,
-        });
-      } else {
-        toast({
-          type: "error",
-          title: "Network Error",
-          description: "Unable to update profile. Please try again.",
-        });
-      }
+      const { title, description } = resolveApiError(error, {
+        title: "Update Failed",
+        description: "Unable to update profile. Please try again.",
+      });
+      toast({ type: "error", title, description });
     },
   });
 }
@@ -316,19 +292,11 @@ export function useUpdateAssessorProfileSectors() {
     },
 
     onError: (error: Error) => {
-      if (error instanceof ApiError) {
-        toast({
-          type: "error",
-          title: "Update Failed",
-          description: error.message,
-        });
-      } else {
-        toast({
-          type: "error",
-          title: "Network Error",
-          description: "Unable to update sectors. Please try again.",
-        });
-      }
+      const { title, description } = resolveApiError(error, {
+        title: "Update Failed",
+        description: "Unable to update sectors. Please try again.",
+      });
+      toast({ type: "error", title, description });
     },
   });
 }

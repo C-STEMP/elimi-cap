@@ -7,6 +7,7 @@ import { useGetAssessorApplications } from "@/src/features/assessor/features/App
 import { useGetAssessorProfile } from "@/src/features/assessor/hooks";
 import type { Application } from "@/src/features/shared/applications/api";
 import { Avatar } from "@/src/components/ui/avatar";
+import { getRejectionReason } from "@/src/utils/rejection";
 
 interface AssessorOverviewViewProps {
   onViewAllApplications: () => void;
@@ -54,6 +55,11 @@ export const AssessorOverviewView: React.FC<AssessorOverviewViewProps> = ({
   // Show only the latest 8 for the overview
   const applications = allApplications.slice(0, 8);
 
+  const accreditationRejected =
+    assessorProfile?.status === "rejected" ||
+    assessorProfile?.status === "suspended";
+  const rejectionReason = getRejectionReason(assessorProfile);
+
   return (
     <div className="w-full flex flex-col gap-6 select-text">
       {/* Assessor Accreditation & Approval Status Banner */}
@@ -84,6 +90,41 @@ export const AssessorOverviewView: React.FC<AssessorOverviewViewProps> = ({
               Status: <span className="font-bold capitalize">Pending Approval</span>
             </span>
           </div>
+        </div>
+      ) : accreditationRejected ? (
+        <div className="bg-rose-50 rounded-3xl p-5 sm:p-6 border border-rose-200 shadow-2xs flex flex-col gap-3">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center gap-4 min-w-0">
+              <div className="w-12 h-12 rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0 border border-rose-200">
+                <FiAward className="w-6 h-6" />
+              </div>
+              <div className="flex flex-col gap-1 min-w-0">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <h3 className="text-base sm:text-lg font-extrabold text-rose-900 tracking-tight truncate">
+                    {assessorProfile?.name || "Assessor Profile"}
+                  </h3>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-semibold bg-white text-rose-700 border border-rose-200 capitalize">
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-600" />
+                    Accreditation {assessorProfile?.status}
+                  </span>
+                </div>
+                <p className="text-xs text-rose-700 font-normal">
+                  Assessor No: <span className="font-semibold">{assessorProfile?.assessorNo || "—"}</span> • Your assessor accreditation was not approved.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 self-start md:self-auto shrink-0">
+              <span className="text-xs font-semibold text-rose-700 bg-white border border-rose-200 px-3.5 py-1.5 rounded-xl">
+                Status: <span className="font-bold capitalize">{assessorProfile?.status}</span>
+              </span>
+            </div>
+          </div>
+          {rejectionReason && (
+            <div className="rounded-2xl bg-white border border-rose-200 px-4 py-3">
+              <p className="text-xs font-semibold text-rose-800 mb-0.5">Reason</p>
+              <p className="text-xs text-rose-700 leading-relaxed">{rejectionReason}</p>
+            </div>
+          )}
         </div>
       ) : !isApprovalDismissed ? (
         <div className="bg-white rounded-3xl p-5 sm:p-6 border border-[#1E7F4C]/20 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4 relative">

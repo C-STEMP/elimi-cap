@@ -12,7 +12,7 @@ export const AssessorApplicationStatsCards: React.FC<
   AssessorApplicationStatsCardsProps
 > = ({ stats }) => {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 w-full">
       {/* Total Applications Card */}
       <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-5 flex flex-col justify-between text-white border border-white/15 transition-all shadow-xs">
         <span className="text-xs sm:text-sm font-medium text-white/80">

@@ -25,7 +25,7 @@ interface RescheduleInterviewModalProps {
 }
 
 export const RescheduleInterviewModal: React.FC<RescheduleInterviewModalProps> = (props) => {
-  const { isOpen, onClose, currentMode = "virtual" } = props;
+  const { isOpen, onClose } = props;
   const s = useRescheduleInterviewState(props);
 
   if (!isOpen && !s.isSuccessOpen) return null;
@@ -85,8 +85,28 @@ export const RescheduleInterviewModal: React.FC<RescheduleInterviewModalProps> =
                   </div>
                 </div>
 
-                {currentMode === "virtual" && (
-                  <div className="flex flex-col gap-1.5 pt-1">
+                <div className="flex flex-col gap-1.5 pt-1">
+                  <label className="text-xs font-semibold text-gray-700">Interview Mode</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(["physical", "virtual"] as const).map((m) => (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() => s.setMode(m)}
+                        className={`h-11 rounded-xl text-sm font-semibold capitalize transition-all cursor-pointer border ${
+                          s.mode === m
+                            ? "bg-[#fdf2f4] border-[#a31d38] text-[#a31d38]"
+                            : "bg-[#F9FAFB] border-gray-200 text-gray-600 hover:border-gray-300"
+                        }`}
+                      >
+                        {m === "virtual" ? "Online" : "Physical"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {s.mode === "virtual" && (
+                  <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-semibold text-gray-700">Meeting Link</label>
                     <input
                       type="text"
@@ -96,6 +116,35 @@ export const RescheduleInterviewModal: React.FC<RescheduleInterviewModalProps> =
                       required
                       className="w-full h-11 px-3.5 rounded-xl border border-gray-200 bg-[#F9FAFB] text-sm text-gray-800 outline-none focus:border-[#fbab2a] focus:ring-1 focus:ring-[#fbab2a]/30 transition-all font-medium"
                     />
+                  </div>
+                )}
+
+                {s.mode === "physical" && (
+                  <div className="flex flex-col gap-2.5">
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={s.useCentreAddress}
+                        onChange={(e) => s.setUseCentreAddress(e.target.checked)}
+                        className="w-4 h-4 accent-[#a31d38] cursor-pointer"
+                      />
+                      <span className="text-xs font-semibold text-gray-700">
+                        Same as centre address
+                      </span>
+                    </label>
+
+                    {!s.useCentreAddress && (
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-semibold text-gray-700">Location</label>
+                        <input
+                          type="text"
+                          value={s.location}
+                          onChange={(e) => s.setLocation(e.target.value)}
+                          placeholder="Enter interview location / address"
+                          className="w-full h-11 px-3.5 rounded-xl border border-gray-200 bg-[#F9FAFB] text-sm text-gray-800 outline-none focus:border-[#fbab2a] focus:ring-1 focus:ring-[#fbab2a]/30 transition-all font-medium"
+                        />
+                      </div>
+                    )}
                   </div>
                 )}
 

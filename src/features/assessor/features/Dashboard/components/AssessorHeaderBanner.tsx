@@ -34,6 +34,46 @@ export type AssessorNavTab =
   | "Payments"
   | "Settings";
 
+interface BannerStatCardProps {
+  label: string;
+  value: number | string;
+  unit: string;
+  icon: React.ReactNode;
+  onClick?: () => void;
+}
+
+/** Clickable stat card used across the assessor banner (Overview + Centres). */
+const BannerStatCard: React.FC<BannerStatCardProps> = ({
+  label,
+  value,
+  unit,
+  icon,
+  onClick,
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="bg-white/10 hover:bg-white/15 active:scale-[0.98] backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs text-left w-full cursor-pointer"
+  >
+    <div className="flex flex-col">
+      <span className="text-xs sm:text-sm lg:text-lg font-medium text-white/80">
+        {label}
+      </span>
+      <div className="flex items-baseline gap-1.5 mt-1">
+        <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
+          {value}
+        </span>
+        <span className="text-xs lg:text-base font-normal text-white">
+          {unit}
+        </span>
+      </div>
+    </div>
+    <div className="w-9 h-9 flex items-center justify-center shrink-0">
+      {icon}
+    </div>
+  </button>
+);
+
 interface AssessorHeaderBannerProps {
   userName: string;
   activeTab: AssessorNavTab;
@@ -355,82 +395,35 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
             </h1>
 
             {/* Overview Stat Cards Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
-                <div className="flex flex-col">
-                  <span className="text-xs sm:text-sm lg:text-lg font-medium text-white/80">
-                    Total Centres
-                  </span>
-                  <div className="flex items-baseline gap-1.5 mt-1">
-                    <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                      {totalCentresCount}
-                    </span>
-                    <span className="text-xs lg:text-base font-normal text-white">
-                      centres
-                    </span>
-                  </div>
-                </div>
-                <div className="w-9 h-9 flex items-center justify-center shrink-0">
-                  <FiClipboard className="w-5 h-5 text-white/90" />
-                </div>
-              </div>
-
-              <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
-                <div className="flex flex-col">
-                  <span className="text-xs sm:text-sm lg:text-lg font-medium text-white/80">
-                    Total Applications
-                  </span>
-                  <div className="flex items-baseline gap-1.5 mt-1">
-                    <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                      {totalApplicationsCount}
-                    </span>
-                    <span className="text-xs lg:text-base font-normal text-white">
-                      applications
-                    </span>
-                  </div>
-                </div>
-                <div className="w-9 h-9 flex items-center justify-center shrink-0">
-                  <FiClipboard className="w-5 h-5 text-white/90" />
-                </div>
-              </div>
-
-              <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
-                <div className="flex flex-col">
-                  <span className="text-xs sm:text-sm lg:text-lg font-medium text-white/80">
-                    Completed Applications
-                  </span>
-                  <div className="flex items-baseline gap-1.5 mt-1">
-                    <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                      {completedApplicationsCount}
-                    </span>
-                    <span className="text-xs lg:text-base font-normal text-white">
-                      applications
-                    </span>
-                  </div>
-                </div>
-                <div className="w-9 h-9 flex items-center justify-center shrink-0">
-                  <FiUser className="w-5 h-5 text-white/90" />
-                </div>
-              </div>
-
-              <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
-                <div className="flex flex-col">
-                  <span className="text-xs sm:text-sm lg:text-lg font-medium text-white/80">
-                    Pending Applications
-                  </span>
-                  <div className="flex items-baseline gap-1.5 mt-1">
-                    <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                      {pendingApplicationsCount}
-                    </span>
-                    <span className="text-xs lg:text-base font-normal text-white">
-                      applications
-                    </span>
-                  </div>
-                </div>
-                <div className="w-9 h-9 flex items-center justify-center shrink-0">
-                  <FiFlag className="w-5 h-5 text-white/90" />
-                </div>
-              </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              <BannerStatCard
+                label="Total Centres"
+                value={totalCentresCount}
+                unit="centres"
+                icon={<FiClipboard className="w-5 h-5 text-white/90" />}
+                onClick={() => onSelectTab("Centres")}
+              />
+              <BannerStatCard
+                label="Total Applications"
+                value={totalApplicationsCount}
+                unit="applications"
+                icon={<FiClipboard className="w-5 h-5 text-white/90" />}
+                onClick={() => onSelectTab("Applications")}
+              />
+              <BannerStatCard
+                label="Completed Applications"
+                value={completedApplicationsCount}
+                unit="applications"
+                icon={<FiUser className="w-5 h-5 text-white/90" />}
+                onClick={() => onSelectTab("Applications")}
+              />
+              <BannerStatCard
+                label="Pending Applications"
+                value={pendingApplicationsCount}
+                unit="applications"
+                icon={<FiFlag className="w-5 h-5 text-white/90" />}
+                onClick={() => onSelectTab("Applications")}
+              />
             </div>
           </div>
         ) : activeTab === "Applications" ? (
@@ -639,82 +632,34 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
                 </Button>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
-                  <div className="flex flex-col">
-                    <span className="text-xs sm:text-sm lg:text-lg font-medium text-white/80">
-                      Total Centres
-                    </span>
-                    <div className="flex items-baseline gap-1.5 mt-1">
-                      <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                        {totalCentresCount}
-                      </span>
-                      <span className="text-xs lg:text-base font-normal text-white">
-                        centres
-                      </span>
-                    </div>
-                  </div>
-                  <div className="w-9 h-9 flex items-center justify-center shrink-0">
-                    <FiClipboard className="w-5 h-5 text-white/90" />
-                  </div>
-                </div>
-
-                <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
-                  <div className="flex flex-col">
-                    <span className="text-xs sm:text-sm lg:text-lg font-medium text-white/80">
-                      Total Applications
-                    </span>
-                    <div className="flex items-baseline gap-1.5 mt-1">
-                      <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                        {totalApplicationsCount}
-                      </span>
-                      <span className="text-xs lg:text-base font-normal text-white">
-                        applications
-                      </span>
-                    </div>
-                  </div>
-                  <div className="w-9 h-9 flex items-center justify-center shrink-0">
-                    <FiClipboard className="w-5 h-5 text-white/90" />
-                  </div>
-                </div>
-
-                <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
-                  <div className="flex flex-col">
-                    <span className="text-xs sm:text-sm lg:text-lg font-medium text-white/80">
-                      Completed Applications
-                    </span>
-                    <div className="flex items-baseline gap-1.5 mt-1">
-                      <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                        {completedApplicationsCount}
-                      </span>
-                      <span className="text-xs lg:text-base font-normal text-white">
-                        applications
-                      </span>
-                    </div>
-                  </div>
-                  <div className="w-9 h-9 flex items-center justify-center shrink-0">
-                    <FiUser className="w-5 h-5 text-white/90" />
-                  </div>
-                </div>
-
-                <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
-                  <div className="flex flex-col">
-                    <span className="text-xs sm:text-sm lg:text-lg font-medium text-white/80">
-                      Pending Applications
-                    </span>
-                    <div className="flex items-baseline gap-1.5 mt-1">
-                      <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                        {pendingApplicationsCount}
-                      </span>
-                      <span className="text-xs lg:text-base font-normal text-white">
-                        applications
-                      </span>
-                    </div>
-                  </div>
-                  <div className="w-9 h-9 flex items-center justify-center shrink-0">
-                    <FiFlag className="w-5 h-5 text-white/90" />
-                  </div>
-                </div>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                <BannerStatCard
+                  label="Total Centres"
+                  value={totalCentresCount}
+                  unit="centres"
+                  icon={<FiClipboard className="w-5 h-5 text-white/90" />}
+                />
+                <BannerStatCard
+                  label="Total Applications"
+                  value={totalApplicationsCount}
+                  unit="applications"
+                  icon={<FiClipboard className="w-5 h-5 text-white/90" />}
+                  onClick={() => onSelectTab("Applications")}
+                />
+                <BannerStatCard
+                  label="Completed Applications"
+                  value={completedApplicationsCount}
+                  unit="applications"
+                  icon={<FiUser className="w-5 h-5 text-white/90" />}
+                  onClick={() => onSelectTab("Applications")}
+                />
+                <BannerStatCard
+                  label="Pending Applications"
+                  value={pendingApplicationsCount}
+                  unit="applications"
+                  icon={<FiFlag className="w-5 h-5 text-white/90" />}
+                  onClick={() => onSelectTab("Applications")}
+                />
               </div>
             </div>
           )
