@@ -46,6 +46,13 @@ export function resolveApiError(
     if (msg.includes("not approved") || msg.includes("not_approved")) {
       return CODE_MESSAGES["assessor.not_approved"];
     }
+    if (msg.includes("workflow state") || msg.includes("no workflow")) {
+      return {
+        title: "Not Ready for Review",
+        description:
+          "This application hasn't been submitted into the assessment workflow yet, so it can't be approved. The candidate needs to submit it first.",
+      };
+    }
     if (error.statusCode === 403) {
       return CODE_MESSAGES["auth.out_of_scope"];
     }

@@ -1,18 +1,19 @@
 "use client";
 
-import React, { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { FiX, FiCheckCircle, FiAlertTriangle } from "react-icons/fi";
 import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
-import {
-  useReviewApplication,
-  useGetPaymentQuote,
-  APPLICATION_QUERY_KEYS,
-} from "@/src/features/shared/applications/hooks";
 import { submitApplicationApi } from "@/src/features/shared/applications/api";
-import { useQueryClient } from "@tanstack/react-query";
+import {
+  APPLICATION_QUERY_KEYS,
+  useGetPaymentQuote,
+  useReviewApplication,
+} from "@/src/features/shared/applications/hooks";
+import { resolveApiError } from "@/src/utils/apiError";
 import { formatCurrency } from "@/src/utils/currency";
+import { useQueryClient } from "@tanstack/react-query";
+import { AnimatePresence, motion } from "framer-motion";
+import React, { useState } from "react";
+import { FiAlertTriangle, FiCheckCircle, FiX } from "react-icons/fi";
 
 interface ConfirmNsqDecisionModalProps {
   isOpen: boolean;
@@ -24,7 +25,9 @@ interface ConfirmNsqDecisionModalProps {
   onSuccess?: (decision: "approve" | "reject") => void;
 }
 
-export const ConfirmNsqDecisionModal: React.FC<ConfirmNsqDecisionModalProps> = ({
+export const ConfirmNsqDecisionModal: React.FC<
+  ConfirmNsqDecisionModalProps
+> = ({
   isOpen,
   onClose,
   applicationId,
@@ -54,43 +57,42 @@ export const ConfirmNsqDecisionModal: React.FC<ConfirmNsqDecisionModalProps> = (
   const handleConfirm = async () => {
     setIsSubmitting(true);
     try {
+      const reviewPayload = {
+        decision: isApprove ? ("approve" as const) : ("reject" as const),
+        stageKey: "application_form",
+        feedback:
+          notes ||
+          (isApprove
+            ? "Approved by Assessment Centre"
+            : "Rejected by Assessment Centre"),
+      };
+
       try {
         await reviewMutation.mutateAsync({
           id: applicationId,
-          payload: {
-            decision: isApprove ? "approve" : "reject",
-            stageKey: "application_form",
-            feedback:
-              notes ||
-              (isApprove
-                ? "Approved by Assessment Centre"
-                : "Rejected by Assessment Centre"),
-          },
+          payload: reviewPayload,
+          suppressErrorToast: true,
         });
       } catch (reviewErr: any) {
         const errMsg = String(
           reviewErr?.message || reviewErr?.details?.[0]?.message || "",
         ).toLowerCase();
-        // If the workflow state hasn't been initialized yet, submit first to seed workflow stages then retry
         if (
           errMsg.includes("workflow") ||
           errMsg.includes("draft") ||
           errMsg.includes("not submitted") ||
           errMsg.includes("submit")
         ) {
-          await submitApplicationApi(applicationId);
-          await reviewMutation.mutateAsync({
-            id: applicationId,
-            payload: {
-              decision: isApprove ? "approve" : "reject",
-              stageKey: "application_form",
-              feedback:
-                notes ||
-                (isApprove
-                  ? "Approved by Assessment Centre"
-                  : "Rejected by Assessment Centre"),
-            },
-          });
+          try {
+            await submitApplicationApi(applicationId);
+            await reviewMutation.mutateAsync({
+              id: applicationId,
+              payload: reviewPayload,
+              suppressErrorToast: true,
+            });
+          } catch {
+            throw reviewErr;
+          }
         } else {
           throw reviewErr;
         }
@@ -114,9 +116,12 @@ export const ConfirmNsqDecisionModal: React.FC<ConfirmNsqDecisionModalProps> = (
 
       onSuccess?.(decision);
       onClose();
-    } catch {
-      // useReviewApplication already surfaces an error toast; stay open so
-      // the centre can retry instead of silently reporting a fake success.
+    } catch (finalErr) {
+      const { title, description } = resolveApiError(finalErr, {
+        title: "Review Failed",
+        description: "Unable to record the decision. Please try again.",
+      });
+      toast({ type: "error", title, description });
     } finally {
       setIsSubmitting(false);
     }
@@ -132,7 +137,6 @@ export const ConfirmNsqDecisionModal: React.FC<ConfirmNsqDecisionModalProps> = (
           transition={{ duration: 0.2 }}
           className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl relative border border-gray-100 flex flex-col gap-6"
         >
-          {/* Close button */}
           <button
             type="button"
             onClick={onClose}
@@ -141,7 +145,6 @@ export const ConfirmNsqDecisionModal: React.FC<ConfirmNsqDecisionModalProps> = (
             <FiX className="w-5 h-5" />
           </button>
 
-          {/* Icon and Title */}
           <div className="flex items-start gap-4">
             <div
               className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
@@ -177,13 +180,17 @@ export const ConfirmNsqDecisionModal: React.FC<ConfirmNsqDecisionModalProps> = (
               <span className="text-gray-400 font-bold uppercase text-[10px] tracking-wider">
                 Candidate
               </span>
-              <span className="font-bold text-neutral-primary">{candidateName}</span>
+              <span className="font-bold text-neutral-primary">
+                {candidateName}
+              </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-400 font-bold uppercase text-[10px] tracking-wider">
                 Trade
               </span>
-              <span className="font-bold text-neutral-primary">{tradeName}</span>
+              <span className="font-bold text-neutral-primary">
+                {tradeName}
+              </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-400 font-bold uppercase text-[10px] tracking-wider">
@@ -230,7 +237,6 @@ export const ConfirmNsqDecisionModal: React.FC<ConfirmNsqDecisionModalProps> = (
             </div>
           )}
 
-          {/* Modal Actions */}
           <div className="flex items-center justify-end gap-3 pt-2">
             <button
               type="button"

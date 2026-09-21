@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
@@ -149,6 +149,21 @@ export const AssessorVerifyIdentity: React.FC = () => {
     });
   };
 
+  // NIN verification is a one-time, account-wide check. If this account is
+  // already verified, don't make them do it again — auto-pass this step.
+  const autoAdvancedRef = useRef(false);
+  useEffect(() => {
+    if (
+      isIdentityAlreadyVerified &&
+      !autoAdvancedRef.current &&
+      !submitOnboarding.isPending
+    ) {
+      autoAdvancedRef.current = true;
+      handleContinue();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isIdentityAlreadyVerified]);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 15 }}
@@ -275,7 +290,7 @@ export const AssessorVerifyIdentity: React.FC = () => {
           <Button
             type="button"
             onClick={handleContinue}
-            disabled={!effectiveIsVerified}
+            disabled={!effectiveIsVerified || submitOnboarding.isPending}
             variant="amber"
             size="md"
             rightIcon={<FiArrowRight className="w-4.5 h-4.5" />}
