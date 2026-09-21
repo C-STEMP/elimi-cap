@@ -10,27 +10,32 @@ import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
 import { ASSETS_URL } from "@/assets";
 import { useAppDispatch, useAppSelector } from "@/src/store/hooks";
-import { setSidebarVariant, markVerified } from "@/src/store/slices/authSlice";
+import { setSidebarVariant, markVerified, setVerified } from "@/src/store/slices/authSlice";
 import { setRPLIdentity } from "@/src/store/slices/onboardingSlice";
 import { saveOnboardedStatus } from "@/src/lib/auth-storage";
 import { validateNIN } from "@/src/lib/validation";
 import { useOnboarding } from "@/src/features/candidate/features/Onboarding/hooks";
+import { ONBOARDING_QUERY_KEYS } from "@/src/features/shared/onboarding/hooks";
 import { saveCandidateOnboardingApi } from "@/src/features/candidate/features/Onboarding/api";
 import { verifyIdentityApi } from "@/src/features/shared/onboarding/api";
-import { useGetMe } from "@/src/features/shared/account/hooks";
+import { useGetMe, ACCOUNT_QUERY_KEYS } from "@/src/features/shared/account/hooks";
+import { useQueryClient } from "@tanstack/react-query";
 
 export const CandidateVerifyIdentity: React.FC = () => {
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const queryClient = useQueryClient();
   const { toast } = useToast();
   const { submitOnboarding } = useOnboarding();
   const saved = useAppSelector((s) => s.onboarding.rplIdentity);
   const authUser = useAppSelector((s) => s.auth.user);
-  const { data: meData } = useGetMe();
+  const { data: meData, isLoading: isMeLoading } = useGetMe();
 
   const [nin, setNin] = useState(saved.nin || "");
   const [error, setError] = useState<string | undefined>(undefined);
-  const [isVerified, setIsVerified] = useState(saved.isVerified || false);
+  const [isVerified, setIsVerified] = useState(
+    Boolean(saved.isVerified && saved.nin),
+  );
   const [modalState, setModalState] = useState<
     "none" | "verifying" | "success" | "error"
   >("none");
@@ -42,26 +47,51 @@ export const CandidateVerifyIdentity: React.FC = () => {
   }, [dispatch]);
 
   useEffect(() => {
-    if (saved.nin) setNin(saved.nin);
-    if (typeof saved.isVerified === "boolean") {
-      setIsVerified(saved.isVerified);
+    if (saved.nin) {
+      setNin(saved.nin);
+      if (typeof saved.isVerified === "boolean") {
+        setIsVerified(saved.isVerified);
+      }
     }
   }, [saved]);
 
   // The account may already have a verified identity from a different
   // persona (e.g. a centre owner onboarding as an assessor) — in that case
-  // NIN verification has already happened and must not be repeated.
+  // NIN verification has already happened on the account level and must not be repeated.
   const isIdentityAlreadyVerified = Boolean(
-    meData?.identityVerified || authUser?.isVerified,
+    !isMeLoading && meData?.identityVerified,
   );
-  useEffect(() => {
-    if (isIdentityAlreadyVerified) {
-      dispatch(setRPLIdentity({ isVerified: true }));
-      dispatch(markVerified());
-    }
-  }, [isIdentityAlreadyVerified, dispatch]);
 
-  const effectiveIsVerified = isVerified || isIdentityAlreadyVerified;
+  useEffect(() => {
+    if (!isMeLoading && meData) {
+      if (meData.identityVerified) {
+        dispatch(setRPLIdentity({ isVerified: true }));
+        dispatch(markVerified());
+        setIsVerified(true);
+      } else if (!saved.nin) {
+        // If the backend says not verified and no NIN was verified in this session,
+        // clear any stale/poisoned verified flags from previous runs.
+        if (saved.isVerified) {
+          dispatch(setRPLIdentity({ isVerified: false }));
+        }
+        setIsVerified(false);
+        if (authUser?.isVerified) {
+          dispatch(setVerified(false));
+        }
+      }
+    }
+  }, [
+    isMeLoading,
+    meData,
+    saved.nin,
+    saved.isVerified,
+    authUser?.isVerified,
+    dispatch,
+  ]);
+
+  const effectiveIsVerified = Boolean(
+    isIdentityAlreadyVerified || (isVerified && (saved.nin || nin)),
+  );
 
   const handleStartVerification = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -89,6 +119,12 @@ export const CandidateVerifyIdentity: React.FC = () => {
       setIsVerified(true);
       dispatch(setRPLIdentity({ nin: nin.trim(), isVerified: true }));
       dispatch(markVerified());
+
+      queryClient.invalidateQueries({ queryKey: ACCOUNT_QUERY_KEYS.me });
+      queryClient.invalidateQueries({ queryKey: ONBOARDING_QUERY_KEYS.mine });
+      queryClient.invalidateQueries({
+        queryKey: ONBOARDING_QUERY_KEYS.candidateProfile,
+      });
     } catch (err: any) {
       setModalState("error");
       toast({
