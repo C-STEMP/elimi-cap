@@ -13,7 +13,7 @@ import { useAppDispatch, useAppSelector } from "@/src/store/hooks";
 import { setSidebarVariant, markVerified, setVerified } from "@/src/store/slices/authSlice";
 import { setRPLIdentity } from "@/src/store/slices/onboardingSlice";
 import { saveOnboardedStatus } from "@/src/lib/auth-storage";
-import { validateNIN } from "@/src/lib/validation";
+import { validateNIN, formatToIsoDate } from "@/src/lib/validation";
 import { useOnboarding } from "@/src/features/candidate/features/Onboarding/hooks";
 import { ONBOARDING_QUERY_KEYS } from "@/src/features/shared/onboarding/hooks";
 import { saveCandidateOnboardingApi } from "@/src/features/candidate/features/Onboarding/api";
@@ -28,6 +28,7 @@ export const CandidateVerifyIdentity: React.FC = () => {
   const { toast } = useToast();
   const { submitOnboarding } = useOnboarding();
   const saved = useAppSelector((s) => s.onboarding.rplIdentity);
+  const personalInfo = useAppSelector((s) => s.onboarding.personalInfo);
   const authUser = useAppSelector((s) => s.auth.user);
   const { data: meData, isLoading: isMeLoading } = useGetMe();
 
@@ -113,6 +114,15 @@ export const CandidateVerifyIdentity: React.FC = () => {
       await verifyIdentityApi({
         type: "nin",
         identificationNumber: nin.trim(),
+        ...(personalInfo.firstName || personalInfo.lastName || personalInfo.dob
+          ? {
+              personalDetails: {
+                firstName: personalInfo.firstName || undefined,
+                lastName: personalInfo.lastName || undefined,
+                dob: formatToIsoDate(personalInfo.dob) || undefined,
+              },
+            }
+          : {}),
       });
 
       setModalState("success");

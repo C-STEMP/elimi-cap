@@ -94,7 +94,7 @@ export function useRplExperienceState(onContinue?: () => void) {
 
   const [form, setForm] = useState({
     qualificationTitle: initialTradeTitle,
-    qualificationCode: savedRPLExperienceTrade.qualificationCode || "NOS-ELI-L3",
+    qualificationCode: savedRPLExperienceTrade.qualificationCode || "",
     completedBefore: savedRPLExperienceTrade.completedBefore || "No",
     previousAssessmentDetails: savedRPLExperienceTrade.previousAssessmentDetails || "",
     assessmentType: savedRPLExperienceTrade.assessmentType || "",

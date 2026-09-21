@@ -233,7 +233,7 @@ const initialState: OnboardingState = {
   },
   rplExperienceTrade: {
     qualificationTitle: "",
-    qualificationCode: "NOS-ELI-L3",
+    qualificationCode: "",
     completedBefore: "No",
     previousAssessmentDetails: "",
     assessmentType: "",
