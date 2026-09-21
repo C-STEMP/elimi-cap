@@ -7,10 +7,12 @@ import { useGetJobPostings } from "@/features/assessment-centre/features/JobList
 interface JobListingsViewProps {
   onSelectJob: (jobId: string) => void;
   onPostRequest: () => void;
+  activeStatusFilter?: string;
 }
 
 export const JobListingsView: React.FC<JobListingsViewProps> = ({
   onSelectJob,
+  activeStatusFilter,
 }) => {
   const { data: jobs = [], isLoading } = useGetJobPostings();
   const [searchQuery, setSearchQuery] = useState("");
@@ -33,12 +35,17 @@ export const JobListingsView: React.FC<JobListingsViewProps> = ({
 
   const filteredJobs = useMemo(
     () =>
-      jobs.filter(
-        (job) =>
+      jobs.filter((job) => {
+        const matchesSearch =
           job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          job.tradeId.toLowerCase().includes(searchQuery.toLowerCase()),
-      ),
-    [jobs, searchQuery],
+          job.tradeId.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesStatus =
+          !activeStatusFilter ||
+          activeStatusFilter === "all" ||
+          job.status === activeStatusFilter;
+        return matchesSearch && matchesStatus;
+      }),
+    [jobs, searchQuery, activeStatusFilter],
   );
 
   if (isLoading) {

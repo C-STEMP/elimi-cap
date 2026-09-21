@@ -30,6 +30,8 @@ interface ApplicationsTabProps {
   onOpenCreatePanel: () => void;
   onOpenCreateInterview?: () => void;
   onOpenScheduleInterview: () => void;
+  activeFilterTab?: string;
+  onTabChange?: (tab: string) => void;
 }
 
 export const ApplicationsTab: React.FC<ApplicationsTabProps> = ({
@@ -50,6 +52,8 @@ export const ApplicationsTab: React.FC<ApplicationsTabProps> = ({
   onOpenCreatePanel,
   onOpenCreateInterview,
   onOpenScheduleInterview,
+  activeFilterTab,
+  onTabChange,
 }) => {
   const { data: selectedApp } = useGetApplicationById(
     selectedApplicationId || "",
@@ -114,6 +118,8 @@ export const ApplicationsTab: React.FC<ApplicationsTabProps> = ({
           onOpenCreatePanel={onOpenCreatePanel}
           onOpenCreateInterview={onOpenCreateInterview}
           onOpenScheduleInterview={onOpenScheduleInterview}
+          activeFilterTab={activeFilterTab}
+          onTabChange={onTabChange}
         />
       )}
     </motion.div>

@@ -408,6 +408,9 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
           dob: formatToIsoDate(form.dob),
           gender: form.gender,
           nationality: form.nationality,
+          ...(savedPersonalInfo.passportAssetId && {
+            passportPhotoAssetId: savedPersonalInfo.passportAssetId,
+          }),
         },
         contactInformation: {
           emailAddress: form.email || authUser?.email || "",
@@ -429,9 +432,6 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
         previousAssessmentStatus: {
           hasCompletedPreviousAssessment: false,
         },
-        passportAssetId: savedPersonalInfo.passportAssetId || undefined,
-        passportUrl: passportDefaultImage || savedPersonalInfo.passportUrl || undefined,
-        photoAssetId: savedPersonalInfo.passportAssetId || undefined,
       } as any,
       {
         onSettled: () => {

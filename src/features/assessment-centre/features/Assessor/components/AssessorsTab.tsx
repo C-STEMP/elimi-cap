@@ -11,6 +11,8 @@ interface AssessorsTabProps {
   selectedAssessorId: string | null;
   onSelectAssessor: (id: string | null) => void;
   onViewCandidate: (candidateId: string) => void;
+  activeStatusFilter?: string;
+  onSelectStatusFilter?: (status: string) => void;
 }
 
 export const AssessorsTab: React.FC<AssessorsTabProps> = ({
@@ -18,6 +20,8 @@ export const AssessorsTab: React.FC<AssessorsTabProps> = ({
   selectedAssessorId,
   onSelectAssessor,
   onViewCandidate,
+  activeStatusFilter,
+  onSelectStatusFilter,
 }) => {
   return (
     <motion.div
@@ -35,6 +39,8 @@ export const AssessorsTab: React.FC<AssessorsTabProps> = ({
         <AssessorsListView
           userRole={activeRole}
           onSelectAssessor={(id) => onSelectAssessor(id)}
+          activeStatusFilter={activeStatusFilter}
+          onSelectStatusFilter={onSelectStatusFilter}
         />
       )}
     </motion.div>

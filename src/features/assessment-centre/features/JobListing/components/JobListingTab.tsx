@@ -12,6 +12,8 @@ interface JobListingTabProps {
   onSelectJob: (id: string | null) => void;
   onSelectApplicant: (id: string | null) => void;
   onOpenPostJobModal: () => void;
+  activeStatusFilter?: string;
+  onSelectStatusFilter?: (status: string) => void;
 }
 
 export const JobListingTab: React.FC<JobListingTabProps> = ({
@@ -20,6 +22,7 @@ export const JobListingTab: React.FC<JobListingTabProps> = ({
   onSelectJob,
   onSelectApplicant,
   onOpenPostJobModal,
+  activeStatusFilter,
 }) => {
   return (
     <motion.div
@@ -43,6 +46,7 @@ export const JobListingTab: React.FC<JobListingTabProps> = ({
         <JobListingsView
           onSelectJob={(id) => onSelectJob(id)}
           onPostRequest={onOpenPostJobModal}
+          activeStatusFilter={activeStatusFilter}
         />
       )}
     </motion.div>

@@ -31,6 +31,8 @@ interface ApplicationsHeaderProps {
   onScheduleInterview?: () => void;
   onCreateInterview?: () => void;
   onCreatePanel?: () => void;
+  activeFilterTab?: string;
+  onSelectFilterTab?: (tab: string) => void;
 }
 
 export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = (props) => {
@@ -43,6 +45,8 @@ export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = (props) => 
     onScheduleInterview,
     onCreateInterview,
     onCreatePanel,
+    activeFilterTab,
+    onSelectFilterTab,
   } = props;
 
   const { data: applications = [] } = useGetApplications();
@@ -119,6 +123,8 @@ export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = (props) => 
         ongoingCount={ongoingCount}
         completedCount={completedCount}
         archivedCount={archivedCount}
+        activeFilterTab={activeFilterTab}
+        onSelectFilterTab={onSelectFilterTab}
       />
     </div>
   );

@@ -20,11 +20,15 @@ interface StaffListViewProps {
   onSelectStaff: (staffId: string) => void;
   onAddStaff?: () => void;
   userRole?: string;
+  activeStatusFilter?: string;
+  onSelectStatusFilter?: (status: string) => void;
 }
 
 export const StaffListView: React.FC<StaffListViewProps> = ({
   onSelectStaff,
   userRole,
+  activeStatusFilter,
+  onSelectStatusFilter,
 }) => {
   const { toast } = useToast();
   const user = useAppSelector((state) => state.auth.user);
@@ -48,7 +52,16 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
   const patchStaffBulk = usePatchCentreStaffBulk();
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All");
+  const [internalStatusFilter, setInternalStatusFilter] = useState("All");
+  const statusFilter =
+    activeStatusFilter !== undefined ? activeStatusFilter : internalStatusFilter;
+  const setStatusFilter = (val: string) => {
+    if (activeStatusFilter !== undefined && onSelectStatusFilter) {
+      onSelectStatusFilter(val);
+    } else {
+      setInternalStatusFilter(val);
+    }
+  };
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
   const [isDeactivateModalOpen, setIsDeactivateModalOpen] = useState(false);

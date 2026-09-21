@@ -288,6 +288,13 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
   const [assessorDeactivateModalMode, setAssessorDeactivateModalMode] =
     useState<StaffStatusModalMode>("confirm-deactivate");
 
+  // Stat card filter state — lifted here so header clicks wire to tab list views
+  const [applicationsFilterTab, setApplicationsFilterTab] = useState<string>("all");
+  const [staffStatusFilter, setStaffStatusFilter] = useState<string>("all");
+  const [assessorsStatusFilter, setAssessorsStatusFilter] = useState<string>("all");
+  const [jobStatusFilter, setJobStatusFilter] = useState<string>("all");
+  const [paymentsStatusFilter, setPaymentsStatusFilter] = useState<string | undefined>(undefined);
+
   const handleOpenScheduleInterview = () => {
     const hasPanels =
       (centrePanels && centrePanels.length > 0) ||
@@ -308,6 +315,8 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
               setStaffDeactivateModalMode(mode);
               setIsStaffDeactivateModalOpen(true);
             }}
+            activeStatusFilter={staffStatusFilter}
+            onSelectStatusFilter={setStaffStatusFilter}
           />
         );
       case "applications":
@@ -366,6 +375,8 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
             onCreatePanel={() => setIsCreatePanelModalOpen(true)}
             onCreateInterview={() => setIsCreateInterviewModalOpen(true)}
             onScheduleInterview={handleOpenScheduleInterview}
+            activeFilterTab={applicationsFilterTab}
+            onSelectFilterTab={setApplicationsFilterTab}
           />
         );
       case "job-listing":
@@ -384,6 +395,8 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
             }}
             onPostRequest={() => setIsPostJobModalOpen(true)}
             onMarkAsFilled={() => setSelectedJobId(null)}
+            activeStatusFilter={jobStatusFilter}
+            onSelectStatusFilter={setJobStatusFilter}
           />
         );
       case "assessor-request":
@@ -403,12 +416,16 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
               setIsAssessorDeactivateModalOpen(true);
             }}
             userRole={activeRole}
+            activeStatusFilter={assessorsStatusFilter}
+            onSelectStatusFilter={setAssessorsStatusFilter}
           />
         );
       case "payments":
         return (
           <PaymentsHeader
             onWithdrawFunds={() => setIsWithdrawModalOpen(true)}
+            activeStatusFilter={paymentsStatusFilter}
+            onSelectStatusFilter={setPaymentsStatusFilter}
           />
         );
       case "settings":
@@ -460,6 +477,8 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
             selectedStaffId={selectedStaffId}
             onSelectStaff={setSelectedStaffId}
             onOpenAddStaffModal={() => setIsAddStaffModalOpen(true)}
+            activeStatusFilter={staffStatusFilter}
+            onSelectStatusFilter={setStaffStatusFilter}
           />
         )}
         {activeTab === "applications" && (
@@ -488,6 +507,8 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
             onOpenCreatePanel={() => setIsCreatePanelModalOpen(true)}
             onOpenCreateInterview={() => setIsCreateInterviewModalOpen(true)}
             onOpenScheduleInterview={handleOpenScheduleInterview}
+            activeFilterTab={applicationsFilterTab}
+            onTabChange={setApplicationsFilterTab}
           />
         )}
         {activeTab === "job-listing" && (
@@ -497,6 +518,8 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
             onSelectJob={setSelectedJobId}
             onSelectApplicant={setSelectedApplicantId}
             onOpenPostJobModal={() => setIsPostJobModalOpen(true)}
+            activeStatusFilter={jobStatusFilter}
+            onSelectStatusFilter={setJobStatusFilter}
           />
         )}
         {activeTab === "assessor-request" && (
@@ -513,6 +536,8 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
             onViewCandidate={(candidateId) => {
               router.push(`/applications/${candidateId}?from=centre`);
             }}
+            activeStatusFilter={assessorsStatusFilter}
+            onSelectStatusFilter={setAssessorsStatusFilter}
           />
         )}
         {activeTab === "payments" && (

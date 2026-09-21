@@ -182,15 +182,7 @@ export function useRplApplicationSubmission() {
         gender: personalInfo.gender || "male",
         nationality: personalInfo.nationality || "Nigerian",
         passportPhotoAssetId: personalInfo.passportAssetId || undefined,
-        passportUrl: personalInfo.passportUrl || undefined,
       };
-    }
-    if (personalInfo.passportAssetId) {
-      personalInformation.passportAssetId = personalInfo.passportAssetId;
-      personalInformation.photoAssetId = personalInfo.passportAssetId;
-    }
-    if (personalInfo.passportUrl) {
-      personalInformation.passportUrl = personalInfo.passportUrl;
     }
 
     const resolvedOccupation =

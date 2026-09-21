@@ -19,11 +19,15 @@ import { canDeactivateAssessor } from "@/features/assessment-centre/utils/rbac";
 interface AssessorsListViewProps {
   onSelectAssessor: (assessorId: string) => void;
   userRole?: string;
+  activeStatusFilter?: string;
+  onSelectStatusFilter?: (status: string) => void;
 }
 
 export const AssessorsListView: React.FC<AssessorsListViewProps> = ({
   onSelectAssessor,
   userRole,
+  activeStatusFilter,
+  onSelectStatusFilter,
 }) => {
   const { data: remoteAssessors = [], isLoading } = useGetCentreAssessors({
     status: "all",
@@ -33,7 +37,16 @@ export const AssessorsListView: React.FC<AssessorsListViewProps> = ({
   const canDeactivate = canDeactivateAssessor(userRole || user?.role);
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All");
+  const [internalStatusFilter, setInternalStatusFilter] = useState("All");
+  const statusFilter =
+    activeStatusFilter !== undefined ? activeStatusFilter : internalStatusFilter;
+  const setStatusFilter = (val: string) => {
+    if (activeStatusFilter !== undefined && onSelectStatusFilter) {
+      onSelectStatusFilter(val);
+    } else {
+      setInternalStatusFilter(val);
+    }
+  };
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [isDeactivateModalOpen, setIsDeactivateModalOpen] = useState(false);

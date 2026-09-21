@@ -17,12 +17,17 @@ interface ApplicationsViewProps {
   onOpenCreatePanel?: () => void;
   onOpenCreateInterview?: () => void;
   onOpenScheduleInterview?: () => void;
+  activeFilterTab?: string;
+  onTabChange?: (tab: string) => void;
 }
 
 export const ApplicationsView: React.FC<ApplicationsViewProps> = ({
-  onSelectCandidate, onSelectInterview,
+  onSelectCandidate,
+  onSelectInterview,
+  activeFilterTab,
+  onTabChange,
 }) => {
-  const state = useApplicationsViewState();
+  const state = useApplicationsViewState(activeFilterTab, onTabChange);
 
   return (
     <div className="w-full flex flex-col gap-6 select-text">

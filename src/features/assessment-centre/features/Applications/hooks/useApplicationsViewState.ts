@@ -21,10 +21,23 @@ import {
 } from "../utils/appViewHelpers";
 import type { InterviewRowData } from "../components/ViewInterviewDetailModal";
 
-export function useApplicationsViewState() {
+export function useApplicationsViewState(
+  externalFilterTab?: string,
+  onExternalFilterTabChange?: (tab: string) => void,
+) {
   const { toast } = useToast();
   const { forwardToAwardingBody } = useApplication();
-  const [activeFilterTab, setActiveFilterTab] = useState<string>("All");
+  const [internalFilterTab, setInternalFilterTab] = useState<string>("All");
+
+  const activeFilterTab =
+    externalFilterTab !== undefined ? externalFilterTab : internalFilterTab;
+  const setActiveFilterTab = (tab: string) => {
+    if (externalFilterTab !== undefined && onExternalFilterTabChange) {
+      onExternalFilterTabChange(tab);
+    } else {
+      setInternalFilterTab(tab);
+    }
+  };
 
   const appQueryParams = useMemo(() => {
     if (activeFilterTab === "IV Approved") {
