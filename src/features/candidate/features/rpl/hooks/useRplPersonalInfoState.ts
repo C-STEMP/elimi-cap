@@ -4,11 +4,13 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/src/components/ui/toast";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { setSidebarVariant, setRplStep } from "@/store/slices/authSlice";
+import { setSidebarVariant, setRplStep, updateUser } from "@/store/slices/authSlice";
 import { setPersonalInfo } from "@/store/slices/onboardingSlice";
 import { personalInfoSchema, extractZodErrors } from "@/src/lib/validation";
 import { useCountryStateCity } from "@/src/lib/hooks/useCountryStateCity";
 import { useOnboarding } from "@/src/features/candidate/features/Onboarding/hooks";
+import { useCandidateProfile } from "@/src/features/shared/onboarding/hooks";
+import { useGetMeProfile } from "@/src/features/shared/account/hooks";
 import { useRplApplicationSubmission } from "./useRplApplicationSubmission";
 import { parseImpairmentString } from "@/features/candidate/utils";
 
@@ -18,10 +20,23 @@ export function useRplPersonalInfoState(onSuccess?: () => void) {
   const router = useRouter();
   const { getOnboarding } = useOnboarding();
   const { saveDraft } = useRplApplicationSubmission();
+  const { data: meProfile } = useGetMeProfile();
+  const { data: candidateProfile } = useCandidateProfile(true);
 
   const authUser = useAppSelector((s) => s.auth.user);
   const savedPersonalInfo = useAppSelector((s) => s.onboarding.personalInfo);
   const initialEmail = savedPersonalInfo.email || authUser?.email || "";
+
+  const initialPassportUrl =
+    savedPersonalInfo.passportUrl ||
+    savedPersonalInfo.passportPreview ||
+    meProfile?.photo?.url ||
+    meProfile?.personalDetails?.passportUrl ||
+    (candidateProfile as any)?.passportPhoto?.url ||
+    (candidateProfile as any)?.photo?.url ||
+    authUser?.passportUrl ||
+    authUser?.avatarUrl ||
+    "";
 
   const [form, setForm] = useState({
     firstName: savedPersonalInfo.firstName ?? "",
@@ -46,7 +61,7 @@ export function useRplPersonalInfoState(onSuccess?: () => void) {
   const [otherImpairment, setOtherImpairment] = useState(initialImpairmentState.otherText);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [passportFile, setPassportFile] = useState<File | null>(null);
-  const [passportDefaultImage, setPassportDefaultImage] = useState<string>(savedPersonalInfo.passportUrl || "");
+  const [passportDefaultImage, setPassportDefaultImage] = useState<string>(initialPassportUrl);
   const [passportError, setPassportError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmDraftModal, setShowConfirmDraftModal] = useState(false);
@@ -57,6 +72,44 @@ export function useRplPersonalInfoState(onSuccess?: () => void) {
     dispatch(setRplStep(1));
   }, [dispatch]);
 
+  // Synchronize passport photo from meProfile, candidateProfile, or saved state if initially missing
+  useEffect(() => {
+    const fallbackPhotoUrl =
+      meProfile?.photo?.url ||
+      meProfile?.personalDetails?.passportUrl ||
+      (candidateProfile as any)?.passportPhoto?.url ||
+      (candidateProfile as any)?.photo?.url ||
+      authUser?.passportUrl ||
+      authUser?.avatarUrl ||
+      savedPersonalInfo.passportUrl ||
+      "";
+
+    const fallbackPhotoAssetId =
+      meProfile?.photoAssetId ||
+      meProfile?.personalDetails?.passportPhotoAssetId ||
+      savedPersonalInfo.passportAssetId ||
+      "";
+
+    if (fallbackPhotoUrl && !passportDefaultImage) {
+      setPassportDefaultImage(fallbackPhotoUrl);
+      dispatch(
+        setPersonalInfo({
+          passportUrl: fallbackPhotoUrl,
+          passportAssetId: fallbackPhotoAssetId,
+        }),
+      );
+    }
+  }, [
+    meProfile,
+    candidateProfile,
+    authUser?.passportUrl,
+    authUser?.avatarUrl,
+    savedPersonalInfo.passportUrl,
+    savedPersonalInfo.passportAssetId,
+    passportDefaultImage,
+    dispatch,
+  ]);
+
   useEffect(() => {
     if (getOnboarding.data?.data) {
       const apiData = getOnboarding.data.data as any;
@@ -64,8 +117,22 @@ export function useRplPersonalInfoState(onSuccess?: () => void) {
       const ci = apiData?.contactInformation;
       const ra = apiData?.residentialAddress;
       const acc = apiData?.accessibility;
-      const passportAssetId: string = apiData?.passportAssetId ?? "";
-      const passportUrl: string = apiData?.passportUrl ?? "";
+      const passportAssetId: string =
+        apiData?.passportAssetId ||
+        apiData?.personalDetails?.passportPhotoAssetId ||
+        meProfile?.photoAssetId ||
+        savedPersonalInfo.passportAssetId ||
+        "";
+      const passportUrl: string =
+        apiData?.passportUrl ||
+        apiData?.personalDetails?.passportUrl ||
+        apiData?.photo?.url ||
+        apiData?.passportPreview ||
+        meProfile?.photo?.url ||
+        (candidateProfile as any)?.passportPhoto?.url ||
+        savedPersonalInfo.passportUrl ||
+        authUser?.passportUrl ||
+        "";
       const hydratedEmail = ci?.emailAddress || savedPersonalInfo.email || authUser?.email || "";
       const rawImpairment = acc?.impairment || savedPersonalInfo.impairment || "None / No impairment";
       const parsed = parseImpairmentString(rawImpairment);
@@ -93,14 +160,14 @@ export function useRplPersonalInfoState(onSuccess?: () => void) {
 
       if (passportAssetId || passportUrl) {
         dispatch(setPersonalInfo({ passportAssetId, passportUrl }));
-        setPassportDefaultImage(passportUrl || savedPersonalInfo.passportUrl || "");
+        setPassportDefaultImage((prev) => prev || passportUrl);
       } else if (savedPersonalInfo.passportUrl) {
-        setPassportDefaultImage(savedPersonalInfo.passportUrl);
+        setPassportDefaultImage((prev) => prev || savedPersonalInfo.passportUrl);
       }
     } else if (authUser?.email && !form.email) {
       setForm((prev) => ({ ...prev, email: authUser.email || "" }));
     }
-  }, [getOnboarding.data, authUser?.email]);
+  }, [getOnboarding.data, meProfile, candidateProfile, authUser?.email, authUser?.passportUrl]);
 
   const { countries, states, cities, isLoadingStates, isLoadingLgas } = useCountryStateCity(form.country, form.state);
 

@@ -7,6 +7,7 @@ import { DatePicker } from "@/src/components/ui/date-picker";
 import { PassportUpload } from "@/src/components/ui/passport-upload";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setPersonalInfo } from "@/store/slices/onboardingSlice";
+import { updateUser } from "@/store/slices/authSlice";
 import { GENDER_OPTIONS } from "@/features/candidate/utils";
 
 interface RplPersonalDetailsCardProps {
@@ -62,6 +63,12 @@ export const RplPersonalDetailsCard: React.FC<RplPersonalDetailsCardProps> = ({
                   passportAssetId: asset?.assetId || savedPersonalInfo.passportAssetId || "",
                   passportUrl: previewUrl || savedPersonalInfo.passportUrl || "",
                   passportFileName: file?.name ?? savedPersonalInfo.passportFileName ?? "",
+                })
+              );
+              dispatch(
+                updateUser({
+                  passportUrl: previewUrl || savedPersonalInfo.passportUrl || "",
+                  avatarUrl: previewUrl || savedPersonalInfo.passportUrl || "",
                 })
               );
             } else {
