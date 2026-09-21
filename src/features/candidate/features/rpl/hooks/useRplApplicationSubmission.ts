@@ -181,7 +181,16 @@ export function useRplApplicationSubmission() {
         dob: formatToIsoDate(personalInfo.dob) || "2000-01-01",
         gender: personalInfo.gender || "male",
         nationality: personalInfo.nationality || "Nigerian",
+        passportPhotoAssetId: personalInfo.passportAssetId || undefined,
+        passportUrl: personalInfo.passportUrl || undefined,
       };
+    }
+    if (personalInfo.passportAssetId) {
+      personalInformation.passportAssetId = personalInfo.passportAssetId;
+      personalInformation.photoAssetId = personalInfo.passportAssetId;
+    }
+    if (personalInfo.passportUrl) {
+      personalInformation.passportUrl = personalInfo.passportUrl;
     }
 
     const resolvedOccupation =

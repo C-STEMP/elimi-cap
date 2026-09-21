@@ -13,7 +13,7 @@ import { FiArrowLeft, FiArrowRight, FiCheck } from "react-icons/fi";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { setSidebarVariant } from "@/store/slices/authSlice";
+import { setSidebarVariant, updateUser } from "@/store/slices/authSlice";
 import { setPersonalInfo } from "@/store/slices/onboardingSlice";
 import {
   personalInfoSchema,
@@ -22,6 +22,8 @@ import {
 } from "@/src/lib/validation";
 import { useCountryStateCity } from "@/src/lib/hooks/useCountryStateCity";
 import { useOnboarding } from "@/src/features/candidate/features/Onboarding/hooks";
+import { useGetMeProfile } from "@/src/features/shared/account/hooks";
+import { useCandidateProfile } from "@/src/features/shared/onboarding/hooks";
 
 import {
   IMPAIRMENT_OPTIONS,
@@ -45,9 +47,22 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
 
   const authUser = useAppSelector((s) => s.auth.user);
   const savedPersonalInfo = useAppSelector((s) => s.onboarding.personalInfo);
+  const { data: meProfile } = useGetMeProfile();
+  const { data: candidateProfile } = useCandidateProfile(true);
 
   const initialEmail =
     savedPersonalInfo.email || authUser?.email || "";
+
+  const initialPassportUrl =
+    savedPersonalInfo.passportUrl ||
+    savedPersonalInfo.passportPreview ||
+    meProfile?.photo?.url ||
+    meProfile?.personalDetails?.passportUrl ||
+    (candidateProfile as any)?.passportPhoto?.url ||
+    (candidateProfile as any)?.photo?.url ||
+    authUser?.passportUrl ||
+    authUser?.avatarUrl ||
+    "";
 
   const [form, setForm] = useState({
     firstName: savedPersonalInfo.firstName ?? "",
@@ -145,10 +160,48 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [passportFile, setPassportFile] = useState<File | null>(null);
   const [passportDefaultImage, setPassportDefaultImage] = useState<string>(
-    savedPersonalInfo.passportUrl || "",
+    initialPassportUrl,
   );
   const [passportError, setPassportError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Synchronize passport photo from meProfile, candidateProfile, or saved state if initially missing
+  useEffect(() => {
+    const fallbackPhotoUrl =
+      meProfile?.photo?.url ||
+      meProfile?.personalDetails?.passportUrl ||
+      (candidateProfile as any)?.passportPhoto?.url ||
+      (candidateProfile as any)?.photo?.url ||
+      authUser?.passportUrl ||
+      authUser?.avatarUrl ||
+      savedPersonalInfo.passportUrl ||
+      "";
+
+    const fallbackPhotoAssetId =
+      meProfile?.photoAssetId ||
+      meProfile?.personalDetails?.passportPhotoAssetId ||
+      savedPersonalInfo.passportAssetId ||
+      "";
+
+    if (fallbackPhotoUrl && !passportDefaultImage) {
+      setPassportDefaultImage(fallbackPhotoUrl);
+      dispatch(
+        setPersonalInfo({
+          passportUrl: fallbackPhotoUrl,
+          passportAssetId: fallbackPhotoAssetId,
+        }),
+      );
+    }
+  }, [
+    meProfile,
+    candidateProfile,
+    authUser?.passportUrl,
+    authUser?.avatarUrl,
+    savedPersonalInfo.passportUrl,
+    savedPersonalInfo.passportAssetId,
+    passportDefaultImage,
+    dispatch,
+  ]);
 
   const {
     countries,
@@ -376,7 +429,10 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
         previousAssessmentStatus: {
           hasCompletedPreviousAssessment: false,
         },
-      },
+        passportAssetId: savedPersonalInfo.passportAssetId || undefined,
+        passportUrl: passportDefaultImage || savedPersonalInfo.passportUrl || undefined,
+        photoAssetId: savedPersonalInfo.passportAssetId || undefined,
+      } as any,
       {
         onSettled: () => {
           setIsSubmitting(false);
@@ -457,6 +513,14 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
                       previewUrl || savedPersonalInfo.passportUrl || "",
                     passportFileName:
                       file?.name ?? savedPersonalInfo.passportFileName ?? "",
+                  }),
+                );
+                dispatch(
+                  updateUser({
+                    passportUrl:
+                      previewUrl || savedPersonalInfo.passportUrl || "",
+                    avatarUrl:
+                      previewUrl || savedPersonalInfo.passportUrl || "",
                   }),
                 );
               } else {
