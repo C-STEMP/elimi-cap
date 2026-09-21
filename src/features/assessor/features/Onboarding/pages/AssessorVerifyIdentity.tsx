@@ -16,7 +16,7 @@ import { saveOnboardedStatus } from "@/src/lib/auth-storage";
 import { ASSESSOR_ROUTES } from "@/src/features/assessor/utils/assessorRoutes";
 import { useAssessorOnboarding } from "../hooks/useOnboarding";
 import { verifyIdentityApi } from "@/src/features/shared/onboarding/api";
-import { validateNIN, formatToIsoDate } from "@/src/lib/validation";
+import { validateNIN } from "@/src/lib/validation";
 import { usePatchAssessorProfile } from "@/src/features/shared/assessor/hooks/useAssessor";
 import type { AssessorQualification } from "@/src/features/shared/assessor/api/assessor.api";
 import { useGetMe, ACCOUNT_QUERY_KEYS } from "@/src/features/shared/account/hooks";
@@ -31,7 +31,6 @@ export const AssessorVerifyIdentity: React.FC = () => {
   const { saveOnboarding, submitOnboarding } = useAssessorOnboarding();
   const saved = useAppSelector((s) => s.onboarding.assessorIdentity);
   const assessorDetails = useAppSelector((s) => s.onboarding.assessorDetails);
-  const assessorPersonalInfo = useAppSelector((s) => s.onboarding.assessorPersonalInfo);
   const authUser = useAppSelector((s) => s.auth.user);
   const patchAssessorProfile = usePatchAssessorProfile();
   const { data: meData, isLoading: isMeLoading } = useGetMe();
@@ -114,15 +113,6 @@ export const AssessorVerifyIdentity: React.FC = () => {
       await verifyIdentityApi({
         type: "nin",
         identificationNumber: nin.trim(),
-        ...(assessorPersonalInfo.firstName || assessorPersonalInfo.lastName || assessorPersonalInfo.dob
-          ? {
-              personalDetails: {
-                firstName: assessorPersonalInfo.firstName || undefined,
-                lastName: assessorPersonalInfo.lastName || undefined,
-                dob: formatToIsoDate(assessorPersonalInfo.dob) || undefined,
-              },
-            }
-          : {}),
       });
 
       setModalState("success");

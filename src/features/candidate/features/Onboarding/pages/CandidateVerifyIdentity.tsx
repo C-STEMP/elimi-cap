@@ -111,18 +111,26 @@ export const CandidateVerifyIdentity: React.FC = () => {
     setModalState("verifying");
 
     try {
+      if (personalInfo.firstName && personalInfo.lastName && personalInfo.dob) {
+        try {
+          await saveCandidateOnboardingApi({
+            personalDetails: {
+              firstName: personalInfo.firstName,
+              lastName: personalInfo.lastName,
+              middleName: personalInfo.middleName?.trim() || undefined,
+              dob: formatToIsoDate(personalInfo.dob),
+              gender: personalInfo.gender || "male",
+              nationality: personalInfo.nationality || "Nigerian",
+            },
+          });
+        } catch {
+          // Continue to verification attempt
+        }
+      }
+
       await verifyIdentityApi({
         type: "nin",
         identificationNumber: nin.trim(),
-        ...(personalInfo.firstName || personalInfo.lastName || personalInfo.dob
-          ? {
-              personalDetails: {
-                firstName: personalInfo.firstName || undefined,
-                lastName: personalInfo.lastName || undefined,
-                dob: formatToIsoDate(personalInfo.dob) || undefined,
-              },
-            }
-          : {}),
       });
 
       setModalState("success");

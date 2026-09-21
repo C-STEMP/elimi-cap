@@ -177,11 +177,6 @@ export async function submitOnboardingApi(
 export interface IdentityVerificationPayload {
   type: "nin";
   identificationNumber: string;
-  personalDetails?: {
-    firstName?: string;
-    lastName?: string;
-    dob?: string; // YYYY-MM-DD
-  };
 }
 
 export interface IdentityVerificationResponse {

@@ -431,13 +431,23 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
         },
       } as any,
       {
-        onSettled: () => {
+        onSuccess: () => {
           setIsSubmitting(false);
           if (onSuccess) {
             onSuccess();
           } else {
             router.push("/onboarding/verify-identity");
           }
+        },
+        onError: (err: any) => {
+          setIsSubmitting(false);
+          toast({
+            type: "error",
+            title: "Save Failed",
+            description:
+              err?.message ||
+              "Failed to save personal details. Please check your information.",
+          });
         },
       },
     );
