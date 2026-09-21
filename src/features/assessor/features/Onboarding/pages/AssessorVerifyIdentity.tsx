@@ -16,7 +16,7 @@ import { saveOnboardedStatus } from "@/src/lib/auth-storage";
 import { ASSESSOR_ROUTES } from "@/src/features/assessor/utils/assessorRoutes";
 import { useAssessorOnboarding } from "../hooks/useOnboarding";
 import { verifyIdentityApi } from "@/src/features/shared/onboarding/api";
-import { validateNIN } from "@/src/lib/validation";
+import { validateNIN, formatToIsoDate } from "@/src/lib/validation";
 import { usePatchAssessorProfile } from "@/src/features/shared/assessor/hooks/useAssessor";
 import type { AssessorQualification } from "@/src/features/shared/assessor/api/assessor.api";
 import { useGetMe, ACCOUNT_QUERY_KEYS } from "@/src/features/shared/account/hooks";
@@ -31,6 +31,7 @@ export const AssessorVerifyIdentity: React.FC = () => {
   const { saveOnboarding, submitOnboarding } = useAssessorOnboarding();
   const saved = useAppSelector((s) => s.onboarding.assessorIdentity);
   const assessorDetails = useAppSelector((s) => s.onboarding.assessorDetails);
+  const assessorPersonalInfo = useAppSelector((s) => s.onboarding.assessorPersonalInfo);
   const authUser = useAppSelector((s) => s.auth.user);
   const patchAssessorProfile = usePatchAssessorProfile();
   const { data: meData, isLoading: isMeLoading } = useGetMe();
@@ -59,9 +60,6 @@ export const AssessorVerifyIdentity: React.FC = () => {
     }
   }, [saved]);
 
-  // This account may already have a verified identity from a different
-  // persona (e.g. this rep already verified their NIN as a centre owner) —
-  // re-submitting the same NIN here would be rejected as a duplicate.
   const isIdentityAlreadyVerified = Boolean(
     !isMeLoading && meData?.identityVerified,
   );
@@ -73,8 +71,7 @@ export const AssessorVerifyIdentity: React.FC = () => {
         dispatch(markVerified());
         setIsVerified(true);
       } else if (!saved.nin) {
-        // If the backend says not verified and no NIN was verified in this session,
-        // clear any stale/poisoned verified flags from previous runs.
+ 
         if (saved.isVerified) {
           dispatch(setAssessorIdentity({ isVerified: false }));
         }
@@ -117,6 +114,15 @@ export const AssessorVerifyIdentity: React.FC = () => {
       await verifyIdentityApi({
         type: "nin",
         identificationNumber: nin.trim(),
+        ...(assessorPersonalInfo.firstName || assessorPersonalInfo.lastName || assessorPersonalInfo.dob
+          ? {
+              personalDetails: {
+                firstName: assessorPersonalInfo.firstName || undefined,
+                lastName: assessorPersonalInfo.lastName || undefined,
+                dob: formatToIsoDate(assessorPersonalInfo.dob) || undefined,
+              },
+            }
+          : {}),
       });
 
       setModalState("success");
@@ -182,8 +188,6 @@ export const AssessorVerifyIdentity: React.FC = () => {
     });
   };
 
-  // NIN verification is a one-time, account-wide check. If this account is
-  // already verified, don't make them do it again — auto-pass this step.
   const autoAdvancedRef = useRef(false);
   useEffect(() => {
     if (
@@ -204,14 +208,12 @@ export const AssessorVerifyIdentity: React.FC = () => {
       transition={{ duration: 0.4, ease: "easeOut" }}
       className="w-full flex flex-col gap-6 select-text max-w-2xl mx-auto pb-10"
     >
-      {/* Progress Bar */}
       <div className="w-full max-w-109.75 flex justify-start mb-2">
         <div className="w-46.5 h-2.5 bg-primary-solid/15 rounded-[10px] overflow-hidden">
           <div className="w-full h-full bg-primary-solid rounded-[10px] transition-all duration-300" />
         </div>
       </div>
 
-      {/* Header */}
       <div className="flex flex-col gap-1.5 text-left">
         <h1 className="text-2xl xl:text-3xl font-extrabold tracking-tight text-neutral-primary">
           Verify Identity

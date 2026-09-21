@@ -16,7 +16,7 @@ import {
   markVerified,
 } from "@/store/slices/authSlice";
 import { setRPLIdentity } from "@/store/slices/onboardingSlice";
-import { validateNIN } from "@/src/lib/validation";
+import { validateNIN, formatToIsoDate } from "@/src/lib/validation";
 import { useOnboarding } from "@/src/features/candidate/features/Onboarding/hooks";
 
 import { StatusModal } from "@/components/status-modal";
@@ -39,6 +39,7 @@ export const RPLVerifyIdentity: React.FC<RPLVerifyIdentityProps> = ({
   const { getOnboarding } = useOnboarding();
   const verifyIdentityMutation = useVerifyIdentity();
   const savedRPLIdentity = useAppSelector((s) => s.onboarding.rplIdentity);
+  const personalInfo = useAppSelector((s) => s.onboarding.personalInfo);
 
   const [nin, setNin] = useState(savedRPLIdentity.nin || "");
   const [ninError, setNinError] = useState<string | undefined>(undefined);
@@ -88,7 +89,19 @@ export const RPLVerifyIdentity: React.FC<RPLVerifyIdentityProps> = ({
     setModalState("verifying");
 
     verifyIdentityMutation.mutate(
-      { type: "nin", identificationNumber: nin },
+      {
+        type: "nin",
+        identificationNumber: nin,
+        ...(personalInfo.firstName || personalInfo.lastName || personalInfo.dob
+          ? {
+              personalDetails: {
+                firstName: personalInfo.firstName || undefined,
+                lastName: personalInfo.lastName || undefined,
+                dob: formatToIsoDate(personalInfo.dob) || undefined,
+              },
+            }
+          : {}),
+      },
       {
         onSuccess: () => {
           setModalState("success");

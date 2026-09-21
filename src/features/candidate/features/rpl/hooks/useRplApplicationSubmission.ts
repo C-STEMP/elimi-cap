@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   createApplicationApi,
   getApplicationsApi,
+  getApplicationByIdApi,
   patchApplicationDraftApi,
   submitApplicationApi,
 } from "@/src/features/shared/applications/api";
@@ -41,20 +42,34 @@ export function useRplApplicationSubmission() {
     // 1. Check existing applications from backend
     try {
       const existing = await getApplicationsApi();
-      const existingDraft = existing.find(
+      const existingApp = existing.find(
         (a) =>
-          a.type === "RPL" &&
-          (a.status === "draft" || a.status === "in_progress"),
+          (a.type || "").toUpperCase() === "RPL" &&
+          a.status !== "certified" &&
+          a.status !== "rejected" &&
+          a.status !== "withdrawn",
       );
-      if (existingDraft?.id) {
-        dispatch(setCurrentApplication(existingDraft.id));
-        return existingDraft.id;
+      if (existingApp?.id) {
+        dispatch(setCurrentApplication(existingApp.id));
+        return existingApp.id;
       }
     } catch {
-      // Ignore network errors and continue to creation
+      // Ignore network errors and continue to verification
     }
 
-    // 2. Resolve centreId, sectorId, tradeId
+    // 2. If currentAppId exists in Redux and is not a fake local ID, verify it on the backend
+    if (currentAppId && !currentAppId.startsWith("app-1")) {
+      try {
+        const app = await getApplicationByIdApi(currentAppId);
+        if (app?.id) {
+          return app.id;
+        }
+      } catch {
+        // App not found, continue to creation
+      }
+    }
+
+    // 3. Resolve centreId, sectorId, tradeId from store or catalogues
     let centreId = startApp.assessmentCenter;
     let sectorId = startApp.sector;
     let tradeId = startApp.trade;
@@ -72,15 +87,17 @@ export function useRplApplicationSubmission() {
           if (trades.length > 0) tradeId = trades[0].id;
         }
       } catch {
-        // Fallback IDs if catalogue request fails
+        // Catalogue request failed
       }
     }
 
-    if (!centreId) centreId = "centre-1";
-    if (!sectorId) sectorId = "sector-1";
-    if (!tradeId) tradeId = "trade-1";
+    if (!centreId || !sectorId || !tradeId) {
+      throw new Error(
+        "Please select your Assessment Centre, Sector, and Trade before submitting.",
+      );
+    }
 
-    // 3. Create draft application on backend
+    // 4. Create draft application on backend
     try {
       const created = await createApplicationApi({
         type: "RPL",
@@ -89,6 +106,7 @@ export function useRplApplicationSubmission() {
         tradeId,
         unitIds: [],
       });
+
       if (created?.id) {
         dispatch(setCurrentApplication(created.id));
         dispatch(
@@ -108,32 +126,28 @@ export function useRplApplicationSubmission() {
         return created.id;
       }
     } catch (err: any) {
-      // If 409 conflict, refetch to get existing draft ID
+      // If 409 conflict ("already exists"), refetch applications to find the existing one
       const msg = err?.message?.toLowerCase() || "";
-      if (msg.includes("already") || err?.statusCode === 409) {
+      if (
+        msg.includes("already") ||
+        err?.statusCode === 409 ||
+        err?.status === 409
+      ) {
         const existing = await getApplicationsApi().catch(() => []);
-        const found = existing.find((a) => a.type === "RPL");
+        const found = existing.find(
+          (a) => (a.type || "").toUpperCase() === "RPL",
+        );
         if (found?.id) {
           dispatch(setCurrentApplication(found.id));
           return found.id;
         }
       }
+      throw err;
     }
 
-    const fallbackId = currentAppId || `app-${Date.now()}`;
-    dispatch(setCurrentApplication(fallbackId));
-    dispatch(
-      createApplicationSlice({
-        title:
-          (!rplExp.qualificationTitle?.match(/^[0-9A-Z]{20,}$/) &&
-            rplExp.qualificationTitle) ||
-          startApp.tradeName ||
-          "RPL Application",
-        subtitle:
-          startApp.sectorName || "Recognition of Prior Learning",
-      }),
+    throw new Error(
+      "Unable to create or find an RPL application on the server.",
     );
-    return fallbackId;
   };
 
   /**
@@ -162,14 +176,14 @@ export function useRplApplicationSubmission() {
         emailAddress: personalInfo.email || authUser?.email || "",
         phoneNumber: {
           countryCode: "+234",
-          number: personalInfo.phoneNumber || "08012345678",
+          number: personalInfo.phoneNumber || "",
         },
       },
       residentialAddress: {
         country: personalInfo.country || "Nigeria",
-        state: personalInfo.state || "Lagos",
-        lga: personalInfo.lga || "Ikeja",
-        address: personalInfo.streetAddress || "Street Address",
+        state: personalInfo.state || "",
+        lga: personalInfo.lga || undefined,
+        address: personalInfo.streetAddress || "",
       },
     };
 
@@ -178,10 +192,9 @@ export function useRplApplicationSubmission() {
         firstName: personalInfo.firstName,
         lastName: personalInfo.lastName,
         middleName: personalInfo.middleName || undefined,
-        dob: formatToIsoDate(personalInfo.dob) || "2000-01-01",
-        gender: personalInfo.gender || "male",
-        nationality: personalInfo.nationality || "Nigerian",
-        passportPhotoAssetId: personalInfo.passportAssetId || undefined,
+        dob: formatToIsoDate(personalInfo.dob) || undefined,
+        gender: personalInfo.gender || undefined,
+        nationality: personalInfo.nationality || undefined,
       };
     }
 
@@ -190,7 +203,7 @@ export function useRplApplicationSubmission() {
       (!rplExp.qualificationTitle?.match(/^[0-9A-Z]{20,}$/) &&
         rplExp.qualificationTitle) ||
       startApp.tradeName ||
-      "Cosmetologist";
+      "";
 
     // Sanitize unitIds: if Full Assessment, send []; if Modular Assessment, only send valid ID strings
     const isFullAssessment =
@@ -219,32 +232,20 @@ export function useRplApplicationSubmission() {
         currentOccupation: {
           occupation: resolvedOccupation,
           yearsOfExperience: yearsNum,
-          employmentHistory: (rplExp.employments && rplExp.employments.length > 0
-            ? rplExp.employments
-            : [
-                {
-                  id: "emp-1",
-                  companyName: "Self-Employed",
-                  jobTitle: resolvedOccupation,
-                  employmentType: "Full-time",
-                  startDate: "2020-01-01",
-                  endDate: "",
-                  responsibilities: "Trade duties",
-                },
-              ]
-          ).map((emp) => ({
-            company: emp.companyName || "Self-Employed",
-            jobTitle: emp.jobTitle || resolvedOccupation,
-            employmentType: emp.employmentType || "Full-time",
-            startDate:
-              formatToIsoDate(emp.startDate) || "2020-01-01",
-            endDate: (emp as any).endDate
-              ? formatToIsoDate((emp as any).endDate)
-              : undefined,
-            keyResponsibilities: emp.responsibilities || "Trade duties",
-          })),
+          employmentHistory: (rplExp.employments || [])
+            .filter((emp) => emp.companyName || emp.jobTitle)
+            .map((emp) => ({
+              company: emp.companyName || "",
+              jobTitle: emp.jobTitle || resolvedOccupation,
+              employmentType: emp.employmentType || "Full-time",
+              startDate: formatToIsoDate(emp.startDate) || "",
+              endDate: (emp as any).endDate
+                ? formatToIsoDate((emp as any).endDate)
+                : undefined,
+              keyResponsibilities: emp.responsibilities || "",
+            })),
         },
-        reasonForSeekingRPL: rplExp.reasonRPL || "Certification of skills",
+        reasonForSeekingRPL: rplExp.reasonRPL || "",
         evidenceCandidateCanProvide: {
           resume: Boolean(
             rplExp.selectedEvidence?.includes("Resume / CV") ||
