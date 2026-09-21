@@ -17,7 +17,7 @@ import { StatusModal } from "@/components/status-modal";
 
 import { useCandidateProfile } from "@/src/features/shared/onboarding/hooks";
 import { markVerified } from "@/store/slices/authSlice";
-import { setPersonalInfo } from "@/store/slices/onboardingSlice";
+import { setPersonalInfo, setRPLExperienceTrade } from "@/store/slices/onboardingSlice";
 import { useRplApplicationSubmission } from "../hooks/useRplApplicationSubmission";
 
 export interface RPLReviewSubmitProps {
@@ -48,9 +48,16 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
   const personalInfoCompleted = Boolean(
     effectiveFirstName && effectiveLastName,
   );
-  const expCompleted = Boolean(
+
+  const obOcc = obData?.currentOccupation || obData?.rplExperienceTrade;
+  const effectiveOccupation =
     rplExp.occupation ||
-      rplExp.employments?.some((e) => e.companyName || e.jobTitle),
+    obOcc?.occupation ||
+    (!rplExp.qualificationTitle?.match(/^[0-9A-Z]{20,}$/) && rplExp.qualificationTitle);
+  const expCompleted = Boolean(
+    effectiveOccupation ||
+      rplExp.employments?.some((e) => e.companyName || e.jobTitle) ||
+      obOcc?.employmentHistory?.length > 0,
   );
   const identityVerified = Boolean(
     rplId.isVerified ||
@@ -83,8 +90,23 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
       if (Object.keys(patch).length > 0) {
         dispatch(setPersonalInfo(patch));
       }
+
+      const expPatch: Record<string, any> = {};
+      const obRpl = obData?.rplExperienceTrade;
+      if (!rplExp.occupation && (obOcc?.occupation || obRpl?.occupation)) {
+        expPatch.occupation = obOcc?.occupation || obRpl?.occupation;
+      }
+      if (!rplExp.reasonRPL && (obRpl?.reasonRPL || obOcc?.reasonForSeekingRPL)) {
+        expPatch.reasonRPL = obRpl?.reasonRPL || obOcc?.reasonForSeekingRPL;
+      }
+      if (obOcc?.yearsOfExperience !== undefined && !rplExp.yearsOfExperience) {
+        expPatch.yearsOfExperience = String(obOcc.yearsOfExperience);
+      }
+      if (Object.keys(expPatch).length > 0) {
+        dispatch(setRPLExperienceTrade(expPatch));
+      }
     }
-  }, [obData, personalInfo, user?.email, dispatch]);
+  }, [obData, personalInfo, rplExp, user?.email, dispatch]);
 
   React.useEffect(() => {
     if (identityVerified && !user?.isVerified) {
