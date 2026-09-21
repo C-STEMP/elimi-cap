@@ -128,15 +128,6 @@ export const CenterVerifyIdentity: React.FC = () => {
       {
         type: "nin",
         identificationNumber: nin,
-        ...(centrePersonalInfo.firstName || centrePersonalInfo.lastName || centrePersonalInfo.dob
-          ? {
-              personalDetails: {
-                firstName: centrePersonalInfo.firstName || undefined,
-                lastName: centrePersonalInfo.lastName || undefined,
-                dob: formatToIsoDate(centrePersonalInfo.dob) || undefined,
-              },
-            }
-          : {}),
       },
       {
         onSuccess: () => {
