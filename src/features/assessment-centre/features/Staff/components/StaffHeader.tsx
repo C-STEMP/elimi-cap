@@ -2,12 +2,18 @@
 
 import React from "react";
 import {
-  FiPlus,
   FiUser,
-  FiClipboard,
+  FiPlus,
   FiSlash,
+  FiMail,
+  FiPhone,
+  FiClipboard,
+  FiCheckCircle,
+  FiClock,
+  FiAlertCircle,
 } from "react-icons/fi";
 import { Button } from "@/src/components/ui/button";
+import { Avatar } from "@/src/components/ui/avatar";
 import { StaffStatusModalMode } from "./StaffStatusModal";
 import { StaffMember } from "@/features/assessment-centre/types";
 import { MOCK_STAFF_MEMBERS } from "@/features/assessment-centre/utils/constants";
@@ -22,6 +28,8 @@ interface StaffHeaderProps {
   onBack: () => void;
   onAddStaff: () => void;
   onDeactivate: (mode: StaffStatusModalMode) => void;
+  activeStatusFilter?: string;
+  onSelectStatusFilter?: (status: string) => void;
 }
 
 export const StaffHeader: React.FC<StaffHeaderProps> = ({
@@ -29,6 +37,8 @@ export const StaffHeader: React.FC<StaffHeaderProps> = ({
   onBack,
   onAddStaff,
   onDeactivate,
+  activeStatusFilter,
+  onSelectStatusFilter,
 }) => {
   if (selectedStaffId) {
     const mockStaff = MOCK_STAFF_MEMBERS.find((s) => s.id === selectedStaffId);
@@ -42,7 +52,13 @@ export const StaffHeader: React.FC<StaffHeaderProps> = ({
     );
   }
 
-  return <StaffListHeader onAddStaff={onAddStaff} />;
+  return (
+    <StaffListHeader
+      onAddStaff={onAddStaff}
+      activeStatusFilter={activeStatusFilter}
+      onSelectStatusFilter={onSelectStatusFilter}
+    />
+  );
 };
 
 interface StaffDetailHeaderProps {
@@ -133,61 +149,61 @@ const StaffDetailHeader: React.FC<StaffDetailHeaderProps> = ({
         )}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
-          <div className="flex flex-col">
-            <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+        <div className="col-span-2 sm:col-span-1 bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
+          <div className="flex flex-col min-w-0">
+            <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80 truncate">
               Reviewed Applications
             </span>
             <div className="flex items-baseline gap-1.5 mt-1">
               <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
                 {reviewedCount}
               </span>
-              <span className="text-xs font-normal text-white/70">
+              <span className="text-xs lg:text-sm font-normal text-white/80">
                 applications
               </span>
             </div>
           </div>
-          <div className="w-9 h-9 flex items-center justify-center shrink-0">
-            <FiClipboard className="w-5 h-5 text-white/90" />
+          <div className="w-9 h-9 flex items-center justify-center shrink-0 ml-2">
+            <FiCheckCircle className="w-5 h-5 text-white/90" />
           </div>
         </div>
 
         <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
-          <div className="flex flex-col">
-            <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80">
+          <div className="flex flex-col min-w-0">
+            <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80 truncate">
               Pending Applications
             </span>
             <div className="flex items-baseline gap-1.5 mt-1">
               <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
                 {pendingCount}
               </span>
-              <span className="text-xs font-normal text-white/70">
+              <span className="text-xs lg:text-sm font-normal text-white/80">
                 applications
               </span>
             </div>
           </div>
-          <div className="w-9 h-9 flex items-center justify-center shrink-0">
-            <FiClipboard className="w-5 h-5 text-white/90" />
+          <div className="w-9 h-9 flex items-center justify-center shrink-0 ml-2">
+            <FiClock className="w-5 h-5 text-white/90" />
           </div>
         </div>
 
         <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
-          <div className="flex flex-col">
-            <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80">
+          <div className="flex flex-col min-w-0">
+            <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80 truncate">
               Requires Attention
             </span>
             <div className="flex items-baseline gap-1.5 mt-1">
               <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
                 {requiresAttentionCount}
               </span>
-              <span className="text-xs font-normal text-white/70">
+              <span className="text-xs lg:text-sm font-normal text-white/80">
                 applications
               </span>
             </div>
           </div>
-          <div className="w-9 h-9 flex items-center justify-center shrink-0">
-            <FiClipboard className="w-5 h-5 text-white/90" />
+          <div className="w-9 h-9 flex items-center justify-center shrink-0 ml-2">
+            <FiAlertCircle className="w-5 h-5 text-white/90" />
           </div>
         </div>
       </div>
@@ -197,9 +213,15 @@ const StaffDetailHeader: React.FC<StaffDetailHeaderProps> = ({
 
 interface StaffListHeaderProps {
   onAddStaff: () => void;
+  activeStatusFilter?: string;
+  onSelectStatusFilter?: (status: string) => void;
 }
 
-const StaffListHeader: React.FC<StaffListHeaderProps> = ({ onAddStaff }) => {
+const StaffListHeader: React.FC<StaffListHeaderProps> = ({
+  onAddStaff,
+  activeStatusFilter,
+  onSelectStatusFilter,
+}) => {
   const { data: staffList = [] } = useGetCentreStaff();
   const { data: staffSummary } = useGetCentreStaffSummary();
 
@@ -213,6 +235,37 @@ const StaffListHeader: React.FC<StaffListHeaderProps> = ({ onAddStaff }) => {
   const inactiveStaff =
     staffSummary?.inactive ??
     staffList.filter((s) => s.status === "inactive").length;
+
+  const stats = [
+    {
+      id: "total",
+      label: "Total Staffs",
+      count: totalStaff,
+      status: "All",
+      icon: <FiUser className="w-5 h-5 text-white/90" />,
+    },
+    {
+      id: "active",
+      label: "Active Staff",
+      count: activeStaff,
+      status: "Active",
+      icon: <FiCheckCircle className="w-5 h-5 text-white/90" />,
+    },
+    {
+      id: "pending",
+      label: "Pending Staff",
+      count: pendingStaff,
+      status: "Pending",
+      icon: <FiClock className="w-5 h-5 text-white/90" />,
+    },
+    {
+      id: "inactive",
+      label: "Inactive Staff",
+      count: inactiveStaff,
+      status: "Inactive",
+      icon: <FiSlash className="w-5 h-5 text-white/90" />,
+    },
+  ];
 
   return (
     <div className="flex flex-col gap-6 pt-2">
@@ -232,82 +285,51 @@ const StaffListHeader: React.FC<StaffListHeaderProps> = ({ onAddStaff }) => {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
-          <div className="flex flex-col">
-            <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80">
-              Total Staffs
-            </span>
-            <div className="flex items-baseline gap-1.5 mt-1">
-              <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                {totalStaff}
-              </span>
-              <span className="text-xs font-normal text-white/70">
-                staffs
-              </span>
-            </div>
-          </div>
-          <div className="w-9 h-9 flex items-center justify-center shrink-0">
-            <FiUser className="w-5 h-5 text-white/90" />
-          </div>
-        </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {stats.map((item) => {
+          const isActive =
+            activeStatusFilter !== undefined &&
+            (activeStatusFilter === item.status ||
+              (item.status === "All" &&
+                (activeStatusFilter === "All" || !activeStatusFilter)));
+          const isClickable = Boolean(onSelectStatusFilter);
 
-        <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
-          <div className="flex flex-col">
-            <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80">
-              Active Staff
-            </span>
-            <div className="flex items-baseline gap-1.5 mt-1">
-              <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                {activeStaff}
-              </span>
-              <span className="text-xs font-normal text-white/70">
-                staffs
-              </span>
-            </div>
-          </div>
-          <div className="w-9 h-9 flex items-center justify-center shrink-0">
-            <FiUser className="w-5 h-5 text-white/90" />
-          </div>
-        </div>
-
-        <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
-          <div className="flex flex-col">
-            <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80">
-              Pending Staff
-            </span>
-            <div className="flex items-baseline gap-1.5 mt-1">
-              <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                {pendingStaff}
-              </span>
-              <span className="text-xs font-normal text-white/70">
-                staffs
-              </span>
-            </div>
-          </div>
-          <div className="w-9 h-9 flex items-center justify-center shrink-0">
-            <FiUser className="w-5 h-5 text-white/90" />
-          </div>
-        </div>
-
-        <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
-          <div className="flex flex-col">
-            <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80">
-              Inactive
-            </span>
-            <div className="flex items-baseline gap-1.5 mt-1">
-              <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                {inactiveStaff}
-              </span>
-              <span className="text-xs font-normal text-white/70">
-                staffs
-              </span>
-            </div>
-          </div>
-          <div className="w-9 h-9 flex items-center justify-center shrink-0">
-            <FiUser className="w-5 h-5 text-white/90" />
-          </div>
-        </div>
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={
+                isClickable ? () => onSelectStatusFilter?.(item.status) : undefined
+              }
+              className={`bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border transition-all shadow-xs text-left w-full ${
+                isClickable
+                  ? "cursor-pointer active:scale-[0.98]"
+                  : "cursor-default"
+              } ${
+                isActive
+                  ? "ring-2 ring-white/60 bg-white/20 border-white/40 shadow-md"
+                  : "border-white/15"
+              }`}
+            >
+              <div className="flex flex-col min-w-0">
+                <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80 truncate">
+                  {item.label}
+                </span>
+                <div className="flex items-baseline gap-1.5 mt-1">
+                  <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
+                    {item.count}
+                  </span>
+                  <span className="text-xs lg:text-sm font-normal text-white/90">
+                    staffs
+                  </span>
+                </div>
+              </div>
+              <div className="w-9 h-9 flex items-center justify-center shrink-0 ml-2">
+                {item.icon}
+              </div>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

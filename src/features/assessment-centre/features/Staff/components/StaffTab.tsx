@@ -11,6 +11,8 @@ interface StaffTabProps {
   selectedStaffId: string | null;
   onSelectStaff: (id: string | null) => void;
   onOpenAddStaffModal: () => void;
+  activeStatusFilter?: string;
+  onSelectStatusFilter?: (status: string) => void;
 }
 
 export const StaffTab: React.FC<StaffTabProps> = ({
@@ -18,6 +20,8 @@ export const StaffTab: React.FC<StaffTabProps> = ({
   selectedStaffId,
   onSelectStaff,
   onOpenAddStaffModal,
+  activeStatusFilter,
+  onSelectStatusFilter,
 }) => {
   return (
     <motion.div
@@ -35,6 +39,8 @@ export const StaffTab: React.FC<StaffTabProps> = ({
           userRole={activeRole}
           onSelectStaff={(id) => onSelectStaff(id)}
           onAddStaff={onOpenAddStaffModal}
+          activeStatusFilter={activeStatusFilter}
+          onSelectStatusFilter={onSelectStatusFilter}
         />
       )}
     </motion.div>

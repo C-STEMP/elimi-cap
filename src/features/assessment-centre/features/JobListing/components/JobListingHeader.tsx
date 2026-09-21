@@ -4,8 +4,12 @@ import React from "react";
 import {
   FiPlus,
   FiUser,
+  FiUsers,
   FiCheck,
+  FiCheckCircle,
   FiClipboard,
+  FiBriefcase,
+  FiArchive,
 } from "react-icons/fi";
 import { Button } from "@/src/components/ui/button";
 import {
@@ -22,6 +26,8 @@ interface JobListingHeaderProps {
   onBackFromApplicant: () => void;
   onPostRequest: () => void;
   onMarkAsFilled: () => void;
+  activeStatusFilter?: string;
+  onSelectStatusFilter?: (status: string) => void;
 }
 
 export const JobListingHeader: React.FC<JobListingHeaderProps> = ({
@@ -32,6 +38,8 @@ export const JobListingHeader: React.FC<JobListingHeaderProps> = ({
   onBackFromApplicant,
   onPostRequest,
   onMarkAsFilled,
+  activeStatusFilter,
+  onSelectStatusFilter,
 }) => {
   if (selectedApplicantId) {
     return (
@@ -57,7 +65,13 @@ export const JobListingHeader: React.FC<JobListingHeaderProps> = ({
     );
   }
 
-  return <JobListHeader onPostRequest={onPostRequest} />;
+  return (
+    <JobListHeader
+      onPostRequest={onPostRequest}
+      activeStatusFilter={activeStatusFilter}
+      onSelectStatusFilter={onSelectStatusFilter}
+    />
+  );
 };
 
 interface ApplicantDetailHeaderProps {
@@ -171,7 +185,7 @@ const JobDetailHeader: React.FC<JobDetailHeaderProps> = ({
         )}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
           <div className="flex flex-col">
             <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80">
@@ -185,7 +199,7 @@ const JobDetailHeader: React.FC<JobDetailHeaderProps> = ({
             </div>
           </div>
           <div className="w-9 h-9 flex items-center justify-center shrink-0">
-            <FiClipboard className="w-5 h-5 text-white/90" />
+            <FiBriefcase className="w-5 h-5 text-white/90" />
           </div>
         </div>
 
@@ -204,7 +218,7 @@ const JobDetailHeader: React.FC<JobDetailHeaderProps> = ({
             </div>
           </div>
           <div className="w-9 h-9 flex items-center justify-center shrink-0">
-            <FiClipboard className="w-5 h-5 text-white/90" />
+            <FiUsers className="w-5 h-5 text-white/90" />
           </div>
         </div>
 
@@ -223,7 +237,7 @@ const JobDetailHeader: React.FC<JobDetailHeaderProps> = ({
             </div>
           </div>
           <div className="w-9 h-9 flex items-center justify-center shrink-0">
-            <FiClipboard className="w-5 h-5 text-white/90" />
+            <FiCheckCircle className="w-5 h-5 text-white/90" />
           </div>
         </div>
       </div>
@@ -233,9 +247,15 @@ const JobDetailHeader: React.FC<JobDetailHeaderProps> = ({
 
 interface JobListHeaderProps {
   onPostRequest: () => void;
+  activeStatusFilter?: string;
+  onSelectStatusFilter?: (status: string) => void;
 }
 
-const JobListHeader: React.FC<JobListHeaderProps> = ({ onPostRequest }) => {
+const JobListHeader: React.FC<JobListHeaderProps> = ({
+  onPostRequest,
+  activeStatusFilter,
+  onSelectStatusFilter,
+}) => {
   const { data: jobListings = [] } = useGetJobPostings();
 
   const totalJobs = jobListings.length;
@@ -245,6 +265,13 @@ const JobListHeader: React.FC<JobListHeaderProps> = ({ onPostRequest }) => {
     (sum, j: any) => sum + (j.applicantCount || (j.applicants?.length ?? 0)),
     0,
   );
+
+  const cards = [
+    { label: "Total Job Listing", value: totalJobs, unit: "listings", icon: <FiClipboard className="w-5 h-5 text-white/90" />, filter: "all" },
+    { label: "Open Listing", value: openJobs, unit: "listings", icon: <FiBriefcase className="w-5 h-5 text-white/90" />, filter: "open" },
+    { label: "Filled Listing", value: filledJobs, unit: "listings", icon: <FiCheckCircle className="w-5 h-5 text-white/90" />, filter: "closed" },
+    { label: "Total Applicants", value: totalApplicants, unit: "applicants", icon: <FiUsers className="w-5 h-5 text-white/90" />, filter: null },
+  ];
 
   return (
     <div className="flex flex-col gap-6 pt-2">
@@ -264,82 +291,41 @@ const JobListHeader: React.FC<JobListHeaderProps> = ({ onPostRequest }) => {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
-          <div className="flex flex-col">
-            <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80">
-              Total Job Listing
-            </span>
-            <div className="flex items-baseline gap-1.5 mt-1">
-              <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                {totalJobs}
-              </span>
-              <span className="text-xs font-normal text-white/70">
-                listings
-              </span>
-            </div>
-          </div>
-          <div className="w-9 h-9 flex items-center justify-center shrink-0">
-            <FiClipboard className="w-5 h-5 text-white/90" />
-          </div>
-        </div>
-
-        <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
-          <div className="flex flex-col">
-            <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80">
-              Open Listing
-            </span>
-            <div className="flex items-baseline gap-1.5 mt-1">
-              <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                {openJobs}
-              </span>
-              <span className="text-xs font-normal text-white/70">
-                listings
-              </span>
-            </div>
-          </div>
-          <div className="w-9 h-9 flex items-center justify-center shrink-0">
-            <FiClipboard className="w-5 h-5 text-white/90" />
-          </div>
-        </div>
-
-        <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
-          <div className="flex flex-col">
-            <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80">
-              Filled Listing
-            </span>
-            <div className="flex items-baseline gap-1.5 mt-1">
-              <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                {filledJobs}
-              </span>
-              <span className="text-xs font-normal text-white/70">
-                listings
-              </span>
-            </div>
-          </div>
-          <div className="w-9 h-9 flex items-center justify-center shrink-0">
-            <FiClipboard className="w-5 h-5 text-white/90" />
-          </div>
-        </div>
-
-        <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
-          <div className="flex flex-col">
-            <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80">
-              Total Applicants
-            </span>
-            <div className="flex items-baseline gap-1.5 mt-1">
-              <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                {totalApplicants}
-              </span>
-              <span className="text-xs font-normal text-white/70">
-                applicants
-              </span>
-            </div>
-          </div>
-          <div className="w-9 h-9 flex items-center justify-center shrink-0">
-            <FiUser className="w-5 h-5 text-white/90" />
-          </div>
-        </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {cards.map((card) => {
+          const isActive = card.filter !== null && activeStatusFilter === card.filter;
+          return (
+            <button
+              key={card.label}
+              type="button"
+              onClick={() => card.filter !== null && onSelectStatusFilter?.(card.filter)}
+              className={[
+                "bg-white/10 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border transition-all shadow-xs text-left",
+                card.filter !== null ? "cursor-pointer hover:bg-white/15 active:scale-[0.98]" : "cursor-default",
+                isActive
+                  ? "ring-2 ring-white/60 bg-white/20 border-white/40"
+                  : "border-white/15",
+              ].join(" ")}
+            >
+              <div className="flex flex-col">
+                <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80">
+                  {card.label}
+                </span>
+                <div className="flex items-baseline gap-1.5 mt-1">
+                  <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
+                    {card.value}
+                  </span>
+                  <span className="text-xs font-normal text-white/70">
+                    {card.unit}
+                  </span>
+                </div>
+              </div>
+              <div className="w-9 h-9 flex items-center justify-center shrink-0">
+                {card.icon}
+              </div>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

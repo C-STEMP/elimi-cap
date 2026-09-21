@@ -5,6 +5,9 @@ import {
   FiFlag,
   FiClipboard,
   FiSlash,
+  FiCheckCircle,
+  FiClock,
+  FiActivity,
 } from "react-icons/fi";
 import { Button } from "@/src/components/ui/button";
 import { AssessorItem } from "@/features/assessment-centre/types";
@@ -23,6 +26,8 @@ interface AssessorsHeaderProps {
   onBackToList: () => void;
   onDeactivate: (mode: StaffStatusModalMode) => void;
   userRole?: string;
+  activeStatusFilter?: string;
+  onSelectStatusFilter?: (status: string) => void;
 }
 
 export const AssessorsHeader: React.FC<AssessorsHeaderProps> = ({
@@ -30,6 +35,8 @@ export const AssessorsHeader: React.FC<AssessorsHeaderProps> = ({
   onBackToList,
   onDeactivate,
   userRole,
+  activeStatusFilter,
+  onSelectStatusFilter,
 }) => {
   if (selectedAssessorId) {
     return (
@@ -42,7 +49,12 @@ export const AssessorsHeader: React.FC<AssessorsHeaderProps> = ({
     );
   }
 
-  return <AssessorsListHeader />;
+  return (
+    <AssessorsListHeader
+      activeStatusFilter={activeStatusFilter}
+      onSelectStatusFilter={onSelectStatusFilter}
+    />
+  );
 };
 
 interface AssessorDetailHeaderProps {
@@ -129,61 +141,61 @@ const AssessorDetailHeader: React.FC<AssessorDetailHeaderProps> = ({
         ) : null}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
-          <div className="flex flex-col">
-            <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+        <div className="col-span-2 sm:col-span-1 bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
+          <div className="flex flex-col min-w-0">
+            <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80 truncate">
               Assigned Candidates
             </span>
             <div className="flex items-baseline gap-1.5 mt-1">
               <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
                 {assignedCount}
               </span>
-              <span className="text-xs font-normal text-white/70">
+              <span className="text-xs lg:text-sm font-normal text-white/80">
                 applications
               </span>
             </div>
           </div>
-          <div className="w-9 h-9 flex items-center justify-center shrink-0">
+          <div className="w-9 h-9 flex items-center justify-center shrink-0 ml-2">
             <FiClipboard className="w-5 h-5 text-white/90" />
           </div>
         </div>
 
         <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
-          <div className="flex flex-col">
-            <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80">
+          <div className="flex flex-col min-w-0">
+            <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80 truncate">
               Ongoing
             </span>
             <div className="flex items-baseline gap-1.5 mt-1">
               <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
                 {ongoingCount}
               </span>
-              <span className="text-xs font-normal text-white/70">
+              <span className="text-xs lg:text-sm font-normal text-white/80">
                 applications
               </span>
             </div>
           </div>
-          <div className="w-9 h-9 flex items-center justify-center shrink-0">
-            <FiClipboard className="w-5 h-5 text-white/90" />
+          <div className="w-9 h-9 flex items-center justify-center shrink-0 ml-2">
+            <FiActivity className="w-5 h-5 text-white/90" />
           </div>
         </div>
 
         <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
-          <div className="flex flex-col">
-            <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80">
+          <div className="flex flex-col min-w-0">
+            <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80 truncate">
               Completed
             </span>
             <div className="flex items-baseline gap-1.5 mt-1">
               <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
                 {completedCount}
               </span>
-              <span className="text-xs font-normal text-white/70">
+              <span className="text-xs lg:text-sm font-normal text-white/80">
                 applications
               </span>
             </div>
           </div>
-          <div className="w-9 h-9 flex items-center justify-center shrink-0">
-            <FiClipboard className="w-5 h-5 text-white/90" />
+          <div className="w-9 h-9 flex items-center justify-center shrink-0 ml-2">
+            <FiCheckCircle className="w-5 h-5 text-white/90" />
           </div>
         </div>
       </div>
@@ -191,7 +203,15 @@ const AssessorDetailHeader: React.FC<AssessorDetailHeaderProps> = ({
   );
 };
 
-const AssessorsListHeader: React.FC = () => {
+interface AssessorsListHeaderProps {
+  activeStatusFilter?: string;
+  onSelectStatusFilter?: (status: string) => void;
+}
+
+const AssessorsListHeader: React.FC<AssessorsListHeaderProps> = ({
+  activeStatusFilter,
+  onSelectStatusFilter,
+}) => {
   const { data: retainedRequests = [] } = useGetRetainedRequests();
   const { data: assessorSummary } = useGetCentreAssessorsSummary();
 
@@ -208,88 +228,88 @@ const AssessorsListHeader: React.FC = () => {
       (r) => r.status === "rejected" || r.status === "revoked",
     ).length;
 
+  const stats = [
+    {
+      id: "total",
+      label: "Total Assessors",
+      count: totalAssessors,
+      status: "All",
+      icon: <FiFlag className="w-5 h-5 text-white/90" />,
+    },
+    {
+      id: "active",
+      label: "Active Assessors",
+      count: activeAssessors,
+      status: "Active",
+      icon: <FiCheckCircle className="w-5 h-5 text-white/90" />,
+    },
+    {
+      id: "pending",
+      label: "Pending Assessors",
+      count: pendingAssessors,
+      status: "Pending",
+      icon: <FiClock className="w-5 h-5 text-white/90" />,
+    },
+    {
+      id: "inactive",
+      label: "Inactive Assessors",
+      count: inactiveAssessors,
+      status: "Inactive",
+      icon: <FiSlash className="w-5 h-5 text-white/90" />,
+    },
+  ];
+
   return (
     <div className="flex flex-col gap-6 pt-2">
       <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
         Assessors
       </h1>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
-          <div className="flex flex-col">
-            <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80">
-              Total Assessors
-            </span>
-            <div className="flex items-baseline gap-1.5 mt-1">
-              <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                {totalAssessors}
-              </span>
-              <span className="text-xs font-normal text-white/70">
-                assessors
-              </span>
-            </div>
-          </div>
-          <div className="w-9 h-9 flex items-center justify-center shrink-0">
-            <FiFlag className="w-5 h-5 text-white/90" />
-          </div>
-        </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {stats.map((item) => {
+          const isActive =
+            activeStatusFilter !== undefined &&
+            (activeStatusFilter === item.status ||
+              (item.status === "All" &&
+                (activeStatusFilter === "All" || !activeStatusFilter)));
+          const isClickable = Boolean(onSelectStatusFilter);
 
-        <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
-          <div className="flex flex-col">
-            <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80">
-              Active Assessors
-            </span>
-            <div className="flex items-baseline gap-1.5 mt-1">
-              <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                {activeAssessors}
-              </span>
-              <span className="text-xs font-normal text-white/70">
-                assessors
-              </span>
-            </div>
-          </div>
-          <div className="w-9 h-9 flex items-center justify-center shrink-0">
-            <FiFlag className="w-5 h-5 text-white/90" />
-          </div>
-        </div>
-
-        <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
-          <div className="flex flex-col">
-            <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80">
-              Pending Assessors
-            </span>
-            <div className="flex items-baseline gap-1.5 mt-1">
-              <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                {pendingAssessors}
-              </span>
-              <span className="text-xs font-normal text-white/70">
-                assessors
-              </span>
-            </div>
-          </div>
-          <div className="w-9 h-9 flex items-center justify-center shrink-0">
-            <FiFlag className="w-5 h-5 text-white/90" />
-          </div>
-        </div>
-
-        <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
-          <div className="flex flex-col">
-            <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80">
-              Inactive Assessors
-            </span>
-            <div className="flex items-baseline gap-1.5 mt-1">
-              <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                {inactiveAssessors}
-              </span>
-              <span className="text-xs font-normal text-white/70">
-                assessors
-              </span>
-            </div>
-          </div>
-          <div className="w-9 h-9 flex items-center justify-center shrink-0">
-            <FiFlag className="w-5 h-5 text-white/90" />
-          </div>
-        </div>
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={
+                isClickable ? () => onSelectStatusFilter?.(item.status) : undefined
+              }
+              className={`bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border transition-all shadow-xs text-left w-full ${
+                isClickable
+                  ? "cursor-pointer active:scale-[0.98]"
+                  : "cursor-default"
+              } ${
+                isActive
+                  ? "ring-2 ring-white/60 bg-white/20 border-white/40 shadow-md"
+                  : "border-white/15"
+              }`}
+            >
+              <div className="flex flex-col min-w-0">
+                <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80 truncate">
+                  {item.label}
+                </span>
+                <div className="flex items-baseline gap-1.5 mt-1">
+                  <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
+                    {item.count}
+                  </span>
+                  <span className="text-xs lg:text-sm font-normal text-white/90">
+                    assessors
+                  </span>
+                </div>
+              </div>
+              <div className="w-9 h-9 flex items-center justify-center shrink-0 ml-2">
+                {item.icon}
+              </div>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
