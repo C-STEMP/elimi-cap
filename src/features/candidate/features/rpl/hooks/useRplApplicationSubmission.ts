@@ -20,7 +20,10 @@ import {
   setCurrentApplication,
   updateApplicationStatus,
 } from "@/store/slices/applicationSlice";
-import { setPersonalInfo } from "@/store/slices/onboardingSlice";
+import {
+  setPersonalInfo,
+  setRPLExperienceTrade,
+} from "@/store/slices/onboardingSlice";
 import { getOnboardingPersonaApi } from "@/src/features/shared/onboarding/api";
 import { formatToIsoDate } from "@/src/lib/validation";
 
@@ -203,6 +206,112 @@ export function useRplApplicationSubmission() {
     return current;
   };
 
+  const getHydratedExperienceAndTrade = async (appId?: string) => {
+    let current = { ...rplExp };
+    const hasOccupation = Boolean(
+      current.occupation && current.occupation.trim().length > 0,
+    );
+    const hasReason = Boolean(
+      current.reasonRPL && current.reasonRPL.trim().length > 0,
+    );
+
+    if (!hasOccupation || !hasReason) {
+      try {
+        const obRes = await getOnboardingPersonaApi("candidate");
+        const obData = obRes?.data as any;
+        if (obData) {
+          const obOcc = obData.currentOccupation;
+          const obRpl = obData.rplExperienceTrade;
+          const patch: Partial<typeof rplExp> = {};
+
+          if (!hasOccupation) {
+            const occ =
+              obOcc?.occupation ||
+              obRpl?.occupation ||
+              startApp.tradeName ||
+              "";
+            if (occ) patch.occupation = occ;
+          }
+
+          if (!hasReason) {
+            const reason =
+              obRpl?.reasonRPL ||
+              obOcc?.reasonForSeekingRPL ||
+              obData.reasonForSeekingRPL ||
+              "";
+            if (reason) patch.reasonRPL = reason;
+          }
+
+          if (
+            !current.yearsOfExperience &&
+            obOcc?.yearsOfExperience !== undefined
+          ) {
+            patch.yearsOfExperience = String(obOcc.yearsOfExperience);
+          }
+
+          if (
+            (!current.employments || current.employments.length === 0) &&
+            Array.isArray(obOcc?.employmentHistory) &&
+            obOcc.employmentHistory.length > 0
+          ) {
+            patch.employments = obOcc.employmentHistory.map(
+              (h: any, idx: number) => ({
+                id: String(idx + 1),
+                companyName: h.company || "",
+                jobTitle: h.jobTitle || "",
+                employmentType: h.employmentType || "Full-time",
+                startDate: h.startDate || "",
+                endDate: h.endDate || "",
+                responsibilities: h.keyResponsibilities || "",
+              }),
+            );
+          }
+
+          if (Object.keys(patch).length > 0) {
+            dispatch(setRPLExperienceTrade(patch));
+            current = { ...current, ...patch };
+          }
+        }
+      } catch {
+        // Fall back to application check
+      }
+
+      if (appId && (!current.occupation || !current.reasonRPL)) {
+        try {
+          const app = await getApplicationByIdApi(appId);
+          if (app) {
+            const patch: Partial<typeof rplExp> = {};
+            if (
+              !current.occupation &&
+              (app.currentOccupation?.occupation || app.trade?.name)
+            ) {
+              patch.occupation =
+                app.currentOccupation?.occupation || app.trade?.name || "";
+            }
+            if (!current.reasonRPL && app.reasonForSeekingRPL) {
+              patch.reasonRPL = app.reasonForSeekingRPL;
+            }
+            if (
+              !current.yearsOfExperience &&
+              app.currentOccupation?.yearsOfExperience !== undefined
+            ) {
+              patch.yearsOfExperience = String(
+                app.currentOccupation.yearsOfExperience,
+              );
+            }
+            if (Object.keys(patch).length > 0) {
+              dispatch(setRPLExperienceTrade(patch));
+              current = { ...current, ...patch };
+            }
+          }
+        } catch {
+          // Ignore
+        }
+      }
+    }
+    return current;
+  };
+
   /**
    * Builds the comprehensive patch payload from current form state
    */
@@ -210,9 +319,12 @@ export function useRplApplicationSubmission() {
     customDeclarations?: Record<string, boolean>,
     includePersonalDetails = true,
     overridePersonalInfo?: typeof personalInfo,
+    overrideRplExp?: typeof rplExp,
   ) => {
     const info = overridePersonalInfo || personalInfo;
-    const rawYears = rplExp.yearsOfExperience;
+    const exp = overrideRplExp || rplExp;
+
+    const rawYears = exp.yearsOfExperience;
     let yearsNum = 0;
     if (typeof rawYears === "number") {
       yearsNum = isNaN(rawYears) ? 0 : Math.max(0, Math.floor(rawYears));
@@ -222,8 +334,7 @@ export function useRplApplicationSubmission() {
     }
 
     const isIdentityLocked = Boolean(
-      authUser?.isVerified ||
-      rplIdentity?.isVerified
+      authUser?.isVerified || rplIdentity?.isVerified,
     );
 
     const hasPhone = Boolean(
@@ -231,9 +342,9 @@ export function useRplApplicationSubmission() {
     );
     const hasAddress = Boolean(
       info.state &&
-      info.streetAddress &&
-      info.state.trim().length > 0 &&
-      info.streetAddress.trim().length > 0,
+        info.streetAddress &&
+        info.state.trim().length > 0 &&
+        info.streetAddress.trim().length > 0,
     );
 
     const personalInformation: Record<string, unknown> = {};
@@ -274,20 +385,21 @@ export function useRplApplicationSubmission() {
       };
     }
 
-    const resolvedOccupation =
-      rplExp.occupation ||
-      (!rplExp.qualificationTitle?.match(/^[0-9A-Z]{20,}$/) &&
-        rplExp.qualificationTitle) ||
-      startApp.tradeName ||
-      "";
+    const resolvedOccupation = (
+      exp.occupation?.trim() ||
+      (!exp.qualificationTitle?.match(/^[0-9A-Z]{20,}$/) &&
+        exp.qualificationTitle?.trim()) ||
+      startApp.tradeName?.trim() ||
+      ""
+    );
 
     // Sanitize unitIds: if Full Assessment, send []; if Modular Assessment, only send valid ID strings
     const isFullAssessment =
-      rplExp.assessmentType === "Full Qualification Assessment";
+      exp.assessmentType === "Full Qualification Assessment";
     let validUnitIds: string[] = [];
 
-    if (!isFullAssessment && Array.isArray(rplExp.individualUnit)) {
-      validUnitIds = rplExp.individualUnit.filter((u) => {
+    if (!isFullAssessment && Array.isArray(exp.individualUnit)) {
+      validUnitIds = exp.individualUnit.filter((u) => {
         if (!u || typeof u !== "string") return false;
         const trimmed = u.trim();
         if (
@@ -301,71 +413,95 @@ export function useRplApplicationSubmission() {
       });
     }
 
+    const experienceAndTrade: Record<string, unknown> = {};
+
+    if (validUnitIds.length > 0) {
+      experienceAndTrade.unitIds = validUnitIds;
+    }
+
+    if (resolvedOccupation.length > 0) {
+      const validEmploymentHistory = (exp.employments || [])
+        .filter(
+          (emp) =>
+            emp.companyName?.trim() &&
+            (emp.jobTitle?.trim() || resolvedOccupation),
+        )
+        .map((emp) => {
+          const item: Record<string, unknown> = {
+            company: emp.companyName.trim(),
+            jobTitle: emp.jobTitle?.trim() || resolvedOccupation,
+            employmentType: emp.employmentType || "Full-time",
+            keyResponsibilities: emp.responsibilities?.trim() || "N/A",
+          };
+          const startIso = formatToIsoDate(emp.startDate);
+          if (startIso) item.startDate = startIso;
+          const endIso = (emp as any).endDate
+            ? formatToIsoDate((emp as any).endDate)
+            : undefined;
+          if (endIso) item.endDate = endIso;
+          return item;
+        });
+
+      experienceAndTrade.currentOccupation = {
+        occupation: resolvedOccupation,
+        yearsOfExperience: yearsNum,
+        employmentHistory: validEmploymentHistory,
+      };
+    }
+
+    const resolvedReason = (exp.reasonRPL || "").trim();
+    if (resolvedReason.length > 0) {
+      experienceAndTrade.reasonForSeekingRPL = resolvedReason;
+    }
+
+    if (exp.selectedEvidence && exp.selectedEvidence.length > 0) {
+      experienceAndTrade.evidenceCandidateCanProvide = {
+        resume: Boolean(
+          exp.selectedEvidence.includes("Resume / CV") ||
+            exp.selectedEvidence.includes("Resume"),
+        ),
+        workSamples: Boolean(
+          exp.selectedEvidence.includes("Work samples") ||
+            exp.selectedEvidence.includes("Work Samples"),
+        ),
+        employmentLetter: Boolean(
+          exp.selectedEvidence.includes("Employment Letter") ||
+            exp.selectedEvidence.includes("Employment letter"),
+        ),
+        certificates: Boolean(
+          exp.selectedEvidence.includes("Certificates") ||
+            exp.selectedEvidence.includes(
+              "Certificates / Statements of Attainment",
+            ),
+        ),
+        statementsOfAttainment: Boolean(
+          exp.selectedEvidence.includes("Statements of Attainment") ||
+            exp.selectedEvidence.includes("Statements of attainment"),
+        ),
+        thirdPartyReportsOrReferences: Boolean(
+          exp.selectedEvidence.includes("Reference letters") ||
+            exp.selectedEvidence.includes("References") ||
+            exp.selectedEvidence.includes(
+              "References / Third-Party Reports",
+            ),
+        ),
+        jobDescriptions: Boolean(
+          exp.selectedEvidence.includes("Job Descriptions") ||
+            exp.selectedEvidence.includes("Job descriptions"),
+        ),
+        photosOrVideosOfWork: Boolean(
+          exp.selectedEvidence.includes("Photos / Videos of work") ||
+            exp.selectedEvidence.includes("Photos / Videos of Work") ||
+            exp.selectedEvidence.includes("Photos / Videos"),
+        ),
+        other: Boolean(
+          exp.selectedEvidence.includes("Other") ||
+            Boolean(exp.otherEvidenceText?.trim()),
+        ),
+      };
+    }
+
     const payload: Record<string, unknown> = {
-      experienceAndTrade: {
-        unitIds: validUnitIds,
-        currentOccupation: {
-          occupation: resolvedOccupation,
-          yearsOfExperience: yearsNum,
-          employmentHistory: (rplExp.employments || [])
-            .filter((emp) => emp.companyName || emp.jobTitle)
-            .map((emp) => ({
-              company: emp.companyName || "",
-              jobTitle: emp.jobTitle || resolvedOccupation,
-              employmentType: emp.employmentType || "Full-time",
-              startDate: formatToIsoDate(emp.startDate) || "",
-              endDate: (emp as any).endDate
-                ? formatToIsoDate((emp as any).endDate)
-                : undefined,
-              keyResponsibilities: emp.responsibilities || "",
-            })),
-        },
-        reasonForSeekingRPL: rplExp.reasonRPL || "",
-        evidenceCandidateCanProvide: {
-          resume: Boolean(
-            rplExp.selectedEvidence?.includes("Resume / CV") ||
-              rplExp.selectedEvidence?.includes("Resume"),
-          ),
-          workSamples: Boolean(
-            rplExp.selectedEvidence?.includes("Work samples") ||
-              rplExp.selectedEvidence?.includes("Work Samples"),
-          ),
-          employmentLetter: Boolean(
-            rplExp.selectedEvidence?.includes("Employment Letter") ||
-              rplExp.selectedEvidence?.includes("Employment letter"),
-          ),
-          certificates: Boolean(
-            rplExp.selectedEvidence?.includes("Certificates") ||
-              rplExp.selectedEvidence?.includes(
-                "Certificates / Statements of Attainment",
-              ),
-          ),
-          statementsOfAttainment: Boolean(
-            rplExp.selectedEvidence?.includes("Statements of Attainment") ||
-              rplExp.selectedEvidence?.includes("Statements of attainment"),
-          ),
-          thirdPartyReportsOrReferences: Boolean(
-            rplExp.selectedEvidence?.includes("Reference letters") ||
-              rplExp.selectedEvidence?.includes("References") ||
-              rplExp.selectedEvidence?.includes(
-                "References / Third-Party Reports",
-              ),
-          ),
-          jobDescriptions: Boolean(
-            rplExp.selectedEvidence?.includes("Job Descriptions") ||
-              rplExp.selectedEvidence?.includes("Job descriptions"),
-          ),
-          photosOrVideosOfWork: Boolean(
-            rplExp.selectedEvidence?.includes("Photos / Videos of work") ||
-              rplExp.selectedEvidence?.includes("Photos / Videos of Work") ||
-              rplExp.selectedEvidence?.includes("Photos / Videos"),
-          ),
-          other: Boolean(
-            rplExp.selectedEvidence?.includes("Other") ||
-              Boolean(rplExp.otherEvidenceText?.trim()),
-          ),
-        },
-      },
       assessmentDeclaration: {
         infoProvidedIsAccurate: Boolean(
           customDeclarations?.trueAndAccurate ?? true,
@@ -385,6 +521,10 @@ export function useRplApplicationSubmission() {
       payload.personalInformation = personalInformation;
     }
 
+    if (Object.keys(experienceAndTrade).length > 0) {
+      payload.experienceAndTrade = experienceAndTrade;
+    }
+
     return payload;
   };
 
@@ -393,8 +533,16 @@ export function useRplApplicationSubmission() {
    */
   const saveDraft = async () => {
     const appId = await ensureDraftApplicationId();
-    const hydratedInfo = await getHydratedPersonalInfo();
-    const payload = buildPatchPayload(undefined, true, hydratedInfo);
+    const [hydratedInfo, hydratedExp] = await Promise.all([
+      getHydratedPersonalInfo(),
+      getHydratedExperienceAndTrade(appId),
+    ]);
+    const payload = buildPatchPayload(
+      undefined,
+      true,
+      hydratedInfo,
+      hydratedExp,
+    );
 
     try {
       await patchApplicationDraftApi(appId, payload);
@@ -404,7 +552,12 @@ export function useRplApplicationSubmission() {
         msg.includes("identity_fields_locked") ||
         err?.details?.some?.((d: any) => d.issue === "identity_fields_locked")
       ) {
-        const retryPayload = buildPatchPayload(undefined, false, hydratedInfo);
+        const retryPayload = buildPatchPayload(
+          undefined,
+          false,
+          hydratedInfo,
+          hydratedExp,
+        );
         await patchApplicationDraftApi(appId, retryPayload).catch(() => {});
       } else {
         const issues = err?.details
@@ -432,8 +585,16 @@ export function useRplApplicationSubmission() {
    */
   const submitApplication = async (declarations?: Record<string, boolean>) => {
     const appId = await ensureDraftApplicationId();
-    const hydratedInfo = await getHydratedPersonalInfo();
-    const payload = buildPatchPayload(declarations, true, hydratedInfo);
+    const [hydratedInfo, hydratedExp] = await Promise.all([
+      getHydratedPersonalInfo(),
+      getHydratedExperienceAndTrade(appId),
+    ]);
+    const payload = buildPatchPayload(
+      declarations,
+      true,
+      hydratedInfo,
+      hydratedExp,
+    );
 
     try {
       await patchApplicationDraftApi(appId, payload);
@@ -443,7 +604,12 @@ export function useRplApplicationSubmission() {
         msg.includes("identity_fields_locked") ||
         err?.details?.some?.((d: any) => d.issue === "identity_fields_locked")
       ) {
-        const retryPayload = buildPatchPayload(declarations, false, hydratedInfo);
+        const retryPayload = buildPatchPayload(
+          declarations,
+          false,
+          hydratedInfo,
+          hydratedExp,
+        );
         await patchApplicationDraftApi(appId, retryPayload).catch(() => {});
       } else {
         const issues = err?.details
