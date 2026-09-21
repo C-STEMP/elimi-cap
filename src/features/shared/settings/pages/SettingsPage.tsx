@@ -27,7 +27,7 @@ import {
   useGetMeProfile,
   usePatchMeProfile,
 } from "@/src/features/shared/account/hooks";
-import { markVerified, updateUser } from "@/store/slices/authSlice";
+import { markVerified, setVerified, updateUser } from "@/store/slices/authSlice";
 import { useUploadFile } from "@/src/features/shared/storage/hooks";
 
 export const SettingsPage: React.FC = () => {
@@ -53,20 +53,24 @@ export const SettingsPage: React.FC = () => {
   const { data: candidateProfile } = useCandidateProfile(true);
 
   const isVerified = Boolean(
-    user?.isVerified ||
     meProfile?.identityVerified ||
     candidateProfile?.identityVerified ||
-    savedRPLIdentity?.isVerified ||
-    savedCentreIdentity?.isVerified ||
-    savedAssessorIdentity?.isVerified ||
-    user?.status === "active"
+    (savedRPLIdentity?.isVerified && savedRPLIdentity?.nin) ||
+    (savedCentreIdentity?.isVerified && savedCentreIdentity?.nin) ||
+    (savedAssessorIdentity?.isVerified && savedAssessorIdentity?.nin) ||
+    user?.isVerified
   );
 
   React.useEffect(() => {
-    if (isVerified && !user?.isVerified) {
-      dispatch(markVerified());
+    if (meProfile !== undefined || candidateProfile !== undefined) {
+      const serverVerified = Boolean(
+        meProfile?.identityVerified || candidateProfile?.identityVerified,
+      );
+      if (user?.isVerified !== serverVerified) {
+        dispatch(setVerified(serverVerified));
+      }
     }
-  }, [isVerified, user?.isVerified, dispatch]);
+  }, [meProfile, candidateProfile, user?.isVerified, dispatch]);
 
   const verificationStatus: VerificationStatus = isVerified
     ? "verified"

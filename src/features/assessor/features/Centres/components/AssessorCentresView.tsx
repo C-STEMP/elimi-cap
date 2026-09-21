@@ -18,7 +18,8 @@ export interface AssessorCentreItem {
   name: string;
   role: string;
   candidateAssigned: number | string;
-  status: "Active" | "Inactive" | "Pending";
+  status: "Active" | "Inactive" | "Pending" | "Rejected";
+  rejectionReason?: string | null;
   joinedAt: string;
 }
 
@@ -82,8 +83,9 @@ export const AssessorCentresView: React.FC<AssessorCentresViewProps> = ({
               options={[
                 { label: "All", value: "All" },
                 { label: "Active", value: "Active" },
-                { label: "Inactive", value: "Inactive" },
                 { label: "Pending", value: "Pending" },
+                { label: "Rejected", value: "Rejected" },
+                { label: "Inactive", value: "Inactive" },
               ]}
             />
           </div>
@@ -168,17 +170,29 @@ export const AssessorCentresView: React.FC<AssessorCentresViewProps> = ({
                   <td className="p-3.5 text-gray-600">{c.role}</td>
                   <td className="p-3.5 text-gray-600">{c.candidateAssigned}</td>
                   <td className="p-3.5">
-                    <span
-                      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
-                        c.status === "Active"
-                          ? "bg-emerald-100 text-emerald-700"
-                          : c.status === "Pending"
-                          ? "bg-amber-100 text-amber-700"
-                          : "bg-gray-200 text-gray-700"
-                      }`}
-                    >
-                      {c.status}
-                    </span>
+                    <div className="flex flex-col gap-1">
+                      <span
+                        className={`inline-flex w-fit items-center px-3 py-1 rounded-full text-xs font-semibold ${
+                          c.status === "Active"
+                            ? "bg-emerald-100 text-emerald-700"
+                            : c.status === "Pending"
+                            ? "bg-amber-100 text-amber-700"
+                            : c.status === "Rejected"
+                            ? "bg-rose-100 text-rose-700"
+                            : "bg-gray-200 text-gray-700"
+                        }`}
+                      >
+                        {c.status}
+                      </span>
+                      {c.status === "Rejected" && c.rejectionReason && (
+                        <span
+                          className="text-[11px] text-rose-600 max-w-45 truncate"
+                          title={c.rejectionReason}
+                        >
+                          {c.rejectionReason}
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="p-3.5 text-gray-500">{c.joinedAt}</td>
                   <td className="p-3.5 text-right">

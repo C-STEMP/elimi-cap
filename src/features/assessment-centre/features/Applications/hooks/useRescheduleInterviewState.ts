@@ -40,6 +40,9 @@ export function useRescheduleInterviewState({
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [meetingLink, setMeetingLink] = useState("www.meet.google.com");
+  const [mode, setMode] = useState<"physical" | "virtual">(currentMode);
+  const [location, setLocation] = useState("");
+  const [useCentreAddress, setUseCentreAddress] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
 
@@ -54,8 +57,12 @@ export function useRescheduleInterviewState({
       }
       setTime(currentTime || "12:00");
       setMeetingLink(currentMeetingLink || "www.meet.google.com");
+      setMode(currentMode);
+      setLocation(currentLocation || "");
+      // Default to the centre address when no explicit location was provided.
+      setUseCentreAddress(!currentLocation);
     }
-  }, [isOpen, currentDate, currentTime, currentMeetingLink]);
+  }, [isOpen, currentDate, currentTime, currentMeetingLink, currentMode, currentLocation]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,6 +72,25 @@ export function useRescheduleInterviewState({
         type: "error",
         title: "Date Required",
         description: "Please specify the rescheduled interview date.",
+      });
+      return;
+    }
+
+    if (mode === "virtual" && !meetingLink.trim()) {
+      toast({
+        type: "error",
+        title: "Meeting Link Required",
+        description: "Please provide a meeting link for the online interview.",
+      });
+      return;
+    }
+
+    if (mode === "physical" && !useCentreAddress && !location.trim()) {
+      toast({
+        type: "error",
+        title: "Location Required",
+        description:
+          "Please provide the interview location or use the centre address.",
       });
       return;
     }
@@ -89,6 +115,14 @@ export function useRescheduleInterviewState({
         ? meetingLink
         : `https://${meetingLink}`;
 
+    const apiMode = mode === "virtual" ? "online" : "physical";
+    const resolvedLocation =
+      mode === "physical"
+        ? useCentreAddress
+          ? undefined
+          : location.trim()
+        : undefined;
+
     if (typeof window !== "undefined" && applicationId) {
       try {
         const storedSchedule = localStorage.getItem(`elimi_interview_schedule_${applicationId}`);
@@ -98,9 +132,10 @@ export function useRescheduleInterviewState({
           JSON.stringify({
             ...parsed,
             scheduledAt: scheduledAtIso,
-            mode: currentMode === "virtual" ? "online" : "physical",
-            link: formattedMeetingLink,
-            location: currentLocation || "Cstemp Centre",
+            mode: apiMode,
+            link: mode === "virtual" ? formattedMeetingLink : undefined,
+            location: resolvedLocation || (useCentreAddress ? "Centre Address" : ""),
+            useCentreAddress: mode === "physical" ? useCentreAddress : undefined,
             status: "scheduled",
             isRescheduled: true,
           }),
@@ -117,9 +152,10 @@ export function useRescheduleInterviewState({
       if (isRealApp) {
         await scheduleInterviewApi(applicationId, {
           scheduledAt: scheduledAtIso,
-          mode: currentMode === "virtual" ? "online" : "physical",
-          location: currentMode === "physical" ? currentLocation : undefined,
-          link: currentMode === "virtual" ? formattedMeetingLink : undefined,
+          mode: apiMode,
+          location: resolvedLocation,
+          useCentreAddress: mode === "physical" ? useCentreAddress : undefined,
+          link: mode === "virtual" ? formattedMeetingLink : undefined,
         }).catch((err) => console.warn("Schedule interview API fallback:", err));
       }
 
@@ -142,8 +178,13 @@ export function useRescheduleInterviewState({
     onSuccess({
       date,
       time,
-      meetingLink,
-      location: currentLocation,
+      meetingLink: mode === "virtual" ? meetingLink : undefined,
+      location:
+        mode === "physical"
+          ? useCentreAddress
+            ? currentLocation
+            : location
+          : undefined,
       isRescheduled: true,
     });
     onClose();
@@ -156,6 +197,12 @@ export function useRescheduleInterviewState({
     setTime,
     meetingLink,
     setMeetingLink,
+    mode,
+    setMode,
+    location,
+    setLocation,
+    useCentreAddress,
+    setUseCentreAddress,
     isSubmitting,
     isSuccessOpen,
     handleSubmit,

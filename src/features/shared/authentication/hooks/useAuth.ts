@@ -8,6 +8,7 @@ import {
   setCentreId,
   setCentreRole,
   markVerified,
+  setVerified,
   logout as logoutAction,
 } from "@/store/slices/authSlice";
 import {
@@ -125,7 +126,7 @@ export function useVerifyAccount() {
             status: data.user.status,
             intents: data.user.intents,
             createdAt: data.user.createdAt,
-            isVerified: true,
+            isVerified: false,
           },
           accessToken: data.accessToken,
           refreshToken: data.refreshToken,
@@ -138,22 +139,24 @@ export function useVerifyAccount() {
         description: "Your account has been created successfully.",
       });
 
-      router.push("/onboarding/welcome");
+      const userEmail = data.user.email;
+      savePersona("candidate");
+      const dest = resolveUserDestination(false, "candidate", userEmail);
+      router.push(dest);
     },
 
-    onError: (error: Error) => {
-      if (error instanceof ApiError && error.statusCode === 422) {
+    onError: (error: Error, variables) => {
+      if (error instanceof ApiError) {
         toast({
           type: "error",
-          title: "Invalid Code",
-          description:
-            "The code is incorrect or has expired. Please try again.",
+          title: "Verification Failed",
+          description: error.message,
         });
       } else {
         toast({
           type: "error",
-          title: "Verification Failed",
-          description: (error as Error).message,
+          title: "Network Error",
+          description: "Unable to connect. Please try again.",
         });
       }
     },
@@ -218,7 +221,7 @@ export function useLogin() {
             status: data.user.status,
             intents: data.user.intents,
             createdAt: data.user.createdAt,
-            isVerified: data.user.status === "active",
+            isVerified: false,
           },
           accessToken: data.accessToken,
           refreshToken: data.refreshToken,
@@ -238,14 +241,13 @@ export function useLogin() {
           getMeApi(),
         ]);
 
-        if (profile.status === "fulfilled" && profile.value?.identityVerified) {
-          dispatch(markVerified());
-        }
+        const isIdentityVerified = Boolean(
+          (profile.status === "fulfilled" && profile.value?.identityVerified) ||
+          (meRes.status === "fulfilled" && meRes.value?.identityVerified)
+        );
+        dispatch(setVerified(isIdentityVerified));
 
         if (meRes.status === "fulfilled") {
-          if (meRes.value.identityVerified) {
-            dispatch(markVerified());
-          }
           if (meRes.value.centres && meRes.value.centres.length > 0) {
             const activeCentre = meRes.value.centres[0];
             const role = activeCentre.role || "super_admin";
@@ -533,7 +535,7 @@ export function useGoogleAuth() {
             status: data.user.status,
             intents: data.user.intents,
             createdAt: data.user.createdAt,
-            isVerified: data.user.status === "active",
+            isVerified: false,
           },
           accessToken: data.accessToken,
           refreshToken: data.refreshToken,
@@ -553,14 +555,13 @@ export function useGoogleAuth() {
           getMeApi(),
         ]);
 
-        if (profile.status === "fulfilled" && profile.value?.identityVerified) {
-          dispatch(markVerified());
-        }
+        const isIdentityVerified = Boolean(
+          (profile.status === "fulfilled" && profile.value?.identityVerified) ||
+          (meRes.status === "fulfilled" && meRes.value?.identityVerified)
+        );
+        dispatch(setVerified(isIdentityVerified));
 
         if (meRes.status === "fulfilled") {
-          if (meRes.value.identityVerified) {
-            dispatch(markVerified());
-          }
           if (meRes.value.centres && meRes.value.centres.length > 0) {
             const activeCentre = meRes.value.centres[0];
             const role = activeCentre.role || "super_admin";

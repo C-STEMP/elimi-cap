@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
@@ -10,7 +10,7 @@ import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
 import { ASSETS_URL } from "@/assets";
 import { useAppDispatch, useAppSelector } from "@/src/store/hooks";
-import { setSidebarVariant, markVerified } from "@/src/store/slices/authSlice";
+import { setSidebarVariant, markVerified, setVerified } from "@/src/store/slices/authSlice";
 import { setAssessorIdentity } from "@/src/store/slices/onboardingSlice";
 import { saveOnboardedStatus } from "@/src/lib/auth-storage";
 import { ASSESSOR_ROUTES } from "@/src/features/assessor/utils/assessorRoutes";
@@ -19,22 +19,27 @@ import { verifyIdentityApi } from "@/src/features/shared/onboarding/api";
 import { validateNIN } from "@/src/lib/validation";
 import { usePatchAssessorProfile } from "@/src/features/shared/assessor/hooks/useAssessor";
 import type { AssessorQualification } from "@/src/features/shared/assessor/api/assessor.api";
-import { useGetMe } from "@/src/features/shared/account/hooks";
+import { useGetMe, ACCOUNT_QUERY_KEYS } from "@/src/features/shared/account/hooks";
+import { ONBOARDING_QUERY_KEYS } from "@/src/features/shared/onboarding/hooks";
+import { useQueryClient } from "@tanstack/react-query";
 
 export const AssessorVerifyIdentity: React.FC = () => {
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const queryClient = useQueryClient();
   const { toast } = useToast();
   const { saveOnboarding, submitOnboarding } = useAssessorOnboarding();
   const saved = useAppSelector((s) => s.onboarding.assessorIdentity);
   const assessorDetails = useAppSelector((s) => s.onboarding.assessorDetails);
   const authUser = useAppSelector((s) => s.auth.user);
   const patchAssessorProfile = usePatchAssessorProfile();
-  const { data: meData } = useGetMe();
+  const { data: meData, isLoading: isMeLoading } = useGetMe();
 
   const [nin, setNin] = useState(saved.nin || "");
   const [error, setError] = useState<string | undefined>(undefined);
-  const [isVerified, setIsVerified] = useState(saved.isVerified || false);
+  const [isVerified, setIsVerified] = useState(
+    Boolean(saved.isVerified && saved.nin),
+  );
   const [modalState, setModalState] = useState<
     "none" | "verifying" | "success" | "error"
   >("none");
@@ -46,9 +51,11 @@ export const AssessorVerifyIdentity: React.FC = () => {
   }, [dispatch]);
 
   useEffect(() => {
-    if (saved.nin) setNin(saved.nin);
-    if (typeof saved.isVerified === "boolean") {
-      setIsVerified(saved.isVerified);
+    if (saved.nin) {
+      setNin(saved.nin);
+      if (typeof saved.isVerified === "boolean") {
+        setIsVerified(saved.isVerified);
+      }
     }
   }, [saved]);
 
@@ -56,16 +63,39 @@ export const AssessorVerifyIdentity: React.FC = () => {
   // persona (e.g. this rep already verified their NIN as a centre owner) —
   // re-submitting the same NIN here would be rejected as a duplicate.
   const isIdentityAlreadyVerified = Boolean(
-    meData?.identityVerified || authUser?.isVerified,
+    !isMeLoading && meData?.identityVerified,
   );
-  useEffect(() => {
-    if (isIdentityAlreadyVerified) {
-      dispatch(setAssessorIdentity({ isVerified: true }));
-      dispatch(markVerified());
-    }
-  }, [isIdentityAlreadyVerified, dispatch]);
 
-  const effectiveIsVerified = isVerified || isIdentityAlreadyVerified;
+  useEffect(() => {
+    if (!isMeLoading && meData) {
+      if (meData.identityVerified) {
+        dispatch(setAssessorIdentity({ isVerified: true }));
+        dispatch(markVerified());
+        setIsVerified(true);
+      } else if (!saved.nin) {
+        // If the backend says not verified and no NIN was verified in this session,
+        // clear any stale/poisoned verified flags from previous runs.
+        if (saved.isVerified) {
+          dispatch(setAssessorIdentity({ isVerified: false }));
+        }
+        setIsVerified(false);
+        if (authUser?.isVerified) {
+          dispatch(setVerified(false));
+        }
+      }
+    }
+  }, [
+    isMeLoading,
+    meData,
+    saved.nin,
+    saved.isVerified,
+    authUser?.isVerified,
+    dispatch,
+  ]);
+
+  const effectiveIsVerified = Boolean(
+    isIdentityAlreadyVerified || (isVerified && (saved.nin || nin)),
+  );
 
   const handleStartVerification = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -93,6 +123,9 @@ export const AssessorVerifyIdentity: React.FC = () => {
       setIsVerified(true);
       dispatch(setAssessorIdentity({ nin: nin.trim(), isVerified: true }));
       dispatch(markVerified());
+
+      queryClient.invalidateQueries({ queryKey: ACCOUNT_QUERY_KEYS.me });
+      queryClient.invalidateQueries({ queryKey: ONBOARDING_QUERY_KEYS.mine });
     } catch (err: any) {
       setModalState("error");
       toast({
@@ -148,6 +181,21 @@ export const AssessorVerifyIdentity: React.FC = () => {
       },
     });
   };
+
+  // NIN verification is a one-time, account-wide check. If this account is
+  // already verified, don't make them do it again — auto-pass this step.
+  const autoAdvancedRef = useRef(false);
+  useEffect(() => {
+    if (
+      isIdentityAlreadyVerified &&
+      !autoAdvancedRef.current &&
+      !submitOnboarding.isPending
+    ) {
+      autoAdvancedRef.current = true;
+      handleContinue();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isIdentityAlreadyVerified]);
 
   return (
     <motion.div
@@ -275,7 +323,7 @@ export const AssessorVerifyIdentity: React.FC = () => {
           <Button
             type="button"
             onClick={handleContinue}
-            disabled={!effectiveIsVerified}
+            disabled={!effectiveIsVerified || submitOnboarding.isPending}
             variant="amber"
             size="md"
             rightIcon={<FiArrowRight className="w-4.5 h-4.5" />}

@@ -16,12 +16,15 @@ import { ASSESSMENT_CENTRE_ROUTES } from "@/features/assessment-centre/utils/cen
 import { useOnboarding } from "@/features/assessment-centre/features/Onboarding/hooks";
 import { useAppDispatch, useAppSelector } from "@/src/store/hooks";
 import { setCentreIdentity } from "@/src/store/slices/onboardingSlice";
-import { markVerified } from "@/src/store/slices/authSlice";
-import { useGetMe } from "@/src/features/shared/account/hooks";
+import { markVerified, setVerified } from "@/src/store/slices/authSlice";
+import { useGetMe, ACCOUNT_QUERY_KEYS } from "@/src/features/shared/account/hooks";
+import { ONBOARDING_QUERY_KEYS } from "@/src/features/shared/onboarding/hooks";
+import { useQueryClient } from "@tanstack/react-query";
 
 export const CenterVerifyIdentity: React.FC = () => {
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const queryClient = useQueryClient();
   const { toast } = useToast();
   const { getOnboarding, saveOnboarding, verifyIdentity, submitOnboarding } =
     useOnboarding();
@@ -35,12 +38,12 @@ export const CenterVerifyIdentity: React.FC = () => {
     (s) => s.onboarding.centrePersonalInfo,
   );
   const authUser = useAppSelector((s) => s.auth.user);
-  const { data: meData } = useGetMe();
+  const { data: meData, isLoading: isMeLoading } = useGetMe();
 
   const [nin, setNin] = useState(savedCentreIdentity.nin || "");
   const [ninError, setNinError] = useState<string | undefined>(undefined);
   const [isVerified, setIsVerified] = useState(
-    savedCentreIdentity.isVerified || false,
+    Boolean(savedCentreIdentity.isVerified && savedCentreIdentity.nin),
   );
   const [showDraftModal, setShowDraftModal] = useState(false);
   const [modalState, setModalState] = useState<
@@ -70,16 +73,39 @@ export const CenterVerifyIdentity: React.FC = () => {
   // assessor) — re-submitting the same NIN here would be rejected as a
   // duplicate, so treat the account-level flag as authoritative.
   const isIdentityAlreadyVerified = Boolean(
-    meData?.identityVerified || authUser?.isVerified,
+    !isMeLoading && meData?.identityVerified,
   );
-  React.useEffect(() => {
-    if (isIdentityAlreadyVerified) {
-      dispatch(setCentreIdentity({ isVerified: true }));
-      dispatch(markVerified());
-    }
-  }, [isIdentityAlreadyVerified, dispatch]);
 
-  const effectiveIsVerified = isVerified || isIdentityAlreadyVerified;
+  React.useEffect(() => {
+    if (!isMeLoading && meData) {
+      if (meData.identityVerified) {
+        dispatch(setCentreIdentity({ isVerified: true }));
+        dispatch(markVerified());
+        setIsVerified(true);
+      } else if (!savedCentreIdentity.nin) {
+        // If the backend says not verified and no NIN was verified in this session,
+        // clear any stale/poisoned verified flags from previous runs.
+        if (savedCentreIdentity.isVerified) {
+          dispatch(setCentreIdentity({ isVerified: false }));
+        }
+        setIsVerified(false);
+        if (authUser?.isVerified) {
+          dispatch(setVerified(false));
+        }
+      }
+    }
+  }, [
+    isMeLoading,
+    meData,
+    savedCentreIdentity.nin,
+    savedCentreIdentity.isVerified,
+    authUser?.isVerified,
+    dispatch,
+  ]);
+
+  const effectiveIsVerified = Boolean(
+    isIdentityAlreadyVerified || (isVerified && (savedCentreIdentity.nin || nin)),
+  );
 
   const handleStartVerification = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -109,6 +135,9 @@ export const CenterVerifyIdentity: React.FC = () => {
           setIsVerified(true);
           dispatch(setCentreIdentity({ nin, isVerified: true }));
           dispatch(markVerified());
+
+          queryClient.invalidateQueries({ queryKey: ACCOUNT_QUERY_KEYS.me });
+          queryClient.invalidateQueries({ queryKey: ONBOARDING_QUERY_KEYS.mine });
         },
         onError: () => {
           setModalState("error");

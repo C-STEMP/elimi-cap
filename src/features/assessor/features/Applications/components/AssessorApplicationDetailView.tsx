@@ -196,21 +196,39 @@ export const AssessorApplicationDetailView: React.FC<
 
   // Folder arrangement (evidence vault) stage — once already passed, the
   // assessor shouldn't be able to "Mark as complete" it again.
-  const folderStageRow = stagesData?.find(
-    (s) =>
-      s.stageKey === "folder_arrangement" ||
-      s.stageKey === "evidence_vault" ||
-      s.stageKey === "evidence",
+  const FOLDER_STAGE_KEYS = ["folder_arrangement", "evidence_vault", "evidence"];
+  // Stage keys that only exist AFTER folder arrangement / evidence review.
+  const POST_FOLDER_STAGE_KEYS = [
+    "interview",
+    "direct_observation",
+    "internal_verification",
+    "external_verification",
+    "certification",
+  ];
+  const folderStageRow = stagesData?.find((s) =>
+    FOLDER_STAGE_KEYS.includes(s.stageKey),
   );
+  const currentStageKey =
+    appDetail?.currentStageKey ?? application?.currentStageKey;
+  const appStatus = appDetail?.status ?? application?.status;
   const isFolderArrangementDone = Boolean(
+    // The folder/evidence stage itself has been passed.
     folderStageRow?.status === "successful" ||
-    (folderStageRow?.status as string) === "completed" ||
+    // The workflow has advanced to a later stage.
+    (currentStageKey && POST_FOLDER_STAGE_KEYS.includes(currentStageKey)) ||
+    // A later stage row already exists and is active or passed.
     stagesData?.some(
       (s) =>
-        (s.stageKey === "interview" || s.stageKey === "direct_observation") &&
-        (s.status === "scheduled" || s.status === "in_progress" || s.status === "successful")
+        POST_FOLDER_STAGE_KEYS.includes(s.stageKey) &&
+        (s.status === "scheduled" ||
+          s.status === "in_progress" ||
+          s.status === "under_review" ||
+          s.status === "successful"),
     ) ||
-    application.status === "Completed",
+    // The application has reached a terminal state.
+    appStatus === "certified" ||
+    appStatus === "rejected" ||
+    appStatus === "withdrawn",
   );
 
   // Assessment forms are to be filled by Lead Panelist & viewed by IV, Facilitator, and other panel members

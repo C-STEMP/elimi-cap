@@ -176,6 +176,8 @@ export function useReviewApplication() {
     }: {
       id: string;
       payload: ReviewDecisionPayload;
+      /** When true, the caller owns error messaging and the hook stays silent on error. */
+      suppressErrorToast?: boolean;
     }) => reviewApplicationApi(id, payload),
 
     onSuccess: (data, variables) => {
@@ -206,7 +208,9 @@ export function useReviewApplication() {
       });
     },
 
-    onError: (error: Error) => {
+    onError: (error: Error, variables) => {
+      // The caller (e.g. a modal that retries) may own error messaging.
+      if (variables?.suppressErrorToast) return;
       if (error instanceof ApiError) {
         toast({
           type: "error",

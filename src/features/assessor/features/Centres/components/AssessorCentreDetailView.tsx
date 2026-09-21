@@ -128,12 +128,25 @@ export const AssessorCentreDetailView: React.FC<
               ? "bg-emerald-100 text-emerald-700"
               : centre.status === "Pending"
               ? "bg-amber-100 text-amber-700"
+              : centre.status === "Rejected"
+              ? "bg-rose-100 text-rose-700"
               : "bg-gray-200 text-gray-700"
           }`}
         >
           {centre.status}
         </span>
       </div>
+
+      {centre.status === "Rejected" && centre.rejectionReason && (
+        <div className="rounded-2xl bg-rose-50 border border-rose-200 px-4 py-3">
+          <p className="text-xs font-semibold text-rose-800 mb-0.5">
+            Rejection Reason
+          </p>
+          <p className="text-xs text-rose-700 leading-relaxed">
+            {centre.rejectionReason}
+          </p>
+        </div>
+      )}
 
       {/* Search & Filters */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">

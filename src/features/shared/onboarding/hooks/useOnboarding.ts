@@ -146,6 +146,7 @@ import {
   setCentreIdentity,
   setAssessorIdentity,
 } from "@/store/slices/onboardingSlice";
+import { ACCOUNT_QUERY_KEYS } from "@/src/features/shared/account/hooks";
 
 export function useVerifyIdentity() {
   const queryClient = useQueryClient();
@@ -166,6 +167,9 @@ export function useVerifyIdentity() {
         dispatch(setCentreIdentity({ isVerified: true }));
         dispatch(setAssessorIdentity({ isVerified: true }));
       }
+      queryClient.invalidateQueries({
+        queryKey: ACCOUNT_QUERY_KEYS.me,
+      });
       queryClient.invalidateQueries({
         queryKey: ONBOARDING_QUERY_KEYS.candidateProfile,
       });

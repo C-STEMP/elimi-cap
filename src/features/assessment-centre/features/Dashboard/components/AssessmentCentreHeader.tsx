@@ -114,13 +114,21 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
     ? formatCurrency(rawRevenue.amountMinorUnits, rawRevenue.currency || "NGN")
     : "₦0";
 
-  const dynamicStats = [
+  const dynamicStats: {
+    id: string;
+    label: string;
+    count: string;
+    unit: string;
+    icon: string;
+    tab: AssessmentCentreTab;
+  }[] = [
     {
       id: "total-applications",
       label: "Total Applications",
       count: totalAppsCount.toLocaleString(),
       unit: "applications",
       icon: "clipboard",
+      tab: "applications",
     },
     {
       id: "total-assessors",
@@ -128,6 +136,7 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
       count: totalAssessorsCount.toLocaleString(),
       unit: "assessors",
       icon: "flag",
+      tab: "assessors",
     },
     {
       id: "total-staffs",
@@ -135,6 +144,7 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
       count: totalStaffCount.toLocaleString(),
       unit: "staffs",
       icon: "user",
+      tab: "staff",
     },
     {
       id: "total-revenue",
@@ -142,6 +152,7 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
       count: formattedRevenue,
       unit: "",
       icon: "money",
+      tab: "payments",
     },
   ];
 
@@ -383,11 +394,19 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
             {displayTitle}
           </h1>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {dynamicStats.map((stat) => (
-              <div
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            {dynamicStats.map((stat) => {
+              const canNavigate = permittedTabs.includes(stat.tab);
+              return (
+              <button
                 key={stat.id}
-                className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs"
+                type="button"
+                onClick={
+                  canNavigate ? () => onSelectTab(stat.tab) : undefined
+                }
+                className={`bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs text-left w-full ${
+                  canNavigate ? "cursor-pointer active:scale-[0.98]" : "cursor-default"
+                }`}
               >
                 <div className="flex flex-col">
                   <span className="text-xs sm:text-sm lg:text-lg font-medium text-white/80">
@@ -408,8 +427,9 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
                 <div className="w-9 h-9 flex items-center justify-center shrink-0">
                   {renderStatIcon(stat.icon)}
                 </div>
-              </div>
-            ))}
+              </button>
+              );
+            })}
           </div>
         </div>
       ) : null}

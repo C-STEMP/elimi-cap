@@ -103,6 +103,7 @@ const IqamToolsDashboard = dynamic(
 
 import { useGetCentres } from "@/src/features/shared/reference/hooks";
 import { useToast } from "@/src/components/ui/toast";
+import { getRejectionReason } from "@/src/utils/rejection";
 
 export const AssessorDashboard: React.FC = () => {
   const { toast } = useToast();
@@ -216,7 +217,11 @@ export const AssessorDashboard: React.FC = () => {
           ? "Active"
           : r.status === "pending"
             ? "Pending"
-            : "Inactive",
+            : r.status === "rejected"
+              ? "Rejected"
+              : "Inactive",
+      rejectionReason:
+        r.status === "rejected" ? getRejectionReason(r) : undefined,
       joinedAt: r.joinedAt
         ? new Date(r.joinedAt).toLocaleDateString("en-GB")
         : r.respondedAt
