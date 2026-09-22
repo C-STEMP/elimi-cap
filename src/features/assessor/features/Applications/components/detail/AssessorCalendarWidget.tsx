@@ -83,7 +83,7 @@ export const AssessorCalendarWidget: React.FC<AssessorCalendarWidgetProps> = ({
   const blanks = Array.from({ length: firstDayIndex }, (_, i) => i);
 
   return (
-    <div className="bg-text-dark text-white rounded-3xl p-6 shadow-md flex flex-col gap-5 w-full select-none">
+    <div className="bg-text-dark text-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-md flex flex-col gap-4 sm:gap-5 w-full select-none">
       {/* Month Navigation */}
       <div className="flex items-center justify-between font-bold text-base">
         <button
