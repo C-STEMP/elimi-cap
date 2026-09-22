@@ -5,6 +5,7 @@ import {
   useGetEvidenceVault,
   useGetSelfAssessment,
   useGetApplicationById,
+  APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
 } from "@/src/features/shared/applications/hooks";
 import type { EvidenceRecord } from "@/src/features/shared/evidence-vault/utils/evidenceConstants";
 
@@ -12,7 +13,9 @@ export function useEvidenceVaultViewState(id: string = "") {
   const { data: remoteEvidenceItems = [], isLoading: isLoadingEvidence } =
     useGetEvidenceVault(id);
   const { data: selfAssessment } = useGetSelfAssessment(id);
-  const { data: appDetail } = useGetApplicationById(id);
+  const { data: appDetail } = useGetApplicationById(id, {
+    refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
+  });
 
   const [previewItem, setPreviewItem] = useState<EvidenceRecord | null>(null);
 

@@ -5,6 +5,7 @@ import { MOCK_COMPETENCY_TASKS } from "@/features/assessment-centre/utils/consta
 import {
   useGetSelfAssessment,
   useGetApplicationById,
+  APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
 } from "@/src/features/shared/applications/hooks";
 
 interface Props {
@@ -18,7 +19,9 @@ export function useSelfAssessmentFormState({
 }: Props) {
   const { data: selfAssessment, isLoading: isLoadingSelfAssessment } =
     useGetSelfAssessment(id);
-  const { data: appDetail } = useGetApplicationById(id);
+  const { data: appDetail } = useGetApplicationById(id, {
+    refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
+  });
 
   const personalDetails =
     (selfAssessment as any)?.frozenPersonalInformation?.personalDetails ||
