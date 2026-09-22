@@ -354,11 +354,6 @@ export const NsqCentreApplicationDetailView: React.FC<
       (typeof application?.trade === "object" && (application.trade as any)?.level) ||
       "";
 
-  const qualificationCode =
-    (tradeDetail as any)?.code ||
-    (typeof application?.trade === "object" && (application.trade as any)?.code) ||
-    "—";
-
   const evidenceTypesText =
     remoteEvidenceTypes.length > 0
       ? (remoteEvidenceTypes as any[])
@@ -378,6 +373,14 @@ export const NsqCentreApplicationDetailView: React.FC<
         (u: any) => u.qualificationLevelId === wishedQualificationLevel.id,
       )
     : application?.nsq?.units;
+
+  const qualificationCode =
+    nsqUnitsForLevel?.[0]?.referenceNumber ||
+    remoteUnits[0]?.referenceNumber ||
+    (tradeDetail?.activeNosDocument as any)?.qualificationLevels?.[0]?.slug ||
+    (tradeDetail?.activeNosDocument as any)?.title ||
+    "—";
+
   const unitsList: QualificationUnitItem[] = nsqUnitsForLevel?.length
     ? nsqUnitsForLevel.map((u: any) => ({
         id: u.id,
