@@ -7,6 +7,7 @@ import {
   useGetApplicationStages,
   useReviewApplication,
   APPLICATION_QUERY_KEYS,
+  APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
 } from "@/src/features/shared/applications/hooks";
 
 interface Props {
@@ -20,8 +21,12 @@ export function useCandidateFormState({
   candidateName = "Candidate",
   onAcceptApplication,
 }: Props) {
-  const { data: appDetail, isLoading: isLoadingDetail } = useGetApplicationById(id);
-  const { data: stages = [] } = useGetApplicationStages(id);
+  const { data: appDetail, isLoading: isLoadingDetail } = useGetApplicationById(id, {
+    refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
+  });
+  const { data: stages = [] } = useGetApplicationStages(id, {
+    refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
+  });
   const reviewMutation = useReviewApplication();
   const queryClient = useQueryClient();
 
