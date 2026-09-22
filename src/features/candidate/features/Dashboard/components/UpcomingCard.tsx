@@ -55,7 +55,7 @@ export const UpcomingCard: React.FC<UpcomingCardProps> = ({
 
   return (
     <div
-      className={`bg-white rounded-3xl p-6 border border-gray-100 shadow-2xs flex flex-col items-center justify-center text-center gap-3 py-6 w-full ${className}`}
+      className={`bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-gray-100 shadow-2xs flex flex-col items-center justify-center text-center gap-3 py-5 sm:py-6 w-full ${className}`}
     >
       <h3 className="text-base font-extrabold text-black self-start tracking-tight mb-1">
         Upcoming Events
