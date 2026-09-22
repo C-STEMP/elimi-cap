@@ -62,6 +62,7 @@ export const AssessorEvidenceVaultView: React.FC<
   useEffect(() => {
     let localItems: any[] = [];
     let storedFeedbackMap: Record<string, string[]> = {};
+    let storedApprovedMap: Record<string, boolean> = {};
     let isVaultSubmitted = false;
     if (typeof window !== "undefined" && applicationId) {
       try {
@@ -79,6 +80,11 @@ export const AssessorEvidenceVaultView: React.FC<
           `elimi_evidence_feedback_${applicationId}`,
         );
         storedFeedbackMap = storedFb ? JSON.parse(storedFb) : {};
+
+        const storedAppr = localStorage.getItem(
+          `elimi_evidence_approved_${applicationId}`,
+        );
+        storedApprovedMap = storedAppr ? JSON.parse(storedAppr) : {};
       } catch (e) {
         console.error("Storage read error:", e);
       }
@@ -148,9 +154,12 @@ export const AssessorEvidenceVaultView: React.FC<
         `Evidence Item ${idx + 1}`;
 
       const itemKey = e.id || e.assetId || docName;
+      const normDocName = docName.toLowerCase();
+
       const extraFeedback =
         storedFeedbackMap[itemKey] ||
         storedFeedbackMap[docName] ||
+        storedFeedbackMap[normDocName] ||
         (e.assetId ? storedFeedbackMap[e.assetId] : null) ||
         [];
 
@@ -168,9 +177,29 @@ export const AssessorEvidenceVaultView: React.FC<
         new Set([...initialFeedback, ...(Array.isArray(extraFeedback) ? extraFeedback : [extraFeedback])]),
       ).filter(Boolean);
 
+      const isApprovedLocally = Boolean(
+        storedApprovedMap[itemKey] ||
+        storedApprovedMap[docName] ||
+        storedApprovedMap[normDocName] ||
+        (e.assetId && storedApprovedMap[e.assetId]) ||
+        (e.id && storedApprovedMap[e.id]),
+      );
+
+      const isItemApproved =
+        isStageAlreadyComplete ||
+        isApprovedLocally ||
+        (e.status &&
+          (e.status.toLowerCase().includes("approv") ||
+            e.status.toLowerCase() === "accepted" ||
+            e.status.toLowerCase() === "successful"));
+
       // Format backend status directly, no hardcoded fallbacks!
       const defaultStatus = isVaultSubmitted ? "Submitted" : "Pending";
-      const rawStatus = e.status || defaultStatus;
+      const rawStatus = isItemApproved
+        ? "Approved"
+        : combinedFeedback.length > 0
+          ? "Attention Required"
+          : (e.status || defaultStatus);
       const formattedStatus = rawStatus
         .replace(/_/g, " ")
         .replace(/\b\w/g, (c: string) => c.toUpperCase());
@@ -189,7 +218,7 @@ export const AssessorEvidenceVaultView: React.FC<
       };
     });
     setEvidenceItems(mapped);
-  }, [remoteEvidence, applicationId]);
+  }, [remoteEvidence, applicationId, isStageAlreadyComplete]);
 
   // Send Feedback Flow State
   const [selectedItemForFeedback, setSelectedItemForFeedback] =
@@ -336,6 +365,20 @@ export const AssessorEvidenceVaultView: React.FC<
 
           localStorage.setItem(vaultKey, JSON.stringify(parsedVault));
 
+          // Also remove approval for this item since it now has feedback
+          const apprKey = `elimi_evidence_approved_${applicationId}`;
+          const storedAppr = localStorage.getItem(apprKey);
+          if (storedAppr) {
+            const parsedAppr = JSON.parse(storedAppr);
+            if (targetId) delete parsedAppr[targetId];
+            if (targetAssetId) delete parsedAppr[targetAssetId];
+            if (item.name) {
+              delete parsedAppr[item.name];
+              delete parsedAppr[item.name.toLowerCase()];
+            }
+            localStorage.setItem(apprKey, JSON.stringify(parsedAppr));
+          }
+
           // Also save in dedicated feedback mapping
           const fbKey = `elimi_evidence_feedback_${applicationId}`;
           const storedFb = localStorage.getItem(fbKey);
@@ -381,13 +424,15 @@ export const AssessorEvidenceVaultView: React.FC<
     try {
       const targetId = item.id;
       const targetAssetId = item.assetId;
+      const targetName = (item.name || "").trim();
+      const normTargetName = targetName.toLowerCase();
 
       setEvidenceItems((prev) =>
         prev.map((e) => {
           const isMatch =
             (targetId && e.id === targetId) ||
             (targetAssetId && e.assetId === targetAssetId) ||
-            (!targetId && !targetAssetId && e.name === item.name);
+            (e.name && e.name.trim().toLowerCase() === normTargetName);
           return isMatch ? { ...e, status: "Approved", feedback: [] } : e;
         }),
       );
@@ -396,7 +441,7 @@ export const AssessorEvidenceVaultView: React.FC<
         previewItem &&
         ((targetId && previewItem.id === targetId) ||
           (targetAssetId && previewItem.assetId === targetAssetId) ||
-          (!targetId && !targetAssetId && previewItem.name === item.name))
+          (previewItem.name && previewItem.name.trim().toLowerCase() === normTargetName))
       ) {
         setPreviewItem((prev) =>
           prev
@@ -413,30 +458,59 @@ export const AssessorEvidenceVaultView: React.FC<
 
       if (typeof window !== "undefined" && applicationId) {
         try {
-          const vaultKey = `elimi_evidence_vault_${applicationId}`;
-          const stored = localStorage.getItem(vaultKey);
-          if (stored) {
-            const parsed = JSON.parse(stored);
-            const updated = parsed.map((e: any) => {
-              const isMatch =
-                (targetId && e.id === targetId) ||
-                (targetAssetId && e.assetId === targetAssetId) ||
-                (!targetId && !targetAssetId && (e.name === item.name || e.documentName === item.name));
-              return isMatch
-                ? { ...e, status: "Approved", issues: [], feedback: null }
-                : e;
-            });
-            localStorage.setItem(vaultKey, JSON.stringify(updated));
-          }
+          // 1. Save to dedicated approval map so it survives page refresh
+          const apprKey = `elimi_evidence_approved_${applicationId}`;
+          const storedAppr = localStorage.getItem(apprKey);
+          const parsedAppr = storedAppr ? JSON.parse(storedAppr) : {};
+          if (targetId) parsedAppr[targetId] = true;
+          if (targetAssetId) parsedAppr[targetAssetId] = true;
+          if (targetName) parsedAppr[targetName] = true;
+          if (normTargetName) parsedAppr[normTargetName] = true;
+          localStorage.setItem(apprKey, JSON.stringify(parsedAppr));
+
+          // 2. Remove any issues / feedback from feedback map
           const fbKey = `elimi_evidence_feedback_${applicationId}`;
           const storedFb = localStorage.getItem(fbKey);
           if (storedFb) {
             const parsedFb = JSON.parse(storedFb);
             if (targetId) delete parsedFb[targetId];
-            delete parsedFb[item.name];
+            delete parsedFb[targetName];
+            delete parsedFb[normTargetName];
             if (targetAssetId) delete parsedFb[targetAssetId];
             localStorage.setItem(fbKey, JSON.stringify(parsedFb));
           }
+
+          // 3. Update elimi_evidence_vault_${applicationId}
+          const vaultKey = `elimi_evidence_vault_${applicationId}`;
+          const storedVault = localStorage.getItem(vaultKey);
+          let parsedVault = storedVault ? JSON.parse(storedVault) : [];
+          let found = false;
+          parsedVault = parsedVault.map((e: any) => {
+            const eName = (e.name || e.documentName || "").trim().toLowerCase();
+            const isMatch =
+              (targetId && e.id === targetId) ||
+              (targetAssetId && e.assetId === targetAssetId) ||
+              (eName && eName === normTargetName);
+            if (isMatch) {
+              found = true;
+              return { ...e, status: "Approved", issues: [], feedback: null };
+            }
+            return e;
+          });
+          if (!found) {
+            parsedVault.push({
+              id: targetId,
+              name: targetName,
+              documentName: targetName,
+              size: item.size,
+              status: "Approved",
+              issues: [],
+              feedback: null,
+              assetId: targetAssetId,
+              url: (item as any).url || (item as any).fileUrl,
+            });
+          }
+          localStorage.setItem(vaultKey, JSON.stringify(parsedVault));
         } catch (e) {
           console.error("Local storage error on approve:", e);
         }
