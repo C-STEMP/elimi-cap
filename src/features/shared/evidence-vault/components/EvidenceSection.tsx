@@ -111,18 +111,18 @@ export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
                 key={item.id}
                 className="bg-input-bg rounded-[20px] p-4 sm:p-5 border border-gray-100/70 flex flex-col gap-3 shadow-2xs"
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3.5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+                  <div className="flex items-center gap-3 sm:gap-3.5 min-w-0 flex-1 w-full">
                     <div className="w-10 sm:w-12 h-10 sm:h-12 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
                       {getFileTypeIcon(item.mimeType, item.name)}
                     </div>
-                    <div className="flex flex-col">
-                      <div className="flex items-center gap-3 flex-wrap">
-                        <h4 className="text-[#191918] font-medium text-sm sm:text-base leading-snug">
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                        <h4 className="text-[#191918] font-medium text-sm sm:text-base leading-snug break-words">
                           {item.name}
                         </h4>
                         <div
-                          className={`${badgeBg} ${badgeText} text-xs font-semibold px-3 py-0.5 rounded-full capitalize`}
+                          className={`${badgeBg} ${badgeText} text-xs font-semibold px-2.5 sm:px-3 py-0.5 rounded-full capitalize`}
                         >
                           {item.status || "Pending"}
                         </div>
@@ -136,7 +136,7 @@ export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-end sm:justify-start gap-2 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-200/50 sm:border-transparent shrink-0">
                     <button
                       type="button"
                       onClick={() => onPreview(item)}

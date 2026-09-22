@@ -41,14 +41,14 @@ export const EvidenceItemsList: React.FC<Props> = ({
 
         <div
           onClick={onOpenSelfAssessmentForm}
-          className="bg-white rounded-2xl p-5 border border-gray-100 shadow-2xs flex items-center justify-between gap-4 transition-all cursor-pointer group"
+          className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-100 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 transition-all cursor-pointer group"
         >
-          <div className="flex items-center gap-4 min-w-0">
-            <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
-              <FiFileText className="w-6 h-6 text-[#a31d38]" />
+          <div className="flex items-center gap-3.5 sm:gap-4 min-w-0 flex-1 w-full">
+            <div className="w-11 sm:w-12 h-11 sm:h-12 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
+              <FiFileText className="w-5 sm:w-6 h-5 sm:h-6 text-[#a31d38]" />
             </div>
             <div className="flex flex-col gap-1 min-w-0">
-              <h3 className="text-base sm:text-lg font-bold text-black tracking-tight truncate group-hover:text-primary transition-colors">
+              <h3 className="text-sm sm:text-base md:text-lg font-bold text-black tracking-tight group-hover:text-primary transition-colors">
                 Self-Assessment Form
               </h3>
               <span className="text-xs text-gray-400 font-normal">
@@ -58,28 +58,30 @@ export const EvidenceItemsList: React.FC<Props> = ({
               </span>
             </div>
           </div>
-          <Button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onOpenSelfAssessmentForm();
-            }}
-            variant="outline"
-            size="sm"
-            className="bg-white! text-[#fbab2a]! border border-gray-200! hover:bg-gray-50! font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl transition-all cursor-pointer shadow-none! shrink-0"
-          >
-            View
-          </Button>
+          <div className="flex items-center justify-end sm:justify-start w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100/70 sm:border-transparent shrink-0">
+            <Button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenSelfAssessmentForm();
+              }}
+              variant="outline"
+              size="sm"
+              className="w-full sm:w-auto bg-white! text-[#fbab2a]! border border-gray-200! hover:bg-gray-50! font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl transition-all cursor-pointer shadow-none! shrink-0 text-center"
+            >
+              View
+            </Button>
+          </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-2xs flex items-center justify-between gap-4 transition-all">
-          <div className="flex items-center gap-4 min-w-0">
-            <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
-              <FiFileText className="w-6 h-6 text-[#a31d38]" />
+        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-100 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 transition-all">
+          <div className="flex items-center gap-3.5 sm:gap-4 min-w-0 flex-1 w-full">
+            <div className="w-11 sm:w-12 h-11 sm:h-12 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
+              <FiFileText className="w-5 sm:w-6 h-5 sm:h-6 text-[#a31d38]" />
             </div>
             <div className="flex flex-col gap-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-base sm:text-lg font-bold text-black tracking-tight truncate">
+                <h3 className="text-sm sm:text-base md:text-lg font-bold text-black tracking-tight">
                   Third Party Reports
                 </h3>
                 <span
@@ -95,7 +97,7 @@ export const EvidenceItemsList: React.FC<Props> = ({
               <span className="text-xs text-gray-400 font-normal">Employer &amp; Supervisor References</span>
             </div>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center justify-end sm:justify-start gap-2 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100/70 sm:border-transparent shrink-0">
             {hasUploadedReport && (
               <Button
                 type="button"
@@ -114,7 +116,7 @@ export const EvidenceItemsList: React.FC<Props> = ({
                 }
                 variant="outline"
                 size="sm"
-                className="bg-white! text-[#fbab2a]! border border-gray-200! hover:bg-gray-50! font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl transition-all cursor-pointer shadow-none! shrink-0"
+                className="flex-1 sm:flex-initial text-center bg-white! text-[#fbab2a]! border border-gray-200! hover:bg-gray-50! font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl transition-all cursor-pointer shadow-none! shrink-0"
               >
                 View
               </Button>
@@ -124,7 +126,7 @@ export const EvidenceItemsList: React.FC<Props> = ({
               type="button"
               onClick={handleDownloadThirdParty}
               disabled={isDownloading}
-              className="bg-[#F8F9FA] border border-gray-200 hover:bg-gray-100 text-gray-700 font-semibold text-xs sm:text-sm px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-2xs shrink-0 disabled:opacity-60 disabled:cursor-not-allowed"
+              className="flex-1 sm:flex-initial justify-center bg-[#F8F9FA] border border-gray-200 hover:bg-gray-100 text-gray-700 font-semibold text-xs sm:text-sm px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-2xs shrink-0 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <span>{isDownloading ? "Downloading..." : "Download"}</span>
               {isDownloading ? (
@@ -198,17 +200,17 @@ export const EvidenceItemsList: React.FC<Props> = ({
               <div
                 key={item.id || idx}
                 onClick={handlePreview}
-                className="bg-white rounded-2xl p-5 border border-gray-100 shadow-2xs flex flex-col gap-3 transition-all cursor-pointer group"
+                className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-100 shadow-2xs flex flex-col gap-3 transition-all cursor-pointer group"
               >
-                <div className="flex items-center justify-between gap-4 flex-wrap">
-                  <div className="flex items-center gap-4 min-w-0">
-                    <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
-                      <FiFileText className="w-6 h-6 text-[#a31d38]" />
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+                  <div className="flex items-center gap-3.5 sm:gap-4 min-w-0 flex-1 w-full">
+                    <div className="w-11 sm:w-12 h-11 sm:h-12 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
+                      <FiFileText className="w-5 sm:w-6 h-5 sm:h-6 text-[#a31d38]" />
                     </div>
-                    <div className="flex flex-col gap-1 min-w-0">
-                      <div className="flex items-center gap-3 flex-wrap">
-                        <h3 className="text-base sm:text-lg font-bold text-black tracking-tight truncate group-hover:text-primary transition-colors">{title}</h3>
-                        <span className={`text-xs font-semibold px-3 py-0.5 rounded-full capitalize ${badgeBg} ${badgeText}`}>
+                    <div className="flex flex-col gap-1 min-w-0 flex-1">
+                      <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                        <h3 className="text-sm sm:text-base md:text-lg font-bold text-black tracking-tight group-hover:text-primary transition-colors break-words">{title}</h3>
+                        <span className={`text-xs font-semibold px-2.5 sm:px-3 py-0.5 rounded-full capitalize ${badgeBg} ${badgeText}`}>
                           {displayStatus}
                         </span>
                       </div>
@@ -216,16 +218,18 @@ export const EvidenceItemsList: React.FC<Props> = ({
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handlePreview();
-                    }}
-                    className="bg-white border border-gray-200 hover:bg-gray-50 text-[#fbab2a] font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl cursor-pointer shrink-0 transition-colors shadow-none"
-                  >
-                    View
-                  </button>
+                  <div className="flex items-center justify-end sm:justify-start w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100/70 sm:border-transparent shrink-0">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handlePreview();
+                      }}
+                      className="w-full sm:w-auto text-center bg-white border border-gray-200 hover:bg-gray-50 text-[#fbab2a] font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl cursor-pointer shrink-0 transition-colors shadow-none"
+                    >
+                      View
+                    </button>
+                  </div>
                 </div>
 
                 {fileFeedback && (

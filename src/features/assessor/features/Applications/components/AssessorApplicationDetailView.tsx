@@ -84,8 +84,18 @@ export const AssessorApplicationDetailView: React.FC<
   });
   const isInterviewStage = Boolean(
     appDetail?.currentStageKey === "interview" ||
+    appDetail?.currentStageKey === "direct_observation" ||
+    appDetail?.currentStageKey === "observation" ||
     (appDetail as any)?.stage === "interview" ||
-    application?.currentStageKey === "interview"
+    application?.currentStageKey === "interview" ||
+    application?.currentStageKey === "direct_observation" ||
+    stagesData?.some(
+      (s) =>
+        (s.stageKey === "interview" ||
+          s.stageKey === "direct_observation" ||
+          s.stageKey === "observation") &&
+        (s.status as string) !== "not_started",
+    ),
   );
   const { data: interviewSchedule } = useGetInterviewSchedule(application.id, {
     enabled: isInterviewStage,
@@ -253,6 +263,25 @@ export const AssessorApplicationDetailView: React.FC<
     reason: string;
     recommendation: string;
   } | null>(null);
+
+  // Only display the assessment forms widget when in the interview stages
+  const isAtInterviewStage = Boolean(
+    (interviewStageRow &&
+      (interviewStageRow.status as string) !== "not_started") ||
+    Boolean(interviewSchedule?.scheduledAt) ||
+    currentStageKey === "interview" ||
+    currentStageKey === "direct_observation" ||
+    currentStageKey === "observation" ||
+    (appDetail as any)?.stage === "interview" ||
+    application?.currentStageKey === "interview" ||
+    interviewOutcome !== "ongoing" ||
+    (isFolderArrangementDone &&
+      stagesData?.some(
+        (s) =>
+          POST_FOLDER_STAGE_KEYS.includes(s.stageKey) &&
+          (s.status as string) !== "not_started",
+      )),
+  );
 
   const queryClient = useQueryClient();
 
@@ -690,25 +719,33 @@ export const AssessorApplicationDetailView: React.FC<
           panelInterviewDate={interviewSchedule?.scheduledAt || undefined}
         />
         <AssessorUpcomingEventsWidget event={upcomingEvent} />
-        <AssessorAssessmentFormsWidget
-          applicationId={application.id}
-          isReadOnly={isAssessmentFormReadOnly}
-          remoteForms={remoteForms}
-          isInterviewDone={Boolean(
-            (interviewStageRow?.status === "successful" || interviewOutcome === "competent") &&
-            interviewOutcome !== "awaiting_signature" &&
-            interviewOutcome !== "incompetent" &&
-            interviewOutcome !== "inconclusive"
-          )}
-          isAwaitingPanelSignatures={Boolean(
-            !(interviewStageRow?.status === "successful" || interviewOutcome === "competent") ||
-            interviewOutcome === "awaiting_signature" ||
-            (pendingSignatures && pendingSignatures.length > 0)
-          )}
-          onViewForm={(form) => {
-            router.push(`/applications/${application.id}/assessment-forms/${form.id}?from=assessor`);
-          }}
-        />
+        {isAtInterviewStage && (
+          <AssessorAssessmentFormsWidget
+            applicationId={application.id}
+            isReadOnly={isAssessmentFormReadOnly}
+            remoteForms={remoteForms}
+            isInterviewDone={Boolean(
+              (interviewStageRow?.status === "successful" ||
+                interviewOutcome === "competent") &&
+                interviewOutcome !== "awaiting_signature" &&
+                interviewOutcome !== "incompetent" &&
+                interviewOutcome !== "inconclusive",
+            )}
+            isAwaitingPanelSignatures={Boolean(
+              !(
+                interviewStageRow?.status === "successful" ||
+                interviewOutcome === "competent"
+              ) ||
+                interviewOutcome === "awaiting_signature" ||
+                (pendingSignatures && pendingSignatures.length > 0),
+            )}
+            onViewForm={(form) => {
+              router.push(
+                `/applications/${application.id}/assessment-forms/${form.id}?from=assessor`,
+              );
+            }}
+          />
+        )}
       </div>
 
       {/* Internal Verifier Modals */}

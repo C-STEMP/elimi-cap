@@ -121,22 +121,22 @@ export const EvidenceItemCard: React.FC<EvidenceItemCardProps> = ({
   return (
     <div
       onClick={() => onView(item)}
-      className="bg-white rounded-2xl p-5 border border-gray-100 shadow-xs hover:shadow-md hover:border-gray-200 flex flex-col gap-3 transition-all relative cursor-pointer group"
+      className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-100 shadow-xs hover:shadow-md hover:border-gray-200 flex flex-col gap-3 transition-all relative cursor-pointer group"
     >
-      <div className="flex items-center justify-between gap-4 w-full">
-        <div className="flex items-center gap-4 min-w-0 flex-1">
-          <div className="w-12 h-12 rounded-xl bg-[#FFF5F6] border border-rose-100 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 w-full">
+        <div className="flex items-center gap-3.5 sm:gap-4 min-w-0 flex-1">
+          <div className="w-11 sm:w-12 h-11 sm:h-12 rounded-xl bg-[#FFF5F6] border border-rose-100 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
             {getFileTypeIcon(item.mimeType, item.name)}
           </div>
 
           <div className="flex flex-col gap-0.5 min-w-0 flex-1">
-            <div className="flex items-center gap-2.5 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap">
               <h4
                 onClick={(e) => {
                   e.stopPropagation();
                   onView(item);
                 }}
-                className="text-base sm:text-lg font-bold text-neutral-primary hover:text-primary transition-colors truncate cursor-pointer"
+                className="text-sm sm:text-base md:text-lg font-bold text-neutral-primary hover:text-primary transition-colors cursor-pointer break-words"
               >
                 {item.name}
               </h4>
@@ -153,7 +153,7 @@ export const EvidenceItemCard: React.FC<EvidenceItemCardProps> = ({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center justify-end sm:justify-start gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100/70 sm:border-transparent">
           <button
             type="button"
             onClick={(e) => {
@@ -174,7 +174,7 @@ export const EvidenceItemCard: React.FC<EvidenceItemCardProps> = ({
                 e.stopPropagation();
                 onApprove(item);
               }}
-              className="px-3 py-1.5 rounded-xl bg-[#12B76A]/10 hover:bg-[#12B76A]/20 text-[#12B76A] text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
+              className="px-3.5 py-2 rounded-xl bg-[#12B76A]/10 hover:bg-[#12B76A]/20 text-[#12B76A] text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
               title="Approve Evidence"
             >
               <FiCheck className="w-3.5 h-3.5 stroke-[2.5]" />
