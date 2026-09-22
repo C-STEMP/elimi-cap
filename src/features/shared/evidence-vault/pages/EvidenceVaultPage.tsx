@@ -130,6 +130,18 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
     }
   }, [applicationId]);
 
+  const storedApprovedMap: Record<string, boolean> = React.useMemo(() => {
+    if (typeof window === "undefined" || !applicationId) return {};
+    try {
+      const stored = localStorage.getItem(
+        `elimi_evidence_approved_${applicationId}`,
+      );
+      return stored ? JSON.parse(stored) : {};
+    } catch {
+      return {};
+    }
+  }, [applicationId]);
+
   const combinedEvidenceList = React.useMemo(() => {
     const list: any[] = [];
     const seenNames = new Set<string>();
@@ -220,15 +232,26 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
       new Set([...initialIssues, ...(Array.isArray(extraFeedback) ? extraFeedback : [extraFeedback])]),
     ).filter(Boolean);
 
+    const normDoc = docName.toLowerCase();
+    const isApprovedLocally = Boolean(
+      storedApprovedMap[itemKey] ||
+      storedApprovedMap[docName] ||
+      storedApprovedMap[normDoc] ||
+      (item.assetId && storedApprovedMap[item.assetId]) ||
+      (item.id && storedApprovedMap[item.id]),
+    );
+
     // Use ONLY the status coming from the backend - no hardcoded status!
     const defaultPendingStatus = isEvidenceSubmitted ? "Submitted" : "Pending";
-    const rawStatus = (item.status as string) || (combinedIssues.length > 0 ? "Attention Required" : defaultPendingStatus);
+    const initialRawStatus = (item.status as string) || (combinedIssues.length > 0 ? "Attention Required" : defaultPendingStatus);
+    const rawStatus = isApprovedLocally ? "Approved" : initialRawStatus;
     const statusLabel = rawStatus
       .replace(/_/g, " ")
       .replace(/\b\w/g, (c: string) => c.toUpperCase());
 
     const s = rawStatus.toLowerCase().replace(/_/g, " ");
     const isApproved =
+      isApprovedLocally ||
       s.includes("approv") ||
       s.includes("accept") ||
       s.includes("complet") ||

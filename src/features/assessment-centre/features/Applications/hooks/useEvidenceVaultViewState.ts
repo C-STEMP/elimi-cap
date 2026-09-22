@@ -51,6 +51,14 @@ export function useEvidenceVaultViewState(id: string = "") {
     const seenNames = new Set<string>();
     const seenIds = new Set<string>();
 
+    let approvedMap: Record<string, boolean> = {};
+    if (typeof window !== "undefined" && id) {
+      try {
+        const stored = localStorage.getItem(`elimi_evidence_approved_${id}`);
+        approvedMap = stored ? JSON.parse(stored) : {};
+      } catch {}
+    }
+
     (remoteEvidenceItems || [])
       .filter(
         (item: any) =>
@@ -64,7 +72,17 @@ export function useEvidenceVaultViewState(id: string = "") {
         seenNames.add(norm);
         if (item.id) seenIds.add(item.id);
         if (item.assetId) seenIds.add(item.assetId);
-        list.push({ ...item, documentName: docName });
+        const isApproved = Boolean(
+          approvedMap[item.id] ||
+          approvedMap[item.assetId] ||
+          approvedMap[docName] ||
+          approvedMap[norm],
+        );
+        list.push({
+          ...item,
+          documentName: docName,
+          status: isApproved ? "Approved" : item.status,
+        });
       });
 
     persistedEvidence
@@ -79,11 +97,21 @@ export function useEvidenceVaultViewState(id: string = "") {
         seenNames.add(norm);
         if (item.id) seenIds.add(item.id);
         if (item.assetId) seenIds.add(item.assetId);
-        list.push({ ...item, documentName: docName });
+        const isApproved = Boolean(
+          approvedMap[item.id] ||
+          approvedMap[item.assetId] ||
+          approvedMap[docName] ||
+          approvedMap[norm],
+        );
+        list.push({
+          ...item,
+          documentName: docName,
+          status: isApproved ? "Approved" : item.status,
+        });
       });
 
     return list;
-  }, [remoteEvidenceItems, persistedEvidence]);
+  }, [remoteEvidenceItems, persistedEvidence, id]);
 
   return {
     isLoadingEvidence,
