@@ -173,12 +173,15 @@ export const AssessorApplicantProfileView: React.FC<
     });
   };
 
-  const handleConfirmDecline = () => {
-    rejectRetainedMutation.mutate(applicantId, {
-      onSuccess: () => {
-        setRequestModalMode("declined-success");
+  const handleConfirmDecline = (reason?: string) => {
+    rejectRetainedMutation.mutate(
+      { id: applicantId, reason },
+      {
+        onSuccess: () => {
+          setRequestModalMode("declined-success");
+        },
       },
-    });
+    );
   };
 
   // Handlers for Job Posting Application (Shortlist / Reject)
@@ -208,13 +211,14 @@ export const AssessorApplicantProfileView: React.FC<
     );
   };
 
-  const handleConfirmReject = () => {
+  const handleConfirmReject = (reason?: string) => {
     if (!jobId) return;
     patchDecisionMutation.mutate(
       {
         id: jobId,
         applicationId: applicantId,
         decision: "reject",
+        reason,
       },
       {
         onSuccess: () => {
