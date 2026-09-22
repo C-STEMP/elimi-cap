@@ -55,20 +55,20 @@ export const ResourcesSection: React.FC<ResourcesSectionProps> = ({
       {/* Resource Card 1: Self-Assessment Form */}
       <div
         onClick={onViewSelfAssessment}
-        className="bg-white rounded-2xl p-5 border border-gray-100 shadow-xs flex items-center justify-between gap-4 transition-all cursor-pointer group"
+        className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-100 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 transition-all cursor-pointer group"
       >
-        <div className="flex items-center gap-4 min-w-0">
-          <div className="w-12 h-12 rounded-xl bg-[#FFF5F6] border border-rose-100 flex items-center justify-center shrink-0">
+        <div className="flex items-center gap-3.5 sm:gap-4 min-w-0 flex-1">
+          <div className="w-11 sm:w-12 h-11 sm:h-12 rounded-xl bg-[#FFF5F6] border border-rose-100 flex items-center justify-center shrink-0">
             <Image
               src={ASSETS_URL.pdfImg}
               alt="PDF"
               width={24}
               height={24}
-              className="w-6 h-6 object-contain"
+              className="w-5 sm:w-6 h-5 sm:h-6 object-contain"
             />
           </div>
           <div className="flex flex-col gap-0.5 min-w-0">
-            <h4 className="text-base sm:text-lg font-bold text-neutral-primary truncate group-hover:text-primary transition-colors">
+            <h4 className="text-sm sm:text-base md:text-lg font-bold text-neutral-primary group-hover:text-primary transition-colors">
               Self-Assessment Form
             </h4>
             <span className="text-xs text-neutral-secondary font-normal">
@@ -77,33 +77,35 @@ export const ResourcesSection: React.FC<ResourcesSectionProps> = ({
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onViewSelfAssessment?.();
-          }}
-          className="bg-white text-[#FBAB2A] border border-gray-200 hover:bg-orange-50/50 font-bold text-xs sm:text-sm px-6 py-2 rounded-xl transition-all cursor-pointer shadow-2xs shrink-0"
-        >
-          View
-        </button>
+        <div className="flex items-center justify-end sm:justify-start pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100/70 sm:border-transparent shrink-0">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onViewSelfAssessment?.();
+            }}
+            className="w-full sm:w-auto text-center bg-white text-[#FBAB2A] border border-gray-200 hover:bg-orange-50/50 font-bold text-xs sm:text-sm px-6 py-2 rounded-xl transition-all cursor-pointer shadow-2xs"
+          >
+            View
+          </button>
+        </div>
       </div>
 
       {/* Resource Card 2: Third Party Reports */}
-      <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-xs flex items-center justify-between gap-4 transition-all">
-        <div className="flex items-center gap-4 min-w-0">
-          <div className="w-12 h-12 rounded-xl bg-[#FFF5F6] border border-rose-100 flex items-center justify-center shrink-0">
+      <div className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-100 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 transition-all">
+        <div className="flex items-center gap-3.5 sm:gap-4 min-w-0 flex-1">
+          <div className="w-11 sm:w-12 h-11 sm:h-12 rounded-xl bg-[#FFF5F6] border border-rose-100 flex items-center justify-center shrink-0">
             <Image
               src={ASSETS_URL.pdfImg}
               alt="PDF"
               width={24}
               height={24}
-              className="w-6 h-6 object-contain"
+              className="w-5 sm:w-6 h-5 sm:h-6 object-contain"
             />
           </div>
           <div className="flex flex-col gap-0.5 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h4 className="text-base sm:text-lg font-bold text-neutral-primary truncate">
+              <h4 className="text-sm sm:text-base md:text-lg font-bold text-neutral-primary">
                 Third Party Reports
               </h4>
               <span
@@ -122,12 +124,12 @@ export const ResourcesSection: React.FC<ResourcesSectionProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center justify-end sm:justify-start gap-2 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100/70 sm:border-transparent shrink-0">
           {hasUploadedReport && (
             <button
               type="button"
               onClick={handleViewReport}
-              className="bg-white text-[#FBAB2A] border border-gray-200 hover:bg-orange-50/50 font-bold text-xs sm:text-sm px-6 py-2 rounded-xl transition-all cursor-pointer shadow-2xs shrink-0"
+              className="flex-1 sm:flex-initial text-center bg-white text-[#FBAB2A] border border-gray-200 hover:bg-orange-50/50 font-bold text-xs sm:text-sm px-5 py-2 rounded-xl transition-all cursor-pointer shadow-2xs"
             >
               View
             </button>
@@ -137,7 +139,7 @@ export const ResourcesSection: React.FC<ResourcesSectionProps> = ({
             type="button"
             onClick={handleDownload}
             disabled={isDownloading}
-            className="bg-[#F8F9FA] border border-gray-200 hover:bg-gray-100 text-neutral-primary font-semibold text-xs sm:text-sm px-4 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-2xs shrink-0 disabled:opacity-60 disabled:cursor-not-allowed"
+            className="flex-1 sm:flex-initial justify-center bg-[#F8F9FA] border border-gray-200 hover:bg-gray-100 text-neutral-primary font-semibold text-xs sm:text-sm px-4 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-2xs disabled:opacity-60 disabled:cursor-not-allowed"
           >
             <span>{isDownloading ? "Downloading..." : "Download"}</span>
             {isDownloading ? (

@@ -85,7 +85,9 @@ export const AssessorEvidenceVaultView: React.FC<
     }
 
     const combined: any[] = [];
-    const seen = new Set<string>();
+    const seenNames = new Set<string>();
+    const seenIds = new Set<string>();
+    const seenAssetIds = new Set<string>();
 
     // Self-assessment and third-party report records are structured form
     // data, not uploaded files — they have no resolvable URL/assetId and no
@@ -96,86 +98,97 @@ export const AssessorEvidenceVaultView: React.FC<
       (!e.kind && (e.documentName || e.name || e.assetId));
 
     (remoteEvidence || []).filter(isGeneralEvidence).forEach((e: any) => {
-      const docName =
+      const docName = (
         e.documentName ||
         e.name ||
         e.title ||
         e.filename ||
-        e.originalName;
-      const key = e.id || e.assetId || docName;
-      if (key && !seen.has(key)) {
-        seen.add(key);
-        combined.push({ ...e, documentName: docName });
-      }
+        e.originalName ||
+        ""
+      ).trim();
+      if (!docName && !e.id && !e.assetId) return;
+      const norm = docName.toLowerCase();
+      if (norm) seenNames.add(norm);
+      if (e.id) seenIds.add(e.id);
+      if (e.assetId) seenAssetIds.add(e.assetId);
+      combined.push({ ...e, documentName: docName });
     });
 
     localItems.filter(isGeneralEvidence).forEach((e: any) => {
+      const docName = (
+        e.documentName ||
+        e.name ||
+        e.title ||
+        e.filename ||
+        e.originalName ||
+        ""
+      ).trim();
+      if (!docName && !e.id && !e.assetId) return;
+      const norm = docName.toLowerCase();
+      if (
+        (norm && seenNames.has(norm)) ||
+        (e.id && seenIds.has(e.id)) ||
+        (e.assetId && seenAssetIds.has(e.assetId))
+      ) {
+        return;
+      }
+      if (norm) seenNames.add(norm);
+      if (e.id) seenIds.add(e.id);
+      if (e.assetId) seenAssetIds.add(e.assetId);
+      combined.push({ ...e, documentName: docName });
+    });
+
+    const mapped = combined.map((e: any, idx: number) => {
       const docName =
         e.documentName ||
         e.name ||
         e.title ||
         e.filename ||
-        e.originalName;
-      const key = e.id || e.assetId || docName;
-      if (key && !seen.has(key)) {
-        seen.add(key);
-        combined.push({ ...e, documentName: docName });
-      }
+        e.originalName ||
+        `Evidence Item ${idx + 1}`;
+
+      const itemKey = e.id || e.assetId || docName;
+      const extraFeedback =
+        storedFeedbackMap[itemKey] ||
+        storedFeedbackMap[docName] ||
+        (e.assetId ? storedFeedbackMap[e.assetId] : null) ||
+        [];
+
+      const initialFeedback = Array.isArray(e.feedback)
+        ? e.feedback
+        : e.feedback
+          ? [e.feedback]
+          : e.reviewComment
+            ? [e.reviewComment]
+            : Array.isArray(e.issues)
+              ? e.issues
+              : [];
+
+      const combinedFeedback = Array.from(
+        new Set([...initialFeedback, ...(Array.isArray(extraFeedback) ? extraFeedback : [extraFeedback])]),
+      ).filter(Boolean);
+
+      // Format backend status directly, no hardcoded fallbacks!
+      const defaultStatus = isVaultSubmitted ? "Submitted" : "Pending";
+      const rawStatus = e.status || defaultStatus;
+      const formattedStatus = rawStatus
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (c: string) => c.toUpperCase());
+
+      return {
+        id: e.id || `ev-${idx}`,
+        name: docName,
+        size: e.size || e.fileSize || "5 MB",
+        status: formattedStatus,
+        url: e.url || e.dataUrl,
+        dataUrl: e.dataUrl || e.url,
+        assetId: e.assetId,
+        mimeType: e.mimeType,
+        evidenceType: e.evidenceType || e.type,
+        feedback: combinedFeedback,
+      };
     });
-
-    if (combined.length > 0) {
-      const mapped = combined.map((e: any, idx: number) => {
-        const docName =
-          e.documentName ||
-          e.name ||
-          e.title ||
-          e.filename ||
-          e.originalName ||
-          `Evidence Item ${idx + 1}`;
-
-        const itemKey = e.id || e.assetId || docName;
-        const extraFeedback =
-          storedFeedbackMap[itemKey] ||
-          storedFeedbackMap[docName] ||
-          (e.assetId ? storedFeedbackMap[e.assetId] : null) ||
-          [];
-
-        const initialFeedback = Array.isArray(e.feedback)
-          ? e.feedback
-          : e.feedback
-            ? [e.feedback]
-            : e.reviewComment
-              ? [e.reviewComment]
-              : Array.isArray(e.issues)
-                ? e.issues
-                : [];
-
-        const combinedFeedback = Array.from(
-          new Set([...initialFeedback, ...(Array.isArray(extraFeedback) ? extraFeedback : [extraFeedback])]),
-        ).filter(Boolean);
-
-        // Format backend status directly, no hardcoded fallbacks!
-        const defaultStatus = isVaultSubmitted ? "Submitted" : "Pending";
-        const rawStatus = e.status || defaultStatus;
-        const formattedStatus = rawStatus
-          .replace(/_/g, " ")
-          .replace(/\b\w/g, (c: string) => c.toUpperCase());
-
-        return {
-          id: e.id || `ev-${idx}`,
-          name: docName,
-          size: e.size || e.fileSize || "5 MB",
-          status: formattedStatus,
-          url: e.url || e.dataUrl,
-          dataUrl: e.dataUrl || e.url,
-          assetId: e.assetId,
-          mimeType: e.mimeType,
-          evidenceType: e.evidenceType || e.type,
-          feedback: combinedFeedback,
-        };
-      });
-      setEvidenceItems(mapped);
-    }
+    setEvidenceItems(mapped);
   }, [remoteEvidence, applicationId]);
 
   // Send Feedback Flow State

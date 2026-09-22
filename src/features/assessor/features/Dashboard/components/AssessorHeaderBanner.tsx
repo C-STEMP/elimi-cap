@@ -477,14 +477,14 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
               </div>
             ) : (
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2 min-w-0 max-w-full">
                   <button
                     type="button"
                     onClick={onBackFromApplication}
-                    className="flex items-center gap-2 text-white font-bold text-2xl sm:text-3xl hover:opacity-90 transition-opacity w-fit cursor-pointer"
+                    className="flex items-center gap-1.5 sm:gap-2 text-white font-bold text-xl sm:text-2xl lg:text-3xl hover:opacity-90 transition-opacity w-fit cursor-pointer text-left break-words"
                   >
-                    <FiChevronLeft className="w-6 h-6 stroke-[2.5]" />
-                    <span>
+                    <FiChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.5] shrink-0" />
+                    <span className="break-words">
                       {isNsqApplication && nsqSubViewTitle
                         ? nsqSubViewTitle
                         : applicationSubView === "evidence_vault"
@@ -496,7 +496,7 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
                               : selectedApplicationName}
                     </span>
                   </button>
-                  <div className="flex items-center gap-2 text-xs sm:text-sm text-white/90 font-normal">
+                  <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-white/90 font-normal flex-wrap break-words">
                     <span
                       onClick={onBackFromApplication}
                       className="hover:underline cursor-pointer"
