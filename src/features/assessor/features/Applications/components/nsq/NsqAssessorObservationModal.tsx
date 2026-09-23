@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { FiX, FiTrash2, FiPlus, FiEdit3, FiCheck } from "react-icons/fi";
+import { useModalDraft } from "@/src/lib/hooks/usePersistentModal";
+import { NSQ_ASSESSOR_OBSERVATION_MODAL } from "@/src/lib/modal-keys";
 
 export interface ObservationRequestDetails {
   units: string[];
@@ -23,18 +25,29 @@ interface NsqAssessorObservationModalProps {
   details: ObservationRequestDetails;
   onAccept: (updated: { requirements: string[]; isSigned: boolean }) => void;
   onReject: () => void;
+  /** URL/draft key; pass a distinct one when several instances can be mounted at once. */
+  modalKey?: string;
 }
 
 export const NsqAssessorObservationModal: React.FC<
   NsqAssessorObservationModalProps
-> = ({ isOpen, onClose, details, onAccept, onReject }) => {
-  const [requirements, setRequirements] = useState<string[]>(
+> = ({
+  isOpen,
+  onClose,
+  details,
+  onAccept,
+  onReject,
+  modalKey = NSQ_ASSESSOR_OBSERVATION_MODAL,
+}) => {
+  const [requirements, setRequirements] = useModalDraft<string[]>(
+    modalKey,
+    "requirements",
     details.requirements && details.requirements.length > 0
       ? details.requirements
       : ["Candidate must be equipped with complete safety gear (PPE)."],
   );
-  const [newRequirement, setNewRequirement] = useState("");
-  const [isSigned, setIsSigned] = useState(details.isSigned ?? false);
+  const [newRequirement, setNewRequirement] = useModalDraft(modalKey, "newRequirement", "");
+  const [isSigned, setIsSigned] = useModalDraft(modalKey, "isSigned", details.isSigned ?? false);
 
   if (!isOpen) return null;
 

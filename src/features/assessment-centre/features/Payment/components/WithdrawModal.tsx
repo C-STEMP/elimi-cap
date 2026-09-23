@@ -8,6 +8,8 @@ import { Input } from "@/src/components/ui/input";
 import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
 import { ASSETS_URL } from "@/assets";
+import { useModalDraft } from "@/src/lib/hooks/usePersistentModal";
+import { WITHDRAW_MODAL } from "@/src/lib/modal-keys";
 
 interface WithdrawModalProps {
   isOpen: boolean;
@@ -23,7 +25,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
   onWithdrawSuccess,
 }) => {
   const { toast } = useToast();
-  const [amount, setAmount] = useState("");
+  const [amount, setAmount] = useModalDraft(WITHDRAW_MODAL, "amount", "");
   const [step, setStep] = useState<"form" | "success">("form");
 
   if (!isOpen) return null;

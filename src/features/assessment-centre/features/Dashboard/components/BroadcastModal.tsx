@@ -9,6 +9,8 @@ import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
 import { ASSETS_URL } from "@/assets";
 import { useSendBroadcastMessage } from "@/src/features/shared/messages/hooks";
+import { useModalDraft } from "@/src/lib/hooks/usePersistentModal";
+import { BROADCAST_MODAL } from "@/src/lib/modal-keys";
 
 interface BroadcastModalProps {
   isOpen: boolean;
@@ -29,8 +31,8 @@ export const BroadcastModal: React.FC<BroadcastModalProps> = ({
   onSendSuccess,
 }) => {
   const { toast } = useToast();
-  const [recipient, setRecipient] = useState("");
-  const [message, setMessage] = useState("");
+  const [recipient, setRecipient] = useModalDraft(BROADCAST_MODAL, "recipient", "");
+  const [message, setMessage] = useModalDraft(BROADCAST_MODAL, "message", "");
   const [step, setStep] = useState<"form" | "success">("form");
 
   const sendBroadcastMutation = useSendBroadcastMessage();

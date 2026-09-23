@@ -21,6 +21,8 @@ import {
 } from "@/src/features/shared/applications/hooks";
 import { NsqUploadEvidenceModal } from "./NsqUploadEvidenceModal";
 import { NsqPreviewEvidenceModal } from "./NsqPreviewEvidenceModal";
+import { useUrlModalValue, useModalDraft } from "@/src/lib/hooks/usePersistentModal";
+import { NSQ_UPLOAD_EVIDENCE_MODAL } from "@/src/lib/modal-keys";
 
 export type EvidenceStatus = "in_review" | "approved" | "rejected";
 
@@ -292,11 +294,11 @@ export const NsqUnitDetailView: React.FC<NsqUnitDetailViewProps> = ({
   const [expandedLoIds, setExpandedLoIds] = useState<string[]>(["lo-1"]);
   const [expandedPcIds, setExpandedPcIds] = useState<string[]>(["pc-1-1"]);
 
-  const [activePcForUpload, setActivePcForUpload] = useState<PerformanceCriteria | null>(null);
+  const [activePcForUpload, setActivePcForUpload] = useUrlModalValue<PerformanceCriteria>(NSQ_UPLOAD_EVIDENCE_MODAL);
   // Set only when re-uploading to replace an existing evidence row — seeds
   // the modal's evidence type with the type being replaced instead of
   // defaulting to a fresh upload's default.
-  const [replacingEvidenceType, setReplacingEvidenceType] = useState<string | undefined>(undefined);
+  const [replacingEvidenceType, setReplacingEvidenceType] = useModalDraft<string | undefined>(NSQ_UPLOAD_EVIDENCE_MODAL, "replacingEvidenceType", undefined);
   const [learningOutcomes, setLearningOutcomes] = useState<LearningOutcome[]>(() =>
     parseStructureToLearningOutcomes(structure, tradeName),
   );

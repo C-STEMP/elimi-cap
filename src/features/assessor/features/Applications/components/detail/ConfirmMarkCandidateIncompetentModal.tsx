@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Image from "next/image";
 import { ASSETS_URL } from "@/src/assets";
 import { Button } from "@/src/components/ui/button";
+import { useModalDraft } from "@/src/lib/hooks/usePersistentModal";
+import { MARK_INCOMPETENT_MODAL } from "@/src/lib/modal-keys";
 
 interface ConfirmMarkCandidateIncompetentModalProps {
   isOpen: boolean;
@@ -15,8 +17,8 @@ interface ConfirmMarkCandidateIncompetentModalProps {
 export const ConfirmMarkCandidateIncompetentModal: React.FC<
   ConfirmMarkCandidateIncompetentModalProps
 > = ({ isOpen, onClose, onConfirm, isLoading = false }) => {
-  const [reason, setReason] = useState("");
-  const [recommendation, setRecommendation] = useState("");
+  const [reason, setReason] = useModalDraft(MARK_INCOMPETENT_MODAL, "reason", "");
+  const [recommendation, setRecommendation] = useModalDraft(MARK_INCOMPETENT_MODAL, "recommendation", "");
 
   if (!isOpen) return null;
 

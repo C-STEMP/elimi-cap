@@ -8,6 +8,8 @@ import { Select, SelectOption } from "@/src/components/ui/select";
 import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
 import { useCountryStateCity } from "@/src/lib/hooks/useCountryStateCity";
+import { useModalDraft } from "@/src/lib/hooks/usePersistentModal";
+import { NSQ_REQUEST_OBSERVATION_MODAL } from "@/src/lib/modal-keys";
 
 export interface ObservationUnitOption {
   id: string;
@@ -39,14 +41,14 @@ export const NsqRequestObservationModal: React.FC<NsqRequestObservationModalProp
 }) => {
   const { toast } = useToast();
 
-  const [selectedUnitIds, setSelectedUnitIds] = useState<string[]>([]);
+  const [selectedUnitIds, setSelectedUnitIds] = useModalDraft<string[]>(NSQ_REQUEST_OBSERVATION_MODAL, "selectedUnitIds", []);
 
-  const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
-  const [country, setCountry] = useState("Nigeria");
-  const [stateOfResidence, setStateOfResidence] = useState("");
-  const [lga, setLga] = useState("");
-  const [streetAddress, setStreetAddress] = useState("");
+  const [date, setDate] = useModalDraft(NSQ_REQUEST_OBSERVATION_MODAL, "date", "");
+  const [time, setTime] = useModalDraft(NSQ_REQUEST_OBSERVATION_MODAL, "time", "");
+  const [country, setCountry] = useModalDraft(NSQ_REQUEST_OBSERVATION_MODAL, "country", "Nigeria");
+  const [stateOfResidence, setStateOfResidence] = useModalDraft(NSQ_REQUEST_OBSERVATION_MODAL, "stateOfResidence", "");
+  const [lga, setLga] = useModalDraft(NSQ_REQUEST_OBSERVATION_MODAL, "lga", "");
+  const [streetAddress, setStreetAddress] = useModalDraft(NSQ_REQUEST_OBSERVATION_MODAL, "streetAddress", "");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { countries, states, cities } = useCountryStateCity(

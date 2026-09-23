@@ -25,6 +25,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import React, { useState } from "react";
 import { NsqCentreApplicationDetailView } from "./nsq/NsqCentreApplicationDetailView";
+import { useUrlModal } from "@/src/lib/hooks/usePersistentModal";
+import { APPLICATION_SCHEDULE_INTERVIEW_MODAL, CREATE_INTERVIEW_MODAL, APPLICATION_CANDIDATE_FORM_VIEW } from "@/src/lib/modal-keys";
+import { closeUrlSubView, openUrlSubView } from "@/src/lib/navigation/url-sub-view";
 export const CentreApplicationRouteView: React.FC<{ id: string }> = ({
   id,
 }) => {
@@ -41,27 +44,32 @@ export const CentreApplicationRouteView: React.FC<{ id: string }> = ({
   });
   const reviewMutation = useReviewApplication();
 
-  const [showCandidateForm, setShowCandidateForm] = useState(false);
+  const [showCandidateForm, setShowCandidateForm] = useUrlModal(APPLICATION_CANDIDATE_FORM_VIEW);
   const [showEvidenceVault, setShowEvidenceVault] = useState(false);
   const [showSelfAssessmentForm, setShowSelfAssessmentForm] = useState(false);
   const [isPromptCreatePanelModalOpen, setIsPromptCreatePanelModalOpen] =
     useState(false);
   const [isScheduleInterviewModalOpen, setIsScheduleInterviewModalOpen] =
-    useState(false);
+    useUrlModal(APPLICATION_SCHEDULE_INTERVIEW_MODAL);
   const [isCreateInterviewModalOpen, setIsCreateInterviewModalOpen] =
-    useState(false);
+    useUrlModal(CREATE_INTERVIEW_MODAL);
   const [selectedUnitNumber, setInternalSelectedUnitNumber] = useState<
     string | null
   >(() => searchParams.get("unit"));
 
   const setSelectedUnitNumber = (unitNo: string | null) => {
     setInternalSelectedUnitNumber(unitNo);
-    const params = new URLSearchParams(searchParams.toString());
-    if (unitNo) params.set("unit", unitNo);
-    else params.delete("unit");
-    const query = params.toString();
-    router.push(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    if (unitNo) openUrlSubView(router, pathname, searchParams, unitNo);
+    else closeUrlSubView(router, pathname, searchParams);
   };
+
+  // Browser back/forward: keep the open unit in step with `?unit=`.
+  const urlUnit = searchParams.get("unit");
+  const [prevUrlUnit, setPrevUrlUnit] = useState(urlUnit);
+  if (urlUnit !== prevUrlUnit) {
+    setPrevUrlUnit(urlUnit);
+    setInternalSelectedUnitNumber(urlUnit);
+  }
 
   const { data: centrePanels = [] } = useGetCentrePanels();
   const { data: centreInterviews = [] } = useGetCentreInterviews();
@@ -281,6 +289,7 @@ export const CentreApplicationRouteView: React.FC<{ id: string }> = ({
         isOpen={isScheduleInterviewModalOpen}
         onClose={() => setIsScheduleInterviewModalOpen(false)}
         initialApplicationId={id}
+        modalKey={APPLICATION_SCHEDULE_INTERVIEW_MODAL}
       />
       <CreateInterviewModal
         isOpen={isCreateInterviewModalOpen}

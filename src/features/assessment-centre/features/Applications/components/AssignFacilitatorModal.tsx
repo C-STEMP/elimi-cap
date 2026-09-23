@@ -10,6 +10,8 @@ import { useGetCentreAssessors } from "@/src/features/shared/centre/hooks";
 import { assignFacilitatorApi } from "@/src/features/shared/applications/api/application.api";
 import { APPLICATION_QUERY_KEYS } from "@/src/features/shared/applications/hooks";
 import { useQueryClient } from "@tanstack/react-query";
+import { useModalDraft } from "@/src/lib/hooks/usePersistentModal";
+import { ASSIGN_FACILITATOR_MODAL } from "@/src/lib/modal-keys";
 
 interface AssignFacilitatorModalProps {
   isOpen: boolean;
@@ -31,7 +33,7 @@ export const AssignFacilitatorModal: React.FC<AssignFacilitatorModalProps> = ({
   const { data: centreAssessors = [], isLoading: isLoadingAssessors } =
     useGetCentreAssessors({ status: "approved" });
 
-  const [selectedAssessorId, setSelectedAssessorId] = useState("");
+  const [selectedAssessorId, setSelectedAssessorId] = useModalDraft(ASSIGN_FACILITATOR_MODAL, "selectedAssessorId", "");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
   const [assignedInfo, setAssignedInfo] = useState<{ id: string; name: string } | null>(

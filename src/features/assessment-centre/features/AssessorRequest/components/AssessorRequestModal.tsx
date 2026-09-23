@@ -1,10 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/src/components/ui/button";
 import { ASSETS_URL } from "@/assets";
+import { useModalDraft } from "@/src/lib/hooks/usePersistentModal";
+import { ASSESSOR_REQUEST_MODAL } from "@/src/lib/modal-keys";
 
 export type AssessorRequestModalMode =
   | "confirm-accept"
@@ -29,13 +31,13 @@ export const AssessorRequestModal: React.FC<AssessorRequestModalProps> = ({
   onConfirmDecline,
   isLoading = false,
 }) => {
-  const [rejectionReason, setRejectionReason] = useState("");
+  const [rejectionReason, setRejectionReason] = useModalDraft(ASSESSOR_REQUEST_MODAL, "rejectionReason", "");
 
   useEffect(() => {
     if (!isOpen || mode !== "confirm-decline") {
       setRejectionReason("");
     }
-  }, [isOpen, mode]);
+  }, [isOpen, mode, setRejectionReason]);
 
   if (!isOpen) return null;
 

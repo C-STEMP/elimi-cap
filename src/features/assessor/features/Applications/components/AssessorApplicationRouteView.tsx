@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   useGetApplicationById,
   APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
@@ -12,6 +12,7 @@ import {
   type AssessorDetailSubView,
 } from "./AssessorApplicationDetailView";
 import { NsqAssessorApplicationDetailView } from "./nsq/NsqAssessorApplicationDetailView";
+import { closeUrlSubView } from "@/src/lib/navigation/url-sub-view";
 import { IqamToolsDashboard } from "@/src/features/assessor/features/iqam/IqamToolsDashboard";
 import type { AssessorApplicationRecord } from "./AssessorApplicationsView";
 import { useAppSelector } from "@/src/store/hooks";
@@ -20,6 +21,8 @@ export const AssessorApplicationRouteView: React.FC<{ id: string }> = ({
   id,
 }) => {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const user = useAppSelector((state) => state.auth.user);
   const { data: application, isLoading } = useGetApplicationById(id, {
     refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
@@ -33,6 +36,7 @@ export const AssessorApplicationRouteView: React.FC<{ id: string }> = ({
   const [nsqSubViewTitle, setNsqSubViewTitle] = useState<string | null>(null);
   const [iqamHeaderConfig, setIqamHeaderConfig] = useState<any>(null);
   const [hasMovedToIqam, setHasMovedToIqam] = useState(false);
+  const [canMoveToIqam, setCanMoveToIqam] = useState(false);
   const moveToIqamRef = useRef<(() => void) | null>(null);
 
   const candidateName = application
@@ -70,6 +74,15 @@ export const AssessorApplicationRouteView: React.FC<{ id: string }> = ({
     : null;
 
   const handleBack = () => {
+    // NSQ sub-views (a unit, observation/IQAM forms) go back to the
+    // application overview, not all the way out to the applications list.
+    if (application?.type === "NSQ" && nsqNavState !== "overview") {
+      setNsqNavState("overview");
+      setNsqSubViewTitle(null);
+      if (searchParams.get("unit")) closeUrlSubView(router, pathname, searchParams);
+      return;
+    }
+    setCanMoveToIqam(false);
     if (applicationSubView !== "stages") {
       setApplicationSubView("stages");
     } else {
@@ -102,6 +115,7 @@ export const AssessorApplicationRouteView: React.FC<{ id: string }> = ({
         nsqSubViewTitle={nsqSubViewTitle}
         onMoveToIqam={() => moveToIqamRef.current?.()}
         hasMovedToIqam={hasMovedToIqam}
+        canMoveToIqam={canMoveToIqam}
         applicationSubView={applicationSubView}
         canMarkAsComplete={canMarkAsComplete}
         onMarkAsComplete={() => setTriggerMarkComplete(true)}
@@ -173,6 +187,7 @@ export const AssessorApplicationRouteView: React.FC<{ id: string }> = ({
               moveToIqamRef.current = fn;
             }}
             onMoveToIqamStatusChange={setHasMovedToIqam}
+            onCanMoveToIqamChange={setCanMoveToIqam}
           />
         ) : (
           <AssessorApplicationDetailView

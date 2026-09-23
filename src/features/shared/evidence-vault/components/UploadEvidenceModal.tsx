@@ -8,6 +8,8 @@ import { Select } from "@/src/components/ui/select";
 import { Button } from "@/src/components/ui/button";
 
 import { useGetEvidenceTypesByTrade } from "@/src/features/shared/reference/hooks";
+import { useModalDraft } from "@/src/lib/hooks/usePersistentModal";
+import { UPLOAD_EVIDENCE_MODAL } from "@/src/lib/modal-keys";
 
 export interface SelectedFileType {
   name: string;
@@ -79,8 +81,8 @@ export const UploadEvidenceModal: React.FC<UploadEvidenceModalProps> = ({
   }, [evidenceTypes, tradeEvidenceTypes]);
 
   const defaultType = evidenceTypeOptions[0]?.value || "PS";
-  const [docName, setDocName] = useState("");
-  const [evidenceType, setEvidenceType] = useState(defaultType);
+  const [docName, setDocName] = useModalDraft(UPLOAD_EVIDENCE_MODAL, "docName", "");
+  const [evidenceType, setEvidenceType] = useModalDraft(UPLOAD_EVIDENCE_MODAL, "evidenceType", defaultType);
   const [realFile, setRealFile] = useState<File | null>(null);
   const [selectedFile, setSelectedFile] = useState<SelectedFileType | null>(
     null,
@@ -97,7 +99,7 @@ export const UploadEvidenceModal: React.FC<UploadEvidenceModalProps> = ({
     ) {
       setEvidenceType(evidenceTypeOptions[0].value);
     }
-  }, [evidenceTypeOptions, evidenceType]);
+  }, [evidenceTypeOptions, evidenceType, setEvidenceType]);
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 

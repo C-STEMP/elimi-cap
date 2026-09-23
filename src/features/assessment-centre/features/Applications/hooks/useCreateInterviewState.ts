@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useToast } from "@/src/components/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -9,6 +9,8 @@ import {
 } from "@/src/features/shared/centre/hooks";
 import { postCentreInterviewsApi } from "@/src/features/shared/centre/api";
 import { useCountryStateCity } from "@/src/lib/hooks/useCountryStateCity";
+import { hasModalDraft, useModalDraft } from "@/src/lib/hooks/usePersistentModal";
+import { CREATE_INTERVIEW_MODAL } from "@/src/lib/modal-keys";
 
 interface Props {
   isOpen: boolean;
@@ -29,20 +31,20 @@ export function useCreateInterviewState({
   const { data: centreProfile } = useGetCentreProfile();
   const { data: panels = [], isLoading: isLoadingPanels } = useGetCentrePanels();
 
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [selectedPanelId, setSelectedPanelId] = useState("");
-  const [date, setDate] = useState("");
-  const [time, setTime] = useState("10:00");
-  const [interviewMode, setInterviewMode] = useState<"Physical" | "Online">("Physical");
-  const [sameAsCentreAddress, setSameAsCentreAddress] = useState(true);
-  const [selectedCountry, setSelectedCountry] = useState(centreProfile?.address?.country || "Nigeria");
-  const [selectedState, setSelectedState] = useState(centreProfile?.address?.state || "");
-  const [selectedLga, setSelectedLga] = useState(centreProfile?.address?.lga || "");
-  const [streetAddress, setStreetAddress] = useState(
+  const [name, setName] = useModalDraft(CREATE_INTERVIEW_MODAL, "name", "");
+  const [description, setDescription] = useModalDraft(CREATE_INTERVIEW_MODAL, "description", "");
+  const [selectedPanelId, setSelectedPanelId] = useModalDraft(CREATE_INTERVIEW_MODAL, "selectedPanelId", "");
+  const [date, setDate] = useModalDraft(CREATE_INTERVIEW_MODAL, "date", "");
+  const [time, setTime] = useModalDraft(CREATE_INTERVIEW_MODAL, "time", "10:00");
+  const [interviewMode, setInterviewMode] = useModalDraft<"Physical" | "Online">(CREATE_INTERVIEW_MODAL, "interviewMode", "Physical");
+  const [sameAsCentreAddress, setSameAsCentreAddress] = useModalDraft(CREATE_INTERVIEW_MODAL, "sameAsCentreAddress", true);
+  const [selectedCountry, setSelectedCountry] = useModalDraft(CREATE_INTERVIEW_MODAL, "selectedCountry", centreProfile?.address?.country || "Nigeria");
+  const [selectedState, setSelectedState] = useModalDraft(CREATE_INTERVIEW_MODAL, "selectedState", centreProfile?.address?.state || "");
+  const [selectedLga, setSelectedLga] = useModalDraft(CREATE_INTERVIEW_MODAL, "selectedLga", centreProfile?.address?.lga || "");
+  const [streetAddress, setStreetAddress] = useModalDraft(CREATE_INTERVIEW_MODAL, "streetAddress", 
     centreProfile?.formattedAddress || centreProfile?.address?.address || ""
   );
-  const [meetingLink, setMeetingLink] = useState("");
+  const [meetingLink, setMeetingLink] = useModalDraft(CREATE_INTERVIEW_MODAL, "meetingLink", "");
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -59,8 +61,12 @@ export function useCreateInterviewState({
     });
   }, [panels]);
 
+  // Skip the on-open reset when a draft was restored after a page reload.
+  const restoredDraft = useRef(hasModalDraft(CREATE_INTERVIEW_MODAL));
+
   useEffect(() => {
-    if (isOpen) {
+    if (!isOpen) restoredDraft.current = false;
+    if (isOpen && !restoredDraft.current) {
       setName("");
       setDescription("");
       const d = new Date();
@@ -76,7 +82,18 @@ export function useCreateInterviewState({
         setSelectedPanelId("");
       }
     }
-  }, [isOpen, panelOptions]);
+  }, [
+    isOpen,
+    panelOptions,
+    setDate,
+    setDescription,
+    setInterviewMode,
+    setMeetingLink,
+    setName,
+    setSameAsCentreAddress,
+    setSelectedPanelId,
+    setTime,
+  ]);
 
   useEffect(() => {
     if (sameAsCentreAddress && centreProfile) {
@@ -90,7 +107,14 @@ export function useCreateInterviewState({
       if (centreProfile?.address?.country) setSelectedCountry(centreProfile.address.country);
       if (centreProfile?.address?.lga) setSelectedLga(centreProfile.address.lga);
     }
-  }, [sameAsCentreAddress, centreProfile]);
+  }, [
+    sameAsCentreAddress,
+    centreProfile,
+    setSelectedCountry,
+    setSelectedLga,
+    setSelectedState,
+    setStreetAddress,
+  ]);
 
   const handleTriggerCreate = (e: React.FormEvent) => {
     e.preventDefault();

@@ -26,6 +26,8 @@ import { DeleteEvidenceModal } from "../components/DeleteEvidenceModal";
 import { PreviewEvidenceModal } from "../components/PreviewEvidenceModal";
 import { ResourcesSection } from "../components/ResourcesSection";
 import { EvidenceSection } from "../components/EvidenceSection";
+import { useUrlModal } from "@/src/lib/hooks/usePersistentModal";
+import { UPLOAD_EVIDENCE_MODAL } from "@/src/lib/modal-keys";
 
 interface EvidenceVaultPageProps {
   applicationId?: string;
@@ -88,7 +90,7 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
     (apiApp as any)?.selfAssessmentCompleted,
   );
 
-  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useUrlModal(UPLOAD_EVIDENCE_MODAL);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<EvidenceRecord | null>(null);
   const [previewItem, setPreviewItem] = useState<EvidenceRecord | null>(null);

@@ -11,6 +11,8 @@ import {
   reviewEvApi,
 } from "@/src/features/shared/applications/api/application.api";
 import { useQueryClient } from "@tanstack/react-query";
+import { useModalDraft } from "@/src/lib/hooks/usePersistentModal";
+import { REVIEW_VERIFIER_MODAL } from "@/src/lib/modal-keys";
 
 interface ReviewVerifierModalProps {
   isOpen: boolean;
@@ -30,7 +32,7 @@ export const ReviewVerifierModal: React.FC<ReviewVerifierModalProps> = ({
   onSuccess,
 }) => {
   const queryClient = useQueryClient();
-  const [feedback, setFeedback] = useState("");
+  const [feedback, setFeedback] = useModalDraft(REVIEW_VERIFIER_MODAL, "feedback", "");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
 

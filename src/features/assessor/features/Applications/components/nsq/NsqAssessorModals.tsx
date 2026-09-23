@@ -5,6 +5,8 @@ import Image from "next/image";
 import { ASSETS_URL } from "@/src/assets";
 import { Button } from "@/src/components/ui/button";
 import { FiX } from "react-icons/fi";
+import { useModalDraft } from "@/src/lib/hooks/usePersistentModal";
+import { REJECT_EVIDENCE_MODAL } from "@/src/lib/modal-keys";
 
 // ─── 1. Evidence Approval Confirmation Modal ─────────────────────────────────
 interface ConfirmApproveEvidenceModalProps {
@@ -115,6 +117,8 @@ interface RejectEvidenceModalProps {
   title?: string;
   subtitle?: string;
   submitLabel?: string;
+  /** URL/draft key; pass a distinct one when several instances can be mounted at once. */
+  modalKey?: string;
 }
 
 export const RejectEvidenceModal: React.FC<RejectEvidenceModalProps> = ({
@@ -124,8 +128,9 @@ export const RejectEvidenceModal: React.FC<RejectEvidenceModalProps> = ({
   title = "Reject Evidence",
   subtitle = "Send a feedback on this evidence",
   submitLabel = "Reject Evidence",
+  modalKey = REJECT_EVIDENCE_MODAL,
 }) => {
-  const [comment, setComment] = React.useState("");
+  const [comment, setComment] = useModalDraft(modalKey, "comment", "");
 
   if (!isOpen) return null;
 

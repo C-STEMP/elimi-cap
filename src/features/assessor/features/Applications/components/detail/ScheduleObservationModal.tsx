@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { FiX, FiCalendar, FiClock } from "react-icons/fi";
 import { Button } from "@/src/components/ui/button";
+import { useModalDraft } from "@/src/lib/hooks/usePersistentModal";
+import { SCHEDULE_OBSERVATION_MODAL } from "@/src/lib/modal-keys";
 
 interface ScheduleObservationModalProps {
   isOpen: boolean;
@@ -13,9 +15,9 @@ interface ScheduleObservationModalProps {
 export const ScheduleObservationModal: React.FC<
   ScheduleObservationModalProps
 > = ({ isOpen, onClose, onSchedule }) => {
-  const [date, setDate] = useState("2026-03-22");
-  const [time, setTime] = useState("12:00");
-  const [location, setLocation] = useState("Cstemp Centre");
+  const [date, setDate] = useModalDraft(SCHEDULE_OBSERVATION_MODAL, "date", "2026-03-22");
+  const [time, setTime] = useModalDraft(SCHEDULE_OBSERVATION_MODAL, "time", "12:00");
+  const [location, setLocation] = useModalDraft(SCHEDULE_OBSERVATION_MODAL, "location", "Cstemp Centre");
 
   if (!isOpen) return null;
 

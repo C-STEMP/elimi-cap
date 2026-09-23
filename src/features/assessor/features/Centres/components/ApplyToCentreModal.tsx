@@ -7,11 +7,15 @@ import { Select, SelectOption } from "@/src/components/ui/select";
 import { Button } from "@/src/components/ui/button";
 import { useRequestToJoinCentre } from "../hooks";
 import { useGetCentres } from "@/src/features/shared/reference/hooks";
+import { useModalDraft } from "@/src/lib/hooks/usePersistentModal";
+import { APPLY_TO_CENTRE_MODAL } from "@/src/lib/modal-keys";
 
 interface ApplyToCentreModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  /** URL/draft key; pass a distinct one when several instances can be mounted at once. */
+  modalKey?: string;
 }
 
 const ROLES = ["QAA Assessor", "Internal Verifier"];
@@ -20,9 +24,10 @@ export const ApplyToCentreModal: React.FC<ApplyToCentreModalProps> = ({
   isOpen,
   onClose,
   onSuccess,
+  modalKey = APPLY_TO_CENTRE_MODAL,
 }) => {
-  const [role, setRole] = useState("");
-  const [centre, setCentre] = useState("");
+  const [role, setRole] = useModalDraft(modalKey, "role", "");
+  const [centre, setCentre] = useModalDraft(modalKey, "centre", "");
   const [errors, setErrors] = useState<{ role?: string; centre?: string }>({});
 
   const { data: remoteCentres = [], isLoading: isLoadingCentres } =

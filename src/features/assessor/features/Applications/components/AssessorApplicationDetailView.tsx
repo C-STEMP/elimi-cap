@@ -43,6 +43,8 @@ import { useToast } from "@/src/components/ui/toast";
 import { useAppSelector } from "@/src/store/hooks";
 import { useGetMeProfile } from "@/src/features/shared/account/hooks";
 import { useGetAssessorProfile } from "@/src/features/assessor/hooks";
+import { useUrlModal } from "@/src/lib/hooks/usePersistentModal";
+import { MARK_INCOMPETENT_MODAL, SCHEDULE_OBSERVATION_MODAL } from "@/src/lib/modal-keys";
 
 export type AssessorDetailSubView =
   | "stages"
@@ -309,7 +311,7 @@ export const AssessorApplicationDetailView: React.FC<
   const [
     isConfirmCandidateIncompetentOpen,
     setIsConfirmCandidateIncompetentOpen,
-  ] = useState(false);
+  ] = useUrlModal(MARK_INCOMPETENT_MODAL);
   const [
     isCandidateIncompetentSuccessOpen,
     setIsCandidateIncompetentSuccessOpen,
@@ -321,7 +323,7 @@ export const AssessorApplicationDetailView: React.FC<
 
   // Observation Scheduling Modals State
   const [isScheduleObservationOpen, setIsScheduleObservationOpen] =
-    useState(false);
+    useUrlModal(SCHEDULE_OBSERVATION_MODAL);
   const [isObservationSuccessOpen, setIsObservationSuccessOpen] =
     useState(false);
   const [scheduledObservationEvent, setScheduledObservationEvent] = useState<{

@@ -1,11 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import Image from "next/image";
 import { FiX } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/src/components/ui/button";
 import { ASSETS_URL } from "@/assets";
+import { useModalDraft } from "@/src/lib/hooks/usePersistentModal";
+import { ASSESSOR_DECISION_MODAL } from "@/src/lib/modal-keys";
 
 export type AssessorDecisionModalMode =
   | "confirm-shortlist"
@@ -28,13 +30,13 @@ export const AssessorDecisionModal: React.FC<AssessorDecisionModalProps> = ({
   onConfirmShortlist,
   onConfirmReject,
 }) => {
-  const [rejectionReason, setRejectionReason] = useState("");
+  const [rejectionReason, setRejectionReason] = useModalDraft(ASSESSOR_DECISION_MODAL, "rejectionReason", "");
 
   useEffect(() => {
     if (!isOpen || mode !== "confirm-reject") {
       setRejectionReason("");
     }
-  }, [isOpen, mode]);
+  }, [isOpen, mode, setRejectionReason]);
 
   if (!isOpen) return null;
 

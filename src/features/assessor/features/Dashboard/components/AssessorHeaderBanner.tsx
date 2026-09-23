@@ -87,6 +87,7 @@ interface AssessorHeaderBannerProps {
   /** Once the QAA stage is already marked complete, the action shouldn't
    * be offered again — moving to IQAM isn't reversible from here. */
   hasMovedToIqam?: boolean;
+  canMoveToIqam?: boolean;
   applicationSubView?:
     | "stages"
     | "application_form"
@@ -123,6 +124,7 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
   nsqSubViewTitle = null,
   onMoveToIqam,
   hasMovedToIqam = false,
+  canMoveToIqam = false,
   applicationSubView = "stages",
   canMarkAsComplete = false,
   onMarkAsComplete,
@@ -544,7 +546,7 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
                 </div>
 
                 {/* NSQ Move To IQAM Action */}
-                {isNsqApplication && !nsqSubViewTitle && !hasMovedToIqam && (
+                {isNsqApplication && !nsqSubViewTitle && !hasMovedToIqam && canMoveToIqam && (
                   <button
                     type="button"
                     onClick={onMoveToIqam}

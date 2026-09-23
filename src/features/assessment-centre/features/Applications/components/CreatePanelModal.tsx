@@ -10,6 +10,7 @@ import { CreatePanelSuccessModal } from "./CreatePanelSuccessModal";
 
 interface CreatePanelModalProps {
   isOpen: boolean;
+  modalKey?: string;
   onClose: () => void;
   onSuccess?: () => void;
 }

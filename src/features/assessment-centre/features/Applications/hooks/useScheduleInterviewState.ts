@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useToast } from "@/src/components/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useGetApplications } from "@/src/features/shared/applications/hooks";
@@ -14,6 +14,8 @@ import {
   scheduleInterviewApi,
   curateInterviewPanelApi,
 } from "@/src/features/shared/applications/api/application.api";
+import { hasModalDraft, useModalDraft } from "@/src/lib/hooks/usePersistentModal";
+import { SCHEDULE_INTERVIEW_MODAL } from "@/src/lib/modal-keys";
 
 export interface CandidateSlot {
   id: string;
@@ -25,6 +27,8 @@ export interface CandidateSlot {
 
 interface Props {
   isOpen: boolean;
+  /** URL/draft key; pass a distinct one when several instances can be mounted at once. */
+  modalKey?: string;
   onClose: () => void;
   onSuccess?: (data?: any) => void;
   initialApplicationId?: string;
@@ -34,6 +38,7 @@ interface Props {
 
 export function useScheduleInterviewState({
   isOpen,
+  modalKey = SCHEDULE_INTERVIEW_MODAL,
   onClose,
   onSuccess,
   initialApplicationId,
@@ -49,10 +54,10 @@ export function useScheduleInterviewState({
   const { data: panels = [] } = useGetCentrePanels();
   const { data: backendTrades = [], isLoading: isLoadingTrades } = useGetAllTrades();
 
-  const [selectedInterviewId, setSelectedInterviewId] = useState("");
-  const [selectedTrade, setSelectedTrade] = useState("All Trades");
-  const [candidateRows, setCandidateRows] = useState<CandidateSlot[]>([]);
-  const [candidatePickerId, setCandidatePickerId] = useState("");
+  const [selectedInterviewId, setSelectedInterviewId] = useModalDraft(modalKey, "selectedInterviewId", "");
+  const [selectedTrade, setSelectedTrade] = useModalDraft(modalKey, "selectedTrade", "All Trades");
+  const [candidateRows, setCandidateRows] = useModalDraft<CandidateSlot[]>(modalKey, "candidateRows", []);
+  const [candidatePickerId, setCandidatePickerId] = useModalDraft(modalKey, "candidatePickerId", "");
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -165,9 +170,16 @@ export function useScheduleInterviewState({
       });
   }, [schedulableApplications, candidateRows, selectedTrade]);
 
+  // Skip the on-open reset when a draft was restored after a page reload.
+  const restoredDraft = useRef(hasModalDraft(modalKey));
+
   // Initialize / reset on open
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      restoredDraft.current = false;
+      return;
+    }
+    if (restoredDraft.current) return;
 
     if (interviewTemplates.length > 0) {
       setSelectedInterviewId((prev) => prev || interviewTemplates[0].id);
@@ -195,14 +207,23 @@ export function useScheduleInterviewState({
     } else {
       setCandidateRows([]);
     }
-  }, [isOpen, initialApplicationId, initialCandidateName, initialTradeName]);
+  }, [
+    isOpen,
+    initialApplicationId,
+    initialCandidateName,
+    initialTradeName,
+    setCandidatePickerId,
+    setCandidateRows,
+    setSelectedInterviewId,
+    setSelectedTrade,
+  ]);
 
   // Pick first interview if interviewTemplates load after modal opens
   useEffect(() => {
     if (isOpen && interviewTemplates.length > 0 && !selectedInterviewId) {
       setSelectedInterviewId(interviewTemplates[0].id);
     }
-  }, [isOpen, interviewTemplates, selectedInterviewId]);
+  }, [isOpen, interviewTemplates, selectedInterviewId, setSelectedInterviewId]);
 
   const handleSelectCandidate = (appId: string) => {
     if (!appId) return;

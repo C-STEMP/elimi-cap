@@ -26,6 +26,8 @@ import {
   type ObservationRequestDetails,
 } from "./NsqAssessorObservationModal";
 import { NsqAssessorSidebar } from "./NsqAssessorSidebar";
+import { useUrlModal } from "@/src/lib/hooks/usePersistentModal";
+import { REJECT_EVIDENCE_MODAL, NSQ_UNIT_ASSESSOR_OBSERVATION_MODAL, NSQ_UNIT_REJECT_OBSERVATION_MODAL } from "@/src/lib/modal-keys";
 
 interface NsqAssessorUnitDetailViewProps {
   unitId?: string;
@@ -146,7 +148,7 @@ export const NsqAssessorUnitDetailView: React.FC<
   } | null>(null);
   const [isConfirmApproveOpen, setIsConfirmApproveOpen] = useState(false);
   const [isApproveSuccessOpen, setIsApproveSuccessOpen] = useState(false);
-  const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
+  const [isRejectModalOpen, setIsRejectModalOpen] = useUrlModal(REJECT_EVIDENCE_MODAL);
 
   const allEvidence = learningOutcomes.flatMap((lo) =>
     lo.criteria.flatMap((pc) => pc.evidences),
@@ -172,9 +174,9 @@ export const NsqAssessorUnitDetailView: React.FC<
     setIsSignoffSuccessOpen(true);
   };
 
-  const [isObsModalOpen, setIsObsModalOpen] = useState(false);
+  const [isObsModalOpen, setIsObsModalOpen] = useUrlModal(NSQ_UNIT_ASSESSOR_OBSERVATION_MODAL);
   const [isConfirmAcceptObsOpen, setIsConfirmAcceptObsOpen] = useState(false);
-  const [isRejectObsReasonOpen, setIsRejectObsReasonOpen] = useState(false);
+  const [isRejectObsReasonOpen, setIsRejectObsReasonOpen] = useUrlModal(NSQ_UNIT_REJECT_OBSERVATION_MODAL);
   const [isAcceptObsSuccessOpen, setIsAcceptObsSuccessOpen] = useState(false);
   const [isRejectObsSuccessOpen, setIsRejectObsSuccessOpen] = useState(false);
   const [pendingAcceptRequirements, setPendingAcceptRequirements] = useState<
@@ -410,6 +412,7 @@ export const NsqAssessorUnitDetailView: React.FC<
       {observation && (
         <NsqAssessorObservationModal
           isOpen={isObsModalOpen}
+          modalKey={NSQ_UNIT_ASSESSOR_OBSERVATION_MODAL}
           onClose={() => setIsObsModalOpen(false)}
           details={observation}
           onAccept={(payload) => {
@@ -439,6 +442,7 @@ export const NsqAssessorUnitDetailView: React.FC<
       />
       <RejectEvidenceModal
         isOpen={isRejectObsReasonOpen}
+        modalKey={NSQ_UNIT_REJECT_OBSERVATION_MODAL}
         onClose={() => setIsRejectObsReasonOpen(false)}
         onSubmit={async (reason) => {
           setIsRejectObsReasonOpen(false);
