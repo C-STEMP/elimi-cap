@@ -11,6 +11,8 @@ import {
 import { Button } from "@/src/components/ui/button";
 import { Select } from "@/src/components/ui/select";
 import { ApplyToCentreModal } from "./ApplyToCentreModal";
+import { useUrlModal } from "@/src/lib/hooks/usePersistentModal";
+import { APPLY_TO_CENTRE_MODAL } from "@/src/lib/modal-keys";
 
 export interface AssessorCentreItem {
   id: string;
@@ -40,7 +42,7 @@ export const AssessorCentresView: React.FC<AssessorCentresViewProps> = ({
   const [statusFilter, setStatusFilter] = useState("All");
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
 
-  const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
+  const [isApplyModalOpen, setIsApplyModalOpen] = useUrlModal(APPLY_TO_CENTRE_MODAL);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
 
   const filteredCentres = centres.filter((c) => {

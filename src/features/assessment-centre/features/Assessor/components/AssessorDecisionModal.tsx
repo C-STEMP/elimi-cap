@@ -1,11 +1,13 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import Image from "next/image";
 import { FiX } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/src/components/ui/button";
 import { ASSETS_URL } from "@/assets";
+import { useModalDraft } from "@/src/lib/hooks/usePersistentModal";
+import { ASSESSOR_DECISION_MODAL } from "@/src/lib/modal-keys";
 
 export type AssessorDecisionModalMode =
   | "confirm-shortlist"
@@ -18,7 +20,7 @@ interface AssessorDecisionModalProps {
   mode: AssessorDecisionModalMode;
   onClose: () => void;
   onConfirmShortlist?: () => void;
-  onConfirmReject?: () => void;
+  onConfirmReject?: (reason?: string) => void;
 }
 
 export const AssessorDecisionModal: React.FC<AssessorDecisionModalProps> = ({
@@ -28,6 +30,14 @@ export const AssessorDecisionModal: React.FC<AssessorDecisionModalProps> = ({
   onConfirmShortlist,
   onConfirmReject,
 }) => {
+  const [rejectionReason, setRejectionReason] = useModalDraft(ASSESSOR_DECISION_MODAL, "rejectionReason", "");
+
+  useEffect(() => {
+    if (!isOpen || mode !== "confirm-reject") {
+      setRejectionReason("");
+    }
+  }, [isOpen, mode, setRejectionReason]);
+
   if (!isOpen) return null;
 
   return (
@@ -145,13 +155,33 @@ export const AssessorDecisionModal: React.FC<AssessorDecisionModalProps> = ({
                 Reject Applicant
               </h3>
 
-              <p className="text-xs sm:text-sm text-neutral-secondary font-normal mb-8 leading-relaxed">
+              <p className="text-xs sm:text-sm text-neutral-secondary font-normal mb-4 leading-relaxed">
                 Are you sure you want to reject this applicant?
               </p>
 
+              <div className="w-full mb-6 text-left">
+                <label
+                  htmlFor="job-applicant-rejection-reason"
+                  className="block text-xs font-semibold text-neutral-primary mb-1.5"
+                >
+                  Reason for rejection <span className="text-gray-400 font-normal">(optional)</span>
+                </label>
+                <textarea
+                  id="job-applicant-rejection-reason"
+                  rows={3}
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                  placeholder="Specify why this applicant is being rejected..."
+                  maxLength={2000}
+                  className="w-full bg-[#F4F5F7] border border-gray-200 rounded-xl p-3 text-xs text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-red-200 resize-none text-left"
+                />
+              </div>
+
               <button
                 type="button"
-                onClick={onConfirmReject}
+                onClick={() =>
+                  onConfirmReject?.(rejectionReason.trim() || undefined)
+                }
                 className="w-full h-12.5 text-white font-bold text-base bg-[#C5221F] hover:bg-[#a81c19] transition-all shadow-lg cursor-pointer rounded-xl"
               >
                 Yes, Reject

@@ -152,6 +152,8 @@ import {
   getCentreRole,
 } from "@/src/lib/auth-storage";
 import { getPermittedTabs, normalizeRole, RoleType } from "../utils/rbac";
+import { useUrlModal } from "@/src/lib/hooks/usePersistentModal";
+import { DASHBOARD_CREATE_PANEL_MODAL, CREATE_INTERVIEW_MODAL, DASHBOARD_SCHEDULE_INTERVIEW_MODAL, BROADCAST_MODAL, ADD_STAFF_MODAL, POST_JOB_MODAL, WITHDRAW_MODAL } from "@/src/lib/modal-keys";
 
 export const AssessmentCentreDashboardPage: React.FC = () => {
   const router = useRouter();
@@ -218,9 +220,9 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
 
   // Modal and Selection State
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState(false);
+  const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useUrlModal(BROADCAST_MODAL);
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
-  const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useState(false);
+  const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useUrlModal(ADD_STAFF_MODAL);
   const [selectedCandidateName, setSelectedCandidateName] = useState<
     string | null
   >(null);
@@ -260,14 +262,14 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
   const [selectedApplicantId, setSelectedApplicantId] = useState<string | null>(
     null,
   );
-  const [isPostJobModalOpen, setIsPostJobModalOpen] = useState(false);
-  const [isCreatePanelModalOpen, setIsCreatePanelModalOpen] = useState(false);
+  const [isPostJobModalOpen, setIsPostJobModalOpen] = useUrlModal(POST_JOB_MODAL);
+  const [isCreatePanelModalOpen, setIsCreatePanelModalOpen] = useUrlModal(DASHBOARD_CREATE_PANEL_MODAL);
   const [isCreateInterviewModalOpen, setIsCreateInterviewModalOpen] =
-    useState(false);
+    useUrlModal(CREATE_INTERVIEW_MODAL);
   const [isPromptCreatePanelModalOpen, setIsPromptCreatePanelModalOpen] =
     useState(false);
   const [isScheduleInterviewModalOpen, setIsScheduleInterviewModalOpen] =
-    useState(false);
+    useUrlModal(DASHBOARD_SCHEDULE_INTERVIEW_MODAL);
   const [selectedInterview, setSelectedInterview] =
     useState<InterviewRowData | null>(null);
   const [selectedAssessorId, setSelectedAssessorId] = useState<string | null>(
@@ -276,7 +278,7 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
   const [selectedAssessorRequestId, setSelectedAssessorRequestId] = useState<
     string | null
   >(null);
-  const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
+  const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useUrlModal(WITHDRAW_MODAL);
   const [selectedReceiptTx, setSelectedReceiptTx] =
     useState<PaymentTransaction | null>(null);
   const [isStaffDeactivateModalOpen, setIsStaffDeactivateModalOpen] =
@@ -564,6 +566,7 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
       {isCreatePanelModalOpen && (
         <CreatePanelModal
           isOpen={isCreatePanelModalOpen}
+          modalKey={DASHBOARD_CREATE_PANEL_MODAL}
           onClose={() => setIsCreatePanelModalOpen(false)}
         />
       )}
@@ -587,6 +590,7 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
       {isScheduleInterviewModalOpen && (
         <ScheduleInterviewModal
           isOpen={isScheduleInterviewModalOpen}
+          modalKey={DASHBOARD_SCHEDULE_INTERVIEW_MODAL}
           onClose={() => setIsScheduleInterviewModalOpen(false)}
         />
       )}

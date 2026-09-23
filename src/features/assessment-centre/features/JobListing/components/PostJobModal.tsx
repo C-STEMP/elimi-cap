@@ -15,6 +15,8 @@ import {
   useGetSectors,
   useGetTradesBySector,
 } from "@/src/features/shared/reference/hooks";
+import { useModalDraft } from "@/src/lib/hooks/usePersistentModal";
+import { POST_JOB_MODAL } from "@/src/lib/modal-keys";
 
 interface PostJobModalProps {
   isOpen: boolean;
@@ -36,9 +38,9 @@ export const PostJobModal: React.FC<PostJobModalProps> = ({
 }) => {
   const { toast } = useToast();
   const createJobPosting = useCreateJobPosting();
-  const [title, setTitle] = useState("");
-  const [sector, setSector] = useState("");
-  const [trade, setTrade] = useState("");
+  const [title, setTitle] = useModalDraft(POST_JOB_MODAL, "title", "");
+  const [sector, setSector] = useModalDraft(POST_JOB_MODAL, "sector", "");
+  const [trade, setTrade] = useModalDraft(POST_JOB_MODAL, "trade", "");
 
   const { data: remoteSectors = [], isLoading: isLoadingSectors } =
     useGetSectors();
@@ -54,13 +56,13 @@ export const PostJobModal: React.FC<PostJobModalProps> = ({
     label: t.name,
     value: t.id,
   }));
-  const [durationValue, setDurationValue] = useState("1");
-  const [durationUnit, setDurationUnit] = useState("Weeks");
-  const [slots, setSlots] = useState("2");
-  const [deadline, setDeadline] = useState("");
-  const [description, setDescription] = useState("");
-  const [reqInput, setReqInput] = useState("");
-  const [requirements, setRequirements] = useState<string[]>([]);
+  const [durationValue, setDurationValue] = useModalDraft(POST_JOB_MODAL, "durationValue", "1");
+  const [durationUnit, setDurationUnit] = useModalDraft(POST_JOB_MODAL, "durationUnit", "Weeks");
+  const [slots, setSlots] = useModalDraft(POST_JOB_MODAL, "slots", "2");
+  const [deadline, setDeadline] = useModalDraft(POST_JOB_MODAL, "deadline", "");
+  const [description, setDescription] = useModalDraft(POST_JOB_MODAL, "description", "");
+  const [reqInput, setReqInput] = useModalDraft(POST_JOB_MODAL, "reqInput", "");
+  const [requirements, setRequirements] = useModalDraft<string[]>(POST_JOB_MODAL, "requirements", []);
   const [step, setStep] = useState<"form" | "success">("form");
 
   if (!isOpen) return null;

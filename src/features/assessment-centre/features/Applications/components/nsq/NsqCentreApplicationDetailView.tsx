@@ -38,6 +38,8 @@ import { NsqAssessorObservationFormsView } from "@/src/features/assessor/feature
 import { CentreIqamFormViewer } from "./CentreIqamFormViewer";
 import type { IqamToolId } from "@/src/features/assessor/features/iqam/types/iqam.types";
 import type { ApplicationDetail, NsqCriterion } from "@/src/features/shared/applications/api/types";
+import { useModalDraft, useUrlModal } from "@/src/lib/hooks/usePersistentModal";
+import { NSQ_ASSIGN_ASSESSOR_MODAL, NSQ_DECISION_MODAL } from "@/src/lib/modal-keys";
 
 const NSQ_PROGRESS_STEPS = [
   { key: "induction", label: "Induction Form" },
@@ -46,6 +48,16 @@ const NSQ_PROGRESS_STEPS = [
   { key: "external_verification", label: "Awarding Body" },
   { key: "certification", label: "Certification" },
 ] as const;
+
+const STAGE_ORDER = [
+  "application_form",
+  "payment",
+  "induction",
+  "regular_assessment",
+  "internal_verification",
+  "external_verification",
+  "certification",
+];
 
 interface NsqCentreApplicationDetailViewProps {
   application: ApplicationDetail | any;
@@ -197,22 +209,32 @@ export const NsqCentreApplicationDetailView: React.FC<
   const [localStatus, setLocalStatus] = useState<string | null>(null);
 
   // Decision Modal State
-  const [decisionModal, setDecisionModal] = useState<{
-    isOpen: boolean;
-    decision: "approve" | "reject";
-  }>({
-    isOpen: false,
-    decision: "approve",
-  });
+  // Open flag lives in the URL (and the decision in the modal's draft) so the
+  // modal survives the page reloading while the user is away.
+  const [isDecisionModalOpen, setIsDecisionModalOpen] = useUrlModal(NSQ_DECISION_MODAL);
+  const [decisionType, setDecisionType] = useModalDraft<"approve" | "reject">(
+    NSQ_DECISION_MODAL,
+    "decision",
+    "approve",
+  );
+  const decisionModal = { isOpen: isDecisionModalOpen, decision: decisionType };
+  const setDecisionModal = (next: typeof decisionModal) => {
+    setIsDecisionModalOpen(next.isOpen);
+    setDecisionType(next.decision);
+  };
 
   // Assessor/Verifier Assignment Modal State
-  const [assignModal, setAssignModal] = useState<{
-    isOpen: boolean;
-    roleType: NsqRoleType;
-  }>({
-    isOpen: false,
-    roleType: "QAA",
-  });
+  const [isAssignModalOpen, setIsAssignModalOpen] = useUrlModal(NSQ_ASSIGN_ASSESSOR_MODAL);
+  const [assignRoleType, setAssignRoleType] = useModalDraft<NsqRoleType>(
+    NSQ_ASSIGN_ASSESSOR_MODAL,
+    "roleType",
+    "QAA",
+  );
+  const assignModal = { isOpen: isAssignModalOpen, roleType: assignRoleType };
+  const setAssignModal = (next: typeof assignModal) => {
+    setIsAssignModalOpen(next.isOpen);
+    setAssignRoleType(next.roleType);
+  };
 
   // Assigned Staff State — no assessor until either assigned this session or
   // hydrated from real backend data below.
@@ -476,6 +498,23 @@ export const NsqCentreApplicationDetailView: React.FC<
         : "—";
 
   // Assessment Progress timeline nodes, resolved against the real stage rows.
+  const effectiveStageKey =
+    application?.currentStageKey ||
+    (application as any)?.stageKey;
+
+  const ivStage = stagesData?.find((s) => s.stageKey === "internal_verification");
+  const regularAssessmentStage = stagesData?.find((s) => s.stageKey === "regular_assessment");
+
+  const isInternalVerificationStage = Boolean(
+    (effectiveStageKey &&
+      STAGE_ORDER.indexOf(effectiveStageKey) >= STAGE_ORDER.indexOf("internal_verification")) ||
+      (ivStage && ivStage.status !== "not_started") ||
+      (regularAssessmentStage &&
+        (regularAssessmentStage.status === "successful" ||
+          (regularAssessmentStage.status as string) === "completed" ||
+          (regularAssessmentStage.status as string) === "approved")),
+  );
+
   const progressSteps = useMemo(
     () =>
       NSQ_PROGRESS_STEPS.map((step) => ({
@@ -1086,32 +1125,34 @@ export const NsqCentreApplicationDetailView: React.FC<
               </div>
 
               {/* 9. IQAM Forms Card */}
-              <div className="bg-white rounded-2xl p-6 shadow-xs border border-gray-100 flex flex-col gap-4">
-                <h3 className="text-base font-bold text-gray-900">
-                  IQAM Forms
-                </h3>
+              {isInternalVerificationStage && (
+                <div className="bg-white rounded-2xl p-6 shadow-xs border border-gray-100 flex flex-col gap-4">
+                  <h3 className="text-base font-bold text-gray-900">
+                    IQAM Forms
+                  </h3>
 
-                <div className="flex flex-col gap-2.5">
-                  {IQAM_FORMS_LIST.map((form) => (
-                    <div
-                      key={form.id}
-                      className="p-4 rounded-xl bg-[#F8F9FA] flex items-center justify-between gap-4 transition-all"
-                    >
-                      <span className="text-xs sm:text-sm font-semibold text-gray-800">
-                        {form.title}
-                      </span>
-
-                      <button
-                        type="button"
-                        onClick={() => setSelectedIqamTool(form.id)}
-                        className="text-xs sm:text-sm font-bold text-[#fbab2a] hover:text-[#e89b1f] hover:underline cursor-pointer shrink-0"
+                  <div className="flex flex-col gap-2.5">
+                    {IQAM_FORMS_LIST.map((form) => (
+                      <div
+                        key={form.id}
+                        className="p-4 rounded-xl bg-[#F8F9FA] flex items-center justify-between gap-4 transition-all"
                       >
-                        View
-                      </button>
-                    </div>
-                  ))}
+                        <span className="text-xs sm:text-sm font-semibold text-gray-800">
+                          {form.title}
+                        </span>
+
+                        <button
+                          type="button"
+                          onClick={() => setSelectedIqamTool(form.id)}
+                          className="text-xs sm:text-sm font-bold text-[#fbab2a] hover:text-[#e89b1f] hover:underline cursor-pointer shrink-0"
+                        >
+                          View
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </>
           )}
         </div>
@@ -1406,7 +1447,7 @@ export const NsqCentreApplicationDetailView: React.FC<
       />
 
       {/* IQAM Tool Viewer Modal */}
-      {selectedIqamTool && (
+      {selectedIqamTool && isInternalVerificationStage && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-xs select-text">
           <div className="bg-white rounded-3xl w-full max-w-6xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden border border-gray-100">
             <div className="p-4 sm:p-5 border-b border-gray-100 flex items-center justify-between bg-[#F8F9FA]">

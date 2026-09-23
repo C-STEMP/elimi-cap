@@ -12,6 +12,8 @@ import {
   assignEvApi,
 } from "@/src/features/shared/applications/api/application.api";
 import { useQueryClient } from "@tanstack/react-query";
+import { useModalDraft } from "@/src/lib/hooks/usePersistentModal";
+import { ASSIGN_VERIFIER_MODAL } from "@/src/lib/modal-keys";
 
 interface AssignVerifierModalProps {
   isOpen: boolean;
@@ -43,7 +45,7 @@ export const AssignVerifierModal: React.FC<AssignVerifierModalProps> = ({
       qualification: verifierType === "internal" ? "IV" : "EV",
     });
 
-  const [selectedAssessorId, setSelectedAssessorId] = useState("");
+  const [selectedAssessorId, setSelectedAssessorId] = useModalDraft(ASSIGN_VERIFIER_MODAL, "selectedAssessorId", "");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
   const [assignedInfo, setAssignedInfo] = useState<{ id: string; name: string } | null>(

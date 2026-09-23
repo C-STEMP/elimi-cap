@@ -201,6 +201,7 @@ export interface RetainedAssessorRequest {
   centreId: string;
   status: RetainedRequestStatus;
   preferredRole?: CentreAssessorAssignmentRole | string | null;
+  reason?: string | null;
   requestedAt: string;
   respondedAt?: string | null;
   respondedBy?: string | null;
@@ -509,6 +510,7 @@ export async function getCentreRetainedRequestsApi(params?: {
 export async function patchCentreRetainedRequestsBulkApi(payload: {
   ids: string[];
   decision: "approve" | "reject";
+  reason?: string;
 }): Promise<void> {
   await capFetch<void>("/centre/retained-requests/bulk", {
     method: "PATCH",
@@ -530,9 +532,13 @@ export async function approveRetainedRequestApi(id: string): Promise<void> {
   });
 }
 
-export async function rejectRetainedRequestApi(id: string): Promise<void> {
+export async function rejectRetainedRequestApi(
+  id: string,
+  payload?: { reason?: string },
+): Promise<void> {
   await capFetch<void>(`/centre/retained-requests/${id}/reject`, {
     method: "PATCH",
+    data: payload,
   });
 }
 
@@ -671,6 +677,7 @@ export async function patchCentreJobPostingApplicationsBulkApi(
   payload: {
     ids: string[];
     decision: "shortlist" | "reject";
+    reason?: string;
   },
 ): Promise<void> {
   await capFetch<void>(`/centre/job-postings/${id}/applications/bulk`, {
@@ -694,7 +701,7 @@ export async function getCentreJobPostingApplicationDetailApi(
 export async function patchCentreJobPostingApplicationDecisionApi(
   id: string,
   applicationId: string,
-  payload: { decision: "shortlist" | "reject" },
+  payload: { decision: "shortlist" | "reject"; reason?: string },
 ): Promise<JobPostingApplication> {
   return capFetch<JobPostingApplication>(
     `/centre/job-postings/${id}/applications/${applicationId}`,

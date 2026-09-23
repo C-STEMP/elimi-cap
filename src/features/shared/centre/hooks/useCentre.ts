@@ -363,14 +363,51 @@ export function useApproveRetainedRequest() {
   });
 }
 
+export function usePatchCentreRetainedRequestsBulk() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (payload: {
+      ids: string[];
+      decision: "approve" | "reject";
+      reason?: string;
+    }) => patchCentreRetainedRequestsBulkApi(payload),
+
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["centre", "retained-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["centre", "assessors"] });
+      queryClient.invalidateQueries({ queryKey: CENTRE_QUERY_KEYS.assessorsSummary });
+      toast({
+        type: "success",
+        title: "Requests Updated",
+        description: `Retained assessor requests ${variables.decision === "approve" ? "approved" : "rejected"}.`,
+      });
+    },
+
+    onError: (error: Error) => {
+      toast({
+        type: "error",
+        title: "Action Failed",
+        description: error.message || "Unable to process requests.",
+      });
+    },
+  });
+}
+
 export function useRejectRetainedRequest() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: (id: string) => rejectRetainedRequestApi(id),
+    mutationFn: (variables: string | { id: string; reason?: string }) => {
+      const id = typeof variables === "string" ? variables : variables.id;
+      const reason = typeof variables === "string" ? undefined : variables.reason;
+      return rejectRetainedRequestApi(id, reason ? { reason } : undefined);
+    },
 
-    onSuccess: (_, id) => {
+    onSuccess: (_, variables) => {
+      const id = typeof variables === "string" ? variables : variables.id;
       queryClient.invalidateQueries({ queryKey: ["centre", "retained-requests"] });
       queryClient.invalidateQueries({ queryKey: CENTRE_QUERY_KEYS.retainedRequestDetail(id) });
       queryClient.invalidateQueries({ queryKey: ["centre", "assessors"] });
@@ -621,12 +658,17 @@ export function usePatchJobPostingApplicationDecision() {
       id,
       applicationId,
       decision,
+      reason,
     }: {
       id: string;
       applicationId: string;
       decision: "shortlist" | "reject";
+      reason?: string;
     }) =>
-      patchCentreJobPostingApplicationDecisionApi(id, applicationId, { decision }),
+      patchCentreJobPostingApplicationDecisionApi(id, applicationId, {
+        decision,
+        reason,
+      }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: CENTRE_QUERY_KEYS.jobPostingApplications(variables.id),

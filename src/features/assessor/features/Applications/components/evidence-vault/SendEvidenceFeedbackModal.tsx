@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { FiX } from "react-icons/fi";
 import { Button } from "@/src/components/ui/button";
 import type { EvidenceItem } from "./EvidenceItemCard";
+import { useModalDraft } from "@/src/lib/hooks/usePersistentModal";
+import { EVIDENCE_FEEDBACK_MODAL } from "@/src/lib/modal-keys";
 
 interface SendEvidenceFeedbackModalProps {
   isOpen: boolean;
@@ -15,7 +17,7 @@ interface SendEvidenceFeedbackModalProps {
 export const SendEvidenceFeedbackModal: React.FC<
   SendEvidenceFeedbackModalProps
 > = ({ isOpen, item, onClose, onSubmit }) => {
-  const [comment, setComment] = useState("");
+  const [comment, setComment] = useModalDraft(EVIDENCE_FEEDBACK_MODAL, "comment", "");
 
   if (!isOpen || !item) return null;
 

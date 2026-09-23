@@ -1,29 +1,38 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useToast } from "@/src/components/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useGetCentreAssessors } from "@/src/features/shared/centre/hooks";
 import { postCentrePanelsApi } from "@/src/features/shared/centre/api";
+import { hasModalDraft, useModalDraft } from "@/src/lib/hooks/usePersistentModal";
+import { CREATE_PANEL_MODAL } from "@/src/lib/modal-keys";
 
 interface Props {
   isOpen: boolean;
+  /** URL/draft key; pass a distinct one when several instances can be mounted at once. */
+  modalKey?: string;
   onClose: () => void;
   onSuccess?: () => void;
 }
 
-export function useCreatePanelState({ isOpen, onClose, onSuccess }: Props) {
+export function useCreatePanelState({
+  isOpen,
+  modalKey = CREATE_PANEL_MODAL,
+  onClose,
+  onSuccess,
+}: Props) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const { data: centreAssessors = [], isLoading: isLoadingAssessors } =
     useGetCentreAssessors({ status: "all" });
 
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [leadPanelistId, setLeadPanelistId] = useState("");
-  const [panelMemberId, setPanelMemberId] = useState("");
-  const [internalVerifierId, setInternalVerifierId] = useState("");
+  const [title, setTitle] = useModalDraft(modalKey, "title", "");
+  const [description, setDescription] = useModalDraft(modalKey, "description", "");
+  const [leadPanelistId, setLeadPanelistId] = useModalDraft(modalKey, "leadPanelistId", "");
+  const [panelMemberId, setPanelMemberId] = useModalDraft(modalKey, "panelMemberId", "");
+  const [internalVerifierId, setInternalVerifierId] = useModalDraft(modalKey, "internalVerifierId", "");
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -47,8 +56,15 @@ export function useCreatePanelState({ isOpen, onClose, onSuccess }: Props) {
     return [];
   }, [centreAssessors]);
 
+  // Skip the on-open reset when a draft was restored after a page reload.
+  const restoredDraft = useRef(hasModalDraft(modalKey));
+
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      restoredDraft.current = false;
+      return;
+    }
+    if (restoredDraft.current) return;
     setTitle("");
     setDescription("");
     if (assessorOptions.length >= 3) {
@@ -64,7 +80,15 @@ export function useCreatePanelState({ isOpen, onClose, onSuccess }: Props) {
       setPanelMemberId(assessorOptions[1]?.value || "");
       setInternalVerifierId(assessorOptions[2]?.value || "");
     }
-  }, [isOpen, assessorOptions]);
+  }, [
+    isOpen,
+    assessorOptions,
+    setDescription,
+    setInternalVerifierId,
+    setLeadPanelistId,
+    setPanelMemberId,
+    setTitle,
+  ]);
 
   const selectedIvAssessor = useMemo(
     () => assessorOptions.find((a) => a.value === internalVerifierId),

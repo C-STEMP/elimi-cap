@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { FiChevronLeft, FiPlus, FiCheck } from "react-icons/fi";
 import { NsqAssessorSidebar } from "./NsqAssessorSidebar";
@@ -28,6 +28,7 @@ import { ObservationChecklistView } from "../../../iqam/components/con05/Observa
 import { FinalPortfolioReportView } from "../../../iqam/components/con06/FinalPortfolioReportView";
 import { ReviewVerifierModal } from "@/src/features/assessment-centre/features/Applications/components/ReviewVerifierModal";
 import { useToast } from "@/src/components/ui/toast";
+import { closeUrlSubView, openUrlSubView } from "@/src/lib/navigation/url-sub-view";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useGetApplicationById,
@@ -47,6 +48,8 @@ import {
 } from "@/src/features/shared/reference/hooks";
 import type { DirectObservationSession } from "@/src/features/shared/applications/api/types";
 import type { AssessorApplicationRecord } from "../../types/applications.types";
+import { useUrlModal } from "@/src/lib/hooks/usePersistentModal";
+import { REVIEW_VERIFIER_MODAL, NSQ_ASSESSOR_OBSERVATION_MODAL, NSQ_REJECT_OBSERVATION_MODAL } from "@/src/lib/modal-keys";
 
 const mapSessionToObservation = (
   session?: DirectObservationSession | null,
@@ -88,6 +91,7 @@ export interface NsqAssessorApplicationDetailViewProps {
   onSubViewChange?: (subViewTitle: string | null) => void;
   onRegisterMoveToIqam?: (fn: () => void) => void;
   onMoveToIqamStatusChange?: (hasMoved: boolean) => void;
+  onCanMoveToIqamChange?: (canMove: boolean) => void;
   subViewNavState?: NsqAssessorSubView;
   onSubViewNavStateChange?: (state: NsqAssessorSubView) => void;
 }
@@ -113,6 +117,7 @@ export const NsqAssessorApplicationDetailView: React.FC<
   onSubViewChange,
   onRegisterMoveToIqam,
   onMoveToIqamStatusChange,
+  onCanMoveToIqamChange,
   subViewNavState: externalNavState,
   onSubViewNavStateChange,
 }) => {
@@ -122,7 +127,7 @@ export const NsqAssessorApplicationDetailView: React.FC<
   const searchParams = useSearchParams();
   const [internalSubView, setInternalSubView] = useState<NsqAssessorSubView>("overview");
   const activeSubView = externalNavState || internalSubView;
-  const [isReviewIvModalOpen, setIsReviewIvModalOpen] = useState(false);
+  const [isReviewIvModalOpen, setIsReviewIvModalOpen] = useUrlModal(REVIEW_VERIFIER_MODAL);
 
   const setActiveSubView = (next: NsqAssessorSubView) => {
     setInternalSubView(next);
@@ -228,9 +233,9 @@ export const NsqAssessorApplicationDetailView: React.FC<
   }, [liveObs?.id, liveObs?.status, liveObs?.scheduledAt]);
 
   const [isInductionModalOpen, setIsInductionModalOpen] = useState(false);
-  const [isObsModalOpen, setIsObsModalOpen] = useState(false);
+  const [isObsModalOpen, setIsObsModalOpen] = useUrlModal(NSQ_ASSESSOR_OBSERVATION_MODAL);
   const [isConfirmAcceptObsOpen, setIsConfirmAcceptObsOpen] = useState(false);
-  const [isRejectObsReasonOpen, setIsRejectObsReasonOpen] = useState(false);
+  const [isRejectObsReasonOpen, setIsRejectObsReasonOpen] = useUrlModal(NSQ_REJECT_OBSERVATION_MODAL);
   const [isAcceptObsSuccessOpen, setIsAcceptObsSuccessOpen] = useState(false);
   const [isRejectObsSuccessOpen, setIsRejectObsSuccessOpen] = useState(false);
   const [pendingAcceptRequirements, setPendingAcceptRequirements] = useState<
@@ -250,18 +255,25 @@ export const NsqAssessorApplicationDetailView: React.FC<
   const handleSelectUnit = (unit: QualificationUnitItem) => {
     setSelectedUnit(unit);
     setActiveSubView("unit");
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("unit", unit.id);
-    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+    openUrlSubView(router, pathname, searchParams, unit.id);
   };
 
   const handleBackFromUnit = () => {
     setActiveSubView("overview");
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete("unit");
-    const query = params.toString();
-    router.push(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    closeUrlSubView(router, pathname, searchParams);
   };
+
+  // Browser back/forward: when `unit` disappears from the URL, return to the
+  // overview instead of leaving the unit view on screen.
+  const prevUnitParam = useRef(searchParams.get("unit"));
+  useEffect(() => {
+    const unitParam = searchParams.get("unit");
+    if (prevUnitParam.current && !unitParam && activeSubView === "unit") {
+      setActiveSubView("overview");
+    }
+    prevUnitParam.current = unitParam;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   // Every unit with attached evidence must be individually signed off
   // (POST /applications/{id}/units/{unitId}/signoff) before the application
@@ -353,9 +365,28 @@ export const NsqAssessorApplicationDetailView: React.FC<
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onRegisterMoveToIqam, candidateName, apiApp?.nsq?.units]);
 
-  const hasMovedToIqam = Boolean(
-    apiApp?.currentStageKey &&
-      STAGE_ORDER.indexOf(apiApp.currentStageKey) > STAGE_ORDER.indexOf("regular_assessment"),
+  const effectiveStageKey =
+    apiApp?.currentStageKey ||
+    (application as any)?.currentStageKey ||
+    (application as any)?.stageKey;
+
+  const isInternalVerificationStage = Boolean(
+    effectiveStageKey &&
+      STAGE_ORDER.indexOf(effectiveStageKey) >= STAGE_ORDER.indexOf("internal_verification"),
+  );
+
+  const hasMovedToIqam = isInternalVerificationStage;
+
+  const unitsWithEvidence = unitsList.filter((u) => (u.totalCount ?? 0) > 0);
+  const notFullyApproved = unitsWithEvidence.filter(
+    (u) => (u.approvedCount ?? 0) !== (u.totalCount ?? 0),
+  );
+  const isRegularAssessmentStage = effectiveStageKey === "regular_assessment";
+  const canMoveToIqam = Boolean(
+    !hasMovedToIqam &&
+      isRegularAssessmentStage &&
+      unitsWithEvidence.length > 0 &&
+      notFullyApproved.length === 0,
   );
 
   // Once every IQAM form is submitted, the assigned IV can mark themselves
@@ -369,6 +400,10 @@ export const NsqAssessorApplicationDetailView: React.FC<
   useEffect(() => {
     onMoveToIqamStatusChange?.(hasMovedToIqam);
   }, [onMoveToIqamStatusChange, hasMovedToIqam]);
+
+  useEffect(() => {
+    onCanMoveToIqamChange?.(canMoveToIqam);
+  }, [onCanMoveToIqamChange, canMoveToIqam]);
 
   const acceptObservation = async (requirements: string[]) => {
     await reviewObservationMutation({
@@ -456,7 +491,7 @@ export const NsqAssessorApplicationDetailView: React.FC<
     );
   }
 
-  if (activeSubView === "iqam_con04") {
+  if (isInternalVerificationStage && activeSubView === "iqam_con04") {
     return (
       <ComprehensiveReportView
         applicationId={application.id}
@@ -466,7 +501,7 @@ export const NsqAssessorApplicationDetailView: React.FC<
     );
   }
 
-  if (activeSubView === "iqam_con05") {
+  if (isInternalVerificationStage && activeSubView === "iqam_con05") {
     return (
       <ObservationChecklistView
         applicationId={application.id}
@@ -476,7 +511,7 @@ export const NsqAssessorApplicationDetailView: React.FC<
     );
   }
 
-  if (activeSubView === "iqam_con06") {
+  if (isInternalVerificationStage && activeSubView === "iqam_con06") {
     return (
       <FinalPortfolioReportView
         applicationId={application.id}
@@ -516,96 +551,98 @@ export const NsqAssessorApplicationDetailView: React.FC<
             />
 
             {/* 4. IQAM Forms Card — status from GET /applications/{id} `iqamForms` */}
-            <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-xs border border-gray-100 flex flex-col gap-4">
-              <div className="flex items-center gap-2.5">
-                <h3 className="text-base font-extrabold text-neutral-primary tracking-tight">
-                  IQAM Forms
-                </h3>
-                {(() => {
-                  const ivReportSubmitted = Boolean(
-                    apiApp?.iqamForms?.find((f) => f.key === "iv_report")?.submittedAt,
-                  );
-                  const finalPortfolioSubmitted = Boolean(
-                    apiApp?.iqamForms?.find((f) => f.key === "final_portfolio")?.submittedAt,
-                  );
-                  return ivReportSubmitted && finalPortfolioSubmitted ? (
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-[#1E7F4C]/10 text-[#1E7F4C]">
-                      Up to Date
-                    </span>
-                  ) : (
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-primary/10 text-primary">
-                      Attention Required
-                    </span>
-                  );
-                })()}
-              </div>
-
-              <div className="flex flex-col gap-3">
-                <div className="p-4 bg-gray-50/70 hover:bg-gray-100/70 rounded-2xl border border-gray-100/80 transition-all flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2.5">
-                    <span className="text-xs sm:text-sm font-semibold text-neutral-primary">
-                      Comprehensive Internal Verifier Report Form
-                    </span>
-                    {apiApp?.iqamForms?.find((f) => f.key === "iv_report")?.submittedAt && (
-                      <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#1E7F4C]/10 text-[#1E7F4C]">
-                        Submitted
+            {isInternalVerificationStage && (
+              <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-xs border border-gray-100 flex flex-col gap-4">
+                <div className="flex items-center gap-2.5">
+                  <h3 className="text-base font-extrabold text-neutral-primary tracking-tight">
+                    IQAM Forms
+                  </h3>
+                  {(() => {
+                    const ivReportSubmitted = Boolean(
+                      apiApp?.iqamForms?.find((f) => f.key === "iv_report")?.submittedAt,
+                    );
+                    const finalPortfolioSubmitted = Boolean(
+                      apiApp?.iqamForms?.find((f) => f.key === "final_portfolio")?.submittedAt,
+                    );
+                    return ivReportSubmitted && finalPortfolioSubmitted ? (
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-[#1E7F4C]/10 text-[#1E7F4C]">
+                        Up to Date
                       </span>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setActiveSubView("iqam_con04")}
-                    className="text-[#fbab2a] hover:text-[#e89b1f] hover:underline font-bold text-xs sm:text-sm cursor-pointer select-none shrink-0"
-                  >
-                    View
-                  </button>
-                </div>
-
-                <div className="p-4 bg-gray-50/70 hover:bg-gray-100/70 rounded-2xl border border-gray-100/80 transition-all flex items-center justify-between gap-3">
-                  <span className="text-xs sm:text-sm font-semibold text-neutral-primary">
-                    IV Observation & Questioning Checklist
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setActiveSubView("iqam_con05")}
-                    className="text-[#fbab2a] hover:text-[#e89b1f] hover:underline font-bold text-xs sm:text-sm cursor-pointer select-none shrink-0"
-                  >
-                    View
-                  </button>
-                </div>
-
-                <div className="p-4 bg-gray-50/70 hover:bg-gray-100/70 rounded-2xl border border-gray-100/80 transition-all flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2.5">
-                    <span className="text-xs sm:text-sm font-semibold text-neutral-primary">
-                      Final Portfolio / Award Report Form
-                    </span>
-                    {apiApp?.iqamForms?.find((f) => f.key === "final_portfolio")?.submittedAt && (
-                      <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#1E7F4C]/10 text-[#1E7F4C]">
-                        Submitted
+                    ) : (
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-primary/10 text-primary">
+                        Attention Required
                       </span>
-                    )}
+                    );
+                  })()}
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  <div className="p-4 bg-gray-50/70 hover:bg-gray-100/70 rounded-2xl border border-gray-100/80 transition-all flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-xs sm:text-sm font-semibold text-neutral-primary">
+                        Comprehensive Internal Verifier Report Form
+                      </span>
+                      {apiApp?.iqamForms?.find((f) => f.key === "iv_report")?.submittedAt && (
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#1E7F4C]/10 text-[#1E7F4C]">
+                          Submitted
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setActiveSubView("iqam_con04")}
+                      className="text-[#fbab2a] hover:text-[#e89b1f] hover:underline font-bold text-xs sm:text-sm cursor-pointer select-none shrink-0"
+                    >
+                      View
+                    </button>
                   </div>
+
+                  <div className="p-4 bg-gray-50/70 hover:bg-gray-100/70 rounded-2xl border border-gray-100/80 transition-all flex items-center justify-between gap-3">
+                    <span className="text-xs sm:text-sm font-semibold text-neutral-primary">
+                      IV Observation & Questioning Checklist
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setActiveSubView("iqam_con05")}
+                      className="text-[#fbab2a] hover:text-[#e89b1f] hover:underline font-bold text-xs sm:text-sm cursor-pointer select-none shrink-0"
+                    >
+                      View
+                    </button>
+                  </div>
+
+                  <div className="p-4 bg-gray-50/70 hover:bg-gray-100/70 rounded-2xl border border-gray-100/80 transition-all flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-xs sm:text-sm font-semibold text-neutral-primary">
+                        Final Portfolio / Award Report Form
+                      </span>
+                      {apiApp?.iqamForms?.find((f) => f.key === "final_portfolio")?.submittedAt && (
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#1E7F4C]/10 text-[#1E7F4C]">
+                          Submitted
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setActiveSubView("iqam_con06")}
+                      className="text-[#fbab2a] hover:text-[#e89b1f] hover:underline font-bold text-xs sm:text-sm cursor-pointer select-none shrink-0"
+                    >
+                      View
+                    </button>
+                  </div>
+                </div>
+
+                {isIqamFormsComplete && !isIvApproved && (
                   <button
                     type="button"
-                    onClick={() => setActiveSubView("iqam_con06")}
-                    className="text-[#fbab2a] hover:text-[#e89b1f] hover:underline font-bold text-xs sm:text-sm cursor-pointer select-none shrink-0"
+                    onClick={() => setIsReviewIvModalOpen(true)}
+                    className="w-full h-11 bg-[#fbab2a] hover:bg-[#e89b1f] text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition-all cursor-pointer flex items-center justify-center gap-2"
                   >
-                    View
+                    <span>Mark IQA Competent</span>
+                    <FiCheck className="w-4 h-4" />
                   </button>
-                </div>
+                )}
               </div>
-
-              {isIqamFormsComplete && !isIvApproved && (
-                <button
-                  type="button"
-                  onClick={() => setIsReviewIvModalOpen(true)}
-                  className="w-full h-11 bg-[#fbab2a] hover:bg-[#e89b1f] text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition-all cursor-pointer flex items-center justify-center gap-2"
-                >
-                  <span>Mark IQA Competent</span>
-                  <FiCheck className="w-4 h-4" />
-                </button>
-              )}
-            </div>
+            )}
           </div>
 
           <div className="lg:col-span-4 w-full">
@@ -658,6 +695,7 @@ export const NsqAssessorApplicationDetailView: React.FC<
 
       <RejectEvidenceModal
         isOpen={isRejectObsReasonOpen}
+        modalKey={NSQ_REJECT_OBSERVATION_MODAL}
         onClose={() => setIsRejectObsReasonOpen(false)}
         onSubmit={handleRejectObservation}
         title="Reject Observation Request"

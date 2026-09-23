@@ -1,11 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { FiX, FiAlertCircle } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
 import { useCreateAppeal } from "@/src/features/shared/applications/hooks";
+import { useModalDraft } from "@/src/lib/hooks/usePersistentModal";
+import { CANDIDATE_APPEAL_MODAL } from "@/src/lib/modal-keys";
 
 interface CandidateAppealModalProps {
   isOpen: boolean;
@@ -20,7 +22,7 @@ export const CandidateAppealModal: React.FC<CandidateAppealModalProps> = ({
 }) => {
   const { toast } = useToast();
   const createAppealMutation = useCreateAppeal(applicationId);
-  const [comment, setComment] = useState("");
+  const [comment, setComment] = useModalDraft(CANDIDATE_APPEAL_MODAL, "comment", "");
 
   if (!isOpen) return null;
 

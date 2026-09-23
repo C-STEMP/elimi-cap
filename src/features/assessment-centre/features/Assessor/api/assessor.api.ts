@@ -18,6 +18,9 @@ export async function approveRetainedRequestApi(id: string): Promise<void> {
   return approveRetainedRequestSharedApi(id);
 }
 
-export async function rejectRetainedRequestApi(id: string): Promise<void> {
-  return rejectRetainedRequestSharedApi(id);
+export async function rejectRetainedRequestApi(
+  id: string,
+  payload?: { reason?: string },
+): Promise<void> {
+  return rejectRetainedRequestSharedApi(id, payload);
 }

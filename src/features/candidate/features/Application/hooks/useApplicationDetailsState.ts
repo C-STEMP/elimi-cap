@@ -21,6 +21,9 @@ import {
 } from "../utils/applicationDetailsHelpers";
 import type { PaymentModalType } from "../components/PaymentModals";
 import { formatCurrency } from "@/src/utils/currency";
+import { useUrlModal } from "@/src/lib/hooks/usePersistentModal";
+import { CANDIDATE_APPEAL_MODAL, CANDIDATE_SIGNATURE_MODAL } from "@/src/lib/modal-keys";
+import {  } from "../components/CandidateAppealModal";
 
 export function useApplicationDetailsState(id?: string) {
   const router = useRouter();
@@ -35,14 +38,14 @@ export function useApplicationDetailsState(id?: string) {
   const [paymentErrorInfo, setPaymentErrorInfo] = useState<{ title?: string; description?: string }>({});
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [isCallRequestModalOpen, setIsCallRequestModalOpen] = useState(false);
-  const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
+  const [isSignatureModalOpen, setIsSignatureModalOpen] = useUrlModal(CANDIDATE_SIGNATURE_MODAL);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
   const [isInterviewCollapsed, setIsInterviewCollapsed] = useState(false);
   const [selectedInterviewFormType, setSelectedInterviewFormType] = useState<
     "records" | "assessment_grid" | "practical_observation" | "skill_demonstration" | null
   >(null);
   const [isInterviewFormModalOpen, setIsInterviewFormModalOpen] = useState(false);
-  const [isAppealModalOpen, setIsAppealModalOpen] = useState(false);
+  const [isAppealModalOpen, setIsAppealModalOpen] = useUrlModal(CANDIDATE_APPEAL_MODAL);
 
   const authUser = useAppSelector((state) => state.auth.user);
   const { data: apiApp, isLoading } = useGetApplicationById(id || "", {

@@ -19,6 +19,7 @@ import { Button } from "@/src/components/ui/button";
 import { Avatar } from "@/src/components/ui/avatar";
 import { ASSETS_URL } from "@/assets";
 import { useToast } from "@/src/components/ui/toast";
+import { closeUrlSubView, openUrlSubView } from "@/src/lib/navigation/url-sub-view";
 import { TransactionReceiptModal } from "@/features/assessment-centre/features/Payment/components/TransactionReceiptModal";
 import { PaymentModal, type PaymentModalType } from "../PaymentModals";
 import {
@@ -48,6 +49,8 @@ import { NsqRequestObservationModal } from "./NsqRequestObservationModal";
 import { NsqObservationRequestReviewModal } from "./NsqObservationRequestReviewModal";
 import { NsqObservationSuccessModal } from "./NsqObservationSuccessModal";
 import { NsqCompleteInductionFormModal } from "./NsqCompleteInductionFormModal";
+import { useUrlModal } from "@/src/lib/hooks/usePersistentModal";
+import { NSQ_INDUCTION_FORM_MODAL, NSQ_OBSERVATION_REVIEW_MODAL, NSQ_REQUEST_OBSERVATION_MODAL } from "@/src/lib/modal-keys";
 
 const NSQ_PROGRESS_STEPS = [
   { key: "induction", label: "Induction Form" },
@@ -84,24 +87,27 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
 
   const handleSelectUnit = (unit: NsqUnitItem) => {
     setSelectedUnit(unit);
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("unit", unit.id);
-    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+    openUrlSubView(router, pathname, searchParams, unit.id);
   };
 
   const handleBackFromUnit = () => {
     setSelectedUnit(null);
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete("unit");
-    const query = params.toString();
-    router.push(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    closeUrlSubView(router, pathname, searchParams);
   };
-  const [isObservationModalOpen, setIsObservationModalOpen] = useState(false);
-  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+
+  // Browser back/forward: keep the open unit in step with `?unit=`.
+  const urlUnitId = searchParams.get("unit");
+  const [prevUrlUnitId, setPrevUrlUnitId] = useState(urlUnitId);
+  if (urlUnitId !== prevUrlUnitId) {
+    setPrevUrlUnitId(urlUnitId);
+    if (!urlUnitId) setSelectedUnit(null);
+  }
+  const [isObservationModalOpen, setIsObservationModalOpen] = useUrlModal(NSQ_REQUEST_OBSERVATION_MODAL);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useUrlModal(NSQ_OBSERVATION_REVIEW_MODAL);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
   const [isInductionViewModalOpen, setIsInductionViewModalOpen] = useState(false);
-  const [isInductionFillModalOpen, setIsInductionFillModalOpen] = useState(false);
+  const [isInductionFillModalOpen, setIsInductionFillModalOpen] = useUrlModal(NSQ_INDUCTION_FORM_MODAL);
 
   const appId = application?.id || "nsq";
 

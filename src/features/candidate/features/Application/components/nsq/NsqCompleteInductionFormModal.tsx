@@ -11,6 +11,8 @@ import { useUploadFile } from "@/src/features/shared/storage/hooks";
 import { useCandidateProfileSignature } from "@/src/features/shared/onboarding/hooks";
 import { useSubmitInductionForm } from "@/src/features/shared/applications/hooks";
 import { UploadSignatureModal } from "../UploadSignatureModal";
+import { useModalDraft, useUrlModal } from "@/src/lib/hooks/usePersistentModal";
+import { NSQ_INDUCTION_FORM_MODAL, NSQ_INDUCTION_SIGNATURE_MODAL } from "@/src/lib/modal-keys";
 
 const ASSESSMENT_TYPE_OPTIONS: SelectOption[] = [
   { label: "Specialized", value: "Specialized" },
@@ -88,13 +90,13 @@ export const NsqCompleteInductionFormModal: React.FC<
   const submitMutation = useSubmitInductionForm(applicationId);
 
   const [nameParts] = useState(() => candidateName.trim().split(/\s+/));
-  const [firstName, setFirstName] = useState(nameParts[0] || "");
-  const [lastName, setLastName] = useState(nameParts.slice(1).join(" ") || "");
-  const [middleName, setMiddleName] = useState("");
-  const [registrationNo, setRegistrationNo] = useState("");
-  const [assessmentType, setAssessmentType] = useState("Full Qualification");
-  const [courseStartDate, setCourseStartDate] = useState("");
-  const [selectedLevelId, setSelectedLevelId] = useState<string>(
+  const [firstName, setFirstName] = useModalDraft(NSQ_INDUCTION_FORM_MODAL, "firstName", nameParts[0] || "");
+  const [lastName, setLastName] = useModalDraft(NSQ_INDUCTION_FORM_MODAL, "lastName", nameParts.slice(1).join(" ") || "");
+  const [middleName, setMiddleName] = useModalDraft(NSQ_INDUCTION_FORM_MODAL, "middleName", "");
+  const [registrationNo, setRegistrationNo] = useModalDraft(NSQ_INDUCTION_FORM_MODAL, "registrationNo", "");
+  const [assessmentType, setAssessmentType] = useModalDraft(NSQ_INDUCTION_FORM_MODAL, "assessmentType", "Full Qualification");
+  const [courseStartDate, setCourseStartDate] = useModalDraft(NSQ_INDUCTION_FORM_MODAL, "courseStartDate", "");
+  const [selectedLevelId, setSelectedLevelId] = useModalDraft<string>(NSQ_INDUCTION_FORM_MODAL, "selectedLevelId", 
     defaultQualificationLevelId || qualificationLevels[0]?.id || "",
   );
 
@@ -111,23 +113,23 @@ export const NsqCompleteInductionFormModal: React.FC<
       )
     : availableUnits;
 
-  const [selectedUnitIds, setSelectedUnitIds] = useState<string[]>(
+  const [selectedUnitIds, setSelectedUnitIds] = useModalDraft<string[]>(NSQ_INDUCTION_FORM_MODAL, "selectedUnitIds", 
     defaultSelectedUnitIds && defaultSelectedUnitIds.length > 0
       ? defaultSelectedUnitIds
       : unitsForSelectedLevel.map((u) => u.id),
   );
-  const [relevantQualification, setRelevantQualification] = useState("");
-  const [impairment, setImpairment] = useState("None");
-  const [learningStrengths, setLearningStrengths] = useState<string[]>([]);
-  const [newStrength, setNewStrength] = useState("");
-  const [learningWeaknesses, setLearningWeaknesses] = useState<string[]>([]);
-  const [newWeakness, setNewWeakness] = useState("");
-  const [passportAssetId, setPassportAssetId] = useState<string | null>(null);
-  const [passportPreview, setPassportPreview] = useState<string | null>(null);
+  const [relevantQualification, setRelevantQualification] = useModalDraft(NSQ_INDUCTION_FORM_MODAL, "relevantQualification", "");
+  const [impairment, setImpairment] = useModalDraft(NSQ_INDUCTION_FORM_MODAL, "impairment", "None");
+  const [learningStrengths, setLearningStrengths] = useModalDraft<string[]>(NSQ_INDUCTION_FORM_MODAL, "learningStrengths", []);
+  const [newStrength, setNewStrength] = useModalDraft(NSQ_INDUCTION_FORM_MODAL, "newStrength", "");
+  const [learningWeaknesses, setLearningWeaknesses] = useModalDraft<string[]>(NSQ_INDUCTION_FORM_MODAL, "learningWeaknesses", []);
+  const [newWeakness, setNewWeakness] = useModalDraft(NSQ_INDUCTION_FORM_MODAL, "newWeakness", "");
+  const [passportAssetId, setPassportAssetId] = useModalDraft<string | null>(NSQ_INDUCTION_FORM_MODAL, "passportAssetId", null);
+  const [passportPreview, setPassportPreview] = useModalDraft<string | null>(NSQ_INDUCTION_FORM_MODAL, "passportPreview", null);
   const [isUploadingPassport, setIsUploadingPassport] = useState(false);
-  const [signatureAssetId, setSignatureAssetId] = useState<string | null>(null);
-  const [signatureUrl, setSignatureUrl] = useState<string | null>(null);
-  const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
+  const [signatureAssetId, setSignatureAssetId] = useModalDraft<string | null>(NSQ_INDUCTION_FORM_MODAL, "signatureAssetId", null);
+  const [signatureUrl, setSignatureUrl] = useModalDraft<string | null>(NSQ_INDUCTION_FORM_MODAL, "signatureUrl", null);
+  const [isSignatureModalOpen, setIsSignatureModalOpen] = useUrlModal(NSQ_INDUCTION_SIGNATURE_MODAL);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const toggleUnit = (id: string) => {

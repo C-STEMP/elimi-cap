@@ -9,6 +9,7 @@ import { ConfirmScheduleInterviewModal } from "./ConfirmScheduleInterviewModal";
 
 interface ScheduleInterviewModalProps {
   isOpen: boolean;
+  modalKey?: string;
   onClose: () => void;
   onSuccess?: (scheduledData?: any) => void;
   initialApplicationId?: string;

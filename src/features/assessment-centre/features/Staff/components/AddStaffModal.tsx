@@ -11,6 +11,8 @@ import { useToast } from "@/src/components/ui/toast";
 import { ASSETS_URL } from "@/assets";
 
 import { useAddStaff } from "@/features/assessment-centre/features/Staff/hooks";
+import { useModalDraft } from "@/src/lib/hooks/usePersistentModal";
+import { ADD_STAFF_MODAL } from "@/src/lib/modal-keys";
 
 interface AddStaffModalProps {
   isOpen: boolean;
@@ -25,9 +27,9 @@ export const AddStaffModal: React.FC<AddStaffModalProps> = ({
 }) => {
   const { toast } = useToast();
   const addStaffMutation = useAddStaff();
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [role, setRole] = useState("");
+  const [name, setName] = useModalDraft(ADD_STAFF_MODAL, "name", "");
+  const [email, setEmail] = useModalDraft(ADD_STAFF_MODAL, "email", "");
+  const [role, setRole] = useModalDraft(ADD_STAFF_MODAL, "role", "");
   const [step, setStep] = useState<"form" | "success">("form");
 
   if (!isOpen) return null;

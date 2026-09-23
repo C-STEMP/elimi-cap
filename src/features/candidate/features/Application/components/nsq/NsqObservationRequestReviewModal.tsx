@@ -9,6 +9,8 @@ import { UploadSignatureModal } from "../UploadSignatureModal";
 import { useCandidateProfileSignature } from "@/src/features/shared/onboarding/hooks";
 import { signDirectObservationApi } from "@/src/features/shared/applications/api";
 import { useGetDirectObservationSession } from "@/src/features/shared/applications/hooks";
+import { useModalDraft, useUrlModal } from "@/src/lib/hooks/usePersistentModal";
+import { NSQ_OBSERVATION_REVIEW_MODAL, NSQ_OBSERVATION_SIGNATURE_MODAL } from "@/src/lib/modal-keys";
 
 export type ObservationStatus =
   | "pending"
@@ -60,10 +62,10 @@ export const NsqObservationRequestReviewModal: React.FC<
   const bothFormsSubmitted =
     sessionDetail?.physicalStatus === "submitted" &&
     sessionDetail?.oralStatus === "submitted";
-  const [isSigned, setIsSigned] = useState(details?.isSigned ?? false);
-  const [uploadedAssetId, setUploadedAssetId] = useState<string | null>(null);
+  const [isSigned, setIsSigned] = useModalDraft(NSQ_OBSERVATION_REVIEW_MODAL, "isSigned", details?.isSigned ?? false);
+  const [uploadedAssetId, setUploadedAssetId] = useModalDraft<string | null>(NSQ_OBSERVATION_REVIEW_MODAL, "uploadedAssetId", null);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-  const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
+  const [isSignatureModalOpen, setIsSignatureModalOpen] = useUrlModal(NSQ_OBSERVATION_SIGNATURE_MODAL);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!details) return null;

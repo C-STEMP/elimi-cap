@@ -22,6 +22,8 @@ import type { EvidenceRecord } from "@/src/features/shared/evidence-vault/utils/
 import { useToast } from "@/src/components/ui/toast";
 
 import { useGetEvidenceVault, useGetSelfAssessment, useGetThirdPartyReport, useReviewApplication } from "@/src/features/shared/applications/hooks";
+import { useUrlModal, useModalDraft } from "@/src/lib/hooks/usePersistentModal";
+import { EVIDENCE_FEEDBACK_MODAL } from "@/src/lib/modal-keys";
 
 interface AssessorEvidenceVaultViewProps {
   applicationId?: string;
@@ -222,9 +224,9 @@ export const AssessorEvidenceVaultView: React.FC<
 
   // Send Feedback Flow State
   const [selectedItemForFeedback, setSelectedItemForFeedback] =
-    useState<EvidenceItem | null>(null);
+    useModalDraft<EvidenceItem | null>(EVIDENCE_FEEDBACK_MODAL, "selectedItemForFeedback", null);
   const [pendingFeedbackText, setPendingFeedbackText] = useState("");
-  const [isSendFeedbackModalOpen, setIsSendFeedbackModalOpen] = useState(false);
+  const [isSendFeedbackModalOpen, setIsSendFeedbackModalOpen] = useUrlModal(EVIDENCE_FEEDBACK_MODAL);
   const [isConfirmFeedbackModalOpen, setIsConfirmFeedbackModalOpen] =
     useState(false);
   const [isFeedbackSuccessModalOpen, setIsFeedbackSuccessModalOpen] =
@@ -286,8 +288,9 @@ export const AssessorEvidenceVaultView: React.FC<
 
   // Handle Feedback Flow
   const handleOpenSendFeedback = (item: EvidenceItem) => {
-    setSelectedItemForFeedback(item);
+    // Open first so the selected item is saved with the modal's draft.
     setIsSendFeedbackModalOpen(true);
+    setSelectedItemForFeedback(item);
   };
 
   const handleFeedbackFormSubmit = (comment: string) => {

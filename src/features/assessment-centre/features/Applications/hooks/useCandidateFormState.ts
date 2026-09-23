@@ -9,6 +9,8 @@ import {
   APPLICATION_QUERY_KEYS,
   APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
 } from "@/src/features/shared/applications/hooks";
+import { useModalDraft, useUrlModal } from "@/src/lib/hooks/usePersistentModal";
+import { CANDIDATE_REJECT_MODAL } from "@/src/lib/modal-keys";
 
 interface Props {
   id?: string;
@@ -49,8 +51,8 @@ export function useCandidateFormState({
 
   const [isAccepted, setIsAccepted] = useState(false);
   const [isConfirmAcceptOpen, setIsConfirmAcceptOpen] = useState(false);
-  const [isConfirmRejectOpen, setIsConfirmRejectOpen] = useState(false);
-  const [rejectReason, setRejectReason] = useState("");
+  const [isConfirmRejectOpen, setIsConfirmRejectOpen] = useUrlModal(CANDIDATE_REJECT_MODAL);
+  const [rejectReason, setRejectReason] = useModalDraft(CANDIDATE_REJECT_MODAL, "rejectReason", "");
   const [isAcceptSuccessOpen, setIsAcceptSuccessOpen] = useState(false);
 
   const personalDetails = appDetail?.personalInformation?.personalDetails;

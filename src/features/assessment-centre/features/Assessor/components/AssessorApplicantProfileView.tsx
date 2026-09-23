@@ -25,6 +25,8 @@ import {
   CertificatePreviewModal,
   CertificatePreviewData,
 } from "@/src/features/shared/settings/components/CertificatePreviewModal";
+import { useUrlModal, useModalDraft } from "@/src/lib/hooks/usePersistentModal";
+import { ASSESSOR_DECISION_MODAL, ASSESSOR_REQUEST_MODAL } from "@/src/lib/modal-keys";
 
 interface AssessorApplicantProfileViewProps {
   applicantId: string;
@@ -69,13 +71,13 @@ export const AssessorApplicantProfileView: React.FC<
   const [previewCertificate, setPreviewCertificate] =
     useState<CertificatePreviewData | null>(null);
 
-  const [isDecisionModalOpen, setIsDecisionModalOpen] = useState(false);
+  const [isDecisionModalOpen, setIsDecisionModalOpen] = useUrlModal(ASSESSOR_DECISION_MODAL);
   const [decisionModalMode, setDecisionModalMode] =
-    useState<AssessorDecisionModalMode>("confirm-shortlist");
+    useModalDraft<AssessorDecisionModalMode>(ASSESSOR_DECISION_MODAL, "decisionModalMode", "confirm-shortlist");
 
-  const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
+  const [isRequestModalOpen, setIsRequestModalOpen] = useUrlModal(ASSESSOR_REQUEST_MODAL);
   const [requestModalMode, setRequestModalMode] =
-    useState<AssessorRequestModalMode>("confirm-accept");
+    useModalDraft<AssessorRequestModalMode>(ASSESSOR_REQUEST_MODAL, "requestModalMode", "confirm-accept");
 
   const isLoading = isAssessorRequest ? isLoadingRetained : isLoadingJobApp;
   const isError = isAssessorRequest ? isErrorRetained : isErrorJobApp;
@@ -156,13 +158,15 @@ export const AssessorApplicantProfileView: React.FC<
 
   // Handlers for Retained Request (Accept / Decline)
   const handleOpenAcceptModal = () => {
-    setRequestModalMode("confirm-accept");
+    // Open first so the mode is saved with the modal's draft.
     setIsRequestModalOpen(true);
+    setRequestModalMode("confirm-accept");
   };
 
   const handleOpenDeclineModal = () => {
-    setRequestModalMode("confirm-decline");
+    // Open first so the mode is saved with the modal's draft.
     setIsRequestModalOpen(true);
+    setRequestModalMode("confirm-decline");
   };
 
   const handleConfirmAccept = () => {
@@ -173,23 +177,28 @@ export const AssessorApplicantProfileView: React.FC<
     });
   };
 
-  const handleConfirmDecline = () => {
-    rejectRetainedMutation.mutate(applicantId, {
-      onSuccess: () => {
-        setRequestModalMode("declined-success");
+  const handleConfirmDecline = (reason?: string) => {
+    rejectRetainedMutation.mutate(
+      { id: applicantId, reason },
+      {
+        onSuccess: () => {
+          setRequestModalMode("declined-success");
+        },
       },
-    });
+    );
   };
 
   // Handlers for Job Posting Application (Shortlist / Reject)
   const handleOpenShortlistModal = () => {
-    setDecisionModalMode("confirm-shortlist");
+    // Open first so the mode is saved with the modal's draft.
     setIsDecisionModalOpen(true);
+    setDecisionModalMode("confirm-shortlist");
   };
 
   const handleOpenRejectModal = () => {
-    setDecisionModalMode("confirm-reject");
+    // Open first so the mode is saved with the modal's draft.
     setIsDecisionModalOpen(true);
+    setDecisionModalMode("confirm-reject");
   };
 
   const handleConfirmShortlist = () => {
@@ -208,13 +217,14 @@ export const AssessorApplicantProfileView: React.FC<
     );
   };
 
-  const handleConfirmReject = () => {
+  const handleConfirmReject = (reason?: string) => {
     if (!jobId) return;
     patchDecisionMutation.mutate(
       {
         id: jobId,
         applicationId: applicantId,
         decision: "reject",
+        reason,
       },
       {
         onSuccess: () => {

@@ -104,6 +104,8 @@ const IqamToolsDashboard = dynamic(
 import { useGetCentres } from "@/src/features/shared/reference/hooks";
 import { useToast } from "@/src/components/ui/toast";
 import { getRejectionReason } from "@/src/utils/rejection";
+import { useUrlModal } from "@/src/lib/hooks/usePersistentModal";
+import { DASHBOARD_APPLY_TO_CENTRE_MODAL } from "@/src/lib/modal-keys";
 
 export const AssessorDashboard: React.FC = () => {
   const { toast } = useToast();
@@ -270,9 +272,10 @@ export const AssessorDashboard: React.FC = () => {
   const [nsqSubViewTitle, setNsqSubViewTitle] = useState<string | null>(null);
   const [nsqNavState, setNsqNavState] = useState<any>("overview");
   const [hasMovedToIqam, setHasMovedToIqam] = useState(false);
+  const [canMoveToIqam, setCanMoveToIqam] = useState(false);
   const moveToIqamRef = React.useRef<(() => void) | null>(null);
 
-  const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
+  const [isApplyModalOpen, setIsApplyModalOpen] = useUrlModal(DASHBOARD_APPLY_TO_CENTRE_MODAL);
 
   const handleTabChange = (tab: AssessorNavTab) => {
     setActiveTab(tab);
@@ -283,6 +286,7 @@ export const AssessorDashboard: React.FC = () => {
     setApplicationSubView("stages");
     setCanMarkAsComplete(false);
     setTriggerMarkComplete(false);
+    setCanMoveToIqam(false);
     setSelectedJob(null);
     setSelectedIqamTool(null);
     setIqamHeaderConfig(null);
@@ -305,6 +309,7 @@ export const AssessorDashboard: React.FC = () => {
         setSelectedApplication(null);
         setNsqSubViewTitle(null);
         setNsqNavState("overview");
+        setCanMoveToIqam(false);
       }
       return;
     }
@@ -315,6 +320,7 @@ export const AssessorDashboard: React.FC = () => {
       setSelectedApplication(null);
       setCanMarkAsComplete(false);
       setTriggerMarkComplete(false);
+      setCanMoveToIqam(false);
     }
   };
 
@@ -345,6 +351,7 @@ export const AssessorDashboard: React.FC = () => {
         nsqSubViewTitle={nsqSubViewTitle}
         onMoveToIqam={() => moveToIqamRef.current?.()}
         hasMovedToIqam={hasMovedToIqam}
+        canMoveToIqam={canMoveToIqam}
         applicationSubView={applicationSubView}
         canMarkAsComplete={canMarkAsComplete}
         onMarkAsComplete={handleTriggerMarkComplete}
@@ -416,6 +423,7 @@ export const AssessorDashboard: React.FC = () => {
                   moveToIqamRef.current = fn;
                 }}
                 onMoveToIqamStatusChange={setHasMovedToIqam}
+                onCanMoveToIqamChange={setCanMoveToIqam}
               />
             ) : (
               <AssessorApplicationDetailView
@@ -475,6 +483,7 @@ export const AssessorDashboard: React.FC = () => {
       {isApplyModalOpen && (
         <ApplyToCentreModal
           isOpen={isApplyModalOpen}
+          modalKey={DASHBOARD_APPLY_TO_CENTRE_MODAL}
           onClose={() => setIsApplyModalOpen(false)}
           onSuccess={() => setIsApplyModalOpen(false)}
         />

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useToast } from "@/src/components/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useGetCentreAssessors, useGetCentreProfile } from "@/src/features/shared/centre/hooks";
@@ -11,6 +11,8 @@ import {
 } from "@/src/features/shared/applications/api/application.api";
 import { useCountryStateCity } from "@/src/lib/hooks/useCountryStateCity";
 import type { ScheduledPanelistInfo } from "../components/AssignPanelistModal";
+import { hasModalDraft, useModalDraft } from "@/src/lib/hooks/usePersistentModal";
+import { ASSIGN_PANELIST_MODAL } from "@/src/lib/modal-keys";
 
 interface InitialSchedule { scheduledAt?: string; mode?: string; location?: string; link?: string; useCentreAddress?: boolean; }
 interface InitialPanel { members?: { assessorId: string; isLead: boolean; isObserver?: boolean; name?: string }[]; }
@@ -35,19 +37,19 @@ export function usePanelistModalState({
 
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedTrade, setSelectedTrade] = useState(tradeName);
-  const [leadPanelistId, setLeadPanelistId] = useState("");
-  const [panelMemberId, setPanelMemberId] = useState("");
-  const [internalVerifierId, setInternalVerifierId] = useState("");
-  const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
-  const [interviewMode, setInterviewMode] = useState<"Physical" | "Virtual">("Physical");
-  const [sameAsCompanyAddress, setSameAsCompanyAddress] = useState(true);
-  const [selectedCountry, setSelectedCountry] = useState("Nigeria");
-  const [selectedState, setSelectedState] = useState("FCT");
-  const [selectedLga, setSelectedLga] = useState("Abuja Municipal");
-  const [streetAddress, setStreetAddress] = useState("Cstemp Centre");
-  const [meetingLink, setMeetingLink] = useState("www.meet.google.com");
+  const [selectedTrade, setSelectedTrade] = useModalDraft(ASSIGN_PANELIST_MODAL, "selectedTrade", tradeName);
+  const [leadPanelistId, setLeadPanelistId] = useModalDraft(ASSIGN_PANELIST_MODAL, "leadPanelistId", "");
+  const [panelMemberId, setPanelMemberId] = useModalDraft(ASSIGN_PANELIST_MODAL, "panelMemberId", "");
+  const [internalVerifierId, setInternalVerifierId] = useModalDraft(ASSIGN_PANELIST_MODAL, "internalVerifierId", "");
+  const [date, setDate] = useModalDraft(ASSIGN_PANELIST_MODAL, "date", "");
+  const [time, setTime] = useModalDraft(ASSIGN_PANELIST_MODAL, "time", "");
+  const [interviewMode, setInterviewMode] = useModalDraft<"Physical" | "Virtual">(ASSIGN_PANELIST_MODAL, "interviewMode", "Physical");
+  const [sameAsCompanyAddress, setSameAsCompanyAddress] = useModalDraft(ASSIGN_PANELIST_MODAL, "sameAsCompanyAddress", true);
+  const [selectedCountry, setSelectedCountry] = useModalDraft(ASSIGN_PANELIST_MODAL, "selectedCountry", "Nigeria");
+  const [selectedState, setSelectedState] = useModalDraft(ASSIGN_PANELIST_MODAL, "selectedState", "FCT");
+  const [selectedLga, setSelectedLga] = useModalDraft(ASSIGN_PANELIST_MODAL, "selectedLga", "Abuja Municipal");
+  const [streetAddress, setStreetAddress] = useModalDraft(ASSIGN_PANELIST_MODAL, "streetAddress", "Cstemp Centre");
+  const [meetingLink, setMeetingLink] = useModalDraft(ASSIGN_PANELIST_MODAL, "meetingLink", "www.meet.google.com");
   const [scheduledResult, setScheduledResult] = useState<ScheduledPanelistInfo | null>(null);
 
   const { countries, states, lgas } = useCountryStateCity(selectedCountry, selectedState);
@@ -69,8 +71,15 @@ export function usePanelistModalState({
     ];
   }, [centreAssessors, tradeName]);
 
+  // Skip the on-open reset when a draft was restored after a page reload.
+  const restoredDraft = useRef(hasModalDraft(ASSIGN_PANELIST_MODAL));
+
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      restoredDraft.current = false;
+      return;
+    }
+    if (restoredDraft.current) return;
     setSelectedTrade(tradeName || "Carpentry");
     if (initialSchedule?.scheduledAt) {
       try {
@@ -99,7 +108,22 @@ export function usePanelistModalState({
       setPanelMemberId(assessorOptions[1]?.value || assessorOptions[0]?.value || "");
       setInternalVerifierId(assessorOptions[2]?.value || assessorOptions[0]?.value || "");
     }
-  }, [isOpen, tradeName, initialSchedule, initialPanel, assessorOptions]);
+  }, [
+    isOpen,
+    tradeName,
+    initialSchedule,
+    initialPanel,
+    assessorOptions,
+    setDate,
+    setInternalVerifierId,
+    setInterviewMode,
+    setLeadPanelistId,
+    setMeetingLink,
+    setPanelMemberId,
+    setSelectedTrade,
+    setStreetAddress,
+    setTime,
+  ]);
 
   useEffect(() => {
     if (!sameAsCompanyAddress) return;
@@ -108,7 +132,14 @@ export function usePanelistModalState({
     if (centreProfile?.address?.state) setSelectedState(centreProfile.address.state);
     if (centreProfile?.address?.country) setSelectedCountry(centreProfile.address.country);
     if (centreProfile?.address?.lga) setSelectedLga(centreProfile.address.lga);
-  }, [sameAsCompanyAddress, centreProfile]);
+  }, [
+    sameAsCompanyAddress,
+    centreProfile,
+    setSelectedCountry,
+    setSelectedLga,
+    setSelectedState,
+    setStreetAddress,
+  ]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

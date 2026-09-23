@@ -118,13 +118,16 @@ export const AssessorRequestListView: React.FC<
     });
   };
 
-  const handleConfirmDecline = () => {
+  const handleConfirmDecline = (reason?: string) => {
     if (!modalState.targetId) return;
-    rejectMutation.mutate(modalState.targetId, {
-      onSuccess: () => {
-        setModalState((prev) => ({ ...prev, mode: "declined-success" }));
+    rejectMutation.mutate(
+      { id: modalState.targetId, reason },
+      {
+        onSuccess: () => {
+          setModalState((prev) => ({ ...prev, mode: "declined-success" }));
+        },
       },
-    });
+    );
   };
 
   if (isLoading) {

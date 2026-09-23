@@ -17,6 +17,8 @@ import {
 } from "@/src/features/shared/centre/hooks";
 import { ScheduledPanelistInfo } from "../components/AssignPanelistModal";
 import { computeStageCalculations } from "../utils/detailHelpers";
+import { useUrlModal } from "@/src/lib/hooks/usePersistentModal";
+import { ASSIGN_PANELIST_MODAL, RESCHEDULE_INTERVIEW_MODAL, SCHEDULE_INTERVIEW_MODAL, CREATE_PANEL_MODAL, ASSIGN_FACILITATOR_MODAL, ASSIGN_VERIFIER_MODAL, REVIEW_VERIFIER_MODAL } from "@/src/lib/modal-keys";
 
 export function useApplicationDetailState(id: string, candidateNameProp = "Candidate") {
   const { toast } = useToast();
@@ -56,18 +58,18 @@ export function useApplicationDetailState(id: string, candidateNameProp = "Candi
   const { data: centreInterviews = [] } = useGetCentreInterviews();
 
   // Modals
-  const [isAssignFacilitatorOpen, setIsAssignFacilitatorOpen] = useState(false);
+  const [isAssignFacilitatorOpen, setIsAssignFacilitatorOpen] = useUrlModal(ASSIGN_FACILITATOR_MODAL);
   const [assignedFacilitator, setAssignedFacilitator] = useState<{ id: string; name: string; avatar?: string; trade?: string } | null>(null);
-  const [isAssignPanelistOpen, setIsAssignPanelistOpen] = useState(false);
-  const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
+  const [isAssignPanelistOpen, setIsAssignPanelistOpen] = useUrlModal(ASSIGN_PANELIST_MODAL);
+  const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useUrlModal(RESCHEDULE_INTERVIEW_MODAL);
   const [isRescheduledLocally, setIsRescheduledLocally] = useState(false);
   const [scheduledPanelistData, setScheduledPanelistData] = useState<ScheduledPanelistInfo | null>(null);
-  const [isAssignVerifierOpen, setIsAssignVerifierOpen] = useState(false);
-  const [isReviewVerifierOpen, setIsReviewVerifierOpen] = useState(false);
+  const [isAssignVerifierOpen, setIsAssignVerifierOpen] = useUrlModal(ASSIGN_VERIFIER_MODAL);
+  const [isReviewVerifierOpen, setIsReviewVerifierOpen] = useUrlModal(REVIEW_VERIFIER_MODAL);
   const [activeVerifierType, setActiveVerifierType] = useState<"internal" | "external">("internal");
   const [isPromptCreatePanelOpen, setIsPromptCreatePanelOpen] = useState(false);
-  const [isScheduleInterviewModalOpen, setIsScheduleInterviewModalOpen] = useState(false);
-  const [isCreatePanelModalOpen, setIsCreatePanelModalOpen] = useState(false);
+  const [isScheduleInterviewModalOpen, setIsScheduleInterviewModalOpen] = useUrlModal(SCHEDULE_INTERVIEW_MODAL);
+  const [isCreatePanelModalOpen, setIsCreatePanelModalOpen] = useUrlModal(CREATE_PANEL_MODAL);
 
   // Calendar
   const [currentMonth, setCurrentMonth] = useState("July");

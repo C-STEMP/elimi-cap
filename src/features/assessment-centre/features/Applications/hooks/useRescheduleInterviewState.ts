@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useToast } from "@/src/components/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { scheduleInterviewApi } from "@/src/features/shared/applications/api/application.api";
+import { hasModalDraft, useModalDraft } from "@/src/lib/hooks/usePersistentModal";
+import { RESCHEDULE_INTERVIEW_MODAL } from "@/src/lib/modal-keys";
 
 interface Props {
   isOpen: boolean;
@@ -37,17 +39,21 @@ export function useRescheduleInterviewState({
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
-  const [meetingLink, setMeetingLink] = useState("www.meet.google.com");
-  const [mode, setMode] = useState<"physical" | "virtual">(currentMode);
-  const [location, setLocation] = useState("");
-  const [useCentreAddress, setUseCentreAddress] = useState(true);
+  const [date, setDate] = useModalDraft(RESCHEDULE_INTERVIEW_MODAL, "date", "");
+  const [time, setTime] = useModalDraft(RESCHEDULE_INTERVIEW_MODAL, "time", "");
+  const [meetingLink, setMeetingLink] = useModalDraft(RESCHEDULE_INTERVIEW_MODAL, "meetingLink", "www.meet.google.com");
+  const [mode, setMode] = useModalDraft<"physical" | "virtual">(RESCHEDULE_INTERVIEW_MODAL, "mode", currentMode);
+  const [location, setLocation] = useModalDraft(RESCHEDULE_INTERVIEW_MODAL, "location", "");
+  const [useCentreAddress, setUseCentreAddress] = useModalDraft(RESCHEDULE_INTERVIEW_MODAL, "useCentreAddress", true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
 
+  // Skip the on-open reset when a draft was restored after a page reload.
+  const restoredDraft = useRef(hasModalDraft(RESCHEDULE_INTERVIEW_MODAL));
+
   useEffect(() => {
-    if (isOpen) {
+    if (!isOpen) restoredDraft.current = false;
+    if (isOpen && !restoredDraft.current) {
       if (currentDate) {
         setDate(currentDate);
       } else {
@@ -62,7 +68,20 @@ export function useRescheduleInterviewState({
       // Default to the centre address when no explicit location was provided.
       setUseCentreAddress(!currentLocation);
     }
-  }, [isOpen, currentDate, currentTime, currentMeetingLink, currentMode, currentLocation]);
+  }, [
+    isOpen,
+    currentDate,
+    currentTime,
+    currentMeetingLink,
+    currentMode,
+    currentLocation,
+    setDate,
+    setLocation,
+    setMeetingLink,
+    setMode,
+    setTime,
+    setUseCentreAddress,
+  ]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

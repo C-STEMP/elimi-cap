@@ -14,6 +14,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import React, { useState } from "react";
 import { FiAlertTriangle, FiCheckCircle, FiX } from "react-icons/fi";
+import { useModalDraft } from "@/src/lib/hooks/usePersistentModal";
+import { NSQ_DECISION_MODAL } from "@/src/lib/modal-keys";
 
 interface ConfirmNsqDecisionModalProps {
   isOpen: boolean;
@@ -43,7 +45,7 @@ export const ConfirmNsqDecisionModal: React.FC<
     enabled: Boolean(isOpen && applicationId),
   });
 
-  const [notes, setNotes] = useState("");
+  const [notes, setNotes] = useModalDraft(NSQ_DECISION_MODAL, "notes", "");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen) return null;

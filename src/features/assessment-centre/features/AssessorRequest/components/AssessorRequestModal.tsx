@@ -1,10 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/src/components/ui/button";
 import { ASSETS_URL } from "@/assets";
+import { useModalDraft } from "@/src/lib/hooks/usePersistentModal";
+import { ASSESSOR_REQUEST_MODAL } from "@/src/lib/modal-keys";
 
 export type AssessorRequestModalMode =
   | "confirm-accept"
@@ -17,7 +19,7 @@ interface AssessorRequestModalProps {
   mode: AssessorRequestModalMode;
   onClose: () => void;
   onConfirmAccept?: () => void;
-  onConfirmDecline?: () => void;
+  onConfirmDecline?: (reason?: string) => void;
   isLoading?: boolean;
 }
 
@@ -29,6 +31,14 @@ export const AssessorRequestModal: React.FC<AssessorRequestModalProps> = ({
   onConfirmDecline,
   isLoading = false,
 }) => {
+  const [rejectionReason, setRejectionReason] = useModalDraft(ASSESSOR_REQUEST_MODAL, "rejectionReason", "");
+
+  useEffect(() => {
+    if (!isOpen || mode !== "confirm-decline") {
+      setRejectionReason("");
+    }
+  }, [isOpen, mode, setRejectionReason]);
+
   if (!isOpen) return null;
 
   return (
@@ -112,14 +122,35 @@ export const AssessorRequestModal: React.FC<AssessorRequestModalProps> = ({
                 Are You sure?
               </h3>
 
-              <p className="text-xs sm:text-sm text-neutral-secondary font-normal mb-8 leading-relaxed">
+              <p className="text-xs sm:text-sm text-neutral-secondary font-normal mb-4 leading-relaxed">
                 Confirm you want to decline this assessor request?
               </p>
+
+              <div className="w-full mb-6 text-left">
+                <label
+                  htmlFor="rejection-reason"
+                  className="block text-xs font-semibold text-neutral-primary mb-1.5"
+                >
+                  Reason for rejection <span className="text-gray-400 font-normal">(optional)</span>
+                </label>
+                <textarea
+                  id="rejection-reason"
+                  rows={3}
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                  placeholder="Specify why this request is being rejected..."
+                  maxLength={2000}
+                  disabled={isLoading}
+                  className="w-full bg-[#F4F5F7] border border-gray-200 rounded-xl p-3 text-xs text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-red-200 resize-none text-left disabled:opacity-50"
+                />
+              </div>
 
               <div className="flex flex-col gap-3 w-full">
                 <Button
                   type="button"
-                  onClick={onConfirmDecline}
+                  onClick={() =>
+                    onConfirmDecline?.(rejectionReason.trim() || undefined)
+                  }
                   loading={isLoading}
                   disabled={isLoading}
                   variant="amber"
