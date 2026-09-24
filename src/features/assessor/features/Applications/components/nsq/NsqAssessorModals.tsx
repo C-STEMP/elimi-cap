@@ -195,11 +195,13 @@ interface ConfirmSignoffUnitModalProps {
   onClose: () => void;
   onConfirm: () => void;
   unitLabel?: string;
+  description?: React.ReactNode;
+  confirmLabel?: string;
 }
 
 export const ConfirmSignoffUnitModal: React.FC<
   ConfirmSignoffUnitModalProps
-> = ({ isOpen, onClose, onConfirm, unitLabel }) => {
+> = ({ isOpen, onClose, onConfirm, unitLabel, description, confirmLabel }) => {
   if (!isOpen) return null;
 
   return (
@@ -219,8 +221,12 @@ export const ConfirmSignoffUnitModal: React.FC<
           Sign Off {unitLabel || "This Unit"}?
         </h3>
         <p className="text-xs sm:text-sm text-neutral-secondary font-normal mb-6">
-          You&apos;re confirming every criterion in this unit has been reviewed and its
-          evidence approved. This cannot be undone.
+          {description ?? (
+            <>
+              You&apos;re confirming every criterion in this unit has been reviewed and its
+              evidence approved. This cannot be undone.
+            </>
+          )}
         </p>
 
         <div className="flex flex-col gap-3 w-full">
@@ -231,7 +237,7 @@ export const ConfirmSignoffUnitModal: React.FC<
             fullWidth
             className="h-12 bg-[#FBAB2A] hover:bg-[#E89B1F] text-white font-bold text-sm sm:text-base rounded-xl shadow-md cursor-pointer transition-all"
           >
-            Yes, Sign Off Unit
+            {confirmLabel || "Yes, Sign Off Unit"}
           </Button>
 
           <button
@@ -251,11 +257,13 @@ export const ConfirmSignoffUnitModal: React.FC<
 interface UnitSignedOffSuccessModalProps {
   isOpen: boolean;
   onClose: () => void;
+  title?: string;
+  description?: string;
 }
 
 export const UnitSignedOffSuccessModal: React.FC<
   UnitSignedOffSuccessModalProps
-> = ({ isOpen, onClose }) => {
+> = ({ isOpen, onClose, title, description }) => {
   if (!isOpen) return null;
 
   return (
@@ -272,10 +280,10 @@ export const UnitSignedOffSuccessModal: React.FC<
         </div>
 
         <h3 className="text-xl sm:text-2xl font-extrabold text-neutral-primary tracking-tight mb-1">
-          Unit Signed Off
+          {title || "Unit Signed Off"}
         </h3>
         <p className="text-xs sm:text-sm text-neutral-secondary font-normal mb-6">
-          Your verification for this unit has been recorded.
+          {description || "Your verification for this unit has been recorded."}
         </p>
 
         <Button

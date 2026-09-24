@@ -97,18 +97,17 @@ export const EvidenceSidebarWidgets: React.FC<Props> = ({
             />
             <div className="flex flex-col gap-1 min-w-0">
               <span className="text-xs sm:text-sm font-extrabold text-black truncate">
-                {activeFacilitator.name || "Assigned Facilitator"}
+                {activeFacilitator.name}
               </span>
               <span className="text-[10px] sm:text-xs text-gray-500 font-medium truncate">
-                Facilitator · {activeFacilitator.trade || (appDetail as any)?.trade?.name || "RPL"} (Level 3)
+                {["Facilitator", activeFacilitator.trade || (appDetail as any)?.trade?.name].filter(Boolean).join(" · ")}
               </span>
               <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
-                <span className="bg-[#FCE8EB] text-[#A31D38] text-[9px] font-bold px-2 py-0.5 rounded-full">
-                  {activeFacilitator.trade || (appDetail as any)?.trade?.name || "RPL"}
-                </span>
-                <span className="bg-[#FCE8EB] text-[#A31D38] text-[9px] font-bold px-2 py-0.5 rounded-full">
-                  RPL Coordinator
-                </span>
+                {(activeFacilitator.trade || (appDetail as any)?.trade?.name) && (
+                  <span className="bg-[#FCE8EB] text-[#A31D38] text-[9px] font-bold px-2 py-0.5 rounded-full">
+                    {activeFacilitator.trade || (appDetail as any)?.trade?.name}
+                  </span>
+                )}
               </div>
             </div>
           </div>

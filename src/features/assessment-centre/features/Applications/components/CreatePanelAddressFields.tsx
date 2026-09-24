@@ -81,7 +81,7 @@ export const CreatePanelAddressFields: React.FC<Props> = ({
               label="State of Residence"
               value={selectedState}
               onChange={(e) => setSelectedState(e.target.value)}
-              options={states.length > 0 ? states.map((s) => ({ label: s.label, value: s.label })) : ["Abuja (FCT)", "Lagos"]}
+              options={states.map((s) => ({ label: s.label, value: s.label }))}
             />
           </div>
 

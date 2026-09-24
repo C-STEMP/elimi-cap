@@ -16,6 +16,11 @@ import {
   useGetSelfAssessment,
   useSaveSelfAssessment,
 } from "@/src/features/shared/applications/hooks";
+import {
+  useGetEvidenceTypesByTrade,
+  useGetUnitsByTrade,
+} from "@/src/features/shared/reference/hooks";
+import { EVIDENCE_TYPE_LABELS } from "@/src/features/shared/evidence-vault/utils/evidenceConstants";
 
 interface SelfAssessmentPageProps {
   id?: string;
@@ -29,6 +34,39 @@ export const SelfAssessmentPage: React.FC<SelfAssessmentPageProps> = ({
   const { data: apiApp } = useGetApplicationById(id);
   const { data: savedSelfAssessment } = useGetSelfAssessment(id);
   const saveSelfAssessmentMutation = useSaveSelfAssessment(id);
+
+  const tradeId = apiApp?.tradeId || "";
+  const { data: tradeUnits = [], isLoading: isLoadingUnits } =
+    useGetUnitsByTrade(tradeId);
+  const { data: tradeEvidenceTypes = [] } = useGetEvidenceTypesByTrade(tradeId);
+
+  // Competencies are the trade's NOS units (narrowed to the candidate's unit
+  // preferences when they picked any). A saved self-assessment keeps its own
+  // titles so previously submitted answers stay aligned by index.
+  const competencyTitles = React.useMemo(() => {
+    const saved = Array.isArray(savedSelfAssessment?.competencies)
+      ? (savedSelfAssessment.competencies as any[])
+      : [];
+    if (saved.length > 0 && saved.every((c) => c?.title)) {
+      return saved.map((c) => String(c.title));
+    }
+    const preferred = new Set(apiApp?.unitIds ?? []);
+    const units =
+      preferred.size > 0
+        ? tradeUnits.filter((u) => preferred.has(u.id))
+        : tradeUnits;
+    return units.map((u) =>
+      u.referenceNumber ? `${u.referenceNumber}: ${u.title}` : u.title,
+    );
+  }, [savedSelfAssessment?.competencies, apiApp?.unitIds, tradeUnits]);
+
+  const evidenceOptions = React.useMemo(
+    () => [
+      ...tradeEvidenceTypes.map((code) => EVIDENCE_TYPE_LABELS[code] || code),
+      "Other",
+    ],
+    [tradeEvidenceTypes],
+  );
 
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -123,6 +161,8 @@ export const SelfAssessmentPage: React.FC<SelfAssessmentPageProps> = ({
 
           {currentStep === 2 && (
             <Step2Competencies
+              competencies={competencyTitles}
+              isLoading={Boolean(tradeId) && isLoadingUnits}
               initialData={initialCompetencies}
               onNext={(data) => {
                 if (data) setCompetenciesData(data);
@@ -134,6 +174,7 @@ export const SelfAssessmentPage: React.FC<SelfAssessmentPageProps> = ({
 
           {currentStep === 3 && (
             <Step3Reflection
+              evidenceOptions={evidenceOptions}
               initialData={savedSelfAssessment?.reflection}
               onNext={(data) => {
                 if (data) setReflectionData(data);

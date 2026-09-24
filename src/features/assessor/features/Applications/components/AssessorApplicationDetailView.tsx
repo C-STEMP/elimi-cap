@@ -13,8 +13,6 @@ import {
   CandidateCompetentSuccessModal,
   ConfirmMarkCandidateIncompetentModal,
   CandidateIncompetentSuccessModal,
-  ScheduleObservationModal,
-  ObservationScheduledSuccessModal,
   CandidateInconclusiveSuccessModal,
 } from "./detail";
 import { CandidateApplicationFormView } from "./CandidateApplicationFormView";
@@ -44,7 +42,7 @@ import { useAppSelector } from "@/src/store/hooks";
 import { useGetMeProfile } from "@/src/features/shared/account/hooks";
 import { useGetAssessorProfile } from "@/src/features/assessor/hooks";
 import { useUrlModal } from "@/src/lib/hooks/usePersistentModal";
-import { MARK_INCOMPETENT_MODAL, SCHEDULE_OBSERVATION_MODAL } from "@/src/lib/modal-keys";
+import { MARK_INCOMPETENT_MODAL } from "@/src/lib/modal-keys";
 
 export type AssessorDetailSubView =
   | "stages"
@@ -321,17 +319,6 @@ export const AssessorApplicationDetailView: React.FC<
     setIsCandidateInconclusiveSuccessOpen,
   ] = useState(false);
 
-  // Observation Scheduling Modals State
-  const [isScheduleObservationOpen, setIsScheduleObservationOpen] =
-    useUrlModal(SCHEDULE_OBSERVATION_MODAL);
-  const [isObservationSuccessOpen, setIsObservationSuccessOpen] =
-    useState(false);
-  const [scheduledObservationEvent, setScheduledObservationEvent] = useState<{
-    title: string;
-    time: string;
-    date: string;
-    address: string;
-  } | null>(null);
 
   const subView = externalSubView !== undefined ? externalSubView : internalSubView;
 
@@ -486,25 +473,6 @@ export const AssessorApplicationDetailView: React.FC<
     setInterviewOutcome("inconclusive");
   };
 
-  const handleScheduleObservationSubmit = (data: {
-    date: string;
-    time: string;
-    location: string;
-  }) => {
-    setScheduledObservationEvent({
-      title: "Physically Observation",
-      time: data.time,
-      date: data.date,
-      address: data.location,
-    });
-    setIsScheduleObservationOpen(false);
-    setIsObservationSuccessOpen(true);
-  };
-
-  const handleObservationSuccessContinue = () => {
-    setIsObservationSuccessOpen(false);
-    setInterviewOutcome("awaiting_signature");
-  };
 
 
   if (subView === "application_form") {
@@ -588,9 +556,7 @@ export const AssessorApplicationDetailView: React.FC<
   };
 
   const upcomingEvent =
-    interviewOutcome === "awaiting_signature" && scheduledObservationEvent
-      ? scheduledObservationEvent
-      : interviewSchedule?.scheduledAt
+    interviewSchedule?.scheduledAt
         ? {
             title: "Panel Interview",
             time: new Date(interviewSchedule.scheduledAt).toLocaleTimeString("en-US", {
@@ -599,7 +565,7 @@ export const AssessorApplicationDetailView: React.FC<
               hour12: true,
             }),
             date: new Date(interviewSchedule.scheduledAt).toLocaleDateString("en-GB"),
-            location: interviewSchedule.location || "Cstemp Centre",
+            location: interviewSchedule.location || "",
             mode: interviewSchedule.mode,
             liveUrl: interviewSchedule.mode === "online" ? interviewSchedule.link : undefined,
             isRescheduled: Boolean((interviewSchedule as any)?.isRescheduled),
@@ -709,7 +675,6 @@ export const AssessorApplicationDetailView: React.FC<
                 setIsConfirmCandidateIncompetentOpen(true)
               }
               onMarkCandidateInconclusive={handleConfirmCandidateInconclusive}
-              onScheduleObservation={() => setIsScheduleObservationOpen(true)}
             />
           );
         })()}
@@ -811,17 +776,6 @@ export const AssessorApplicationDetailView: React.FC<
         onClose={handleCandidateInconclusiveSuccessContinue}
       />
 
-      {/* Observation Scheduling Modals */}
-      <ScheduleObservationModal
-        isOpen={isScheduleObservationOpen}
-        onClose={() => setIsScheduleObservationOpen(false)}
-        onSchedule={handleScheduleObservationSubmit}
-      />
-
-      <ObservationScheduledSuccessModal
-        isOpen={isObservationSuccessOpen}
-        onClose={handleObservationSuccessContinue}
-      />
     </div>
   );
 };

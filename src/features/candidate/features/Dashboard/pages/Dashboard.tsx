@@ -12,7 +12,10 @@ import { CalendarWidget } from "@/features/candidate/features/Dashboard/componen
 import { VerifiedBadge } from "@/features/candidate/features/Dashboard/components/VerifiedBadge";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { useGetApplications } from "@/src/features/candidate/features/Application/hooks";
-import { useCandidateProfile } from "@/src/features/shared/onboarding/hooks";
+import {
+  useCandidateEvents,
+  useCandidateProfile,
+} from "@/src/features/shared/onboarding/hooks";
 import { markVerified } from "@/store/slices/authSlice";
 import { savePersona } from "@/src/lib/auth-storage";
 
@@ -139,46 +142,42 @@ export const Dashboard: React.FC = () => {
     };
   });
 
-  const scheduledInterviewInfo = React.useMemo(() => {
-    if (typeof window === "undefined") return null;
-    try {
-      for (const app of allApplications) {
-        const stored = localStorage.getItem(`elimi_interview_schedule_${app.id}`);
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (parsed?.scheduledAt) {
-            return {
-              appId: app.id,
-              trade: (app as any).trade?.name || "Panel Interview",
-              ...parsed,
-            };
-          }
-        }
-      }
-    } catch {}
-    return null;
-  }, [allApplications]);
+  // Next upcoming interview from GET /candidate/events.
+  const { data: candidateEvents = [] } = useCandidateEvents(true);
+  const nextInterview = React.useMemo(() => {
+    const now = Date.now();
+    return (
+      candidateEvents
+        .filter(
+          (e) =>
+            e.eventType === "interview" &&
+            e.eventAt &&
+            new Date(e.eventAt).getTime() >= now,
+        )
+        .sort(
+          (a, b) =>
+            new Date(a.eventAt).getTime() - new Date(b.eventAt).getTime(),
+        )[0] ?? null
+    );
+  }, [candidateEvents]);
 
-  const upcomingInterview = scheduledInterviewInfo
+  const upcomingInterview = nextInterview
     ? {
-        title: "Panel Interview",
-        date: new Date(scheduledInterviewInfo.scheduledAt).toLocaleDateString("en-GB"),
-        time: new Date(scheduledInterviewInfo.scheduledAt).toLocaleTimeString("en-US", {
+        title: nextInterview.name,
+        date: new Date(nextInterview.eventAt).toLocaleDateString("en-GB"),
+        time: new Date(nextInterview.eventAt).toLocaleTimeString("en-US", {
           hour: "numeric",
           minute: "2-digit",
           hour12: true,
         }),
-        mode: scheduledInterviewInfo.mode,
-        liveUrl:
-          scheduledInterviewInfo.mode === "online" || scheduledInterviewInfo.mode === "virtual"
-            ? scheduledInterviewInfo.link
-            : undefined,
-        location: scheduledInterviewInfo.location || "Cstemp Centre",
-        isRescheduled: Boolean(scheduledInterviewInfo.isRescheduled),
+        mode: nextInterview.link ? "online" : "physical",
+        liveUrl: nextInterview.link || undefined,
+        location: nextInterview.location || "",
+        isRescheduled: false,
       }
     : null;
 
-  const interviewDate = scheduledInterviewInfo?.scheduledAt || undefined;
+  const interviewDate = nextInterview?.eventAt || undefined;
 
   const isLoading = appsLoading;
 

@@ -67,7 +67,7 @@ export const ApplicationModals: React.FC<ApplicationModalsProps> = ({
         }
         currentTime={interviewTimeFormatted}
         currentMeetingLink={activeInterviewSchedule?.link || "www.meet.google.com"}
-        currentLocation={activeInterviewSchedule?.location || "Cstemp Centre"}
+        currentLocation={activeInterviewSchedule?.location || ""}
         currentMode={activeInterviewSchedule?.mode === "online" ? "virtual" : "physical"}
         onSuccess={state.handleRescheduleSuccess}
       />

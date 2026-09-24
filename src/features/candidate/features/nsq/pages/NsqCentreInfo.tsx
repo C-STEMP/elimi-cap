@@ -10,7 +10,6 @@ import { useToast } from "@/src/components/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAppDispatch, useAppSelector } from "@/src/store/hooks";
 import { setNsqApplication } from "@/src/store/slices/onboardingSlice";
-import { createApplication } from "@/src/store/slices/applicationSlice";
 import {
   useGetCentres,
   useGetSectors,
@@ -192,14 +191,6 @@ export const NsqCentreInfo: React.FC = () => {
           return;
         }
       }
-
-      // Also track in Redux application slice
-      dispatch(
-        createApplication({
-          title: selectedTrade?.name || "Standard Assessment (NSQ)",
-          subtitle: `${selectedCentre?.name || ""} | ${selectedSector?.name || ""}`,
-        }),
-      );
 
       // Invalidate applications query cache
       queryClient.invalidateQueries({ queryKey: APPLICATION_QUERY_KEYS.all });

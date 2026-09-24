@@ -1,5 +1,4 @@
 import { ASSETS_URL } from "@/assets";
-import type { FacilitatorData } from "@/features/candidate/features/Dashboard/components/FacilitatorCard";
 import Image from "next/image";
 import {
   ApplicationFormState,
@@ -8,13 +7,6 @@ import {
   FormItem,
   StageConfig,
 } from "../types";
-
-export const MOCK_FACILITATOR: FacilitatorData = {
-  name: "Ngozi Eze",
-  avatar: ASSETS_URL.userAvatar,
-  role: "Facilitator · Carpentry (Level 3)",
-  tags: ["Carpentry", "RPL Coordinator"],
-};
 
 export const getFolderArrangementStatus = (
   isVaultActive: boolean,
@@ -87,24 +79,6 @@ export const getFormStatus = (formState: ApplicationFormState) => {
     }
   );
 };
-
-export const MOCK_FORMS_TO_SIGN: FormItem[] = [
-  {
-    id: "form-1",
-    title: "Skills Demonstration Records Form",
-    description: "Lorem ipsum dolor",
-  },
-  {
-    id: "form-2",
-    title: "Assessment Grid/Mapping Form",
-    description: "Lorem ipsum dolor",
-  },
-  {
-    id: "form-3",
-    title: "Practical Observation Checklist Form",
-    description: "Lorem ipsum dolor",
-  },
-];
 
 import { ApplicationStage } from "@/src/features/shared/applications/api";
 

@@ -111,6 +111,8 @@ interface AssessorHeaderBannerProps {
   pendingApplicationsCount?: number;
   completedApplicationsCount?: number;
   archivedApplicationsCount?: number;
+  applicationsFilterTab?: string;
+  onSelectApplicationsFilterTab?: (filter: string) => void;
 }
 
 export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
@@ -143,6 +145,8 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
   pendingApplicationsCount = 0,
   completedApplicationsCount = 0,
   archivedApplicationsCount = 0,
+  applicationsFilterTab,
+  onSelectApplicationsFilterTab,
 }) => {
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -563,7 +567,7 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
                     </button>
                   )}
 
-                {/* RPL Mark As Complete Button: only shows when all uploaded evidence are approved */}
+                {/* RPL Mark As Complete Button: shows once the candidate has uploaded evidence */}
                 {!isNsqApplication &&
                   applicationSubView === "evidence_vault" &&
                   canMarkAsComplete && (
@@ -593,6 +597,8 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
                   completed: completedApplicationsCount,
                   archived: archivedApplicationsCount,
                 }}
+                activeFilterTab={applicationsFilterTab}
+                onSelectFilterTab={onSelectApplicationsFilterTab}
               />
             </div>
           )

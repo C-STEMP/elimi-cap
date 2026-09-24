@@ -4,6 +4,7 @@ import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
 import { ReviewVerifierModal } from "@/src/features/assessment-centre/features/Applications/components/ReviewVerifierModal";
 import { submitUnitSignoffApi } from "@/src/features/shared/applications/api";
+import { getNsqScopedUnits } from "@/src/features/shared/applications/utils/nsqUnits";
 import type { DirectObservationSession } from "@/src/features/shared/applications/api/types";
 import {
   useGetApplicationById,
@@ -63,9 +64,11 @@ import {
 import { NsqAssessorInductionModal } from "./NsqAssessorInductionModal";
 import {
   ConfirmAcceptObservationModal,
+  ConfirmSignoffUnitModal,
   ObservationAcceptedSuccessModal,
   ObservationRejectedSuccessModal,
   RejectEvidenceModal,
+  UnitSignedOffSuccessModal,
 } from "./NsqAssessorModals";
 import { NsqAssessorObservationFormsView } from "./NsqAssessorObservationFormsView";
 import {
@@ -213,12 +216,7 @@ export const NsqAssessorApplicationDetailView: React.FC<
   const { data: remoteEvidenceTypes = [] } =
     useGetEvidenceTypesByTrade(tradeId);
 
-  const wishedQualificationLevel = apiApp?.nsq?.wishedQualificationLevel;
-  const nsqUnitsForLevel = wishedQualificationLevel
-    ? apiApp?.nsq?.units?.filter(
-        (u) => u.qualificationLevelId === wishedQualificationLevel.id,
-      )
-    : apiApp?.nsq?.units;
+  const nsqUnitsForLevel = getNsqScopedUnits(apiApp?.nsq);
   const realUnits: QualificationUnitItem[] | null = nsqUnitsForLevel?.length
     ? nsqUnitsForLevel.map((u) => ({
         id: u.id,
@@ -354,6 +352,8 @@ export const NsqAssessorApplicationDetailView: React.FC<
   const isRegularAssessmentStage = effectiveStageKey === "regular_assessment";
 
   // Qualification Units Readiness Validation
+  // Backend `status: "approved"` means every NOS PC's latest evidence row is
+  // approved (criteriaApproved === criteriaTotal); it is not unit sign-off.
   const isUnitFullyApproved = (u: QualificationUnitItem) => {
     if (u.status === "approved") return true;
     const total = u.totalCount ?? 0;
@@ -377,6 +377,17 @@ export const NsqAssessorApplicationDetailView: React.FC<
 
   const areAllUnitsApproved =
     unitsList.length > 0 && unitsList.every(isUnitFullyApproved);
+
+  // Every NOS criterion in every in-scope unit has at least one upload
+  // (pending, rejected or approved latest row).
+  const hasAllEvidenceUploaded =
+    unitsList.length > 0 &&
+    unitsList.every((u) => {
+      const total = u.totalCount ?? 0;
+      const uploaded =
+        (u.approvedCount ?? 0) + (u.criteriaPending ?? 0) + (u.criteriaRejected ?? 0);
+      return total > 0 && uploaded >= total;
+    });
 
   // Physical Observation Validation
   const hasObservation = Boolean(liveObs);
@@ -412,6 +423,57 @@ export const NsqAssessorApplicationDetailView: React.FC<
 
   const [isMoveToIqamModalOpen, setIsMoveToIqamModalOpen] = useState(false);
   const [isMovingToIqam, setIsMovingToIqam] = useState(false);
+
+  // Unit sign-off is recorded once for every in-scope unit, after the
+  // candidate has uploaded all evidence. The backend exposes no read of past
+  // sign-offs, so this only tracks sign-offs made in the current session.
+  const [hasSignedOffUnits, setHasSignedOffUnits] = useState(false);
+  const [isSigningOffUnits, setIsSigningOffUnits] = useState(false);
+  const [isConfirmSignoffOpen, setIsConfirmSignoffOpen] = useState(false);
+  const [isSignoffSuccessOpen, setIsSignoffSuccessOpen] = useState(false);
+
+  const signOffAllUnits = async (): Promise<boolean> => {
+    try {
+      const signedAt = new Date().toISOString();
+      await Promise.all(
+        unitsList.map((u) =>
+          submitUnitSignoffApi(application.id, u.id, {
+            role: "unit_assessor",
+            signedAt,
+          }),
+        ),
+      );
+    } catch (err) {
+      toast({
+        type: "error",
+        title: "Sign-Off Failed",
+        description:
+          err instanceof Error
+            ? err.message
+            : "Could not sign off one or more units. Please try again.",
+      });
+      return false;
+    }
+
+    setHasSignedOffUnits(true);
+    queryClient.invalidateQueries({
+      queryKey: APPLICATION_QUERY_KEYS.detail(application.id),
+    });
+    unitsList.forEach((u) => {
+      queryClient.invalidateQueries({
+        queryKey: APPLICATION_QUERY_KEYS.unitCriteria(application.id, u.id),
+      });
+    });
+    return true;
+  };
+
+  const handleConfirmSignoffAll = async () => {
+    setIsConfirmSignoffOpen(false);
+    setIsSigningOffUnits(true);
+    const ok = await signOffAllUnits();
+    setIsSigningOffUnits(false);
+    if (ok) setIsSignoffSuccessOpen(true);
+  };
 
   const handleMoveToIqam = () => {
     if (unitsList.length === 0) {
@@ -529,36 +591,10 @@ export const NsqAssessorApplicationDetailView: React.FC<
 
     setIsMovingToIqam(true);
 
-    try {
-      await Promise.all(
-        unitsList.map((u) =>
-          submitUnitSignoffApi(application.id, u.id, {
-            role: "unit_assessor",
-            signedAt: new Date().toISOString(),
-          }),
-        ),
-      );
-    } catch (err) {
-      toast({
-        type: "error",
-        title: "Sign-Off Failed",
-        description:
-          err instanceof Error
-            ? err.message
-            : "Could not sign off one or more units. Please try again.",
-      });
+    if (!hasSignedOffUnits && !(await signOffAllUnits())) {
       setIsMovingToIqam(false);
       return;
     }
-
-    queryClient.invalidateQueries({
-      queryKey: APPLICATION_QUERY_KEYS.detail(application.id),
-    });
-    unitsList.forEach((u) => {
-      queryClient.invalidateQueries({
-        queryKey: APPLICATION_QUERY_KEYS.unitCriteria(application.id, u.id),
-      });
-    });
 
     try {
       await reviewApplicationMutation({
@@ -1183,6 +1219,47 @@ export const NsqAssessorApplicationDetailView: React.FC<
                   onView={() => setIsInductionModalOpen(true)}
                 />
 
+                {/* Unit Sign-Off — one sign-off for every in-scope unit, shown
+                    once the candidate has uploaded evidence for every criterion. */}
+                {isRegularAssessmentStage && !hasMovedToIqam && hasAllEvidenceUploaded && (
+                  <div
+                    className={`rounded-3xl p-5 sm:p-6 border flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
+                      hasSignedOffUnits
+                        ? "bg-[#1E7F4C]/5 border-[#1E7F4C]/30"
+                        : "bg-white border-gray-100 shadow-sm"
+                    }`}
+                  >
+                    <div className="flex flex-col gap-0.5">
+                      <h4 className="text-sm sm:text-base font-extrabold text-neutral-primary">
+                        {hasSignedOffUnits ? "Units Signed Off" : "Unit Sign-Off"}
+                      </h4>
+                      <p className="text-xs text-neutral-secondary">
+                        {hasSignedOffUnits
+                          ? `You've signed off all ${unitsList.length} unit(s) as the assigned assessor.`
+                          : areAllUnitsApproved
+                            ? `The candidate has uploaded all evidence and it's approved — sign off all ${unitsList.length} unit(s).`
+                            : "The candidate has uploaded all evidence. Approve every item before signing off the units."}
+                      </p>
+                    </div>
+
+                    {hasSignedOffUnits ? (
+                      <span className="flex items-center gap-1.5 text-[#1E7F4C] font-bold text-xs shrink-0">
+                        <FiCheckCircle className="w-4 h-4" />
+                        Signed
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled={!areAllUnitsApproved || isSigningOffUnits}
+                        onClick={() => setIsConfirmSignoffOpen(true)}
+                        className="w-full sm:w-auto px-5 py-2.5 bg-[#fbab2a] hover:bg-[#e89b1f] disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-xs sm:text-sm rounded-xl shadow-md cursor-pointer transition-all shrink-0"
+                      >
+                        {isSigningOffUnits ? "Signing Off..." : "Sign Off All Units"}
+                      </button>
+                    )}
+                  </div>
+                )}
+
                 {/* Handover to IQAM Readiness Card (Visible in Regular Assessment) */}
                 {!isInternalVerificationStage && (
                   <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-4 select-text">
@@ -1783,6 +1860,21 @@ export const NsqAssessorApplicationDetailView: React.FC<
           </div>
         )}
       </AnimatePresence>
+
+      <ConfirmSignoffUnitModal
+        isOpen={isConfirmSignoffOpen}
+        onClose={() => setIsConfirmSignoffOpen(false)}
+        onConfirm={handleConfirmSignoffAll}
+        unitLabel={`All ${unitsList.length} Unit(s)`}
+        description="You're confirming every criterion in every unit has been reviewed and its evidence approved. This cannot be undone."
+        confirmLabel="Yes, Sign Off All Units"
+      />
+      <UnitSignedOffSuccessModal
+        isOpen={isSignoffSuccessOpen}
+        onClose={() => setIsSignoffSuccessOpen(false)}
+        title="Units Signed Off"
+        description="Your sign-off for all units has been recorded."
+      />
     </div>
   );
 };

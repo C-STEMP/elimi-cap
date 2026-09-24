@@ -1,5 +1,6 @@
 "use client";
 
+import { useToast } from "@/src/components/ui/toast";
 import React, { useState } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
@@ -32,6 +33,7 @@ export const ReviewVerifierModal: React.FC<ReviewVerifierModalProps> = ({
   onSuccess,
 }) => {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [feedback, setFeedback] = useModalDraft(REVIEW_VERIFIER_MODAL, "feedback", "");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
@@ -73,10 +75,12 @@ export const ReviewVerifierModal: React.FC<ReviewVerifierModalProps> = ({
       onSuccess?.();
       setIsSuccessOpen(true);
     } catch (err: any) {
-      console.warn(`review${verifierType === "internal" ? "Iv" : "Ev"}Api error:`, err);
-      // Fallback in case of mock/demo
-      onSuccess?.();
-      setIsSuccessOpen(true);
+      toast({
+        type: "error",
+        title: "Review Failed",
+        description:
+          err?.message || "Could not submit the review. Please try again.",
+      });
     } finally {
       setIsSubmitting(false);
     }

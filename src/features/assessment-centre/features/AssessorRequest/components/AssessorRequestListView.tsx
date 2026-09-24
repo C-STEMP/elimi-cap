@@ -45,20 +45,23 @@ export const AssessorRequestListView: React.FC<
     const sectorsStr = (assessorSnap?.sectors || [])
       .map((s) => s.name)
       .join(", ");
-    const primaryRole =
-      (assessorSnap?.qualifications?.[0] as any) || "Assessor";
+    const primaryRole = (assessorSnap?.qualifications?.[0] as any) || "";
     return {
       id: req.id,
       name:
         assessorSnap?.name ||
-        (assessorSnap?.email
-          ? assessorSnap.email.split("@")[0]
-          : "Assessor"),
+        (assessorSnap?.email ? assessorSnap.email.split("@")[0] : ""),
       email:
-        assessorSnap?.email || "assessor@ng.org",
-      trade: sectorsStr || "Technical Trade",
+        assessorSnap?.email || "",
+      trade: sectorsStr || "",
       role: primaryRole,
-      status: "Pending",
+      // RetainedAssessorRequest.status: pending | approved | rejected | revoked
+      status:
+        req.status === "approved"
+          ? "Active"
+          : req.status === "rejected" || req.status === "revoked"
+            ? "Inactive"
+            : "Pending",
       assignedCount: 0,
       experienceYears: assessorSnap?.yearsOfExperience || 0,
       tags: assessorSnap?.qualifications || [],

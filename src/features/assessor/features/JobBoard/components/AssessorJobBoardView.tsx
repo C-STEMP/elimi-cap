@@ -52,14 +52,13 @@ export const AssessorJobBoardView: React.FC<AssessorJobBoardViewProps> = ({
 
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("All");
-  const [countryFilter, setCountryFilter] = useState("All");
-  const [stateFilter, setStateFilter] = useState("All");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedApplyingJobId, setSelectedApplyingJobId] = useState<
     string | null
   >(null);
 
   const jobs: AssessorJobRecord[] = (apiJobs ?? []).map(mapJobPostingToRecord);
+  const roleOptions = Array.from(new Set(jobs.map((j) => j.title).filter(Boolean)));
 
   const filteredJobs = jobs.filter((job) => {
     const matchesSearch =
@@ -92,25 +91,7 @@ export const AssessorJobBoardView: React.FC<AssessorJobBoardViewProps> = ({
               placeholder="Role"
               value={roleFilter === "All" ? "" : roleFilter}
               onChange={(e) => setRoleFilter(e.target.value || "All")}
-              options={["Internal Verifier", "Assessor", "Facilitator"]}
-            />
-          </div>
-
-          <div className="w-32">
-            <Select
-              placeholder="Country"
-              value={countryFilter === "All" ? "" : countryFilter}
-              onChange={(e) => setCountryFilter(e.target.value || "All")}
-              options={["Nigeria", "Ghana", "Kenya"]}
-            />
-          </div>
-
-          <div className="w-28">
-            <Select
-              placeholder="State"
-              value={stateFilter === "All" ? "" : stateFilter}
-              onChange={(e) => setStateFilter(e.target.value || "All")}
-              options={["Lagos", "Abuja", "Kano"]}
+              options={roleOptions}
             />
           </div>
 

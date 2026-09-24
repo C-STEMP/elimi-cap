@@ -5,7 +5,6 @@ import { RoleCard } from "@/src/components/ui/role-card";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setAssessmentType } from "@/store/slices/authSlice";
 import { setOnboardingAssessmentType } from "@/store/slices/onboardingSlice";
-import { createApplication as createApplicationSlice } from "@/store/slices/applicationSlice";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FiArrowLeft } from "react-icons/fi";
 import { motion } from "framer-motion";

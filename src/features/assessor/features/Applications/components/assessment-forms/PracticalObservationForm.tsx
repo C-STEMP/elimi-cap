@@ -52,7 +52,7 @@ const DEFAULT_OBSERVATION_CHECKLIST: ObservationChecklistItem[] = [
   },
 ];
 
-import { getAutoFilledUnitTitleCode, getUnitOptions } from "./utils";
+import { getUnitOptions } from "./utils";
 
 interface PracticalObservationFormProps {
   candidateName: string;
@@ -61,6 +61,7 @@ interface PracticalObservationFormProps {
   formData?: Record<string, any>;
   isReadOnly?: boolean;
   applicationTrade?: string;
+  unitLabels?: string[];
 }
 
 export const PracticalObservationForm: React.FC<
@@ -72,10 +73,11 @@ export const PracticalObservationForm: React.FC<
   formData,
   isReadOnly = false,
   applicationTrade,
+  unitLabels = [],
 }) => {
   const { toast } = useToast();
 
-  const autoUnit = getAutoFilledUnitTitleCode(applicationTrade, "observation_checklist");
+  const autoUnit = unitLabels[0] ?? "";
   const [candidateFullName, setCandidateFullName] = useState<string>(
     formData?.candidateFullName ?? candidateName ?? "",
   );
@@ -97,8 +99,8 @@ export const PracticalObservationForm: React.FC<
   }, [formData?.unitTitleCode, autoUnit]);
 
   const unitOptions = React.useMemo(() => {
-    return getUnitOptions(unitTitleCode, "observation_checklist");
-  }, [unitTitleCode]);
+    return getUnitOptions(unitTitleCode, unitLabels);
+  }, [unitTitleCode, unitLabels]);
   const [observationDate, setObservationDate] = useState<string>(
     formData?.observationDate ?? "",
   );

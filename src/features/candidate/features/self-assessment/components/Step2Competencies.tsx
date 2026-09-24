@@ -11,9 +11,10 @@ import { InfoIcon } from "@/src/components/ui/info-icon";
 import { StatusModal } from "@/components/status-modal";
 import { useToast } from "@/src/components/ui/toast";
 import { ASSETS_URL } from "@/assets";
-import { MOCK_COMPETENCIES } from "../utils/constants";
 
 interface Step2Props {
+  competencies: string[];
+  isLoading?: boolean;
   onNext: (data?: any) => void;
   onBack: () => void;
   initialData?: any;
@@ -31,6 +32,8 @@ const EVIDENCE_OPTIONS = [
 ];
 
 export const Step2Competencies: React.FC<Step2Props> = ({
+  competencies,
+  isLoading = false,
   onNext,
   onBack,
   initialData,
@@ -89,10 +92,10 @@ export const Step2Competencies: React.FC<Step2Props> = ({
   };
 
   const validateForm = () => {
-    let valid = true;
+    let valid = competencies.length > 0;
     const newErrors: Record<string, string> = {};
 
-    MOCK_COMPETENCIES.forEach((_, idx) => {
+    competencies.forEach((_, idx) => {
       const ans = competencyAnswers[idx];
       if (!ans?.confidence) {
         newErrors[`confidence_${idx}`] = "Please select your confidence level";
@@ -126,7 +129,7 @@ export const Step2Competencies: React.FC<Step2Props> = ({
     onNext(
       Object.entries(competencyAnswers).map(([idx, ans]) => ({
         index: Number(idx),
-        title: MOCK_COMPETENCIES[Number(idx)] || "",
+        title: competencies[Number(idx)] || "",
         ...ans,
       })),
     );
@@ -155,7 +158,15 @@ export const Step2Competencies: React.FC<Step2Props> = ({
       </div>
 
       <form onSubmit={handleContinue} className="flex flex-col gap-6">
-        {MOCK_COMPETENCIES.map((title, idx) => (
+        {isLoading && (
+          <p className="text-sm text-neutral-secondary">Loading competencies…</p>
+        )}
+        {!isLoading && competencies.length === 0 && (
+          <p className="text-sm text-neutral-secondary">
+            No competencies are available for this trade yet.
+          </p>
+        )}
+        {competencies.map((title, idx) => (
           <div
             key={idx}
             className="flex flex-col gap-4 pb-6 border-b border-gray-100/80"

@@ -28,7 +28,7 @@ interface Props {
 }
 
 export function usePanelistModalState({
-  isOpen, onClose, applicationId, tradeName = "Carpentry", initialSchedule, initialPanel, onSuccess,
+  isOpen, onClose, applicationId, tradeName = "", initialSchedule, initialPanel, onSuccess,
 }: Props) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -48,7 +48,7 @@ export function usePanelistModalState({
   const [selectedCountry, setSelectedCountry] = useModalDraft(ASSIGN_PANELIST_MODAL, "selectedCountry", "Nigeria");
   const [selectedState, setSelectedState] = useModalDraft(ASSIGN_PANELIST_MODAL, "selectedState", "FCT");
   const [selectedLga, setSelectedLga] = useModalDraft(ASSIGN_PANELIST_MODAL, "selectedLga", "Abuja Municipal");
-  const [streetAddress, setStreetAddress] = useModalDraft(ASSIGN_PANELIST_MODAL, "streetAddress", "Cstemp Centre");
+  const [streetAddress, setStreetAddress] = useModalDraft(ASSIGN_PANELIST_MODAL, "streetAddress", "");
   const [meetingLink, setMeetingLink] = useModalDraft(ASSIGN_PANELIST_MODAL, "meetingLink", "www.meet.google.com");
   const [scheduledResult, setScheduledResult] = useState<ScheduledPanelistInfo | null>(null);
 
@@ -80,7 +80,7 @@ export function usePanelistModalState({
       return;
     }
     if (restoredDraft.current) return;
-    setSelectedTrade(tradeName || "Carpentry");
+    setSelectedTrade(tradeName || "");
     if (initialSchedule?.scheduledAt) {
       try {
         const d = new Date(initialSchedule.scheduledAt);
@@ -127,7 +127,7 @@ export function usePanelistModalState({
 
   useEffect(() => {
     if (!sameAsCompanyAddress) return;
-    const addr = centreProfile?.formattedAddress || centreProfile?.address?.address || centreProfile?.name || "Cstemp Centre";
+    const addr = centreProfile?.formattedAddress || centreProfile?.address?.address || "";
     setStreetAddress(addr);
     if (centreProfile?.address?.state) setSelectedState(centreProfile.address.state);
     if (centreProfile?.address?.country) setSelectedCountry(centreProfile.address.country);
@@ -145,84 +145,70 @@ export function usePanelistModalState({
     e.preventDefault();
     if (!leadPanelistId) { toast({ type: "error", title: "Lead Panelist Required", description: "Please select a Lead Panelist." }); return; }
     if (!date) { toast({ type: "error", title: "Date Required", description: "Please specify the interview date." }); return; }
-    setIsSubmitting(true);
 
-    const leadAssessor = assessorOptions.find((a) => a.value === leadPanelistId) || { label: "Ngozi Eze", value: leadPanelistId, sectors: [{ id: "1", name: selectedTrade }] };
-    const panelMemberAssessor = assessorOptions.find((a) => a.value === panelMemberId) || { label: "Chidi Okonkwo", value: panelMemberId, sectors: [{ id: "1", name: selectedTrade }] };
-    const thirdAssessor = assessorOptions.find((a) => a.value !== leadPanelistId && a.value !== panelMemberId) || { label: "Amina Bello", value: "assessor-3", sectors: [{ id: "1", name: selectedTrade }] };
-    const ivAssessor = assessorOptions.find((a) => a.value === internalVerifierId) || { label: "David Adeleke", value: internalVerifierId, sectors: [{ id: "1", name: selectedTrade }] };
+    const leadAssessor = assessorOptions.find((a) => a.value === leadPanelistId);
+    const panelMemberAssessor = assessorOptions.find((a) => a.value === panelMemberId);
+    const thirdAssessor = assessorOptions.find((a) => a.value !== leadPanelistId && a.value !== panelMemberId);
+    const ivAssessor = internalVerifierId ? assessorOptions.find((a) => a.value === internalVerifierId) : undefined;
+    if (!leadAssessor || !panelMemberAssessor || !thirdAssessor) {
+      toast({ type: "error", title: "Panel Incomplete", description: "An interview panel needs three assessors from your centre roster." });
+      return;
+    }
 
-    let scheduledAtIso = new Date().toISOString();
-    try {
-      const [h, m] = (time || "12:00").split(":");
-      const d = new Date(date);
-      d.setHours(parseInt(h || "12", 10)); d.setMinutes(parseInt(m || "0", 10)); d.setSeconds(0);
-      scheduledAtIso = d.toISOString();
-    } catch {}
+    const [h, m] = (time || "12:00").split(":");
+    const d = new Date(date);
+    d.setHours(parseInt(h || "12", 10), parseInt(m || "0", 10), 0, 0);
+    if (Number.isNaN(d.getTime())) { toast({ type: "error", title: "Invalid Date", description: "Please specify a valid interview date and time." }); return; }
+    const scheduledAtIso = d.toISOString();
 
     const mode = interviewMode === "Virtual" ? "online" : "physical";
-    const location = mode === "physical" ? streetAddress || "Cstemp Centre" : undefined;
+    const location = mode === "physical" ? streetAddress || undefined : undefined;
     const link = mode === "online" ? (meetingLink.startsWith("http") ? meetingLink : `https://${meetingLink}`) : undefined;
+    if (mode === "physical" && !location && !sameAsCompanyAddress) { toast({ type: "error", title: "Location Required", description: "Please enter the interview address." }); return; }
+
+    const toMember = (a: (typeof assessorOptions)[number], role: string, tags: string[], isHighlighted?: boolean) => ({
+      id: a.value,
+      name: a.label,
+      avatar: (a as any)?.avatar || (a as any)?.photo?.url || undefined,
+      role,
+      tags,
+      ...(isHighlighted === undefined ? {} : { isHighlighted }),
+    });
 
     const panelistData: ScheduledPanelistInfo = {
       trade: selectedTrade || tradeName,
-      leadAssessor: {
-        id: leadAssessor.value,
-        name: leadAssessor.label,
-        avatar: (leadAssessor as any)?.avatar || (leadAssessor as any)?.photo?.url || undefined,
-        role: "Lead Panelist",
-        tags: [selectedTrade, "RPL Coordinator"],
-      },
+      leadAssessor: toMember(leadAssessor, "Lead Panelist", [selectedTrade].filter(Boolean)),
       panelMembers: [
-        {
-          id: panelMemberAssessor.value,
-          name: panelMemberAssessor.label,
-          avatar: (panelMemberAssessor as any)?.avatar || (panelMemberAssessor as any)?.photo?.url || undefined,
-          role: "Panel Member",
-          tags: [selectedTrade],
-          isHighlighted: true,
-        },
-        {
-          id: thirdAssessor.value,
-          name: thirdAssessor.label,
-          avatar: (thirdAssessor as any)?.avatar || (thirdAssessor as any)?.photo?.url || undefined,
-          role: "Panel Member",
-          tags: [selectedTrade],
-          isHighlighted: false,
-        },
+        toMember(panelMemberAssessor, "Panel Member", [selectedTrade].filter(Boolean), true),
+        toMember(thirdAssessor, "Panel Member", [selectedTrade].filter(Boolean), false),
       ],
-      internalVerifier: {
-        id: ivAssessor.value,
-        name: ivAssessor.label,
-        avatar: (ivAssessor as any)?.avatar || (ivAssessor as any)?.photo?.url || undefined,
-        role: "Internal Verifier",
-        tags: ["IV", "RPL Quality Assessor"],
-      },
+      internalVerifier: ivAssessor
+        ? toMember(ivAssessor, "Internal Verifier", ["IV"])
+        : undefined,
       date,
       time: time || "12:00",
       mode: interviewMode === "Virtual" ? "virtual" : "physical",
-      location: location || "Cstemp Centre",
+      location: location || "",
       meetingLink: link,
       useCompanyAddress: sameAsCompanyAddress,
     };
 
-    if (typeof window !== "undefined" && applicationId) {
-      try {
-        localStorage.setItem(`elimi_interview_schedule_${applicationId}`, JSON.stringify({ scheduledAt: scheduledAtIso, mode, location: location || "Cstemp Centre", useCentreAddress: sameAsCompanyAddress, link, status: "scheduled" }));
-        localStorage.setItem(`elimi_interview_panel_${applicationId}`, JSON.stringify(panelistData));
-      } catch {}
-    }
-
+    setIsSubmitting(true);
     try {
-      if (applicationId && !applicationId.startsWith("mock") && !applicationId.startsWith("sample")) {
-        await curateInterviewPanelApi(applicationId, { assessorIds: [leadAssessor.value, panelMemberAssessor.value, thirdAssessor.value], leadAssessorId: leadAssessor.value, observerIvAssessorId: ivAssessor.value }).catch((e) => console.warn("Curate panel:", e));
-        await scheduleInterviewApi(applicationId, { scheduledAt: scheduledAtIso, mode, location: mode === "physical" ? location : undefined, useCentreAddress: sameAsCompanyAddress, link: mode === "online" ? link : undefined }).catch((e) => console.warn("Schedule interview:", e));
-        if (ivAssessor.value) await assignIvApi(applicationId, ivAssessor.value).catch((e) => console.warn("Assign IV:", e));
-      }
+      await curateInterviewPanelApi(applicationId, {
+        assessorIds: [leadAssessor.value, panelMemberAssessor.value, thirdAssessor.value],
+        leadAssessorId: leadAssessor.value,
+        ...(ivAssessor ? { observerIvAssessorId: ivAssessor.value } : {}),
+      });
+      await scheduleInterviewApi(applicationId, { scheduledAt: scheduledAtIso, mode, location, useCentreAddress: sameAsCompanyAddress, link });
+      if (ivAssessor) await assignIvApi(applicationId, ivAssessor.value);
       ["applications", "centre"].forEach((k) => queryClient.invalidateQueries({ queryKey: [k] }));
-    } catch {}
-    finally {
-      setIsSubmitting(false); setScheduledResult(panelistData); setIsSuccessOpen(true);
+      setScheduledResult(panelistData);
+      setIsSuccessOpen(true);
+    } catch (err) {
+      toast({ type: "error", title: "Scheduling Failed", description: err instanceof Error ? err.message : "Could not schedule the interview. Please try again." });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 

@@ -2,13 +2,11 @@
 
 import { ASSETS_URL } from "@/src/assets";
 import Image from "next/image";
-import React, { useEffect, useRef, useState } from "react";
+import React from "react";
 import {
-  FiCheck,
   FiEye,
   FiFileText,
   FiImage,
-  FiMoreVertical,
   FiVideo,
 } from "react-icons/fi";
 
@@ -106,40 +104,13 @@ function getStatusBadge(status: string) {
 interface EvidenceItemCardProps {
   item: EvidenceItem;
   onView: (item: EvidenceItem) => void;
-  onSendFeedback: (item: EvidenceItem) => void;
-  onApprove: (item: EvidenceItem) => void;
 }
 
 export const EvidenceItemCard: React.FC<EvidenceItemCardProps> = ({
   item,
   onView,
-  onSendFeedback,
-  onApprove,
 }) => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setIsMenuOpen(false);
-      }
-    };
-    if (isMenuOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [isMenuOpen]);
-
   const badge = getStatusBadge(item.status);
-  const isApproved = Boolean(
-    item.status &&
-    (item.status.toLowerCase().includes("approv") ||
-      item.status.toLowerCase() === "accepted" ||
-      item.status.toLowerCase() === "successful"),
-  );
 
   return (
     <div
@@ -189,80 +160,6 @@ export const EvidenceItemCard: React.FC<EvidenceItemCardProps> = ({
           >
             <FiEye className="w-4 h-4" />
           </button>
-
-          {!isApproved && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onApprove(item);
-              }}
-              className="px-3.5 py-2 rounded-xl bg-[#12B76A]/10 hover:bg-[#12B76A]/20 text-[#12B76A] text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
-              title="Approve Evidence"
-            >
-              <FiCheck className="w-3.5 h-3.5 stroke-[2.5]" />
-              <span>Approve</span>
-            </button>
-          )}
-
-          {/* Action Menu (Three dots) */}
-          <div className="relative" ref={menuRef}>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsMenuOpen(!isMenuOpen);
-              }}
-              className="w-9 h-9 rounded-xl hover:bg-gray-100 flex items-center justify-center text-gray-500 transition-colors cursor-pointer"
-              aria-label="Actions"
-            >
-              <FiMoreVertical className="w-5 h-5" />
-            </button>
-
-            {isMenuOpen && (
-              <div
-                onClick={(e) => e.stopPropagation()}
-                className="absolute right-0 top-10 w-40 bg-white rounded-xl shadow-lg border border-gray-100 py-1.5 z-20 flex flex-col text-left animate-in fade-in zoom-in-95 duration-150"
-              >
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsMenuOpen(false);
-                    onView(item);
-                  }}
-                  className="px-4 py-2 text-xs sm:text-sm text-neutral-primary hover:bg-gray-50 text-left transition-colors cursor-pointer font-medium flex items-center gap-2"
-                >
-                  <FiEye className="w-3.5 h-3.5" />
-                  <span>View Evidence</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsMenuOpen(false);
-                    onSendFeedback(item);
-                  }}
-                  className="px-4 py-2 text-xs sm:text-sm text-neutral-primary hover:bg-gray-50 text-left transition-colors cursor-pointer font-medium"
-                >
-                  Send Feedback
-                </button>
-                {!isApproved && (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setIsMenuOpen(false);
-                      onApprove(item);
-                    }}
-                    className="px-4 py-2 text-xs sm:text-sm text-[#12B76A] hover:bg-emerald-50 text-left transition-colors cursor-pointer font-medium"
-                  >
-                    Approve
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
         </div>
       </div>
 

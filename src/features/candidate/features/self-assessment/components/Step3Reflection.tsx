@@ -11,15 +11,16 @@ import { InfoIcon } from "@/src/components/ui/info-icon";
 import { StatusModal } from "@/components/status-modal";
 import { useToast } from "@/src/components/ui/toast";
 import { ASSETS_URL } from "@/assets";
-import { MOCK_EVIDENCE_OPTIONS } from "../utils/constants";
 
 interface Step3Props {
+  evidenceOptions: string[];
   onNext: (data?: any) => void;
   onBack: () => void;
   initialData?: any;
 }
 
 export const Step3Reflection: React.FC<Step3Props> = ({
+  evidenceOptions,
   onNext,
   onBack,
   initialData,
@@ -175,7 +176,7 @@ export const Step3Reflection: React.FC<Step3Props> = ({
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {MOCK_EVIDENCE_OPTIONS.map((option) => {
+            {evidenceOptions.map((option) => {
               const isSelected = selectedEvidences.includes(option);
               return (
                 <div

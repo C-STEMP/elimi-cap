@@ -87,7 +87,7 @@ export const DetailSidebar: React.FC<DetailSidebarProps> = ({
                 time: interviewTimeFormatted,
                 mode: activeInterviewSchedule.mode,
                 liveUrl: activeInterviewSchedule.link,
-                location: activeInterviewSchedule.location || "Cstemp Centre",
+                location: activeInterviewSchedule.location || "",
                 isRescheduled,
               }
             : null

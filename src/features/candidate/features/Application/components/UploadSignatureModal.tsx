@@ -124,18 +124,9 @@ export const UploadSignatureModal: React.FC<UploadSignatureModalProps> = ({
     try {
       await setSignatureMutation.mutateAsync(uploadedAsset.assetId);
     } catch {
-      // Handled by toast
+      // Error toast is shown by the mutation; don't report success.
+      return;
     }
-
-    try {
-      localStorage.setItem(
-        "user_saved_signature",
-        JSON.stringify({
-          assetId: uploadedAsset.assetId,
-          url: uploadedAsset.url,
-        }),
-      );
-    } catch {}
 
     onUploadSuccess({
       assetId: uploadedAsset.assetId,

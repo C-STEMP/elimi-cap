@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo } from "react";
-import { MOCK_COMPETENCY_TASKS } from "@/features/assessment-centre/utils/constants";
 import {
   useGetSelfAssessment,
   useGetApplicationById,
@@ -52,18 +51,13 @@ export function useSelfAssessmentFormState({
     (appDetail as any)?.passportUrl ||
     "";
 
-  const rawCompetencies = useMemo(() => {
-    return Array.isArray(selfAssessment?.competencies) &&
-      selfAssessment.competencies.length > 0
-      ? selfAssessment.competencies
-      : MOCK_COMPETENCY_TASKS.map((task, idx) => ({
-          index: idx,
-          title: task,
-          confidence: "high",
-          evidence: "yes",
-          experience: "",
-        }));
-  }, [selfAssessment]);
+  const rawCompetencies = useMemo(
+    () =>
+      Array.isArray(selfAssessment?.competencies)
+        ? selfAssessment.competencies
+        : [],
+    [selfAssessment],
+  );
 
   const reflectionData = (selfAssessment?.reflection as any) || {};
   const declarationData = (selfAssessment?.declaration as any) || {};

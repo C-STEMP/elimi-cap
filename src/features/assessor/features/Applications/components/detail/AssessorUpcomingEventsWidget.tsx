@@ -53,7 +53,7 @@ export const AssessorUpcomingEventsWidget: React.FC<
         title: propEvent.title || "Panel Interview",
         time: propEvent.time,
         date: propEvent.date,
-        location: propEvent.location || propEvent.address || "Cstemp Centre",
+        location: propEvent.location || propEvent.address || "",
         mode: propEvent.mode,
         liveUrl: propEvent.liveUrl,
         isRescheduled: propEvent.isRescheduled,
@@ -75,7 +75,7 @@ export const AssessorUpcomingEventsWidget: React.FC<
             hour12: true,
           }),
           date: schDate.toLocaleDateString("en-GB"),
-          location: interviewSchedule.location || "Cstemp Centre",
+          location: interviewSchedule.location || "",
           mode: interviewSchedule.mode,
           liveUrl:
             interviewSchedule.mode === "online"
@@ -128,7 +128,7 @@ export const AssessorUpcomingEventsWidget: React.FC<
             hour12: true,
           }),
           date: eventDate.toLocaleDateString("en-GB"),
-          location: first.location || "Cstemp Centre",
+          location: first.location || "",
           mode: (first as any).mode || (first.link ? "online" : "physical"),
           liveUrl: first.link || undefined,
         };

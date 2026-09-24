@@ -497,6 +497,8 @@ export interface NsqEvidenceThreadItem {
   performanceCriteriaCode: string;
   evidenceType: string;
   evidenceAssetId: string;
+  /** Resolved file; url is null if the asset is missing or failed to resolve. */
+  evidence?: { assetId: string; url?: string | null } | null;
   evidenceRefPage?: string | null;
   reviewStatus: "pending" | "approved" | "rejected";
   reviewComment?: string | null;

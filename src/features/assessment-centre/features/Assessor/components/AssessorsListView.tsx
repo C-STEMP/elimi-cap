@@ -58,9 +58,9 @@ export const AssessorsListView: React.FC<AssessorsListViewProps> = ({
     const primaryRole = (item.qualifications?.[0] as any) || "Assessor";
     return {
       id: item.id,
-      name: item.name || "Assessor",
-      email: item.email || "assessor@ng.org",
-      trade: sectorsStr || "General",
+      name: item.name || "",
+      email: item.email || "",
+      trade: sectorsStr || "",
       role: primaryRole,
       status:
         item.status === "approved"
@@ -82,8 +82,9 @@ export const AssessorsListView: React.FC<AssessorsListViewProps> = ({
       assessor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       assessor.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
       assessor.trade.toLowerCase().includes(searchQuery.toLowerCase());
+    const filter = (statusFilter || "all").toLowerCase();
     const matchesStatus =
-      statusFilter === "All" || assessor.status === statusFilter;
+      filter === "all" || assessor.status.toLowerCase() === filter;
     return matchesSearch && matchesStatus;
   });
 

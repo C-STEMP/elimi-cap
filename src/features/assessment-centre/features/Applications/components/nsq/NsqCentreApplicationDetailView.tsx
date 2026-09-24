@@ -37,6 +37,7 @@ import {
 import { formatCurrency } from "@/src/utils/currency";
 import { NsqAssessorObservationFormsView } from "@/src/features/assessor/features/Applications/components/nsq/NsqAssessorObservationFormsView";
 import { CentreIqamFormViewer } from "./CentreIqamFormViewer";
+import { getNsqScopedUnits } from "@/src/features/shared/applications/utils/nsqUnits";
 import type { IqamToolId } from "@/src/features/assessor/features/iqam/types/iqam.types";
 import type { ApplicationDetail, NsqCriterion } from "@/src/features/shared/applications/api/types";
 import { useModalDraft, useUrlModal } from "@/src/lib/hooks/usePersistentModal";
@@ -554,14 +555,10 @@ export const NsqCentreApplicationDetailView: React.FC<
           .join("/")
       : "—";
 
-  // Units list — prefer the application-specific units (real per-unit
-  // evidence progress from GET /applications/{id} `nsq.units`) over the
+  // Units list — the candidate's induction-picked units from GET
+  // /applications/{id} `nsq.units` (real per-unit evidence progress), over the
   // generic trade catalogue, which has no progress data.
-  const nsqUnitsForLevel = wishedQualificationLevel
-    ? (application?.nsq?.units || []).filter(
-        (u: any) => u.qualificationLevelId === wishedQualificationLevel.id,
-      )
-    : application?.nsq?.units;
+  const nsqUnitsForLevel = getNsqScopedUnits(application?.nsq);
 
   const qualificationCode =
     nsqUnitsForLevel?.[0]?.referenceNumber ||
@@ -669,17 +666,13 @@ export const NsqCentreApplicationDetailView: React.FC<
     application?.currentStageKey ||
     (application as any)?.stageKey;
 
-  const ivStage = stagesData?.find((s) => s.stageKey === "internal_verification");
-  const regularAssessmentStage = stagesData?.find((s) => s.stageKey === "regular_assessment");
 
+  // Only the application's current stage decides this. Stage rows can change
+  // status per unit (e.g. after one unit is approved), which would wrongly
+  // show the application as in IQA before the assessor hands it over.
   const isInternalVerificationStage = Boolean(
-    (effectiveStageKey &&
-      STAGE_ORDER.indexOf(effectiveStageKey) >= STAGE_ORDER.indexOf("internal_verification")) ||
-      (ivStage && ivStage.status !== "not_started") ||
-      (regularAssessmentStage &&
-        (regularAssessmentStage.status === "successful" ||
-          (regularAssessmentStage.status as string) === "completed" ||
-          (regularAssessmentStage.status as string) === "approved")),
+    effectiveStageKey &&
+      STAGE_ORDER.indexOf(effectiveStageKey) >= STAGE_ORDER.indexOf("internal_verification"),
   );
 
   const progressSteps = useMemo(
@@ -696,7 +689,7 @@ export const NsqCentreApplicationDetailView: React.FC<
 
   // Receipt transaction object — GET /applications/{id}/receipt.
   const receiptTransaction: PaymentTransaction = {
-    id: receiptData?.paymentId || application?.id || "tx-nsq-001",
+    id: receiptData?.paymentId || application?.id || "",
     candidateName,
     assessmentType: levelName
       ? `NSQ ${resolvedTradeName} (${levelName})`
@@ -1204,21 +1197,6 @@ export const NsqCentreApplicationDetailView: React.FC<
                 </div>
               </div>
 
-              {/* 7. Candidate Induction Form Action Card */}
-              <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-xs border border-gray-100 flex items-center justify-between gap-4">
-                <span className="text-sm sm:text-base font-bold text-gray-900">
-                  Candidate Induction Form
-                </span>
-
-                <button
-                  type="button"
-                  onClick={() => setIsInductionModalOpen(true)}
-                  className="px-6 py-2 border border-gray-200 rounded-xl text-xs font-bold text-[#fbab2a] hover:bg-amber-50/60 cursor-pointer transition-all"
-                >
-                  View
-                </button>
-              </div>
-
               {/* 8. Qualification Units Card */}
               <div className="bg-white rounded-2xl p-6 shadow-xs border border-gray-100 flex flex-col gap-4">
                 <h3 className="text-base font-bold text-gray-900">
@@ -1550,7 +1528,7 @@ export const NsqCentreApplicationDetailView: React.FC<
                         ? new Date(application.submittedAt).toLocaleDateString(
                             "en-GB",
                           )
-                        : "22/03/2026"}
+                        : "—"}
                   </span>
                 </div>
               </div>

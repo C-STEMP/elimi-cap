@@ -69,11 +69,21 @@ function mapApplicationToRecord(app: any): AssessorApplicationRecord {
 
 interface AssessorApplicationsViewProps {
   onSelectApplication: (app: AssessorApplicationRecord) => void;
+  /** Stat card selected in the header ("all" | "pending" | "completed" | "archived"). */
+  cardFilter?: string;
 }
+
+// Header stat cards → list statuses. "Pending" mirrors /assessor/summary,
+// which counts in-progress applications, shown in the list as "Ongoing".
+const CARD_FILTER_STATUSES: Record<string, AssessorApplicationRecord["status"][]> = {
+  pending: ["Pending", "Ongoing"],
+  completed: ["Completed"],
+  archived: ["Archived"],
+};
 
 export const AssessorApplicationsView: React.FC<
   AssessorApplicationsViewProps
-> = ({ onSelectApplication }) => {
+> = ({ onSelectApplication, cardFilter = "all" }) => {
   const { data: apiApplications, isLoading } = useGetAssessorApplications();
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -100,6 +110,8 @@ export const AssessorApplicationsView: React.FC<
 
   const filteredApps = useMemo(() => {
     return applications.filter((app) => {
+      const cardStatuses = CARD_FILTER_STATUSES[cardFilter.toLowerCase()];
+      if (cardStatuses && !cardStatuses.includes(app.status)) return false;
       const matchesSearch =
         !searchTerm.trim() ||
         app.candidateName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -122,7 +134,7 @@ export const AssessorApplicationsView: React.FC<
 
       return matchesSearch && matchesTrade && matchesType && matchesStatus;
     });
-  }, [applications, searchTerm, filterCriteria]);
+  }, [applications, searchTerm, filterCriteria, cardFilter]);
 
   return (
     <div className="w-full bg-white rounded-3xl p-6 sm:p-8 shadow-xs border border-gray-100 flex flex-col gap-6 select-text">

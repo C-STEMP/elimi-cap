@@ -132,12 +132,15 @@ export const AssessorInformation: React.FC = () => {
         });
 
         clearInterval(progressInterval);
+        if (!asset?.assetId) {
+          throw new Error("The certificate upload did not return an asset id.");
+        }
         setUploadProgress(100);
 
         const fileData = {
           name: file.name,
           size: sizeMb,
-          assetId: asset?.assetId || `asset-${Date.now()}`,
+          assetId: asset.assetId,
         };
 
         if (type === "qaa") {

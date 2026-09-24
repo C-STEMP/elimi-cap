@@ -15,7 +15,7 @@ export interface UnitMappingItem {
   status: "Satisfied" | "Not Satisfied";
 }
 
-import { getAutoFilledUnitTitleCode, getUnitOptions } from "./utils";
+import { getUnitOptions } from "./utils";
 
 interface AssessmentMappingFormProps {
   candidateName: string;
@@ -24,6 +24,7 @@ interface AssessmentMappingFormProps {
   formData?: Record<string, any>;
   isReadOnly?: boolean;
   applicationTrade?: string;
+  unitLabels?: string[];
 }
 
 export const AssessmentMappingForm: React.FC<AssessmentMappingFormProps> = ({
@@ -33,10 +34,11 @@ export const AssessmentMappingForm: React.FC<AssessmentMappingFormProps> = ({
   formData,
   isReadOnly = false,
   applicationTrade,
+  unitLabels = [],
 }) => {
   const { toast } = useToast();
 
-  const autoUnit = getAutoFilledUnitTitleCode(applicationTrade, "assessment_mapping");
+  const autoUnit = unitLabels[0] ?? "";
   const [candidateFullName, setCandidateFullName] = useState<string>(
     formData?.candidateFullName ?? candidateName ?? "",
   );
@@ -58,8 +60,8 @@ export const AssessmentMappingForm: React.FC<AssessmentMappingFormProps> = ({
   }, [formData?.unitTitleCode, autoUnit]);
 
   const unitOptions = React.useMemo(() => {
-    return getUnitOptions(unitTitleCode, "assessment_mapping");
-  }, [unitTitleCode]);
+    return getUnitOptions(unitTitleCode, unitLabels);
+  }, [unitTitleCode, unitLabels]);
   const [dateCollected, setDateCollected] = useState<string>(
     formData?.dateCollected ?? "",
   );

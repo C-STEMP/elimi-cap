@@ -178,7 +178,7 @@ export const MyApplicationsPage: React.FC = () => {
     const tradeTitle = rawTrade && !isRawId(rawTrade) ? rawTrade : "";
 
     if (app.type === "NSQ") {
-      return tradeTitle || "Carpentry";
+      return tradeTitle || "Standard Assessment (NSQ)";
     }
 
     const typeLabel = app.type || "RPL";

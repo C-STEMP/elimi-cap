@@ -25,7 +25,7 @@ export const AssignFacilitatorModal: React.FC<AssignFacilitatorModalProps> = ({
   isOpen,
   onClose,
   applicationId,
-  tradeName = "Carpentry",
+  tradeName = "",
   onSuccess,
 }) => {
   const { toast } = useToast();

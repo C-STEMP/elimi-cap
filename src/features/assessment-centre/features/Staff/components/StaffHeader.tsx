@@ -15,13 +15,13 @@ import {
 import { Button } from "@/src/components/ui/button";
 import { Avatar } from "@/src/components/ui/avatar";
 import { StaffStatusModalMode } from "./StaffStatusModal";
-import { StaffMember } from "@/features/assessment-centre/types";
-import { MOCK_STAFF_MEMBERS } from "@/features/assessment-centre/utils/constants";
 import {
   useGetCentreStaff,
   useGetCentreStaffSummary,
   useGetCentreStaffDetail,
 } from "@/src/features/shared/centre/hooks";
+
+const isAllFilter = (value?: string | null) => !value || value.toLowerCase() === "all";
 
 interface StaffHeaderProps {
   selectedStaffId: string | null;
@@ -41,11 +41,9 @@ export const StaffHeader: React.FC<StaffHeaderProps> = ({
   onSelectStatusFilter,
 }) => {
   if (selectedStaffId) {
-    const mockStaff = MOCK_STAFF_MEMBERS.find((s) => s.id === selectedStaffId);
     return (
       <StaffDetailHeader
         staffId={selectedStaffId}
-        fallbackStaff={mockStaff}
         onBack={onBack}
         onDeactivate={onDeactivate}
       />
@@ -63,43 +61,25 @@ export const StaffHeader: React.FC<StaffHeaderProps> = ({
 
 interface StaffDetailHeaderProps {
   staffId: string;
-  fallbackStaff?: StaffMember;
   onBack: () => void;
   onDeactivate: (mode: StaffStatusModalMode) => void;
 }
 
 const StaffDetailHeader: React.FC<StaffDetailHeaderProps> = ({
   staffId,
-  fallbackStaff,
   onBack,
   onDeactivate,
 }) => {
   const { data: staffDetail } = useGetCentreStaffDetail(staffId);
 
   const staffName =
-    staffDetail?.name ||
-    staffDetail?.email?.split("@")[0] ||
-    fallbackStaff?.name ||
-    "Staff Member";
+    staffDetail?.name || staffDetail?.email?.split("@")[0] || "";
 
-  const staffStatus = staffDetail?.status
-    ? staffDetail.status === "inactive"
-      ? "Inactive"
-      : "Active"
-    : fallbackStaff?.status || "Active";
+  const staffStatus = staffDetail?.status === "inactive" ? "Inactive" : "Active";
 
-  const reviewedCount =
-    staffDetail?.workload?.reviewed ??
-    fallbackStaff?.reviewedApplicationsCount ??
-    0;
-  const pendingCount =
-    staffDetail?.workload?.pending ??
-    fallbackStaff?.pendingApplicationsCount ??
-    0;
-  const requiresAttentionCount =
-    staffDetail?.workload?.requiresAttention ??
-    fallbackStaff?.requiresAttentionCount ??
-    0;
+  const reviewedCount = staffDetail?.workload?.reviewed ?? 0;
+  const pendingCount = staffDetail?.workload?.pending ?? 0;
+  const requiresAttentionCount = staffDetail?.workload?.requiresAttention ?? 0;
 
   return (
     <div className="flex flex-col gap-6 pt-2">
@@ -287,11 +267,10 @@ const StaffListHeader: React.FC<StaffListHeaderProps> = ({
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {stats.map((item) => {
-          const isActive =
-            activeStatusFilter !== undefined &&
-            (activeStatusFilter === item.status ||
-              (item.status === "All" &&
-                (activeStatusFilter === "All" || !activeStatusFilter)));
+          // The "All" card is the default selection when no filter is set.
+          const isActive = isAllFilter(activeStatusFilter)
+            ? item.status === "All"
+            : activeStatusFilter!.toLowerCase() === item.status.toLowerCase();
           const isClickable = Boolean(onSelectStatusFilter);
 
           return (

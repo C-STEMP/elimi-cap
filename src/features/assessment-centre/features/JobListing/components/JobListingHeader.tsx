@@ -18,6 +18,8 @@ import {
   useGetJobPostingApplicationDetail,
 } from "@/src/features/shared/centre/hooks";
 
+const isAllFilter = (value?: string | null) => !value || value.toLowerCase() === "all";
+
 interface JobListingHeaderProps {
   selectedJobId: string | null;
   selectedApplicantId: string | null;
@@ -260,7 +262,7 @@ const JobListHeader: React.FC<JobListHeaderProps> = ({
 
   const totalJobs = jobListings.length;
   const openJobs = jobListings.filter((j) => j.status === "open").length;
-  const filledJobs = jobListings.filter((j) => j.status === "closed").length;
+  const filledJobs = jobListings.filter((j) => j.status === "filled").length;
   const totalApplicants = jobListings.reduce(
     (sum, j: any) => sum + (j.applicantCount || (j.applicants?.length ?? 0)),
     0,
@@ -269,7 +271,7 @@ const JobListHeader: React.FC<JobListHeaderProps> = ({
   const cards = [
     { label: "Total Job Listing", value: totalJobs, unit: "listings", icon: <FiClipboard className="w-5 h-5 text-white/90" />, filter: "all" },
     { label: "Open Listing", value: openJobs, unit: "listings", icon: <FiBriefcase className="w-5 h-5 text-white/90" />, filter: "open" },
-    { label: "Filled Listing", value: filledJobs, unit: "listings", icon: <FiCheckCircle className="w-5 h-5 text-white/90" />, filter: "closed" },
+    { label: "Filled Listing", value: filledJobs, unit: "listings", icon: <FiCheckCircle className="w-5 h-5 text-white/90" />, filter: "filled" },
     { label: "Total Applicants", value: totalApplicants, unit: "applicants", icon: <FiUsers className="w-5 h-5 text-white/90" />, filter: null },
   ];
 
@@ -293,7 +295,12 @@ const JobListHeader: React.FC<JobListHeaderProps> = ({
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {cards.map((card) => {
-          const isActive = card.filter !== null && activeStatusFilter === card.filter;
+          // The "all" card is the default selection when no filter is set.
+          const isActive =
+            card.filter !== null &&
+            (isAllFilter(activeStatusFilter)
+              ? card.filter === "all"
+              : activeStatusFilter === card.filter);
           return (
             <button
               key={card.label}

@@ -6,16 +6,12 @@ import { EvidenceItemCard, type EvidenceItem } from "./EvidenceItemCard";
 interface EvidenceListSectionProps {
   items: EvidenceItem[];
   onView: (item: EvidenceItem) => void;
-  onSendFeedback: (item: EvidenceItem) => void;
-  onApprove: (item: EvidenceItem) => void;
   isLoading?: boolean;
 }
 
 export const EvidenceListSection: React.FC<EvidenceListSectionProps> = ({
   items,
   onView,
-  onSendFeedback,
-  onApprove,
   isLoading = false,
 }) => {
   return (
@@ -53,8 +49,6 @@ export const EvidenceListSection: React.FC<EvidenceListSectionProps> = ({
               key={item.id}
               item={item}
               onView={onView}
-              onSendFeedback={onSendFeedback}
-              onApprove={onApprove}
             />
           ))}
         </div>
