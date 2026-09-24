@@ -1,9 +1,16 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
-import Image from "next/image";
-import { FiMoreVertical, FiFileText, FiImage, FiVideo, FiEye, FiCheck } from "react-icons/fi";
 import { ASSETS_URL } from "@/src/assets";
+import Image from "next/image";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  FiCheck,
+  FiEye,
+  FiFileText,
+  FiImage,
+  FiMoreVertical,
+  FiVideo,
+} from "react-icons/fi";
 
 export interface EvidenceItem {
   id: string;
@@ -34,10 +41,16 @@ function getFileTypeIcon(mimeType?: string, name?: string) {
       />
     );
   }
-  if (mime.startsWith("image/") || ["jpg", "jpeg", "png", "gif", "webp", "svg", "bmp"].includes(ext)) {
+  if (
+    mime.startsWith("image/") ||
+    ["jpg", "jpeg", "png", "gif", "webp", "svg", "bmp"].includes(ext)
+  ) {
     return <FiImage className="w-6 h-6 text-[#a31d38]" />;
   }
-  if (mime.startsWith("video/") || ["mp4", "mov", "avi", "mkv", "webm"].includes(ext)) {
+  if (
+    mime.startsWith("video/") ||
+    ["mp4", "mov", "avi", "mkv", "webm"].includes(ext)
+  ) {
     return <FiVideo className="w-6 h-6 text-[#a31d38]" />;
   }
   return <FiFileText className="w-6 h-6 text-[#a31d38]" />;
@@ -45,7 +58,12 @@ function getFileTypeIcon(mimeType?: string, name?: string) {
 
 function getStatusBadge(status: string) {
   const s = (status || "").toLowerCase().replace(/_/g, " ");
-  if (s.includes("approv") || s.includes("accept") || s.includes("complet") || s.includes("verifi")) {
+  if (
+    s.includes("approv") ||
+    s.includes("accept") ||
+    s.includes("complet") ||
+    s.includes("verifi")
+  ) {
     return {
       bg: "bg-[#1E7F4C]/10",
       text: "text-[#1E7F4C]",
@@ -59,7 +77,12 @@ function getStatusBadge(status: string) {
       label: status || "Submitted",
     };
   }
-  if (s.includes("reject") || s.includes("attenti") || s.includes("fail") || s.includes("declin")) {
+  if (
+    s.includes("reject") ||
+    s.includes("attenti") ||
+    s.includes("fail") ||
+    s.includes("declin")
+  ) {
     return {
       bg: "bg-[#FCE8EB]",
       text: "text-[#A31D38]",
@@ -113,9 +136,9 @@ export const EvidenceItemCard: React.FC<EvidenceItemCardProps> = ({
   const badge = getStatusBadge(item.status);
   const isApproved = Boolean(
     item.status &&
-      (item.status.toLowerCase().includes("approv") ||
-        item.status.toLowerCase() === "accepted" ||
-        item.status.toLowerCase() === "successful"),
+    (item.status.toLowerCase().includes("approv") ||
+      item.status.toLowerCase() === "accepted" ||
+      item.status.toLowerCase() === "successful"),
   );
 
   return (
@@ -136,7 +159,7 @@ export const EvidenceItemCard: React.FC<EvidenceItemCardProps> = ({
                   e.stopPropagation();
                   onView(item);
                 }}
-                className="text-sm sm:text-base md:text-lg font-bold text-neutral-primary hover:text-primary transition-colors cursor-pointer break-words"
+                className="text-sm sm:text-base md:text-lg font-bold text-neutral-primary hover:text-primary transition-colors cursor-pointer wrap-break-word"
               >
                 {item.name}
               </h4>
@@ -260,4 +283,3 @@ export const EvidenceItemCard: React.FC<EvidenceItemCardProps> = ({
     </div>
   );
 };
-

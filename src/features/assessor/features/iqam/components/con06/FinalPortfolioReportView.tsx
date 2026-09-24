@@ -8,6 +8,8 @@ import {
   useSubmitIqamFinalPortfolio,
 } from "../../hooks/useIqam";
 import type { IqamFinalPortfolioData, IqamFinalPortfolioCheckpoint, IqamSignatureStub } from "../../api/types";
+import { Button } from "@/src/components/ui/button";
+import { FiArrowLeft, FiCheck } from "react-icons/fi";
 
 interface FinalPortfolioReportViewProps {
   applicationId: string;
@@ -311,6 +313,38 @@ export const FinalPortfolioReportView: React.FC<FinalPortfolioReportViewProps> =
                 setFormData((prev) => ({ ...prev, signatures: { ...signatures, countersigningIqa: appendedSignature() } }))
               }
             />
+          </div>
+        </div>
+
+        {/* Bottom Actions / Submit Bar */}
+        <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-wrap items-center justify-between gap-4 mt-2">
+          <button
+            type="button"
+            onClick={onBack}
+            className="px-5 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-700 hover:bg-gray-50 transition-all cursor-pointer flex items-center gap-1.5"
+          >
+            <FiArrowLeft className="w-4 h-4" />
+            <span>Back to Application</span>
+          </button>
+
+          <div className="flex items-center gap-3">
+            {isSubmitted ? (
+              <span className="px-4 py-2 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-bold flex items-center gap-1.5">
+                <FiCheck className="w-4 h-4" />
+                <span>Report Submitted</span>
+              </span>
+            ) : (
+              <Button
+                type="button"
+                variant="primary"
+                onClick={handleSubmit}
+                loading={patchPortfolio.isPending || submitPortfolio.isPending}
+                className="bg-[#900B27] hover:bg-[#72081f] text-white text-xs font-bold px-6 py-2.5 rounded-xl cursor-pointer flex items-center gap-2 shadow-sm border-none"
+              >
+                <span>Submit Final Portfolio Report (CON 06)</span>
+                <FiCheck className="w-4 h-4" />
+              </Button>
+            )}
           </div>
         </div>
       </div>

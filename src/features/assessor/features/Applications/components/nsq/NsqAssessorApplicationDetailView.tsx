@@ -1,55 +1,64 @@
 "use client";
 
+import { Button } from "@/src/components/ui/button";
+import { useToast } from "@/src/components/ui/toast";
+import { ReviewVerifierModal } from "@/src/features/assessment-centre/features/Applications/components/ReviewVerifierModal";
+import { submitUnitSignoffApi } from "@/src/features/shared/applications/api";
+import type { DirectObservationSession } from "@/src/features/shared/applications/api/types";
+import {
+  useGetApplicationById,
+  useGetDirectObservations,
+  useGetInductionForm,
+  useReviewApplication,
+  useReviewDirectObservation,
+} from "@/src/features/shared/applications/hooks";
+import {
+  APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
+  APPLICATION_QUERY_KEYS,
+} from "@/src/features/shared/applications/hooks/queryKeys";
+import {
+  useGetEvidenceTypesByTrade,
+  useGetTradeDetail,
+} from "@/src/features/shared/reference/hooks";
+import { useUrlModal } from "@/src/lib/hooks/usePersistentModal";
+import {
+  NSQ_ASSESSOR_OBSERVATION_MODAL,
+  NSQ_REJECT_OBSERVATION_MODAL,
+  REVIEW_VERIFIER_MODAL,
+} from "@/src/lib/modal-keys";
+import {
+  closeUrlSubView,
+  openUrlSubView,
+} from "@/src/lib/navigation/url-sub-view";
+import { useQueryClient } from "@tanstack/react-query";
+import { AnimatePresence, motion } from "framer-motion";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { FiChevronLeft, FiPlus, FiCheck } from "react-icons/fi";
-import { NsqAssessorSidebar } from "./NsqAssessorSidebar";
-import { NsqAssessorUnitDetailView } from "./NsqAssessorUnitDetailView";
-import { NsqAssessorObservationFormsView } from "./NsqAssessorObservationFormsView";
-import { NsqAssessorInductionModal } from "./NsqAssessorInductionModal";
-import { QualificationStandardCard } from "./components/detail/QualificationStandardCard";
+import { FiAlertTriangle, FiCheck, FiInfo, FiX } from "react-icons/fi";
+import { ComprehensiveReportView } from "../../../iqam/components/con04/ComprehensiveReportView";
+import { ObservationChecklistView } from "../../../iqam/components/con05/ObservationChecklistView";
+import { FinalPortfolioReportView } from "../../../iqam/components/con06/FinalPortfolioReportView";
+import type { AssessorApplicationRecord } from "../../types/applications.types";
 import { CandidateInductionTriggerCard } from "./components/detail/CandidateInductionTriggerCard";
+import { QualificationStandardCard } from "./components/detail/QualificationStandardCard";
 import {
   QualificationUnitsList,
   type QualificationUnitItem,
 } from "./components/detail/QualificationUnitsList";
-import {
-  NsqAssessorObservationModal,
-  type ObservationRequestDetails,
-} from "./NsqAssessorObservationModal";
+import { NsqAssessorInductionModal } from "./NsqAssessorInductionModal";
 import {
   ConfirmAcceptObservationModal,
   ObservationAcceptedSuccessModal,
   ObservationRejectedSuccessModal,
   RejectEvidenceModal,
 } from "./NsqAssessorModals";
-import { ComprehensiveReportView } from "../../../iqam/components/con04/ComprehensiveReportView";
-import { ObservationChecklistView } from "../../../iqam/components/con05/ObservationChecklistView";
-import { FinalPortfolioReportView } from "../../../iqam/components/con06/FinalPortfolioReportView";
-import { ReviewVerifierModal } from "@/src/features/assessment-centre/features/Applications/components/ReviewVerifierModal";
-import { useToast } from "@/src/components/ui/toast";
-import { closeUrlSubView, openUrlSubView } from "@/src/lib/navigation/url-sub-view";
-import { useQueryClient } from "@tanstack/react-query";
+import { NsqAssessorObservationFormsView } from "./NsqAssessorObservationFormsView";
 import {
-  useGetApplicationById,
-  useGetInductionForm,
-  useGetDirectObservations,
-  useReviewDirectObservation,
-  useReviewApplication,
-} from "@/src/features/shared/applications/hooks";
-import {
-  APPLICATION_QUERY_KEYS,
-  APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
-} from "@/src/features/shared/applications/hooks/queryKeys";
-import { submitUnitSignoffApi } from "@/src/features/shared/applications/api";
-import {
-  useGetTradeDetail,
-  useGetEvidenceTypesByTrade,
-} from "@/src/features/shared/reference/hooks";
-import type { DirectObservationSession } from "@/src/features/shared/applications/api/types";
-import type { AssessorApplicationRecord } from "../../types/applications.types";
-import { useUrlModal } from "@/src/lib/hooks/usePersistentModal";
-import { REVIEW_VERIFIER_MODAL, NSQ_ASSESSOR_OBSERVATION_MODAL, NSQ_REJECT_OBSERVATION_MODAL } from "@/src/lib/modal-keys";
+  NsqAssessorObservationModal,
+  type ObservationRequestDetails,
+} from "./NsqAssessorObservationModal";
+import { NsqAssessorSidebar } from "./NsqAssessorSidebar";
+import { NsqAssessorUnitDetailView } from "./NsqAssessorUnitDetailView";
 
 const mapSessionToObservation = (
   session?: DirectObservationSession | null,
@@ -96,8 +105,6 @@ export interface NsqAssessorApplicationDetailViewProps {
   onSubViewNavStateChange?: (state: NsqAssessorSubView) => void;
 }
 
-// Workflow order — moving to IQAM means the application is on this stage or
-// later, i.e. regular_assessment (QAA) has already been marked complete.
 const STAGE_ORDER = [
   "application_form",
   "payment",
@@ -125,35 +132,42 @@ export const NsqAssessorApplicationDetailView: React.FC<
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [internalSubView, setInternalSubView] = useState<NsqAssessorSubView>("overview");
+  const [internalSubView, setInternalSubView] =
+    useState<NsqAssessorSubView>("overview");
   const activeSubView = externalNavState || internalSubView;
-  const [isReviewIvModalOpen, setIsReviewIvModalOpen] = useUrlModal(REVIEW_VERIFIER_MODAL);
+  const [isReviewIvModalOpen, setIsReviewIvModalOpen] = useUrlModal(
+    REVIEW_VERIFIER_MODAL,
+  );
 
   const setActiveSubView = (next: NsqAssessorSubView) => {
     setInternalSubView(next);
     onSubViewNavStateChange?.(next);
     if (next === "overview") onSubViewChange?.(null);
-    else if (next === "unit") onSubViewChange?.(selectedUnit?.unitNo || "UNIT 1");
-    else if (next === "observation_form") onSubViewChange?.("Physical Observation Form");
-    else if (next === "iqam_con04") onSubViewChange?.("Comprehensive Internal Verifier Report Form");
-    else if (next === "iqam_con05") onSubViewChange?.("IV Observation & Questioning Checklist");
-    else if (next === "iqam_con06") onSubViewChange?.("Final Portfolio / Award Report Form");
+    else if (next === "unit")
+      onSubViewChange?.(selectedUnit?.unitNo || "UNIT 1");
+    else if (next === "observation_form")
+      onSubViewChange?.("Physical Observation Form");
+    else if (next === "iqam_con04")
+      onSubViewChange?.("Comprehensive Internal Verifier Report Form");
+    else if (next === "iqam_con05")
+      onSubViewChange?.("IV Observation & Questioning Checklist");
+    else if (next === "iqam_con06")
+      onSubViewChange?.("Final Portfolio / Award Report Form");
   };
 
-  // Full application detail — same query key as the route view that fetched
-  // this application, so it's served from cache rather than refetched.
-  const { data: apiApp, isLoading: isLoadingApp } = useGetApplicationById(application.id, {
-    refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
-  });
+  const { data: apiApp, isLoading: isLoadingApp } = useGetApplicationById(
+    application.id,
+    {
+      refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
+    },
+  );
   const { data: inductionForm } = useGetInductionForm(application.id);
 
   const tradeId = apiApp?.tradeId || "";
   const { data: tradeDetail } = useGetTradeDetail(tradeId);
-  const { data: remoteEvidenceTypes = [] } = useGetEvidenceTypesByTrade(tradeId);
+  const { data: remoteEvidenceTypes = [] } =
+    useGetEvidenceTypesByTrade(tradeId);
 
-  // Real qualification units — GET /applications/{id} `nsq.units`, already
-  // carrying per-unit evidence counts (criteriaApproved/criteriaTotal) and
-  // the "new upload" signal (criteriaPending > 0). No extra fetch needed.
   const wishedQualificationLevel = apiApp?.nsq?.wishedQualificationLevel;
   const nsqUnitsForLevel = wishedQualificationLevel
     ? apiApp?.nsq?.units?.filter(
@@ -172,7 +186,8 @@ export const NsqAssessorApplicationDetailView: React.FC<
     : null;
   const unitsList = realUnits || [];
 
-  const [selectedUnit, setSelectedUnit] = useState<QualificationUnitItem | null>(null);
+  const [selectedUnit, setSelectedUnit] =
+    useState<QualificationUnitItem | null>(null);
 
   useEffect(() => {
     if (!realUnits || realUnits.length === 0) return;
@@ -192,10 +207,8 @@ export const NsqAssessorApplicationDetailView: React.FC<
     if (!selectedUnit) {
       setSelectedUnit(realUnits[0]);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [realUnits, searchParams]);
 
-  // Direct Observation Queries & Mutation
   const { data: directObsList } = useGetDirectObservations(application.id, {
     enabled: Boolean(application.id),
   });
@@ -212,7 +225,8 @@ export const NsqAssessorApplicationDetailView: React.FC<
   const liveObs = sortedSessions[0];
   const effectiveSessionId = liveObs?.id || "session-1";
   const hasFilledObservationForm =
-    liveObs?.physicalStatus === "submitted" && liveObs?.oralStatus === "submitted";
+    liveObs?.physicalStatus === "submitted" &&
+    liveObs?.oralStatus === "submitted";
 
   const { mutateAsync: reviewObservationMutation } = useReviewDirectObservation(
     application.id,
@@ -221,21 +235,23 @@ export const NsqAssessorApplicationDetailView: React.FC<
   const { mutateAsync: reviewApplicationMutation } = useReviewApplication();
   const queryClient = useQueryClient();
 
-  // Observation Request State — seeded from the real backend session and
-  // kept as local state only so accept/reject can optimistically update it.
-  const [observation, setObservation] = useState<ObservationRequestDetails | null>(
-    mapSessionToObservation(liveObs),
-  );
+  const [observation, setObservation] =
+    useState<ObservationRequestDetails | null>(
+      mapSessionToObservation(liveObs),
+    );
 
   useEffect(() => {
     setObservation(mapSessionToObservation(liveObs));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [liveObs?.id, liveObs?.status, liveObs?.scheduledAt]);
 
   const [isInductionModalOpen, setIsInductionModalOpen] = useState(false);
-  const [isObsModalOpen, setIsObsModalOpen] = useUrlModal(NSQ_ASSESSOR_OBSERVATION_MODAL);
+  const [isObsModalOpen, setIsObsModalOpen] = useUrlModal(
+    NSQ_ASSESSOR_OBSERVATION_MODAL,
+  );
   const [isConfirmAcceptObsOpen, setIsConfirmAcceptObsOpen] = useState(false);
-  const [isRejectObsReasonOpen, setIsRejectObsReasonOpen] = useUrlModal(NSQ_REJECT_OBSERVATION_MODAL);
+  const [isRejectObsReasonOpen, setIsRejectObsReasonOpen] = useUrlModal(
+    NSQ_REJECT_OBSERVATION_MODAL,
+  );
   const [isAcceptObsSuccessOpen, setIsAcceptObsSuccessOpen] = useState(false);
   const [isRejectObsSuccessOpen, setIsRejectObsSuccessOpen] = useState(false);
   const [pendingAcceptRequirements, setPendingAcceptRequirements] = useState<
@@ -244,13 +260,16 @@ export const NsqAssessorApplicationDetailView: React.FC<
 
   const candidateName = application.candidateName || "Candidate";
   const tradeName = tradeDetail?.name || application.trade || "—";
-  const candidateEmail = apiApp?.personalInformation?.contactInformation?.emailAddress;
-  const candidatePhoneNumber = apiApp?.personalInformation?.contactInformation?.phoneNumber;
+  const candidateEmail =
+    apiApp?.personalInformation?.contactInformation?.emailAddress;
+  const candidatePhoneNumber =
+    apiApp?.personalInformation?.contactInformation?.phoneNumber;
   const candidatePhone = candidatePhoneNumber?.number
     ? `${candidatePhoneNumber.countryCode || ""} ${candidatePhoneNumber.number}`.trim()
     : undefined;
 
-  const evidenceTypesText = remoteEvidenceTypes.length > 0 ? remoteEvidenceTypes.join("/") : undefined;
+  const evidenceTypesText =
+    remoteEvidenceTypes.length > 0 ? remoteEvidenceTypes.join("/") : undefined;
 
   const handleSelectUnit = (unit: QualificationUnitItem) => {
     setSelectedUnit(unit);
@@ -263,8 +282,6 @@ export const NsqAssessorApplicationDetailView: React.FC<
     closeUrlSubView(router, pathname, searchParams);
   };
 
-  // Browser back/forward: when `unit` disappears from the URL, return to the
-  // overview instead of leaving the unit view on screen.
   const prevUnitParam = useRef(searchParams.get("unit"));
   useEffect(() => {
     const unitParam = searchParams.get("unit");
@@ -272,18 +289,12 @@ export const NsqAssessorApplicationDetailView: React.FC<
       setActiveSubView("overview");
     }
     prevUnitParam.current = unitParam;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
-  // Every unit with attached evidence must be individually signed off
-  // (POST /applications/{id}/units/{unitId}/signoff) before the application
-  // can move to Internal Quality Assurance — units are the primary
-  // assessable entity, so a single blanket approval can't stand in for it.
-  // Once every eligible unit is signed off, the regular_assessment stage is
-  // marked complete, which advances the application to internal_verification
-  // — the centre then assigns the IQA from there (a separate, centre-driven
-  // step via POST /applications/{id}/iv).
-  const handleMoveToIqam = async () => {
+  const [isMoveToIqamModalOpen, setIsMoveToIqamModalOpen] = useState(false);
+  const [isMovingToIqam, setIsMovingToIqam] = useState(false);
+
+  const handleMoveToIqam = () => {
     const unitsWithEvidence = unitsList.filter((u) => (u.totalCount ?? 0) > 0);
     const notFullyApproved = unitsWithEvidence.filter(
       (u) => (u.approvedCount ?? 0) !== (u.totalCount ?? 0),
@@ -309,6 +320,13 @@ export const NsqAssessorApplicationDetailView: React.FC<
       return;
     }
 
+    setIsMoveToIqamModalOpen(true);
+  };
+
+  const executeMoveToIqam = async () => {
+    const unitsWithEvidence = unitsList.filter((u) => (u.totalCount ?? 0) > 0);
+    setIsMovingToIqam(true);
+
     try {
       await Promise.all(
         unitsWithEvidence.map((u) =>
@@ -327,6 +345,7 @@ export const NsqAssessorApplicationDetailView: React.FC<
             ? err.message
             : "Could not sign off one or more units. Please try again.",
       });
+      setIsMovingToIqam(false);
       return;
     }
 
@@ -349,9 +368,12 @@ export const NsqAssessorApplicationDetailView: React.FC<
         },
       });
     } catch {
-      // useReviewApplication already surfaced an error toast.
+      setIsMovingToIqam(false);
       return;
     }
+
+    setIsMovingToIqam(false);
+    setIsMoveToIqamModalOpen(false);
 
     toast({
       type: "success",
@@ -372,7 +394,8 @@ export const NsqAssessorApplicationDetailView: React.FC<
 
   const isInternalVerificationStage = Boolean(
     effectiveStageKey &&
-      STAGE_ORDER.indexOf(effectiveStageKey) >= STAGE_ORDER.indexOf("internal_verification"),
+    STAGE_ORDER.indexOf(effectiveStageKey) >=
+      STAGE_ORDER.indexOf("internal_verification"),
   );
 
   const hasMovedToIqam = isInternalVerificationStage;
@@ -384,16 +407,14 @@ export const NsqAssessorApplicationDetailView: React.FC<
   const isRegularAssessmentStage = effectiveStageKey === "regular_assessment";
   const canMoveToIqam = Boolean(
     !hasMovedToIqam &&
-      isRegularAssessmentStage &&
-      unitsWithEvidence.length > 0 &&
-      notFullyApproved.length === 0,
+    isRegularAssessmentStage &&
+    unitsWithEvidence.length > 0 &&
+    notFullyApproved.length === 0,
   );
 
-  // Once every IQAM form is submitted, the assigned IV can mark themselves
-  // competent (POST /applications/{id}/iv/review) — only the assigned IV may
-  // call this, which is why it lives here rather than on the centre's view.
   const isIqamFormsComplete = Boolean(
-    apiApp?.iqamForms?.length && apiApp.iqamForms.every((f) => f.status === "submitted"),
+    apiApp?.iqamForms?.length &&
+    apiApp.iqamForms.every((f) => f.status === "submitted"),
   );
   const isIvApproved = Boolean((apiApp as any)?.ivApproved);
 
@@ -423,7 +444,11 @@ export const NsqAssessorApplicationDetailView: React.FC<
   const rejectObservation = async (reason: string) => {
     await reviewObservationMutation({ decision: "reject", comment: reason });
     if (observation) {
-      setObservation({ ...observation, status: "rejected", rejectionReason: reason });
+      setObservation({
+        ...observation,
+        status: "rejected",
+        rejectionReason: reason,
+      });
     }
   };
 
@@ -432,7 +457,6 @@ export const NsqAssessorApplicationDetailView: React.FC<
     try {
       await acceptObservation(pendingAcceptRequirements);
     } catch {
-      // useReviewDirectObservation already surfaced an error toast.
       return;
     }
     setIsAcceptObsSuccessOpen(true);
@@ -443,7 +467,6 @@ export const NsqAssessorApplicationDetailView: React.FC<
     try {
       await rejectObservation(reason);
     } catch {
-      // useReviewDirectObservation already surfaced an error toast.
       return;
     }
     setIsRejectObsSuccessOpen(true);
@@ -479,13 +502,17 @@ export const NsqAssessorApplicationDetailView: React.FC<
         unitsAssessed={
           observation?.units && observation.units.length > 0
             ? observation.units
-                .map((unitId) => unitsList.find((u) => u.id === unitId)?.unitNo || unitId)
+                .map(
+                  (unitId) =>
+                    unitsList.find((u) => u.id === unitId)?.unitNo || unitId,
+                )
                 .join("/")
             : undefined
         }
         onBack={() => setActiveSubView("overview")}
         onSubmitSuccess={() => {
-          if (observation) setObservation({ ...observation, status: "confirmed" });
+          if (observation)
+            setObservation({ ...observation, status: "confirmed" });
         }}
       />
     );
@@ -526,6 +553,25 @@ export const NsqAssessorApplicationDetailView: React.FC<
       <div className="w-full max-w-7xl xl:max-w-360 mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           <div className="lg:col-span-8 flex flex-col gap-6 w-full">
+            {isInternalVerificationStage && (
+              <div className="bg-blue-50/90 border border-blue-200 rounded-3xl p-5 sm:p-6 shadow-xs flex items-start gap-4">
+                <div className="w-10 h-10 rounded-2xl bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
+                  <FiInfo className="w-5 h-5 stroke-[2.5]" />
+                </div>
+                <div className="flex flex-col gap-1 min-w-0">
+                  <h4 className="text-sm sm:text-base font-extrabold text-blue-950">
+                    Application in Internal Quality Assurance (IQA)
+                  </h4>
+                  <p className="text-xs sm:text-sm text-blue-800 leading-relaxed font-normal">
+                    This candidate has finished the regular assessment phase and
+                    advanced to Internal Quality Assurance. Candidate evidence
+                    upload is now closed. The assigned Internal Verifier (IQA)
+                    samples evidence and completes the IQAM verification forms
+                    below.
+                  </p>
+                </div>
+              </div>
+            )}
             <QualificationStandardCard
               tradeName={tradeName}
               qualificationCode={unitsList[0]?.unitNo}
@@ -537,7 +583,9 @@ export const NsqAssessorApplicationDetailView: React.FC<
                   : undefined
               }
             />
-            <CandidateInductionTriggerCard onView={() => setIsInductionModalOpen(true)} />
+            <CandidateInductionTriggerCard
+              onView={() => setIsInductionModalOpen(true)}
+            />
             <QualificationUnitsList
               tradeName={tradeName}
               level={
@@ -559,10 +607,13 @@ export const NsqAssessorApplicationDetailView: React.FC<
                   </h3>
                   {(() => {
                     const ivReportSubmitted = Boolean(
-                      apiApp?.iqamForms?.find((f) => f.key === "iv_report")?.submittedAt,
+                      apiApp?.iqamForms?.find((f) => f.key === "iv_report")
+                        ?.submittedAt,
                     );
                     const finalPortfolioSubmitted = Boolean(
-                      apiApp?.iqamForms?.find((f) => f.key === "final_portfolio")?.submittedAt,
+                      apiApp?.iqamForms?.find(
+                        (f) => f.key === "final_portfolio",
+                      )?.submittedAt,
                     );
                     return ivReportSubmitted && finalPortfolioSubmitted ? (
                       <span className="px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-[#1E7F4C]/10 text-[#1E7F4C]">
@@ -582,7 +633,8 @@ export const NsqAssessorApplicationDetailView: React.FC<
                       <span className="text-xs sm:text-sm font-semibold text-neutral-primary">
                         Comprehensive Internal Verifier Report Form
                       </span>
-                      {apiApp?.iqamForms?.find((f) => f.key === "iv_report")?.submittedAt && (
+                      {apiApp?.iqamForms?.find((f) => f.key === "iv_report")
+                        ?.submittedAt && (
                         <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#1E7F4C]/10 text-[#1E7F4C]">
                           Submitted
                         </span>
@@ -615,7 +667,9 @@ export const NsqAssessorApplicationDetailView: React.FC<
                       <span className="text-xs sm:text-sm font-semibold text-neutral-primary">
                         Final Portfolio / Award Report Form
                       </span>
-                      {apiApp?.iqamForms?.find((f) => f.key === "final_portfolio")?.submittedAt && (
+                      {apiApp?.iqamForms?.find(
+                        (f) => f.key === "final_portfolio",
+                      )?.submittedAt && (
                         <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#1E7F4C]/10 text-[#1E7F4C]">
                           Submitted
                         </span>
@@ -654,7 +708,9 @@ export const NsqAssessorApplicationDetailView: React.FC<
                 photoUrl: application.candidatePhotoUrl,
               }}
               observation={observation}
-              observationActionLabel={hasFilledObservationForm ? "View" : "Fill Form"}
+              observationActionLabel={
+                hasFilledObservationForm ? "View" : "Fill Form"
+              }
               onOpenObservationModal={() => setIsObsModalOpen(true)}
               onFillObservationForm={() => setActiveSubView("observation_form")}
             />
@@ -719,10 +775,132 @@ export const NsqAssessorApplicationDetailView: React.FC<
         applicationId={application.id}
         verifierType="internal"
         onSuccess={() => {
-          queryClient.invalidateQueries({ queryKey: APPLICATION_QUERY_KEYS.detail(application.id) });
-          queryClient.invalidateQueries({ queryKey: APPLICATION_QUERY_KEYS.stages(application.id) });
+          queryClient.invalidateQueries({
+            queryKey: APPLICATION_QUERY_KEYS.detail(application.id),
+          });
+          queryClient.invalidateQueries({
+            queryKey: APPLICATION_QUERY_KEYS.stages(application.id),
+          });
         }}
       />
+
+      <AnimatePresence>
+        {isMoveToIqamModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs select-text">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl relative border border-gray-100 flex flex-col gap-5"
+            >
+              <button
+                type="button"
+                onClick={() => setIsMoveToIqamModalOpen(false)}
+                className="absolute top-6 right-6 p-2 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all cursor-pointer"
+              >
+                <FiX className="w-5 h-5" />
+              </button>
+
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                  <FiAlertTriangle className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">
+                    Hand Over to Internal Verification (IQAM)?
+                  </h3>
+                  <p className="text-xs text-gray-500">
+                    Candidate:{" "}
+                    <span className="font-semibold text-gray-700">
+                      {candidateName}
+                    </span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100 flex flex-col gap-2.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-gray-500 font-medium">
+                    Total Qualification Units:
+                  </span>
+                  <span className="font-bold text-gray-900">
+                    {unitsList.length}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-gray-500 font-medium">
+                    Units with Approved Evidence:
+                  </span>
+                  <span className="font-bold text-emerald-600">
+                    {
+                      unitsList.filter(
+                        (u) =>
+                          (u.totalCount ?? 0) > 0 &&
+                          u.approvedCount === u.totalCount,
+                      ).length
+                    }
+                  </span>
+                </div>
+                {unitsList.filter((u) => (u.approvedCount ?? 0) === 0).length >
+                  0 && (
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-500 font-medium">
+                      Units without Evidence:
+                    </span>
+                    <span className="font-bold text-amber-600">
+                      {
+                        unitsList.filter((u) => (u.approvedCount ?? 0) === 0)
+                          .length
+                      }
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {unitsList.filter((u) => (u.approvedCount ?? 0) === 0).length >
+                0 && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-xs text-amber-800 flex items-start gap-2.5">
+                  <FiAlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold">Important Warning: </span>
+                    Not all qualification units have approved evidence. Moving
+                    to IQAM will finalize the assessment phase. Once moved, the
+                    candidate will{" "}
+                    <strong>no longer be able to upload evidence</strong> for
+                    any remaining units.
+                  </div>
+                </div>
+              )}
+
+              <p className="text-xs text-gray-500 leading-relaxed">
+                Advancing will sign off all eligible units and transition the
+                application to the <strong>Internal Verification (IQA)</strong>{" "}
+                stage for sampling by the Internal Verifier.
+              </p>
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsMoveToIqamModalOpen(false)}
+                  className="px-5 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50 transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <Button
+                  type="button"
+                  variant="amber"
+                  loading={isMovingToIqam}
+                  onClick={executeMoveToIqam}
+                  className="px-6 py-2.5 bg-[#fbab2a] hover:bg-[#e89b1f] text-white text-xs font-bold rounded-xl shadow-md cursor-pointer border-none"
+                >
+                  Confirm &amp; Move to IQAM
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

@@ -12,6 +12,7 @@ import {
   FiClock,
   FiUser,
   FiX,
+  FiInfo,
 } from "react-icons/fi";
 import { HeaderBanner } from "@/features/candidate/features/Dashboard/components/HeaderBanner";
 import { CalendarWidget } from "@/features/candidate/features/Dashboard/components/CalendarWidget";
@@ -165,6 +166,18 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
   const completedStepsCount = progressSteps.filter((s) => s.status === "successful").length;
   const progressPercent =
     progressSteps.length > 1 ? (completedStepsCount / (progressSteps.length - 1)) * 100 : 0;
+
+  const ivStage = stagesData?.find((s) => s.stageKey === "internal_verification");
+  const regularAssessmentStage = stagesData?.find((s) => s.stageKey === "regular_assessment");
+  const effectiveStageKey = application?.currentStageKey || (application as any)?.stageKey;
+  const isInternalVerificationStage = Boolean(
+    effectiveStageKey === "internal_verification" ||
+      (ivStage && ivStage.status !== "not_started") ||
+      (regularAssessmentStage &&
+        (regularAssessmentStage.status === "successful" ||
+          (regularAssessmentStage.status as string) === "completed" ||
+          (regularAssessmentStage.status as string) === "approved")),
+  );
 
   const applicationStatusBadge =
     applicationFormStage?.status === "successful" || isAppFormApproved ? (
@@ -541,7 +554,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
         unitNumber={selectedUnit.unitNo}
         unitTitle={selectedUnit.title}
         tradeName={resolvedTradeName}
-        currentStageKey={application?.currentStageKey}
+        currentStageKey={effectiveStageKey}
         structure={selectedUnit.structure}
         onBack={handleBackFromUnit}
       />
@@ -694,6 +707,23 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                 })}
               </div>
             </div>
+
+            {/* Stage Notice Banner */}
+            {isInternalVerificationStage && (
+              <div className="bg-blue-50/90 border border-blue-200 rounded-2xl p-5 shadow-xs flex items-start gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
+                  <FiInfo className="w-5 h-5 stroke-[2.5]" />
+                </div>
+                <div className="flex flex-col gap-1 min-w-0">
+                  <h4 className="text-sm sm:text-base font-extrabold text-blue-950">
+                    Application in Internal Quality Assurance (IQA)
+                  </h4>
+                  <p className="text-xs sm:text-sm text-blue-800 leading-relaxed font-normal">
+                    Your assessment evidence has been reviewed and signed off by your assessor, and your application has advanced to the Internal Quality Assurance stage. Evidence uploading is closed while the Internal Verifier samples and reviews your assessment.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* 2. Application Status Card */}
             <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-2">

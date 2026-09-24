@@ -17,6 +17,7 @@ import type { PaymentTransaction } from "@/features/assessment-centre/types";
 import { Avatar } from "@/src/components/ui/avatar";
 import { ConfirmNsqDecisionModal } from "./ConfirmNsqDecisionModal";
 import { AssignNsqAssessorModal, type NsqRoleType } from "./AssignNsqAssessorModal";
+import { useGetCentreAssessors } from "@/src/features/shared/centre/hooks";
 import {
   useGetTradeDetail,
   useGetUnitsByTrade,
@@ -236,6 +237,33 @@ export const NsqCentreApplicationDetailView: React.FC<
     setAssignRoleType(next.roleType);
   };
 
+  // Fetch centre assessors roster to resolve photos and details if not attached directly to application
+  const { data: centreAssessors = [] } = useGetCentreAssessors({
+    status: "all",
+  });
+
+  const extractPhoto = (obj: any): string | undefined => {
+    if (!obj) return undefined;
+    return (
+      obj.photo?.url ||
+      obj.photoUrl ||
+      obj.avatar ||
+      (typeof obj.photoAssetId === "string" ? obj.photoAssetId : undefined) ||
+      undefined
+    );
+  };
+
+  const isSameAssessor = (
+    a?: { id?: string; name?: string } | null,
+    b?: { id?: string; name?: string } | null,
+  ): boolean => {
+    if (!a || !b) return false;
+    if (a.id && b.id && a.id === b.id) return true;
+    const nameA = a.name?.trim().toLowerCase();
+    const nameB = b.name?.trim().toLowerCase();
+    return Boolean(nameA && nameB && nameA === nameB);
+  };
+
   // Assigned Staff State — no assessor until either assigned this session or
   // hydrated from real backend data below.
   const [assignedAssessor, setAssignedAssessor] = useState<{
@@ -260,29 +288,168 @@ export const NsqCentreApplicationDetailView: React.FC<
       (application as any)?.unitAssessor ||
       (application as any)?.facilitator;
     if (unitAssessor) {
-      setAssignedAssessor({
+      const qaaPhoto = extractPhoto(unitAssessor);
+      setAssignedAssessor((prev) => ({
         id: unitAssessor.assessorId || unitAssessor.id,
         name: unitAssessor.name,
         qualification:
           unitAssessor.qualifications?.join(", ") || "QAA Assessor",
-        photoUrl: unitAssessor.photo?.url,
-      });
+        photoUrl: qaaPhoto || prev?.photoUrl,
+      }));
     }
   }, [
-    (application as any)?.unitAssessor?.assessorId,
-    (application as any)?.facilitator?.assessorId,
+    (application as any)?.unitAssessor,
+    (application as any)?.facilitator,
   ]);
 
   useEffect(() => {
     if (application?.internalVerifier) {
-      setAssignedIqa({
-        id: application.internalVerifier.assessorId,
-        name: application.internalVerifier.name,
+      const iv = application.internalVerifier as any;
+      const unitAssessor =
+        (application as any)?.unitAssessor ||
+        (application as any)?.facilitator;
+      const same = isSameAssessor(
+        { id: iv.assessorId, name: iv.name },
+        unitAssessor
+          ? { id: unitAssessor.assessorId || unitAssessor.id, name: unitAssessor.name }
+          : null,
+      );
+
+      const fallbackPhoto = same ? extractPhoto(unitAssessor) : undefined;
+      const directPhoto = extractPhoto(iv);
+
+      setAssignedIqa((prev) => ({
+        id: iv.assessorId,
+        name: iv.name,
         qualification: "IQAM Verifier",
-      });
+        photoUrl: directPhoto || fallbackPhoto || prev?.photoUrl,
+      }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [application?.internalVerifier?.assessorId]);
+  }, [
+    application?.internalVerifier,
+    (application as any)?.unitAssessor,
+    (application as any)?.facilitator,
+  ]);
+
+  // Robustly resolve Assessor photo across direct state, unitAssessor, same-person link, and roster
+  const resolvedAssessorPhoto = useMemo(() => {
+    if (assignedAssessor?.photoUrl) return assignedAssessor.photoUrl;
+
+    const unitAssessor =
+      (application as any)?.unitAssessor ||
+      (application as any)?.facilitator;
+    const directPhoto = extractPhoto(unitAssessor);
+    if (directPhoto) return directPhoto;
+
+    const qaaObj = assignedAssessor || (unitAssessor ? {
+      id: unitAssessor.assessorId || unitAssessor.id,
+      name: unitAssessor.name,
+    } : null);
+
+    const iqaObj = assignedIqa || (application?.internalVerifier ? {
+      id: application.internalVerifier.assessorId,
+      name: application.internalVerifier.name,
+    } : null);
+
+    // If same person as IQA, borrow IQA's photo
+    if (isSameAssessor(qaaObj, iqaObj)) {
+      const iqaPhoto =
+        assignedIqa?.photoUrl ||
+        extractPhoto(application?.internalVerifier);
+      if (iqaPhoto) return iqaPhoto;
+    }
+
+    // Resolve from centreAssessors directory
+    if (qaaObj) {
+      const matched = centreAssessors.find(
+        (a) =>
+          (qaaObj.id && (a.id === qaaObj.id || (a as any).assessorId === qaaObj.id || (a as any).userId === qaaObj.id)) ||
+          (qaaObj.name && a.name?.trim().toLowerCase() === qaaObj.name.trim().toLowerCase()),
+      );
+      const matchedPhoto = extractPhoto(matched);
+      if (matchedPhoto) return matchedPhoto;
+    }
+
+    if (isSameAssessor(qaaObj, iqaObj) && iqaObj) {
+      const matchedIqa = centreAssessors.find(
+        (a) =>
+          (iqaObj.id && (a.id === iqaObj.id || (a as any).assessorId === iqaObj.id || (a as any).userId === iqaObj.id)) ||
+          (iqaObj.name && a.name?.trim().toLowerCase() === iqaObj.name.trim().toLowerCase()),
+      );
+      const matchedIqaPhoto = extractPhoto(matchedIqa);
+      if (matchedIqaPhoto) return matchedIqaPhoto;
+    }
+
+    return undefined;
+  }, [
+    assignedAssessor,
+    application?.unitAssessor,
+    application?.facilitator,
+    assignedIqa,
+    application?.internalVerifier,
+    centreAssessors,
+  ]);
+
+  // Robustly resolve IQA photo across direct state, internalVerifier, same-person link, and roster
+  const resolvedIqaPhoto = useMemo(() => {
+    if (assignedIqa?.photoUrl) return assignedIqa.photoUrl;
+
+    const ivRaw = application?.internalVerifier;
+    const directPhoto = extractPhoto(ivRaw);
+    if (directPhoto) return directPhoto;
+
+    const iqaObj = assignedIqa || (ivRaw ? {
+      id: ivRaw.assessorId,
+      name: ivRaw.name,
+    } : null);
+
+    const unitAssessor =
+      (application as any)?.unitAssessor ||
+      (application as any)?.facilitator;
+    const qaaObj = assignedAssessor || (unitAssessor ? {
+      id: unitAssessor.assessorId || unitAssessor.id,
+      name: unitAssessor.name,
+    } : null);
+
+    // If same person as QAA Assessor, borrow QAA's photo
+    if (isSameAssessor(iqaObj, qaaObj)) {
+      const qaaPhoto =
+        assignedAssessor?.photoUrl ||
+        extractPhoto(unitAssessor);
+      if (qaaPhoto) return qaaPhoto;
+    }
+
+    // Resolve from centreAssessors directory
+    if (iqaObj) {
+      const matched = centreAssessors.find(
+        (a) =>
+          (iqaObj.id && (a.id === iqaObj.id || (a as any).assessorId === iqaObj.id || (a as any).userId === iqaObj.id)) ||
+          (iqaObj.name && a.name?.trim().toLowerCase() === iqaObj.name.trim().toLowerCase()),
+      );
+      const matchedPhoto = extractPhoto(matched);
+      if (matchedPhoto) return matchedPhoto;
+    }
+
+    if (isSameAssessor(iqaObj, qaaObj) && qaaObj) {
+      const matchedQaa = centreAssessors.find(
+        (a) =>
+          (qaaObj.id && (a.id === qaaObj.id || (a as any).assessorId === qaaObj.id || (a as any).userId === qaaObj.id)) ||
+          (qaaObj.name && a.name?.trim().toLowerCase() === qaaObj.name.trim().toLowerCase()),
+      );
+      const matchedQaaPhoto = extractPhoto(matchedQaa);
+      if (matchedQaaPhoto) return matchedQaaPhoto;
+    }
+
+    return undefined;
+  }, [
+    assignedIqa,
+    application?.internalVerifier,
+    assignedAssessor,
+    application?.unitAssessor,
+    application?.facilitator,
+    centreAssessors,
+  ]);
 
   // Modals for induction, receipt & IQAM form viewer
   const [isInductionModalOpen, setIsInductionModalOpen] = useState(false);
@@ -961,7 +1128,7 @@ export const NsqCentreApplicationDetailView: React.FC<
                   {assignedAssessor ? (
                     <div className="bg-[#F8F9FA] rounded-xl p-5 border border-gray-100 flex items-center gap-3.5 min-h-25">
                       <Avatar
-                        src={assignedAssessor.photoUrl}
+                        src={resolvedAssessorPhoto || assignedAssessor.photoUrl}
                         name={assignedAssessor.name}
                         className="w-12 h-12 shrink-0 border border-gray-200"
                         alt={assignedAssessor.name}
@@ -1000,7 +1167,7 @@ export const NsqCentreApplicationDetailView: React.FC<
                   {assignedIqa ? (
                     <div className="bg-[#F8F9FA] rounded-xl p-5 border border-gray-100 flex items-center gap-3.5 min-h-25">
                       <Avatar
-                        src={assignedIqa.photoUrl}
+                        src={resolvedIqaPhoto || assignedIqa.photoUrl}
                         name={assignedIqa.name}
                         className="w-12 h-12 shrink-0 border border-gray-200"
                         alt={assignedIqa.name}

@@ -1,11 +1,11 @@
 "use client";
 
-import React from "react";
-import { FiDownload, FiFileText, FiLoader } from "react-icons/fi";
 import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
-import type { EvidenceRecord } from "@/src/features/shared/evidence-vault/utils/evidenceConstants";
 import { useThirdPartyReportDownload } from "@/src/features/shared/evidence-vault/hooks/useThirdPartyReportDownload";
+import type { EvidenceRecord } from "@/src/features/shared/evidence-vault/utils/evidenceConstants";
+import React from "react";
+import { FiDownload, FiFileText, FiLoader } from "react-icons/fi";
 
 interface Props {
   applicationId?: string;
@@ -37,7 +37,9 @@ export const EvidenceItemsList: React.FC<Props> = ({
     <div className="lg:col-span-8 xl:col-span-9 flex flex-col gap-8">
       {/* Section 1: Resources */}
       <div className="flex flex-col gap-4">
-        <h2 className="text-lg font-extrabold text-black tracking-tight">Resources</h2>
+        <h2 className="text-lg font-extrabold text-black tracking-tight">
+          Resources
+        </h2>
 
         <div
           onClick={onOpenSelfAssessmentForm}
@@ -94,7 +96,9 @@ export const EvidenceItemsList: React.FC<Props> = ({
                   {hasUploadedReport ? "Submitted" : "Not Uploaded"}
                 </span>
               </div>
-              <span className="text-xs text-gray-400 font-normal">Employer &amp; Supervisor References</span>
+              <span className="text-xs text-gray-400 font-normal">
+                Employer &amp; Supervisor References
+              </span>
             </div>
           </div>
           <div className="flex items-center justify-end sm:justify-start gap-2 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100/70 sm:border-transparent shrink-0">
@@ -167,25 +171,57 @@ export const EvidenceItemsList: React.FC<Props> = ({
           evidenceItems.map((item, idx) => {
             const statusStr = (item.status as string)?.toLowerCase() || "";
             const isApproved =
-              statusStr === "approved" || statusStr === "accepted" || statusStr === "successful";
+              statusStr === "approved" ||
+              statusStr === "accepted" ||
+              statusStr === "successful";
             const isAttention =
-              statusStr === "rejected" || statusStr === "needs_attention" || statusStr === "attention_required";
+              statusStr === "rejected" ||
+              statusStr === "needs_attention" ||
+              statusStr === "attention_required";
             const isSubmitted = statusStr === "submitted";
 
             const title =
-              item.documentName || item.name || item.title || item.filename || item.originalName || `Evidence Document #${idx + 1}`;
+              item.documentName ||
+              item.name ||
+              item.title ||
+              item.filename ||
+              item.originalName ||
+              `Evidence Document #${idx + 1}`;
             const fileFeedback = item.feedback || item.reviewComment;
-            const displaySize = item.size || item.fileSize || "Uploaded document";
-            const displayStatus = isApproved ? "Approved" : isAttention ? "Attention Required" : isSubmitted ? "Submitted" : item.status ? item.status.replace(/_/g, " ") : "Pending";
-            const badgeBg = isApproved || isSubmitted ? "bg-[#1E7F4C]/10" : isAttention ? "bg-[#FCE8EB]" : "bg-[#F9A825]/10";
-            const badgeText = isApproved || isSubmitted ? "text-[#1E7F4C]" : isAttention ? "text-[#A31D38]" : "text-[#F9A825]";
+            const displaySize =
+              item.size || item.fileSize || "Uploaded document";
+            const displayStatus = isApproved
+              ? "Approved"
+              : isAttention
+                ? "Attention Required"
+                : isSubmitted
+                  ? "Submitted"
+                  : item.status
+                    ? item.status.replace(/_/g, " ")
+                    : "Pending";
+            const badgeBg =
+              isApproved || isSubmitted
+                ? "bg-[#1E7F4C]/10"
+                : isAttention
+                  ? "bg-[#FCE8EB]"
+                  : "bg-[#F9A825]/10";
+            const badgeText =
+              isApproved || isSubmitted
+                ? "text-[#1E7F4C]"
+                : isAttention
+                  ? "text-[#A31D38]"
+                  : "text-[#F9A825]";
 
             const handlePreview = () => {
               onSelectPreview({
                 id: item.id || `ev-${idx}`,
                 name: title,
                 size: displaySize,
-                status: isApproved ? "Approved" : isSubmitted ? "Submitted" : displayStatus,
+                status: isApproved
+                  ? "Approved"
+                  : isSubmitted
+                    ? "Submitted"
+                    : displayStatus,
                 statusBg: badgeBg,
                 statusText: badgeText,
                 assetId: item.assetId,
@@ -209,12 +245,18 @@ export const EvidenceItemsList: React.FC<Props> = ({
                     </div>
                     <div className="flex flex-col gap-1 min-w-0 flex-1">
                       <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-                        <h3 className="text-sm sm:text-base md:text-lg font-bold text-black tracking-tight group-hover:text-primary transition-colors break-words">{title}</h3>
-                        <span className={`text-xs font-semibold px-2.5 sm:px-3 py-0.5 rounded-full capitalize ${badgeBg} ${badgeText}`}>
+                        <h3 className="text-sm sm:text-base md:text-lg font-bold text-black tracking-tight group-hover:text-primary transition-colors wrap-break-word">
+                          {title}
+                        </h3>
+                        <span
+                          className={`text-xs font-semibold px-2.5 sm:px-3 py-0.5 rounded-full capitalize ${badgeBg} ${badgeText}`}
+                        >
                           {displayStatus}
                         </span>
                       </div>
-                      <span className="text-xs text-gray-400 font-normal">{displaySize}</span>
+                      <span className="text-xs text-gray-400 font-normal">
+                        {displaySize}
+                      </span>
                     </div>
                   </div>
 

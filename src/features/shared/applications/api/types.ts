@@ -195,8 +195,15 @@ export interface ApplicationDetail extends Application {
   internalVerifier?: {
     assessorId: string;
     name: string;
-    qualifications: string[];
-    assignedAt: string;
+    qualifications?: string[];
+    assignedAt?: string;
+    photoAssetId?: string | null;
+    photo?: {
+      assetId?: string;
+      url?: string | null;
+    } | null;
+    photoUrl?: string | null;
+    avatar?: string | null;
   } | null;
   facilitator?: {
     assessorId?: string;
