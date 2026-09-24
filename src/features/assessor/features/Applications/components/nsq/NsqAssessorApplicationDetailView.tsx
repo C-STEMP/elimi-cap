@@ -640,7 +640,17 @@ export const NsqAssessorApplicationDetailView: React.FC<
     apiApp?.iqamForms?.length &&
     apiApp.iqamForms.every((f) => f.status === "submitted"),
   );
-  const isIvApproved = Boolean((apiApp as any)?.ivApproved);
+  // IV approval moves the application past internal_verification (the backend
+  // sends no separate "approved" flag). The local flag hides the button as soon
+  // as the approval succeeds, before the refetched stage arrives.
+  const [hasApprovedIv, setHasApprovedIv] = useState(false);
+  const isIvApproved =
+    hasApprovedIv ||
+    Boolean(
+      effectiveStageKey &&
+        STAGE_ORDER.indexOf(effectiveStageKey) >
+          STAGE_ORDER.indexOf("internal_verification"),
+    );
 
   useEffect(() => {
     onMoveToIqamStatusChange?.(hasMovedToIqam);
@@ -1570,6 +1580,7 @@ export const NsqAssessorApplicationDetailView: React.FC<
         applicationId={application.id}
         verifierType="internal"
         onSuccess={() => {
+          setHasApprovedIv(true);
           queryClient.invalidateQueries({
             queryKey: APPLICATION_QUERY_KEYS.detail(application.id),
           });

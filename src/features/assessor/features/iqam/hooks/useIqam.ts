@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/src/components/ui/toast";
 import { ApiError } from "@/src/lib/api/client";
+import { APPLICATION_QUERY_KEYS } from "@/src/features/shared/applications/hooks/queryKeys";
 import {
   getIqamCentresApi,
   getIqamCentreApi,
@@ -107,6 +108,9 @@ export function useSubmitIqamSamplingPlan(centreId: string) {
     mutationFn: (payload: { tradeId: string; qualificationLevelId: string }) =>
       submitIqamSamplingPlanApi(centreId, payload),
     onSuccess: (data) => {
+      // The application's `iqamForms` statuses gate "Mark IQA Competent" on
+      // the application page, so refresh the application too.
+      queryClient.invalidateQueries({ queryKey: APPLICATION_QUERY_KEYS.all });
       queryClient.invalidateQueries({
         queryKey: IQAM_QUERY_KEYS.samplingPlan(centreId, data.trade.id, data.qualificationLevel.id),
       });
@@ -188,6 +192,9 @@ export function useSubmitIqamSamplingRecord(centreId: string) {
     mutationFn: (payload: { tradeId: string; qualificationLevelId: string }) =>
       submitIqamSamplingRecordApi(centreId, payload),
     onSuccess: (data) => {
+      // The application's `iqamForms` statuses gate "Mark IQA Competent" on
+      // the application page, so refresh the application too.
+      queryClient.invalidateQueries({ queryKey: APPLICATION_QUERY_KEYS.all });
       queryClient.invalidateQueries({
         queryKey: IQAM_QUERY_KEYS.samplingRecord(centreId, data.trade.id, data.qualificationLevel.id),
       });
@@ -256,6 +263,9 @@ export function useSubmitIqamIvReport(applicationId: string) {
   return useMutation({
     mutationFn: () => submitIqamIvReportApi(applicationId),
     onSuccess: (data) => {
+      // The application's `iqamForms` statuses gate "Mark IQA Competent" on
+      // the application page, so refresh the application too.
+      queryClient.invalidateQueries({ queryKey: APPLICATION_QUERY_KEYS.all });
       queryClient.setQueryData(IQAM_QUERY_KEYS.ivReport(applicationId), data);
       toast({
         type: "success",
@@ -297,6 +307,9 @@ export function useSubmitIqamAssessorOutcomes(applicationId: string) {
   return useMutation({
     mutationFn: () => submitIqamAssessorOutcomesApi(applicationId),
     onSuccess: (data) => {
+      // The application's `iqamForms` statuses gate "Mark IQA Competent" on
+      // the application page, so refresh the application too.
+      queryClient.invalidateQueries({ queryKey: APPLICATION_QUERY_KEYS.all });
       queryClient.setQueryData(IQAM_QUERY_KEYS.assessorOutcomes(applicationId), data);
       toast({
         type: "success",
@@ -338,6 +351,9 @@ export function useSubmitIqamFinalPortfolio(applicationId: string) {
   return useMutation({
     mutationFn: () => submitIqamFinalPortfolioApi(applicationId),
     onSuccess: (data) => {
+      // The application's `iqamForms` statuses gate "Mark IQA Competent" on
+      // the application page, so refresh the application too.
+      queryClient.invalidateQueries({ queryKey: APPLICATION_QUERY_KEYS.all });
       queryClient.setQueryData(IQAM_QUERY_KEYS.finalPortfolio(applicationId), data);
       toast({
         type: "success",
