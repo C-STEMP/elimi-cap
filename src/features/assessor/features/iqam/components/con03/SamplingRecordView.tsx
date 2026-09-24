@@ -108,7 +108,7 @@ export const SamplingRecordView: React.FC<SamplingRecordViewProps> = ({
             <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
               <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">INTERNAL VERIFIER</span>
               <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">
-                {matrix?.internalVerifier.name || "—"}
+                {matrix?.internalVerifier?.name || "—"}
               </h4>
             </div>
 

@@ -112,11 +112,11 @@ export const ComprehensiveReportView: React.FC<ComprehensiveReportViewProps> = (
         )}
 
         {/* Navigation Tabs Pill Container */}
-        <div className="flex items-center gap-2 p-1.5 bg-slate-100/80 rounded-2xl w-fit">
+        <div className="flex items-center gap-1.5 sm:gap-2 p-1 sm:p-1.5 bg-slate-100/80 rounded-2xl w-full sm:w-fit overflow-x-auto scrollbar-none">
           <button
             type="button"
             onClick={() => setActiveTab("04A")}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
               activeTab === "04A" ? "bg-[#900B27] text-white shadow-xs" : "text-gray-600 hover:text-neutral-primary"
             }`}
           >
@@ -125,7 +125,7 @@ export const ComprehensiveReportView: React.FC<ComprehensiveReportViewProps> = (
           <button
             type="button"
             onClick={() => setActiveTab("04B")}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
               activeTab === "04B" ? "bg-[#900B27] text-white shadow-xs" : "text-gray-600 hover:text-neutral-primary"
             }`}
           >
@@ -134,7 +134,7 @@ export const ComprehensiveReportView: React.FC<ComprehensiveReportViewProps> = (
           <button
             type="button"
             onClick={() => setActiveTab("04C")}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
               activeTab === "04C" ? "bg-[#900B27] text-white shadow-xs" : "text-gray-600 hover:text-neutral-primary"
             }`}
           >
@@ -145,9 +145,9 @@ export const ComprehensiveReportView: React.FC<ComprehensiveReportViewProps> = (
         {/* Dynamic Section View */}
         {activeTab === "04A" && (
           <Section04AVerificationScope
-            candidateName={report?.candidate.name || candidateName}
-            qualificationTitle={report ? `${report.trade.name} Level ${report.qualificationLevel.level}` : undefined}
-            internalVerifierName={report?.internalVerifier.name}
+            candidateName={report?.candidate?.name || candidateName}
+            qualificationTitle={report?.trade?.name && report?.qualificationLevel?.level ? `${report.trade.name} Level ${report.qualificationLevel.level}` : undefined}
+            internalVerifierName={report?.internalVerifier?.name}
             unitAssessorName={report?.unitAssessor?.name}
             data={formData.con04a}
             readOnly={isSubmitted}
@@ -172,8 +172,8 @@ export const ComprehensiveReportView: React.FC<ComprehensiveReportViewProps> = (
         )}
 
         {/* Bottom Form Actions / Submit Bar */}
-        <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-wrap items-center justify-between gap-4 mt-2">
-          <div className="flex items-center gap-3">
+        <div className="bg-white rounded-3xl p-4 sm:p-6 shadow-sm border border-gray-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mt-2">
+          <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
             <button
               type="button"
               onClick={() => {
@@ -181,17 +181,17 @@ export const ComprehensiveReportView: React.FC<ComprehensiveReportViewProps> = (
                 else if (activeTab === "04B") setActiveTab("04A");
                 else if (activeTab === "04C") setActiveTab("04B");
               }}
-              className="px-5 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-700 hover:bg-gray-50 transition-all cursor-pointer flex items-center gap-1.5"
+              className="flex-1 sm:flex-initial justify-center px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-700 hover:bg-gray-50 transition-all cursor-pointer flex items-center gap-1.5"
             >
               <FiArrowLeft className="w-4 h-4" />
               <span>{activeTab === "04A" ? "Back to Application" : "Previous Section"}</span>
             </button>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
             {isSubmitted ? (
-              <div className="flex items-center gap-2">
-                <span className="px-4 py-2 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-bold flex items-center gap-1.5">
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <span className="flex-1 sm:flex-initial justify-center px-4 py-2.5 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-bold flex items-center gap-1.5">
                   <FiCheck className="w-4 h-4" />
                   <span>Report Submitted</span>
                 </span>
@@ -202,7 +202,7 @@ export const ComprehensiveReportView: React.FC<ComprehensiveReportViewProps> = (
                       if (activeTab === "04A") setActiveTab("04B");
                       else if (activeTab === "04B") setActiveTab("04C");
                     }}
-                    className="px-5 py-2.5 rounded-xl bg-[#900B27] hover:bg-[#72081f] text-white text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
+                    className="flex-1 sm:flex-initial justify-center px-5 py-2.5 rounded-xl bg-[#900B27] hover:bg-[#72081f] text-white text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
                   >
                     <span>Next Section</span>
                     <FiArrowRight className="w-4 h-4" />
@@ -215,7 +215,7 @@ export const ComprehensiveReportView: React.FC<ComprehensiveReportViewProps> = (
                 variant="primary"
                 onClick={handleNextOrSubmit}
                 loading={patchReport.isPending || submitReport.isPending}
-                className="bg-[#900B27] hover:bg-[#72081f] text-white text-xs font-bold px-6 py-2.5 rounded-xl cursor-pointer flex items-center gap-2 shadow-sm border-none"
+                className="w-full sm:w-auto justify-center bg-[#900B27] hover:bg-[#72081f] text-white text-xs font-bold px-6 py-2.5 rounded-xl cursor-pointer flex items-center gap-2 shadow-sm border-none"
               >
                 <span>Submit Comprehensive Report</span>
                 <FiCheck className="w-4 h-4" />
@@ -226,7 +226,7 @@ export const ComprehensiveReportView: React.FC<ComprehensiveReportViewProps> = (
                 variant="primary"
                 onClick={handleNextOrSubmit}
                 loading={patchReport.isPending}
-                className="bg-[#900B27] hover:bg-[#72081f] text-white text-xs font-bold px-6 py-2.5 rounded-xl cursor-pointer flex items-center gap-2 shadow-sm border-none"
+                className="w-full sm:w-auto justify-center bg-[#900B27] hover:bg-[#72081f] text-white text-xs font-bold px-6 py-2.5 rounded-xl cursor-pointer flex items-center gap-2 shadow-sm border-none"
               >
                 <span>Save &amp; Continue to {activeTab === "04A" ? "Section 04B" : "Section 04C"}</span>
                 <FiArrowRight className="w-4 h-4" />

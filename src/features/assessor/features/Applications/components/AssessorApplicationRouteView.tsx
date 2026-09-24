@@ -1,11 +1,14 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useMemo } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   useGetApplicationById,
   APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
 } from "@/src/features/shared/applications/hooks";
+import { useGetMeProfile } from "@/src/features/shared/account/hooks";
+import { useGetAssessorProfile } from "@/src/features/assessor/hooks";
+import { getAssessorRoleContext } from "@/src/features/shared/applications/utils/assessorRole";
 import { AssessorHeaderBanner } from "@/src/features/assessor/features/Dashboard/components/AssessorHeaderBanner";
 import {
   AssessorApplicationDetailView,
@@ -24,9 +27,20 @@ export const AssessorApplicationRouteView: React.FC<{ id: string }> = ({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const user = useAppSelector((state) => state.auth.user);
+  const { data: meProfile } = useGetMeProfile();
+  const { data: assessorProfile } = useGetAssessorProfile();
   const { data: application, isLoading } = useGetApplicationById(id, {
     refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
   });
+
+  const roleCtx = useMemo(() => {
+    return getAssessorRoleContext({
+      application,
+      user,
+      meProfile,
+      assessorProfile,
+    });
+  }, [application, user, meProfile, assessorProfile]);
 
   const [applicationSubView, setApplicationSubView] =
     useState<AssessorDetailSubView>("stages");
@@ -69,7 +83,7 @@ export const AssessorApplicationRouteView: React.FC<{ id: string }> = ({
           (application.candidate as any)?.photoAssetId ||
           (application.candidate as any)?.avatar ||
           null,
-        role: (application as any).role || "Assessor",
+        role: (application as any).role || roleCtx.roleLabel || "Assessor",
       }
     : null;
 
@@ -120,7 +134,13 @@ export const AssessorApplicationRouteView: React.FC<{ id: string }> = ({
         canMarkAsComplete={canMarkAsComplete}
         onMarkAsComplete={() => setTriggerMarkComplete(true)}
         onBackFromApplication={handleBack}
-        isIvApplication={assessorRecord?.role === "Internal Verifier"}
+        isIvApplication={
+          Boolean(
+            nsqNavState?.toString().startsWith("iqam") ||
+              (roleCtx.isCurrentIqa && !roleCtx.isCurrentQaa) ||
+              assessorRecord?.role === "Internal Verifier",
+          )
+        }
         activeIqamToolTitle={iqamHeaderConfig?.title}
         activeIqamBreadcrumb={iqamHeaderConfig?.breadcrumb}
         onBackFromIqamTool={() => setIqamHeaderConfig(null)}
@@ -167,15 +187,6 @@ export const AssessorApplicationRouteView: React.FC<{ id: string }> = ({
               Back to Applications
             </button>
           </div>
-        ) : assessorRecord.role === "Internal Verifier" ? (
-          <IqamToolsDashboard
-            initialToolId="CON/04/IQAM"
-            initialApplicationId={application.id}
-            initialCentreId={application.centreId}
-            initialCandidateName={assessorRecord.candidateName}
-            onBack={handleBack}
-            onUpdateHeader={setIqamHeaderConfig}
-          />
         ) : application.type === "NSQ" ? (
           <NsqAssessorApplicationDetailView
             application={assessorRecord}
@@ -188,6 +199,16 @@ export const AssessorApplicationRouteView: React.FC<{ id: string }> = ({
             }}
             onMoveToIqamStatusChange={setHasMovedToIqam}
             onCanMoveToIqamChange={setCanMoveToIqam}
+            onUpdateHeader={setIqamHeaderConfig}
+          />
+        ) : assessorRecord.role === "Internal Verifier" ? (
+          <IqamToolsDashboard
+            initialToolId="CON/04/IQAM"
+            initialApplicationId={application.id}
+            initialCentreId={application.centreId}
+            initialCandidateName={assessorRecord.candidateName}
+            onBack={handleBack}
+            onUpdateHeader={setIqamHeaderConfig}
           />
         ) : (
           <AssessorApplicationDetailView
