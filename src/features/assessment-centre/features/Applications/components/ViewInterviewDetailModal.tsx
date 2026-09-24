@@ -152,7 +152,7 @@ export const ViewInterviewDetailModal: React.FC<ViewInterviewDetailModalProps> =
                             hour: "2-digit",
                             minute: "2-digit",
                           })
-                        : "10:00 AM"}
+                        : "—"}
                     </span>
                   </div>
                 </div>
@@ -180,7 +180,7 @@ export const ViewInterviewDetailModal: React.FC<ViewInterviewDetailModalProps> =
                     <div className="flex flex-col">
                       <span className="text-[11px] text-gray-400">Mode: Physical</span>
                       <span className="text-xs font-bold text-gray-800">
-                        {interview.location || "Cstemp Centre Address"}
+                        {interview.location || ""}
                       </span>
                     </div>
                   </>

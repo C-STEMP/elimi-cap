@@ -6,10 +6,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/src/components/ui/toast";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import {
-  useApplication, useGetApplicationById, useGetApplicationStages,
+  useGetApplicationById, useGetApplicationStages,
   useGetPaymentQuote, useGetApplicationReceipt,
 } from "./useApplication";
-import { useGetInterviewSchedule, useGetInterviewPanel, useGetInterviewForms } from "@/src/features/shared/applications/hooks";
+import { useGetInterviewSchedule, useGetInterviewPanel, useGetInterviewForms, usePaystackCheckout } from "@/src/features/shared/applications/hooks";
 import {
   APPLICATION_QUERY_KEYS,
   APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
@@ -31,7 +31,7 @@ export function useApplicationDetailsState(id?: string) {
   const { toast } = useToast();
   const dispatch = useAppDispatch();
   const queryClient = useQueryClient();
-  const { initiatePayment } = useApplication();
+  const paystackCheckout = usePaystackCheckout();
 
   const [isPaymentConfirmed, setIsPaymentConfirmed] = useState(false);
   const [activePaymentModal, setActivePaymentModal] = useState<PaymentModalType>(null);
@@ -141,12 +141,13 @@ export function useApplicationDetailsState(id?: string) {
     }
     setActivePaymentModal("processing");
     setPaymentErrorInfo({});
-    initiatePayment.mutate(application.id, {
-      onSuccess: (data: any) => {
-        const checkoutUrl = data?.checkoutUrl || data?.data?.checkoutUrl;
-        if (checkoutUrl) window.location.href = checkoutUrl;
-        else { setIsPaymentConfirmed(true); setActivePaymentModal("success"); queryClient.invalidateQueries({ queryKey: APPLICATION_QUERY_KEYS.all }); }
+    paystackCheckout.startCheckout(application.id, {
+      onPaid: () => {
+        setIsPaymentConfirmed(true);
+        setActivePaymentModal("success");
+        toast({ type: "success", title: "Payment Confirmed", description: "Your payment was processed successfully via Paystack." });
       },
+      onClosedUnpaid: () => setActivePaymentModal(null),
       onError: (err: any) => {
         setPaymentErrorInfo({ title: "Payment Unsuccessful", description: err?.message || "Payment was not successful. Please try again." });
         setActivePaymentModal("unsuccessful");

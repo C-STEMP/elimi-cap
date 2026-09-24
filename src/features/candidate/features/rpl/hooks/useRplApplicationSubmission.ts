@@ -16,7 +16,6 @@ import {
   getTradesBySectorApi,
 } from "@/src/features/shared/reference/api";
 import {
-  createApplication as createApplicationSlice,
   setCurrentApplication,
   updateApplicationStatus,
 } from "@/store/slices/applicationSlice";
@@ -114,20 +113,6 @@ export function useRplApplicationSubmission() {
 
       if (created?.id) {
         dispatch(setCurrentApplication(created.id));
-        dispatch(
-          createApplicationSlice({
-            title:
-              created.trade?.name ||
-              (!rplExp.qualificationTitle?.match(/^[0-9A-Z]{20,}$/) &&
-                rplExp.qualificationTitle) ||
-              startApp.tradeName ||
-              "RPL Application",
-            subtitle:
-              created.sector?.name ||
-              startApp.sectorName ||
-              "Recognition of Prior Learning",
-          }),
-        );
         return created.id;
       }
     } catch (err: any) {

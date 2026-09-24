@@ -24,7 +24,6 @@ import {
 } from "@/src/features/shared/reference/hooks";
 import {
   setCurrentApplication,
-  createApplication as createApplicationSlice,
 } from "@/store/slices/applicationSlice";
 
 const rule = createSchemaFieldRule(startApplicationSchema);
@@ -283,12 +282,6 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
           if (createdApp?.id) {
             dispatch(setCurrentApplication(createdApp.id));
           }
-          dispatch(
-            createApplicationSlice({
-              title: tradeName,
-              subtitle: sectorName,
-            }),
-          );
 
           if (onContinue) {
             onContinue();
@@ -312,12 +305,6 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
             err?.statusCode === 409;
 
           if (isConflict) {
-            dispatch(
-              createApplicationSlice({
-                title: tradeName,
-                subtitle: sectorName,
-              }),
-            );
             if (onContinue) {
               onContinue();
             } else if (appType === "RPL") {

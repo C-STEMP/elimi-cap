@@ -21,6 +21,8 @@ import {
 import { useAppSelector } from "@/src/store/hooks";
 import { canDeactivateAssessor } from "@/features/assessment-centre/utils/rbac";
 
+const isAllFilter = (value?: string | null) => !value || value.toLowerCase() === "all";
+
 interface AssessorsHeaderProps {
   selectedAssessorId: string | null;
   onBackToList: () => void;
@@ -267,11 +269,10 @@ const AssessorsListHeader: React.FC<AssessorsListHeaderProps> = ({
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {stats.map((item) => {
-          const isActive =
-            activeStatusFilter !== undefined &&
-            (activeStatusFilter === item.status ||
-              (item.status === "All" &&
-                (activeStatusFilter === "All" || !activeStatusFilter)));
+          // The "All" card is the default selection when no filter is set.
+          const isActive = isAllFilter(activeStatusFilter)
+            ? item.status === "All"
+            : activeStatusFilter!.toLowerCase() === item.status.toLowerCase();
           const isClickable = Boolean(onSelectStatusFilter);
 
           return (

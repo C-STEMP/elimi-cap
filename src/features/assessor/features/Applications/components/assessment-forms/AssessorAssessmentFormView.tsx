@@ -15,6 +15,8 @@ import {
   useGetApplicationById,
 } from "@/src/features/shared/applications/hooks";
 import { useToast } from "@/src/components/ui/toast";
+import { useGetUnitsByTrade } from "@/src/features/shared/reference/hooks";
+import { toUnitLabel } from "./utils";
 import { useAppSelector } from "@/src/store/hooks";
 
 interface AssessorAssessmentFormViewProps {
@@ -70,6 +72,17 @@ export const AssessorAssessmentFormView: React.FC<
   const isInterviewStage = applicationData?.currentStageKey === "interview";
 
   const formType = FORM_MAP[formId] || "records";
+  // Unit dropdowns list the trade's NOS units, candidate-preferred ones first.
+  const { data: tradeUnits = [] } = useGetUnitsByTrade(
+    applicationData?.tradeId || "",
+  );
+  const unitLabels = React.useMemo(() => {
+    const preferred = new Set(applicationData?.unitIds ?? []);
+    return [...tradeUnits]
+      .sort((a, b) => Number(preferred.has(b.id)) - Number(preferred.has(a.id)))
+      .map(toUnitLabel);
+  }, [tradeUnits, applicationData?.unitIds]);
+
   const { data: remoteForms } = useGetInterviewForms(applicationId);
   const updateFormMutation = useUpdateInterviewForm(applicationId);
 
@@ -125,6 +138,7 @@ export const AssessorAssessmentFormView: React.FC<
         isCandidate={effectiveIsCandidate}
         formRecord={matchedRemoteForm}
         applicationTrade={resolvedTrade}
+            unitLabels={unitLabels}
         isInterviewStage={isInterviewStage}
       />
     );
@@ -141,6 +155,7 @@ export const AssessorAssessmentFormView: React.FC<
             formData={matchedRemoteForm?.data}
             isReadOnly={effectiveReadOnly}
             applicationTrade={resolvedTrade}
+            unitLabels={unitLabels}
           />
         );
       case "assessment_mapping":
@@ -152,6 +167,7 @@ export const AssessorAssessmentFormView: React.FC<
             formData={matchedRemoteForm?.data}
             isReadOnly={effectiveReadOnly}
             applicationTrade={resolvedTrade}
+            unitLabels={unitLabels}
           />
         );
       case "observation_checklist":
@@ -163,6 +179,7 @@ export const AssessorAssessmentFormView: React.FC<
             formData={matchedRemoteForm?.data}
             isReadOnly={effectiveReadOnly}
             applicationTrade={resolvedTrade}
+            unitLabels={unitLabels}
           />
         );
       case "interview_record":

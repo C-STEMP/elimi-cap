@@ -53,7 +53,7 @@ export const ApplicationDetailsSidebar: React.FC<ApplicationDetailsSidebarProps>
             activeInterviewSchedule.mode === "online" || activeInterviewSchedule.mode === "virtual"
               ? activeInterviewSchedule.link
               : undefined,
-          location: activeInterviewSchedule.location || "Cstemp Centre",
+          location: activeInterviewSchedule.location || "",
           isRescheduled: Boolean(activeInterviewSchedule.isRescheduled),
         }
       : null;

@@ -9,8 +9,6 @@ import { CalendarWidget } from "@/features/candidate/features/Dashboard/componen
 import { UpcomingCard } from "@/features/candidate/features/Dashboard/components/UpcomingCard";
 import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
-import { useAppSelector, useAppDispatch } from "@/store/hooks";
-import { markEvidenceUploaded } from "@/store/slices/applicationSlice";
 import {
   useGetApplicationById,
   useGetSelfAssessment,
@@ -37,7 +35,6 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
   applicationId = "",
 }) => {
   const { toast } = useToast();
-  const dispatch = useAppDispatch();
   const router = useRouter();
 
   const { data: apiApp } = useGetApplicationById(applicationId);
@@ -95,170 +92,53 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
   const [itemToDelete, setItemToDelete] = useState<EvidenceRecord | null>(null);
   const [previewItem, setPreviewItem] = useState<EvidenceRecord | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [isEvidenceSubmitted, setIsEvidenceSubmitted] = useState(() => {
-    if (typeof window === "undefined" || !applicationId) return false;
-    try {
-      return (
-        localStorage.getItem(
-          `elimi_evidence_vault_submitted_${applicationId}`,
-        ) === "true"
-      );
-    } catch {
-      return false;
-    }
-  });
 
-  const persistedEvidence: any[] = React.useMemo(() => {
-    if (typeof window === "undefined" || !applicationId) return [];
-    try {
-      const stored = localStorage.getItem(
-        `elimi_evidence_vault_${applicationId}`,
-      );
-      return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
-    }
-  }, [applicationId, isUploadModalOpen, isDeleteModalOpen]);
+  const combinedEvidenceList = React.useMemo(
+    () =>
+      (remoteVault || [])
+        .filter(
+          (item: any) =>
+            item.kind === "general" ||
+            (!item.kind && (item.documentName || item.name || item.assetId)),
+        )
+        .map((item: any) => ({
+          ...item,
+          documentName: (
+            item.documentName || item.name || item.title || item.filename || item.originalName || ""
+          ).trim(),
+        }))
+        .filter((item: any) => item.documentName),
+    [remoteVault],
+  );
 
-  const storedFeedback: Record<string, string[]> = React.useMemo(() => {
-    if (typeof window === "undefined" || !applicationId) return {};
-    try {
-      const stored = localStorage.getItem(
-        `elimi_evidence_feedback_${applicationId}`,
-      );
-      return stored ? JSON.parse(stored) : {};
-    } catch {
-      return {};
-    }
-  }, [applicationId]);
+  const evidences: EvidenceRecord[] = combinedEvidenceList.map((item) => {
+    const docName = item.documentName;
 
-  const storedApprovedMap: Record<string, boolean> = React.useMemo(() => {
-    if (typeof window === "undefined" || !applicationId) return {};
-    try {
-      const stored = localStorage.getItem(
-        `elimi_evidence_approved_${applicationId}`,
-      );
-      return stored ? JSON.parse(stored) : {};
-    } catch {
-      return {};
-    }
-  }, [applicationId]);
-
-  const combinedEvidenceList = React.useMemo(() => {
-    const list: any[] = [];
-    const seenNames = new Set<string>();
-    const seenIds = new Set<string>();
-
-    // 1. Process remote items
-    (remoteVault || [])
-      .filter(
-        (item: any) =>
-          item.kind === "general" ||
-          (!item.kind && (item.documentName || item.name || item.assetId)),
-      )
-      .forEach((item: any) => {
-        const docName = (
-          item.documentName ||
-          item.name ||
-          item.title ||
-          item.filename ||
-          item.originalName ||
-          ""
-        ).trim();
-        if (!docName) return;
-        const norm = docName.toLowerCase();
-        seenNames.add(norm);
-        if (item.id) seenIds.add(item.id);
-        if (item.assetId) seenIds.add(item.assetId);
-        list.push({ ...item, documentName: docName });
-      });
-
-    // 2. Process persisted local items
-    persistedEvidence
-      .filter(
-        (item: any) =>
-          item.kind === "general" || (!item.kind && item.documentName),
-      )
-      .forEach((item: any) => {
-        const docName = (
-          item.documentName ||
-          item.name ||
-          item.title ||
-          item.filename ||
-          item.originalName ||
-          ""
-        ).trim();
-        if (!docName) return;
-        const norm = docName.toLowerCase();
-        if (
-          seenNames.has(norm) ||
-          (item.id && seenIds.has(item.id)) ||
-          (item.assetId && seenIds.has(item.assetId))
-        ) {
-          return;
-        }
-        seenNames.add(norm);
-        if (item.id) seenIds.add(item.id);
-        if (item.assetId) seenIds.add(item.assetId);
-        list.push({ ...item, documentName: docName });
-      });
-
-    return list;
-  }, [remoteVault, persistedEvidence]);
-
-  const evidences: EvidenceRecord[] = combinedEvidenceList.map((item, idx) => {
-    const docName =
-      item.documentName ||
-      item.name ||
-      item.title ||
-      item.filename ||
-      item.originalName ||
-      `Evidence Document ${idx + 1}`;
-
-    const itemKey = item.id || item.assetId || docName;
-    const extraFeedback =
-      storedFeedback[itemKey] ||
-      storedFeedback[docName] ||
-      (item.assetId ? storedFeedback[item.assetId] : null) ||
-      [];
-
-    const initialIssues = Array.isArray(item.issues)
-      ? item.issues
-      : item.feedback
-        ? [item.feedback]
-        : item.reviewComment
-          ? [item.reviewComment]
-          : [];
-
-    const combinedIssues = Array.from(
-      new Set([...initialIssues, ...(Array.isArray(extraFeedback) ? extraFeedback : [extraFeedback])]),
+    const combinedIssues: string[] = (
+      Array.isArray(item.issues)
+        ? item.issues
+        : item.feedback
+          ? [item.feedback]
+          : item.reviewComment
+            ? [item.reviewComment]
+            : []
     ).filter(Boolean);
 
-    const normDoc = docName.toLowerCase();
-    const isApprovedLocally = Boolean(
-      storedApprovedMap[itemKey] ||
-      storedApprovedMap[docName] ||
-      storedApprovedMap[normDoc] ||
-      (item.assetId && storedApprovedMap[item.assetId]) ||
-      (item.id && storedApprovedMap[item.id]),
-    );
-
-    // Use ONLY the status coming from the backend - no hardcoded status!
-    const defaultPendingStatus = isEvidenceSubmitted ? "Submitted" : "Pending";
-    const initialRawStatus = (item.status as string) || (combinedIssues.length > 0 ? "Attention Required" : defaultPendingStatus);
-    const rawStatus = isApprovedLocally ? "Approved" : initialRawStatus;
+    const defaultPendingStatus = "Pending";
+    const rawStatus: string =
+      (item.status as string) ||
+      (combinedIssues.length > 0 ? "Attention Required" : defaultPendingStatus);
     const statusLabel = rawStatus
       .replace(/_/g, " ")
       .replace(/\b\w/g, (c: string) => c.toUpperCase());
 
     const s = rawStatus.toLowerCase().replace(/_/g, " ");
     const isApproved =
-      isApprovedLocally ||
       s.includes("approv") ||
       s.includes("accept") ||
       s.includes("complet") ||
       s.includes("verifi");
-    const isSubmitted = s.includes("submi") || (isEvidenceSubmitted && !s.includes("reject") && !s.includes("fail") && !s.includes("declin"));
+    const isSubmitted = s.includes("submi");
     const isAttention =
       s.includes("reject") ||
       s.includes("attenti") ||
@@ -284,9 +164,9 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
           : "text-[#F9A825]";
 
     return {
-      id: item.id || `ev-${idx}`,
+      id: item.id || item.assetId,
       name: docName,
-      size: item.size || item.fileSize || "5 MB",
+      size: item.size || item.fileSize || "",
       status: statusLabel,
       statusBg,
       statusText,
@@ -295,18 +175,9 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
       dataUrl: item.dataUrl || item.url,
       mimeType: item.mimeType,
       assetId: item.assetId,
-      evidenceType: item.evidenceType || item.type || "PS",
+      evidenceType: item.evidenceType || item.type || "",
     };
   });
-
-  // Evidence already submitted (or approved) on the backend — no need to
-  // resurface the submit action.
-  const allEvidenceSubmitted =
-    evidences.length > 0 &&
-    evidences.every((item) => {
-      const s = item.status.toLowerCase();
-      return s.includes("submit") || s.includes("approv") || s.includes("complet");
-    });
 
   const handleUploadSubmit = async (
     docName: string,
@@ -326,76 +197,19 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
       setIsUploading(true);
 
       const finalDocName = docName.trim() || file.name.replace(/\.[^/.]+$/, "");
-      const normalizedType = evidenceType || "PS";
-      const formattedSize = `${(file.size / (1024 * 1024)).toFixed(1)} MB`;
 
-      // 1. Upload the file to storage
-      let assetId = `asset-${Date.now()}`;
-      let uploadedUrl = "";
-      try {
-        const asset = await uploadFileMutation.mutateAsync({
-          file,
-          purpose: "evidence",
-        });
-        if (asset?.assetId || (asset as any)?.id) {
-          assetId = asset?.assetId || (asset as any)?.id;
-        }
-        if ((asset as any)?.url) {
-          uploadedUrl = (asset as any).url;
-        }
-      } catch (uploadErr) {
-        console.warn("Storage upload fallback:", uploadErr);
-      }
+      const asset = await uploadFileMutation.mutateAsync({
+        file,
+        purpose: "evidence",
+      });
+      const assetId = asset?.assetId || (asset as any)?.id;
+      if (!assetId) throw new Error("The file upload did not return an asset id.");
 
-      // 2. Create the general evidence record in CAP backend
-      try {
-        await createGeneralEvidenceMutation.mutateAsync({
-          documentName: finalDocName,
-          evidenceType: normalizedType,
-          assetId,
-        });
-      } catch (apiErr) {
-        console.warn("Backend create evidence fallback:", apiErr);
-      }
-
-      // 3. Generate preview url
-      let localUrl = uploadedUrl;
-      try {
-        if (!localUrl && typeof window !== "undefined") {
-          localUrl = URL.createObjectURL(file);
-        }
-      } catch {}
-
-      // 4. Save locally to ensure persistence across browser refresh
-      const localItem = {
-        id: `ev-local-${Date.now()}`,
-        kind: "general",
+      await createGeneralEvidenceMutation.mutateAsync({
         documentName: finalDocName,
-        name: finalDocName,
-        title: finalDocName,
-        evidenceType: normalizedType,
-        status: "Pending",
-        size: formattedSize,
+        evidenceType,
         assetId,
-        url: localUrl,
-        dataUrl: localUrl,
-        mimeType: file.type,
-        createdAt: new Date().toISOString(),
-      };
-
-      try {
-        const stored = localStorage.getItem(
-          `elimi_evidence_vault_${applicationId}`,
-        );
-        const existingList = stored ? JSON.parse(stored) : [];
-        const updatedList = [localItem, ...existingList];
-        localStorage.setItem(
-          `elimi_evidence_vault_${applicationId}`,
-          JSON.stringify(updatedList),
-        );
-      } catch (storageErr) {
-        console.error("Local evidence save error:", storageErr);
-      }
+      });
 
       toast({
         type: "success",
@@ -405,7 +219,11 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
 
       setIsUploadModalOpen(false);
     } catch (err: any) {
-      console.error("Evidence upload error:", err);
+      toast({
+        type: "error",
+        title: "Upload Failed",
+        description: err?.message || "Could not upload your evidence. Please try again.",
+      });
     } finally {
       setIsUploading(false);
     }
@@ -415,69 +233,16 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
     if (itemToDelete && applicationId) {
       try {
         await deleteGeneralEvidenceMutation.mutateAsync(itemToDelete.id);
+        setIsDeleteModalOpen(false);
+        setItemToDelete(null);
       } catch (err: any) {
-        console.warn("Evidence delete fallback:", err);
-      }
-
-      // Remove from localStorage
-      try {
-        const stored = localStorage.getItem(
-          `elimi_evidence_vault_${applicationId}`,
-        );
-        if (stored) {
-          const list = JSON.parse(stored) as any[];
-          const filtered = list.filter(
-            (i) =>
-              i.id !== itemToDelete.id &&
-              i.documentName !== itemToDelete.name &&
-              i.name !== itemToDelete.name,
-          );
-          localStorage.setItem(
-            `elimi_evidence_vault_${applicationId}`,
-            JSON.stringify(filtered),
-          );
-        }
-      } catch (storageErr) {
-        console.error("Local delete error:", storageErr);
-      }
-
-      setIsDeleteModalOpen(false);
-      setItemToDelete(null);
-    }
-  };
-
-  const handleSubmit = () => {
-    dispatch(markEvidenceUploaded(application.id));
-    setIsEvidenceSubmitted(true);
-
-    if (typeof window !== "undefined" && applicationId) {
-      try {
-        localStorage.setItem(`elimi_evidence_vault_submitted_${applicationId}`, "true");
-
-        // Also update items in local storage to reflect "Submitted"
-        const stored = localStorage.getItem(`elimi_evidence_vault_${applicationId}`);
-        if (stored) {
-          const list = JSON.parse(stored) as any[];
-          const updated = list.map((item) => {
-            const currentStatus = (item.status || "").toLowerCase();
-            if (currentStatus.includes("approv")) return item;
-            return {
-              ...item,
-              status: "Submitted",
-            };
-          });
-          localStorage.setItem(`elimi_evidence_vault_${applicationId}`, JSON.stringify(updated));
-        }
-      } catch (err) {
-        console.error("Error updating submitted state:", err);
+        toast({
+          type: "error",
+          title: "Delete Failed",
+          description: err?.message || "Could not delete this evidence. Please try again.",
+        });
       }
     }
-
-    toast({
-      type: "success",
-      title: "Evidence Submitted",
-      description: "Your evidence has been submitted for review.",
-    });
   };
 
   return (
@@ -529,19 +294,6 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
               }}
               onOpenUploadModal={() => setIsUploadModalOpen(true)}
             />
-            {!(isEvidenceSubmitted || allEvidenceSubmitted) && (
-              <div className="flex flex-col items-end gap-2">
-                <Button
-                  variant="secondary"
-                  size="lg"
-                  className="w-55! cursor-pointer place-self-end disabled:opacity-50 disabled:cursor-not-allowed"
-                  onClick={handleSubmit}
-                  disabled={evidences.length === 0 || isUploading}
-                >
-                  Submit Evidence
-                </Button>
-              </div>
-            )}
           </div>
 
           <div className="lg:col-span-4 xl:col-span-3 flex flex-col gap-6">
@@ -562,7 +314,7 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
                         interviewSchedule.mode === "online"
                           ? interviewSchedule.link
                           : undefined,
-                      location: interviewSchedule.location || "Cstemp Centre",
+                      location: interviewSchedule.location || "",
                     }
                   : null
               }

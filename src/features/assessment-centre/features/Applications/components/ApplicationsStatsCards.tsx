@@ -9,6 +9,8 @@ import {
   FiArchive,
 } from "react-icons/fi";
 
+const isAllFilter = (value?: string | null) => !value || value.toLowerCase() === "all";
+
 interface Props {
   totalCount: number;
   pendingCount: number;
@@ -69,11 +71,10 @@ export const ApplicationsStatsCards: React.FC<Props> = ({
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
       {cards.map((card, index) => {
-        const isActive =
-          activeFilterTab !== undefined &&
-          (activeFilterTab === card.filterValue ||
-            (card.filterValue === "All" &&
-              (activeFilterTab === "All" || !activeFilterTab)));
+        // The "All" card is the default selection when no filter is set.
+        const isActive = isAllFilter(activeFilterTab)
+          ? card.filterValue === "All"
+          : activeFilterTab!.toLowerCase() === card.filterValue.toLowerCase();
         const isClickable = Boolean(onSelectFilterTab);
 
         return (

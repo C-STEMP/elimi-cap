@@ -75,8 +75,8 @@ function parseStructureToLearningOutcomes(
     if (Array.isArray(rawOutcomes) && rawOutcomes.length > 0) {
       return rawOutcomes.map((lo: any, loIdx: number) => {
         const loCode = lo.code || `LO ${loIdx + 1}`;
-        const loText = lo.text || lo.title || `Maintain core competencies in ${tradeName}`;
-        const loTitle = loText.startsWith("LO") ? loText : `${loCode}: ${loText}`;
+        const loText = lo.text || lo.title || "";
+        const loTitle = !loText ? loCode : loText.startsWith("LO") ? loText : `${loCode}: ${loText}`;
 
         const rawCriteria = lo.performanceCriteria || lo.criteria || [];
         const criteria: PerformanceCriteria[] = Array.isArray(rawCriteria) && rawCriteria.length > 0
@@ -86,10 +86,7 @@ function parseStructureToLearningOutcomes(
                   ? pc.code
                   : `PC ${pc.code}`
                 : `PC ${loIdx + 1}.${pcIdx + 1}`;
-              const pcDesc =
-                pc.text ||
-                pc.description ||
-                `Demonstrate required occupational standard criteria for ${tradeName}.`;
+              const pcDesc = pc.text || pc.description || "";
 
               // Use real evidences if provided from backend or empty array for fresh criteria
               const initialEvidences: EvidenceItem[] = Array.isArray(pc.evidences)
@@ -103,20 +100,7 @@ function parseStructureToLearningOutcomes(
                 evidences: initialEvidences,
               };
             })
-          : [
-              {
-                id: `pc-${loIdx + 1}-1`,
-                code: `PC ${loIdx + 1}.1`,
-                description: "Wear Clean, Smart And Appropriate Personal Protective Equipment.",
-                evidences: [],
-              },
-              {
-                id: `pc-${loIdx + 1}-2`,
-                code: `PC ${loIdx + 1}.2`,
-                description: "Adhere to environmental safety, tool calibration, and equipment maintenance protocols.",
-                evidences: [],
-              },
-            ];
+          : [];
 
         return {
           id: `lo-${loIdx + 1}`,
@@ -127,75 +111,7 @@ function parseStructureToLearningOutcomes(
     }
   }
 
-  // Default Learning Outcomes (clean state without hardcoded mock cards)
-  return [
-    {
-      id: "lo-1",
-      title: "LO 1: Maintain personal health and hygiene",
-      criteria: [
-        {
-          id: "pc-1-1",
-          code: "PC 1.1",
-          description: "Wear Clean, Smart And Appropriate Personal Protective Equipment.",
-          evidences: [],
-        },
-        {
-          id: "pc-1-2",
-          code: "PC 1.2",
-          description: "Ensure personal hygiene meets industry and regulatory health safety standards.",
-          evidences: [],
-        },
-        {
-          id: "pc-1-3",
-          code: "PC 1.3",
-          description: "Identify communication tools and their uses e.g. tablets, phones, magazines etc.",
-          evidences: [],
-        },
-        {
-          id: "pc-1-4",
-          code: "PC 1.4",
-          description: "List the different channels of communication e.g. notice board, flyers, stickers, flyers, etc.",
-          evidences: [],
-        },
-      ],
-    },
-    {
-      id: "lo-2",
-      title: "LO 2: Understand communication style and maintain a hygienic, safe workplace.",
-      criteria: [
-        {
-          id: "pc-2-1",
-          code: "PC 2.1",
-          description: `Identify potential hazards and adhere strictly to ${tradeName} safety protocols.`,
-          evidences: [],
-        },
-        {
-          id: "pc-2-2",
-          code: "PC 2.2",
-          description: "Ensure work areas are cleared of obstructions, debris, and contaminants.",
-          evidences: [],
-        },
-      ],
-    },
-    {
-      id: "lo-3",
-      title: "LO 3: Know the art of effective communication and secure inventory handling",
-      criteria: [
-        {
-          id: "pc-3-1",
-          code: "PC 3.1",
-          description: `Safely store tools, power equipment, and specialized substances for ${tradeName}.`,
-          evidences: [],
-        },
-        {
-          id: "pc-3-2",
-          code: "PC 3.2",
-          description: "Maintain secure inventory documentation and report safety irregularities.",
-          evidences: [],
-        },
-      ],
-    },
-  ];
+  return [];
 }
 
 function parseCriteriaToLearningOutcomes(
@@ -211,7 +127,7 @@ function parseCriteriaToLearningOutcomes(
     const loKey = crit.learningObjectiveCode || "LO 1";
     const loTitle = crit.learningObjectiveText
       ? `${loKey}: ${crit.learningObjectiveText}`
-      : `${loKey}: Occupational Core Competencies for ${tradeName}`;
+      : loKey;
 
     if (!groups[loKey]) {
       groups[loKey] = {
@@ -274,7 +190,7 @@ export const NsqUnitDetailView: React.FC<NsqUnitDetailViewProps> = ({
   unitId,
   unitNumber = "Unit 01",
   unitTitle = "Core Fundamentals & Safety Standards",
-  tradeName = "Carpentry",
+  tradeName = "",
   currentStageKey,
   structure,
   onBack,

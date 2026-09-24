@@ -291,11 +291,11 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
     useState<StaffStatusModalMode>("confirm-deactivate");
 
   // Stat card filter state — lifted here so header clicks wire to tab list views
-  const [applicationsFilterTab, setApplicationsFilterTab] = useState<string>("all");
-  const [staffStatusFilter, setStaffStatusFilter] = useState<string>("all");
-  const [assessorsStatusFilter, setAssessorsStatusFilter] = useState<string>("all");
+  const [applicationsFilterTab, setApplicationsFilterTab] = useState<string>("All");
+  const [staffStatusFilter, setStaffStatusFilter] = useState<string>("All");
+  const [assessorsStatusFilter, setAssessorsStatusFilter] = useState<string>("All");
   const [jobStatusFilter, setJobStatusFilter] = useState<string>("all");
-  const [paymentsStatusFilter, setPaymentsStatusFilter] = useState<string | undefined>(undefined);
+  const [paymentsStatusFilter, setPaymentsStatusFilter] = useState<string>("all");
 
   const handleOpenScheduleInterview = () => {
     const hasPanels =
@@ -546,6 +546,8 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
           <PaymentsTab
             onWithdrawFunds={() => setIsWithdrawModalOpen(true)}
             onSelectReceipt={setSelectedReceiptTx}
+            cardFilter={paymentsStatusFilter}
+            onCardFilterChange={setPaymentsStatusFilter}
           />
         )}
         {activeTab === "settings" && <SettingsTab />}

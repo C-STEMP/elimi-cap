@@ -20,6 +20,7 @@ interface SkillsDemonstrationFormProps {
   formData?: Record<string, any>;
   isReadOnly?: boolean;
   applicationTrade?: string;
+  unitLabels?: string[];
 }
 
 const DEFAULT_SKILLS_CRITERIA: CriteriaItem[] = [
@@ -67,7 +68,7 @@ const DEFAULT_SKILLS_CRITERIA: CriteriaItem[] = [
   },
 ];
 
-import { getAutoFilledUnitTitleCode, getUnitOptions } from "./utils";
+import { getUnitOptions } from "./utils";
 
 export const SkillsDemonstrationForm: React.FC<
   SkillsDemonstrationFormProps
@@ -78,10 +79,11 @@ export const SkillsDemonstrationForm: React.FC<
   formData,
   isReadOnly = false,
   applicationTrade,
+  unitLabels = [],
 }) => {
   const { toast } = useToast();
 
-  const autoUnit = getAutoFilledUnitTitleCode(applicationTrade, "skills_demo");
+  const autoUnit = unitLabels[0] ?? "";
   const [candidateFullName, setCandidateFullName] = useState<string>(
     formData?.candidateFullName ?? candidateName ?? "",
   );
@@ -103,8 +105,8 @@ export const SkillsDemonstrationForm: React.FC<
   }, [formData?.unitTitleCode, autoUnit]);
 
   const unitOptions = React.useMemo(() => {
-    return getUnitOptions(unitTitleCode, "skills_demo");
-  }, [unitTitleCode]);
+    return getUnitOptions(unitTitleCode, unitLabels);
+  }, [unitTitleCode, unitLabels]);
   const [demonstrationDate, setDemonstrationDate] = useState<string>(
     formData?.demonstrationDate ?? "",
   );

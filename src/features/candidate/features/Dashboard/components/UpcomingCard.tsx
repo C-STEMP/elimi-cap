@@ -80,7 +80,7 @@ export const UpcomingCard: React.FC<UpcomingCardProps> = ({
                 TIME
               </span>
               <span className="text-xs font-bold text-gray-900 mt-0.5">
-                {interview.time || "12:00PM"}
+                {interview.time || "—"}
               </span>
             </div>
             <div className="flex flex-col">
@@ -88,7 +88,7 @@ export const UpcomingCard: React.FC<UpcomingCardProps> = ({
                 DATE
               </span>
               <span className="text-xs font-bold text-gray-900 mt-0.5">
-                {interview.date || "22/03/2026"}
+                {interview.date || "—"}
               </span>
             </div>
           </div>
@@ -108,7 +108,7 @@ export const UpcomingCard: React.FC<UpcomingCardProps> = ({
               </a>
             ) : (
               <span className="text-xs font-bold text-gray-900 mt-0.5 truncate">
-                {interview.location || "Cstemp Centre"}
+                {interview.location || ""}
               </span>
             )}
           </div>

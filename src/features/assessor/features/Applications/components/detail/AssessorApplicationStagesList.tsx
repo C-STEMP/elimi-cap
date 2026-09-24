@@ -23,7 +23,6 @@ interface AssessorApplicationStagesListProps {
   onMarkCandidateCompetent?: () => void;
   onMarkCandidateIncompetent?: () => void;
   onMarkCandidateInconclusive?: () => void;
-  onScheduleObservation?: () => void;
   interviewOutcome?:
     | "ongoing"
     | "competent"
@@ -53,7 +52,6 @@ export const AssessorApplicationStagesList: React.FC<
   onMarkCandidateCompetent,
   onMarkCandidateIncompetent,
   onMarkCandidateInconclusive,
-  onScheduleObservation,
   interviewOutcome = "ongoing",
   interviewFeedback,
   isUserLeadPanelist = false,
@@ -108,7 +106,9 @@ export const AssessorApplicationStagesList: React.FC<
         undefined;
       const tags = m.sectors?.length
         ? m.sectors.map((s: any) => s.name || s)
-        : [application.trade || "Carpentry", "RPL Coordinator"];
+        : application.trade
+          ? [application.trade]
+          : [];
 
       // Check if this assessor is in pendingSignatures
       let isPendingSignature: boolean | undefined = undefined;
@@ -360,10 +360,6 @@ export const AssessorApplicationStagesList: React.FC<
           label: "Inconclusive",
           onClick: onMarkCandidateInconclusive || (() => {}),
         },
-        {
-          label: "Schedule Observation",
-          onClick: onScheduleObservation || (() => {}),
-        },
       ],
     },
     {
@@ -373,9 +369,9 @@ export const AssessorApplicationStagesList: React.FC<
       badgeType: isIvDone ? "completed" : isIvActive ? "under_review" : "not_started",
       badgeText: isIvDone ? "Completed" : isIvActive ? "Under Review" : "Not Started",
       dateText: isIvDone
-        ? (ivStageRow?.enteredAt ? `Completed on: ${formatFriendlyDate(ivStageRow.enteredAt)}` : `Started on: ${formatFriendlyDate(application.submittedAt || "2026-07-23")}`)
+        ? (ivStageRow?.enteredAt ? `Completed on: ${formatFriendlyDate(ivStageRow.enteredAt)}` : `Started on: ${(application.submittedAt ? formatFriendlyDate(application.submittedAt) : "—")}`)
         : isIvActive
-          ? `Started on: ${formatFriendlyDate(application.submittedAt || "2026-07-23")}`
+          ? `Started on: ${(application.submittedAt ? formatFriendlyDate(application.submittedAt) : "—")}`
           : "---",
       actionButton:
         !isIvDone && isIvActive && isUserIv && onMarkCompetent
@@ -393,9 +389,9 @@ export const AssessorApplicationStagesList: React.FC<
       badgeType: isEvDone ? "completed" : (isEvActive && isIvDone) ? "under_review" : "not_started",
       badgeText: isEvDone ? "Completed" : (isEvActive && isIvDone) ? "Under Review" : "Not Started",
       dateText: isEvDone
-        ? (evStageRow?.enteredAt ? `Completed on: ${formatFriendlyDate(evStageRow.enteredAt)}` : `Started on: ${formatFriendlyDate(application.submittedAt || "2026-08-15")}`)
+        ? (evStageRow?.enteredAt ? `Completed on: ${formatFriendlyDate(evStageRow.enteredAt)}` : `Started on: ${(application.submittedAt ? formatFriendlyDate(application.submittedAt) : "—")}`)
         : (isEvActive && isIvDone)
-          ? `Started on: ${formatFriendlyDate(application.submittedAt || "2026-08-15")}`
+          ? `Started on: ${(application.submittedAt ? formatFriendlyDate(application.submittedAt) : "—")}`
           : "---",
       actionButton:
         !isEvDone && isEvActive && isIvDone && isUserEv && onMarkEvCompetent

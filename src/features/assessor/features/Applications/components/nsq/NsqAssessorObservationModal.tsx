@@ -118,7 +118,7 @@ export const NsqAssessorObservationModal: React.FC<
                 TIME
               </span>
               <span className="font-bold text-neutral-primary text-xs mt-0.5 block">
-                {details.time || "12:00PM"}
+                {details.time || "—"}
               </span>
             </div>
             <div>
@@ -126,7 +126,7 @@ export const NsqAssessorObservationModal: React.FC<
                 DATE
               </span>
               <span className="font-bold text-neutral-primary text-xs mt-0.5 block">
-                {details.date || "22/03/2026"}
+                {details.date || "—"}
               </span>
             </div>
           </div>

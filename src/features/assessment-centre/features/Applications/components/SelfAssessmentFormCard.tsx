@@ -71,6 +71,11 @@ export const SelfAssessmentFormCard: React.FC<Props> = ({
             </p>
           </div>
           <div className="flex flex-col gap-5">
+            {rawCompetencies.length === 0 && (
+              <p className="text-xs sm:text-sm text-gray-500">
+                The candidate has not submitted any competencies yet.
+              </p>
+            )}
             {rawCompetencies.map((comp: any, idx: number) => {
               const isChecked = comp.confidence === "high" || comp.evidence === "yes" || Boolean(comp.confidence);
               const label = comp.confidence === "high" ? "I Can Do This Well" : comp.confidence === "moderate" ? "Moderately Confident" : "Developing Skill";

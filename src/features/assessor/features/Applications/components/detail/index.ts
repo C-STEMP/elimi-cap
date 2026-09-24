@@ -10,6 +10,4 @@ export * from "./ConfirmMarkCandidateCompetentModal";
 export * from "./CandidateCompetentSuccessModal";
 export * from "./ConfirmMarkCandidateIncompetentModal";
 export * from "./CandidateIncompetentSuccessModal";
-export * from "./ScheduleObservationModal";
-export * from "./ObservationScheduledSuccessModal";
 export * from "./CandidateInconclusiveSuccessModal";

@@ -10,14 +10,31 @@ import { useGetCentrePayments } from "@/src/features/shared/centre/hooks";
 interface PaymentsViewProps {
   onWithdrawFunds: () => void;
   onSelectReceipt: (transaction: PaymentTransaction) => void;
+  /** Header stat card selection ("all" | "completed" | "pending"); keeps the dropdown in sync. */
+  cardFilter?: string;
+  onCardFilterChange?: (filter: string) => void;
 }
+
+// Header card filter ↔ list status dropdown.
+const CARD_TO_STATUS: Record<string, string> = { all: "All", completed: "Paid", pending: "Pending" };
+const STATUS_TO_CARD: Record<string, string> = { All: "all", Paid: "completed", Pending: "pending" };
 
 export const PaymentsView: React.FC<PaymentsViewProps> = ({
   onSelectReceipt,
+  cardFilter,
+  onCardFilterChange,
 }) => {
   const { data: remotePayments = [], isLoading } = useGetCentrePayments();
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All");
+  const [localStatusFilter, setLocalStatusFilter] = useState("All");
+  const statusFilter =
+    cardFilter !== undefined
+      ? CARD_TO_STATUS[cardFilter.toLowerCase()] ?? "All"
+      : localStatusFilter;
+  const setStatusFilter = (value: string) =>
+    onCardFilterChange
+      ? onCardFilterChange(STATUS_TO_CARD[value] ?? "all")
+      : setLocalStatusFilter(value);
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
 
   const transactions: PaymentTransaction[] = remotePayments.map((tx) => ({

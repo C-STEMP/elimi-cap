@@ -84,8 +84,8 @@ export function useApplicationDetailState(id: string, candidateNameProp = "Candi
     (appDetail as any)?.trade?.name ||
     (typeof (appDetail as any)?.trade === "string" && !/^[0-9a-f-]{20,}$/i.test((appDetail as any).trade) ? (appDetail as any).trade : "") ||
     (appDetail as any)?.sector?.name ||
-    "Cosmetology";
-  const resolvedTradeName = rawTrade && !/^[0-9a-f-]{20,}$/i.test(rawTrade) ? rawTrade : "Cosmetology";
+    "";
+  const resolvedTradeName = rawTrade && !/^[0-9a-f-]{20,}$/i.test(rawTrade) ? rawTrade : "";
 
   const rawApiSchedule = (interviewSchedule as any)?.data || interviewSchedule;
   const activeInterviewSchedule = rawApiSchedule?.scheduledAt ? rawApiSchedule : null;

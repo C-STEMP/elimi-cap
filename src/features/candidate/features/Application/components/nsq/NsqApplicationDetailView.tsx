@@ -12,7 +12,6 @@ import {
   FiClock,
   FiUser,
   FiX,
-  FiInfo,
 } from "react-icons/fi";
 import { HeaderBanner } from "@/features/candidate/features/Dashboard/components/HeaderBanner";
 import { CalendarWidget } from "@/features/candidate/features/Dashboard/components/CalendarWidget";
@@ -23,12 +22,13 @@ import { useToast } from "@/src/components/ui/toast";
 import { closeUrlSubView, openUrlSubView } from "@/src/lib/navigation/url-sub-view";
 import { TransactionReceiptModal } from "@/features/assessment-centre/features/Payment/components/TransactionReceiptModal";
 import { PaymentModal, type PaymentModalType } from "../PaymentModals";
+import { getNsqScopedUnits } from "@/src/features/shared/applications/utils/nsqUnits";
 import {
   useGetInductionForm,
   useGetDirectObservations,
   useScheduleDirectObservation,
   useGetApplicationStages,
-  useInitiateApplicationPayment,
+  usePaystackCheckout,
   useGetPaymentQuote,
   useGetApplicationReceipt,
 } from "@/src/features/shared/applications/hooks";
@@ -144,7 +144,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
   const { data: receiptData } = useGetApplicationReceipt(application?.id || "", {
     enabled: Boolean(application?.id && isPaid),
   });
-  const initiatePayment = useInitiateApplicationPayment();
+  const paystackCheckout = usePaystackCheckout();
 
   const paymentAmountText = receiptData?.amount?.amountMinorUnits
     ? formatCurrency(receiptData.amount.amountMinorUnits, receiptData.amount.currency)
@@ -167,16 +167,14 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
   const progressPercent =
     progressSteps.length > 1 ? (completedStepsCount / (progressSteps.length - 1)) * 100 : 0;
 
-  const ivStage = stagesData?.find((s) => s.stageKey === "internal_verification");
-  const regularAssessmentStage = stagesData?.find((s) => s.stageKey === "regular_assessment");
   const effectiveStageKey = application?.currentStageKey || (application as any)?.stageKey;
+  // Only the application's current stage decides this. Stage rows can change
+  // status per unit (e.g. after one unit is approved), which would wrongly
+  // show the application as in IQA before the assessor hands it over.
   const isInternalVerificationStage = Boolean(
-    effectiveStageKey === "internal_verification" ||
-      (ivStage && ivStage.status !== "not_started") ||
-      (regularAssessmentStage &&
-        (regularAssessmentStage.status === "successful" ||
-          (regularAssessmentStage.status as string) === "completed" ||
-          (regularAssessmentStage.status as string) === "approved")),
+    effectiveStageKey &&
+      NSQ_PROGRESS_STEPS.findIndex((s) => s.key === effectiveStageKey) >=
+        NSQ_PROGRESS_STEPS.findIndex((s) => s.key === "internal_verification"),
   );
 
   const applicationStatusBadge =
@@ -323,14 +321,13 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
   } | null>(
     application?.directObservation
       ? {
-          units: application.directObservation.units || ["UNIT 1"],
+          units: application.directObservation.units || [],
           date:
-            application.directObservation.scheduledAt?.split("T")[0] ||
-            "22/03/2026",
+            application.directObservation.scheduledAt?.split("T")[0] || "",
           time:
             application.directObservation.scheduledAt
               ?.split("T")[1]
-              ?.slice(0, 5) || "12:00PM",
+              ?.slice(0, 5) || "",
           status: application.directObservation.status || "pending",
           isSigned: false,
         }
@@ -343,12 +340,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
     ? `Level ${wishedQualificationLevel.level}`
     : "";
 
-  const nsqUnitsAll: any[] = nsqData?.units || [];
-  const nsqUnits = wishedQualificationLevel
-    ? nsqUnitsAll.filter(
-        (u) => u.qualificationLevelId === wishedQualificationLevel.id,
-      )
-    : nsqUnitsAll;
+  const nsqUnits = getNsqScopedUnits(nsqData, inductionForm);
   const unitsList: NsqUnitItem[] =
     nsqUnits.length > 0
       ? nsqUnits.map((u) => {
@@ -423,10 +415,10 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
         id: liveSitting.id,
         units: liveSitting.unitIds?.length
           ? liveSitting.unitIds.map(resolveUnitLabel)
-          : ["UNIT 1"],
-        date: liveSitting.scheduledAt?.split("T")[0] || "22/03/2026",
+          : [],
+        date: liveSitting.scheduledAt?.split("T")[0] || "",
         time:
-          liveSitting.scheduledAt?.split("T")[1]?.slice(0, 5) || "12:00PM",
+          liveSitting.scheduledAt?.split("T")[1]?.slice(0, 5) || "",
         address: liveSitting.address,
         status: mapSittingStatus(liveSitting.status),
         isSigned: Boolean(liveSitting.signatures?.learner),
@@ -505,8 +497,8 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
       : "—";
 
   // Handle Make Payment action — initiates a real checkout via
-  // POST /applications/{id}/pay and redirects to the returned Paystack
-  // checkoutUrl (same flow as the RPL application detail page).
+  // POST /applications/{id}/pay and opens the Paystack checkout in a pop-up
+  // that closes once payment is confirmed (same flow as the RPL page).
   const handleMakePayment = () => {
     if (!application?.id) return;
 
@@ -522,19 +514,17 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
     setActivePaymentModal("processing");
     setPaymentErrorInfo({});
 
-    initiatePayment.mutate(application.id, {
-      onSuccess: (data: any) => {
-        const checkoutUrl = data?.checkoutUrl || data?.data?.checkoutUrl;
-        if (checkoutUrl) {
-          window.location.href = checkoutUrl;
-        } else {
-          setIsPaymentConfirmed(true);
-          setActivePaymentModal("success");
-          queryClient.invalidateQueries({
-            queryKey: APPLICATION_QUERY_KEYS.stages(application.id),
-          });
-        }
+    paystackCheckout.startCheckout(application.id, {
+      onPaid: () => {
+        setIsPaymentConfirmed(true);
+        setActivePaymentModal("success");
+        toast({
+          type: "success",
+          title: "Payment Confirmed",
+          description: "Your NSQ assessment fee payment has been confirmed.",
+        });
       },
+      onClosedUnpaid: () => setActivePaymentModal(null),
       onError: (err: any) => {
         setPaymentErrorInfo({
           title: "Payment Unsuccessful",
@@ -583,7 +573,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
     await scheduleObservationMutation({
       unitIds: details.unitIds,
       scheduledAt: isoDate,
-      address: fullAddress || details.address || "Centre Workshop",
+      address: fullAddress || details.address || "",
     });
 
     const unitLabels = details.unitIds.map(
@@ -708,23 +698,6 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
               </div>
             </div>
 
-            {/* Stage Notice Banner */}
-            {isInternalVerificationStage && (
-              <div className="bg-blue-50/90 border border-blue-200 rounded-2xl p-5 shadow-xs flex items-start gap-3.5">
-                <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
-                  <FiInfo className="w-5 h-5 stroke-[2.5]" />
-                </div>
-                <div className="flex flex-col gap-1 min-w-0">
-                  <h4 className="text-sm sm:text-base font-extrabold text-blue-950">
-                    Application in Internal Quality Assurance (IQA)
-                  </h4>
-                  <p className="text-xs sm:text-sm text-blue-800 leading-relaxed font-normal">
-                    Your assessment evidence has been reviewed and signed off by your assessor, and your application has advanced to the Internal Quality Assurance stage. Evidence uploading is closed while the Internal Verifier samples and reviews your assessment.
-                  </p>
-                </div>
-              </div>
-            )}
-
             {/* 2. Application Status Card */}
             <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-2">
               <div className="flex items-center justify-between">
@@ -766,7 +739,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                 <button
                   type="button"
                   onClick={handleMakePayment}
-                  disabled={initiatePayment.isPending}
+                  disabled={paystackCheckout.isPending}
                   className="text-sm font-extrabold text-[#fbab2a] hover:text-[#e89b1f] hover:underline cursor-pointer select-none shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Make Payment
@@ -1007,7 +980,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                             Time
                           </span>
                           <span className="text-xs font-bold text-neutral-primary">
-                            {activeObservation.time || "12:00PM"}
+                            {activeObservation.time || "—"}
                           </span>
                         </div>
 
@@ -1016,7 +989,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                             Date
                           </span>
                           <span className="text-xs font-bold text-neutral-primary">
-                            {activeObservation.date || "22/03/2026"}
+                            {activeObservation.date || "—"}
                           </span>
                         </div>
                       </div>
@@ -1178,6 +1151,12 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
         candidateName={
           application?.candidate?.name || application?.user?.name || ""
         }
+        lockedName={
+          application?.frozenProfile?.personalDetails ||
+          application?.frozenProfile?.personalInformation?.personalDetails ||
+          application?.personalInformation?.personalDetails ||
+          null
+        }
         availableUnits={
           inductionForm?.options?.units && inductionForm.options.units.length > 0
             ? inductionForm.options.units.map((u) => ({
@@ -1268,7 +1247,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                         ? new Date(application.submittedAt).toLocaleDateString(
                             "en-GB",
                           )
-                        : "22/03/2026"}
+                        : "—"}
                   </span>
                 </div>
               </div>
@@ -1332,8 +1311,23 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
         type={activePaymentModal}
         title={paymentErrorInfo.title}
         description={paymentErrorInfo.description}
+        // NSQ has no folder arrangement — after paying, the next step is the
+        // induction form.
+        actionLabel={
+          activePaymentModal === "success"
+            ? inductionForm?.submittedAt
+              ? "Continue"
+              : "Fill Induction Form"
+            : undefined
+        }
         onClose={() => setActivePaymentModal(null)}
-        onAction={() => setActivePaymentModal(null)}
+        onAction={() => {
+          const wasSuccess = activePaymentModal === "success";
+          setActivePaymentModal(null);
+          if (wasSuccess && !inductionForm?.submittedAt) {
+            setIsInductionFillModalOpen(true);
+          }
+        }}
       />
     </div>
   );

@@ -9,6 +9,8 @@ import {
 } from "@/src/features/shared/centre/hooks";
 import { formatCurrency } from "@/src/utils/currency";
 
+const isAllFilter = (value?: string | null) => !value || value.toLowerCase() === "all";
+
 interface PaymentsHeaderProps {
   onWithdrawFunds?: () => void;
   activeStatusFilter?: string;
@@ -37,7 +39,7 @@ export const PaymentsHeader: React.FC<PaymentsHeaderProps> = ({
       value: formattedRevenue,
       unit: null,
       icon: <FiDollarSign className="w-5 h-5 text-white/90" />,
-      filter: null,
+      filter: "all",
     },
     {
       label: "Completed Transactions",
@@ -76,8 +78,12 @@ export const PaymentsHeader: React.FC<PaymentsHeaderProps> = ({
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         {cards.map((card) => {
+          // The first ("all") card is the default selection when no filter is set.
           const isActive =
-            card.filter !== null && activeStatusFilter === card.filter;
+            card.filter !== null &&
+            (isAllFilter(activeStatusFilter)
+              ? card.filter === "all"
+              : activeStatusFilter === card.filter);
           return (
             <button
               key={card.label}

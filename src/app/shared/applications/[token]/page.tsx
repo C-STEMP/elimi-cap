@@ -136,7 +136,7 @@ export default function SharedApplicationDossierPage() {
     (application as any)?.trade?.name ||
     (application as any)?.trade ||
     (application as any)?.sector?.name ||
-    "Cosmetology";
+    "";
 
   const paymentStage = stages.find((s) => s.stageKey === "payment");
   const ivStage = stages.find(

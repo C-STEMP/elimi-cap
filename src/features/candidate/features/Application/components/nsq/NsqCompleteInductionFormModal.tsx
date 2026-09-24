@@ -64,6 +64,9 @@ interface NsqCompleteInductionFormModalProps {
   qualificationLevels?: InductionQualificationLevelOption[];
   defaultQualificationLevelId?: string;
   candidateName?: string;
+  /** Name locked on the application (frozen profile). The backend rejects a
+   * submission whose names differ from it, so these fields are read-only. */
+  lockedName?: { firstName?: string; middleName?: string; lastName?: string } | null;
   availableUnits: InductionUnitOption[];
   defaultSelectedUnitIds?: string[];
   onSubmitted?: () => void;
@@ -80,6 +83,7 @@ export const NsqCompleteInductionFormModal: React.FC<
   qualificationLevels = [],
   defaultQualificationLevelId,
   candidateName = "",
+  lockedName,
   availableUnits,
   defaultSelectedUnitIds,
   onSubmitted,
@@ -93,6 +97,10 @@ export const NsqCompleteInductionFormModal: React.FC<
   const [firstName, setFirstName] = useModalDraft(NSQ_INDUCTION_FORM_MODAL, "firstName", nameParts[0] || "");
   const [lastName, setLastName] = useModalDraft(NSQ_INDUCTION_FORM_MODAL, "lastName", nameParts.slice(1).join(" ") || "");
   const [middleName, setMiddleName] = useModalDraft(NSQ_INDUCTION_FORM_MODAL, "middleName", "");
+  const isNameLocked = Boolean(lockedName?.firstName || lockedName?.lastName);
+  const effectiveFirstName = isNameLocked ? lockedName?.firstName ?? "" : firstName;
+  const effectiveMiddleName = isNameLocked ? lockedName?.middleName ?? "" : middleName;
+  const effectiveLastName = isNameLocked ? lockedName?.lastName ?? "" : lastName;
   const [registrationNo, setRegistrationNo] = useModalDraft(NSQ_INDUCTION_FORM_MODAL, "registrationNo", "");
   const [assessmentType, setAssessmentType] = useModalDraft(NSQ_INDUCTION_FORM_MODAL, "assessmentType", "Full Qualification");
   const [courseStartDate, setCourseStartDate] = useModalDraft(NSQ_INDUCTION_FORM_MODAL, "courseStartDate", "");
@@ -215,7 +223,16 @@ export const NsqCompleteInductionFormModal: React.FC<
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!firstName.trim() || !lastName.trim()) {
+    // Include text still typed in the boxes but not yet added with "Add" —
+    // easy to miss on a phone.
+    const strengths = newStrength.trim()
+      ? [...learningStrengths, newStrength.trim()]
+      : learningStrengths;
+    const weaknesses = newWeakness.trim()
+      ? [...learningWeaknesses, newWeakness.trim()]
+      : learningWeaknesses;
+
+    if (!effectiveFirstName.trim() || !effectiveLastName.trim()) {
       toast({ type: "error", title: "Name Required", description: "Please enter your first and last name." });
       return;
     }
@@ -231,6 +248,10 @@ export const NsqCompleteInductionFormModal: React.FC<
       toast({ type: "error", title: "Qualification Required", description: "Please select your highest qualification held." });
       return;
     }
+    if (weaknesses.length === 0) {
+      toast({ type: "error", title: "Learning Weakness Required", description: "Please add at least one learning weakness or area for improvement." });
+      return;
+    }
     if (!passportAssetId) {
       toast({ type: "error", title: "Passport Required", description: "Please upload your passport photo." });
       return;
@@ -241,13 +262,21 @@ export const NsqCompleteInductionFormModal: React.FC<
     }
 
     setIsSubmitting(true);
+    if (strengths !== learningStrengths) {
+      setLearningStrengths(strengths);
+      setNewStrength("");
+    }
+    if (weaknesses !== learningWeaknesses) {
+      setLearningWeaknesses(weaknesses);
+      setNewWeakness("");
+    }
     try {
       await submitMutation.mutateAsync({
         submit: true,
         data: {
-          firstName: firstName.trim(),
-          lastName: lastName.trim(),
-          middleName: middleName.trim() || undefined,
+          firstName: effectiveFirstName.trim(),
+          lastName: effectiveLastName.trim(),
+          middleName: effectiveMiddleName.trim() || undefined,
           registrationNo: registrationNo.trim() || undefined,
           qualificationLevelId: selectedLevelId,
           assessmentType,
@@ -256,8 +285,8 @@ export const NsqCompleteInductionFormModal: React.FC<
           relevantQualification,
           hasImpairment: impairment !== "None",
           impairment: impairment !== "None" ? impairment : undefined,
-          learningStrengths,
-          learningWeaknesses,
+          learningStrengths: strengths,
+          learningWeaknesses: weaknesses,
           passportAssetId,
           signatureAssetId: resolvedSignatureAssetId,
         },
@@ -316,20 +345,24 @@ export const NsqCompleteInductionFormModal: React.FC<
               <Input
                 label={<span>First Name<span className="text-primary-solid ml-0.5">*</span></span>}
                 placeholder="First name"
-                value={firstName}
+                value={effectiveFirstName}
                 onChange={(e) => setFirstName(e.target.value)}
+                readOnly={isNameLocked}
               />
               <Input
                 label={<span>Last Name<span className="text-primary-solid ml-0.5">*</span></span>}
                 placeholder="Surname"
-                value={lastName}
+                value={effectiveLastName}
                 onChange={(e) => setLastName(e.target.value)}
+                readOnly={isNameLocked}
               />
               <Input
                 label="Middle Name"
                 placeholder="Other names"
-                value={middleName}
+                value={effectiveMiddleName}
                 onChange={(e) => setMiddleName(e.target.value)}
+                readOnly={isNameLocked}
+                helperText={isNameLocked ? "Names come from your saved profile and can't be changed here." : undefined}
               />
               <Input
                 label="Registration No."
@@ -449,6 +482,7 @@ export const NsqCompleteInductionFormModal: React.FC<
                   placeholder="Add a strength..."
                   value={newStrength}
                   onChange={(e) => setNewStrength(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && addStrength(e)}
                   className="flex-1 h-10 px-3 rounded-xl border border-gray-200 bg-[#f8f9fa] text-xs"
                 />
                 <Button type="button" size="sm" variant="outline" onClick={addStrength}>
@@ -458,7 +492,9 @@ export const NsqCompleteInductionFormModal: React.FC<
             </div>
 
             <div className="flex flex-col gap-3">
-              <h4 className="text-sm sm:text-base font-bold text-neutral-primary">Learning Weaknesses</h4>
+              <h4 className="text-sm sm:text-base font-bold text-neutral-primary">
+                Learning Weaknesses<span className="text-primary-solid ml-0.5">*</span>
+              </h4>
               <div className="flex flex-wrap gap-2">
                 {learningWeaknesses.map((wk, idx) => (
                   <span
@@ -478,6 +514,7 @@ export const NsqCompleteInductionFormModal: React.FC<
                   placeholder="Add a weakness / area for improvement..."
                   value={newWeakness}
                   onChange={(e) => setNewWeakness(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && addWeakness(e)}
                   className="flex-1 h-10 px-3 rounded-xl border border-gray-200 bg-[#f8f9fa] text-xs"
                 />
                 <Button type="button" size="sm" variant="outline" onClick={addWeakness}>

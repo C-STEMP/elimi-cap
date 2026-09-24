@@ -53,8 +53,7 @@ export const PreviewEvidenceModal: React.FC<PreviewEvidenceModalProps> = ({
         !targetUrl &&
         !targetAssetId &&
         applicationId &&
-        item.id &&
-        !item.id.startsWith("ev-local-")
+        item.id
       ) {
         try {
           const detail = await getGeneralEvidenceByIdApi(

@@ -70,10 +70,7 @@ export const NsqObservationRequestReviewModal: React.FC<
 
   if (!details) return null;
 
-  const units =
-    details.units && details.units.length > 0
-      ? details.units
-      : ["UNIT 1", "UNIT 2", "UNIT 3"];
+  const units = details.units ?? [];
 
   const resolveUnitName = (unitIdOrName: string, index: number) => {
     const match =
@@ -95,19 +92,8 @@ export const NsqObservationRequestReviewModal: React.FC<
   };
 
   const handleAppendSignature = () => {
-    let localAssetId: string | null = null;
-    if (!profileSignature?.assetId) {
-      try {
-        const local = localStorage.getItem("user_saved_signature");
-        if (local) {
-          const parsed = JSON.parse(local);
-          if (parsed?.assetId) localAssetId = parsed.assetId;
-        }
-      } catch {}
-    }
-
-    if (profileSignature?.assetId || localAssetId) {
-      setUploadedAssetId(localAssetId);
+    if (profileSignature?.assetId) {
+      setUploadedAssetId(null);
       setIsSigned(true);
       toast({
         type: "success",
@@ -258,7 +244,7 @@ export const NsqObservationRequestReviewModal: React.FC<
                   Time
                 </span>
                 <span className="text-xs sm:text-sm font-extrabold text-neutral-primary">
-                  {details.time || "12:00PM"}
+                  {details.time || "—"}
                 </span>
               </div>
 
@@ -267,7 +253,7 @@ export const NsqObservationRequestReviewModal: React.FC<
                   Date
                 </span>
                 <span className="text-xs sm:text-sm font-extrabold text-neutral-primary">
-                  {details.date || "22/03/2026"}
+                  {details.date || "—"}
                 </span>
               </div>
             </div>

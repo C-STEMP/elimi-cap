@@ -13,7 +13,6 @@ import {
 } from "@/src/features/shared/applications/hooks";
 import { useToast } from "@/src/components/ui/toast";
 import { useAppSelector } from "@/src/store/hooks";
-import { getAutoFilledUnitTitleCode } from "./utils";
 
 interface AssessorAssessmentFormDocumentViewProps {
   applicationId?: string;
@@ -24,6 +23,7 @@ interface AssessorAssessmentFormDocumentViewProps {
   isCandidate?: boolean;
   formRecord?: InterviewForm | null;
   applicationTrade?: string;
+  unitLabels?: string[];
   // Signing is an "interview stage" action on the backend — once the
   // application has moved past that stage, signing always fails. Defaults
   // to true so callers that don't track stage (e.g. the public shared
@@ -99,6 +99,7 @@ export const AssessorAssessmentFormDocumentView: React.FC<
   isCandidate = false,
   formRecord,
   applicationTrade,
+  unitLabels = [],
   isInterviewStage = true,
 }) => {
   const { toast } = useToast();
@@ -226,8 +227,8 @@ export const AssessorAssessmentFormDocumentView: React.FC<
   const unitTitleCode =
     formData?.unitTitleCode ||
     formData?.levelAppliedFor ||
-    getAutoFilledUnitTitleCode(applicationTrade, formId) ||
-    "Standard Assessment";
+    unitLabels[0] ||
+    "—";
   const dateStr =
     formData?.demonstrationDate ||
     formData?.observationDate ||

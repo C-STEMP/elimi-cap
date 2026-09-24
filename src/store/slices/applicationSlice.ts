@@ -38,24 +38,6 @@ export const applicationSlice = createSlice({
   name: "application",
   initialState,
   reducers: {
-    createApplication: (
-      state,
-      action: PayloadAction<{ title: string; subtitle: string }>
-    ) => {
-      const newApp: Application = {
-        id: `app-${Date.now()}`,
-        title: action.payload.title,
-        subtitle: action.payload.subtitle,
-        status: "draft",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        selfAssessmentCompleted: false,
-        paymentCompleted: false,
-        evidenceUploaded: false,
-      };
-      state.applications.push(newApp);
-      state.currentApplicationId = newApp.id;
-    },
     setCurrentApplication: (state, action: PayloadAction<string>) => {
       state.currentApplicationId = action.payload;
     },
@@ -130,7 +112,6 @@ export const applicationSlice = createSlice({
 });
 
 export const {
-  createApplication,
   setCurrentApplication,
   updateApplicationStatus,
   markSelfAssessmentComplete,

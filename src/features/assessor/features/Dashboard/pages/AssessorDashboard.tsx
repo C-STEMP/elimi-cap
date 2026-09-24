@@ -272,6 +272,7 @@ export const AssessorDashboard: React.FC = () => {
   const [nsqSubViewTitle, setNsqSubViewTitle] = useState<string | null>(null);
   const [nsqNavState, setNsqNavState] = useState<any>("overview");
   const [hasMovedToIqam, setHasMovedToIqam] = useState(false);
+  const [applicationsFilterTab, setApplicationsFilterTab] = useState("all");
   const [canMoveToIqam, setCanMoveToIqam] = useState(false);
   const moveToIqamRef = React.useRef<(() => void) | null>(null);
 
@@ -352,6 +353,8 @@ export const AssessorDashboard: React.FC = () => {
         onMoveToIqam={() => moveToIqamRef.current?.()}
         hasMovedToIqam={hasMovedToIqam}
         canMoveToIqam={canMoveToIqam}
+        applicationsFilterTab={applicationsFilterTab}
+        onSelectApplicationsFilterTab={setApplicationsFilterTab}
         applicationSubView={applicationSubView}
         canMarkAsComplete={canMarkAsComplete}
         onMarkAsComplete={handleTriggerMarkComplete}
@@ -449,6 +452,7 @@ export const AssessorDashboard: React.FC = () => {
             )
           ) : (
             <AssessorApplicationsView
+              cardFilter={applicationsFilterTab}
               onSelectApplication={(app) => {
                 router.push(`/applications/${app.id}?from=assessor`);
               }}

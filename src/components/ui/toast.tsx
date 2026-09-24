@@ -7,6 +7,7 @@ import React, {
   useCallback,
   useEffect,
 } from "react";
+import { createPortal } from "react-dom";
 import { ToastSuccessIcon, ToastErrorIcon, ToastInfoIcon } from "./svg-icons";
 
 export interface Toast {
@@ -85,15 +86,23 @@ interface ToastContainerProps {
 }
 
 const ToastContainer: React.FC<ToastContainerProps> = ({ toasts, dismiss }) => {
-  return (
+  const [mounted, setMounted] = useState(false);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return null;
+
+  // Portalled to <body> with a z-index above every modal (app modals go up to
+  // z-1100, antd's to 1000+) so errors raised from inside a modal stay visible.
+  return createPortal(
     <div
       suppressHydrationWarning
-      className="fixed top-4 left-4 right-4 sm:top-6 sm:right-6 sm:left-auto z-50 flex flex-col gap-4 w-[calc(100%-2rem)] sm:w-full sm:max-w-90 pointer-events-none select-none"
+      className="fixed top-4 left-4 right-4 sm:top-6 sm:right-6 sm:left-auto z-[2147483000] flex flex-col gap-4 w-[calc(100%-2rem)] sm:w-full sm:max-w-90 pointer-events-none select-none"
     >
       {toasts.map((t) => (
         <ToastItem key={t.id} toast={t} onDismiss={() => dismiss(t.id)} />
       ))}
-    </div>
+    </div>,
+    document.body,
   );
 };
 

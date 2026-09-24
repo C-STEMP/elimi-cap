@@ -112,10 +112,12 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
             .toLowerCase()
             .includes(searchQuery.toLowerCase()) ||
           (staff.email || "").toLowerCase().includes(searchQuery.toLowerCase());
+        // Cards emit "Active"/"Pending"; the dropdown and backend use lowercase.
+        const filter = (statusFilter || "all").toLowerCase();
         const matchesStatus =
-          statusFilter === "All" ||
-          staff.role === statusFilter ||
-          staff.status === statusFilter;
+          filter === "all" ||
+          (staff.role || "").toLowerCase() === filter ||
+          (staff.status || "").toLowerCase() === filter;
         return matchesSearch && matchesStatus;
       }),
     [staffMembers, searchQuery, statusFilter],
@@ -210,7 +212,11 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
               size="sm"
               showPlaceholderOption={false}
               containerClassName="w-32 shrink-0"
-              value={statusFilter}
+              value={
+                !statusFilter || statusFilter.toLowerCase() === "all"
+                  ? "All"
+                  : statusFilter.toLowerCase()
+              }
               onChange={(e) => setStatusFilter(e.target.value)}
               options={[
                 { label: "All", value: "All" },

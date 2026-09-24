@@ -42,12 +42,12 @@ export const resolveSectorName = (rawSector: any): string => {
 export const buildFacilitatorData = (rawFacilitator: any, resolvedTrade: string) => {
   if (!rawFacilitator) return null;
   return {
-    name: rawFacilitator.name || `${rawFacilitator.firstName || ""} ${rawFacilitator.lastName || ""}`.trim() || "Assigned Facilitator",
+    name: rawFacilitator.name || `${rawFacilitator.firstName || ""} ${rawFacilitator.lastName || ""}`.trim(),
     avatar: rawFacilitator.photo?.url || rawFacilitator.photoUrl || rawFacilitator.avatar || null,
-    role: rawFacilitator.role || `Facilitator · ${rawFacilitator.trade || resolvedTrade || "Coordinator"}`,
+    role: rawFacilitator.role || ["Facilitator", rawFacilitator.trade || resolvedTrade].filter(Boolean).join(" · "),
     tags: Array.isArray(rawFacilitator.tags) && rawFacilitator.tags.length > 0
       ? rawFacilitator.tags
-      : [rawFacilitator.trade || resolvedTrade || "RPL", "RPL Coordinator"],
+      : [rawFacilitator.trade || resolvedTrade].filter(Boolean),
   };
 };
 

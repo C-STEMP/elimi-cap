@@ -32,7 +32,7 @@ export function useRescheduleInterviewState({
   currentDate = "",
   currentTime = "",
   currentMeetingLink = "www.meet.google.com",
-  currentLocation = "Cstemp Centre",
+  currentLocation = "",
   currentMode = "virtual",
   onSuccess,
 }: Props) {
@@ -142,53 +142,32 @@ export function useRescheduleInterviewState({
           : location.trim()
         : undefined;
 
-    if (typeof window !== "undefined" && applicationId) {
-      try {
-        const storedSchedule = localStorage.getItem(`elimi_interview_schedule_${applicationId}`);
-        const parsed = storedSchedule ? JSON.parse(storedSchedule) : {};
-        localStorage.setItem(
-          `elimi_interview_schedule_${applicationId}`,
-          JSON.stringify({
-            ...parsed,
-            scheduledAt: scheduledAtIso,
-            mode: apiMode,
-            link: mode === "virtual" ? formattedMeetingLink : undefined,
-            location: resolvedLocation || (useCentreAddress ? "Centre Address" : ""),
-            useCentreAddress: mode === "physical" ? useCentreAddress : undefined,
-            status: "scheduled",
-            isRescheduled: true,
-          }),
-        );
-      } catch (err) {
-        console.warn("Storage error:", err);
-      }
-    }
-
     try {
-      const isRealApp =
-        applicationId && !applicationId.startsWith("mock") && !applicationId.startsWith("sample");
-
-      if (isRealApp) {
-        await scheduleInterviewApi(applicationId, {
-          scheduledAt: scheduledAtIso,
-          mode: apiMode,
-          location: resolvedLocation,
-          useCentreAddress: mode === "physical" ? useCentreAddress : undefined,
-          link: mode === "virtual" ? formattedMeetingLink : undefined,
-        }).catch((err) => console.warn("Schedule interview API fallback:", err));
-      }
-
+      await scheduleInterviewApi(applicationId, {
+        scheduledAt: scheduledAtIso,
+        mode: apiMode,
+        location: resolvedLocation,
+        useCentreAddress: mode === "physical" ? useCentreAddress : undefined,
+        link: mode === "virtual" ? formattedMeetingLink : undefined,
+      });
       queryClient.invalidateQueries({
         queryKey: ["applications", "interview-schedule", applicationId],
       });
       queryClient.invalidateQueries({
         queryKey: ["applications", applicationId],
       });
+      setIsSuccessOpen(true);
     } catch (err) {
-      console.warn("Reschedule interview error:", err);
+      toast({
+        type: "error",
+        title: "Reschedule Failed",
+        description:
+          err instanceof Error
+            ? err.message
+            : "Could not reschedule the interview. Please try again.",
+      });
     } finally {
       setIsSubmitting(false);
-      setIsSuccessOpen(true);
     }
   };
 

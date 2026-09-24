@@ -11,7 +11,7 @@ export interface ScheduledPanelistInfo {
   trade: string;
   leadAssessor: { id: string; name: string; avatar?: string; role?: string; tags?: string[]; isHighlighted?: boolean };
   panelMembers: { id: string; name: string; avatar?: string; role?: string; tags?: string[]; isHighlighted?: boolean }[];
-  internalVerifier: { id: string; name: string; avatar?: string; role?: string; tags?: string[] };
+  internalVerifier?: { id: string; name: string; avatar?: string; role?: string; tags?: string[] };
   date: string;
   time: string;
   mode: "physical" | "virtual";
@@ -64,7 +64,7 @@ export const AssignPanelistModal: React.FC<AssignPanelistModalProps> = (props) =
                       <div className="flex flex-col gap-3">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <Select label="Country" value={s.selectedCountry} onChange={(e) => s.setSelectedCountry(e.target.value)} options={s.countries.length > 0 ? s.countries.map((c) => ({ label: c.label, value: c.label })) : ["Nigeria"]} />
-                          <Select label="State" value={s.selectedState} onChange={(e) => s.setSelectedState(e.target.value)} options={s.states.length > 0 ? s.states.map((st) => ({ label: st.label, value: st.label })) : ["Abuja (FCT)", "Lagos"]} />
+                          <Select label="State" value={s.selectedState} onChange={(e) => s.setSelectedState(e.target.value)} options={s.states.map((st) => ({ label: st.label, value: st.label }))} />
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <Select label="LGA" value={s.selectedLga} onChange={(e) => s.setSelectedLga(e.target.value)} options={s.lgas.length > 0 ? s.lgas.map((l) => ({ label: l.label, value: l.label })) : ["Abuja Municipal"]} />

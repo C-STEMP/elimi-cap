@@ -9,6 +9,8 @@ import {
 } from "react-icons/fi";
 import type { AssessorApplicationStats } from "../../types/applications.types";
 
+const isAllFilter = (value?: string | null) => !value || value.toLowerCase() === "all";
+
 interface AssessorApplicationStatsCardsProps {
   stats: AssessorApplicationStats;
   activeFilterTab?: string;
@@ -52,7 +54,10 @@ export const AssessorApplicationStatsCards: React.FC<
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 w-full">
       {cards.map((card) => {
-        const isActive = activeFilterTab === card.filter;
+        // The "all" card is the default selection when no filter is set.
+        const isActive = isAllFilter(activeFilterTab)
+          ? card.filter === "all"
+          : activeFilterTab === card.filter;
         return (
           <button
             key={card.label}

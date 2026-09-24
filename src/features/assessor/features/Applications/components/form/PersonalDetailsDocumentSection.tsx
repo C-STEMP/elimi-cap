@@ -51,32 +51,32 @@ export const PersonalDetailsDocumentSection: React.FC<
     {
       key: "resume",
       label: "Resume / CV",
-      checked: Boolean((evidence as any)?.resume ?? true),
+      checked: Boolean((evidence as any)?.resume),
     },
     {
       key: "workSamples",
       label: "Work Samples",
-      checked: Boolean((evidence as any)?.workSamples ?? true),
+      checked: Boolean((evidence as any)?.workSamples),
     },
     {
       key: "certificates",
       label: "Certificates / Statements of Attainment",
-      checked: Boolean((evidence as any)?.certificates ?? true),
+      checked: Boolean((evidence as any)?.certificates),
     },
     {
       key: "thirdPartyReports",
       label: "References / Third-Party Reports",
-      checked: Boolean((evidence as any)?.thirdPartyReports ?? true),
+      checked: Boolean((evidence as any)?.thirdPartyReports),
     },
     {
       key: "jobDescriptions",
       label: "Job Descriptions",
-      checked: Boolean((evidence as any)?.jobDescriptions ?? true),
+      checked: Boolean((evidence as any)?.jobDescriptions),
     },
     {
       key: "photosVideos",
       label: "Photos / Videos of Work",
-      checked: Boolean((evidence as any)?.photosVideos ?? true),
+      checked: Boolean((evidence as any)?.photosVideos),
     },
     {
       key: "other",

@@ -164,7 +164,7 @@ export function useCreateInterviewState({
       const location =
         mode === "physical"
           ? sameAsCentreAddress
-            ? centreProfile?.formattedAddress || "Cstemp Centre"
+            ? centreProfile?.formattedAddress || ""
             : `${streetAddress}, ${selectedLga}, ${selectedState}`
           : undefined;
 
