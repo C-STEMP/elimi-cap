@@ -295,12 +295,6 @@ export const AssessorDashboard: React.FC = () => {
   };
 
   const handleBackFromApplication = () => {
-    if (selectedApplication?.role === "Internal Verifier") {
-      setSelectedApplication(null);
-      setIqamHeaderConfig(null);
-      return;
-    }
-
     if (selectedApplication?.assessmentType === "NSQ") {
       if (nsqNavState !== "overview") {
         setNsqNavState("overview");
@@ -311,6 +305,12 @@ export const AssessorDashboard: React.FC = () => {
         setNsqNavState("overview");
         setCanMoveToIqam(false);
       }
+      return;
+    }
+
+    if (selectedApplication?.role === "Internal Verifier") {
+      setSelectedApplication(null);
+      setIqamHeaderConfig(null);
       return;
     }
 
@@ -356,7 +356,16 @@ export const AssessorDashboard: React.FC = () => {
         canMarkAsComplete={canMarkAsComplete}
         onMarkAsComplete={handleTriggerMarkComplete}
         onBackFromApplication={handleBackFromApplication}
-        isIvApplication={selectedApplication?.role === "Internal Verifier"}
+        isIvApplication={
+          selectedApplication?.role === "Internal Verifier" ||
+          nsqSubViewTitle?.includes("Internal Verification") ||
+          nsqSubViewTitle?.includes("CON 0") ||
+          nsqSubViewTitle?.includes("Sampling Record") ||
+          nsqSubViewTitle?.includes("Comprehensive Report") ||
+          nsqSubViewTitle?.includes("Observation Checklist") ||
+          nsqSubViewTitle?.includes("Final Portfolio") ||
+          Boolean(iqamHeaderConfig)
+        }
         activeIqamToolTitle={iqamHeaderConfig?.title || (selectedIqamTool ? "IQAM Tool" : null)}
         activeIqamBreadcrumb={iqamHeaderConfig?.breadcrumb}
         onBackFromIqamTool={() => {
@@ -404,15 +413,7 @@ export const AssessorDashboard: React.FC = () => {
           )
         ) : activeTab === "Applications" ? (
           selectedApplication ? (
-            selectedApplication.role === "Internal Verifier" ? (
-              <IqamToolsDashboard
-                initialToolId="CON/04/IQAM"
-                initialApplicationId={selectedApplication.id}
-                initialCandidateName={selectedApplication.candidateName}
-                onBack={handleBackFromApplication}
-                onUpdateHeader={setIqamHeaderConfig}
-              />
-            ) : selectedApplication.assessmentType === "NSQ" ? (
+            selectedApplication.assessmentType === "NSQ" ? (
               <NsqAssessorApplicationDetailView
                 application={selectedApplication}
                 onBack={handleBackFromApplication}
@@ -424,6 +425,15 @@ export const AssessorDashboard: React.FC = () => {
                 }}
                 onMoveToIqamStatusChange={setHasMovedToIqam}
                 onCanMoveToIqamChange={setCanMoveToIqam}
+                onUpdateHeader={setIqamHeaderConfig}
+              />
+            ) : selectedApplication.role === "Internal Verifier" ? (
+              <IqamToolsDashboard
+                initialToolId="CON/04/IQAM"
+                initialApplicationId={selectedApplication.id}
+                initialCandidateName={selectedApplication.candidateName}
+                onBack={handleBackFromApplication}
+                onUpdateHeader={setIqamHeaderConfig}
               />
             ) : (
               <AssessorApplicationDetailView

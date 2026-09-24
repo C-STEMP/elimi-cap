@@ -172,21 +172,21 @@ export const ObservationChecklistView: React.FC<ObservationChecklistViewProps> =
             <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
               <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">CANDIDATE NAME</span>
               <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">
-                {outcomes?.candidate.name || candidateName || "—"}
+                {outcomes?.candidate?.name || candidateName || "—"}
               </h4>
             </div>
           </div>
         </div>
 
         {/* Section A: Did the Assessor? */}
-        <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-5">
+        <div className="bg-white rounded-3xl p-4 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-4 sm:gap-5">
           <h3 className="text-sm sm:text-base font-extrabold text-neutral-primary">Did the Assessor?</h3>
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-3.5 sm:gap-4">
             {sectionA.map((item) => (
-              <div key={item.id} className="p-4 bg-gray-50/70 rounded-2xl border border-gray-100 flex flex-col gap-2.5">
-                <div className="flex items-start justify-between gap-4">
-                  <span className="text-xs font-semibold text-neutral-primary leading-snug">{item.question}</span>
-                  <div className="flex items-center gap-1.5 shrink-0">
+              <div key={item.id} className="p-3.5 sm:p-4 bg-gray-50/70 rounded-2xl border border-gray-100 flex flex-col gap-2.5">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2.5 sm:gap-4">
+                  <span className="text-xs font-semibold text-neutral-primary leading-snug flex-1">{item.question}</span>
+                  <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-start">
                     <button type="button" disabled={isSubmitted} onClick={() => toggleAnswer("A", item.id, "yes")} className={`px-3 py-1 rounded-lg text-xs font-bold disabled:opacity-60 ${item.answer === "yes" ? "bg-[#a31d38] text-white" : "bg-gray-200 text-gray-700"}`}>Yes</button>
                     <button type="button" disabled={isSubmitted} onClick={() => toggleAnswer("A", item.id, "no")} className={`px-3 py-1 rounded-lg text-xs font-bold disabled:opacity-60 ${item.answer === "no" ? "bg-[#a31d38] text-white" : "bg-gray-200 text-gray-700"}`}>No</button>
                   </div>
@@ -198,14 +198,14 @@ export const ObservationChecklistView: React.FC<ObservationChecklistViewProps> =
         </div>
 
         {/* Section B: Can the Assessor explain? */}
-        <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-5">
+        <div className="bg-white rounded-3xl p-4 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-4 sm:gap-5">
           <h3 className="text-sm sm:text-base font-extrabold text-neutral-primary">Can the Assessor explain?</h3>
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-3.5 sm:gap-4">
             {sectionB.map((item) => (
-              <div key={item.id} className="p-4 bg-gray-50/70 rounded-2xl border border-gray-100 flex flex-col gap-2.5">
-                <div className="flex items-start justify-between gap-4">
-                  <span className="text-xs font-semibold text-neutral-primary leading-snug">{item.question}</span>
-                  <div className="flex items-center gap-1.5 shrink-0">
+              <div key={item.id} className="p-3.5 sm:p-4 bg-gray-50/70 rounded-2xl border border-gray-100 flex flex-col gap-2.5">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2.5 sm:gap-4">
+                  <span className="text-xs font-semibold text-neutral-primary leading-snug flex-1">{item.question}</span>
+                  <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-start">
                     <button type="button" disabled={isSubmitted} onClick={() => toggleAnswer("B", item.id, "yes")} className={`px-3 py-1 rounded-lg text-xs font-bold disabled:opacity-60 ${item.answer === "yes" ? "bg-[#a31d38] text-white" : "bg-gray-200 text-gray-700"}`}>Yes</button>
                     <button type="button" disabled={isSubmitted} onClick={() => toggleAnswer("B", item.id, "no")} className={`px-3 py-1 rounded-lg text-xs font-bold disabled:opacity-60 ${item.answer === "no" ? "bg-[#a31d38] text-white" : "bg-gray-200 text-gray-700"}`}>No</button>
                   </div>
@@ -217,7 +217,7 @@ export const ObservationChecklistView: React.FC<ObservationChecklistViewProps> =
         </div>
 
         {/* Signatures */}
-        <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-5">
+        <div className="bg-white rounded-3xl p-4 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-4 sm:gap-5">
           <h3 className="text-sm sm:text-base font-extrabold text-neutral-primary">Signature & Date</h3>
           <IqamSignatureBlock
             label="IV Signature"
@@ -246,19 +246,19 @@ export const ObservationChecklistView: React.FC<ObservationChecklistViewProps> =
         </div>
 
         {/* Bottom Actions / Submit Bar */}
-        <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-wrap items-center justify-between gap-4 mt-2">
+        <div className="bg-white rounded-3xl p-4 sm:p-6 shadow-sm border border-gray-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mt-2">
           <button
             type="button"
             onClick={onBack}
-            className="px-5 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-700 hover:bg-gray-50 transition-all cursor-pointer flex items-center gap-1.5"
+            className="w-full sm:w-auto justify-center px-5 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-700 hover:bg-gray-50 transition-all cursor-pointer flex items-center gap-1.5"
           >
             <FiArrowLeft className="w-4 h-4" />
             <span>Back to Application</span>
           </button>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 w-full sm:w-auto">
             {isSubmitted ? (
-              <span className="px-4 py-2 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-bold flex items-center gap-1.5">
+              <span className="w-full sm:w-auto justify-center px-4 py-2.5 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-bold flex items-center gap-1.5">
                 <FiCheck className="w-4 h-4" />
                 <span>Checklist Submitted</span>
               </span>
@@ -268,7 +268,7 @@ export const ObservationChecklistView: React.FC<ObservationChecklistViewProps> =
                 variant="primary"
                 onClick={handleSubmit}
                 loading={patchOutcomes.isPending || submitOutcomes.isPending}
-                className="bg-[#900B27] hover:bg-[#72081f] text-white text-xs font-bold px-6 py-2.5 rounded-xl cursor-pointer flex items-center gap-2 shadow-sm border-none"
+                className="w-full sm:w-auto justify-center bg-[#900B27] hover:bg-[#72081f] text-white text-xs font-bold px-6 py-2.5 rounded-xl cursor-pointer flex items-center gap-2 shadow-sm border-none"
               >
                 <span>Submit Checklist (CON 05)</span>
                 <FiCheck className="w-4 h-4" />

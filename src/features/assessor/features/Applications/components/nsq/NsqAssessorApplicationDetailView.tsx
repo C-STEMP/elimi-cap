@@ -33,8 +33,23 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import React, { useEffect, useRef, useState } from "react";
-import { FiAlertTriangle, FiCheck, FiInfo, FiX } from "react-icons/fi";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import {
+  FiAlertTriangle,
+  FiArrowRight,
+  FiCheck,
+  FiCheckCircle,
+  FiClock,
+  FiEdit3,
+  FiInfo,
+  FiUserCheck,
+  FiX,
+} from "react-icons/fi";
+import { useGetMeProfile } from "@/src/features/shared/account/hooks";
+import { useGetAssessorProfile } from "@/src/features/assessor/hooks";
+import { useAppSelector } from "@/src/store/hooks";
+import { getAssessorRoleContext } from "@/src/features/shared/applications/utils/assessorRole";
+import { IqamToolsDashboard } from "../../../iqam/IqamToolsDashboard";
 import { ComprehensiveReportView } from "../../../iqam/components/con04/ComprehensiveReportView";
 import { ObservationChecklistView } from "../../../iqam/components/con05/ObservationChecklistView";
 import { FinalPortfolioReportView } from "../../../iqam/components/con06/FinalPortfolioReportView";
@@ -91,7 +106,8 @@ export type NsqAssessorSubView =
   | "observation_form"
   | "iqam_con04"
   | "iqam_con05"
-  | "iqam_con06";
+  | "iqam_con06"
+  | "iqam_workspace";
 
 export interface NsqAssessorApplicationDetailViewProps {
   application: AssessorApplicationRecord;
@@ -103,6 +119,12 @@ export interface NsqAssessorApplicationDetailViewProps {
   onCanMoveToIqamChange?: (canMove: boolean) => void;
   subViewNavState?: NsqAssessorSubView;
   onSubViewNavStateChange?: (state: NsqAssessorSubView) => void;
+  onUpdateHeader?: (config: {
+    title: string;
+    breadcrumb: string;
+    actionLabel?: string;
+    onAction?: () => void;
+  } | null) => void;
 }
 
 const STAGE_ORDER = [
@@ -127,6 +149,7 @@ export const NsqAssessorApplicationDetailView: React.FC<
   onCanMoveToIqamChange,
   subViewNavState: externalNavState,
   onSubViewNavStateChange,
+  onUpdateHeader,
 }) => {
   const { toast } = useToast();
   const router = useRouter();
@@ -142,17 +165,24 @@ export const NsqAssessorApplicationDetailView: React.FC<
   const setActiveSubView = (next: NsqAssessorSubView) => {
     setInternalSubView(next);
     onSubViewNavStateChange?.(next);
-    if (next === "overview") onSubViewChange?.(null);
-    else if (next === "unit")
-      onSubViewChange?.(selectedUnit?.unitNo || "UNIT 1");
-    else if (next === "observation_form")
+    if (next === "overview") {
+      onSubViewChange?.(null);
+      onUpdateHeader?.(null);
+    } else if (next === "unit") {
+      onSubViewChange?.(selectedUnit?.unitNo || "Unit Details");
+      onUpdateHeader?.(null);
+    } else if (next === "observation_form") {
       onSubViewChange?.("Physical Observation Form");
-    else if (next === "iqam_con04")
+      onUpdateHeader?.(null);
+    } else if (next === "iqam_con04") {
       onSubViewChange?.("Comprehensive Internal Verifier Report Form");
-    else if (next === "iqam_con05")
+    } else if (next === "iqam_con05") {
       onSubViewChange?.("IV Observation & Questioning Checklist");
-    else if (next === "iqam_con06")
+    } else if (next === "iqam_con06") {
       onSubViewChange?.("Final Portfolio / Award Report Form");
+    } else if (next === "iqam_workspace") {
+      onSubViewChange?.("IQAM Tools Workspace");
+    }
   };
 
   const { data: apiApp, isLoading: isLoadingApp } = useGetApplicationById(
@@ -162,6 +192,21 @@ export const NsqAssessorApplicationDetailView: React.FC<
     },
   );
   const { data: inductionForm } = useGetInductionForm(application.id);
+
+  const user = useAppSelector((state) => state.auth.user);
+  const { data: meProfile } = useGetMeProfile();
+  const { data: assessorProfile } = useGetAssessorProfile();
+
+  const roleCtx = useMemo(() => {
+    return getAssessorRoleContext({
+      application: apiApp,
+      user,
+      meProfile,
+      assessorProfile,
+    });
+  }, [apiApp, user, meProfile, assessorProfile]);
+
+  const [perspective, setPerspective] = useState<"qaa" | "iqa">("qaa");
 
   const tradeId = apiApp?.tradeId || "";
   const { data: tradeDetail } = useGetTradeDetail(tradeId);
@@ -182,6 +227,9 @@ export const NsqAssessorApplicationDetailView: React.FC<
         approvedCount: u.criteriaApproved,
         totalCount: u.criteriaTotal,
         hasNewUpload: u.criteriaPending > 0,
+        status: u.status,
+        criteriaPending: u.criteriaPending,
+        criteriaRejected: u.criteriaRejected,
       }))
     : null;
   const unitsList = realUnits || [];
@@ -291,31 +339,181 @@ export const NsqAssessorApplicationDetailView: React.FC<
     prevUnitParam.current = unitParam;
   }, [searchParams]);
 
+  const effectiveStageKey =
+    apiApp?.currentStageKey ||
+    (application as any)?.currentStageKey ||
+    (application as any)?.stageKey;
+
+  const isInternalVerificationStage = Boolean(
+    effectiveStageKey &&
+    STAGE_ORDER.indexOf(effectiveStageKey) >=
+      STAGE_ORDER.indexOf("internal_verification"),
+  );
+
+  const hasMovedToIqam = isInternalVerificationStage;
+  const isRegularAssessmentStage = effectiveStageKey === "regular_assessment";
+
+  // Qualification Units Readiness Validation
+  const isUnitFullyApproved = (u: QualificationUnitItem) => {
+    if (u.status === "approved") return true;
+    const total = u.totalCount ?? 0;
+    const approved = u.approvedCount ?? 0;
+    return total > 0 && approved >= total;
+  };
+
+  const unitsWithNoEvidence = unitsList.filter(
+    (u) =>
+      !isUnitFullyApproved(u) &&
+      (u.approvedCount ?? 0) === 0 &&
+      (u.criteriaPending ?? 0) === 0 &&
+      u.status !== "in_progress",
+  );
+
+  const unitsPendingApproval = unitsList.filter(
+    (u) =>
+      !isUnitFullyApproved(u) &&
+      !unitsWithNoEvidence.some((m) => m.id === u.id),
+  );
+
+  const areAllUnitsApproved =
+    unitsList.length > 0 && unitsList.every(isUnitFullyApproved);
+
+  // Physical Observation Validation
+  const hasObservation = Boolean(liveObs);
+  const isObsPending = Boolean(
+    liveObs && (liveObs.status === "pending" || liveObs.status === "requested"),
+  );
+  const isObsRejected = Boolean(
+    liveObs && (liveObs.status === "rejected" || liveObs.status === "cancelled"),
+  );
+  const hasAssessorSignature = Boolean(
+    liveObs?.signatures?.unitAssessor?.signedAt ||
+      liveObs?.signatures?.unitAssessor,
+  );
+  const hasLearnerSignature = Boolean(
+    liveObs?.signatures?.learner?.signedAt ||
+      liveObs?.signatures?.learner,
+  );
+  const isObservationFullyCompleted = Boolean(
+    hasObservation &&
+      !isObsPending &&
+      !isObsRejected &&
+      hasFilledObservationForm &&
+      hasAssessorSignature &&
+      hasLearnerSignature,
+  );
+
+  const canMoveToIqam = Boolean(
+    !hasMovedToIqam &&
+      isRegularAssessmentStage &&
+      areAllUnitsApproved &&
+      isObservationFullyCompleted,
+  );
+
   const [isMoveToIqamModalOpen, setIsMoveToIqamModalOpen] = useState(false);
   const [isMovingToIqam, setIsMovingToIqam] = useState(false);
 
   const handleMoveToIqam = () => {
-    const unitsWithEvidence = unitsList.filter((u) => (u.totalCount ?? 0) > 0);
-    const notFullyApproved = unitsWithEvidence.filter(
-      (u) => (u.approvedCount ?? 0) !== (u.totalCount ?? 0),
-    );
-
-    if (unitsWithEvidence.length === 0) {
+    if (unitsList.length === 0) {
       toast({
         type: "error",
-        title: "No Evidence Submitted",
-        description: "There's no unit evidence to sign off yet.",
+        title: "Units Not Loaded",
+        description:
+          "The qualification units for this candidate are not yet loaded. Please refresh the page.",
       });
       return;
     }
 
-    if (notFullyApproved.length > 0) {
+    if (unitsWithNoEvidence.length > 0) {
+      const missingNames = unitsWithNoEvidence
+        .map((u) => u.unitNo)
+        .join(", ");
       toast({
         type: "error",
-        title: "Units Not Ready",
-        description: `Approve all evidence in ${notFullyApproved
-          .map((u) => u.unitNo)
-          .join(", ")} before moving this application to IQAM.`,
+        title: "Candidate Evidence Incomplete",
+        description: `Evidence has not been submitted for all qualification units. Missing: ${missingNames}. The candidate must upload evidence for every unit before advancing to Internal Quality Assurance (IQA).`,
+      });
+      return;
+    }
+
+    if (unitsPendingApproval.length > 0) {
+      const pendingNames = unitsPendingApproval
+        .map((u) => u.unitNo)
+        .join(", ");
+      toast({
+        type: "error",
+        title: "Evidence Pending Assessor Approval",
+        description: `There is pending or unapproved evidence in: ${pendingNames}. Please review and approve all submitted evidence before handing over this application to IQAM.`,
+      });
+      return;
+    }
+
+    if (!hasObservation) {
+      toast({
+        type: "error",
+        title: "Physical Observation Required",
+        description:
+          "A direct physical observation has not been conducted for this candidate. The candidate must request an observation session, and both the Physical Observation Log (ARF 02A) and Oral Questioning Record (ARF 04A) must be completed and signed before advancing.",
+      });
+      return;
+    }
+
+    if (isObsPending) {
+      toast({
+        type: "error",
+        title: "Physical Observation Pending Review",
+        description:
+          "The candidate has requested a physical observation session that is awaiting your acceptance. Please review and accept the session from the sidebar before advancing.",
+      });
+      return;
+    }
+
+    if (isObsRejected) {
+      toast({
+        type: "error",
+        title: "Physical Observation Incomplete",
+        description:
+          "The physical observation session was rejected or cancelled. A valid observation session must be completed before handing over to IQAM.",
+      });
+      return;
+    }
+
+    if (!hasFilledObservationForm) {
+      toast({
+        type: "error",
+        title: "Observation Forms Incomplete",
+        description:
+          "Both the Physical Observation Log (ARF 02A) and Oral Questioning Record (ARF 04A) must be filled out and submitted before handing over to IQAM.",
+      });
+      return;
+    }
+
+    if (!hasAssessorSignature && !hasLearnerSignature) {
+      toast({
+        type: "error",
+        title: "Observation Signatures Required",
+        description:
+          "Both you (the unit assessor) and the candidate must sign off on the completed physical observation report before the application can advance to Internal Quality Assurance.",
+      });
+      return;
+    }
+
+    if (!hasAssessorSignature) {
+      toast({
+        type: "error",
+        title: "Assessor Signature Required",
+        description:
+          "Please open the observation form and append your signature to sign off on the observation report before advancing.",
+      });
+      return;
+    }
+
+    if (!hasLearnerSignature) {
+      toast({
+        type: "error",
+        title: "Candidate Signature Pending",
+        description:
+          "The candidate has not yet appended their signature to the completed physical observation report. Both assessor and candidate signatures are mandatory before moving to Internal Quality Assurance.",
       });
       return;
     }
@@ -324,12 +522,16 @@ export const NsqAssessorApplicationDetailView: React.FC<
   };
 
   const executeMoveToIqam = async () => {
-    const unitsWithEvidence = unitsList.filter((u) => (u.totalCount ?? 0) > 0);
+    if (!areAllUnitsApproved || !isObservationFullyCompleted) {
+      handleMoveToIqam();
+      return;
+    }
+
     setIsMovingToIqam(true);
 
     try {
       await Promise.all(
-        unitsWithEvidence.map((u) =>
+        unitsList.map((u) =>
           submitUnitSignoffApi(application.id, u.id, {
             role: "unit_assessor",
             signedAt: new Date().toISOString(),
@@ -352,7 +554,7 @@ export const NsqAssessorApplicationDetailView: React.FC<
     queryClient.invalidateQueries({
       queryKey: APPLICATION_QUERY_KEYS.detail(application.id),
     });
-    unitsWithEvidence.forEach((u) => {
+    unitsList.forEach((u) => {
       queryClient.invalidateQueries({
         queryKey: APPLICATION_QUERY_KEYS.unitCriteria(application.id, u.id),
       });
@@ -364,7 +566,7 @@ export const NsqAssessorApplicationDetailView: React.FC<
         payload: {
           decision: "approve",
           stageKey: "regular_assessment",
-          feedback: `QAA assessment complete for ${candidateName} — ready for Internal Quality Assurance.`,
+          feedback: `QAA assessment complete for ${candidateName} — all ${unitsList.length} units and physical observation verified and signed off for Internal Quality Assurance.`,
         },
       });
     } catch {
@@ -378,39 +580,20 @@ export const NsqAssessorApplicationDetailView: React.FC<
     toast({
       type: "success",
       title: "Handed over to IQAM",
-      description: `All units signed off. Application for ${candidateName} has moved to Internal Quality Assurance.`,
+      description: `All ${unitsList.length} units and physical observation signed off. Application for ${candidateName} has moved to Internal Quality Assurance.`,
     });
   };
 
   useEffect(() => {
     onRegisterMoveToIqam?.(handleMoveToIqam);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onRegisterMoveToIqam, candidateName, apiApp?.nsq?.units]);
-
-  const effectiveStageKey =
-    apiApp?.currentStageKey ||
-    (application as any)?.currentStageKey ||
-    (application as any)?.stageKey;
-
-  const isInternalVerificationStage = Boolean(
-    effectiveStageKey &&
-    STAGE_ORDER.indexOf(effectiveStageKey) >=
-      STAGE_ORDER.indexOf("internal_verification"),
-  );
-
-  const hasMovedToIqam = isInternalVerificationStage;
-
-  const unitsWithEvidence = unitsList.filter((u) => (u.totalCount ?? 0) > 0);
-  const notFullyApproved = unitsWithEvidence.filter(
-    (u) => (u.approvedCount ?? 0) !== (u.totalCount ?? 0),
-  );
-  const isRegularAssessmentStage = effectiveStageKey === "regular_assessment";
-  const canMoveToIqam = Boolean(
-    !hasMovedToIqam &&
-    isRegularAssessmentStage &&
-    unitsWithEvidence.length > 0 &&
-    notFullyApproved.length === 0,
-  );
+  }, [
+    onRegisterMoveToIqam,
+    handleMoveToIqam,
+    candidateName,
+    apiApp?.nsq?.units,
+    liveObs,
+  ]);
 
   const isIqamFormsComplete = Boolean(
     apiApp?.iqamForms?.length &&
@@ -523,7 +706,18 @@ export const NsqAssessorApplicationDetailView: React.FC<
       <ComprehensiveReportView
         applicationId={application.id}
         candidateName={candidateName}
-        onBack={() => setActiveSubView("overview")}
+        onBack={() => {
+          onUpdateHeader?.(null);
+          setActiveSubView("overview");
+        }}
+        onUpdateHeader={(cfg) => {
+          onSubViewChange?.(
+            cfg?.title || "Comprehensive Internal Verifier Report Form",
+          );
+          onUpdateHeader?.(
+            cfg ? { ...cfg, breadcrumb: cfg.breadcrumb || cfg.title } : null,
+          );
+        }}
       />
     );
   }
@@ -533,7 +727,18 @@ export const NsqAssessorApplicationDetailView: React.FC<
       <ObservationChecklistView
         applicationId={application.id}
         candidateName={candidateName}
-        onBack={() => setActiveSubView("overview")}
+        onBack={() => {
+          onUpdateHeader?.(null);
+          setActiveSubView("overview");
+        }}
+        onUpdateHeader={(cfg) => {
+          onSubViewChange?.(
+            cfg?.title || "IV Observation & Questioning Checklist",
+          );
+          onUpdateHeader?.(
+            cfg ? { ...cfg, breadcrumb: cfg.breadcrumb || cfg.title } : null,
+          );
+        }}
       />
     );
   }
@@ -543,7 +748,35 @@ export const NsqAssessorApplicationDetailView: React.FC<
       <FinalPortfolioReportView
         applicationId={application.id}
         candidateName={candidateName}
-        onBack={() => setActiveSubView("overview")}
+        onBack={() => {
+          onUpdateHeader?.(null);
+          setActiveSubView("overview");
+        }}
+        onUpdateHeader={(cfg) => {
+          onSubViewChange?.(cfg?.title || "Final Portfolio / Award Report Form");
+          onUpdateHeader?.(
+            cfg ? { ...cfg, breadcrumb: cfg.breadcrumb || cfg.title } : null,
+          );
+        }}
+      />
+    );
+  }
+
+  if (isInternalVerificationStage && activeSubView === "iqam_workspace") {
+    return (
+      <IqamToolsDashboard
+        initialToolId="CON/04/IQAM"
+        initialApplicationId={application.id}
+        initialCentreId={apiApp?.centreId || (application as any)?.centreId}
+        initialCandidateName={candidateName}
+        onBack={() => {
+          onUpdateHeader?.(null);
+          setActiveSubView("overview");
+        }}
+        onUpdateHeader={(cfg) => {
+          onSubViewChange?.(cfg?.title || "IQAM Tools Workspace");
+          onUpdateHeader?.(cfg);
+        }}
       />
     );
   }
@@ -553,9 +786,72 @@ export const NsqAssessorApplicationDetailView: React.FC<
       <div className="w-full max-w-7xl xl:max-w-360 mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           <div className="lg:col-span-8 flex flex-col gap-6 w-full">
-            {isInternalVerificationStage && (
-              <div className="bg-blue-50/90 border border-blue-200 rounded-3xl p-5 sm:p-6 shadow-xs flex items-start gap-4">
-                <div className="w-10 h-10 rounded-2xl bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
+            {/* Dual Role / IQA Assignment Banner */}
+            {roleCtx.isDualRole ? (
+              <div className="bg-gradient-to-r from-amber-50 to-rose-50 border border-amber-200/80 rounded-3xl p-4 sm:p-5 shadow-xs flex flex-col gap-4">
+                <div className="flex items-start gap-3 sm:gap-3.5">
+                  <div className="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-700 flex items-center justify-center shrink-0 mt-0.5">
+                    <FiUserCheck className="w-5 h-5 stroke-[2.5]" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h4 className="text-sm font-extrabold text-neutral-primary">
+                        Dual Role Assignment
+                      </h4>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#900B27] text-white">
+                        QAA + IQA
+                      </span>
+                    </div>
+                    <p className="text-xs text-neutral-secondary mt-1 font-normal leading-relaxed">
+                      You are assigned as both the QAA Assessor and Internal Verifier (IQA) for this candidate. You have full permission to assess units and fill out all IQAM verification forms.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 p-1 bg-white/90 border border-amber-200 rounded-2xl w-full sm:w-fit sm:flex sm:items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setPerspective("qaa")}
+                    className={`px-3 sm:px-4 py-2 sm:py-1.5 rounded-xl text-xs font-bold transition-all text-center cursor-pointer ${
+                      perspective === "qaa"
+                        ? "bg-[#900B27] text-white shadow-xs"
+                        : "text-gray-600 hover:text-neutral-primary"
+                    }`}
+                  >
+                    Assessor (QAA) View
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPerspective("iqa")}
+                    className={`px-3 sm:px-4 py-2 sm:py-1.5 rounded-xl text-xs font-bold transition-all text-center cursor-pointer ${
+                      perspective === "iqa"
+                        ? "bg-[#900B27] text-white shadow-xs"
+                        : "text-gray-600 hover:text-neutral-primary"
+                    }`}
+                  >
+                    Verifier (IQA) View
+                  </button>
+                </div>
+              </div>
+            ) : !roleCtx.isDualRole && roleCtx.canPerformIqa && isInternalVerificationStage ? (
+              <div className="bg-emerald-50/90 border border-emerald-200 rounded-3xl p-4 sm:p-5 shadow-xs flex items-start sm:items-center gap-3.5">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5 sm:mt-0">
+                  <FiCheck className="w-5 h-5 stroke-[2.5]" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-extrabold text-emerald-950">
+                    Assigned Internal Verifier (IQA)
+                  </h4>
+                  <p className="text-xs text-emerald-800 font-normal mt-0.5 leading-relaxed">
+                    You are the assigned Internal Verifier. Candidate evidence has moved to internal verification. You can fill out and submit all IQAM verification forms below.
+                  </p>
+                </div>
+              </div>
+            ) : null}
+
+            {isInternalVerificationStage && !roleCtx.canPerformIqa && (
+              <div className="bg-blue-50/90 border border-blue-200 rounded-3xl p-4 sm:p-6 shadow-xs flex items-start gap-3.5">
+                <div className="w-10 h-10 rounded-2xl bg-blue-100 text-blue-700 flex items-center justify-center shrink-0 mt-0.5">
                   <FiInfo className="w-5 h-5 stroke-[2.5]" />
                 </div>
                 <div className="flex flex-col gap-1 min-w-0">
@@ -572,130 +868,734 @@ export const NsqAssessorApplicationDetailView: React.FC<
                 </div>
               </div>
             )}
-            <QualificationStandardCard
-              tradeName={tradeName}
-              qualificationCode={unitsList[0]?.unitNo}
-              evidenceTypes={evidenceTypesText}
-              sector={apiApp?.sector?.name}
-              level={
-                apiApp?.nsq?.wishedQualificationLevel
-                  ? `Level ${apiApp.nsq.wishedQualificationLevel.level}`
-                  : undefined
-              }
-            />
-            <CandidateInductionTriggerCard
-              onView={() => setIsInductionModalOpen(true)}
-            />
-            <QualificationUnitsList
-              tradeName={tradeName}
-              level={
-                apiApp?.nsq?.wishedQualificationLevel
-                  ? `Level ${apiApp.nsq.wishedQualificationLevel.level}`
-                  : undefined
-              }
-              units={unitsList}
-              onSelectUnit={handleSelectUnit}
-              isLoading={isLoadingApp}
-            />
 
-            {/* 4. IQAM Forms Card — status from GET /applications/{id} `iqamForms` */}
-            {isInternalVerificationStage && (
-              <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-xs border border-gray-100 flex flex-col gap-4">
-                <div className="flex items-center gap-2.5">
-                  <h3 className="text-base font-extrabold text-neutral-primary tracking-tight">
-                    IQAM Forms
-                  </h3>
-                  {(() => {
-                    const ivReportSubmitted = Boolean(
-                      apiApp?.iqamForms?.find((f) => f.key === "iv_report")
-                        ?.submittedAt,
-                    );
-                    const finalPortfolioSubmitted = Boolean(
-                      apiApp?.iqamForms?.find(
-                        (f) => f.key === "final_portfolio",
-                      )?.submittedAt,
-                    );
-                    return ivReportSubmitted && finalPortfolioSubmitted ? (
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-[#1E7F4C]/10 text-[#1E7F4C]">
-                        Up to Date
-                      </span>
-                    ) : (
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-primary/10 text-primary">
-                        Attention Required
-                      </span>
-                    );
-                  })()}
-                </div>
-
-                <div className="flex flex-col gap-3">
-                  <div className="p-4 bg-gray-50/70 hover:bg-gray-100/70 rounded-2xl border border-gray-100/80 transition-all flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2.5">
-                      <span className="text-xs sm:text-sm font-semibold text-neutral-primary">
-                        Comprehensive Internal Verifier Report Form
-                      </span>
-                      {apiApp?.iqamForms?.find((f) => f.key === "iv_report")
-                        ?.submittedAt && (
-                        <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#1E7F4C]/10 text-[#1E7F4C]">
-                          Submitted
-                        </span>
-                      )}
+            {perspective === "iqa" && isInternalVerificationStage ? (
+              <>
+                {/* 1. IQAM Forms Card Prominent in IQA view */}
+                <div className="bg-white rounded-3xl p-4 sm:p-6 shadow-xs border border-gray-100 flex flex-col gap-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="text-base sm:text-lg font-extrabold text-neutral-primary tracking-tight">
+                        IQAM Verification Forms
+                      </h3>
+                      {(() => {
+                        const ivReportSubmitted = Boolean(
+                          apiApp?.iqamForms?.find((f) => f.key === "iv_report")
+                            ?.submittedAt,
+                        );
+                        const finalPortfolioSubmitted = Boolean(
+                          apiApp?.iqamForms?.find(
+                            (f) => f.key === "final_portfolio",
+                          )?.submittedAt,
+                        );
+                        return ivReportSubmitted && finalPortfolioSubmitted ? (
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-[#1E7F4C]/10 text-[#1E7F4C]">
+                            Up to Date
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-amber-500/10 text-amber-700">
+                            Attention Required
+                          </span>
+                        );
+                      })()}
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setActiveSubView("iqam_con04")}
-                      className="text-[#fbab2a] hover:text-[#e89b1f] hover:underline font-bold text-xs sm:text-sm cursor-pointer select-none shrink-0"
-                    >
-                      View
-                    </button>
-                  </div>
 
-                  <div className="p-4 bg-gray-50/70 hover:bg-gray-100/70 rounded-2xl border border-gray-100/80 transition-all flex items-center justify-between gap-3">
-                    <span className="text-xs sm:text-sm font-semibold text-neutral-primary">
-                      IV Observation & Questioning Checklist
+                    <span className="self-start sm:self-auto text-[11px] font-bold text-neutral-secondary bg-gray-50 border border-gray-200/80 px-2.5 py-1 rounded-xl">
+                      {roleCtx.isDualRole
+                        ? "Acting as Internal Verifier"
+                        : "Assigned Verifier"}
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => setActiveSubView("iqam_con05")}
-                      className="text-[#fbab2a] hover:text-[#e89b1f] hover:underline font-bold text-xs sm:text-sm cursor-pointer select-none shrink-0"
-                    >
-                      View
-                    </button>
                   </div>
 
-                  <div className="p-4 bg-gray-50/70 hover:bg-gray-100/70 rounded-2xl border border-gray-100/80 transition-all flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2.5">
-                      <span className="text-xs sm:text-sm font-semibold text-neutral-primary">
-                        Final Portfolio / Award Report Form
+                  <div className="flex flex-col gap-3">
+                    {/* CON 04 */}
+                    {(() => {
+                      const isSub = Boolean(apiApp?.iqamForms?.find((f) => f.key === "iv_report")?.submittedAt);
+                      return (
+                        <div className="p-3.5 sm:p-4.5 bg-gray-50/80 hover:bg-gray-100/80 rounded-2xl border border-gray-100/90 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+                          <div className="flex flex-col gap-1.5 min-w-0 flex-1">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="px-2 py-0.5 rounded-lg text-[10px] font-extrabold bg-[#900B27]/10 text-[#900B27] tracking-wider uppercase shrink-0">
+                                CON 04
+                              </span>
+                              <div className="sm:hidden">
+                                {isSub ? (
+                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#1E7F4C]/10 text-[#1E7F4C]">
+                                    Submitted
+                                  </span>
+                                ) : (
+                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-500/10 text-amber-700">
+                                    Pending
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                              <h4 className="text-xs sm:text-sm font-bold text-neutral-primary leading-snug">
+                                Comprehensive Internal Verifier Report Form
+                              </h4>
+                              <span className="text-[11px] text-gray-500 font-normal mt-0.5">
+                                CON/04/IQAM • Verification & Quality Evaluation
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-3 w-full sm:w-auto shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-200/50 sm:border-transparent">
+                            <div className="hidden sm:block shrink-0">
+                              {isSub ? (
+                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#1E7F4C]/10 text-[#1E7F4C]">
+                                  Submitted
+                                </span>
+                              ) : (
+                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-700">
+                                  Pending
+                                </span>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setActiveSubView("iqam_con04")}
+                              className={`w-full sm:w-auto justify-center px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
+                                isSub
+                                  ? "border border-gray-200 text-gray-700 hover:bg-gray-100 bg-white"
+                                  : roleCtx.canPerformIqa
+                                    ? "bg-[#900B27] hover:bg-[#72081f] text-white shadow-xs"
+                                    : "text-[#fbab2a] hover:underline"
+                              }`}
+                            >
+                              {!isSub && roleCtx.canPerformIqa ? (
+                                <>
+                                  <FiEdit3 className="w-3.5 h-3.5" />
+                                  <span>Fill Form</span>
+                                </>
+                              ) : (
+                                <span>View</span>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* CON 05 */}
+                    {(() => {
+                      const isSub = Boolean(apiApp?.iqamForms?.find((f) => f.key === "assessor_outcomes")?.submittedAt);
+                      return (
+                        <div className="p-3.5 sm:p-4.5 bg-gray-50/80 hover:bg-gray-100/80 rounded-2xl border border-gray-100/90 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+                          <div className="flex flex-col gap-1.5 min-w-0 flex-1">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="px-2 py-0.5 rounded-lg text-[10px] font-extrabold bg-[#900B27]/10 text-[#900B27] tracking-wider uppercase shrink-0">
+                                CON 05
+                              </span>
+                              <div className="sm:hidden">
+                                {isSub ? (
+                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#1E7F4C]/10 text-[#1E7F4C]">
+                                    Submitted
+                                  </span>
+                                ) : (
+                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-500/10 text-amber-700">
+                                    Pending
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                              <h4 className="text-xs sm:text-sm font-bold text-neutral-primary leading-snug">
+                                IV Observation &amp; Questioning Checklist
+                              </h4>
+                              <span className="text-[11px] text-gray-500 font-normal mt-0.5">
+                                CON/05/IQAM • Assessor Practice Observation
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-3 w-full sm:w-auto shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-200/50 sm:border-transparent">
+                            <div className="hidden sm:block shrink-0">
+                              {isSub ? (
+                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#1E7F4C]/10 text-[#1E7F4C]">
+                                  Submitted
+                                </span>
+                              ) : (
+                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-700">
+                                  Pending
+                                </span>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setActiveSubView("iqam_con05")}
+                              className={`w-full sm:w-auto justify-center px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
+                                isSub
+                                  ? "border border-gray-200 text-gray-700 hover:bg-gray-100 bg-white"
+                                  : roleCtx.canPerformIqa
+                                    ? "bg-[#900B27] hover:bg-[#72081f] text-white shadow-xs"
+                                    : "text-[#fbab2a] hover:underline"
+                              }`}
+                            >
+                              {!isSub && roleCtx.canPerformIqa ? (
+                                <>
+                                  <FiEdit3 className="w-3.5 h-3.5" />
+                                  <span>Fill Checklist</span>
+                                </>
+                              ) : (
+                                <span>View</span>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* CON 06 */}
+                    {(() => {
+                      const isSub = Boolean(apiApp?.iqamForms?.find((f) => f.key === "final_portfolio")?.submittedAt);
+                      return (
+                        <div className="p-3.5 sm:p-4.5 bg-gray-50/80 hover:bg-gray-100/80 rounded-2xl border border-gray-100/90 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+                          <div className="flex flex-col gap-1.5 min-w-0 flex-1">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="px-2 py-0.5 rounded-lg text-[10px] font-extrabold bg-[#900B27]/10 text-[#900B27] tracking-wider uppercase shrink-0">
+                                CON 06
+                              </span>
+                              <div className="sm:hidden">
+                                {isSub ? (
+                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#1E7F4C]/10 text-[#1E7F4C]">
+                                    Submitted
+                                  </span>
+                                ) : (
+                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-500/10 text-amber-700">
+                                    Pending
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                              <h4 className="text-xs sm:text-sm font-bold text-neutral-primary leading-snug">
+                                Final Portfolio / Award Report Form
+                              </h4>
+                              <span className="text-[11px] text-gray-500 font-normal mt-0.5">
+                                CON/06/IQAM • Final Award & Verification Audit
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-3 w-full sm:w-auto shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-200/50 sm:border-transparent">
+                            <div className="hidden sm:block shrink-0">
+                              {isSub ? (
+                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#1E7F4C]/10 text-[#1E7F4C]">
+                                  Submitted
+                                </span>
+                              ) : (
+                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-700">
+                                  Pending
+                                </span>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setActiveSubView("iqam_con06")}
+                              className={`w-full sm:w-auto justify-center px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
+                                isSub
+                                  ? "border border-gray-200 text-gray-700 hover:bg-gray-100 bg-white"
+                                  : roleCtx.canPerformIqa
+                                    ? "bg-[#900B27] hover:bg-[#72081f] text-white shadow-xs"
+                                    : "text-[#fbab2a] hover:underline"
+                              }`}
+                            >
+                              {!isSub && roleCtx.canPerformIqa ? (
+                                <>
+                                  <FiEdit3 className="w-3.5 h-3.5" />
+                                  <span>Fill Report</span>
+                                </>
+                              ) : (
+                                <span>View</span>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    <div className="pt-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 border-t border-gray-100">
+                      <span className="text-xs text-neutral-secondary font-medium leading-relaxed">
+                        Need to review sampling plans, records or candidate allocations?
                       </span>
-                      {apiApp?.iqamForms?.find(
-                        (f) => f.key === "final_portfolio",
-                      )?.submittedAt && (
-                        <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#1E7F4C]/10 text-[#1E7F4C]">
-                          Submitted
+                      <button
+                        type="button"
+                        onClick={() => setActiveSubView("iqam_workspace")}
+                        className="text-xs font-bold text-[#fbab2a] hover:text-[#e89b1f] hover:underline flex items-center gap-1.5 cursor-pointer shrink-0 py-1"
+                      >
+                        <span>Open Full IQAM Workspace (CON 01 – CON 06)</span>
+                        <FiArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {isIqamFormsComplete && !isIvApproved && (
+                    <button
+                      type="button"
+                      onClick={() => setIsReviewIvModalOpen(true)}
+                      className="w-full h-11 bg-[#fbab2a] hover:bg-[#e89b1f] text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition-all cursor-pointer flex items-center justify-center gap-2"
+                    >
+                      <span>Mark IQA Competent</span>
+                      <FiCheck className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+
+                <QualificationStandardCard
+                  tradeName={tradeName}
+                  qualificationCode={unitsList[0]?.unitNo}
+                  evidenceTypes={evidenceTypesText}
+                  sector={apiApp?.sector?.name}
+                  level={
+                    apiApp?.nsq?.wishedQualificationLevel
+                      ? `Level ${apiApp.nsq.wishedQualificationLevel.level}`
+                      : undefined
+                  }
+                />
+
+                <QualificationUnitsList
+                  tradeName={tradeName}
+                  level={
+                    apiApp?.nsq?.wishedQualificationLevel
+                      ? `Level ${apiApp.nsq.wishedQualificationLevel.level}`
+                      : undefined
+                  }
+                  units={unitsList}
+                  onSelectUnit={handleSelectUnit}
+                  isLoading={isLoadingApp}
+                />
+              </>
+            ) : (
+              <>
+                <QualificationStandardCard
+                  tradeName={tradeName}
+                  qualificationCode={unitsList[0]?.unitNo}
+                  evidenceTypes={evidenceTypesText}
+                  sector={apiApp?.sector?.name}
+                  level={
+                    apiApp?.nsq?.wishedQualificationLevel
+                      ? `Level ${apiApp.nsq.wishedQualificationLevel.level}`
+                      : undefined
+                  }
+                />
+                <CandidateInductionTriggerCard
+                  onView={() => setIsInductionModalOpen(true)}
+                />
+
+                {/* Handover to IQAM Readiness Card (Visible in Regular Assessment) */}
+                {!isInternalVerificationStage && (
+                  <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-4 select-text">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                      <div className="flex items-center gap-2.5">
+                        <div
+                          className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                            canMoveToIqam
+                              ? "bg-emerald-100 text-emerald-700"
+                              : "bg-amber-100 text-amber-700"
+                          }`}
+                        >
+                          {canMoveToIqam ? (
+                            <FiCheckCircle className="w-5 h-5 stroke-[2.5]" />
+                          ) : (
+                            <FiClock className="w-5 h-5 stroke-[2.5]" />
+                          )}
+                        </div>
+                        <div className="flex flex-col">
+                          <h4 className="text-sm sm:text-base font-extrabold text-neutral-primary">
+                            Internal Quality Assurance (IQA) Handover Status
+                          </h4>
+                          <span className="text-[11px] sm:text-xs text-gray-500 font-medium">
+                            Stage 4: Regular Assessment Completion
+                          </span>
+                        </div>
+                      </div>
+                      <span
+                        className={`self-start sm:self-auto px-3 py-1 rounded-full text-[11px] font-bold ${
+                          canMoveToIqam
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            : "bg-amber-50 text-amber-800 border border-amber-200"
+                        }`}
+                      >
+                        {canMoveToIqam ? "Ready for IQAM" : "Assessment in Progress"}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                      {/* Unit Evidence Status */}
+                      <div
+                        className={`p-3.5 rounded-2xl border flex items-start gap-3 ${
+                          areAllUnitsApproved
+                            ? "bg-emerald-50/60 border-emerald-100"
+                            : "bg-gray-50/80 border-gray-100"
+                        }`}
+                      >
+                        <div className="mt-0.5 shrink-0">
+                          {areAllUnitsApproved ? (
+                            <FiCheckCircle className="w-4 h-4 text-emerald-600" />
+                          ) : (
+                            <FiAlertTriangle className="w-4 h-4 text-amber-500" />
+                          )}
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-xs font-bold text-neutral-primary">
+                            Qualification Units
+                          </span>
+                          <span className="text-[11px] text-gray-600 mt-0.5">
+                            {areAllUnitsApproved
+                              ? `All ${unitsList.length} Units Approved (100%)`
+                              : unitsWithNoEvidence.length > 0
+                                ? `${unitsWithNoEvidence.length} Unit(s) Missing Evidence`
+                                : `${unitsPendingApproval.length} Unit(s) Pending Review`}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Physical Observation Status */}
+                      <div
+                        className={`p-3.5 rounded-2xl border flex items-start gap-3 ${
+                          isObservationFullyCompleted
+                            ? "bg-emerald-50/60 border-emerald-100"
+                            : "bg-gray-50/80 border-gray-100"
+                        }`}
+                      >
+                        <div className="mt-0.5 shrink-0">
+                          {isObservationFullyCompleted ? (
+                            <FiCheckCircle className="w-4 h-4 text-emerald-600" />
+                          ) : (
+                            <FiClock className="w-4 h-4 text-amber-500" />
+                          )}
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-xs font-bold text-neutral-primary">
+                            Physical Observation
+                          </span>
+                          <span className="text-[11px] text-gray-600 mt-0.5">
+                            {isObservationFullyCompleted
+                              ? "ARF 02A & 04A Completed & Signed"
+                              : !hasObservation
+                                ? "Session Not Yet Scheduled"
+                                : isObsPending
+                                  ? "Session Awaiting Assessor Acceptance"
+                                  : !hasFilledObservationForm
+                                    ? "Forms ARF 02A & 04A Incomplete"
+                                    : !hasAssessorSignature
+                                      ? "Awaiting Assessor Signature"
+                                      : "Awaiting Candidate Signature"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <p className="text-xs text-gray-500 leading-relaxed">
+                        {canMoveToIqam
+                          ? "All qualification requirements are met. You can now advance this application to the Internal Quality Assurance stage."
+                          : "All units must have approved evidence and physical observation forms must be completed and signed by both assessor and candidate before hand-off."}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleMoveToIqam}
+                        className={`w-full sm:w-auto px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0 ${
+                          canMoveToIqam
+                            ? "bg-[#fbab2a] hover:bg-[#e89b1f] text-white shadow-xs"
+                            : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                        }`}
+                      >
+                        <span>{canMoveToIqam ? "Hand Over to IQAM" : "Check Requirements"}</span>
+                        <FiArrowRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <QualificationUnitsList
+                  tradeName={tradeName}
+                  level={
+                    apiApp?.nsq?.wishedQualificationLevel
+                      ? `Level ${apiApp.nsq.wishedQualificationLevel.level}`
+                      : undefined
+                  }
+                  units={unitsList}
+                  onSelectUnit={handleSelectUnit}
+                  isLoading={isLoadingApp}
+                />
+
+                {/* 4. IQAM Forms Card — status from GET /applications/{id} `iqamForms` */}
+                {isInternalVerificationStage && (
+                  <div className="bg-white rounded-3xl p-4 sm:p-6 shadow-xs border border-gray-100 flex flex-col gap-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="text-base sm:text-lg font-extrabold text-neutral-primary tracking-tight">
+                          IQAM Forms
+                        </h3>
+                        {(() => {
+                          const ivReportSubmitted = Boolean(
+                            apiApp?.iqamForms?.find((f) => f.key === "iv_report")
+                              ?.submittedAt,
+                          );
+                          const finalPortfolioSubmitted = Boolean(
+                            apiApp?.iqamForms?.find(
+                              (f) => f.key === "final_portfolio",
+                            )?.submittedAt,
+                          );
+                          return ivReportSubmitted && finalPortfolioSubmitted ? (
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-[#1E7F4C]/10 text-[#1E7F4C]">
+                              Up to Date
+                            </span>
+                          ) : (
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-amber-500/10 text-amber-700">
+                              Attention Required
+                            </span>
+                          );
+                        })()}
+                      </div>
+
+                      {roleCtx.canPerformIqa && (
+                        <span className="self-start sm:self-auto text-[11px] font-bold text-neutral-secondary bg-gray-50 border border-gray-200/80 px-2.5 py-1 rounded-xl">
+                          {roleCtx.isDualRole
+                            ? "Acting as Internal Verifier"
+                            : "Assigned Verifier"}
                         </span>
                       )}
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setActiveSubView("iqam_con06")}
-                      className="text-[#fbab2a] hover:text-[#e89b1f] hover:underline font-bold text-xs sm:text-sm cursor-pointer select-none shrink-0"
-                    >
-                      View
-                    </button>
-                  </div>
-                </div>
 
-                {isIqamFormsComplete && !isIvApproved && (
-                  <button
-                    type="button"
-                    onClick={() => setIsReviewIvModalOpen(true)}
-                    className="w-full h-11 bg-[#fbab2a] hover:bg-[#e89b1f] text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition-all cursor-pointer flex items-center justify-center gap-2"
-                  >
-                    <span>Mark IQA Competent</span>
-                    <FiCheck className="w-4 h-4" />
-                  </button>
+                    <div className="flex flex-col gap-3">
+                      {/* CON 04 */}
+                      {(() => {
+                        const isSub = Boolean(apiApp?.iqamForms?.find((f) => f.key === "iv_report")?.submittedAt);
+                        return (
+                          <div className="p-3.5 sm:p-4.5 bg-gray-50/80 hover:bg-gray-100/80 rounded-2xl border border-gray-100/90 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+                            <div className="flex flex-col gap-1.5 min-w-0 flex-1">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="px-2 py-0.5 rounded-lg text-[10px] font-extrabold bg-[#900B27]/10 text-[#900B27] tracking-wider uppercase shrink-0">
+                                  CON 04
+                                </span>
+                                <div className="sm:hidden">
+                                  {isSub ? (
+                                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#1E7F4C]/10 text-[#1E7F4C]">
+                                      Submitted
+                                    </span>
+                                  ) : (
+                                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-500/10 text-amber-700">
+                                      Pending
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex flex-col min-w-0">
+                                <h4 className="text-xs sm:text-sm font-bold text-neutral-primary leading-snug">
+                                  Comprehensive Internal Verifier Report Form
+                                </h4>
+                                <span className="text-[11px] text-gray-500 font-normal mt-0.5">
+                                  CON/04/IQAM • Verification & Quality Evaluation
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-3 w-full sm:w-auto shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-200/50 sm:border-transparent">
+                              <div className="hidden sm:block shrink-0">
+                                {isSub ? (
+                                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#1E7F4C]/10 text-[#1E7F4C]">
+                                    Submitted
+                                  </span>
+                                ) : (
+                                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-700">
+                                    Pending
+                                  </span>
+                                )}
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setActiveSubView("iqam_con04")}
+                                className={`w-full sm:w-auto justify-center px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
+                                  isSub
+                                    ? "border border-gray-200 text-gray-700 hover:bg-gray-100 bg-white"
+                                    : roleCtx.canPerformIqa
+                                      ? "bg-[#900B27] hover:bg-[#72081f] text-white shadow-xs"
+                                      : "text-[#fbab2a] hover:underline"
+                                }`}
+                              >
+                                {!isSub && roleCtx.canPerformIqa ? (
+                                  <>
+                                    <FiEdit3 className="w-3.5 h-3.5" />
+                                    <span>Fill Form</span>
+                                  </>
+                                ) : (
+                                  <span>View</span>
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      {/* CON 05 */}
+                      {(() => {
+                        const isSub = Boolean(apiApp?.iqamForms?.find((f) => f.key === "assessor_outcomes")?.submittedAt);
+                        return (
+                          <div className="p-3.5 sm:p-4.5 bg-gray-50/80 hover:bg-gray-100/80 rounded-2xl border border-gray-100/90 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+                            <div className="flex flex-col gap-1.5 min-w-0 flex-1">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="px-2 py-0.5 rounded-lg text-[10px] font-extrabold bg-[#900B27]/10 text-[#900B27] tracking-wider uppercase shrink-0">
+                                  CON 05
+                                </span>
+                                <div className="sm:hidden">
+                                  {isSub ? (
+                                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#1E7F4C]/10 text-[#1E7F4C]">
+                                      Submitted
+                                    </span>
+                                  ) : (
+                                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-500/10 text-amber-700">
+                                      Pending
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex flex-col min-w-0">
+                                <h4 className="text-xs sm:text-sm font-bold text-neutral-primary leading-snug">
+                                  IV Observation &amp; Questioning Checklist
+                                </h4>
+                                <span className="text-[11px] text-gray-500 font-normal mt-0.5">
+                                  CON/05/IQAM • Assessor Practice Observation
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-3 w-full sm:w-auto shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-200/50 sm:border-transparent">
+                              <div className="hidden sm:block shrink-0">
+                                {isSub ? (
+                                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#1E7F4C]/10 text-[#1E7F4C]">
+                                    Submitted
+                                  </span>
+                                ) : (
+                                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-700">
+                                    Pending
+                                  </span>
+                                )}
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setActiveSubView("iqam_con05")}
+                                className={`w-full sm:w-auto justify-center px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
+                                  isSub
+                                    ? "border border-gray-200 text-gray-700 hover:bg-gray-100 bg-white"
+                                    : roleCtx.canPerformIqa
+                                      ? "bg-[#900B27] hover:bg-[#72081f] text-white shadow-xs"
+                                      : "text-[#fbab2a] hover:underline"
+                                }`}
+                              >
+                                {!isSub && roleCtx.canPerformIqa ? (
+                                  <>
+                                    <FiEdit3 className="w-3.5 h-3.5" />
+                                    <span>Fill Checklist</span>
+                                  </>
+                                ) : (
+                                  <span>View</span>
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      {/* CON 06 */}
+                      {(() => {
+                        const isSub = Boolean(apiApp?.iqamForms?.find((f) => f.key === "final_portfolio")?.submittedAt);
+                        return (
+                          <div className="p-3.5 sm:p-4.5 bg-gray-50/80 hover:bg-gray-100/80 rounded-2xl border border-gray-100/90 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+                            <div className="flex flex-col gap-1.5 min-w-0 flex-1">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="px-2 py-0.5 rounded-lg text-[10px] font-extrabold bg-[#900B27]/10 text-[#900B27] tracking-wider uppercase shrink-0">
+                                  CON 06
+                                </span>
+                                <div className="sm:hidden">
+                                  {isSub ? (
+                                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#1E7F4C]/10 text-[#1E7F4C]">
+                                      Submitted
+                                    </span>
+                                  ) : (
+                                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-500/10 text-amber-700">
+                                      Pending
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex flex-col min-w-0">
+                                <h4 className="text-xs sm:text-sm font-bold text-neutral-primary leading-snug">
+                                  Final Portfolio / Award Report Form
+                                </h4>
+                                <span className="text-[11px] text-gray-500 font-normal mt-0.5">
+                                  CON/06/IQAM • Final Award & Verification Audit
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-3 w-full sm:w-auto shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-200/50 sm:border-transparent">
+                              <div className="hidden sm:block shrink-0">
+                                {isSub ? (
+                                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#1E7F4C]/10 text-[#1E7F4C]">
+                                    Submitted
+                                  </span>
+                                ) : (
+                                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-700">
+                                    Pending
+                                  </span>
+                                )}
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setActiveSubView("iqam_con06")}
+                                className={`w-full sm:w-auto justify-center px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
+                                  isSub
+                                    ? "border border-gray-200 text-gray-700 hover:bg-gray-100 bg-white"
+                                    : roleCtx.canPerformIqa
+                                      ? "bg-[#900B27] hover:bg-[#72081f] text-white shadow-xs"
+                                      : "text-[#fbab2a] hover:underline"
+                                }`}
+                              >
+                                {!isSub && roleCtx.canPerformIqa ? (
+                                  <>
+                                    <FiEdit3 className="w-3.5 h-3.5" />
+                                    <span>Fill Report</span>
+                                  </>
+                                ) : (
+                                  <span>View</span>
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      <div className="pt-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 border-t border-gray-100">
+                        <span className="text-xs text-neutral-secondary font-medium leading-relaxed">
+                          Need to review sampling plans, records or candidate allocations?
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setActiveSubView("iqam_workspace")}
+                          className="text-xs font-bold text-[#fbab2a] hover:text-[#e89b1f] hover:underline flex items-center gap-1.5 cursor-pointer shrink-0 py-1"
+                        >
+                          <span>Open Full IQAM Workspace (CON 01 – CON 06)</span>
+                          <FiArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {isIqamFormsComplete && !isIvApproved && (
+                      <button
+                        type="button"
+                        onClick={() => setIsReviewIvModalOpen(true)}
+                        className="w-full h-11 bg-[#fbab2a] hover:bg-[#e89b1f] text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition-all cursor-pointer flex items-center justify-center gap-2"
+                      >
+                        <span>Mark IQA Competent</span>
+                        <FiCheck className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
                 )}
-              </div>
+              </>
             )}
           </div>
 
@@ -803,8 +1703,8 @@ export const NsqAssessorApplicationDetailView: React.FC<
               </button>
 
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-                  <FiAlertTriangle className="w-6 h-6" />
+                <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                  <FiCheckCircle className="w-6 h-6 stroke-[2.5]" />
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-gray-900">
@@ -833,50 +1733,32 @@ export const NsqAssessorApplicationDetailView: React.FC<
                     Units with Approved Evidence:
                   </span>
                   <span className="font-bold text-emerald-600">
-                    {
-                      unitsList.filter(
-                        (u) =>
-                          (u.totalCount ?? 0) > 0 &&
-                          u.approvedCount === u.totalCount,
-                      ).length
-                    }
+                    {unitsList.length} of {unitsList.length} (100% Complete)
                   </span>
                 </div>
-                {unitsList.filter((u) => (u.approvedCount ?? 0) === 0).length >
-                  0 && (
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-gray-500 font-medium">
-                      Units without Evidence:
-                    </span>
-                    <span className="font-bold text-amber-600">
-                      {
-                        unitsList.filter((u) => (u.approvedCount ?? 0) === 0)
-                          .length
-                      }
-                    </span>
-                  </div>
-                )}
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-gray-500 font-medium">
+                    Physical Observation &amp; Oral Exam:
+                  </span>
+                  <span className="font-bold text-emerald-600 flex items-center gap-1">
+                    <FiCheck className="w-3.5 h-3.5" />
+                    Completed &amp; Signed
+                  </span>
+                </div>
               </div>
 
-              {unitsList.filter((u) => (u.approvedCount ?? 0) === 0).length >
-                0 && (
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-xs text-amber-800 flex items-start gap-2.5">
-                  <FiAlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-bold">Important Warning: </span>
-                    Not all qualification units have approved evidence. Moving
-                    to IQAM will finalize the assessment phase. Once moved, the
-                    candidate will{" "}
-                    <strong>no longer be able to upload evidence</strong> for
-                    any remaining units.
-                  </div>
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3.5 text-xs text-emerald-800 flex items-start gap-2.5">
+                <FiCheckCircle className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-bold">Assessment Requirements Met: </span>
+                  All qualification units have approved evidence and the physical observation record is signed by both assessor and candidate.
                 </div>
-              )}
+              </div>
 
               <p className="text-xs text-gray-500 leading-relaxed">
-                Advancing will sign off all eligible units and transition the
+                Advancing will sign off all qualification units and transition the
                 application to the <strong>Internal Verification (IQA)</strong>{" "}
-                stage for sampling by the Internal Verifier.
+                stage for sampling and quality assurance by the Internal Verifier.
               </p>
 
               <div className="flex items-center justify-end gap-3 pt-2">

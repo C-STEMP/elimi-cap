@@ -10,6 +10,9 @@ export interface QualificationUnitItem {
   approvedCount: number;
   totalCount: number;
   hasNewUpload?: boolean;
+  status?: "not_started" | "in_progress" | "approved";
+  criteriaPending?: number;
+  criteriaRejected?: number;
 }
 
 interface QualificationUnitsListProps {
@@ -55,30 +58,55 @@ export const QualificationUnitsList: React.FC<QualificationUnitsListProps> = ({
             Units will appear here once the candidate&apos;s qualification standard is loaded.
           </p>
         )}
-        {!isLoading && units.map((u) => (
-          <div
-            key={u.id}
-            onClick={() => onSelectUnit(u)}
-            className="p-4 bg-gray-50/70 hover:bg-gray-100/70 rounded-2xl border border-gray-100 transition-all cursor-pointer flex items-center justify-between gap-3 group"
-          >
-            <div className="flex items-center gap-2 flex-1 min-w-0">
-              <span className="text-xs sm:text-sm font-bold text-neutral-primary shrink-0">
-                {u.unitNo}:
-              </span>
-              <span className="text-xs sm:text-sm text-neutral-secondary truncate">
-                {u.title}
-              </span>
-            </div>
+        {!isLoading &&
+          units.map((u) => {
+            const isFullyApproved =
+              u.status === "approved" ||
+              ((u.totalCount ?? 0) > 0 &&
+                (u.approvedCount ?? 0) >= (u.totalCount ?? 0));
+            const hasNoEvidence =
+              !isFullyApproved &&
+              (u.approvedCount ?? 0) === 0 &&
+              (u.criteriaPending ?? 0) === 0 &&
+              u.status !== "in_progress";
 
-            <div className="flex items-center gap-3 shrink-0">
-              <span className="px-3.5 py-1 bg-[#047857] text-white font-medium text-[11px] sm:text-xs rounded-full shadow-2xs">
-                {u.approvedCount}/{u.totalCount} Approved
-              </span>
+            return (
+              <div
+                key={u.id}
+                onClick={() => onSelectUnit(u)}
+                className="p-4 bg-gray-50/70 hover:bg-gray-100/70 rounded-2xl border border-gray-100 transition-all cursor-pointer flex items-center justify-between gap-3 group"
+              >
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <span className="text-xs sm:text-sm font-bold text-neutral-primary shrink-0">
+                    {u.unitNo}:
+                  </span>
+                  <span className="text-xs sm:text-sm text-neutral-secondary truncate">
+                    {u.title}
+                  </span>
+                </div>
 
-              <FiChevronRight className="w-4 h-4 text-gray-400 group-hover:text-neutral-primary transition-colors" />
-            </div>
-          </div>
-        ))}
+                <div className="flex items-center gap-3 shrink-0">
+                  <span
+                    className={`px-3 py-1 font-semibold text-[11px] sm:text-xs rounded-full shadow-2xs ${
+                      isFullyApproved
+                        ? "bg-[#047857] text-white"
+                        : hasNoEvidence
+                          ? "bg-gray-200/80 text-gray-600"
+                          : "bg-amber-100 text-amber-800"
+                    }`}
+                  >
+                    {isFullyApproved
+                      ? `${u.approvedCount}/${u.totalCount} Approved`
+                      : hasNoEvidence
+                        ? "No Evidence"
+                        : `${u.approvedCount}/${u.totalCount} Approved`}
+                  </span>
+
+                  <FiChevronRight className="w-4 h-4 text-gray-400 group-hover:text-neutral-primary transition-colors" />
+                </div>
+              </div>
+            );
+          })}
       </div>
     </div>
   );
