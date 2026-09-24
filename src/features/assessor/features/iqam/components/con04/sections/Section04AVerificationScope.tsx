@@ -35,11 +35,6 @@ export const Section04AVerificationScope: React.FC<Section04AVerificationScopePr
 
   return (
     <div className="flex flex-col gap-5 select-text">
-      {/* Scope Disclaimer Box */}
-      <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-xs border border-gray-100 text-xs sm:text-sm text-neutral-primary leading-relaxed">
-        It Is The Responsibility Of Internal Quality Assurer To Complete This Form, Make Copies, Send The Original To The Quality Assurance Coordinator (Lead IQA) And Ensure A Copy Is Given To The Assessor. Where A Positive Unit Or Award Verification Has Taken Place, The IQA Must Complete Either The Unit Or Units And Award Summary Sheet, Ensuring The Administrator Or The Quality Assurance Coordinator (Lead IQA) Receive The Original.
-      </div>
-
       {/* Row 1: 4 Metadata Cards */}
       <div className="bg-white rounded-3xl p-4 sm:p-5 shadow-xs border border-gray-100">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

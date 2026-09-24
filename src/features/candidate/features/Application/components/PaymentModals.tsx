@@ -18,6 +18,8 @@ interface PaymentModalProps {
   type: PaymentModalType;
   title?: string;
   description?: string;
+  /** Overrides the default button label (e.g. "Start Folder Arrangement" on success). */
+  actionLabel?: string;
   onClose: () => void;
   onAction?: () => void;
 }
@@ -27,6 +29,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   type,
   title,
   description,
+  actionLabel,
   onClose,
   onAction,
 }) => {
@@ -61,6 +64,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
       variant={variantMap[type]}
       title={title}
       description={description}
+      actionLabel={actionLabel}
       onAction={onAction}
     />
   );

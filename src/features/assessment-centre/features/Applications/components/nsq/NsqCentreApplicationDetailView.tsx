@@ -558,7 +558,7 @@ export const NsqCentreApplicationDetailView: React.FC<
   // Units list — the candidate's induction-picked units from GET
   // /applications/{id} `nsq.units` (real per-unit evidence progress), over the
   // generic trade catalogue, which has no progress data.
-  const nsqUnitsForLevel = getNsqScopedUnits(application?.nsq);
+  const nsqUnitsForLevel = getNsqScopedUnits(application?.nsq, inductionForm);
 
   const qualificationCode =
     nsqUnitsForLevel?.[0]?.referenceNumber ||

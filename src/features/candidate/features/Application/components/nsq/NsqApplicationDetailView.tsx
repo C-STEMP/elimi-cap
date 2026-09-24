@@ -12,7 +12,6 @@ import {
   FiClock,
   FiUser,
   FiX,
-  FiInfo,
 } from "react-icons/fi";
 import { HeaderBanner } from "@/features/candidate/features/Dashboard/components/HeaderBanner";
 import { CalendarWidget } from "@/features/candidate/features/Dashboard/components/CalendarWidget";
@@ -341,7 +340,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
     ? `Level ${wishedQualificationLevel.level}`
     : "";
 
-  const nsqUnits = getNsqScopedUnits(nsqData);
+  const nsqUnits = getNsqScopedUnits(nsqData, inductionForm);
   const unitsList: NsqUnitItem[] =
     nsqUnits.length > 0
       ? nsqUnits.map((u) => {
@@ -698,23 +697,6 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                 })}
               </div>
             </div>
-
-            {/* Stage Notice Banner */}
-            {isInternalVerificationStage && (
-              <div className="bg-blue-50/90 border border-blue-200 rounded-2xl p-5 shadow-xs flex items-start gap-3.5">
-                <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
-                  <FiInfo className="w-5 h-5 stroke-[2.5]" />
-                </div>
-                <div className="flex flex-col gap-1 min-w-0">
-                  <h4 className="text-sm sm:text-base font-extrabold text-blue-950">
-                    Application in Internal Quality Assurance (IQA)
-                  </h4>
-                  <p className="text-xs sm:text-sm text-blue-800 leading-relaxed font-normal">
-                    Your assessment evidence has been reviewed and signed off by your assessor, and your application has advanced to the Internal Quality Assurance stage. Evidence uploading is closed while the Internal Verifier samples and reviews your assessment.
-                  </p>
-                </div>
-              </div>
-            )}
 
             {/* 2. Application Status Card */}
             <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-2">
@@ -1329,8 +1311,23 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
         type={activePaymentModal}
         title={paymentErrorInfo.title}
         description={paymentErrorInfo.description}
+        // NSQ has no folder arrangement — after paying, the next step is the
+        // induction form.
+        actionLabel={
+          activePaymentModal === "success"
+            ? inductionForm?.submittedAt
+              ? "Continue"
+              : "Fill Induction Form"
+            : undefined
+        }
         onClose={() => setActivePaymentModal(null)}
-        onAction={() => setActivePaymentModal(null)}
+        onAction={() => {
+          const wasSuccess = activePaymentModal === "success";
+          setActivePaymentModal(null);
+          if (wasSuccess && !inductionForm?.submittedAt) {
+            setIsInductionFillModalOpen(true);
+          }
+        }}
       />
     </div>
   );

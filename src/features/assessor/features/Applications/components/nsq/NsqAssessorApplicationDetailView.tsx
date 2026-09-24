@@ -10,6 +10,7 @@ import {
   useGetApplicationById,
   useGetDirectObservations,
   useGetInductionForm,
+  useGetUnitsCriteria,
   useReviewApplication,
   useReviewDirectObservation,
 } from "@/src/features/shared/applications/hooks";
@@ -34,16 +35,12 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  FiAlertTriangle,
   FiArrowRight,
   FiCheck,
   FiCheckCircle,
-  FiClock,
   FiEdit3,
-  FiInfo,
-  FiUserCheck,
   FiX,
 } from "react-icons/fi";
 import { useGetMeProfile } from "@/src/features/shared/account/hooks";
@@ -209,14 +206,12 @@ export const NsqAssessorApplicationDetailView: React.FC<
     });
   }, [apiApp, user, meProfile, assessorProfile]);
 
-  const [perspective, setPerspective] = useState<"qaa" | "iqa">("qaa");
-
   const tradeId = apiApp?.tradeId || "";
   const { data: tradeDetail } = useGetTradeDetail(tradeId);
   const { data: remoteEvidenceTypes = [] } =
     useGetEvidenceTypesByTrade(tradeId);
 
-  const nsqUnitsForLevel = getNsqScopedUnits(apiApp?.nsq);
+  const nsqUnitsForLevel = getNsqScopedUnits(apiApp?.nsq, inductionForm);
   const realUnits: QualificationUnitItem[] | null = nsqUnitsForLevel?.length
     ? nsqUnitsForLevel.map((u) => ({
         id: u.id,
@@ -348,6 +343,10 @@ export const NsqAssessorApplicationDetailView: React.FC<
       STAGE_ORDER.indexOf("internal_verification"),
   );
 
+  // A dual-role (QAA + IQA) assessor works in the IQA view once the
+  // application reaches internal verification, and the QAA view before.
+  const isIqaView = roleCtx.isDualRole && isInternalVerificationStage;
+
   const hasMovedToIqam = isInternalVerificationStage;
   const isRegularAssessmentStage = effectiveStageKey === "regular_assessment";
 
@@ -379,15 +378,21 @@ export const NsqAssessorApplicationDetailView: React.FC<
     unitsList.length > 0 && unitsList.every(isUnitFullyApproved);
 
   // Every NOS criterion in every in-scope unit has at least one upload
-  // (pending, rejected or approved latest row).
-  const hasAllEvidenceUploaded =
-    unitsList.length > 0 &&
-    unitsList.every((u) => {
-      const total = u.totalCount ?? 0;
-      const uploaded =
-        (u.approvedCount ?? 0) + (u.criteriaPending ?? 0) + (u.criteriaRejected ?? 0);
-      return total > 0 && uploaded >= total;
-    });
+  // (pending, rejected or approved latest row). Read from each unit's criteria:
+  // the unit summary's criteriaPending also counts unmatched upload codes, so
+  // it can't tell whether every criterion has evidence.
+  const unitsCriteria = useGetUnitsCriteria(
+    application.id,
+    unitsList.map((u) => u.id),
+    { enabled: isRegularAssessmentStage },
+  );
+  const hasAllEvidenceUploaded = Boolean(
+    unitsCriteria &&
+      unitsCriteria.every((uc) => {
+        const nos = uc.criteria.filter((c) => !c.unmatched);
+        return nos.length > 0 && nos.every((c) => c.status !== "none");
+      }),
+  );
 
   // Physical Observation Validation
   const hasObservation = Boolean(liveObs);
@@ -691,6 +696,50 @@ export const NsqAssessorApplicationDetailView: React.FC<
     setIsRejectObsSuccessOpen(true);
   };
 
+  // Header callbacks for the IQAM sub-views must keep a stable identity: the
+  // views re-run their header effect whenever the callback changes, and that
+  // effect updates the parent header, which re-renders this component. Inline
+  // arrows made that an infinite update loop. The latest props are read via a
+  // ref instead.
+  const headerPropsRef = useRef({ onSubViewChange, onUpdateHeader });
+  useEffect(() => {
+    headerPropsRef.current = { onSubViewChange, onUpdateHeader };
+  });
+  type IqamHeaderConfig = Parameters<NonNullable<typeof onUpdateHeader>>[0];
+  const forwardIqamHeader = useCallback(
+    (cfg: IqamHeaderConfig, fallbackTitle: string, withBreadcrumb: boolean) => {
+      const { onSubViewChange: onSub, onUpdateHeader: onHeader } =
+        headerPropsRef.current;
+      onSub?.(cfg?.title || fallbackTitle);
+      onHeader?.(
+        cfg && withBreadcrumb
+          ? { ...cfg, breadcrumb: cfg.breadcrumb || cfg.title }
+          : cfg,
+      );
+    },
+    [],
+  );
+  const handleCon04Header = useCallback(
+    (cfg: IqamHeaderConfig) =>
+      forwardIqamHeader(cfg, "Comprehensive Internal Verifier Report Form", true),
+    [forwardIqamHeader],
+  );
+  const handleCon05Header = useCallback(
+    (cfg: IqamHeaderConfig) =>
+      forwardIqamHeader(cfg, "IV Observation & Questioning Checklist", true),
+    [forwardIqamHeader],
+  );
+  const handleCon06Header = useCallback(
+    (cfg: IqamHeaderConfig) =>
+      forwardIqamHeader(cfg, "Final Portfolio / Award Report Form", true),
+    [forwardIqamHeader],
+  );
+  const handleWorkspaceHeader = useCallback(
+    (cfg: IqamHeaderConfig) =>
+      forwardIqamHeader(cfg, "IQAM Tools Workspace", false),
+    [forwardIqamHeader],
+  );
+
   if (activeSubView === "unit" && selectedUnit) {
     return (
       <NsqAssessorUnitDetailView
@@ -746,14 +795,7 @@ export const NsqAssessorApplicationDetailView: React.FC<
           onUpdateHeader?.(null);
           setActiveSubView("overview");
         }}
-        onUpdateHeader={(cfg) => {
-          onSubViewChange?.(
-            cfg?.title || "Comprehensive Internal Verifier Report Form",
-          );
-          onUpdateHeader?.(
-            cfg ? { ...cfg, breadcrumb: cfg.breadcrumb || cfg.title } : null,
-          );
-        }}
+        onUpdateHeader={handleCon04Header}
       />
     );
   }
@@ -767,14 +809,7 @@ export const NsqAssessorApplicationDetailView: React.FC<
           onUpdateHeader?.(null);
           setActiveSubView("overview");
         }}
-        onUpdateHeader={(cfg) => {
-          onSubViewChange?.(
-            cfg?.title || "IV Observation & Questioning Checklist",
-          );
-          onUpdateHeader?.(
-            cfg ? { ...cfg, breadcrumb: cfg.breadcrumb || cfg.title } : null,
-          );
-        }}
+        onUpdateHeader={handleCon05Header}
       />
     );
   }
@@ -788,12 +823,7 @@ export const NsqAssessorApplicationDetailView: React.FC<
           onUpdateHeader?.(null);
           setActiveSubView("overview");
         }}
-        onUpdateHeader={(cfg) => {
-          onSubViewChange?.(cfg?.title || "Final Portfolio / Award Report Form");
-          onUpdateHeader?.(
-            cfg ? { ...cfg, breadcrumb: cfg.breadcrumb || cfg.title } : null,
-          );
-        }}
+        onUpdateHeader={handleCon06Header}
       />
     );
   }
@@ -809,10 +839,7 @@ export const NsqAssessorApplicationDetailView: React.FC<
           onUpdateHeader?.(null);
           setActiveSubView("overview");
         }}
-        onUpdateHeader={(cfg) => {
-          onSubViewChange?.(cfg?.title || "IQAM Tools Workspace");
-          onUpdateHeader?.(cfg);
-        }}
+        onUpdateHeader={handleWorkspaceHeader}
       />
     );
   }
@@ -822,90 +849,7 @@ export const NsqAssessorApplicationDetailView: React.FC<
       <div className="w-full max-w-7xl xl:max-w-360 mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           <div className="lg:col-span-8 flex flex-col gap-6 w-full">
-            {/* Dual Role / IQA Assignment Banner */}
-            {roleCtx.isDualRole ? (
-              <div className="bg-gradient-to-r from-amber-50 to-rose-50 border border-amber-200/80 rounded-3xl p-4 sm:p-5 shadow-xs flex flex-col gap-4">
-                <div className="flex items-start gap-3 sm:gap-3.5">
-                  <div className="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-700 flex items-center justify-center shrink-0 mt-0.5">
-                    <FiUserCheck className="w-5 h-5 stroke-[2.5]" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h4 className="text-sm font-extrabold text-neutral-primary">
-                        Dual Role Assignment
-                      </h4>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#900B27] text-white">
-                        QAA + IQA
-                      </span>
-                    </div>
-                    <p className="text-xs text-neutral-secondary mt-1 font-normal leading-relaxed">
-                      You are assigned as both the QAA Assessor and Internal Verifier (IQA) for this candidate. You have full permission to assess units and fill out all IQAM verification forms.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 p-1 bg-white/90 border border-amber-200 rounded-2xl w-full sm:w-fit sm:flex sm:items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => setPerspective("qaa")}
-                    className={`px-3 sm:px-4 py-2 sm:py-1.5 rounded-xl text-xs font-bold transition-all text-center cursor-pointer ${
-                      perspective === "qaa"
-                        ? "bg-[#900B27] text-white shadow-xs"
-                        : "text-gray-600 hover:text-neutral-primary"
-                    }`}
-                  >
-                    Assessor (QAA) View
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPerspective("iqa")}
-                    className={`px-3 sm:px-4 py-2 sm:py-1.5 rounded-xl text-xs font-bold transition-all text-center cursor-pointer ${
-                      perspective === "iqa"
-                        ? "bg-[#900B27] text-white shadow-xs"
-                        : "text-gray-600 hover:text-neutral-primary"
-                    }`}
-                  >
-                    Verifier (IQA) View
-                  </button>
-                </div>
-              </div>
-            ) : !roleCtx.isDualRole && roleCtx.canPerformIqa && isInternalVerificationStage ? (
-              <div className="bg-emerald-50/90 border border-emerald-200 rounded-3xl p-4 sm:p-5 shadow-xs flex items-start sm:items-center gap-3.5">
-                <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5 sm:mt-0">
-                  <FiCheck className="w-5 h-5 stroke-[2.5]" />
-                </div>
-                <div>
-                  <h4 className="text-sm font-extrabold text-emerald-950">
-                    Assigned Internal Verifier (IQA)
-                  </h4>
-                  <p className="text-xs text-emerald-800 font-normal mt-0.5 leading-relaxed">
-                    You are the assigned Internal Verifier. Candidate evidence has moved to internal verification. You can fill out and submit all IQAM verification forms below.
-                  </p>
-                </div>
-              </div>
-            ) : null}
-
-            {isInternalVerificationStage && !roleCtx.canPerformIqa && (
-              <div className="bg-blue-50/90 border border-blue-200 rounded-3xl p-4 sm:p-6 shadow-xs flex items-start gap-3.5">
-                <div className="w-10 h-10 rounded-2xl bg-blue-100 text-blue-700 flex items-center justify-center shrink-0 mt-0.5">
-                  <FiInfo className="w-5 h-5 stroke-[2.5]" />
-                </div>
-                <div className="flex flex-col gap-1 min-w-0">
-                  <h4 className="text-sm sm:text-base font-extrabold text-blue-950">
-                    Application in Internal Quality Assurance (IQA)
-                  </h4>
-                  <p className="text-xs sm:text-sm text-blue-800 leading-relaxed font-normal">
-                    This candidate has finished the regular assessment phase and
-                    advanced to Internal Quality Assurance. Candidate evidence
-                    upload is now closed. The assigned Internal Verifier (IQA)
-                    samples evidence and completes the IQAM verification forms
-                    below.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {perspective === "iqa" && isInternalVerificationStage ? (
+            {isIqaView ? (
               <>
                 {/* 1. IQAM Forms Card Prominent in IQA view */}
                 <div className="bg-white rounded-3xl p-4 sm:p-6 shadow-xs border border-gray-100 flex flex-col gap-4">
@@ -1257,132 +1201,6 @@ export const NsqAssessorApplicationDetailView: React.FC<
                         {isSigningOffUnits ? "Signing Off..." : "Sign Off All Units"}
                       </button>
                     )}
-                  </div>
-                )}
-
-                {/* Handover to IQAM Readiness Card (Visible in Regular Assessment) */}
-                {!isInternalVerificationStage && (
-                  <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-4 select-text">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                      <div className="flex items-center gap-2.5">
-                        <div
-                          className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                            canMoveToIqam
-                              ? "bg-emerald-100 text-emerald-700"
-                              : "bg-amber-100 text-amber-700"
-                          }`}
-                        >
-                          {canMoveToIqam ? (
-                            <FiCheckCircle className="w-5 h-5 stroke-[2.5]" />
-                          ) : (
-                            <FiClock className="w-5 h-5 stroke-[2.5]" />
-                          )}
-                        </div>
-                        <div className="flex flex-col">
-                          <h4 className="text-sm sm:text-base font-extrabold text-neutral-primary">
-                            Internal Quality Assurance (IQA) Handover Status
-                          </h4>
-                          <span className="text-[11px] sm:text-xs text-gray-500 font-medium">
-                            Stage 4: Regular Assessment Completion
-                          </span>
-                        </div>
-                      </div>
-                      <span
-                        className={`self-start sm:self-auto px-3 py-1 rounded-full text-[11px] font-bold ${
-                          canMoveToIqam
-                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                            : "bg-amber-50 text-amber-800 border border-amber-200"
-                        }`}
-                      >
-                        {canMoveToIqam ? "Ready for IQAM" : "Assessment in Progress"}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                      {/* Unit Evidence Status */}
-                      <div
-                        className={`p-3.5 rounded-2xl border flex items-start gap-3 ${
-                          areAllUnitsApproved
-                            ? "bg-emerald-50/60 border-emerald-100"
-                            : "bg-gray-50/80 border-gray-100"
-                        }`}
-                      >
-                        <div className="mt-0.5 shrink-0">
-                          {areAllUnitsApproved ? (
-                            <FiCheckCircle className="w-4 h-4 text-emerald-600" />
-                          ) : (
-                            <FiAlertTriangle className="w-4 h-4 text-amber-500" />
-                          )}
-                        </div>
-                        <div className="flex flex-col min-w-0">
-                          <span className="text-xs font-bold text-neutral-primary">
-                            Qualification Units
-                          </span>
-                          <span className="text-[11px] text-gray-600 mt-0.5">
-                            {areAllUnitsApproved
-                              ? `All ${unitsList.length} Units Approved (100%)`
-                              : unitsWithNoEvidence.length > 0
-                                ? `${unitsWithNoEvidence.length} Unit(s) Missing Evidence`
-                                : `${unitsPendingApproval.length} Unit(s) Pending Review`}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Physical Observation Status */}
-                      <div
-                        className={`p-3.5 rounded-2xl border flex items-start gap-3 ${
-                          isObservationFullyCompleted
-                            ? "bg-emerald-50/60 border-emerald-100"
-                            : "bg-gray-50/80 border-gray-100"
-                        }`}
-                      >
-                        <div className="mt-0.5 shrink-0">
-                          {isObservationFullyCompleted ? (
-                            <FiCheckCircle className="w-4 h-4 text-emerald-600" />
-                          ) : (
-                            <FiClock className="w-4 h-4 text-amber-500" />
-                          )}
-                        </div>
-                        <div className="flex flex-col min-w-0">
-                          <span className="text-xs font-bold text-neutral-primary">
-                            Physical Observation
-                          </span>
-                          <span className="text-[11px] text-gray-600 mt-0.5">
-                            {isObservationFullyCompleted
-                              ? "ARF 02A & 04A Completed & Signed"
-                              : !hasObservation
-                                ? "Session Not Yet Scheduled"
-                                : isObsPending
-                                  ? "Session Awaiting Assessor Acceptance"
-                                  : !hasFilledObservationForm
-                                    ? "Forms ARF 02A & 04A Incomplete"
-                                    : !hasAssessorSignature
-                                      ? "Awaiting Assessor Signature"
-                                      : "Awaiting Candidate Signature"}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="pt-2 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <p className="text-xs text-gray-500 leading-relaxed">
-                        {canMoveToIqam
-                          ? "All qualification requirements are met. You can now advance this application to the Internal Quality Assurance stage."
-                          : "All units must have approved evidence and physical observation forms must be completed and signed by both assessor and candidate before hand-off."}
-                      </p>
-                      <button
-                        type="button"
-                        onClick={handleMoveToIqam}
-                        className={`w-full sm:w-auto px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0 ${
-                          canMoveToIqam
-                            ? "bg-[#fbab2a] hover:bg-[#e89b1f] text-white shadow-xs"
-                            : "bg-gray-100 hover:bg-gray-200 text-gray-700"
-                        }`}
-                      >
-                        <span>{canMoveToIqam ? "Hand Over to IQAM" : "Check Requirements"}</span>
-                        <FiArrowRight className="w-4 h-4" />
-                      </button>
-                    </div>
                   </div>
                 )}
 

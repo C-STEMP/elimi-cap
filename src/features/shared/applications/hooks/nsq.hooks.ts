@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/src/components/ui/toast";
 import { ApiError } from "@/src/lib/api/client";
 import {
@@ -119,6 +119,26 @@ export function useGetUnitCriteria(
     queryFn: () => getUnitCriteriaApi(applicationId, unitId),
     enabled: Boolean(applicationId && unitId) && (options?.enabled ?? true),
   });
+}
+
+/**
+ * Criteria for several units at once (same cache entries as useGetUnitCriteria).
+ * Returns null until every unit has loaded.
+ */
+export function useGetUnitsCriteria(
+  applicationId: string,
+  unitIds: string[],
+  options?: { enabled?: boolean },
+) {
+  const results = useQueries({
+    queries: unitIds.map((unitId) => ({
+      queryKey: APPLICATION_QUERY_KEYS.unitCriteria(applicationId, unitId),
+      queryFn: () => getUnitCriteriaApi(applicationId, unitId),
+      enabled: Boolean(applicationId && unitId) && (options?.enabled ?? true),
+    })),
+  });
+  if (results.length === 0 || results.some((r) => !r.data)) return null;
+  return results.map((r) => r.data!);
 }
 
 export function useSubmitUnitEvidence(applicationId: string, unitId: string) {

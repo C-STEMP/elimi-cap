@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { FiX, FiChevronDown } from "react-icons/fi";
+import { FiX } from "react-icons/fi";
+import { Select } from "@/src/components/ui/select";
 
 export interface CandidateOption {
   applicationId: string;
@@ -54,30 +55,18 @@ export const CompleteCandidateModal: React.FC<CompleteCandidateModalProps> = ({
           Pick which candidate this form applies to
         </p>
 
-        <div className="w-full text-left mt-6 flex flex-col gap-2">
-          <label className="text-xs font-bold text-neutral-primary">
-            Select Candidate
-          </label>
-          {candidates.length === 0 ? (
-            <p className="text-xs text-gray-400 py-2">
-              No allocated candidates found at this centre yet.
-            </p>
-          ) : (
-            <div className="relative w-full">
-              <select
-                value={selectedApplicationId}
-                onChange={(e) => setSelectedApplicationId(e.target.value)}
-                className="w-full h-12 px-4 pr-10 bg-[#f8f9fa] border border-slate-200/80 rounded-xl text-xs sm:text-sm text-neutral-primary font-medium appearance-none focus:outline-none focus:border-[#900B27] transition-all cursor-pointer"
-              >
-                {candidates.map((c) => (
-                  <option key={c.applicationId} value={c.applicationId}>
-                    {c.candidateName}
-                  </option>
-                ))}
-              </select>
-              <FiChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none stroke-[2.5]" />
-            </div>
-          )}
+        <div className="w-full text-left mt-6">
+          <Select
+            label="Select Candidate"
+            placeholder="Select candidate"
+            value={selectedApplicationId}
+            onChange={(e) => setSelectedApplicationId(e.target.value)}
+            options={candidates.map((c) => ({
+              label: c.candidateName,
+              value: c.applicationId,
+            }))}
+            notFoundContent="No allocated candidates found at this centre yet."
+          />
         </div>
 
         <button

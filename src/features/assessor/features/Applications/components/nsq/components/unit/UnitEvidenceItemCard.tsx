@@ -108,7 +108,7 @@ export const UnitEvidenceItemCard: React.FC<UnitEvidenceItemCardProps> = ({
         <button
           type="button"
           onClick={onApprove}
-          className="text-neutral-primary hover:text-emerald-600 transition-colors cursor-pointer"
+          className="text-emerald-600 hover:text-emerald-700 transition-colors cursor-pointer"
         >
           Approve
         </button>

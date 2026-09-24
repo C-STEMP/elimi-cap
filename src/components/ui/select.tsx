@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useId } from "react";
+import React, { useEffect, useId, useRef } from "react";
 import { Select as AntSelect } from "antd";
 import { FiChevronDown, FiX } from "react-icons/fi";
 
@@ -79,9 +79,28 @@ export const Select: React.FC<SelectProps> = ({
   searchValue,
   filterOption,
   allowClear,
-  autoComplete = "off",
+  autoComplete,
 }) => {
   const reactId = useId();
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Chrome keys saved form entries by the input's name/id. React's useId
+  // values repeat across pages, so the search input was offered entries typed
+  // into unrelated fields, drawn over the options. A unique name per mount
+  // leaves Chrome nothing to suggest.
+  useEffect(() => {
+    const input = containerRef.current?.querySelector("input");
+    if (!input) return;
+    input.setAttribute(
+      "name",
+      `elimi-select-${Math.random().toString(36).slice(2)}`,
+    );
+    // Chrome ignores "off"; "new-password" suppresses its suggestions.
+    input.setAttribute(
+      "autocomplete",
+      !autoComplete || autoComplete === "off" ? "new-password" : autoComplete,
+    );
+  }, [autoComplete]);
   const selectId = id || reactId;
 
   const normalizedOptions: SelectOption[] = React.useMemo(() => {
@@ -170,6 +189,7 @@ export const Select: React.FC<SelectProps> = ({
 
   return (
     <div
+      ref={containerRef}
       className={`flex flex-col gap-1.5 ${hasCustomWidth ? "" : "w-full"} relative ${containerClassName}`}
     >
       {label && (
@@ -209,7 +229,6 @@ export const Select: React.FC<SelectProps> = ({
           if (!open) onSearch?.("");
         }}
         {...({
-          autoComplete: autoComplete || "off",
           "data-lpignore": "true",
           "data-1p-ignore": "true",
           "data-form-type": "other",
