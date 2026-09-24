@@ -1,21 +1,21 @@
 "use client";
 
+import { ASSETS_URL } from "@/assets";
+import { Button } from "@/src/components/ui/button";
+import Image from "next/image";
 import React from "react";
 import {
-  FiFolder,
   FiEye,
-  FiTrash2,
   FiFileText,
+  FiFolder,
   FiImage,
+  FiTrash2,
   FiVideo,
 } from "react-icons/fi";
-import { Button } from "@/src/components/ui/button";
 import {
-  EvidenceRecord,
   EVIDENCE_TYPE_LABELS,
+  EvidenceRecord,
 } from "../utils/evidenceConstants";
-import Image from "next/image";
-import { ASSETS_URL } from "@/assets";
 
 interface EvidenceSectionProps {
   evidences: EvidenceRecord[];
@@ -118,7 +118,7 @@ export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
                     </div>
                     <div className="flex flex-col min-w-0 flex-1">
                       <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-                        <h4 className="text-[#191918] font-medium text-sm sm:text-base leading-snug break-words">
+                        <h4 className="text-[#191918] font-medium text-sm sm:text-base leading-snug wrap-break-word">
                           {item.name}
                         </h4>
                         <div

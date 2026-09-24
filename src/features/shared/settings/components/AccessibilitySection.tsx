@@ -1,11 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
-import { Input } from "@/src/components/ui/input";
+import {
+  IMPAIRMENT_OPTIONS,
+  parseImpairmentString,
+} from "@/features/candidate/utils";
 import { InfoIcon } from "@/src/components/ui/info-icon";
-import { ProfileFormData } from "../types/settings.types";
-import { IMPAIRMENT_OPTIONS, parseImpairmentString } from "@/features/candidate/utils";
+import { Input } from "@/src/components/ui/input";
+import React, { useState } from "react";
 import { FiCheck } from "react-icons/fi";
+import { ProfileFormData } from "../types/settings.types";
 
 interface AccessibilitySectionProps {
   formData: ProfileFormData;
@@ -27,7 +30,10 @@ export const AccessibilitySection: React.FC<AccessibilitySectionProps> = ({
   });
 
   React.useEffect(() => {
-    if (parsedImpairments.otherText && parsedImpairments.otherText !== otherImpairment) {
+    if (
+      parsedImpairments.otherText &&
+      parsedImpairments.otherText !== otherImpairment
+    ) {
       setOtherImpairment(parsedImpairments.otherText);
     }
   }, [parsedImpairments.otherText]);
@@ -108,7 +114,7 @@ export const AccessibilitySection: React.FC<AccessibilitySectionProps> = ({
                 key={opt}
                 type="button"
                 onClick={() => handleToggle(opt)}
-                className={`px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-2 cursor-pointer border text-left leading-snug break-words ${
+                className={`px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-2 cursor-pointer border text-left leading-snug wrap-break-word ${
                   isSelected
                     ? "bg-[#a31d38] text-white border-[#a31d38] shadow-xs"
                     : "bg-white text-neutral-primary border-gray-200 hover:border-gray-300 hover:bg-gray-50"

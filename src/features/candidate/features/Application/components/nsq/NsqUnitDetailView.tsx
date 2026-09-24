@@ -10,6 +10,7 @@ import {
   FiCheckCircle,
   FiFileText,
   FiX,
+  FiLock,
 } from "react-icons/fi";
 import { HeaderBanner } from "@/features/candidate/features/Dashboard/components/HeaderBanner";
 import { submitUnitEvidenceApi } from "@/src/features/shared/applications/api";
@@ -274,6 +275,7 @@ export const NsqUnitDetailView: React.FC<NsqUnitDetailViewProps> = ({
   unitNumber = "Unit 01",
   unitTitle = "Core Fundamentals & Safety Standards",
   tradeName = "Carpentry",
+  currentStageKey,
   structure,
   onBack,
 }) => {
@@ -516,18 +518,27 @@ export const NsqUnitDetailView: React.FC<NsqUnitDetailViewProps> = ({
                                 transition={{ duration: 0.2 }}
                                 className="px-4 pb-4 pt-1 flex flex-col gap-3"
                               >
-                                {/* Dotted Upload Evidence Trigger */}
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setActivePcForUpload(pc);
-                                    setReplacingEvidenceType(undefined);
-                                  }}
-                                  className="w-full border-2 border-dashed border-[#a31d38]/30 hover:border-[#a31d38]/60 bg-[#fdf2f5] hover:bg-[#fbe8ed] rounded-xl p-3.5 flex items-center justify-center gap-2 text-xs font-bold text-[#a31d38] transition-all cursor-pointer select-none"
-                                >
-                                  <FiUpload className="w-4 h-4" />
-                                  <span>Upload Evidence For {pc.code}</span>
-                                </button>
+                                {/* Upload Evidence Trigger or Locked Notice */}
+                                {currentStageKey && currentStageKey !== "regular_assessment" && currentStageKey !== "induction" ? (
+                                  <div className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 flex items-center justify-center gap-2 text-xs font-semibold text-gray-500">
+                                    <FiLock className="w-3.5 h-3.5 text-gray-400" />
+                                    <span>
+                                      Evidence upload closed &mdash; {currentStageKey === "internal_verification" ? "In Internal Verification (IQA)" : `Stage: ${currentStageKey}`}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setActivePcForUpload(pc);
+                                      setReplacingEvidenceType(undefined);
+                                    }}
+                                    className="w-full border-2 border-dashed border-[#a31d38]/30 hover:border-[#a31d38]/60 bg-[#fdf2f5] hover:bg-[#fbe8ed] rounded-xl p-3.5 flex items-center justify-center gap-2 text-xs font-bold text-[#a31d38] transition-all cursor-pointer select-none"
+                                  >
+                                    <FiUpload className="w-4 h-4" />
+                                    <span>Upload Evidence For {pc.code}</span>
+                                  </button>
+                                )}
 
                                 {/* List of Uploaded Evidences */}
                                 {pc.evidences.map((ev) => {

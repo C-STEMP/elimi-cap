@@ -134,7 +134,12 @@ export const AssignNsqAssessorModal: React.FC<AssignNsqAssessorModalProps> = ({
       name: chosen.name,
       email: chosen.email ?? undefined,
       qualification: isQaa ? "QAA Assessor" : "IQAM Verifier",
-      photoUrl: (chosen as any)?.photo?.url ?? undefined,
+      photoUrl:
+        (chosen as any)?.photo?.url ||
+        (chosen as any)?.photoUrl ||
+        (chosen as any)?.avatar ||
+        (chosen as any)?.photoAssetId ||
+        undefined,
     });
 
     setIsSuccess(false);

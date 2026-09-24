@@ -483,10 +483,10 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
                   <button
                     type="button"
                     onClick={onBackFromApplication}
-                    className="flex items-center gap-1.5 sm:gap-2 text-white font-bold text-xl sm:text-2xl lg:text-3xl hover:opacity-90 transition-opacity w-fit cursor-pointer text-left break-words"
+                    className="flex items-center gap-1.5 sm:gap-2 text-white font-bold text-xl sm:text-2xl lg:text-3xl hover:opacity-90 transition-opacity w-fit cursor-pointer text-left wrap-break-word"
                   >
                     <FiChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.5] shrink-0" />
-                    <span className="break-words">
+                    <span className="wrap-break-word">
                       {isNsqApplication && nsqSubViewTitle
                         ? nsqSubViewTitle
                         : applicationSubView === "evidence_vault"
@@ -498,7 +498,7 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
                               : selectedApplicationName}
                     </span>
                   </button>
-                  <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-white/90 font-normal flex-wrap break-words">
+                  <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-white/90 font-normal flex-wrap wrap-break-word">
                     <span
                       onClick={onBackFromApplication}
                       className="hover:underline cursor-pointer"
@@ -546,16 +546,19 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
                 </div>
 
                 {/* NSQ Move To IQAM Action */}
-                {isNsqApplication && !nsqSubViewTitle && !hasMovedToIqam && canMoveToIqam && (
-                  <button
-                    type="button"
-                    onClick={onMoveToIqam}
-                    className="bg-[#FBAB2A] hover:bg-[#E89B1F] text-white font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl shadow-lg flex items-center gap-1.5 cursor-pointer transition-all self-start sm:self-center shrink-0"
-                  >
-                    <span>Move To IQAM</span>
-                    <FiPlus className="w-4 h-4 stroke-3" />
-                  </button>
-                )}
+                {isNsqApplication &&
+                  !nsqSubViewTitle &&
+                  !hasMovedToIqam &&
+                  canMoveToIqam && (
+                    <button
+                      type="button"
+                      onClick={onMoveToIqam}
+                      className="bg-[#FBAB2A] hover:bg-[#E89B1F] text-white font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl shadow-lg flex items-center gap-1.5 cursor-pointer transition-all self-start sm:self-center shrink-0"
+                    >
+                      <span>Move To IQAM</span>
+                      <FiPlus className="w-4 h-4 stroke-3" />
+                    </button>
+                  )}
 
                 {/* RPL Mark As Complete Button: only shows when all uploaded evidence are approved */}
                 {!isNsqApplication &&

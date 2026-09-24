@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
-import Image from "next/image";
-import { FiChevronDown, FiChevronUp } from "react-icons/fi";
 import { Button } from "@/src/components/ui/button";
+import Image from "next/image";
+import React, { useState } from "react";
+import { FiChevronDown, FiChevronUp } from "react-icons/fi";
 import { StageConfig } from "../types";
 
 interface ApplicationStageCardProps {
@@ -41,7 +41,7 @@ export const ApplicationStageCard: React.FC<ApplicationStageCardProps> = ({
           }`}
         >
           <div className="flex items-center gap-2 flex-wrap min-w-0">
-            <h3 className="text-black font-bold text-base tracking-tight break-words">
+            <h3 className="text-black font-bold text-base tracking-tight wrap-break-word">
               {stage.title}
             </h3>
             <span
@@ -72,7 +72,7 @@ export const ApplicationStageCard: React.FC<ApplicationStageCardProps> = ({
 
         {/* Bottom Row: Subtext on left, Action Button on right */}
         <div className="flex items-center justify-between gap-2.5 w-full pt-0.5">
-          <p className="text-gray-400 text-xs font-normal break-words flex-1 min-w-0">
+          <p className="text-gray-400 text-xs font-normal wrap-break-word flex-1 min-w-0">
             {stage.subtext}
           </p>
 
@@ -109,7 +109,7 @@ export const ApplicationStageCard: React.FC<ApplicationStageCardProps> = ({
           }`}
         >
           <div className="flex items-center gap-3 flex-wrap">
-            <h3 className="text-black font-bold text-xl lg:text-2xl tracking-tight break-words">
+            <h3 className="text-black font-bold text-xl lg:text-2xl tracking-tight wrap-break-word">
               {stage.title}
             </h3>
             <span
@@ -118,7 +118,7 @@ export const ApplicationStageCard: React.FC<ApplicationStageCardProps> = ({
               {stage.status}
             </span>
           </div>
-          <p className="text-gray-400 text-sm font-normal mt-1 break-words">
+          <p className="text-gray-400 text-sm font-normal mt-1 wrap-break-word">
             {stage.subtext}
           </p>
         </div>
@@ -241,8 +241,6 @@ export const ApplicationStageCard: React.FC<ApplicationStageCardProps> = ({
         </div>
       )}
 
-
-
       {!isCollapsed && stage.competentBanner && (
         <div className="mt-4 bg-secondary rounded-lg p-6 sm:p-8 text-center text-white flex flex-col items-center justify-center shadow-xs">
           <h3 className="font-semibold text-2xl sm:text-3xl text-white mb-1.5">
@@ -259,7 +257,7 @@ export const ApplicationStageCard: React.FC<ApplicationStageCardProps> = ({
 
       {stage.showPaymentDetails && (
         <div className="mt-4 bg-white rounded-2xl p-3.5 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4 border border-gray-100 shadow-2xs">
-          <span className="text-black font-semibold text-xs sm:text-base break-words">
+          <span className="text-black font-semibold text-xs sm:text-base wrap-break-word">
             {stage.paymentDetailsText || "Assessment Fee"}
           </span>
           <span className="text-[#a31d38] font-extrabold text-sm sm:text-xl shrink-0">

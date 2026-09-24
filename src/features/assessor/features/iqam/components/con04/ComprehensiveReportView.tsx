@@ -6,6 +6,8 @@ import { Section04BMethodsQuality } from "./sections/Section04BMethodsQuality";
 import { Section04CUnitOutcomes } from "./sections/Section04CUnitOutcomes";
 import { useGetIqamIvReport, usePatchIqamIvReport, useSubmitIqamIvReport } from "../../hooks/useIqam";
 import type { IqamIvReportData } from "../../api/types";
+import { Button } from "@/src/components/ui/button";
+import { FiArrowLeft, FiArrowRight, FiCheck } from "react-icons/fi";
 
 interface ComprehensiveReportViewProps {
   applicationId: string;
@@ -168,6 +170,70 @@ export const ComprehensiveReportView: React.FC<ComprehensiveReportViewProps> = (
             onChange={(con04c) => setFormData((prev) => ({ ...prev, con04c }))}
           />
         )}
+
+        {/* Bottom Form Actions / Submit Bar */}
+        <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-wrap items-center justify-between gap-4 mt-2">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                if (activeTab === "04A") onBack();
+                else if (activeTab === "04B") setActiveTab("04A");
+                else if (activeTab === "04C") setActiveTab("04B");
+              }}
+              className="px-5 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-700 hover:bg-gray-50 transition-all cursor-pointer flex items-center gap-1.5"
+            >
+              <FiArrowLeft className="w-4 h-4" />
+              <span>{activeTab === "04A" ? "Back to Application" : "Previous Section"}</span>
+            </button>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {isSubmitted ? (
+              <div className="flex items-center gap-2">
+                <span className="px-4 py-2 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-bold flex items-center gap-1.5">
+                  <FiCheck className="w-4 h-4" />
+                  <span>Report Submitted</span>
+                </span>
+                {activeTab !== "04C" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (activeTab === "04A") setActiveTab("04B");
+                      else if (activeTab === "04B") setActiveTab("04C");
+                    }}
+                    className="px-5 py-2.5 rounded-xl bg-[#900B27] hover:bg-[#72081f] text-white text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
+                  >
+                    <span>Next Section</span>
+                    <FiArrowRight className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            ) : activeTab === "04C" ? (
+              <Button
+                type="button"
+                variant="primary"
+                onClick={handleNextOrSubmit}
+                loading={patchReport.isPending || submitReport.isPending}
+                className="bg-[#900B27] hover:bg-[#72081f] text-white text-xs font-bold px-6 py-2.5 rounded-xl cursor-pointer flex items-center gap-2 shadow-sm border-none"
+              >
+                <span>Submit Comprehensive Report</span>
+                <FiCheck className="w-4 h-4" />
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                variant="primary"
+                onClick={handleNextOrSubmit}
+                loading={patchReport.isPending}
+                className="bg-[#900B27] hover:bg-[#72081f] text-white text-xs font-bold px-6 py-2.5 rounded-xl cursor-pointer flex items-center gap-2 shadow-sm border-none"
+              >
+                <span>Save &amp; Continue to {activeTab === "04A" ? "Section 04B" : "Section 04C"}</span>
+                <FiArrowRight className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
