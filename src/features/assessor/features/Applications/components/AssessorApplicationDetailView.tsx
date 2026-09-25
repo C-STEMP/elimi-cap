@@ -39,8 +39,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/src/components/ui/toast";
 import { useAppSelector } from "@/src/store/hooks";
-import { useGetMeProfile } from "@/src/features/shared/account/hooks";
-import { useGetAssessorProfile } from "@/src/features/assessor/hooks";
+import { usePanelMemberMatch } from "@/src/features/assessor/hooks";
 import { useUrlModal } from "@/src/lib/hooks/usePersistentModal";
 import { MARK_INCOMPETENT_MODAL } from "@/src/lib/modal-keys";
 
@@ -107,8 +106,6 @@ export const AssessorApplicationDetailView: React.FC<
   const resolveAppeal = useResolveAppeal(application.id);
 
   const user = useAppSelector((state) => state.auth.user);
-  const { data: meProfile } = useGetMeProfile();
-  const { data: assessorProfile } = useGetAssessorProfile();
   const { data: interviewPanel } = useGetInterviewPanel(application.id, {
     enabled: isInterviewStage,
   });
@@ -117,54 +114,7 @@ export const AssessorApplicationDetailView: React.FC<
     (a: any) => a.status === "open" || a.status === "pending",
   );
 
-  // Compile all known identifiers and aliases for the logged-in assessor
-  const currentUserId = (user?.id || user?.userId || (user as any)?._id || "").toString().toLowerCase().trim();
-  const currentAssessorId = (assessorProfile?.id || (assessorProfile as any)?.assessorId || "").toString().toLowerCase().trim();
-  const currentUserEmail = (
-    user?.email ||
-    meProfile?.contactInformation?.emailAddress ||
-    assessorProfile?.email ||
-    ""
-  )
-    .toLowerCase()
-    .trim();
-
-  const userCandidateNames = [
-    user?.fullName,
-    (user as any)?.name,
-    `${(user as any)?.firstName || ""} ${(user as any)?.lastName || ""}`.trim(),
-    assessorProfile?.name,
-    `${meProfile?.personalDetails?.firstName || ""} ${meProfile?.personalDetails?.lastName || ""}`.trim(),
-  ]
-    .filter(Boolean)
-    .map((n) => (n as string).toLowerCase().trim());
-
-  const isMemberMatch = (m: any) => {
-    if (!m) return false;
-    const mAssessorId = (m.assessorId || m.userId || m.id || "").toString().toLowerCase().trim();
-    const mEmail = (m.email || "").toLowerCase().trim();
-    const mName = (m.name || "").toLowerCase().trim();
-
-    // Match by ID
-    if (currentUserId && (mAssessorId === currentUserId || (m.userId && m.userId.toString().toLowerCase().trim() === currentUserId))) {
-      return true;
-    }
-    if (currentAssessorId && mAssessorId === currentAssessorId) {
-      return true;
-    }
-
-    // Match by email
-    if (currentUserEmail && mEmail && currentUserEmail === mEmail) {
-      return true;
-    }
-
-    // Match by name
-    if (mName && userCandidateNames.some((n) => n === mName || n.includes(mName) || mName.includes(n))) {
-      return true;
-    }
-
-    return false;
-  };
+  const isMemberMatch = usePanelMemberMatch();
 
   const leadMember = interviewPanel?.members?.find((m: any) => m.isLead);
   const panelMember = interviewPanel?.members?.find((m: any) => !m.isLead && !m.isObserver);
@@ -630,15 +580,9 @@ export const AssessorApplicationDetailView: React.FC<
           const isCurrentUserInPending = Boolean(
             pendingSignatures &&
             pendingSignatures.length > 0 &&
-            pendingSignatures.some((ps) => {
-              const psId = (ps.assessorId || "").toString().toLowerCase().trim();
-              const psName = (ps.name || "").toLowerCase().trim();
-              return (
-                (currentAssessorId && psId === currentAssessorId) ||
-                (currentUserId && psId === currentUserId) ||
-                (psName && userCandidateNames.some((n) => n === psName || n.includes(psName) || psName.includes(n)))
-              );
-            })
+            pendingSignatures.some((ps) =>
+              isMemberMatch({ assessorId: ps.assessorId, name: ps.name }),
+            )
           );
 
           const isInterviewDone = Boolean(

@@ -4,6 +4,10 @@ import { Button } from "@/src/components/ui/button";
 import { useAppSelector } from "@/src/store/hooks";
 import { canSendBroadcast } from "@/features/assessment-centre/utils/rbac";
 
+// Broadcasting isn't a centre action for now (and has no backend endpoint in
+// the CAP spec), so the button is hidden. Flip to true to bring it back.
+const IS_BROADCAST_ENABLED = false;
+
 interface MessagesHeaderProps {
   onSendBroadcast: () => void;
   userRole?: string;
@@ -15,7 +19,7 @@ export const MessagesHeader: React.FC<MessagesHeaderProps> = ({
 }) => {
   const user = useAppSelector((state) => state.auth.user);
   const role = userRole || user?.role;
-  const isAllowed = canSendBroadcast(role);
+  const isAllowed = IS_BROADCAST_ENABLED && canSendBroadcast(role);
 
   return (
     <div className="flex items-center justify-between gap-4 flex-wrap pt-2">

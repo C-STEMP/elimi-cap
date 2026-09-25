@@ -65,17 +65,13 @@ export async function getConversationsApi(params?: {
   cursor?: string;
   q?: string;
 }): Promise<ConversationItem[]> {
-  try {
-    const res = await orchestratorClient.get<{ data: ConversationItem[] }>(
-      "/conversations",
-      {
-        params,
-      },
-    );
-    return res.data?.data || [];
-  } catch {
-    return [];
-  }
+  const res = await orchestratorClient.get<{ data: ConversationItem[] }>(
+    "/conversations",
+    {
+      params,
+    },
+  );
+  return res.data?.data || [];
 }
 
 export async function getConversationDetailsApi(
@@ -95,17 +91,13 @@ export async function getConversationMessagesApi(
   conversationId: string,
   params?: { limit?: number; cursor?: string },
 ): Promise<MessageItem[]> {
-  try {
-    const res = await orchestratorClient.get<{ data: MessageItem[] }>(
-      `/conversations/${conversationId}/messages`,
-      {
-        params,
-      },
-    );
-    return res.data?.data || [];
-  } catch {
-    return [];
-  }
+  const res = await orchestratorClient.get<{ data: MessageItem[] }>(
+    `/conversations/${conversationId}/messages`,
+    {
+      params,
+    },
+  );
+  return res.data?.data || [];
 }
 
 export async function sendMessageApi(
@@ -139,14 +131,12 @@ export async function sendBroadcastMessageApi(
     );
     return res.data;
   } catch {
-    try {
-      const res = await orchestratorClient.post<{ message: string }>(
-        "/conversations/broadcast",
-        payload,
-      );
-      return res.data;
-    } catch {
-      return { message: "Broadcast message queued successfully." };
-    }
+    // Neither endpoint is in the CAP spec yet; let a failure surface instead
+    // of reporting a broadcast that was never sent.
+    const res = await orchestratorClient.post<{ message: string }>(
+      "/conversations/broadcast",
+      payload,
+    );
+    return res.data;
   }
 }

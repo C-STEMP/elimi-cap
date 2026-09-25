@@ -119,11 +119,13 @@ export function useStartConversation() {
 
 export function useSendBroadcastMessage() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (payload: BroadcastMessagePayload) =>
       sendBroadcastMessageApi(payload),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: MESSAGE_QUERY_KEYS.all });
       toast({
         type: "success",
         title: "Broadcast Sent",
