@@ -7,6 +7,8 @@ import { useGetAssessorApplications } from "@/src/features/assessor/features/App
 import { useGetAssessorProfile } from "@/src/features/assessor/hooks";
 import type { Application } from "@/src/features/shared/applications/api";
 import { Avatar } from "@/src/components/ui/avatar";
+import { TablePagination } from "@/src/components/ui/table-pagination";
+import { DEFAULT_PAGE_SIZE, usePagination } from "@/src/lib/hooks/usePagination";
 import { getRejectionReason } from "@/src/utils/rejection";
 
 interface AssessorOverviewViewProps {
@@ -52,8 +54,7 @@ export const AssessorOverviewView: React.FC<AssessorOverviewViewProps> = ({
     }
   };
 
-  // Show only the latest 8 for the overview
-  const applications = allApplications.slice(0, 8);
+  const { pageItems: applications, pagination } = usePagination(allApplications);
 
   const accreditationRejected =
     assessorProfile?.status === "rejected" ||
@@ -193,7 +194,7 @@ export const AssessorOverviewView: React.FC<AssessorOverviewViewProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 text-xs sm:text-sm">
-              {Array.from({ length: 5 }).map((_, i) => (
+              {Array.from({ length: DEFAULT_PAGE_SIZE }).map((_, i) => (
                 <tr key={i} className="animate-pulse">
                   <td className="p-3.5">
                     <div className="flex items-center gap-2.5">
@@ -301,6 +302,7 @@ export const AssessorOverviewView: React.FC<AssessorOverviewViewProps> = ({
               })}
             </tbody>
           </table>
+          <TablePagination {...pagination} />
         </div>
       ) : (
         <div className="my-auto flex flex-col items-center justify-center text-center p-8">

@@ -13,6 +13,8 @@ import {
   AssessorRequestModal,
   AssessorRequestModalMode,
 } from "./AssessorRequestModal";
+import { TablePagination } from "@/src/components/ui/table-pagination";
+import { usePagination } from "@/src/lib/hooks/usePagination";
 
 interface AssessorRequestListViewProps {
   onSelectAssessorRequest: (id: string) => void;
@@ -81,6 +83,7 @@ export const AssessorRequestListView: React.FC<
       statusFilter === "All" || item.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+  const { pageItems, pagination } = usePagination(filteredItems);
 
   const toggleSelectAll = () => {
     if (selectedIds.length === filteredItems.length) {
@@ -219,7 +222,7 @@ export const AssessorRequestListView: React.FC<
           </div>
         ) : viewMode === "grid" ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredItems.map((item) => {
+            {pageItems.map((item) => {
               const isSelected = selectedIds.includes(item.id);
               return (
                 <div
@@ -319,7 +322,7 @@ export const AssessorRequestListView: React.FC<
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 text-xs sm:text-sm font-medium text-neutral-primary">
-                {filteredItems.map((item) => (
+                {pageItems.map((item) => (
                   <tr
                     key={item.id}
                     onClick={() => onSelectAssessorRequest(item.id)}
@@ -382,6 +385,8 @@ export const AssessorRequestListView: React.FC<
             </table>
           </div>
         )}
+
+        <TablePagination {...pagination} className="" />
       </div>
 
       {/* Decision Modal */}

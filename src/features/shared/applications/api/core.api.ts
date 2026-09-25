@@ -1,4 +1,4 @@
-import { capFetch } from "@/src/lib/api/cap";
+import { capFetch, capFetchAll } from "@/src/lib/api/cap";
 import type {
   Application,
   ApplicationDetail,
@@ -35,23 +35,7 @@ export async function getApplicationsApi(params?: {
   ivApproved?: boolean;
   interviewSchedulable?: boolean;
 }): Promise<Application[]> {
-  const query = new URLSearchParams();
-  if (params?.status) query.append("status", params.status);
-  if (params?.type) query.append("type", params.type);
-  if (params?.q) query.append("q", params.q);
-  if (params?.tradeId) query.append("tradeId", params.tradeId);
-  if (params?.stage) query.append("stage", params.stage);
-  if (params?.sort) query.append("sort", params.sort);
-  if (params?.order) query.append("order", params.order);
-  if (params?.cursor) query.append("cursor", params.cursor);
-  if (params?.limit) query.append("limit", params.limit.toString());
-  if (params?.ivApproved !== undefined) query.append("ivApproved", params.ivApproved.toString());
-  if (params?.interviewSchedulable !== undefined) query.append("interviewSchedulable", params.interviewSchedulable.toString());
-
-  const queryString = query.toString() ? `?${query.toString()}` : "";
-  return capFetch<Application[]>(`/applications${queryString}`, {
-    method: "GET",
-  });
+  return capFetchAll<Application>("/applications", params);
 }
 
 export async function getApplicationByIdApi(

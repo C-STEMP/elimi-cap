@@ -323,6 +323,13 @@ export function createApiInstance(
 export async function unwrap<T>(
   promise: Promise<{ data: SuccessEnvelope<T> | ErrorEnvelope }>,
 ): Promise<T> {
+  return (await unwrapEnvelope(promise)).data;
+}
+
+/** Like `unwrap`, but keeps the envelope's `meta` (e.g. cursor pagination). */
+export async function unwrapEnvelope<T>(
+  promise: Promise<{ data: SuccessEnvelope<T> | ErrorEnvelope }>,
+): Promise<SuccessEnvelope<T>> {
   const { data: envelope } = await promise;
   if (!envelope.success) {
     const err = envelope as ErrorEnvelope;
@@ -333,5 +340,5 @@ export async function unwrap<T>(
       err.error?.details,
     );
   }
-  return (envelope as SuccessEnvelope<T>).data;
+  return envelope as SuccessEnvelope<T>;
 }

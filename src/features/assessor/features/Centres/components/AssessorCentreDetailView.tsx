@@ -12,6 +12,8 @@ import type { AssessorCentreItem } from "./AssessorCentresView";
 import { useGetAssessorApplications } from "../../Applications/hooks";
 import { useGetAssessorCentreApplications } from "../hooks";
 import type { AssessorApplicationRecord } from "../../Applications/components/AssessorApplicationsView";
+import { TablePagination } from "@/src/components/ui/table-pagination";
+import { usePagination } from "@/src/lib/hooks/usePagination";
 
 interface AssessorCentreDetailViewProps {
   centre: AssessorCentreItem;
@@ -108,6 +110,7 @@ export const AssessorCentreDetailView: React.FC<
 
     return matchesSearch && matchesTrade && matchesType && matchesStatus;
   });
+  const { pageItems, pagination } = usePagination(filteredCandidates);
 
   return (
     <div className="w-full bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col gap-6 select-text min-h-125">
@@ -269,7 +272,7 @@ export const AssessorCentreDetailView: React.FC<
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredCandidates.map((c) => {
+              {pageItems.map((c) => {
                 const handleViewCandidate = () => {
                   if (onSelectApplication) {
                     onSelectApplication({
@@ -341,6 +344,8 @@ export const AssessorCentreDetailView: React.FC<
           </p>
         </div>
       )}
+
+      {!isLoading && <TablePagination {...pagination} className="" />}
     </div>
   );
 };

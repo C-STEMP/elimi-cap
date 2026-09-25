@@ -6,6 +6,8 @@ import {
   AssessorApplicationTable,
   AssessorApplicationGrid,
 } from "./list";
+import { TablePagination } from "@/src/components/ui/table-pagination";
+import { usePagination } from "@/src/lib/hooks/usePagination";
 import { useGetAssessorApplications } from "../hooks";
 import type {
   AssessorApplicationRecord,
@@ -135,6 +137,7 @@ export const AssessorApplicationsView: React.FC<
       return matchesSearch && matchesTrade && matchesType && matchesStatus;
     });
   }, [applications, searchTerm, filterCriteria, cardFilter]);
+  const { pageItems, pagination } = usePagination(filteredApps);
 
   return (
     <div className="w-full bg-white rounded-3xl p-6 sm:p-8 shadow-xs border border-gray-100 flex flex-col gap-6 select-text">
@@ -164,17 +167,19 @@ export const AssessorApplicationsView: React.FC<
       {/* Candidates List / Grid */}
       {viewMode === "list" ? (
         <AssessorApplicationTable
-          applications={filteredApps}
+          applications={pageItems}
           onSelectApplication={onSelectApplication}
           isLoading={isLoading}
         />
       ) : (
         <AssessorApplicationGrid
-          applications={filteredApps}
+          applications={pageItems}
           onSelectApplication={onSelectApplication}
           isLoading={isLoading}
         />
       )}
+
+      {!isLoading && <TablePagination {...pagination} className="" />}
     </div>
   );
 };

@@ -13,6 +13,8 @@ import { Select } from "@/src/components/ui/select";
 import { ApplyToCentreModal } from "./ApplyToCentreModal";
 import { useUrlModal } from "@/src/lib/hooks/usePersistentModal";
 import { APPLY_TO_CENTRE_MODAL } from "@/src/lib/modal-keys";
+import { TablePagination } from "@/src/components/ui/table-pagination";
+import { usePagination } from "@/src/lib/hooks/usePagination";
 
 export interface AssessorCentreItem {
   id: string;
@@ -54,6 +56,7 @@ export const AssessorCentresView: React.FC<AssessorCentresViewProps> = ({
       c.status.toLowerCase() === statusFilter.toLowerCase();
     return matchesSearch && matchesStatus;
   });
+  const { pageItems, pagination } = usePagination(filteredCentres);
 
   const handleApplySuccess = () => {
     setIsApplyModalOpen(false);
@@ -160,7 +163,7 @@ export const AssessorCentresView: React.FC<AssessorCentresViewProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredCentres.map((c) => (
+              {pageItems.map((c) => (
                 <tr
                   key={c.id}
                   onClick={() => onSelectCentre(c)}
@@ -261,6 +264,8 @@ export const AssessorCentresView: React.FC<AssessorCentresViewProps> = ({
           </motion.div>
         </div>
       )}
+
+      {!isLoading && <TablePagination {...pagination} className="" />}
     </div>
   );
 };
