@@ -1,4 +1,4 @@
-import { capFetch } from "@/src/lib/api/cap";
+import { capFetch, capFetchAll } from "@/src/lib/api/cap";
 import type {
   Application,
   ApplicationEvent,
@@ -119,13 +119,7 @@ export async function getAssessorApplicationsApi(params?: {
   cursor?: string;
   limit?: number;
 }): Promise<CentreAssessorApplication[]> {
-  const res = await capFetch<
-    CentreAssessorApplication[] | { data: CentreAssessorApplication[]; meta?: PaginationMeta }
-  >("/assessor/applications", {
-    method: "GET",
-    params: params as Record<string, unknown>,
-  });
-  return Array.isArray(res) ? res : (res as any)?.data || [];
+  return capFetchAll<CentreAssessorApplication>("/assessor/applications", params as Record<string, unknown>);
 }
 
 // ─── 4. Centres: GET /assessor/centres ───────────────────────────────────────
@@ -137,13 +131,7 @@ export async function getAssessorCentresApi(params?: {
   cursor?: string;
   limit?: number;
 }): Promise<AssessorCentreItem[]> {
-  const res = await capFetch<
-    AssessorCentreItem[] | { data: AssessorCentreItem[]; meta?: PaginationMeta }
-  >("/assessor/centres", {
-    method: "GET",
-    params: params as Record<string, unknown>,
-  });
-  return Array.isArray(res) ? res : (res as any)?.data || [];
+  return capFetchAll<AssessorCentreItem>("/assessor/centres", params as Record<string, unknown>);
 }
 
 // ─── 5. Centre Applications: GET /assessor/centres/{centreId}/applications ──
@@ -160,13 +148,7 @@ export async function getAssessorCentreApplicationsApi(
     limit?: number;
   },
 ): Promise<CentreAssessorApplication[]> {
-  const res = await capFetch<
-    CentreAssessorApplication[] | { data: CentreAssessorApplication[]; meta?: PaginationMeta }
-  >(`/assessor/centres/${centreId}/applications`, {
-    method: "GET",
-    params: params as Record<string, unknown>,
-  });
-  return Array.isArray(res) ? res : (res as any)?.data || [];
+  return capFetchAll<CentreAssessorApplication>(`/assessor/centres/${centreId}/applications`, params as Record<string, unknown>);
 }
 
 // ─── 6. Applied Job Postings: GET /assessor/job-postings ─────────────────────
@@ -174,13 +156,7 @@ export async function getAssessorJobPostingsApi(params?: {
   cursor?: string;
   limit?: number;
 }): Promise<JobPostingApplication[]> {
-  const res = await capFetch<
-    JobPostingApplication[] | { data: JobPostingApplication[]; meta?: PaginationMeta }
-  >("/assessor/job-postings", {
-    method: "GET",
-    params: params as Record<string, unknown>,
-  });
-  return Array.isArray(res) ? res : (res as any)?.data || [];
+  return capFetchAll<JobPostingApplication>("/assessor/job-postings", params as Record<string, unknown>);
 }
 
 // ─── 7. Marketplace: GET /assessor/marketplace ──────────────────────────────
@@ -188,13 +164,7 @@ export async function getAssessorMarketplaceApi(params?: {
   cursor?: string;
   limit?: number;
 }): Promise<AssessorJobPosting[]> {
-  const res = await capFetch<
-    AssessorJobPosting[] | { data: AssessorJobPosting[]; meta?: PaginationMeta }
-  >("/assessor/marketplace", {
-    method: "GET",
-    params: params as Record<string, unknown>,
-  });
-  return Array.isArray(res) ? res : (res as any)?.data || [];
+  return capFetchAll<AssessorJobPosting>("/assessor/marketplace", params as Record<string, unknown>);
 }
 
 // ─── 8. Marketplace Detail: GET /assessor/marketplace/{id} ───────────────────
@@ -223,13 +193,7 @@ export async function getAssessorRetainedRequestsApi(params?: {
   cursor?: string;
   limit?: number;
 }): Promise<RetainedAssessorRequest[]> {
-  const res = await capFetch<
-    RetainedAssessorRequest[] | { data: RetainedAssessorRequest[]; meta?: PaginationMeta }
-  >("/assessor/retained-requests", {
-    method: "GET",
-    params: params as Record<string, unknown>,
-  });
-  return Array.isArray(res) ? res : (res as any)?.data || [];
+  return capFetchAll<RetainedAssessorRequest>("/assessor/retained-requests", params as Record<string, unknown>);
 }
 
 // ─── 11. Request Retained Assessor: POST /assessor/retained-requests ─────────

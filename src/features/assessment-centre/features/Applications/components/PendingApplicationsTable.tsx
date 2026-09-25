@@ -2,6 +2,8 @@
 
 import React from "react";
 import { FiChevronRight } from "react-icons/fi";
+import { TablePagination } from "@/src/components/ui/table-pagination";
+import { usePagination } from "@/src/lib/hooks/usePagination";
 import { useGetApplications } from "@/features/assessment-centre/features/Applications/hooks";
 
 interface TableProps {
@@ -37,6 +39,7 @@ export const PendingApplicationsTable: React.FC<TableProps> = ({
         : new Date(app.createdAt).toLocaleDateString("en-GB"),
     };
   });
+  const { pageItems, pagination } = usePagination(pendingList);
 
   return (
     <div className="bg-white rounded-3xl p-6 shadow-2xs border border-gray-100/80 flex flex-col justify-between select-none">
@@ -85,7 +88,7 @@ export const PendingApplicationsTable: React.FC<TableProps> = ({
                 </tr>
               ))
             ) : pendingList.length > 0 ? (
-              pendingList.map((app) => (
+              pageItems.map((app) => (
                 <tr
                   key={app.id}
                   onClick={() => onViewApplication?.(app.id)}
@@ -135,6 +138,7 @@ export const PendingApplicationsTable: React.FC<TableProps> = ({
           </tbody>
         </table>
       </div>
+      {!isLoading && <TablePagination {...pagination} />}
     </div>
   );
 };

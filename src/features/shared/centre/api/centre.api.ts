@@ -1,4 +1,4 @@
-import { capFetch } from "@/src/lib/api/cap";
+import { capFetch, capFetchAll } from "@/src/lib/api/cap";
 import type {
   PersonalDetails,
   ContactInformation,
@@ -352,14 +352,7 @@ export async function getCentreStaffApi(params?: {
   cursor?: string;
   limit?: number;
 }): Promise<CentreStaff[]> {
-  const res = await capFetch<CentreStaff[] | { data: CentreStaff[]; meta: PaginationMeta }>(
-    "/centre/staff",
-    {
-      method: "GET",
-      params: params as Record<string, unknown>,
-    },
-  );
-  return Array.isArray(res) ? res : (res as any)?.data || [];
+  return capFetchAll<CentreStaff>("/centre/staff", params as Record<string, unknown>);
 }
 
 export async function addCentreStaffApi(
@@ -409,14 +402,7 @@ export async function getCentreStaffApplicationsApi(
     limit?: number;
   },
 ): Promise<any[]> {
-  const res = await capFetch<any[] | { data: any[]; meta: PaginationMeta }>(
-    `/centre/staff/${id}/applications`,
-    {
-      method: "GET",
-      params: params as Record<string, unknown>,
-    },
-  );
-  return Array.isArray(res) ? res : (res as any)?.data || [];
+  return capFetchAll<any>(`/centre/staff/${id}/applications`, params as Record<string, unknown>);
 }
 
 // ─── Dashboard & Summary API ─────────────────────────────────────────────────
@@ -444,13 +430,7 @@ export async function getCentreAssessorsApi(params?: {
   cursor?: string;
   limit?: number;
 }): Promise<CentreAssessorListItem[]> {
-  const res = await capFetch<
-    CentreAssessorListItem[] | { data: CentreAssessorListItem[]; meta: PaginationMeta }
-  >("/centre/assessors", {
-    method: "GET",
-    params: params as Record<string, unknown>,
-  });
-  return Array.isArray(res) ? res : (res as any)?.data || [];
+  return capFetchAll<CentreAssessorListItem>("/centre/assessors", params as Record<string, unknown>);
 }
 
 export async function getCentreAssessorsSummaryApi(): Promise<CentreAssessorSummary> {
@@ -480,14 +460,7 @@ export async function getCentreAssessorApplicationsApi(
     limit?: number;
   },
 ): Promise<any[]> {
-  const res = await capFetch<any[] | { data: any[]; meta: PaginationMeta }>(
-    `/centre/assessors/${id}/applications`,
-    {
-      method: "GET",
-      params: params as Record<string, unknown>,
-    },
-  );
-  return Array.isArray(res) ? res : (res as any)?.data || [];
+  return capFetchAll<any>(`/centre/assessors/${id}/applications`, params as Record<string, unknown>);
 }
 
 export async function getCentreRetainedRequestsApi(params?: {
@@ -498,13 +471,7 @@ export async function getCentreRetainedRequestsApi(params?: {
   cursor?: string;
   limit?: number;
 }): Promise<RetainedAssessorRequest[]> {
-  const res = await capFetch<
-    RetainedAssessorRequest[] | { data: RetainedAssessorRequest[]; meta: PaginationMeta }
-  >("/centre/retained-requests", {
-    method: "GET",
-    params: params as Record<string, unknown>,
-  });
-  return Array.isArray(res) ? res : (res as any)?.data || [];
+  return capFetchAll<RetainedAssessorRequest>("/centre/retained-requests", params as Record<string, unknown>);
 }
 
 export async function patchCentreRetainedRequestsBulkApi(payload: {
@@ -557,13 +524,7 @@ export async function getCentreJobPostingsApi(params?: {
   cursor?: string;
   limit?: number;
 }): Promise<JobPosting[]> {
-  const res = await capFetch<
-    JobPosting[] | { data: JobPosting[]; meta: PaginationMeta }
-  >("/centre/job-postings", {
-    method: "GET",
-    params: params as Record<string, unknown>,
-  });
-  return Array.isArray(res) ? res : (res as any)?.data || [];
+  return capFetchAll<JobPosting>("/centre/job-postings", params as Record<string, unknown>);
 }
 
 function toIsoDateTimeString(dateStr?: string): string {
@@ -663,13 +624,7 @@ export async function getCentreJobPostingApplicationsApi(
     limit?: number;
   },
 ): Promise<JobPostingApplication[]> {
-  const res = await capFetch<
-    JobPostingApplication[] | { data: JobPostingApplication[]; meta: PaginationMeta }
-  >(`/centre/job-postings/${id}/applications`, {
-    method: "GET",
-    params: params as Record<string, unknown>,
-  });
-  return Array.isArray(res) ? res : (res as any)?.data || [];
+  return capFetchAll<JobPostingApplication>(`/centre/job-postings/${id}/applications`, params as Record<string, unknown>);
 }
 
 export async function patchCentreJobPostingApplicationsBulkApi(
@@ -753,13 +708,7 @@ export async function getCentrePaymentsApi(params?: {
   sort?: "paidAt" | "initiatedAt";
   order?: "asc" | "desc";
 }): Promise<CentrePaymentListItem[]> {
-  const res = await capFetch<
-    CentrePaymentListItem[] | { data: CentrePaymentListItem[]; meta: PaginationMeta }
-  >("/centre/payments", {
-    method: "GET",
-    params: params as Record<string, unknown>,
-  });
-  return Array.isArray(res) ? res : (res as any)?.data || [];
+  return capFetchAll<CentrePaymentListItem>("/centre/payments", params as Record<string, unknown>);
 }
 
 export async function getCentreWalletApi(): Promise<Wallet> {
@@ -951,13 +900,7 @@ export async function getCentrePanelsApi(params?: {
   q?: string;
   order?: "asc" | "desc";
 }): Promise<CentrePanel[]> {
-  const res = await capFetch<
-    CentrePanel[] | { data: CentrePanel[]; meta: PaginationMeta }
-  >("/centre/panels", {
-    method: "GET",
-    params: params as Record<string, unknown>,
-  });
-  return Array.isArray(res) ? res : (res as any)?.data || [];
+  return capFetchAll<CentrePanel>("/centre/panels", params as Record<string, unknown>);
 }
 
 export async function postCentrePanelsApi(
@@ -1012,13 +955,7 @@ export async function getCentreInterviewsApi(params?: {
   scheduledAt?: string;
   order?: "asc" | "desc";
 }): Promise<CentreInterview[]> {
-  const res = await capFetch<
-    CentreInterview[] | { data: CentreInterview[]; meta: PaginationMeta }
-  >("/centre/interviews", {
-    method: "GET",
-    params: params as Record<string, unknown>,
-  });
-  return Array.isArray(res) ? res : (res as any)?.data || [];
+  return capFetchAll<CentreInterview>("/centre/interviews", params as Record<string, unknown>);
 }
 
 export async function postCentreInterviewsApi(
@@ -1086,13 +1023,7 @@ export async function getCentreInterviewBookingsApi(params?: {
   status?: "scheduled" | "completed" | "cancelled";
   order?: "asc" | "desc";
 }): Promise<CentreInterviewBooking[]> {
-  const res = await capFetch<
-    CentreInterviewBooking[] | { data: CentreInterviewBooking[]; meta: PaginationMeta }
-  >("/centre/interview-bookings", {
-    method: "GET",
-    params: params as Record<string, unknown>,
-  });
-  return Array.isArray(res) ? res : (res as any)?.data || [];
+  return capFetchAll<CentreInterviewBooking>("/centre/interview-bookings", params as Record<string, unknown>);
 }
 
 export async function getCentreInterviewBookingDetailApi(

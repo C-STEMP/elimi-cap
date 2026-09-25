@@ -18,6 +18,8 @@ import {
   useGetJobPostingApplications,
   usePatchJobPostingApplicationDecision,
 } from "@/src/features/shared/centre/hooks";
+import { TablePagination } from "@/src/components/ui/table-pagination";
+import { usePagination } from "@/src/lib/hooks/usePagination";
 
 interface JobListingDetailViewProps {
   jobId: string;
@@ -85,6 +87,7 @@ export const JobListingDetailView: React.FC<JobListingDetailViewProps> = ({
     const matchesStatus = statusFilter === "All" || app.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+  const { pageItems, pagination } = usePagination(filteredApplicants);
 
   if (isLoadingJob) {
     return (
@@ -267,7 +270,7 @@ export const JobListingDetailView: React.FC<JobListingDetailViewProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 text-xs sm:text-sm font-medium text-neutral-primary">
-                {filteredApplicants.map((app) => (
+                {pageItems.map((app) => (
                   <tr
                     key={app.id}
                     onClick={() => onSelectApplicant(app.id)}
@@ -376,6 +379,8 @@ export const JobListingDetailView: React.FC<JobListingDetailViewProps> = ({
             </table>
           </div>
         )}
+
+        {!isLoadingApps && <TablePagination {...pagination} className="" />}
       </div>
     </div>
   );

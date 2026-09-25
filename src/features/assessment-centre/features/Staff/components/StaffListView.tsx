@@ -15,6 +15,8 @@ import {
   canViewStaffDetails,
   canDeactivateStaff,
 } from "@/features/assessment-centre/utils/rbac";
+import { TablePagination } from "@/src/components/ui/table-pagination";
+import { usePagination } from "@/src/lib/hooks/usePagination";
 
 interface StaffListViewProps {
   onSelectStaff: (staffId: string) => void;
@@ -122,6 +124,7 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
       }),
     [staffMembers, searchQuery, statusFilter],
   );
+  const { pageItems, pagination } = usePagination(filteredStaff);
 
   const renderRoleBadge = (roleStr: string) => {
     switch (roleStr) {
@@ -281,7 +284,7 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
           </div>
         ) : viewMode === "grid" ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredStaff.map((staff) => {
+            {pageItems.map((staff) => {
               const isSelected = selectedStaffIds.includes(staff.id);
               const displayName = staff.name || staff.email.split("@")[0];
               return (
@@ -362,7 +365,7 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 text-xs sm:text-sm text-black">
-                {filteredStaff.map((staff) => {
+                {pageItems.map((staff) => {
                   const isSelected = selectedStaffIds.includes(staff.id);
                   const displayName = staff.name || staff.email.split("@")[0];
                   return (
@@ -412,6 +415,8 @@ export const StaffListView: React.FC<StaffListViewProps> = ({
             </table>
           </div>
         )}
+
+        <TablePagination {...pagination} className="" />
       </div>
 
       <StaffStatusModal

@@ -2,6 +2,8 @@
 
 import React from "react";
 import { FiSearch, FiList, FiGrid, FiChevronDown } from "react-icons/fi";
+import { TablePagination } from "@/src/components/ui/table-pagination";
+import { usePagination } from "@/src/lib/hooks/usePagination";
 
 interface CandidateRow {
   id: string;
@@ -52,6 +54,8 @@ export const SittingCandidatesSection: React.FC<Props> = ({
   toggleSelectRow,
   onSelectCandidate,
 }) => {
+  const { pageItems, pagination } = usePagination(filteredCandidates);
+
   return (
     <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-2xs flex flex-col gap-5">
       <h2 className="text-base sm:text-lg font-bold text-black tracking-tight">Candidates</h2>
@@ -165,7 +169,7 @@ export const SittingCandidatesSection: React.FC<Props> = ({
             </thead>
             <tbody className="divide-y divide-gray-100">
               {filteredCandidates.length > 0 ? (
-                filteredCandidates.map((cand) => (
+                pageItems.map((cand) => (
                   <tr
                     key={cand.id}
                     onClick={() => onSelectCandidate(cand.candidateName, cand.id)}
@@ -213,7 +217,7 @@ export const SittingCandidatesSection: React.FC<Props> = ({
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredCandidates.map((cand) => (
+          {pageItems.map((cand) => (
             <div
               key={cand.id}
               onClick={() => onSelectCandidate(cand.candidateName, cand.id)}
@@ -256,6 +260,8 @@ export const SittingCandidatesSection: React.FC<Props> = ({
           ))}
         </div>
       )}
+
+      <TablePagination {...pagination} className="" />
     </div>
   );
 };

@@ -2,6 +2,8 @@
 
 import React, { useState, useMemo } from "react";
 import { FiSearch, FiList, FiGrid } from "react-icons/fi";
+import { TablePagination } from "@/src/components/ui/table-pagination";
+import { usePagination } from "@/src/lib/hooks/usePagination";
 import { useGetJobPostings } from "@/features/assessment-centre/features/JobListing/hooks";
 
 interface JobListingsViewProps {
@@ -47,6 +49,7 @@ export const JobListingsView: React.FC<JobListingsViewProps> = ({
       }),
     [jobs, searchQuery, activeStatusFilter],
   );
+  const { pageItems, pagination } = usePagination(filteredJobs);
 
   if (isLoading) {
     return (
@@ -120,7 +123,7 @@ export const JobListingsView: React.FC<JobListingsViewProps> = ({
           </div>
         ) : viewMode === "grid" ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredJobs.map((job) => {
+            {pageItems.map((job) => {
               const isSelected = selectedJobIds.includes(job.id);
               return (
                 <div
@@ -204,7 +207,7 @@ export const JobListingsView: React.FC<JobListingsViewProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 text-xs sm:text-sm font-medium text-neutral-primary">
-                {filteredJobs.map((job) => {
+                {pageItems.map((job) => {
                   const isSelected = selectedJobIds.includes(job.id);
                   return (
                     <tr
@@ -262,6 +265,8 @@ export const JobListingsView: React.FC<JobListingsViewProps> = ({
             </table>
           </div>
         )}
+
+        <TablePagination {...pagination} className="" />
       </div>
     </div>
   );

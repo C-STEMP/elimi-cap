@@ -6,6 +6,8 @@ import { Select } from "@/src/components/ui/select";
 import { PaymentTransaction } from "@/features/assessment-centre/types";
 import { formatCurrency } from "@/src/utils/currency";
 import { useGetCentrePayments } from "@/src/features/shared/centre/hooks";
+import { TablePagination } from "@/src/components/ui/table-pagination";
+import { usePagination } from "@/src/lib/hooks/usePagination";
 
 interface PaymentsViewProps {
   onWithdrawFunds: () => void;
@@ -63,6 +65,7 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
     const matchesStatus = statusFilter === "All" || tx.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+  const { pageItems, pagination } = usePagination(filteredTransactions);
 
   if (isLoading) {
     return (
@@ -155,7 +158,7 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
           </div>
         ) : viewMode === "grid" ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredTransactions.map((tx) => (
+              {pageItems.map((tx) => (
                 <div
                   key={tx.id}
                   onClick={() => onSelectReceipt(tx)}
@@ -211,7 +214,7 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 text-xs sm:text-sm font-medium text-neutral-primary">
-                  {filteredTransactions.map((tx) => (
+                  {pageItems.map((tx) => (
                     <tr
                       key={tx.id}
                       onClick={() => onSelectReceipt(tx)}
@@ -255,6 +258,8 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
             </table>
           </div>
         )}
+
+        <TablePagination {...pagination} className="" />
       </div>
     </div>
   );

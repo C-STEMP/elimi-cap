@@ -15,6 +15,8 @@ import {
 
 import { useAppSelector } from "@/src/store/hooks";
 import { canDeactivateAssessor } from "@/features/assessment-centre/utils/rbac";
+import { TablePagination } from "@/src/components/ui/table-pagination";
+import { usePagination } from "@/src/lib/hooks/usePagination";
 
 interface AssessorsListViewProps {
   onSelectAssessor: (assessorId: string) => void;
@@ -87,6 +89,7 @@ export const AssessorsListView: React.FC<AssessorsListViewProps> = ({
       filter === "all" || assessor.status.toLowerCase() === filter;
     return matchesSearch && matchesStatus;
   });
+  const { pageItems, pagination } = usePagination(filteredAssessors);
 
   const toggleSelectAll = () => {
     if (selectedIds.length === filteredAssessors.length) {
@@ -252,7 +255,7 @@ export const AssessorsListView: React.FC<AssessorsListViewProps> = ({
           </div>
         ) : viewMode === "grid" ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredAssessors.map((assessor) => {
+            {pageItems.map((assessor) => {
               const isSelected = selectedIds.includes(assessor.id);
               return (
                 <div
@@ -331,7 +334,7 @@ export const AssessorsListView: React.FC<AssessorsListViewProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 text-xs sm:text-sm font-medium text-neutral-primary">
-                {filteredAssessors.map((assessor) => (
+                {pageItems.map((assessor) => (
                   <tr
                     key={assessor.id}
                     onClick={() => onSelectAssessor(assessor.id)}
@@ -381,6 +384,8 @@ export const AssessorsListView: React.FC<AssessorsListViewProps> = ({
             </table>
           </div>
         )}
+
+        <TablePagination {...pagination} className="" />
       </div>
 
       <StaffStatusModal

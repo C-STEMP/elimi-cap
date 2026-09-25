@@ -30,6 +30,8 @@ import {
   useGetCentreAssessorApplications,
   useRevokeRetainedRequest,
 } from "@/src/features/shared/centre/hooks";
+import { TablePagination } from "@/src/components/ui/table-pagination";
+import { usePagination } from "@/src/lib/hooks/usePagination";
 
 interface AssessorProfileDetailViewProps {
   assessorId: string;
@@ -148,6 +150,7 @@ export const AssessorProfileDetailView: React.FC<
       statusFilter === "All" || cand.status === statusFilter;
     return matchesSearch && matchesTrade && matchesAssessment && matchesStatus;
   });
+  const { pageItems, pagination } = usePagination(filteredCandidates);
 
   const availableTrades = Array.from(
     new Set(candidates.map((c) => c.trade).filter(Boolean)),
@@ -397,7 +400,7 @@ export const AssessorProfileDetailView: React.FC<
           </div>
         ) : detailViewMode === "grid" ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredCandidates.map((cand) => (
+            {pageItems.map((cand) => (
               <div
                 key={cand.id}
                 onClick={() => onViewCandidate?.(cand.id)}
@@ -458,7 +461,7 @@ export const AssessorProfileDetailView: React.FC<
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 text-xs sm:text-sm font-medium text-neutral-primary">
-                {filteredCandidates.map((cand) => (
+                {pageItems.map((cand) => (
                   <tr
                     key={cand.id}
                     onClick={() => onViewCandidate?.(cand.id)}
@@ -508,6 +511,8 @@ export const AssessorProfileDetailView: React.FC<
             </table>
           </div>
         )}
+
+        {!isLoadingApps && <TablePagination {...pagination} className="" />}
       </div>
 
       {/* In-App Certificate Preview Modal */}

@@ -11,6 +11,8 @@ import {
 } from "@/src/features/shared/centre/hooks";
 import { StaffStatusModal, StaffStatusModalMode } from "./StaffStatusModal";
 import { ASSETS_URL } from "@/assets";
+import { TablePagination } from "@/src/components/ui/table-pagination";
+import { usePagination } from "@/src/lib/hooks/usePagination";
 
 interface StaffDetailViewProps {
   staffId: string;
@@ -98,6 +100,7 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
     const matchesStatus = statusFilter === "All" || app.status === statusFilter;
     return matchesSearch && matchesTrade && matchesAssessment && matchesStatus;
   });
+  const { pageItems, pagination } = usePagination(filteredApplications);
 
   const renderStatusBadge = (status: string) => {
     switch (status) {
@@ -299,7 +302,7 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
           </div>
         ) : detailViewMode === "grid" ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredApplications.map((app) => (
+            {pageItems.map((app) => (
               <div
                 key={app.id}
                 onClick={() => onViewApplication?.(app.id)}
@@ -348,7 +351,7 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y-4 divide-input-bg text-xs sm:text-sm text-black">
-                {filteredApplications.map((app) => (
+                {pageItems.map((app) => (
                   <tr
                     key={app.id}
                     onClick={() => onViewApplication?.(app.id)}
@@ -377,6 +380,8 @@ export const StaffDetailView: React.FC<StaffDetailViewProps> = ({
             </table>
           </div>
         )}
+
+        {!isLoadingApps && <TablePagination {...pagination} className="" />}
       </div>
 
       {/* Staff Status Modal */}
