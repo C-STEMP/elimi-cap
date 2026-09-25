@@ -1,30 +1,22 @@
 "use client";
 
 import React from "react";
-import { motion } from "framer-motion";
 import { HeaderBanner } from "@/features/candidate/features/Dashboard/components/HeaderBanner";
 import { NotificationsListContent } from "@/src/features/shared/notifications/components/NotificationsListContent";
+import { useAppSelector } from "@/src/store/hooks";
 
 export default function NotificationsPage() {
+  const authUser = useAppSelector((state) => state.auth.user);
+  const firstName =
+    authUser?.fullName?.split(" ")[0] ||
+    authUser?.email?.split("@")[0] ||
+    "User";
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: "easeOut" }}
-      className="w-full flex flex-col min-h-screen"
-    >
-      <HeaderBanner
-        title="Notifications"
-        backHref="/dashboard"
-        backTitle="Dashboard"
-        breadcrumbs={[
-          { label: "Overview", href: "/dashboard" },
-          { label: "Notifications" },
-        ]}
-        showCreateButton={false}
-      />
+    <div className="min-h-screen w-full bg-[#f8f9fb] flex flex-col select-text">
+      <HeaderBanner userName={firstName} />
 
       <NotificationsListContent />
-    </motion.div>
+    </div>
   );
 }

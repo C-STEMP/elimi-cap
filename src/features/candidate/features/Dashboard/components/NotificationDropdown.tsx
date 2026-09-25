@@ -19,6 +19,7 @@ import {
 } from "@/src/features/shared/notifications/hooks";
 import { NotificationItem } from "@/src/features/shared/notifications/api";
 import { useAppSelector } from "@/src/store/hooks";
+import { getPersona } from "@/src/lib/auth-storage";
 
 interface NotificationDropdownProps {
   isOpen: boolean;
@@ -33,9 +34,15 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
 }) => {
   const router = useRouter();
   const user = useAppSelector((state) => state.auth.user);
-  const notificationsHref = user?.role?.toLowerCase().includes("assessor")
-    ? "/assessor/dashboard/notifications"
-    : "/dashboard/notifications";
+  // Each persona has its own notifications page; centre users are redirected
+  // away from /dashboard/*, so they need the /assessment-centre route.
+  const persona = getPersona();
+  const notificationsHref =
+    persona === "centre"
+      ? "/assessment-centre/dashboard/notifications"
+      : persona === "assessor" || user?.role?.toLowerCase().includes("assessor")
+        ? "/assessor/dashboard/notifications"
+        : "/dashboard/notifications";
   const { data: remoteNotifications = [], isLoading } = useGetNotifications(
     undefined,
     { enabled: isOpen },

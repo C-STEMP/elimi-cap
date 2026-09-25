@@ -16,7 +16,6 @@ import {
   FiPlus,
 } from "react-icons/fi";
 import { formatCurrency } from "@/src/utils/currency";
-import { BiSolidMessageRoundedDetail } from "react-icons/bi";
 import { Logo } from "@/src/components/ui/logo";
 import { Avatar } from "@/src/components/ui/avatar";
 import { ASSETS_URL } from "@/assets";
@@ -42,7 +41,6 @@ import { getPermittedTabs } from "@/features/assessment-centre/utils/rbac";
 interface HeaderProps {
   activeTab: AssessmentCentreTab;
   onSelectTab: (tab: AssessmentCentreTab) => void;
-  onOpenNotifications?: () => void;
   title?: string;
   showStats?: boolean;
   userRole?: string;
@@ -52,7 +50,6 @@ interface HeaderProps {
 export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
   activeTab,
   onSelectTab,
-  onOpenNotifications,
   title,
   showStats = true,
   userRole,
@@ -217,21 +214,6 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
         </div>
 
         <div className="flex items-center gap-1.5 sm:gap-2 2xl:gap-3 shrink-0">
-          <button
-            type="button"
-            onClick={() => onSelectTab("messages")}
-            className={`w-8 h-8 sm:w-9 sm:h-9 2xl:w-10 2xl:h-10 rounded-full flex items-center justify-center transition-all cursor-pointer relative ${
-              activeTab === "messages"
-                ? "bg-white/30 text-white"
-                : "bg-white/10 hover:bg-white/20 text-white/90"
-            }`}
-            aria-label="Messages"
-            title="Messages"
-          >
-            <BiSolidMessageRoundedDetail className="w-4 h-4 sm:w-5 sm:h-5 2xl:w-6 2xl:h-6" />
-            <span className="absolute top-1.5 right-1.5 2xl:top-2 2xl:right-2 w-2 h-2 rounded-full bg-[#fbab2a]" />
-          </button>
-
           <div className="relative">
             <button
               type="button"

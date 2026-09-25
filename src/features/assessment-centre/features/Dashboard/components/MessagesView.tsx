@@ -18,7 +18,11 @@ export const MessagesView: React.FC = () => {
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [inputMessage, setInputMessage] = useState("");
 
-  const { data: conversations = [], isLoading: isLoadingConversations } = useGetConversations({
+  const {
+    data: conversations = [],
+    isLoading: isLoadingConversations,
+    isError: isConversationsError,
+  } = useGetConversations({
     q: searchQuery || undefined,
   });
 
@@ -81,6 +85,10 @@ export const MessagesView: React.FC = () => {
                   </div>
                 </div>
               ))
+            ) : isConversationsError ? (
+              <p className="text-xs text-rose-500 text-center py-6">
+                Couldn&apos;t load conversations. Please try again later.
+              </p>
             ) : conversations.length === 0 ? (
               <p className="text-xs text-gray-400 text-center py-6">
                 No conversations yet.

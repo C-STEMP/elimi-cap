@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { AssessmentCentreHeader } from "../features/Dashboard/components/AssessmentCentreHeader";
-import { NotificationDrawer } from "../features/Dashboard/components/NotificationDrawer";
 import dynamic from "next/dynamic";
 import { Loader } from "@/src/components/ui/loader";
 import type { StaffStatusModalMode } from "../features/Staff/components/StaffStatusModal";
@@ -219,7 +218,6 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
   }, [activeRole, activeTab]);
 
   // Modal and Selection State
-  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useUrlModal(BROADCAST_MODAL);
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
   const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useUrlModal(ADD_STAFF_MODAL);
@@ -449,7 +447,6 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
       <AssessmentCentreHeader
         activeTab={activeTab}
         onSelectTab={handleSelectTab}
-        onOpenNotifications={() => setIsNotificationsOpen(true)}
         showStats={activeTab === "overview"}
         userRole={activeRole}
       >
@@ -621,12 +618,6 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
           isOpen={isAssessorDeactivateModalOpen}
           mode={assessorDeactivateModalMode}
           onClose={() => setIsAssessorDeactivateModalOpen(false)}
-        />
-      )}
-      {isNotificationsOpen && (
-        <NotificationDrawer
-          isOpen={isNotificationsOpen}
-          onClose={() => setIsNotificationsOpen(false)}
         />
       )}
       {isBroadcastModalOpen && (

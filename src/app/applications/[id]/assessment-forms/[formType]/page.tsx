@@ -6,6 +6,7 @@ import { useGetApplicationById, useGetInterviewPanel } from "@/src/features/shar
 import { useAppSelector } from "@/src/store/hooks";
 import { AssessorAssessmentFormView } from "@/src/features/assessor/features/Applications/components/assessment-forms";
 import { Loader } from "@/src/components/ui/loader";
+import { usePanelMemberMatch } from "@/src/features/assessor/hooks";
 
 export default function AssessmentFormDedicatedRoutePage() {
   const params = useParams();
@@ -29,6 +30,7 @@ export default function AssessmentFormDedicatedRoutePage() {
   const user = useAppSelector((state) => state.auth.user);
   const { data: application, isLoading } = useGetApplicationById(id);
   const { data: interviewPanel } = useGetInterviewPanel(id);
+  const isMemberMatch = usePanelMemberMatch();
 
   if (isLoading) {
     return (
@@ -69,22 +71,10 @@ export default function AssessmentFormDedicatedRoutePage() {
   const currentAssessorId = (user as any)?.assessorId || (user as any)?.profileId || user?.id;
   const currentAssessorEmail = user?.email?.toLowerCase();
 
-  const roleStr = String((application as any)?.role || user?.role || "").toLowerCase();
-  const isGlobalIV = roleStr.includes("internal verifier") || roleStr.includes("iv");
-
   const isAssignedLead =
     (application as any)?.assignedAssessors?.some(
       (a: any) =>
         (a.role === "LEAD" || a.role === "Lead Panelist" || a.role === "lead_assessor") &&
-        ((a.assessorId && a.assessorId === currentAssessorId) ||
-          (a.email && a.email.toLowerCase() === currentAssessorEmail) ||
-          (a.user?.email && a.user.email.toLowerCase() === currentAssessorEmail)),
-    ) || false;
-
-  const isAssignedIV =
-    (application as any)?.assignedAssessors?.some(
-      (a: any) =>
-        (a.role === "INTERNAL_VERIFIER" || a.role === "Internal Verifier" || a.role === "iv") &&
         ((a.assessorId && a.assessorId === currentAssessorId) ||
           (a.email && a.email.toLowerCase() === currentAssessorEmail) ||
           (a.user?.email && a.user.email.toLowerCase() === currentAssessorEmail)),
@@ -109,26 +99,6 @@ export default function AssessmentFormDedicatedRoutePage() {
   );
 
   const leadMember = interviewPanel?.members?.find((m: any) => m.isLead);
-  const ivMember = interviewPanel?.members?.find((m: any) => m.isObserver);
-
-  const isMemberMatch = (m: any) => {
-    if (!m) return false;
-    const mAssessorId = (m.assessorId || m.userId || m.id || "").toString().toLowerCase().trim();
-    const mEmail = (m.email || "").toLowerCase().trim();
-    const mName = (m.name || "").toLowerCase().trim();
-
-    if (currentAssessorId && (mAssessorId === currentAssessorId.toString().toLowerCase().trim())) return true;
-    if (user?.id && (mAssessorId === user.id.toLowerCase().trim())) return true;
-    const userNames = [
-      user?.fullName,
-      (user as any)?.name,
-      (user as any)?.firstName,
-      (user as any)?.lastName,
-    ].filter(Boolean).map((n) => (n as string).toLowerCase().trim());
-
-    if (mName && userNames.some((n) => n === mName || n.includes(mName) || mName.includes(n))) return true;
-    return false;
-  };
 
   const isUserLeadPanelist =
     !isCandidateUser &&
@@ -138,15 +108,9 @@ export default function AssessmentFormDedicatedRoutePage() {
       (!leadMember && (application as any).role?.toLowerCase()?.includes("lead"))
     );
 
-  const isUserIV =
-    !isCandidateUser &&
-    Boolean(
-      (ivMember && isMemberMatch(ivMember)) ||
-      isAssignedIV ||
-      isGlobalIV
-    );
-
-  const isReadOnly = isCandidateUser || isUserIV || !isUserLeadPanelist;
+  // Same rule as the application page's "Fill Form" link: only the lead
+  // panelist fills these forms; everyone else gets the read-only document.
+  const isReadOnly = isCandidateUser || !isUserLeadPanelist;
 
   const handleBack = () => {
     if (typeof window !== "undefined" && window.history.length > 1) {
