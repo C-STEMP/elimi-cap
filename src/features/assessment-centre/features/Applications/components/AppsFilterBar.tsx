@@ -103,14 +103,6 @@ export const AppsFilterBar: React.FC<Props> = ({
         >
           Select All
         </button>
-        <button
-          type="button"
-          onClick={onBulkCertify}
-          disabled={isBulkCertifying || (selectedCount ?? 0) === 0}
-          className="hover:underline cursor-pointer transition-colors text-gray-600 hover:text-black disabled:opacity-40"
-        >
-          Mark As Complete
-        </button>
       </div>
     )}
   </div>
