@@ -139,10 +139,8 @@ export function useVerifyAccount() {
         description: "Your account has been created successfully.",
       });
 
-      const userEmail = data.user.email;
-      savePersona("candidate");
-      const dest = resolveUserDestination(false, "candidate", userEmail);
-      router.push(dest);
+      // New accounts have no persona yet — they pick one on role selection.
+      router.push("/onboarding/welcome");
     },
 
     onError: (error: Error, variables) => {

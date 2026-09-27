@@ -70,15 +70,18 @@ export interface AssessorSelfProfile {
   sectors: Sector[];
   yearsOfExperience?: number | null;
   certificates: AssessorCertificate[];
+  resume?: { assetId: string; url: string | null } | null;
 }
 
 export interface AssessorSelfProfilePatch {
   qualifications?: AssessorQualification[];
   sectorIds?: string[];
+  resumeAssetId?: string;
   certifications?: {
     ev?: { certificateAssetId: string };
     qaa?: { certificateAssetId: string };
     iqm?: { certificateAssetId: string };
+    rpl?: { certificateAssetId: string };
   };
 }
 

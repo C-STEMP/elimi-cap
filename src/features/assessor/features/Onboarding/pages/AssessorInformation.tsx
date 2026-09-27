@@ -12,7 +12,10 @@ import { useToast } from "@/src/components/ui/toast";
 import { useUploadFile } from "@/src/features/shared/storage/hooks";
 import { useAppDispatch, useAppSelector } from "@/src/store/hooks";
 import { setSidebarVariant } from "@/src/store/slices/authSlice";
-import { setAssessorDetails } from "@/src/store/slices/onboardingSlice";
+import {
+  setAssessorDetails,
+  type AssessorDetailsState,
+} from "@/src/store/slices/onboardingSlice";
 import { SelectOption } from "@/src/components/ui/select";
 import { ASSESSOR_ROUTES } from "@/src/features/assessor/utils/assessorRoutes";
 import { useAssessorOnboarding } from "../hooks/useOnboarding";
@@ -23,6 +26,166 @@ export const QUALIFICATION_OPTIONS: SelectOption[] = [
   { value: "IV", label: "IV - Internal Verifier" },
   { value: "EV", label: "EV - External Verifier" },
 ];
+
+type UploadKind = "qaa" | "iqm" | "rpl" | "resume";
+
+type UploadedFile = { name: string; size: string; assetId: string };
+
+const UPLOAD_KINDS: UploadKind[] = ["qaa", "iqm", "rpl", "resume"];
+
+const UPLOAD_LABELS: Record<UploadKind, string> = {
+  qaa: "QAA Certificate",
+  iqm: "IQM Certificate",
+  rpl: "RPL Assessor Certificate",
+  resume: "CV / Resume",
+};
+
+const SLICE_KEYS: Record<
+  UploadKind,
+  {
+    assetId: keyof AssessorDetailsState;
+    name: keyof AssessorDetailsState;
+    size: keyof AssessorDetailsState;
+  }
+> = {
+  qaa: {
+    assetId: "qaaCertificateAssetId",
+    name: "qaaCertificateName",
+    size: "qaaCertificateSize",
+  },
+  iqm: {
+    assetId: "iqmCertificateAssetId",
+    name: "iqmCertificateName",
+    size: "iqmCertificateSize",
+  },
+  rpl: {
+    assetId: "rplCertificateAssetId",
+    name: "rplCertificateName",
+    size: "rplCertificateSize",
+  },
+  resume: {
+    assetId: "resumeAssetId",
+    name: "resumeName",
+    size: "resumeSize",
+  },
+};
+
+interface CertificateUploadFieldProps {
+  label: string;
+  hint: string;
+  buttonText?: string;
+  accept?: string;
+  acceptText?: string;
+  file: UploadedFile | null;
+  highlightError?: boolean;
+  error?: string;
+  uploading: boolean;
+  anyUploading: boolean;
+  uploadingFileName: string;
+  uploadProgress: number;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onRemove: () => void;
+}
+
+const CertificateUploadField: React.FC<CertificateUploadFieldProps> = ({
+  label,
+  hint,
+  buttonText = "Upload Certificate",
+  accept = ".jpg,.png,.pdf,.doc,.docx,.mp4,.webp",
+  acceptText = "JPG, PNG, PDF, Docs, Mp4, or WebP",
+  file,
+  highlightError,
+  error,
+  uploading,
+  anyUploading,
+  uploadingFileName,
+  uploadProgress,
+  onChange,
+  onRemove,
+}) => (
+  <div className="mb-5">
+    <label className="block text-sm font-semibold text-neutral-primary mb-1.5">
+      {label}{" "}
+      <span className="text-xs font-normal text-neutral-secondary">{hint}</span>
+    </label>
+
+    <label
+      className={`w-full min-h-28 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center p-4 text-center cursor-pointer transition-all ${
+        highlightError
+          ? "border-red-500 bg-red-50/50"
+          : "border-red-300 bg-red-50/20 hover:bg-red-50/40"
+      }`}
+    >
+      <input
+        type="file"
+        accept={accept}
+        className="hidden"
+        disabled={uploading}
+        onChange={onChange}
+      />
+      <FiUpload className="w-5 h-5 text-primary-solid mb-1.5" />
+      <span className="font-bold text-xs text-primary-solid">{buttonText}</span>
+      <span className="text-[10px] text-gray-400 mt-0.5">{acceptText}</span>
+    </label>
+    {error && (
+      <span className="text-primary-solid text-xs font-semibold mt-1 block">
+        {error}
+      </span>
+    )}
+
+    {uploading && (
+      <div className="mt-3 w-full border border-primary-solid/20 bg-primary-solid/5 rounded-xl p-3 flex flex-col gap-2 shadow-xs">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-4 h-4 border-2 border-primary-solid border-t-transparent rounded-full animate-spin shrink-0" />
+            <span className="text-xs font-semibold text-neutral-primary truncate">
+              Uploading {uploadingFileName || label}...
+            </span>
+          </div>
+          <span className="text-xs font-bold text-primary-solid shrink-0">
+            {uploadProgress}%
+          </span>
+        </div>
+        <div className="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden">
+          <div
+            className="bg-primary-solid h-full rounded-full transition-all duration-200 ease-out"
+            style={{ width: `${uploadProgress}%` }}
+          />
+        </div>
+      </div>
+    )}
+
+    {file && !anyUploading && (
+      <div className="mt-3 w-full border border-gray-200 bg-white rounded-xl p-3 flex items-center justify-between shadow-xs">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-9 h-9 rounded-lg bg-red-50 flex items-center justify-center text-primary-solid shrink-0">
+            <FaFilePdf className="w-5 h-5" />
+          </div>
+          <div className="flex flex-col min-w-0">
+            <span className="text-xs font-bold text-neutral-primary truncate">
+              {file.name}
+            </span>
+            <span className="text-[11px] text-gray-500 flex items-center gap-1.5 mt-0.5">
+              {file.size}
+              <span>•</span>
+              <span className="text-emerald-600 font-semibold flex items-center gap-1">
+                <FiCheckCircle className="w-3.5 h-3.5" /> Completed
+              </span>
+            </span>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onRemove}
+          aria-label={`Remove ${label}`}
+          className="p-1.5 text-gray-400 hover:text-red-500 transition-colors cursor-pointer"
+        >
+          <FiTrash2 className="w-4.5 h-4.5" />
+        </button>
+      </div>
+    )}
+  </div>
+);
 
 export const AssessorInformation: React.FC = () => {
   const router = useRouter();
@@ -40,37 +203,29 @@ export const AssessorInformation: React.FC = () => {
       "QAA",
   });
 
-  const [qaaFile, setQaaFile] = useState<{
-    name: string;
-    size: string;
-    assetId: string;
-  } | null>(
-    saved.qaaCertificateAssetId
-      ? {
-          name: saved.qaaCertificateName || "QAA Certificate",
-          size: saved.qaaCertificateSize || "5 mb",
-          assetId: saved.qaaCertificateAssetId,
-        }
-      : null,
-  );
-
-  const [iqmFile, setIqmFile] = useState<{
-    name: string;
-    size: string;
-    assetId: string;
-  } | null>(
-    saved.iqmCertificateAssetId
-      ? {
-          name: saved.iqmCertificateName || "IQM Certificate",
-          size: saved.iqmCertificateSize || "5 mb",
-          assetId: saved.iqmCertificateAssetId,
-        }
-      : null,
+  const [files, setFiles] = useState<Record<UploadKind, UploadedFile | null>>(
+    () =>
+      Object.fromEntries(
+        UPLOAD_KINDS.map((kind) => {
+          const keys = SLICE_KEYS[kind];
+          const assetId = saved[keys.assetId];
+          return [
+            kind,
+            assetId
+              ? {
+                  name: saved[keys.name] || UPLOAD_LABELS[kind],
+                  size: saved[keys.size] || "5 mb",
+                  assetId,
+                }
+              : null,
+          ];
+        }),
+      ) as Record<UploadKind, UploadedFile | null>,
   );
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [uploadingType, setUploadingType] = useState<"qaa" | "iqm" | null>(null);
+  const [uploadingType, setUploadingType] = useState<UploadKind | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [uploadingFileName, setUploadingFileName] = useState<string>("");
 
@@ -109,12 +264,25 @@ export const AssessorInformation: React.FC = () => {
     }
   };
 
+  const setFile = (kind: UploadKind, file: UploadedFile | null) => {
+    setFiles((prev) => ({ ...prev, [kind]: file }));
+    const keys = SLICE_KEYS[kind];
+    dispatch(
+      setAssessorDetails({
+        [keys.assetId]: file?.assetId ?? "",
+        [keys.name]: file?.name ?? "",
+        [keys.size]: file?.size ?? "",
+      }),
+    );
+  };
+
   const handleCertificateUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
-    type: "qaa" | "iqm",
+    type: UploadKind,
   ) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      e.target.value = "";
       const sizeMb = `${(file.size / (1024 * 1024)).toFixed(1)} mb`;
 
       setUploadingType(type);
@@ -133,43 +301,18 @@ export const AssessorInformation: React.FC = () => {
 
         clearInterval(progressInterval);
         if (!asset?.assetId) {
-          throw new Error("The certificate upload did not return an asset id.");
+          throw new Error("The upload did not return an asset id.");
         }
         setUploadProgress(100);
 
-        const fileData = {
-          name: file.name,
-          size: sizeMb,
-          assetId: asset.assetId,
-        };
-
-        if (type === "qaa") {
-          setQaaFile(fileData);
-          dispatch(
-            setAssessorDetails({
-              qaaCertificateAssetId: fileData.assetId,
-              qaaCertificateName: fileData.name,
-              qaaCertificateSize: fileData.size,
-            }),
-          );
-          setErrors((prev) => ({ ...prev, qaa: "", certificates: "" }));
-        } else {
-          setIqmFile(fileData);
-          dispatch(
-            setAssessorDetails({
-              iqmCertificateAssetId: fileData.assetId,
-              iqmCertificateName: fileData.name,
-              iqmCertificateSize: fileData.size,
-            }),
-          );
-          setErrors((prev) => ({ ...prev, iqm: "", certificates: "" }));
-        }
+        setFile(type, { name: file.name, size: sizeMb, assetId: asset.assetId });
+        setErrors((prev) => ({ ...prev, [type]: "", certificates: "" }));
       } catch {
         clearInterval(progressInterval);
         toast({
           type: "error",
           title: "Upload Failed",
-          description: `Failed to upload ${type.toUpperCase()} Certificate.`,
+          description: `Failed to upload ${UPLOAD_LABELS[type]}.`,
         });
       } finally {
         setUploadingType(null);
@@ -191,7 +334,9 @@ export const AssessorInformation: React.FC = () => {
       newErrors.qualification = "Qualification is required";
       valid = false;
     }
-    if (!qaaFile && !iqmFile) {
+    // RPL certificate and CV are supporting documents only — the backend
+    // still requires at least one of ev/qaa/iqm on submit.
+    if (!files.qaa && !files.iqm) {
       newErrors.certificates =
         "Please upload at least one qualification certificate (QAA or IQM)";
       valid = false;
@@ -218,9 +363,11 @@ export const AssessorInformation: React.FC = () => {
       {
         assessorDetails: {
           assessorNo: form.assessorId,
+          ...(files.resume ? { resumeAssetId: files.resume.assetId } : {}),
           certifications: {
-            ...(qaaFile ? { qaa: { certificateAssetId: qaaFile.assetId } } : {}),
-            ...(iqmFile ? { iqm: { certificateAssetId: iqmFile.assetId } } : {}),
+            ...(files.qaa ? { qaa: { certificateAssetId: files.qaa.assetId } } : {}),
+            ...(files.iqm ? { iqm: { certificateAssetId: files.iqm.assetId } } : {}),
+            ...(files.rpl ? { rpl: { certificateAssetId: files.rpl.assetId } } : {}),
           },
         },
       },
@@ -287,7 +434,8 @@ export const AssessorInformation: React.FC = () => {
               Upload Certificate<span className="text-primary-solid ml-0.5">*</span>
             </h2>
             <p className="text-xs text-neutral-secondary mt-0.5">
-              Please upload at least one qualification certificate (QAA or IQM)
+              Please upload at least one qualification certificate (QAA or IQM).
+              Your RPL assessor certificate and CV are optional.
             </p>
             {errors.certificates && (
               <p className="text-red-600 text-xs font-semibold mt-2 bg-red-50 border border-red-200 rounded-xl p-2.5">
@@ -296,204 +444,62 @@ export const AssessorInformation: React.FC = () => {
             )}
           </div>
 
-          {/* QAA Certificate Upload */}
-          <div className="mb-5">
-            <label className="block text-sm font-semibold text-neutral-primary mb-1.5">
-              QAA Certificate{" "}
-              <span className="text-xs font-normal text-neutral-secondary">
-                (Optional if IQM is uploaded)
-              </span>
-            </label>
+          <CertificateUploadField
+            label="QAA Certificate"
+            hint="(Optional if IQM is uploaded)"
+            file={files.qaa}
+            highlightError={!!errors.qaa || (!!errors.certificates && !files.qaa)}
+            error={errors.qaa}
+            uploading={uploadingType === "qaa"}
+            uploadingFileName={uploadingFileName}
+            uploadProgress={uploadProgress}
+            anyUploading={!!uploadingType}
+            onChange={(e) => handleCertificateUpload(e, "qaa")}
+            onRemove={() => setFile("qaa", null)}
+          />
 
-            <label
-              className={`w-full min-h-28 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center p-4 text-center cursor-pointer transition-all ${
-                errors.qaa || (errors.certificates && !qaaFile)
-                  ? "border-red-500 bg-red-50/50"
-                  : "border-red-300 bg-red-50/20 hover:bg-red-50/40"
-              }`}
-            >
-              <input
-                type="file"
-                accept=".jpg,.png,.pdf,.doc,.docx,.mp4,.webp"
-                className="hidden"
-                onChange={(e) => handleCertificateUpload(e, "qaa")}
-              />
-              <FiUpload className="w-5 h-5 text-primary-solid mb-1.5" />
-              <span className="font-bold text-xs text-primary-solid">
-                Upload Certificate
-              </span>
-              <span className="text-[10px] text-gray-400 mt-0.5">
-                JPG, PNG, PDF, Docs, Mp4, or WebP
-              </span>
-            </label>
-            {errors.qaa && (
-              <span className="text-primary-solid text-xs font-semibold mt-1 block">
-                {errors.qaa}
-              </span>
-            )}
+          <CertificateUploadField
+            label="IQM Certificate"
+            hint="(Optional if QAA is uploaded)"
+            file={files.iqm}
+            highlightError={!!errors.iqm || (!!errors.certificates && !files.iqm)}
+            error={errors.iqm}
+            uploading={uploadingType === "iqm"}
+            uploadingFileName={uploadingFileName}
+            uploadProgress={uploadProgress}
+            anyUploading={!!uploadingType}
+            onChange={(e) => handleCertificateUpload(e, "iqm")}
+            onRemove={() => setFile("iqm", null)}
+          />
 
-            {/* QAA Uploading Progress Bar */}
-            {uploadingType === "qaa" && (
-              <div className="mt-3 w-full border border-primary-solid/20 bg-primary-solid/5 rounded-xl p-3 flex flex-col gap-2 shadow-xs">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="w-4 h-4 border-2 border-primary-solid border-t-transparent rounded-full animate-spin shrink-0" />
-                    <span className="text-xs font-semibold text-neutral-primary truncate">
-                      Uploading {uploadingFileName || "Certificate"}...
-                    </span>
-                  </div>
-                  <span className="text-xs font-bold text-primary-solid shrink-0">
-                    {uploadProgress}%
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden">
-                  <div
-                    className="bg-primary-solid h-full rounded-full transition-all duration-200 ease-out"
-                    style={{ width: `${uploadProgress}%` }}
-                  />
-                </div>
-              </div>
-            )}
+          <CertificateUploadField
+            label="RPL Assessor Certificate"
+            hint="(Optional)"
+            file={files.rpl}
+            error={errors.rpl}
+            uploading={uploadingType === "rpl"}
+            uploadingFileName={uploadingFileName}
+            uploadProgress={uploadProgress}
+            anyUploading={!!uploadingType}
+            onChange={(e) => handleCertificateUpload(e, "rpl")}
+            onRemove={() => setFile("rpl", null)}
+          />
 
-            {/* QAA File Completed Item */}
-            {qaaFile && !uploadingType && (
-              <div className="mt-3 w-full border border-gray-200 bg-white rounded-xl p-3 flex items-center justify-between shadow-xs">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-red-50 flex items-center justify-center text-primary-solid">
-                    <FaFilePdf className="w-5 h-5" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-xs font-bold text-neutral-primary">
-                      {qaaFile.name}
-                    </span>
-                    <span className="text-[11px] text-gray-500 flex items-center gap-1.5 mt-0.5">
-                      {qaaFile.size}
-                      <span>•</span>
-                      <span className="text-emerald-600 font-semibold flex items-center gap-1">
-                        <FiCheckCircle className="w-3.5 h-3.5" /> Completed
-                      </span>
-                    </span>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setQaaFile(null);
-                    dispatch(
-                      setAssessorDetails({
-                        qaaCertificateAssetId: "",
-                        qaaCertificateName: "",
-                        qaaCertificateSize: "",
-                      }),
-                    );
-                  }}
-                  className="p-1.5 text-gray-400 hover:text-red-500 transition-colors cursor-pointer"
-                >
-                  <FiTrash2 className="w-4.5 h-4.5" />
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* IQM Certificate Upload */}
-          <div className="mb-2">
-            <label className="block text-sm font-semibold text-neutral-primary mb-1.5">
-              IQM Certificate{" "}
-              <span className="text-xs font-normal text-neutral-secondary">
-                (Optional if QAA is uploaded)
-              </span>
-            </label>
-
-            <label
-              className={`w-full min-h-28 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center p-4 text-center cursor-pointer transition-all ${
-                errors.iqm || (errors.certificates && !iqmFile)
-                  ? "border-red-500 bg-red-50/50"
-                  : "border-red-300 bg-red-50/20 hover:bg-red-50/40"
-              }`}
-            >
-              <input
-                type="file"
-                accept=".jpg,.png,.pdf,.doc,.docx,.mp4,.webp"
-                className="hidden"
-                disabled={uploadingType === "iqm"}
-                onChange={(e) => handleCertificateUpload(e, "iqm")}
-              />
-              <FiUpload className="w-5 h-5 text-primary-solid mb-1.5" />
-              <span className="font-bold text-xs text-primary-solid">
-                Upload Certificate
-              </span>
-              <span className="text-[10px] text-gray-400 mt-0.5">
-                JPG, PNG, PDF, Docs, Mp4, or WebP
-              </span>
-            </label>
-            {errors.iqm && (
-              <span className="text-primary-solid text-xs font-semibold mt-1 block">
-                {errors.iqm}
-              </span>
-            )}
-
-            {/* IQM Uploading Progress Bar */}
-            {uploadingType === "iqm" && (
-              <div className="mt-3 w-full border border-primary-solid/20 bg-primary-solid/5 rounded-xl p-3 flex flex-col gap-2 shadow-xs">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="w-4 h-4 border-2 border-primary-solid border-t-transparent rounded-full animate-spin shrink-0" />
-                    <span className="text-xs font-semibold text-neutral-primary truncate">
-                      Uploading {uploadingFileName || "Certificate"}...
-                    </span>
-                  </div>
-                  <span className="text-xs font-bold text-primary-solid shrink-0">
-                    {uploadProgress}%
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden">
-                  <div
-                    className="bg-primary-solid h-full rounded-full transition-all duration-200 ease-out"
-                    style={{ width: `${uploadProgress}%` }}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* IQM File Completed Item */}
-            {iqmFile && !uploadingType && (
-              <div className="mt-3 w-full border border-gray-200 bg-white rounded-xl p-3 flex items-center justify-between shadow-xs">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-red-50 flex items-center justify-center text-primary-solid">
-                    <FaFilePdf className="w-5 h-5" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-xs font-bold text-neutral-primary">
-                      {iqmFile.name}
-                    </span>
-                    <span className="text-[11px] text-gray-500 flex items-center gap-1.5 mt-0.5">
-                      {iqmFile.size}
-                      <span>•</span>
-                      <span className="text-emerald-600 font-semibold flex items-center gap-1">
-                        <FiCheckCircle className="w-3.5 h-3.5" /> Completed
-                      </span>
-                    </span>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIqmFile(null);
-                    dispatch(
-                      setAssessorDetails({
-                        iqmCertificateAssetId: "",
-                        iqmCertificateName: "",
-                        iqmCertificateSize: "",
-                      }),
-                    );
-                  }}
-                  className="p-1.5 text-gray-400 hover:text-red-500 transition-colors cursor-pointer"
-                >
-                  <FiTrash2 className="w-4.5 h-4.5" />
-                </button>
-              </div>
-            )}
-          </div>
+          <CertificateUploadField
+            label="CV / Resume"
+            hint="(Optional)"
+            buttonText="Upload CV"
+            accept=".pdf,.doc,.docx"
+            acceptText="PDF or Docs"
+            file={files.resume}
+            error={errors.resume}
+            uploading={uploadingType === "resume"}
+            uploadingFileName={uploadingFileName}
+            uploadProgress={uploadProgress}
+            anyUploading={!!uploadingType}
+            onChange={(e) => handleCertificateUpload(e, "resume")}
+            onRemove={() => setFile("resume", null)}
+          />
         </div>
 
         {/* Bottom Actions */}
