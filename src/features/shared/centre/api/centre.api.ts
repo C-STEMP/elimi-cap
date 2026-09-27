@@ -117,7 +117,8 @@ export interface CentreApplicationsSummary {
 export type AssessorQualification = "QAA" | "IQM" | "IV" | "EV";
 
 export interface AssessorCertificate {
-  kind: "qaa" | "iqm" | "ev";
+  // qaa/iqm/ev derive qualifications; rpl is a supporting document only.
+  kind: "qaa" | "iqm" | "ev" | "rpl";
   assetId: string;
   url: string;
 }
@@ -130,6 +131,7 @@ export interface AssessorSnapshot {
   sectors: { id: string; name: string }[];
   yearsOfExperience?: number | null;
   certificates: AssessorCertificate[];
+  resume?: { assetId: string; url: string | null } | null;
 }
 
 export interface CentreAssessorListItem extends AssessorSnapshot {

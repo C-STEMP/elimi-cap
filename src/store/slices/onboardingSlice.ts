@@ -122,6 +122,12 @@ export interface AssessorDetailsState {
   iqmCertificateAssetId?: string;
   iqmCertificateName?: string;
   iqmCertificateSize?: string;
+  rplCertificateAssetId?: string;
+  rplCertificateName?: string;
+  rplCertificateSize?: string;
+  resumeAssetId?: string;
+  resumeName?: string;
+  resumeSize?: string;
 }
 
 export interface AssessorIdentityState {
@@ -285,6 +291,12 @@ const initialState: OnboardingState = {
     iqmCertificateAssetId: "",
     iqmCertificateName: "",
     iqmCertificateSize: "",
+    rplCertificateAssetId: "",
+    rplCertificateName: "",
+    rplCertificateSize: "",
+    resumeAssetId: "",
+    resumeName: "",
+    resumeSize: "",
   },
   assessorIdentity: {
     nin: "",

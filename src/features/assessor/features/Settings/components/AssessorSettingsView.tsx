@@ -67,7 +67,7 @@ export const AssessorSettingsView: React.FC = () => {
   const [previewCertificate, setPreviewCertificate] =
     useState<CertificatePreviewData | null>(null);
 
-  type ReplaceableCertKind = "qaa" | "iqm" | "ev";
+  type ReplaceableCertKind = "qaa" | "iqm" | "ev" | "rpl" | "resume";
   const replaceFileInputRef = useRef<HTMLInputElement>(null);
   const [pendingReplaceKind, setPendingReplaceKind] =
     useState<ReplaceableCertKind | null>(null);
@@ -93,13 +93,18 @@ export const AssessorSettingsView: React.FC = () => {
         toast({
           type: "error",
           title: "Upload Failed",
-          description: `Failed to upload ${kind.toUpperCase()} certificate.`,
+          description:
+            kind === "resume"
+              ? "Failed to upload CV."
+              : `Failed to upload ${kind.toUpperCase()} certificate.`,
         });
         return;
       }
-      await patchAssessorProfileMutation.mutateAsync({
-        certifications: { [kind]: { certificateAssetId: asset.assetId } },
-      });
+      await patchAssessorProfileMutation.mutateAsync(
+        kind === "resume"
+          ? { resumeAssetId: asset.assetId }
+          : { certifications: { [kind]: { certificateAssetId: asset.assetId } } },
+      );
     } catch {
       /* empty */
     } finally {
@@ -836,6 +841,10 @@ export const AssessorSettingsView: React.FC = () => {
                         title: "EV Certificate",
                         subtitle: "External Verifier · Completed",
                       },
+                      rpl: {
+                        title: "RPL Assessor Certificate",
+                        subtitle: "Supporting document · Completed",
+                      },
                     };
 
                     const certificatesList = assessorProfile?.certificates?.length
@@ -861,6 +870,18 @@ export const AssessorSettingsView: React.FC = () => {
                                   name:
                                     savedAssessorDetails.iqmCertificateName ||
                                     "IQM Certificate",
+                                  url: "",
+                                },
+                              ]
+                            : []),
+                          ...(savedAssessorDetails?.rplCertificateAssetId
+                            ? [
+                                {
+                                  kind: "rpl",
+                                  assetId: savedAssessorDetails.rplCertificateAssetId,
+                                  name:
+                                    savedAssessorDetails.rplCertificateName ||
+                                    "RPL Assessor Certificate",
                                   url: "",
                                 },
                               ]
@@ -903,8 +924,8 @@ export const AssessorSettingsView: React.FC = () => {
                           </div>
 
                           <div className="flex items-center gap-2 shrink-0">
-                            {(["qaa", "iqm", "ev"] as const).includes(
-                              kindKey as ReplaceableCertKind,
+                            {(["qaa", "iqm", "ev", "rpl"] as string[]).includes(
+                              kindKey,
                             ) && (
                               <button
                                 type="button"
@@ -950,6 +971,112 @@ export const AssessorSettingsView: React.FC = () => {
                     });
                   })()}
                 </div>
+
+                {(() => {
+                    const hasRpl = assessorProfile?.certificates?.length
+                      ? assessorProfile.certificates.some((c) => c.kind === "rpl")
+                      : !!savedAssessorDetails?.rplCertificateAssetId;
+                    const resume =
+                      assessorProfile?.resume ??
+                      (savedAssessorDetails?.resumeAssetId
+                        ? { assetId: savedAssessorDetails.resumeAssetId, url: null }
+                        : null);
+
+                    const rows: {
+                      kind: "rpl" | "resume";
+                      title: string;
+                      subtitle: string;
+                      asset: { assetId: string; url: string | null } | null;
+                    }[] = [
+                      ...(hasRpl
+                        ? []
+                        : [
+                            {
+                              kind: "rpl" as const,
+                              title: "RPL Assessor Certificate",
+                              subtitle: "Optional supporting document · Not uploaded",
+                              asset: null,
+                            },
+                          ]),
+                      {
+                        kind: "resume",
+                        title: "CV / Resume",
+                        subtitle: resume
+                          ? "Uploaded · Completed"
+                          : "Optional · Not uploaded",
+                        asset: resume,
+                      },
+                    ];
+
+                    return (
+                      <div className="flex flex-col gap-3">
+                        {rows.map((row) => (
+                          <div
+                            key={row.kind}
+                            className="bg-[#F8F9FA] p-4.5 rounded-2xl border border-gray-100 flex items-center justify-between gap-4"
+                          >
+                            <div className="flex items-center gap-3.5">
+                              <div className="w-10 h-10 rounded-xl bg-pink-100 text-pink-700 flex items-center justify-center shrink-0 font-bold text-xs">
+                                <FiFileText className="w-5 h-5" />
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="font-extrabold text-sm text-neutral-primary">
+                                  {row.title}
+                                </span>
+                                <span className="text-xs text-gray-400 font-medium">
+                                  {row.subtitle}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => triggerReplaceCertificate(row.kind)}
+                                disabled={replacingKind === row.kind}
+                                className="w-9 h-9 rounded-xl bg-gray-200/70 hover:bg-amber-50 text-gray-600 hover:text-[#FBAB2A] flex items-center justify-center transition-colors cursor-pointer shadow-2xs disabled:opacity-50 disabled:cursor-not-allowed"
+                                title={row.asset ? "Replace" : "Upload"}
+                                aria-label={`${row.asset ? "Replace" : "Upload"} ${row.title}`}
+                              >
+                                {row.asset ? (
+                                  <FiRefreshCw
+                                    className={`w-4.5 h-4.5 ${
+                                      replacingKind === row.kind ? "animate-spin" : ""
+                                    }`}
+                                  />
+                                ) : (
+                                  <FiUpload
+                                    className={`w-4.5 h-4.5 ${
+                                      replacingKind === row.kind ? "animate-pulse" : ""
+                                    }`}
+                                  />
+                                )}
+                              </button>
+
+                              {row.asset && (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setPreviewCertificate({
+                                      title: row.title,
+                                      subtitle: row.subtitle,
+                                      url: row.asset?.url || undefined,
+                                      assetId: row.asset?.assetId || undefined,
+                                    })
+                                  }
+                                  className="w-9 h-9 rounded-xl bg-gray-200/70 hover:bg-[#FCE8EC] text-gray-600 hover:text-[#a31d38] flex items-center justify-center transition-colors cursor-pointer shadow-2xs"
+                                  title="Preview"
+                                  aria-label={`Preview ${row.title}`}
+                                >
+                                  <FiEye className="w-4.5 h-4.5" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
 
                 <input
                   ref={replaceFileInputRef}
