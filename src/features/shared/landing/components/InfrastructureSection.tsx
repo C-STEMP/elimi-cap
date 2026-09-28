@@ -1,5 +1,5 @@
-import Image from "next/image";
 import { landingImg1 } from "@/assets";
+import Image from "next/image";
 
 const STATS = [
   { value: "14,800+", label: "Accredited Centres" },
@@ -34,7 +34,7 @@ export function InfrastructureSection() {
             </h2>
 
             <p className="mt-4 text-base leading-relaxed text-black sm:text-lg lg:pr-4">
-              ELIMI is Nigeria&apos;s unified skilled-trades ecosystem that
+              ELIMI is Africa&apos;s unified skilled-trades ecosystem that
               consolidates training, regulatory qualification, and placement
               into a single platform. We believe the skilled-trades sector needs
               absolute trust. By pairing structured online training with
