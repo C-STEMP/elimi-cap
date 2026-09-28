@@ -61,10 +61,11 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
+      { url: "/favicon.ico" },
       { url: "/icon.ico" },
       { url: "/icon.png", type: "image/png", sizes: "512x512" },
     ],
-    apple: "/apple-icon.icon",
+    apple: "/apple-icon.png",
   },
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_APP_URL ||
