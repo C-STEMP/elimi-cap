@@ -2,16 +2,10 @@
 
 import React from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { ASSETS_URL } from "@/assets";
 
 export const LearningPromoCard: React.FC = () => {
-  const router = useRouter();
-
-  const handleStartLearning = () => {
-    router.push("/dashboard/settings");
-  };
-
   return (
     <div className="bg-[#FEEED3] rounded-[22px] p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg border border-[#fae7c9] h-full">
       <div className="flex-1 flex flex-col justify-between h-full items-start">
@@ -24,13 +18,12 @@ export const LearningPromoCard: React.FC = () => {
             needed for certification.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={handleStartLearning}
-          className="bg-[#fbab2a] hover:bg-[#e89b1f] text-white font-semibold text-sm px-6 py-2.5 rounded-xl transition-all shadow-lg cursor-pointer active:scale-95"
+        <Link
+          href="https://training.elimi.africa/"
+          className="bg-[#fbab2a] hover:bg-[#e89b1f] text-white font-semibold text-sm px-6 py-2.5 rounded-xl transition-all shadow-lg cursor-pointer active:scale-95 inline-flex items-center justify-center"
         >
           Start Learning
-        </button>
+        </Link>
       </div>
 
       <div className="relative w-36 h-36 lg:w-44 lg:h-44 shrink-0 flex items-center justify-center self-center">

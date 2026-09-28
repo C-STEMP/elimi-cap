@@ -13,9 +13,9 @@ import { clearTokens } from "@/src/lib/auth-storage";
 const NAV_LINKS = [
   { label: "Home", href: "#" },
   { label: "About Us", href: "#about" },
-  { label: "FAQs", href: "#faqs" },
-  { label: "Portal", href: "#pipeline" },
-  { label: "Workforce Hub", href: "#pillars" },
+  { label: "CAP", href: "#cap" },
+  { label: "Learn", href: "https://training.elimi.africa/" },
+  { label: "Workmaster", href: "#workmaster" },
   { label: "Contact Us", href: "#contact" },
 ];
 
@@ -107,7 +107,7 @@ export function Navbar() {
             href="/login"
             className="whitespace-nowrap text-xs lg:text-sm xl:text-base font-bold text-white transition-colors hover:text-secondary"
           >
-            Login
+            Sign In
           </Link>
           <Link
             href="/register"
@@ -177,7 +177,7 @@ export function Navbar() {
                 onClick={() => setMobileMenuOpen(false)}
                 className="text-center py-2 text-base font-medium text-white hover:text-secondary"
               >
-                Login
+                Sign In
               </Link>
               <Link
                 href="/register"

@@ -2,8 +2,8 @@ import Image from "next/image";
 import { landingImg1 } from "@/assets";
 
 const STATS = [
-  { value: "14,800+", label: "Accredited Centers" },
-  { value: "98%", label: "Certification Rate" },
+  { value: "14,800+", label: "Accredited Centres" },
+  { value: "280+", label: "Certification Programmes" },
   { value: "45+", label: "Trade Curriculums" },
   { value: "100%", label: "Credential Safety" },
 ];
@@ -34,13 +34,13 @@ export function InfrastructureSection() {
             </h2>
 
             <p className="mt-4 text-base leading-relaxed text-black sm:text-lg lg:pr-4">
-              ELIMI is Nigeria's unified skilled-trades ecosystem that
+              ELIMI is Nigeria&apos;s unified skilled-trades ecosystem that
               consolidates training, regulatory qualification, and placement
               into a single platform. We believe the skilled-trades sector needs
-              absolute trust. By integrating online standard training with
-              rigorous physical evaluations under accredited Awarding Bodies, we
+              absolute trust. By pairing structured online training with
+              rigorous physical evaluation under accredited Awarding Bodies, we
               guarantee that an ELIMI credential represents real, fraud-free
-              competent ability.
+              competence.
             </p>
 
             {/* 2x2 Metric Cards Grid */}

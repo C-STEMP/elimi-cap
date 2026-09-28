@@ -1,13 +1,13 @@
 const PILLARS = [
   {
     num: "01",
-    title: "Structured TVET Curricula",
+    title: "Structured TVET Delivery",
     desc: "Trade, level, module, unit, lesson and activity hierarchy that mirrors how NSQ vocational programmes are actually built.",
   },
   {
     num: "02",
-    title: "Standard Interoperability",
-    desc: "Upload and launch externally authored SCORM, xAPI and HTML5 packages — authoring tools are first‑class inputs, not an afterthought.",
+    title: "Content Interoperability",
+    desc: "Upload and launch externally authored SCORM, xAPI and HTML5 packages — authoring tools are first-class inputs, not an afterthought.",
   },
   {
     num: "03",
@@ -22,27 +22,27 @@ const PILLARS = [
   {
     num: "05",
     title: "Institutional Reporting",
-    desc: "Progress, completion, assessment and evidence reporting filtered by cohort, tenant, programme or state — visibility for funders and Management.",
+    desc: "Progress, completion, assessment and evidence reporting filtered by cohort, tenant, programme or state, visibility for funders and management.",
   },
   {
     num: "06",
     title: "Flexible Access & Commercials",
-    desc: "Institutional bulk, sponsored, voucher, subscription and invoice‑based access — designed for how programmes are really funded.",
+    desc: "Institutional bulk, sponsored, voucher, subscription and invoice-based access, designed for how programmes are really funded.",
   },
   {
     num: "07",
     title: "White-Label Ready",
-    desc: "Tenant branding so institutional clients can deliver learning in their own identity, on architecture prepared for it from day one.",
+    desc: "Tenant branding so institutional clients can deliver training in their own identity, on architecture prepared for it from day one.",
   },
   {
     num: "08",
     title: "Mobile-First & Accessible",
-    desc: "The full learner journey — access, learn, resume, complete — works on the phones trainees actually use.",
+    desc: "The full learner journey, access, learn, resume, complete — works on the phones trainees actually use.",
   },
   {
     num: "09",
     title: "AI-Ready & Scalable",
-    desc: "Data structures and xAPI‑ready records that won’t block future AI tutoring, feedback and analytics — or growth to more trades, states and partners.",
+    desc: "Data structures and xAPI-ready records that won't block future AI tutoring, feedback and analytics, or growth to more trades, states and partners.",
   },
 ];
 
@@ -55,8 +55,7 @@ export function PillarsSection() {
             Built On <span className="text-primary">Nine Product</span> Pillars
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-sm sm:text-base lg:text-lg text-black leading-relaxed">
-            A comprehensive solution designed to handle every aspect of
-            technical and vocational education management.
+            The technical foundation behind every certificate ELIMI issues — built for scale, built for more than one market.
           </p>
         </div>
 

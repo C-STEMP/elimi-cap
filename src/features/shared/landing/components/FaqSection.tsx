@@ -4,32 +4,32 @@ import { useState } from "react";
 
 const FAQS = [
   {
-    q: "What is Elimi and who is it for?",
-    a: "Elimi is a comprehensive TVET (Technical and Vocational Education and Training) platform designed for learners, training centers, instructors, and employers across Nigeria.",
+    q: "What is NSQ, and why does it matter?",
+    a: "NSQ (National Skills Qualification) is Nigeria's official, NBTE-issued standard for trade competence. An NSQ certificate from ELIMI proves your skills are independently verified, not just claimed. It's the first framework ELIMI is built on, with more countries to follow.",
   },
   {
-    q: "How do I enroll in a TVET training program?",
-    a: "You can register an account on Elimi, select your preferred skilled trade, and choose an accredited training center nearby to begin your course.",
+    q: "Do I need to attend a physical class to get certified?",
+    a: "No. If you already work in your trade, Recognition of Prior Learning (RPL) assesses the skills you have — no classroom needed. New to the trade? ELIMI Learn prepares you first.",
   },
   {
-    q: "Are the certifications recognized nationwide?",
-    a: "Yes, all certifications issued through Elimi align with the National Vocational Qualification Framework (NVQF), NBTE, and NABTEB standards.",
+    q: "How long does certification take?",
+    a: "Your assessment centre reviews your application and evidence within 7 days, then schedules a panel interview within 3 days after.",
   },
   {
-    q: "How long does training and certification take?",
-    a: "Program durations vary based on the specific trade module, typically ranging from a few weeks of intensive training to several months of competency-based practice.",
+    q: "What happens if I don't pass my assessment?",
+    a: "You won't be certified until you meet the standard, but you'll get clear feedback and can retrain to close the gap before reapplying.",
   },
   {
-    q: "Can employers verify credentials on the platform?",
-    a: "Yes! Elimi features an instant online verification portal where corporate and public employers can verify student credentials using a unique registration code.",
+    q: "Is my certificate really recognised?",
+    a: "Yes. Every ELIMI certificate is issued under an accredited body, currently NBTE and NSQ in Nigeria, and passes an internal and external quality check.",
   },
   {
-    q: "Is Elimi accessible on mobile devices?",
-    a: "Absolutely. Elimi is built mobile-first and optimized for low-bandwidth environments so students can learn and track progress anywhere.",
+    q: "How do employers find and verify me on Workmaster?",
+    a: "Your certificate lives on a public, verifiable profile. Employers confirm it's real without contacting you directly.",
   },
   {
-    q: "What support is available for training institutes?",
-    a: "Training institutes get access to dedicated institutional management portals, standardized curricula, assessor tools, and compliance reporting support.",
+    q: "Can institutions register a whole workforce at once?",
+    a: "Yes — ELIMI supports bulk enrollment for organisations certifying multiple staff across regions.",
   },
 ];
 
@@ -48,7 +48,7 @@ export function FaqSection() {
             Frequently Asked Questions
           </h2>
           <p className="mt-3 text-base text-gray-600">
-            Find answers to common questions about our platform and services.
+            Everything you need to know about training, certification, and getting hired.
           </p>
         </div>
 
