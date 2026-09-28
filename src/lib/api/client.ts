@@ -11,6 +11,7 @@ import {
   getPersona,
   savePersona,
   getCentreId,
+  getOnboardedStatus,
 } from "@/src/lib/auth-storage";
 
 function syncPersonaFromRoute(): void {
@@ -35,8 +36,13 @@ function syncPersonaFromRoute(): void {
       savePersona("candidate");
     }
   } else if (path.startsWith("/dashboard")) {
-    // /dashboard can be candidate or assessor workspace; do not overwrite if assessor
-    if (!stored || (stored !== "assessor" && stored !== "centre" && stored !== "awarding_body")) {
+    // /dashboard can be candidate or assessor workspace; do not overwrite if assessor.
+    // Users who haven't onboarded have no role yet — defaulting them to candidate
+    // would make RouteGuard skip Welcome/Role Selection.
+    if (
+      getOnboardedStatus() &&
+      (!stored || (stored !== "assessor" && stored !== "centre" && stored !== "awarding_body"))
+    ) {
       savePersona("candidate");
     }
   } else if (path.startsWith("/onboarding")) {
