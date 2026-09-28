@@ -6,11 +6,12 @@ import { useToast } from "@/src/components/ui/toast";
 export function ContactSection() {
   const { toast } = useToast();
   const [formData, setFormData] = useState({
-    fullName: "",
+    firstName: "",
+    lastName: "",
+    middleName: "",
+    organization: "",
     email: "",
     phone: "",
-    organization: "",
-    message: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -23,11 +24,12 @@ export function ContactSection() {
       setIsSubmitting(false);
       setSubmitted(true);
       setFormData({
-        fullName: "",
+        firstName: "",
+        lastName: "",
+        middleName: "",
+        organization: "",
         email: "",
         phone: "",
-        organization: "",
-        message: "",
       });
 
       toast({
@@ -56,7 +58,7 @@ export function ContactSection() {
             Contact Us
           </h2>
           <p className="mt-3 text-base text-white/80">
-            Reach out to our team for inquiries and support.
+            Questions about training, certification, or partnering with us? We&apos;re glad to help.
           </p>
         </div>
 
@@ -69,28 +71,28 @@ export function ContactSection() {
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
             <div>
               <label className="block text-xs font-semibold text-white/80 uppercase tracking-wider mb-2">
-                Full Name
+                First Name
               </label>
               <input
                 type="text"
                 required
-                value={formData.fullName}
-                onChange={(e) => update("fullName", e.target.value)}
-                placeholder="Enter your full name"
+                value={formData.firstName}
+                onChange={(e) => update("firstName", e.target.value)}
+                placeholder="Enter your first name"
                 className="w-full rounded-lg border border-white/20 bg-white/10 px-4 py-3 text-sm text-white placeholder-white/40 focus:border-border-secondary focus:outline-none"
               />
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-white/80 uppercase tracking-wider mb-2">
-                Email Address
+                Last Name
               </label>
               <input
-                type="email"
+                type="text"
                 required
-                value={formData.email}
-                onChange={(e) => update("email", e.target.value)}
-                placeholder="Enter your email address"
+                value={formData.lastName}
+                onChange={(e) => update("lastName", e.target.value)}
+                placeholder="Enter your last name"
                 className="w-full rounded-lg border border-white/20 bg-white/10 px-4 py-3 text-sm text-white placeholder-white/40 focus:border-border-secondary focus:outline-none"
               />
             </div>
@@ -99,17 +101,13 @@ export function ContactSection() {
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
             <div>
               <label className="block text-xs font-semibold text-white/80 uppercase tracking-wider mb-2">
-                Phone Number
+                Middle Name
               </label>
               <input
-                type="tel"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                value={formData.phone}
-                onChange={(e) =>
-                  update("phone", e.target.value.replace(/[^0-9]/g, ""))
-                }
-                placeholder="Enter your phone number"
+                type="text"
+                value={formData.middleName}
+                onChange={(e) => update("middleName", e.target.value)}
+                placeholder="Enter your middle name"
                 className="w-full rounded-lg border border-white/20 bg-white/10 px-4 py-3 text-sm text-white placeholder-white/40 focus:border-border-secondary focus:outline-none"
               />
             </div>
@@ -128,18 +126,38 @@ export function ContactSection() {
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-white/80 uppercase tracking-wider mb-2">
-              Message
-            </label>
-            <textarea
-              rows={4}
-              required
-              value={formData.message}
-              onChange={(e) => update("message", e.target.value)}
-              placeholder="How can we help you?"
-              className="w-full rounded-lg border resize-none border-white/20 bg-white/10 px-4 py-3 text-sm text-white placeholder-white/40 focus:border-secondary focus:outline-none"
-            />
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+            <div>
+              <label className="block text-xs font-semibold text-white/80 uppercase tracking-wider mb-2">
+                Email
+              </label>
+              <input
+                type="email"
+                required
+                value={formData.email}
+                onChange={(e) => update("email", e.target.value)}
+                placeholder="Enter your email address"
+                className="w-full rounded-lg border border-white/20 bg-white/10 px-4 py-3 text-sm text-white placeholder-white/40 focus:border-border-secondary focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-white/80 uppercase tracking-wider mb-2">
+                Phone No.
+              </label>
+              <input
+                type="tel"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                required
+                value={formData.phone}
+                onChange={(e) =>
+                  update("phone", e.target.value.replace(/[^0-9]/g, ""))
+                }
+                placeholder="Enter your phone number"
+                className="w-full rounded-lg border border-white/20 bg-white/10 px-4 py-3 text-sm text-white placeholder-white/40 focus:border-border-secondary focus:outline-none"
+              />
+            </div>
           </div>
 
           <div className="text-center pt-2">
@@ -151,7 +169,7 @@ export function ContactSection() {
               {isSubmitting
                 ? "Sending..."
                 : submitted
-                  ? "Message Sent!"
+                  ? "Enquiry Sent!"
                   : "Send Enquiry"}
             </button>
           </div>

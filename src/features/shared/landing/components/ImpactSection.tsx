@@ -6,44 +6,23 @@ const TESTIMONIALS = [
   {
     rating: 5,
     quote:
-      "The hands-on curriculum gave me real practical skills. I was certified within months and got hired immediately by a local construction firm.",
-    name: "Grace Adams",
-    role: "Graduate, Electrical Installation",
+      "Skill was never my problem, proof was. E-limi's RPL pathway turned my years of experience into a qualification I could actually show for it, no classroom needed.",
+    name: "Emeka Osadebe",
+    role: "Carpenter, Enugu",
   },
   {
     rating: 5,
     quote:
-      "This platform streamlined our entire assessment framework. We can now issue verifiable credentials with confidence to thousands of trainees.",
-    name: "Marcus Reed",
-    role: "Director, Technical Training Institute",
+      "I used to skip safety gear to work faster. ELIMI's practical assessment wouldn't pass me until I did it right, and now I run my own site the same way. My clients noticed, and my crew hasn't had an injury since.",
+    name: "Chidinma Okafor",
+    role: "Mason, Port Harcourt",
   },
   {
     rating: 5,
     quote:
-      "Elimi has transformed how we source verified skilled trade talent. It's the most reliable platform in Nigeria for finding certified workers.",
-    name: "Tunde Bello",
-    role: "Operations Manager, BuildCorp",
-  },
-  {
-    rating: 5,
-    quote:
-      "As a working mother, the flexible learning schedule allowed me to upskill without compromising my family responsibilities. Now I earn twice my previous salary.",
-    name: "Amina Yusuf",
-    role: "Certified Tailor & Entrepreneur",
-  },
-  {
-    rating: 5,
-    quote:
-      "The mobile-first approach means my students in rural areas can access quality training materials even with limited internet connectivity.",
-    name: "Dr. Chidi Okafor",
-    role: "Regional Training Coordinator",
-  },
-  {
-    rating: 5,
-    quote:
-      "We've reduced credential verification time from weeks to seconds. Elimi's instant verification portal is a game-changer for our hiring process.",
-    name: "Funke Adeyemi",
-    role: "HR Director, Industrial Solutions Ltd",
+      "I'd wired buildings for over a decade with nothing to show a client but my word. ELIMI's assessment gave me an NSQ certificate I could put in front of contractors — I've picked up three new site contracts since.",
+    name: "Ibrahim Suleiman",
+    role: "Electrician, Kano",
   },
 ];
 
@@ -67,7 +46,7 @@ export function ImpactSection() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const maxIndex = TESTIMONIALS.length - cardsPerView;
+  const maxIndex = Math.max(0, TESTIMONIALS.length - cardsPerView);
 
   const handlePrev = () => {
     setActiveIndex((prev) => (prev === 0 ? maxIndex : prev - 1));
@@ -91,8 +70,7 @@ export function ImpactSection() {
             Our <span className="text-secondary">Positive</span> Social Impact
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-sm sm:text-base lg:text-lg text-black leading-relaxed">
-            Hear from real students and partners who have experienced the
-            difference.
+            Real outcomes, wherever skilled work happens.
           </p>
         </div>
 
@@ -143,47 +121,49 @@ export function ImpactSection() {
             </div>
           </div>
 
-          <div className="mt-8 flex items-center justify-center gap-6">
-            <button
-              onClick={handlePrev}
-              className="flex h-11 w-11 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 shadow-md transition-all hover:bg-secondary hover:text-white hover:border-secondary cursor-pointer"
-              aria-label="Previous testimonial"
-            >
-              <svg
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+          {maxIndex > 0 && (
+            <div className="mt-8 flex items-center justify-center gap-6">
+              <button
+                onClick={handlePrev}
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 shadow-md transition-all hover:bg-secondary hover:text-white hover:border-secondary cursor-pointer"
+                aria-label="Previous testimonial"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 19l-7-7 7-7"
-                />
-              </svg>
-            </button>
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 19l-7-7 7-7"
+                  />
+                </svg>
+              </button>
 
-            <button
-              onClick={handleNext}
-              className="flex h-11 w-11 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 shadow-md transition-all hover:bg-secondary hover:text-white hover:border-secondary cursor-pointer"
-              aria-label="Next testimonial"
-            >
-              <svg
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+              <button
+                onClick={handleNext}
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 shadow-md transition-all hover:bg-secondary hover:text-white hover:border-secondary cursor-pointer"
+                aria-label="Next testimonial"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
-            </button>
-          </div>
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </section>

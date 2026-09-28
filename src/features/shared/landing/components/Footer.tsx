@@ -19,10 +19,11 @@ export function Footer() {
                 style={{ width: "auto" }}
               />
             </Link>
-            <p className="mt-5 max-w-sm text-sm text-white/70 leading-relaxed font-normal">
-              Nigeria&apos;s leading platform for TVET training, certification,
-              and trade job placements. Built on a unified identity model for
-              seamless skills progression.
+            <p className="mt-5 text-base font-semibold text-white">
+              Nigeria&apos;s unified path from skill to certification to career.
+            </p>
+            <p className="mt-2 max-w-sm text-sm text-white/70 leading-relaxed font-normal">
+              ELIMI is the unified path from skill to career, built on recognised qualifications.
             </p>
           </div>
 
@@ -40,18 +41,18 @@ export function Footer() {
                   </Link>
                 </li>
                 <li>
-                  <Link href="#pipeline" className="hover:text-white transition-colors">
+                  <Link href="#cap" className="hover:text-white transition-colors">
                     CAP
                   </Link>
                 </li>
                 <li>
-                  <Link href="#pipeline" className="hover:text-white transition-colors">
+                  <Link href="https://training.elimi.africa/" className="hover:text-white transition-colors">
                     Learn
                   </Link>
                 </li>
                 <li>
-                  <Link href="#pipeline" className="hover:text-white transition-colors">
-                    WorkMasters
+                  <Link href="#workmaster" className="hover:text-white transition-colors">
+                    WorkMaster
                   </Link>
                 </li>
                 <li>

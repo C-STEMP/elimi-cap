@@ -28,7 +28,7 @@ export function HeroSection() {
             data-aos="fade-down"
             className="inline-flex items-center rounded-full bg-secondary/10 px-3.5 lg:px-5 py-1 text-[8px] lg:text-base font-semibold tracking-wider text-secondary uppercase"
           >
-            NIGERIA&apos;S FIRST NATIONWIDE TVET SYSTEM PLATFORM
+            Africa’s Unified Skilled-Trades Ecosystem
           </div>
 
           <h1
@@ -36,7 +36,7 @@ export function HeroSection() {
             data-aos-delay="100"
             className="mt-3 max-w-5xl text-2xl font-extrabold leading-tight tracking-tight sm:text-3xl md:text-4xl lg:text-[44px]"
           >
-            Nigeria&apos;s platform for getting{" "}
+            Africa&apos;s platform for getting{" "}
             <span className="text-secondary italic">trained</span>,{" "}
             <span className="text-[#CB7288] italic">certified</span>, and{" "}
             <span className="text-[#FBCB7C] italic">hired</span> in the skilled
@@ -48,10 +48,9 @@ export function HeroSection() {
             data-aos-delay="200"
             className="mt-4 max-w-5xl font-medium text-sm text-white sm:text-sm lg:text-2xl"
           >
-            One-stop platform for non-formal TVET (Technical &amp; Vocational
-            Education &amp; Training), NBTE TVET National Qualifications
-            Framework, and NABTEB Modular Certifications (under 100 million
-            tradesmen)
+            One login connects you across ELIMI Learn (NOS training), ELIMI CAP
+            (National qualifications and RPL), and WorkMaster (verified hiring
+            directories).
           </p>
 
           <div

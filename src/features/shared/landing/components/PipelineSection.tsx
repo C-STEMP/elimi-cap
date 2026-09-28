@@ -7,49 +7,49 @@ const STEPS = [
     id: "learn",
     title: "Learn",
     titleColor: "text-[#A91D3A]",
-    subtitle: "NSQ-aligned skilled trade e-learning",
+    subtitle: "NOS-aligned skilled trade e-learning",
     bullets: [
-      "National Occupational Standards aligned video lessons & manuals",
-      "Practical pre-requisite prep for carpentry, plumbing, electrical installation",
+      "National Occupational Standards video lessons and manuals",
+      "Practical pre-requisite prep for carpentry, plumbing, electrical, and more",
       "Quizzes and peer discussions with real-time feedback",
       "Generates an academic certificate of course completion",
     ],
-    ctaText: "Get Started",
-    ctaLink: "/register",
+    ctaText: "Learn More",
+    ctaLink: "https://training.elimi.africa/",
     btnStyle: "bg-[#A91D3A] text-white hover:bg-[#8A162D]",
     iconSrc: bookOpenIcon,
     iconAlt: "Book open icon",
   },
   {
-    id: "assessed",
+    id: "cap",
     title: "Get Assessed",
     titleColor: "text-[#E58E00]",
     subtitle: "Competency Assessment Portal",
     bullets: [
-      "Physical test coordination at GIZ & NBTE-approved trade labs",
-      "Robust assessment chain: QAA → IQA → EQA internal & external verification",
-      "Direct connection to recognized National Skills Qualifications Board",
+      "Physical test coordination at QA/NBTE-approved trade centres",
+      "Robust assessment chain: QA → IQA → EQA internal and external verification",
+      "Direct connection to recognised National Skills Qualifications Board",
       "Recognition of Prior Learning (RPL) for seasoned artisans",
     ],
-    ctaText: "Get Assessed",
-    ctaLink: "/onboarding/role-selection",
+    ctaText: "Learn More",
+    ctaLink: "#about",
     btnStyle: "bg-[#E58E00] text-white hover:bg-[#C97C00]",
     iconSrc: quizIcon,
     iconAlt: "Quiz assessment icon",
   },
   {
-    id: "hired",
+    id: "workmaster",
     title: "Get Hired",
     titleColor: "text-black",
     subtitle: "WorkMaster Portal",
     bullets: [
       "Immutable public profile carrying certified digital trade badges",
-      "Employers search, verify, and source talent with 100% credential certainty",
-      "Direct connection with multi-housing developers and corporate sponsors",
+      "Employers search, verify, and hire talent with 100% credential certainty",
+      "Direct connection with corporate sponsors and hiring organisations",
       "Ecosystem tracking showing ongoing professional development",
     ],
-    ctaText: "Join Network",
-    ctaLink: "/register",
+    ctaText: "Learn More",
+    ctaLink: "#about",
     btnStyle: "bg-black text-white hover:bg-slate-800",
     iconSrc: briefcaseIcon,
     iconAlt: "Briefcase icon",
@@ -66,8 +66,7 @@ export function PipelineSection() {
             Pipeline
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-sm sm:text-base lg:text-lg text-black leading-relaxed">
-            A seamless, three-stage pathway connecting candidates from accredited
-            skills training to certified competency assessment and direct employer placement.
+            One login. Three platforms. Every step from the first lesson to the first job, in order.
           </p>
         </div>
 
@@ -75,9 +74,10 @@ export function PipelineSection() {
           {STEPS.map((step, idx) => (
             <div
               key={step.id}
+              id={step.id}
               data-aos="fade-up"
               data-aos-delay={(idx + 1) * 150}
-              className="flex flex-col justify-between rounded-3xl bg-white overflow-hidden transition-all"
+              className="scroll-mt-28 flex flex-col justify-between rounded-3xl bg-white overflow-hidden transition-all"
             >
               <div className="p-4 sm:p-5 md:p-4 lg:p-7 xl:p-8 pb-4">
                 {/* Icon */}
