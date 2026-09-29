@@ -9,6 +9,7 @@ import type {
 
 import {
   useGetInterviewPanel,
+  useGetInterviewSchedule,
   useGetApplicationStages,
   APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
 } from "@/src/features/shared/applications/hooks";
@@ -73,6 +74,7 @@ export const AssessorApplicationStagesList: React.FC<
     )
   );
   const { data: panelData } = useGetInterviewPanel(application.id, { enabled: isInterviewStage });
+  const { data: interviewSchedule } = useGetInterviewSchedule(application.id, { enabled: isInterviewStage });
 
   const hasPendingSignaturesInfo = Array.isArray(pendingSignatures);
 
@@ -328,7 +330,9 @@ export const AssessorApplicationStagesList: React.FC<
           ? (pendingSignatures && pendingSignatures.length > 0
               ? `Awaiting signature from: ${pendingSignatures.map((s) => s.name || "Panel Member").join(", ")}`
               : "Awaiting remaining panel signatures")
-          : "—",
+          : isInterviewOnlyScheduled && interviewSchedule?.scheduledAt
+            ? `Scheduled for: ${formatFriendlyDate(interviewSchedule.scheduledAt)}`
+            : undefined,
       isCollapsible: false,
       isCollapsed: false,
       assessors: panelMembers,

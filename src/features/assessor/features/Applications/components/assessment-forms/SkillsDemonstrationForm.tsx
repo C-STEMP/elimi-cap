@@ -177,10 +177,8 @@ export const SkillsDemonstrationForm: React.FC<
       criteria,
       verdict,
       assessorComments,
-      assessorSigned,
-      assessorSignedAt: assessorSigned
-        ? formData?.assessorSignedAt || new Date().toISOString()
-        : undefined,
+      assessorSigned: true,
+      assessorSignedAt: formData?.assessorSignedAt || new Date().toISOString(),
     });
   };
 

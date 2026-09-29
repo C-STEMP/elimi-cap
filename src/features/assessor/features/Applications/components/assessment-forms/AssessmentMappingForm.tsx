@@ -159,10 +159,8 @@ export const AssessmentMappingForm: React.FC<AssessmentMappingFormProps> = ({
       workplaceContext,
       units,
       overallComments,
-      assessorSigned,
-      assessorSignedAt: assessorSigned
-        ? formData?.assessorSignedAt || new Date().toISOString()
-        : undefined,
+      assessorSigned: true,
+      assessorSignedAt: formData?.assessorSignedAt || new Date().toISOString(),
     });
   };
 

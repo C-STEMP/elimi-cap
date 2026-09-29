@@ -193,10 +193,10 @@ export const DetailStagesList: React.FC<DetailStagesListProps> = ({
       {/* Stage 1: Application Form */}
       <div
         onClick={onOpenCandidateForm}
-        className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-100 shadow-2xs flex items-center justify-between gap-4 cursor-pointer group"
+        className="bg-white rounded-2xl p-4 sm:p-6 border border-gray-100 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 cursor-pointer group hover:border-gray-200 transition-all"
       >
-        <div className="flex flex-col gap-1.5 min-w-0">
-          <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex flex-col gap-1 sm:gap-1.5 min-w-0">
+          <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
             <h3 className="text-black font-bold text-base sm:text-lg lg:text-xl tracking-tight group-hover:text-primary transition-colors">
               Application Form
             </h3>
@@ -210,24 +210,26 @@ export const DetailStagesList: React.FC<DetailStagesListProps> = ({
             Submitted on: {submittedDate}
           </p>
         </div>
-        <Button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onOpenCandidateForm();
-          }}
-          variant="outline"
-          size="sm"
-          className="bg-white! text-[#fbab2a]! border border-gray-200! hover:bg-gray-50! font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl cursor-pointer shrink-0"
-        >
-          View
-        </Button>
+        <div className="flex sm:self-center self-end shrink-0">
+          <Button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenCandidateForm();
+            }}
+            variant="outline"
+            size="sm"
+            className="bg-white! text-[#fbab2a]! border border-gray-200! hover:bg-gray-50! font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl cursor-pointer shrink-0"
+          >
+            View
+          </Button>
+        </div>
       </div>
 
       {/* Stage 2: Payment */}
-      <div className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-100 shadow-2xs flex items-center justify-between gap-4">
-        <div className="flex flex-col gap-1.5 min-w-0">
-          <div className="flex items-center gap-3 flex-wrap">
+      <div className="bg-white rounded-2xl p-4 sm:p-6 border border-gray-100 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+        <div className="flex flex-col gap-1 sm:gap-1.5 min-w-0">
+          <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
             <h3 className="text-black font-bold text-base sm:text-lg lg:text-xl tracking-tight">
               Payment
             </h3>
@@ -245,43 +247,45 @@ export const DetailStagesList: React.FC<DetailStagesListProps> = ({
                 : "Awaiting centre approval"}
           </p>
         </div>
-        {paymentStatus === "Successful" ? (
-          activeFacilitator ||
-          isAtInterviewStage ||
-          isInterviewScheduled ||
-          evidenceStatus === "Marked as complete" ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={onOpenAssignFacilitator}
-              className="bg-white! text-[#fbab2a]! border border-gray-200! hover:bg-gray-50! font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl flex items-center gap-1.5 cursor-pointer shrink-0 shadow-none!"
-            >
-              <FiFlag className="w-4 h-4 text-[#fbab2a]" />
-              <span>Change Facilitator</span>
-            </Button>
+        <div className="flex sm:self-center self-end shrink-0">
+          {paymentStatus === "Successful" ? (
+            activeFacilitator ||
+            isAtInterviewStage ||
+            isInterviewScheduled ||
+            evidenceStatus === "Marked as complete" ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onOpenAssignFacilitator}
+                className="bg-white! text-[#fbab2a]! border border-gray-200! hover:bg-gray-50! font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl flex items-center gap-1.5 cursor-pointer shrink-0 shadow-none!"
+              >
+                <FiFlag className="w-4 h-4 text-[#fbab2a]" />
+                <span>Change Facilitator</span>
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={onOpenAssignFacilitator}
+                className="bg-[#fbab2a]! hover:bg-[#e89b1f]! text-white! font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl cursor-pointer shrink-0 shadow-none!"
+              >
+                Assign Facilitator
+              </Button>
+            )
           ) : (
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={onOpenAssignFacilitator}
-              className="bg-[#fbab2a]! hover:bg-[#e89b1f]! text-white! font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl cursor-pointer shrink-0 shadow-none!"
-            >
-              Assign Facilitator
-            </Button>
-          )
-        ) : (
-          <span className="text-gray-400 font-bold text-sm shrink-0">
-            {paymentDate}
-          </span>
-        )}
+            <span className="text-gray-400 font-bold text-sm shrink-0">
+              {paymentDate}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Stage 3: Folder Arrangement */}
-      <div className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-100 shadow-2xs flex items-center justify-between gap-4">
-        <div className="flex flex-col gap-1.5 min-w-0">
-          <div className="flex items-center gap-3 flex-wrap">
+      <div className="bg-white rounded-2xl p-4 sm:p-6 border border-gray-100 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+        <div className="flex flex-col gap-1 sm:gap-1.5 min-w-0">
+          <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
             <h3 className="text-black font-bold text-base sm:text-lg lg:text-xl tracking-tight">
               Evidence Vault
             </h3>
@@ -305,22 +309,24 @@ export const DetailStagesList: React.FC<DetailStagesListProps> = ({
             Started on: {evidenceDate}
           </p>
         </div>
-        <Button
-          type="button"
-          onClick={() => onOpenEvidenceVault?.()}
-          variant="outline"
-          size="sm"
-          className="bg-white! text-[#fbab2a]! border border-gray-200! hover:bg-gray-50! font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl cursor-pointer shrink-0 shadow-none!"
-        >
-          Evidence Vault
-        </Button>
+        <div className="flex sm:self-center self-end shrink-0">
+          <Button
+            type="button"
+            onClick={() => onOpenEvidenceVault?.()}
+            variant="outline"
+            size="sm"
+            className="bg-white! text-[#fbab2a]! border border-gray-200! hover:bg-gray-50! font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl cursor-pointer shrink-0 shadow-none!"
+          >
+            Evidence Vault
+          </Button>
+        </div>
       </div>
 
       {/* Stage 4: Interview Stage */}
-      <div className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-100 shadow-2xs flex flex-col gap-3">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex flex-col gap-1.5 min-w-0">
-            <div className="flex items-center gap-3 flex-wrap">
+      <div className="bg-white rounded-2xl p-4 sm:p-6 border border-gray-100 shadow-2xs flex flex-col gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+          <div className="flex flex-col gap-1 sm:gap-1.5 min-w-0">
+            <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
               <h3 className="text-black font-bold text-base sm:text-lg lg:text-xl tracking-tight">
                 Interview Stage
               </h3>
@@ -345,50 +351,52 @@ export const DetailStagesList: React.FC<DetailStagesListProps> = ({
             </p>
           </div>
 
-          {interviewStatus === "Completed" ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="bg-white! text-[#fbab2a]! border border-gray-200! hover:bg-gray-50! font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl cursor-pointer shrink-0 shadow-none!"
-            >
-              View
-            </Button>
-          ) : isInterviewScheduled ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={onOpenRescheduleModal}
-              className="bg-white! text-[#fbab2a]! border border-[#fbab2a]! hover:bg-[#FFFBEB]! font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl cursor-pointer shrink-0 shadow-none!"
-            >
-              Reschedule Interview
-            </Button>
-          ) : (
-            <div className="flex flex-col items-end gap-1 shrink-0">
+          <div className="flex sm:self-center self-end shrink-0">
+            {interviewStatus === "Completed" ? (
               <Button
                 type="button"
-                variant="secondary"
+                variant="outline"
                 size="sm"
-                disabled={!isPaymentPaid}
-                onClick={() => isPaymentPaid && onOpenScheduleModal()}
-                className={`font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl shadow-none! shrink-0 transition-all ${isPaymentPaid ? "bg-[#fbab2a]! hover:bg-[#e89b1f]! text-white! cursor-pointer" : "bg-gray-200! text-gray-400! border-gray-200! cursor-not-allowed opacity-60 pointer-events-auto"}`}
+                className="bg-white! text-[#fbab2a]! border border-gray-200! hover:bg-gray-50! font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl cursor-pointer shrink-0 shadow-none!"
               >
-                Schedule Interview
+                View
               </Button>
-              {!isPaymentPaid && (
-                <span className="text-[10px] text-gray-400 font-medium">
-                  Requires completed payment
-                </span>
-              )}
-            </div>
-          )}
+            ) : isInterviewScheduled ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onOpenRescheduleModal}
+                className="bg-white! text-[#fbab2a]! border border-[#fbab2a]! hover:bg-[#FFFBEB]! font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl cursor-pointer shrink-0 shadow-none!"
+              >
+                Reschedule Interview
+              </Button>
+            ) : (
+              <div className="flex flex-col items-end gap-1 shrink-0">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  disabled={!isPaymentPaid}
+                  onClick={() => isPaymentPaid && onOpenScheduleModal()}
+                  className={`font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl shadow-none! shrink-0 transition-all ${isPaymentPaid ? "bg-[#fbab2a]! hover:bg-[#e89b1f]! text-white! cursor-pointer" : "bg-gray-200! text-gray-400! border-gray-200! cursor-not-allowed opacity-60 pointer-events-auto"}`}
+                >
+                  Schedule Interview
+                </Button>
+                {!isPaymentPaid && (
+                  <span className="text-[10px] text-gray-400 font-medium">
+                    Requires completed payment
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {isInterviewScheduled && (
           <div className="mt-2 pt-3 border-t border-gray-100">
             <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-3">
-              YOUR ASSESORS
+              YOUR ASSESSORS
             </span>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
               {interviewAssessorsList.slice(0, 3).map((assessor, idx) => (
@@ -418,9 +426,9 @@ export const DetailStagesList: React.FC<DetailStagesListProps> = ({
       </div>
 
       {/* Stage 5: Internal Verifier */}
-      <div className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-100 shadow-2xs flex items-center justify-between gap-4">
-        <div className="flex flex-col gap-1.5 min-w-0">
-          <div className="flex items-center gap-3 flex-wrap">
+      <div className="bg-white rounded-2xl p-4 sm:p-6 border border-gray-100 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+        <div className="flex flex-col gap-1 sm:gap-1.5 min-w-0">
+          <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
             <h3 className="text-black font-bold text-base sm:text-lg lg:text-xl tracking-tight">
               Internal Verifier
             </h3>
@@ -440,7 +448,7 @@ export const DetailStagesList: React.FC<DetailStagesListProps> = ({
                   : "---"}
           </p>
         </div>
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-3 shrink-0 self-end sm:self-center">
           <span className="text-gray-400 font-bold text-sm hidden sm:inline">
             {ivDate}
           </span>
@@ -576,9 +584,9 @@ export const DetailStagesList: React.FC<DetailStagesListProps> = ({
       </div>
 
       {/* Stage 6: External Verifier */}
-      <div className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-100 shadow-2xs flex items-center justify-between gap-4">
-        <div className="flex flex-col gap-1.5 min-w-0">
-          <div className="flex items-center gap-3 flex-wrap">
+      <div className="bg-white rounded-2xl p-4 sm:p-6 border border-gray-100 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+        <div className="flex flex-col gap-1 sm:gap-1.5 min-w-0">
+          <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
             <h3 className="text-black font-bold text-base sm:text-lg lg:text-xl tracking-tight">
               External Verifier
             </h3>
@@ -595,9 +603,9 @@ export const DetailStagesList: React.FC<DetailStagesListProps> = ({
       </div>
 
       {/* Stage 7: Certification */}
-      <div className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-100 shadow-2xs flex items-center justify-between gap-4">
-        <div className="flex flex-col gap-1.5 min-w-0">
-          <div className="flex items-center gap-3 flex-wrap">
+      <div className="bg-white rounded-2xl p-4 sm:p-6 border border-gray-100 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+        <div className="flex flex-col gap-1 sm:gap-1.5 min-w-0">
+          <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
             <h3 className="text-black font-bold text-base sm:text-lg lg:text-xl tracking-tight">
               Certification
             </h3>
@@ -615,7 +623,7 @@ export const DetailStagesList: React.FC<DetailStagesListProps> = ({
                 : "---"}
           </p>
         </div>
-        <span className="text-gray-400 font-bold text-sm shrink-0">
+        <span className="text-gray-400 font-bold text-sm shrink-0 self-end sm:self-center">
           {certDate}
         </span>
       </div>

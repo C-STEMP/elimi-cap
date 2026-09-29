@@ -7,6 +7,7 @@ import {
   getUnitsByTradeApi,
   getEvidenceTypesByTradeApi,
   getCentresApi,
+  type GetCentresParams,
   getAwardingBodiesApi,
   getThirdPartyReportTemplateApi,
   getBanksApi,
@@ -25,7 +26,7 @@ export const REFERENCE_QUERY_KEYS = {
     ["catalogue", "units", tradeId, level] as const,
   evidenceTypes: (tradeId: string) =>
     ["catalogue", "evidence-types", tradeId] as const,
-  centres: (params?: { cursor?: string; limit?: number }) =>
+  centres: (params?: GetCentresParams) =>
     ["catalogue", "centres", params] as const,
   awardingBodies: ["reference", "awarding-bodies"] as const,
   template: ["reference", "third-party-template"] as const,
@@ -84,7 +85,7 @@ export function useGetEvidenceTypesByTrade(tradeId: string) {
 }
 
 export function useGetCentres(
-  params?: { cursor?: string; limit?: number },
+  params?: GetCentresParams,
   options?: { enabled?: boolean },
 ) {
   return useQuery({

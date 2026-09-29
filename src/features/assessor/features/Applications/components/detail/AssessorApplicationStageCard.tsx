@@ -73,31 +73,33 @@ export const AssessorApplicationStageCard: React.FC<
         isViewStage ? "cursor-pointer group" : ""
       }`}
     >
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full">
-        <div className="flex flex-col gap-1.5 min-w-0">
-          <div className="flex items-center gap-2.5 flex-wrap">
+      <div className="flex items-start sm:items-center justify-between gap-3 w-full">
+        <div className="flex flex-col gap-1 sm:gap-1.5 min-w-0 flex-1">
+          <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
             <h4 className={`text-base sm:text-lg font-bold text-neutral-primary ${isViewStage ? "group-hover:text-primary transition-colors" : ""}`}>
               {stage.title}
             </h4>
             <span
-              className={`px-3 py-0.5 rounded-full text-xs font-semibold ${badgeStyle}`}
+              className={`px-3 py-0.5 rounded-full text-xs font-semibold shrink-0 ${badgeStyle}`}
             >
               {stage.badgeText || stage.status}
             </span>
           </div>
-          <p className="text-xs sm:text-sm text-neutral-secondary">
-            {stage.dateText || "---"}
-          </p>
+          {stage.dateText && stage.dateText !== "—" && stage.dateText !== "---" && stage.dateText.trim() !== "" && (
+            <p className="text-xs sm:text-sm text-neutral-secondary">
+              {stage.dateText}
+            </p>
+          )}
         </div>
 
-        <div className="flex items-center gap-3 shrink-0 self-start sm:self-center" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0 self-start sm:self-center" onClick={(e) => e.stopPropagation()}>
           {stage.actionButton && (
             <div>
               {stage.actionButton.variant === "view" ? (
                 <button
                   type="button"
                   onClick={stage.actionButton.onClick || onViewApplicationForm}
-                  className="bg-white border border-gray-200 hover:bg-gray-50 text-[#FBAB2A] font-bold text-xs sm:text-sm px-6 py-2 rounded-xl transition-all cursor-pointer shadow-none"
+                  className="bg-white border border-gray-200 hover:bg-gray-50 text-[#FBAB2A] font-bold text-xs sm:text-sm px-4 sm:px-6 py-2 rounded-xl transition-all cursor-pointer shadow-none"
                 >
                   {stage.actionButton.label}
                 </button>
@@ -105,7 +107,7 @@ export const AssessorApplicationStageCard: React.FC<
                 <button
                   type="button"
                   onClick={stage.actionButton.onClick || onOpenEvidenceVault}
-                  className="bg-white border border-gray-200 hover:bg-gray-50 text-[#FBAB2A] font-bold text-xs sm:text-sm px-6 py-2 rounded-xl transition-all cursor-pointer shadow-none"
+                  className="bg-white border border-gray-200 hover:bg-gray-50 text-[#FBAB2A] font-bold text-xs sm:text-sm px-4 sm:px-6 py-2 rounded-xl transition-all cursor-pointer shadow-none"
                 >
                   {stage.actionButton.label}
                 </button>
@@ -113,7 +115,7 @@ export const AssessorApplicationStageCard: React.FC<
                 <button
                   type="button"
                   onClick={stage.actionButton.onClick}
-                  className="bg-primary hover:bg-primary/90 text-white font-semibold text-xs sm:text-sm px-5 py-2 rounded-xl transition-all cursor-pointer shadow-xs"
+                  className="bg-primary hover:bg-primary/90 text-white font-semibold text-xs sm:text-sm px-4 sm:px-5 py-2 rounded-xl transition-all cursor-pointer shadow-xs"
                 >
                   {stage.actionButton.label}
                 </button>
@@ -134,7 +136,7 @@ export const AssessorApplicationStageCard: React.FC<
               </button>
 
               {isMenuOpen && (
-                <div className="absolute right-0 top-10 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-1.5 z-20 flex flex-col text-left animate-in fade-in zoom-in-95 duration-150">
+                <div className="absolute right-0 top-10 w-48 max-w-[calc(100vw-2.5rem)] bg-white rounded-xl shadow-lg border border-gray-100 py-1.5 z-20 flex flex-col text-left animate-in fade-in zoom-in-95 duration-150">
                   {stage.menuActions.map((action, idx) => (
                     <button
                       key={idx}

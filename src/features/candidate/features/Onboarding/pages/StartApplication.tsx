@@ -6,7 +6,7 @@ import { createSchemaFieldRule } from "antd-zod";
 import { Select, SelectOption } from "@/src/components/ui/select";
 import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
-import { FiArrowLeft, FiArrowRight } from "react-icons/fi";
+import { FiArrowLeft, FiArrowRight, FiMapPin, FiChevronDown } from "react-icons/fi";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
@@ -21,7 +21,9 @@ import {
   useGetSectors,
   useGetCentres,
   useGetTradesBySector,
+  useCandidateLocation,
 } from "@/src/features/shared/reference/hooks";
+import { useCountryStateCity } from "@/src/lib/hooks/useCountryStateCity";
 import {
   setCurrentApplication,
 } from "@/store/slices/applicationSlice";
@@ -82,34 +84,104 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
 
   const { data: remoteSectors = [], isLoading: isLoadingSectors } =
     useGetSectors();
+  const [isLocationFilterOpen, setIsLocationFilterOpen] = useState(false);
+  const [filterCountry, setFilterCountry] = useState("Nigeria");
+  const [filterState, setFilterState] = useState("");
+  const [filterLga, setFilterLga] = useState("");
+
+  const {
+    states,
+    cities: lgas,
+    isLoadingStates,
+    isLoadingLgas,
+  } = useCountryStateCity(filterCountry, filterState);
+
+  const candidateLoc = useCandidateLocation();
+
+  const queryLocation = React.useMemo(() => {
+    return {
+      country: filterCountry || candidateLoc.country || undefined,
+      state: filterState || candidateLoc.state || undefined,
+      lga: filterLga || candidateLoc.lga || undefined,
+    };
+  }, [filterCountry, filterState, filterLga, candidateLoc]);
+
   const { data: remoteCentres = [], isLoading: isLoadingCentres } =
-    useGetCentres();
+    useGetCentres(queryLocation);
 
-  const selectedSectorId = Form.useWatch("sector", form);
-  const { data: remoteTrades = [], isLoading: isLoadingTrades } =
-    useGetTradesBySector(selectedSectorId);
-
-  const centreOptions: SelectOption[] = React.useMemo(() => {
-    const list = Array.isArray(remoteCentres)
+  const matchingCentres = React.useMemo(() => {
+    let list = Array.isArray(remoteCentres)
       ? remoteCentres
       : (remoteCentres as any)?.data || [];
 
+    if (filterState) {
+      const sMatches = list.filter((c: any) => {
+        if (!c.address?.state) return false;
+        const s1 = c.address.state.toLowerCase();
+        const s2 = filterState.toLowerCase();
+        return s1.includes(s2) || s2.includes(s1);
+      });
+      if (sMatches.length > 0) {
+        list = sMatches;
+      } else {
+        list = [];
+      }
+    }
+
+    if (filterLga && list.length > 0) {
+      const lMatches = list.filter((c: any) => {
+        if (!c.address?.lga) return false;
+        const l1 = c.address.lga.toLowerCase();
+        const l2 = filterLga.toLowerCase();
+        return l1.includes(l2) || l2.includes(l1);
+      });
+      if (lMatches.length > 0) {
+        list = lMatches;
+      }
+    }
+
+    return list;
+  }, [remoteCentres, filterState, filterLga]);
+
+  const centreOptions: SelectOption[] = React.useMemo(() => {
     const seen = new Set<string>();
     const uniqueOptions: SelectOption[] = [];
 
-    for (const c of list) {
+    for (const c of matchingCentres) {
       if (!c || !c.name) continue;
       const normalized = c.name.trim().toLowerCase();
       if (!seen.has(normalized)) {
         seen.add(normalized);
+        const locParts = [c.address?.lga, c.address?.state].filter(Boolean);
+        const locSuffix = locParts.length > 0 ? ` (${locParts.join(", ")})` : "";
         uniqueOptions.push({
-          label: c.name.trim(),
+          label: `${c.name.trim()}${locSuffix}`,
           value: c.id,
         });
       }
     }
     return uniqueOptions;
-  }, [remoteCentres]);
+  }, [matchingCentres]);
+
+  const handleStateFilterChange = (newState: string) => {
+    setFilterState(newState);
+    setFilterLga("");
+    form.setFieldValue("assessmentCenter", "");
+  };
+
+  const handleLgaFilterChange = (newLga: string) => {
+    setFilterLga(newLga);
+    form.setFieldValue("assessmentCenter", "");
+  };
+
+  const handleClearLocation = () => {
+    setFilterState("");
+    setFilterLga("");
+  };
+
+  const selectedSectorId = Form.useWatch("sector", form);
+  const { data: remoteTrades = [], isLoading: isLoadingTrades } =
+    useGetTradesBySector(selectedSectorId);
 
   const sectorOptions: SelectOption[] = remoteSectors.map((s) => ({
     label: s.name,
@@ -305,6 +377,12 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
             err?.statusCode === 409;
 
           if (isConflict) {
+            toast({
+              type: "info",
+              title: "Ongoing Application Reminder",
+              description:
+                "You already have an application in progress. Your progress has been linked to your existing draft.",
+            });
             if (onContinue) {
               onContinue();
             } else if (appType === "RPL") {
@@ -363,7 +441,70 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
         onValuesChange={handleValuesChange}
         className="w-full flex flex-col"
         requiredMark={false}
+        autoComplete="off"
       >
+        {/* Collapsible Location Filter Toggle */}
+        <div className="flex items-center justify-between mb-2">
+          <button
+            type="button"
+            onClick={() => setIsLocationFilterOpen((prev) => !prev)}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-600 hover:text-[#a31d38] transition-colors cursor-pointer group"
+          >
+            <FiMapPin className="w-3.5 h-3.5 text-[#a31d38]" />
+            <span>Filter centres by location</span>
+            <FiChevronDown
+              className={`w-3.5 h-3.5 text-gray-400 group-hover:text-[#a31d38] transition-transform duration-200 ${
+                isLocationFilterOpen ? "rotate-180 text-[#a31d38]" : ""
+              }`}
+            />
+            {(filterState || filterLga) && (
+              <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FCE8EC] text-[#a31d38]">
+                {[filterState, filterLga].filter(Boolean).join(", ")}
+              </span>
+            )}
+          </button>
+
+          {(filterState || filterLga) && (
+            <button
+              type="button"
+              onClick={handleClearLocation}
+              className="text-xs font-medium text-[#a31d38] hover:underline cursor-pointer"
+            >
+              Clear location
+            </button>
+          )}
+        </div>
+
+        {/* Collapsible Location Filter Body */}
+        {isLocationFilterOpen && (
+          <div className="bg-[#FAFBFB] border border-gray-200/80 rounded-2xl p-3.5 sm:p-4 flex flex-col gap-3 mb-4 animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Select
+                label="State"
+                placeholder="All States"
+                options={[{ label: "All States", value: "" }, ...states]}
+                value={filterState}
+                onChange={(e) => handleStateFilterChange(e.target.value)}
+                loading={isLoadingStates}
+                showSearch
+                allowClear
+              />
+
+              <Select
+                label="LGA"
+                placeholder={filterState ? "All LGAs" : "Select State first"}
+                options={[{ label: "All LGAs", value: "" }, ...lgas]}
+                value={filterLga}
+                disabled={!filterState || isLoadingLgas}
+                loading={isLoadingLgas}
+                onChange={(e) => handleLgaFilterChange(e.target.value)}
+                showSearch
+                allowClear
+              />
+            </div>
+          </div>
+        )}
+
         <Form.Item name="assessmentCenter" rules={[rule]}>
           <FormSelect
             label={
@@ -373,13 +514,31 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
               </span>
             }
             loading={isLoadingCentres}
-            disabled={isLoadingCentres}
+            disabled={isLoadingCentres || matchingCentres.length === 0}
             placeholder={
-              isLoadingCentres ? "Loading centres..." : "Select"
+              isLoadingCentres
+                ? "Loading centres..."
+                : matchingCentres.length === 0
+                ? "No centres available in this location"
+                : "Select"
             }
             options={centreOptions}
           />
         </Form.Item>
+        {filterState && matchingCentres.length === 0 && (
+          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200/70 rounded-xl px-3 py-2 -mt-3 mb-4">
+            No approved assessment centres found in {filterState}
+            {filterLga ? ` (${filterLga})` : ""}. Try selecting another state or{" "}
+            <button
+              type="button"
+              onClick={handleClearLocation}
+              className="underline font-semibold hover:text-amber-900 cursor-pointer"
+            >
+              view all centres
+            </button>
+            .
+          </p>
+        )}
 
         <Form.Item name="sector" rules={[rule]}>
           <FormSelect

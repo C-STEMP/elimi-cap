@@ -97,6 +97,30 @@ export function useApplicationsViewState(
     );
   }, [interviewsList, searchQuery]);
 
+  const [modalFilters, setModalFilters] = useState<{
+    assessmentType: string;
+    stage: string;
+    status: string;
+  }>({
+    assessmentType: "",
+    stage: "",
+    status: "All",
+  });
+
+  const hasActiveFilters = Boolean(
+    modalFilters.assessmentType ||
+      modalFilters.stage ||
+      (modalFilters.status && modalFilters.status !== "All"),
+  );
+
+  const handleResetFilters = () => {
+    setModalFilters({
+      assessmentType: "",
+      stage: "",
+      status: "All",
+    });
+  };
+
   const applicationsList = useMemo(
     () => (remoteApps ?? []).map(mapApplicationItem),
     [remoteApps],
@@ -110,14 +134,40 @@ export function useApplicationsViewState(
           (activeFilterTab === "IV Approved"
             ? Boolean((app as any).ivApproved || app.status === "IV Approved")
             : app.status === activeFilterTab);
+
+        const matchesModalType =
+          !modalFilters.assessmentType ||
+          app.assessmentType.toLowerCase() ===
+            modalFilters.assessmentType.toLowerCase();
+
+        const matchesModalStatus =
+          !modalFilters.status ||
+          modalFilters.status === "All" ||
+          app.status.toLowerCase() === modalFilters.status.toLowerCase();
+
+        const stageFormatted = modalFilters.stage
+          .toLowerCase()
+          .replace(/\s+/g, "_");
+        const matchesModalStage =
+          !modalFilters.stage ||
+          (app as any).currentStageKey?.toLowerCase() === stageFormatted ||
+          (app as any).stage?.toLowerCase() === modalFilters.stage.toLowerCase();
+
         const q = searchQuery.toLowerCase();
         const matchesSearch =
           app.candidateName.toLowerCase().includes(q) ||
           app.trade.toLowerCase().includes(q) ||
           app.assessmentType.toLowerCase().includes(q);
-        return matchesTab && matchesSearch;
+
+        return (
+          matchesTab &&
+          matchesModalType &&
+          matchesModalStatus &&
+          matchesModalStage &&
+          matchesSearch
+        );
       }),
-    [applicationsList, activeFilterTab, searchQuery],
+    [applicationsList, activeFilterTab, modalFilters, searchQuery],
   );
 
   const toggleSelectAll = () =>
@@ -227,5 +277,9 @@ export function useApplicationsViewState(
     handleNotifyAwardingBody,
     handleBulkCertify,
     isBulkCertifying: bulkCertifyMutation.isPending,
+    modalFilters,
+    setModalFilters,
+    hasActiveFilters,
+    handleResetFilters,
   };
 }

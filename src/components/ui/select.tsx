@@ -84,23 +84,43 @@ export const Select: React.FC<SelectProps> = ({
   const reactId = useId();
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Chrome keys saved form entries by the input's name/id. React's useId
-  // values repeat across pages, so the search input was offered entries typed
-  // into unrelated fields, drawn over the options. A unique name per mount
-  // leaves Chrome nothing to suggest.
+  // Aggressively suppress browser autofill and credentials manager popup
+  // (e.g. Chrome's dark floating overlay of saved emails, addresses, and history)
   useEffect(() => {
-    const input = containerRef.current?.querySelector("input");
-    if (!input) return;
-    input.setAttribute(
-      "name",
-      `elimi-select-${Math.random().toString(36).slice(2)}`,
-    );
-    // Chrome ignores "off"; "new-password" suppresses its suggestions.
-    input.setAttribute(
-      "autocomplete",
-      !autoComplete || autoComplete === "off" ? "new-password" : autoComplete,
-    );
-  }, [autoComplete]);
+    const el = containerRef.current;
+    if (!el) return;
+
+    const suppressAutofill = () => {
+      const input = el.querySelector("input");
+      if (!input) return;
+      input.setAttribute("autocomplete", "one-time-code");
+      input.setAttribute("autocorrect", "off");
+      input.setAttribute("autocapitalize", "off");
+      input.setAttribute("spellcheck", "false");
+      input.setAttribute("data-lpignore", "true");
+      input.setAttribute("data-1p-ignore", "true");
+      input.setAttribute("data-form-type", "other");
+      input.setAttribute("aria-autocomplete", "none");
+      const currentName = input.getAttribute("name");
+      if (!currentName || !currentName.startsWith("search_")) {
+        input.setAttribute("name", `search_${Math.random().toString(36).slice(2, 9)}`);
+      }
+    };
+
+    suppressAutofill();
+
+    el.addEventListener("focusin", suppressAutofill);
+    el.addEventListener("pointerdown", suppressAutofill);
+
+    const observer = new MutationObserver(suppressAutofill);
+    observer.observe(el, { childList: true, subtree: true, attributes: false });
+
+    return () => {
+      el.removeEventListener("focusin", suppressAutofill);
+      el.removeEventListener("pointerdown", suppressAutofill);
+      observer.disconnect();
+    };
+  }, []);
   const selectId = id || reactId;
 
   const normalizedOptions: SelectOption[] = React.useMemo(() => {
@@ -194,8 +214,8 @@ export const Select: React.FC<SelectProps> = ({
     >
       {label && (
         <label
-          htmlFor={selectId}
-          className="font-sans text-text-dark font-medium text-xs xl:text-sm leading-[1.4] select-none"
+          onClick={() => containerRef.current?.querySelector("input")?.focus()}
+          className="font-sans text-text-dark font-medium text-xs xl:text-sm leading-[1.4] select-none cursor-pointer"
         >
           {label}
           {required && <span className="text-primary-solid ml-0.5">*</span>}
@@ -229,6 +249,7 @@ export const Select: React.FC<SelectProps> = ({
           if (!open) onSearch?.("");
         }}
         {...({
+          autoComplete: "one-time-code",
           "data-lpignore": "true",
           "data-1p-ignore": "true",
           "data-form-type": "other",

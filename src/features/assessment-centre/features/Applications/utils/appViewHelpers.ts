@@ -119,6 +119,7 @@ export function mapApplicationItem(app: any) {
         ? "Archived"
         : "Pending",
     ivApproved: Boolean(rawApp.ivApproved),
+    currentStageKey: rawApp.currentStageKey || null,
     submittedAt: formatDate(rawApp.submittedAt || app.createdAt),
   };
 }

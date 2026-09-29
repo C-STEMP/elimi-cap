@@ -32,16 +32,16 @@ export const ApplicationsView: React.FC<ApplicationsViewProps> = ({
   return (
     <div className="w-full flex flex-col gap-6 select-text">
       {/* Filter tabs */}
-      <div className="bg-[#F8F9FA] border border-gray-200/80 rounded-2xl p-2 flex items-center gap-2 overflow-x-auto no-scrollbar max-w-xl">
+      <div className="w-full max-w-2xl bg-[#F8F9FA] border border-gray-200/80 rounded-2xl p-1.5 flex items-center gap-1.5 overflow-x-auto no-scrollbar scroll-smooth">
         {FILTER_TABS.map((tab) => (
           <button
             key={tab}
             type="button"
             onClick={() => state.setActiveFilterTab(tab)}
-            className={`px-6 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
+            className={`px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
               state.activeFilterTab === tab
                 ? "bg-[#a31d38] text-white shadow-xs"
-                : "text-gray-600 hover:text-black hover:bg-gray-100"
+                : "text-gray-600 hover:text-black hover:bg-gray-200/60"
             }`}
           >
             {tab}
@@ -64,6 +64,15 @@ export const ApplicationsView: React.FC<ApplicationsViewProps> = ({
         onDeletePanels={state.handleDeleteSelectedPanels}
         onSelectAll={state.toggleSelectAll}
         selectedCount={state.selectedIds.length}
+        totalCount={
+          state.activeFilterTab === "Interviews"
+            ? state.filteredInterviews.length
+            : state.activeFilterTab === "Panel"
+            ? state.filteredPanels.length
+            : state.filteredApplications.length
+        }
+        hasActiveFilters={state.hasActiveFilters}
+        onClearFilters={state.handleResetFilters}
         onBulkCertify={state.handleBulkCertify}
         isBulkCertifying={state.isBulkCertifying}
       />
@@ -104,6 +113,7 @@ export const ApplicationsView: React.FC<ApplicationsViewProps> = ({
       <FilterModal
         isOpen={state.isFilterModalOpen}
         onClose={() => state.setIsFilterModalOpen(false)}
+        onApplyFilter={(filters) => state.setModalFilters(filters)}
       />
       <ViewInterviewDetailModal
         isOpen={Boolean(state.viewingInterview)}

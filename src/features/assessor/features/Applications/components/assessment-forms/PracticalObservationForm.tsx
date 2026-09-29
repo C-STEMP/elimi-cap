@@ -182,6 +182,7 @@ export const PracticalObservationForm: React.FC<
 
   const handleSubmit = () => {
     if (isReadOnly) return;
+    const now = new Date().toISOString();
     onSubmit({
       candidateFullName,
       assessorName,
@@ -191,10 +192,8 @@ export const PracticalObservationForm: React.FC<
       checklist,
       verdict,
       observationNotes,
-      assessorSigned,
-      assessorSignedAt: assessorSigned
-        ? formData?.assessorSignedAt || new Date().toISOString()
-        : undefined,
+      assessorSigned: true,
+      assessorSignedAt: formData?.assessorSignedAt || now,
     });
   };
 

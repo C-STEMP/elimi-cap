@@ -45,11 +45,11 @@ export const RoleCard: React.FC<RoleCardProps> = ({
   return (
     <button
       type="button"
-      onClick={() => !disabled && onSelect?.(id)}
-      disabled={disabled}
+      onClick={() => onSelect?.(id)}
+      aria-disabled={disabled}
       className={`group relative w-full max-w-109.75 aspect-439/199 rounded-[10px] flex items-end justify-between px-4 sm:px-8 pb-4 sm:pb-7 text-left select-none overflow-hidden focus:outline-none transition-all duration-300 ease-out ${
         disabled
-          ? "opacity-80 cursor-pointer"
+          ? "opacity-75 cursor-pointer hover:border-amber-200"
           : "cursor-pointer active:scale-[0.995] hover:translate-x-1.5"
       }`}
     >
