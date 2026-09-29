@@ -76,12 +76,27 @@ export interface TradeDetail extends Trade {
   activeNosDocument?: NosDocument;
 }
 
+export interface CentreAddress {
+  addressLine1?: string;
+  addressLine2?: string;
+  city?: string;
+  lga?: string;
+  state?: string;
+  country?: string;
+  postalCode?: string;
+}
+
 export interface Centre {
   id: string;
   name: string;
   registrationNo: string;
   logoAssetId?: string | null;
   status: "pending" | "approved" | "suspended" | "rejected";
+  address?: CentreAddress | null;
+  logo?: {
+    id: string;
+    url: string;
+  } | null;
 }
 
 export interface AwardingBody {
@@ -204,16 +219,24 @@ export async function getEvidenceTypesByTradeApi(
   }
 }
 
+export interface GetCentresParams {
+  cursor?: string;
+  limit?: number;
+  country?: string;
+  state?: string;
+  lga?: string;
+}
+
 /**
  * Catalogue: List approved centres for application draft
  */
-export async function getCentresApi(params?: {
-  cursor?: string;
-  limit?: number;
-}): Promise<Centre[]> {
+export async function getCentresApi(params?: GetCentresParams): Promise<Centre[]> {
   const searchParams = new URLSearchParams();
   if (params?.cursor) searchParams.set("cursor", params.cursor);
   if (params?.limit) searchParams.set("limit", String(params.limit));
+  if (params?.country) searchParams.set("country", params.country);
+  if (params?.state) searchParams.set("state", params.state);
+  if (params?.lga) searchParams.set("lga", params.lga);
   const query = searchParams.toString() ? `?${searchParams.toString()}` : "";
 
   try {

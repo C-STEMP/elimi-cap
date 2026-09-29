@@ -193,6 +193,24 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
       setShowSubmitModal(true);
     } catch (err: any) {
       setShowSubmittingModal(false);
+      const msg = err?.message?.toLowerCase() || "";
+      const isMaxPolicy =
+        msg.includes("in-progress") ||
+        msg.includes("policy max") ||
+        err?.statusCode === 409 ||
+        err?.statusCode === 422;
+
+      if (isMaxPolicy) {
+        toast({
+          type: "info",
+          title: "Application Saved as Draft",
+          description:
+            "You currently have another application in progress. Your RPL application has been saved as a draft in My Applications and can be submitted once your current application is completed.",
+        });
+        router.push("/dashboard/applications");
+        return;
+      }
+
       const errorMsg =
         (err?.details &&
           Array.isArray(err.details) &&

@@ -142,6 +142,22 @@ export const AssessorAssessmentFormDocumentView: React.FC<
   const panelMember = interviewPanel?.members?.find((m: any) => !m.isLead && !m.isObserver);
   const ivMember = interviewPanel?.members?.find((m: any) => m.isObserver);
 
+  const isCandidateSigned = Boolean(
+    initialFormData?.candidateSignedAt || formRecord?.candidateSignedAt,
+  );
+
+  const isAssessorSigned = Boolean(
+    formData?.leadPanelistSigned ||
+    formData?.assessorSigned ||
+    formData?.leadPanelistSignedAt ||
+    formData?.assessorSignedAt ||
+    isCandidateSigned ||
+    formRecord?.candidateSignedAt ||
+    formRecord?.status === "completed" ||
+    formData?.submittedAt ||
+    Boolean(formRecord?.populatedBy)
+  );
+
   const isAssessorUser = !isCandidate && Boolean(
     user?.role?.toLowerCase()?.includes("assessor") ||
     user?.role?.toLowerCase()?.includes("centre") ||
@@ -154,15 +170,15 @@ export const AssessorAssessmentFormDocumentView: React.FC<
   const isMatchIV = Boolean(ivMember && isMemberMatch(ivMember));
   const isMatchPanelMember = Boolean(panelMember && isMemberMatch(panelMember));
 
-  const canSignLead = isAssessorUser && isInterviewStage && (
+  const canSignLead = isAssessorUser && isInterviewStage && !isCandidateSigned && !isAssessorSigned && (
     leadMember ? isMatchLead : true
   );
 
-  const canSignPanelMember = isAssessorUser && isInterviewStage && (
+  const canSignPanelMember = isAssessorUser && isInterviewStage && !isCandidateSigned && !isAssessorSigned && (
     panelMember ? isMatchPanelMember : (!isMatchLead && !isMatchIV)
   );
 
-  const canSignIV = isAssessorUser && isInterviewStage && (
+  const canSignIV = isAssessorUser && isInterviewStage && !isCandidateSigned && !isAssessorSigned && (
     ivMember
       ? isMatchIV
       : user?.role?.toLowerCase()?.includes("iv") ||
@@ -172,6 +188,14 @@ export const AssessorAssessmentFormDocumentView: React.FC<
   const handleSignAsRole = async (role: "lead" | "assessor") => {
     if (!applicationId) {
       toast({ type: "error", title: "Missing Application", description: "Application ID is required to sign." });
+      return;
+    }
+    if (isCandidateSigned) {
+      toast({
+        type: "info",
+        title: "Form Completed",
+        description: "This form has already been signed by the candidate and cannot be modified.",
+      });
       return;
     }
     setIsSigningRole(role);
@@ -204,11 +228,35 @@ export const AssessorAssessmentFormDocumentView: React.FC<
         description: `Successfully signed form as ${isInterviewRecord ? "Lead Panelist" : "Assessor"}.`,
       });
     } catch (err: any) {
-      toast({
-        type: "error",
-        title: "Signature Failed",
-        description: err?.message || "Failed to append signature.",
-      });
+      const isAlreadySigned =
+        err?.statusCode === 409 ||
+        err?.status === 409 ||
+        err?.message?.toLowerCase()?.includes("already been signed");
+
+      if (isAlreadySigned) {
+        const now = new Date().toISOString();
+        const uName = user?.fullName || (user as any)?.name || "";
+        setFormData((prev) => ({
+          ...(prev || {}),
+          assessorSigned: true,
+          assessorSignedAt: (prev as any)?.assessorSignedAt || now,
+          assessorName: (prev as any)?.assessorName || uName,
+          leadPanelistSigned: true,
+          leadPanelistSignedAt: (prev as any)?.leadPanelistSignedAt || now,
+          leadPanelistName: (prev as any)?.leadPanelistName || uName,
+        }));
+        toast({
+          type: "info",
+          title: "Form Already Signed",
+          description: "This form has already been signed.",
+        });
+      } else {
+        toast({
+          type: "error",
+          title: "Signature Failed",
+          description: err?.message || "Failed to append signature.",
+        });
+      }
     } finally {
       setIsSigningRole(null);
     }
@@ -240,10 +288,6 @@ export const AssessorAssessmentFormDocumentView: React.FC<
     formData?.observationSite ||
     formData?.workplaceContext ||
     "Not specified";
-
-  const isCandidateSigned = Boolean(
-    formData?.candidateSignedAt || formRecord?.candidateSignedAt,
-  );
 
   const safeFormName = `${meta.title.replace(/\s+/g, "_")}_${candidateFullName.replace(/\s+/g, "_")}`;
 
@@ -350,13 +394,13 @@ export const AssessorAssessmentFormDocumentView: React.FC<
               <span className="text-[11px] font-semibold text-neutral-secondary">
                 {isInterviewRecord ? "Lead Panelist:" : "Assessor:"}
               </span>
-              {formData?.leadPanelistSigned || formData?.assessorSigned || formData?.leadPanelistSignedAt || formData?.assessorSignedAt ? (
+              {isAssessorSigned ? (
                 <div className="flex items-center gap-2 text-emerald-700 font-bold text-xs bg-emerald-50 border border-emerald-200 px-3 py-2 rounded-xl">
                   <FiCheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                   <span>
                     Signed
-                    {formData?.leadPanelistName ? ` by ${formData.leadPanelistName}` : formData?.assessorName ? ` by ${formData.assessorName}` : ""}
-                    {formData?.leadPanelistSignedAt || formData?.assessorSignedAt ? ` · ${new Date(formData.leadPanelistSignedAt || formData.assessorSignedAt).toLocaleDateString("en-GB")}` : ""}
+                    {formData?.leadPanelistName ? ` by ${formData.leadPanelistName}` : formData?.assessorName ? ` by ${formData.assessorName}` : assessorName ? ` by ${assessorName}` : ""}
+                    {formData?.leadPanelistSignedAt || formData?.assessorSignedAt || formData?.submittedAt || formRecord?.candidateSignedAt ? ` · ${new Date(formData?.leadPanelistSignedAt || formData?.assessorSignedAt || formData?.submittedAt || formRecord?.candidateSignedAt || "").toLocaleDateString("en-GB")}` : ""}
                   </span>
                 </div>
               ) : canSignLead ? (

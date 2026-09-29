@@ -178,10 +178,8 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
       questions,
       strengths,
       areasForDevelopment,
-      leadPanelistSigned,
-      leadPanelistSignedAt: leadPanelistSigned
-        ? formData?.leadPanelistSignedAt || new Date().toISOString()
-        : undefined,
+      leadPanelistSigned: true,
+      leadPanelistSignedAt: formData?.leadPanelistSignedAt || new Date().toISOString(),
       panelMemberSigned,
       panelMemberSignedAt: panelMemberSigned
         ? formData?.panelMemberSignedAt || formData?.facilitatorSignedAt || new Date().toISOString()
@@ -194,10 +192,8 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
       internalVerifierSignedAt: internalVerifierSigned
         ? formData?.internalVerifierSignedAt || new Date().toISOString()
         : undefined,
-      assessorSigned: leadPanelistSigned,
-      assessorSignedAt: leadPanelistSigned
-        ? formData?.assessorSignedAt || new Date().toISOString()
-        : undefined,
+      assessorSigned: true,
+      assessorSignedAt: formData?.assessorSignedAt || new Date().toISOString(),
     });
   };
 

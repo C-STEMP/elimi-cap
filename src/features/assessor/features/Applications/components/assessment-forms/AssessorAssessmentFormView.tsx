@@ -99,13 +99,21 @@ export const AssessorAssessmentFormView: React.FC<
   const handleConfirmSubmit = async () => {
     setIsConfirmModalOpen(false);
     try {
+      const now = new Date().toISOString();
+      const uName = user?.fullName || (user as any)?.name || "";
       await updateFormMutation.mutateAsync({
         formType,
         data: {
           ...(matchedRemoteForm?.data || {}),
           ...(pendingFormData || {}),
-          submittedAt: new Date().toISOString(),
+          submittedAt: now,
           status: "submitted",
+          assessorSigned: true,
+          assessorSignedAt: pendingFormData?.assessorSignedAt || now,
+          assessorName: pendingFormData?.assessorName || uName || (matchedRemoteForm?.data as any)?.assessorName,
+          leadPanelistSigned: true,
+          leadPanelistSignedAt: pendingFormData?.leadPanelistSignedAt || now,
+          leadPanelistName: pendingFormData?.leadPanelistName || uName || (matchedRemoteForm?.data as any)?.leadPanelistName,
         },
       });
       setIsSuccessModalOpen(true);

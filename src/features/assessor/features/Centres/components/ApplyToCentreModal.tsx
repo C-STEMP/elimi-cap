@@ -6,7 +6,7 @@ import { FiX } from "react-icons/fi";
 import { Select, SelectOption } from "@/src/components/ui/select";
 import { Button } from "@/src/components/ui/button";
 import { useRequestToJoinCentre } from "../hooks";
-import { useGetCentres } from "@/src/features/shared/reference/hooks";
+import { useGetCentres, useUserLocation } from "@/src/features/shared/reference/hooks";
 import { useModalDraft } from "@/src/lib/hooks/usePersistentModal";
 import { APPLY_TO_CENTRE_MODAL } from "@/src/lib/modal-keys";
 
@@ -30,8 +30,9 @@ export const ApplyToCentreModal: React.FC<ApplyToCentreModalProps> = ({
   const [centre, setCentre] = useModalDraft(modalKey, "centre", "");
   const [errors, setErrors] = useState<{ role?: string; centre?: string }>({});
 
+  const userLoc = useUserLocation();
   const { data: remoteCentres = [], isLoading: isLoadingCentres } =
-    useGetCentres();
+    useGetCentres(userLoc);
   const requestMutation = useRequestToJoinCentre();
 
   const centreOptions: SelectOption[] = React.useMemo(() => {
@@ -47,8 +48,10 @@ export const ApplyToCentreModal: React.FC<ApplyToCentreModalProps> = ({
       const normalized = c.name.trim().toLowerCase();
       if (!seen.has(normalized)) {
         seen.add(normalized);
+        const locParts = [c.address?.lga, c.address?.state].filter(Boolean);
+        const locSuffix = locParts.length > 0 ? ` (${locParts.join(", ")})` : "";
         uniqueOptions.push({
-          label: c.name.trim(),
+          label: `${c.name.trim()}${locSuffix}`,
           value: c.id,
         });
       }

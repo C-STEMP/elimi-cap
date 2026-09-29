@@ -1,16 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { RoleCard } from "@/src/components/ui/role-card";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setAssessmentType } from "@/store/slices/authSlice";
 import { setOnboardingAssessmentType } from "@/store/slices/onboardingSlice";
-import { useRouter, useSearchParams } from "next/navigation";
-import { FiArrowLeft } from "react-icons/fi";
+import { useRouter } from "next/navigation";
+import { FiArrowLeft, FiInfo } from "react-icons/fi";
 import { motion } from "framer-motion";
 import { useToast } from "@/src/components/ui/toast";
-import { useApplication } from "@/src/features/candidate/features/Application/hooks";
-
 import { useGetApplications } from "@/src/features/candidate/features/Application/hooks";
 
 export interface AssessmentOption {
@@ -18,6 +16,7 @@ export interface AssessmentOption {
   title: string;
   description: string;
   badge?: string;
+  disabled?: boolean;
 }
 
 const ASSESSMENT_OPTIONS: AssessmentOption[] = [
@@ -47,6 +46,49 @@ export const AssessmentType: React.FC<AssessmentTypeProps> = ({
   const { toast } = useToast();
   const { data: applications = [] } = useGetApplications();
 
+  const isTerminalStatus = (status?: string) => {
+    const s = status?.toLowerCase();
+    return s === "certified" || s === "rejected" || s === "withdrawn";
+  };
+
+  const activeRplApp = useMemo(() => {
+    return applications.find(
+      (a) => (a.type || "").toUpperCase() === "RPL" && !isTerminalStatus(a.status),
+    );
+  }, [applications]);
+
+  const activeNsqApp = useMemo(() => {
+    return applications.find(
+      (a) => (a.type || "").toUpperCase() === "NSQ" && !isTerminalStatus(a.status),
+    );
+  }, [applications]);
+
+  const hasActiveRpl = Boolean(activeRplApp);
+  const hasActiveNsq = Boolean(activeNsqApp);
+
+  const assessmentOptions = useMemo(() => {
+    return ASSESSMENT_OPTIONS.map((option) => {
+      if (option.id === "rpl" && hasActiveRpl) {
+        return {
+          ...option,
+          badge: "Ongoing Application",
+          disabled: true,
+        };
+      }
+      if (option.id === "nsq" && hasActiveNsq) {
+        return {
+          ...option,
+          badge: "Ongoing Application",
+          disabled: true,
+        };
+      }
+      return {
+        ...option,
+        disabled: false,
+      };
+    });
+  }, [hasActiveRpl, hasActiveNsq]);
+
   const savedAssessmentType = useAppSelector(
     (state) =>
       state.onboarding.assessmentType || state.auth.user?.assessmentType || "",
@@ -56,6 +98,30 @@ export const AssessmentType: React.FC<AssessmentTypeProps> = ({
   );
 
   const handleSelectType = (id: string) => {
+    if (id === "rpl" && hasActiveRpl) {
+      const tradeTitle =
+        activeRplApp?.trade?.name ||
+        (typeof activeRplApp?.trade === "string" ? activeRplApp.trade : "");
+      toast({
+        type: "info",
+        title: "Ongoing Application",
+        description: `You already have an ongoing RPL application${tradeTitle ? ` for ${tradeTitle}` : ""}. You can view its progress in My Applications.`,
+      });
+      return;
+    }
+
+    if (id === "nsq" && hasActiveNsq) {
+      const tradeTitle =
+        activeNsqApp?.trade?.name ||
+        (typeof activeNsqApp?.trade === "string" ? activeNsqApp.trade : "");
+      toast({
+        type: "info",
+        title: "Ongoing Application",
+        description: `You already have an ongoing NSQ application${tradeTitle ? ` for ${tradeTitle}` : ""}. You can view its progress in My Applications.`,
+      });
+      return;
+    }
+
     setSelectedType(id);
     dispatch(setAssessmentType(id));
     dispatch(setOnboardingAssessmentType(id));
@@ -108,8 +174,37 @@ export const AssessmentType: React.FC<AssessmentTypeProps> = ({
         </p>
       </div>
 
+      {/* Informative Ongoing Application Reminder */}
+      {(hasActiveRpl || hasActiveNsq) && (
+        <div className="mb-6 bg-amber-50/80 border border-amber-200/90 rounded-2xl p-4 flex items-start gap-3 text-amber-900 shadow-2xs">
+          <FiInfo className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+          <div className="flex flex-col gap-1 text-xs">
+            <span className="font-bold text-amber-900 text-sm">
+              Ongoing Application Reminder
+            </span>
+            <p className="text-amber-800 leading-relaxed font-normal">
+              {hasActiveRpl && !hasActiveNsq && (
+                <>
+                  You currently have an ongoing <strong>RPL</strong> application. You may only maintain one active RPL assessment at a time, but you are eligible to apply for an <strong>NSQ</strong> qualification below.
+                </>
+              )}
+              {!hasActiveRpl && hasActiveNsq && (
+                <>
+                  You currently have an ongoing <strong>NSQ</strong> application. You may only maintain one active NSQ qualification at a time, but you are eligible to apply for an <strong>RPL</strong> assessment below.
+                </>
+              )}
+              {hasActiveRpl && hasActiveNsq && (
+                <>
+                  You currently have ongoing applications for both <strong>RPL</strong> and <strong>NSQ</strong>. Candidates may hold one ongoing application per pathway. Please track their progress in My Applications.
+                </>
+              )}
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="w-full flex flex-col gap-4">
-        {ASSESSMENT_OPTIONS.map((option, idx) => (
+        {assessmentOptions.map((option, idx) => (
           <RoleCard
             key={option.id}
             id={option.id}
@@ -117,6 +212,7 @@ export const AssessmentType: React.FC<AssessmentTypeProps> = ({
             title={option.title}
             description={option.description}
             badge={option.badge}
+            disabled={option.disabled}
             isSelected={selectedType === option.id}
             onSelect={handleSelectType}
           />
