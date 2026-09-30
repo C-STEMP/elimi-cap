@@ -1,74 +1,35 @@
 "use client";
 
-import React, { useState } from "react";
-import { FiChevronLeft, FiChevronRight, FiCalendar } from "react-icons/fi";
+import React from "react";
+import { FiCalendar } from "react-icons/fi";
 import { Avatar } from "@/src/components/ui/avatar";
+import { CalendarWidget } from "@/features/candidate/features/Dashboard/components/CalendarWidget";
+import type { ApplicationDetail } from "@/src/features/shared/applications/api/types";
 
 interface Props {
-  activeFacilitator: any;
-  appDetail: any;
+  activeFacilitator?: {
+    name?: string;
+    avatar?: string;
+    trade?: string;
+  } | null;
+  appDetail?: ApplicationDetail | null;
 }
 
 export const EvidenceSidebarWidgets: React.FC<Props> = ({
   activeFacilitator,
   appDetail,
 }) => {
-  const [currentMonth, setCurrentMonth] = useState("July");
-  const months = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December",
-  ];
-  const daysOfWeek = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
-  const daysInMonth = Array.from({ length: 31 }, (_, i) => i + 1);
+  const scheduledInterview =
+    (appDetail as { interviewSchedule?: { scheduledAt?: string } })?.interviewSchedule?.scheduledAt ||
+    (appDetail as { interview?: { scheduledAt?: string } })?.interview?.scheduledAt ||
+    undefined;
 
-  const handlePrevMonth = () => {
-    const idx = months.indexOf(currentMonth);
-    setCurrentMonth(months[(idx - 1 + 12) % 12]);
-  };
-
-  const handleNextMonth = () => {
-    const idx = months.indexOf(currentMonth);
-    setCurrentMonth(months[(idx + 1) % 12]);
-  };
+  const tradeTitle = activeFacilitator?.trade || (appDetail as { trade?: { name?: string } })?.trade?.name;
 
   return (
     <div className="lg:col-span-4 xl:col-span-3 flex flex-col gap-6">
       {/* 1. Dark Calendar Widget */}
-      <div className="bg-[#18181b] text-white rounded-3xl p-5 sm:p-6 shadow-md flex flex-col gap-4 select-none">
-        <div className="flex items-center justify-between text-white px-1">
-          <button
-            type="button"
-            onClick={handlePrevMonth}
-            className="p-1 hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
-            aria-label="Previous Month"
-          >
-            <FiChevronLeft className="w-5 h-5" />
-          </button>
-          <span className="font-bold text-sm sm:text-base tracking-wide">{currentMonth}</span>
-          <button
-            type="button"
-            onClick={handleNextMonth}
-            className="p-1 hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
-            aria-label="Next Month"
-          >
-            <FiChevronRight className="w-5 h-5" />
-          </button>
-        </div>
-
-        <div className="grid grid-cols-7 text-center text-[10px] font-bold text-gray-400">
-          {daysOfWeek.map((day) => (
-            <span key={day}>{day}</span>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-7 text-center gap-y-2 text-xs font-semibold text-gray-200">
-          {daysInMonth.map((day) => (
-            <span key={day} className="p-1 rounded-full hover:bg-white/15 cursor-pointer transition-colors">
-              {day}
-            </span>
-          ))}
-        </div>
-      </div>
+      <CalendarWidget panelInterviewDate={scheduledInterview} />
 
       {/* 2. Upcoming Events Card */}
       <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-2xs flex flex-col items-center justify-center text-center gap-3 py-8">
@@ -100,12 +61,12 @@ export const EvidenceSidebarWidgets: React.FC<Props> = ({
                 {activeFacilitator.name}
               </span>
               <span className="text-[10px] sm:text-xs text-gray-500 font-medium truncate">
-                {["Facilitator", activeFacilitator.trade || (appDetail as any)?.trade?.name].filter(Boolean).join(" · ")}
+                {["Facilitator", tradeTitle].filter(Boolean).join(" · ")}
               </span>
               <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
-                {(activeFacilitator.trade || (appDetail as any)?.trade?.name) && (
+                {tradeTitle && (
                   <span className="bg-[#FCE8EB] text-[#A31D38] text-[9px] font-bold px-2 py-0.5 rounded-full">
-                    {activeFacilitator.trade || (appDetail as any)?.trade?.name}
+                    {tradeTitle}
                   </span>
                 )}
               </div>

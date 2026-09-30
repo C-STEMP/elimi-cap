@@ -425,6 +425,24 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
       }
     : scheduledObservation;
 
+  const nsqCalendarEvents = useMemo(() => {
+    const evts: any[] = [];
+    const obsDate = liveSitting?.scheduledAt || activeObservation?.date;
+    if (obsDate) {
+      evts.push({
+        id: liveSitting?.id || "observation",
+        title: "Direct Observation",
+        name: "Direct Observation",
+        date: obsDate,
+        time: activeObservation?.time,
+        eventType: "observation",
+        location: activeObservation?.address,
+        status: activeObservation?.status,
+      });
+    }
+    return evts;
+  }, [liveSitting?.scheduledAt, liveSitting?.id, activeObservation]);
+
   const resolvedTradeName =
     tradeDetail?.name ||
     application?.trade?.name ||
@@ -913,7 +931,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
           {/* Right Sidebar Column */}
           <div className="lg:col-span-4 flex flex-col gap-6">
             {/* Calendar */}
-            <CalendarWidget />
+            <CalendarWidget events={nsqCalendarEvents} />
 
             {/* Observation Request Card */}
             <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex flex-col gap-3">

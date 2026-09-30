@@ -27,6 +27,7 @@ interface ApplicationDetailsSidebarProps {
   onRequestCall: () => void;
   formsToSign?: FormToSignItem[];
   onOpenForm?: (formId: string) => void;
+  events?: any[];
 }
 
 export const ApplicationDetailsSidebar: React.FC<ApplicationDetailsSidebarProps> = ({
@@ -37,6 +38,7 @@ export const ApplicationDetailsSidebar: React.FC<ApplicationDetailsSidebarProps>
   onRequestCall,
   formsToSign,
   onOpenForm,
+  events,
 }) => {
   const upcomingInterview =
     isInterviewScheduled && activeInterviewSchedule?.scheduledAt
@@ -62,6 +64,7 @@ export const ApplicationDetailsSidebar: React.FC<ApplicationDetailsSidebarProps>
     <div className="lg:col-span-4 xl:col-span-3 flex flex-col gap-6">
       <CalendarWidget
         panelInterviewDate={activeInterviewSchedule?.scheduledAt || undefined}
+        events={events}
       />
       <UpcomingCard
         interview={upcomingInterview}

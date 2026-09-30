@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { HeaderBanner } from "@/features/candidate/features/Dashboard/components/HeaderBanner";
@@ -143,23 +143,28 @@ export const Dashboard: React.FC = () => {
   });
 
   // Next upcoming interview from GET /candidate/events.
+  const [currentTime] = useState(() => Date.now());
   const { data: candidateEvents = [] } = useCandidateEvents(true);
   const nextInterview = React.useMemo(() => {
-    const now = Date.now();
-    return (
-      candidateEvents
-        .filter(
-          (e) =>
-            e.eventType === "interview" &&
-            e.eventAt &&
-            new Date(e.eventAt).getTime() >= now,
-        )
-        .sort(
-          (a, b) =>
-            new Date(a.eventAt).getTime() - new Date(b.eventAt).getTime(),
-        )[0] ?? null
+    const interviewEvents = candidateEvents.filter(
+      (e) =>
+        (e.eventType === "interview" || e.name?.toLowerCase().includes("interview")) &&
+        Boolean(e.eventAt),
     );
-  }, [candidateEvents]);
+
+    if (interviewEvents.length === 0) return null;
+
+    // Upcoming interview first (including today with 24h grace buffer)
+    const upcoming = interviewEvents
+      .filter((e) => new Date(e.eventAt).getTime() >= currentTime - 24 * 60 * 60 * 1000)
+      .sort((a, b) => new Date(a.eventAt).getTime() - new Date(b.eventAt).getTime())[0];
+    if (upcoming) return upcoming;
+
+    // Otherwise latest scheduled interview
+    return interviewEvents.sort(
+      (a, b) => new Date(b.eventAt).getTime() - new Date(a.eventAt).getTime(),
+    )[0];
+  }, [candidateEvents, currentTime]);
 
   const upcomingInterview = nextInterview
     ? {
@@ -212,7 +217,10 @@ export const Dashboard: React.FC = () => {
           </div>
 
           <div className="lg:col-span-3 flex flex-col gap-6">
-            <CalendarWidget panelInterviewDate={interviewDate} />
+            <CalendarWidget
+              panelInterviewDate={interviewDate}
+              events={candidateEvents}
+            />
             <UpcomingCard interview={upcomingInterview} />
             <VerifiedBadge isVerified={isVerified} />
           </div>

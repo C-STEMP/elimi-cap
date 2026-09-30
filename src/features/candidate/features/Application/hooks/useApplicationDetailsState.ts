@@ -10,6 +10,7 @@ import {
   useGetPaymentQuote, useGetApplicationReceipt,
 } from "./useApplication";
 import { useGetInterviewSchedule, useGetInterviewPanel, useGetInterviewForms, usePaystackCheckout } from "@/src/features/shared/applications/hooks";
+import { useGetApplicationEvents } from "@/src/features/shared/notifications/hooks/useNotifications";
 import {
   APPLICATION_QUERY_KEYS,
   APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
@@ -66,9 +67,10 @@ export function useApplicationDetailsState(id?: string) {
 
   const { data: paymentQuote } = useGetPaymentQuote(id || "", { enabled: Boolean(id && !isDraft && !isPaymentPaid) });
   const { data: receiptData } = useGetApplicationReceipt(id || "", { enabled: Boolean(id && isPaymentPaid) });
-  const { data: interviewSchedule } = useGetInterviewSchedule(id || "", { enabled: Boolean(id && !isDraft && isInterviewStageActive) });
+  const { data: interviewSchedule } = useGetInterviewSchedule(id || "", { enabled: Boolean(id && !isDraft) });
   const { data: interviewPanel } = useGetInterviewPanel(id || "", { enabled: Boolean(id && !isDraft && isInterviewStageActive) });
   const { data: interviewForms } = useGetInterviewForms(id || "", { enabled: Boolean(id && !isDraft && isInterviewStageActive) });
+  const { data: applicationEvents = [] } = useGetApplicationEvents(id || "");
 
   const isInterviewScheduled = Boolean(interviewSchedule?.scheduledAt);
   const formattedInterviewDate = interviewSchedule?.scheduledAt
@@ -241,6 +243,7 @@ export function useApplicationDetailsState(id?: string) {
 
   return {
     apiApp, application, isLoading, isDraft, isPaymentPaid, stages, activeInterviewSchedule: interviewSchedule,
+    applicationEvents,
     isInterviewScheduled, isAtInterviewStage, facilitatorData, activePaymentModal, paymentErrorInfo,
     isCallRequestModalOpen, isFormModalOpen, isSignatureModalOpen, isReceiptModalOpen, transactionReceipt,
     interviewForms, selectedInterviewFormType, isInterviewFormModalOpen, isAppealModalOpen,

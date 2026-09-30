@@ -15,7 +15,7 @@ import {
   ApplicationStatus,
 } from "@/src/features/shared/applications/api/application.api";
 import { useGetApplications } from "@/src/features/candidate/features/Application/hooks";
-import { useCandidateProfile } from "@/src/features/shared/onboarding/hooks";
+import { useCandidateProfile, useCandidateEvents } from "@/src/features/shared/onboarding/hooks";
 import { markVerified } from "@/store/slices/authSlice";
 
 type FilterTab = "All" | "Ongoing" | "Completed" | "Draft";
@@ -95,6 +95,43 @@ export const MyApplicationsPage: React.FC = () => {
   const savedRPLIdentity = useAppSelector((s) => s.onboarding.rplIdentity);
   const { data: candidateProfile } = useCandidateProfile(true);
   const { data: applications = [], isLoading } = useGetApplications();
+  const { data: candidateEvents = [] } = useCandidateEvents(true);
+
+  const [currentTime] = useState(() => Date.now());
+  const nextInterview = React.useMemo(() => {
+    const interviewEvents = candidateEvents.filter(
+      (e) =>
+        (e.eventType === "interview" || e.name?.toLowerCase().includes("interview")) &&
+        Boolean(e.eventAt),
+    );
+
+    if (interviewEvents.length === 0) return null;
+
+    const upcoming = interviewEvents
+      .filter((e) => new Date(e.eventAt).getTime() >= currentTime - 24 * 60 * 60 * 1000)
+      .sort((a, b) => new Date(a.eventAt).getTime() - new Date(b.eventAt).getTime())[0];
+    if (upcoming) return upcoming;
+
+    return interviewEvents.sort(
+      (a, b) => new Date(b.eventAt).getTime() - new Date(a.eventAt).getTime(),
+    )[0];
+  }, [candidateEvents, currentTime]);
+
+  const upcomingInterview = nextInterview
+    ? {
+        title: nextInterview.name,
+        date: new Date(nextInterview.eventAt).toLocaleDateString("en-GB"),
+        time: new Date(nextInterview.eventAt).toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        }),
+        mode: nextInterview.link ? "online" : "physical",
+        liveUrl: nextInterview.link || undefined,
+        location: nextInterview.location || "",
+        isRescheduled: false,
+      }
+    : null;
 
   const isVerified = Boolean(
     authUser?.isVerified ||
@@ -332,8 +369,11 @@ export const MyApplicationsPage: React.FC = () => {
           </div>
 
           <div className="lg:col-span-3 flex flex-col gap-6">
-            <CalendarWidget />
-            <UpcomingCard interview={null} />
+            <CalendarWidget
+              panelInterviewDate={nextInterview?.eventAt}
+              events={candidateEvents}
+            />
+            <UpcomingCard interview={upcomingInterview} />
             <VerifiedBadge isVerified={isVerified} />
           </div>
         </div>

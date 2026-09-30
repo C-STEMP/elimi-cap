@@ -1,146 +1,68 @@
 "use client";
 
-import React, { useState } from "react";
-import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
-
+import React, { useMemo, useState } from "react";
 import { useGetAssessorEvents } from "@/src/features/shared/assessor/hooks";
-
-const MONTH_NAMES = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December"
-];
+import { CalendarWidget } from "@/features/candidate/features/Dashboard/components/CalendarWidget";
 
 interface AssessorCalendarWidgetProps {
   panelInterviewDate?: string | Date;
   highlightedDays?: number[];
   defaultDate?: Date;
+  onSelectDate?: (date: Date) => void;
+  className?: string;
 }
 
 export const AssessorCalendarWidget: React.FC<AssessorCalendarWidgetProps> = ({
   panelInterviewDate,
-  highlightedDays: propHighlightedDays,
   defaultDate,
+  onSelectDate,
+  className = "",
 }) => {
-  const parsedInterviewDate = React.useMemo(() => {
-    if (!panelInterviewDate) return null;
-    const d = new Date(panelInterviewDate);
-    return isNaN(d.getTime()) ? null : d;
-  }, [panelInterviewDate]);
-
-  const [currentDate, setCurrentDate] = useState(
-    () => parsedInterviewDate || defaultDate || new Date(2026, 6, 1)
-  );
+  const [today] = useState(() => new Date());
   const { data: eventsData } = useGetAssessorEvents();
 
-  const highlightedDays = React.useMemo(() => {
-    if (propHighlightedDays !== undefined) return propHighlightedDays;
-    if (parsedInterviewDate) {
-      if (
-        parsedInterviewDate.getMonth() === currentDate.getMonth() &&
-        parsedInterviewDate.getFullYear() === currentDate.getFullYear()
-      ) {
-        return [parsedInterviewDate.getDate()];
-      }
-      return [];
+  // Find the single most recent interview date
+  const mostRecentInterviewDate = useMemo(() => {
+    if (panelInterviewDate) return panelInterviewDate;
+    if (!eventsData || !Array.isArray(eventsData) || eventsData.length === 0) {
+      return defaultDate || undefined;
     }
-    if (eventsData && eventsData.length > 0) {
-      const days: number[] = [];
-      eventsData.forEach((evt) => {
-        const rawDate =
-          evt.eventAt || (evt as any).scheduledAt || evt.createdAt;
-        if (rawDate) {
-          const d = new Date(rawDate);
-          if (
-            !isNaN(d.getTime()) &&
-            d.getMonth() === currentDate.getMonth() &&
-            d.getFullYear() === currentDate.getFullYear()
-          ) {
-            days.push(d.getDate());
-          }
-        }
-      });
-      return days;
-    }
-    return [];
-  }, [propHighlightedDays, parsedInterviewDate, eventsData, currentDate]);
 
-  const monthName = MONTH_NAMES[currentDate.getMonth()];
-  const year = currentDate.getFullYear();
+    const interviewEvents = eventsData.filter((evt) => {
+      const e = evt as unknown as Record<string, unknown>;
+      const name = String(e.name || e.title || "").toLowerCase();
+      const type = String(e.eventType || e.type || "").toLowerCase();
+      const isInterview = type === "interview" || name.includes("interview");
+      return isInterview && (e.eventAt || e.scheduledAt || e.createdAt || e.date);
+    });
 
-  const handlePrevMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
-  };
+    const targetList = interviewEvents.length > 0 ? interviewEvents : eventsData;
+    const dates = targetList
+      .map((evt) => {
+        const e = evt as unknown as Record<string, unknown>;
+        const raw = e.eventAt || e.scheduledAt || e.createdAt || e.date;
+        return typeof raw === "string" || raw instanceof Date ? new Date(raw) : null;
+      })
+      .filter((d): d is Date => d !== null && !isNaN(d.getTime()));
 
-  const handleNextMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
-  };
+    if (dates.length === 0) return defaultDate || undefined;
 
-  // Days in month calculation
-  const daysInMonth = new Date(year, currentDate.getMonth() + 1, 0).getDate();
-  const firstDayIndex = new Date(year, currentDate.getMonth(), 1).getDay(); // 0 is Sunday
+    const baseTime = today.getTime();
+    // Upcoming interview first (within 24h grace buffer)
+    const upcoming = dates
+      .filter((d) => d.getTime() >= baseTime - 24 * 60 * 60 * 1000)
+      .sort((a, b) => a.getTime() - b.getTime())[0];
+    if (upcoming) return upcoming;
 
-  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-  const blanks = Array.from({ length: firstDayIndex }, (_, i) => i);
+    // Otherwise the latest scheduled interview in the past
+    return dates.sort((a, b) => b.getTime() - a.getTime())[0];
+  }, [panelInterviewDate, eventsData, defaultDate, today]);
 
   return (
-    <div className="bg-text-dark text-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-md flex flex-col gap-4 sm:gap-5 w-full select-none">
-      {/* Month Navigation */}
-      <div className="flex items-center justify-between font-bold text-base">
-        <button
-          type="button"
-          onClick={handlePrevMonth}
-          className="p-1 text-gray-400 hover:text-white transition-colors cursor-pointer"
-          aria-label="Previous Month"
-        >
-          <FiChevronLeft className="w-5 h-5" />
-        </button>
-        <span className="text-base font-semibold">{monthName}</span>
-        <button
-          type="button"
-          onClick={handleNextMonth}
-          className="p-1 text-gray-400 hover:text-white transition-colors cursor-pointer"
-          aria-label="Next Month"
-        >
-          <FiChevronRight className="w-5 h-5" />
-        </button>
-      </div>
-
-      {/* Weekday Headers */}
-      <div className="grid grid-cols-7 gap-1 text-center text-[11px] text-gray-400 font-semibold tracking-wider">
-        <span>SUN</span>
-        <span>MON</span>
-        <span>TUE</span>
-        <span>WED</span>
-        <span>THU</span>
-        <span>FRI</span>
-        <span>SAT</span>
-      </div>
-
-      {/* Days Grid */}
-      <div className="grid grid-cols-7 gap-1 text-center text-xs font-normal">
-        {blanks.map((b) => (
-          <span key={`blank-${b}`} className="py-2" />
-        ))}
-        {days.map((day) => {
-          const isHighlighted = highlightedDays.includes(day);
-          return (
-            <div
-              key={day}
-              className="py-1 flex items-center justify-center"
-            >
-              <span
-                className={`w-7 h-7 flex items-center justify-center rounded-full transition-colors cursor-pointer text-xs ${
-                  isHighlighted
-                    ? "border-2 border-[#FBAB2A] text-white font-extrabold"
-                    : "text-gray-200 hover:bg-white/10"
-                }`}
-              >
-                {day}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
+    <CalendarWidget
+      panelInterviewDate={mostRecentInterviewDate}
+      onSelectDate={onSelectDate}
+      className={className}
+    />
   );
 };
