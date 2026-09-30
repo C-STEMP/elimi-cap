@@ -179,6 +179,22 @@ export const NsqCentreApplicationDetailView: React.FC<
   });
   const liveObservation = sortedSessions[0];
 
+  const centreCalendarEvents = useMemo(() => {
+    const evts: any[] = [];
+    if (liveObservation?.scheduledAt) {
+      evts.push({
+        id: liveObservation.id,
+        title: "Direct Observation",
+        name: "Direct Observation",
+        date: liveObservation.scheduledAt,
+        time: liveObservation.scheduledAt?.split("T")[1]?.slice(0, 5) || undefined,
+        eventType: "observation",
+        status: liveObservation.status,
+      });
+    }
+    return evts;
+  }, [liveObservation]);
+
   // Unit navigation state (internal + controlled via props)
   const [internalUnitNumber, setInternalUnitNumber] = useState<string | null>(
     null,
@@ -1306,7 +1322,7 @@ export const NsqCentreApplicationDetailView: React.FC<
         {/* Right Sidebar Column */}
         <div className="lg:col-span-4 flex flex-col gap-6">
           {/* Calendar Widget (Dark Theme matching mockup) */}
-          <CalendarWidget />
+          <CalendarWidget events={centreCalendarEvents} />
 
           {/* Observation Request Card — GET /applications/{id}/direct-observation */}
           <div className="bg-white rounded-2xl p-6 shadow-xs border border-gray-100 flex flex-col gap-4">

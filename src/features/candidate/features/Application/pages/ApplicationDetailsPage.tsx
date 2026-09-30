@@ -143,6 +143,7 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({ 
             onRequestCall={() => state.setIsCallRequestModalOpen(true)}
             formsToSign={state.formsToSign}
             onOpenForm={state.handleOpenForm}
+            events={state.applicationEvents}
           />
         </div>
       </div>

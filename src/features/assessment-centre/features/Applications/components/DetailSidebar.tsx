@@ -1,32 +1,38 @@
 "use client";
 
 import React from "react";
-import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import { Avatar } from "@/src/components/ui/avatar";
 import { UpcomingCard } from "@/features/candidate/features/Dashboard/components/UpcomingCard";
+import { CalendarWidget } from "@/features/candidate/features/Dashboard/components/CalendarWidget";
 
 interface DetailSidebarProps {
-  currentMonth: string;
-  daysOfWeek: string[];
-  daysInMonth: number[];
-  handlePrevMonth: () => void;
-  handleNextMonth: () => void;
+  currentMonth?: string;
+  daysOfWeek?: string[];
+  daysInMonth?: number[];
+  handlePrevMonth?: () => void;
+  handleNextMonth?: () => void;
   isInterviewScheduled: boolean;
-  activeInterviewSchedule: any;
+  activeInterviewSchedule?: {
+    scheduledAt?: string;
+    mode?: "physical" | "online" | string;
+    link?: string;
+    location?: string;
+  } | null;
   interviewEventDateFormatted: string;
   interviewTimeFormatted: string;
   isRescheduled: boolean;
   isAtInterviewStage: boolean;
-  activeFacilitator: any;
+  activeFacilitator?: {
+    name?: string;
+    avatar?: string;
+    photo?: { url?: string };
+    photoUrl?: string;
+    trade?: string;
+  } | null;
   tradeName: string;
 }
 
 export const DetailSidebar: React.FC<DetailSidebarProps> = ({
-  currentMonth,
-  daysOfWeek,
-  daysInMonth,
-  handlePrevMonth,
-  handleNextMonth,
   isInterviewScheduled,
   activeInterviewSchedule,
   interviewEventDateFormatted,
@@ -39,43 +45,13 @@ export const DetailSidebar: React.FC<DetailSidebarProps> = ({
   return (
     <div className="lg:col-span-4 xl:col-span-3 flex flex-col gap-6">
       {/* Calendar */}
-      <div className="bg-[#18181b] text-white rounded-3xl p-5 sm:p-6 shadow-md flex flex-col gap-4 select-none">
-        <div className="flex items-center justify-between text-white px-1">
-          <button type="button" onClick={handlePrevMonth} className="p-1 hover:bg-white/10 rounded-lg transition-colors cursor-pointer">
-            <FiChevronLeft className="w-5 h-5" />
-          </button>
-          <span className="font-bold text-sm sm:text-base tracking-wide">{currentMonth}</span>
-          <button type="button" onClick={handleNextMonth} className="p-1 hover:bg-white/10 rounded-lg transition-colors cursor-pointer">
-            <FiChevronRight className="w-5 h-5" />
-          </button>
-        </div>
-
-        <div className="grid grid-cols-7 text-center text-[10px] font-bold text-gray-400">
-          {daysOfWeek.map((day) => (
-            <span key={day}>{day}</span>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-7 text-center gap-y-2 text-xs font-semibold text-gray-200">
-          {daysInMonth.map((day) => {
-            const targetDayNumber = activeInterviewSchedule?.scheduledAt
-              ? new Date(activeInterviewSchedule.scheduledAt).getDate()
-              : null;
-            const isCircled = isInterviewScheduled && targetDayNumber !== null && day === targetDayNumber;
-
-            return (
-              <span
-                key={day}
-                className={`w-6.5 h-6.5 mx-auto rounded-full flex items-center justify-center transition-colors cursor-pointer ${
-                  isCircled ? "border-2 border-[#fbab2a] text-white font-bold" : "hover:bg-white/15 text-gray-300"
-                }`}
-              >
-                {day}
-              </span>
-            );
-          })}
-        </div>
-      </div>
+      <CalendarWidget
+        panelInterviewDate={
+          isInterviewScheduled && activeInterviewSchedule?.scheduledAt
+            ? activeInterviewSchedule.scheduledAt
+            : undefined
+        }
+      />
 
       {/* Upcoming interview card */}
       <UpcomingCard
