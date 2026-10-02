@@ -20,8 +20,14 @@ import { IqamToolsDashboard } from "@/src/features/assessor/features/iqam/IqamTo
 import type { AssessorApplicationRecord } from "./AssessorApplicationsView";
 import { useAppSelector } from "@/src/store/hooks";
 
-export const AssessorApplicationRouteView: React.FC<{ id: string }> = ({
+export const AssessorApplicationRouteView: React.FC<{
+  id: string;
+  initialSubView?: AssessorDetailSubView;
+  isStandaloneRoute?: boolean;
+}> = ({
   id,
+  initialSubView = "stages",
+  isStandaloneRoute = false,
 }) => {
   const router = useRouter();
   const pathname = usePathname();
@@ -43,7 +49,13 @@ export const AssessorApplicationRouteView: React.FC<{ id: string }> = ({
   }, [application, user, meProfile, assessorProfile]);
 
   const [applicationSubView, setApplicationSubView] =
-    useState<AssessorDetailSubView>("stages");
+    useState<AssessorDetailSubView>(
+      initialSubView !== "stages"
+        ? initialSubView
+        : searchParams.get("view") === "evidence_vault"
+        ? "evidence_vault"
+        : "stages",
+    );
   const [canMarkAsComplete, setCanMarkAsComplete] = useState(false);
   const [triggerMarkComplete, setTriggerMarkComplete] = useState(false);
   const [nsqNavState, setNsqNavState] = useState<any>("overview");
@@ -97,6 +109,10 @@ export const AssessorApplicationRouteView: React.FC<{ id: string }> = ({
       return;
     }
     setCanMoveToIqam(false);
+    if (isStandaloneRoute || pathname?.includes("/evidence-vault")) {
+      router.push(`/applications/${id}?from=assessor`);
+      return;
+    }
     if (applicationSubView !== "stages") {
       setApplicationSubView("stages");
     } else {
@@ -217,7 +233,11 @@ export const AssessorApplicationRouteView: React.FC<{ id: string }> = ({
             onSubViewChange={setApplicationSubView}
             onAllApprovedChange={setCanMarkAsComplete}
             onMarkAsComplete={() => {
-              setApplicationSubView("stages");
+              if (isStandaloneRoute) {
+                router.push(`/applications/${id}?from=assessor`);
+              } else {
+                setApplicationSubView("stages");
+              }
             }}
             triggerMarkComplete={triggerMarkComplete}
             onResetTriggerMarkComplete={() => setTriggerMarkComplete(false)}

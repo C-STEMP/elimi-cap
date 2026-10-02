@@ -19,6 +19,7 @@ import { ScheduledPanelistInfo } from "../components/AssignPanelistModal";
 import { computeStageCalculations } from "../utils/detailHelpers";
 import { useUrlModal } from "@/src/lib/hooks/usePersistentModal";
 import { ASSIGN_PANELIST_MODAL, RESCHEDULE_INTERVIEW_MODAL, SCHEDULE_INTERVIEW_MODAL, CREATE_PANEL_MODAL, ASSIGN_FACILITATOR_MODAL, ASSIGN_VERIFIER_MODAL, REVIEW_VERIFIER_MODAL } from "@/src/lib/modal-keys";
+import { extractFacilitatorFromApplication } from "@/src/features/shared/applications/utils/facilitator";
 
 export function useApplicationDetailState(id: string, candidateNameProp = "Candidate") {
   const { toast } = useToast();
@@ -163,7 +164,7 @@ export function useApplicationDetailState(id: string, candidateNameProp = "Candi
     ? new Date(activeInterviewSchedule.scheduledAt).toLocaleDateString("en-GB")
     : "";
 
-  const activeFacilitator = assignedFacilitator || (appDetail as any)?.facilitator || (appDetail as any)?.assessor || null;
+  const activeFacilitator = extractFacilitatorFromApplication(appDetail, assignedFacilitator);
 
   const handleOpenScheduleModal = () => {
     const hasPanels = (centrePanels && centrePanels.length > 0) || (centreInterviews && centreInterviews.length > 0);

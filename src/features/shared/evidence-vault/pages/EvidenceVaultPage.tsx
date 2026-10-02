@@ -3,10 +3,13 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { FiPlus } from "react-icons/fi";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { HeaderBanner } from "@/features/candidate/features/Dashboard/components/HeaderBanner";
 import { CalendarWidget } from "@/features/candidate/features/Dashboard/components/CalendarWidget";
 import { UpcomingCard } from "@/features/candidate/features/Dashboard/components/UpcomingCard";
+import { FacilitatorCard } from "@/features/candidate/features/Dashboard/components/FacilitatorCard";
+import { buildFacilitatorData } from "@/features/candidate/features/Application/utils/applicationDetailsHelpers";
+import { StatusModal } from "@/components/status-modal";
 import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
 import {
@@ -36,6 +39,7 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
 }) => {
   const { toast } = useToast();
   const router = useRouter();
+  const pathname = usePathname();
 
   const { data: apiApp } = useGetApplicationById(applicationId);
   const { data: selfAssessment } = useGetSelfAssessment(applicationId);
@@ -58,6 +62,20 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
   const dynamicTitle = rawTrade
     ? `${rawTrade} (${typeLabel})`
     : `${typeLabel} Application`;
+
+  const facilitatorData = React.useMemo(
+    () =>
+      buildFacilitatorData(
+        (apiApp as any)?.assignedFacilitator ||
+          (apiApp as any)?.facilitator ||
+          (apiApp as any)?.unitAssessor ||
+          (apiApp as any)?.assessor,
+        rawTrade,
+      ),
+    [apiApp, rawTrade],
+  );
+
+  const [isCallRequestModalOpen, setIsCallRequestModalOpen] = useState(false);
 
   const application = apiApp
     ? {
@@ -253,13 +271,24 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
       className="w-full flex flex-col min-h-screen"
     >
       <HeaderBanner
-        backHref={`/dashboard/applications/${application.id}`}
+        backHref={
+          pathname?.startsWith("/applications")
+            ? `/applications/${application.id}`
+            : `/dashboard/applications/${application.id}`
+        }
         backTitle="Evidence Vault"
         breadcrumbs={[
-          { label: "My Applications", href: "/dashboard/applications" },
+          {
+            label: "My Applications",
+            href: pathname?.startsWith("/applications")
+              ? "/dashboard/applications"
+              : "/dashboard/applications",
+          },
           {
             label: application.title,
-            href: `/dashboard/applications/${application.id}`,
+            href: pathname?.startsWith("/applications")
+              ? `/applications/${application.id}`
+              : `/dashboard/applications/${application.id}`,
           },
           { label: "Evidence Vault" },
         ]}
@@ -319,6 +348,10 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
                   : null
               }
             />
+            <FacilitatorCard
+              facilitator={facilitatorData}
+              onRequestCall={() => setIsCallRequestModalOpen(true)}
+            />
           </div>
         </div>
       </div>
@@ -341,6 +374,23 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
         item={previewItem}
         applicationId={applicationId}
         onClose={() => setPreviewItem(null)}
+      />
+
+      <StatusModal
+        isOpen={isCallRequestModalOpen}
+        onClose={() => setIsCallRequestModalOpen(false)}
+        type="success"
+        title="Call Request Sent Successfully"
+        description="Your call request has been sent successfully. Your facilitator will get back to you soon."
+        actionLabel="Close"
+        onAction={() => {
+          setIsCallRequestModalOpen(false);
+          toast({
+            type: "success",
+            title: "Call Requested",
+            description: "Facilitator will contact you soon.",
+          });
+        }}
       />
     </motion.div>
   );
