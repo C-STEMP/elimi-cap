@@ -1,9 +1,10 @@
 "use client";
 
 import React from "react";
-import { Avatar } from "@/src/components/ui/avatar";
 import { UpcomingCard } from "@/features/candidate/features/Dashboard/components/UpcomingCard";
 import { CalendarWidget } from "@/features/candidate/features/Dashboard/components/CalendarWidget";
+import { StaffFacilitatorCard } from "@/src/features/shared/applications/components/StaffFacilitatorCard";
+import type { NormalizedFacilitator } from "@/src/features/shared/applications/utils/facilitator";
 
 interface DetailSidebarProps {
   currentMonth?: string;
@@ -22,11 +23,11 @@ interface DetailSidebarProps {
   interviewTimeFormatted: string;
   isRescheduled: boolean;
   isAtInterviewStage: boolean;
-  activeFacilitator?: {
+  activeFacilitator?: NormalizedFacilitator | {
     name?: string;
-    avatar?: string;
-    photo?: { url?: string };
-    photoUrl?: string;
+    avatar?: string | null;
+    photo?: { url?: string | null };
+    photoUrl?: string | null;
     trade?: string;
   } | null;
   tradeName: string;
@@ -72,32 +73,10 @@ export const DetailSidebar: React.FC<DetailSidebarProps> = ({
 
       {/* Facilitator Card */}
       {!isAtInterviewStage && (
-        activeFacilitator ? (
-          <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-2xs flex flex-col gap-4 select-text">
-            <h3 className="text-base font-extrabold text-black tracking-tight">Facilitator</h3>
-            <div className="flex items-center gap-3.5">
-              <Avatar
-                src={activeFacilitator.photo?.url || activeFacilitator.photoUrl || activeFacilitator.avatar}
-                name={activeFacilitator.name}
-                className="w-13 h-13 border border-gray-200 shrink-0"
-                alt={activeFacilitator.name}
-              />
-              <div className="flex flex-col gap-0.5 min-w-0">
-                <h4 className="text-sm font-bold text-black truncate">{activeFacilitator.name}</h4>
-                <p className="text-[11px] text-gray-500 font-normal truncate">
-                  Facilitator · {activeFacilitator.trade || tradeName} (Level 3)
-                </p>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-2xs flex flex-col gap-2 select-text">
-            <h3 className="text-base font-extrabold text-black tracking-tight">No facilitator assigned yet</h3>
-            <p className="text-xs text-gray-400 font-normal leading-relaxed">
-              A coordinator will be assigned to guide you once your first application is created.
-            </p>
-          </div>
-        )
+        <StaffFacilitatorCard
+          facilitator={activeFacilitator as any}
+          tradeName={tradeName}
+        />
       )}
     </div>
   );

@@ -28,8 +28,14 @@ import { NsqCentreApplicationDetailView } from "./nsq/NsqCentreApplicationDetail
 import { useUrlModal } from "@/src/lib/hooks/usePersistentModal";
 import { APPLICATION_SCHEDULE_INTERVIEW_MODAL, CREATE_INTERVIEW_MODAL, APPLICATION_CANDIDATE_FORM_VIEW } from "@/src/lib/modal-keys";
 import { closeUrlSubView, openUrlSubView } from "@/src/lib/navigation/url-sub-view";
-export const CentreApplicationRouteView: React.FC<{ id: string }> = ({
+export const CentreApplicationRouteView: React.FC<{
+  id: string;
+  initialShowEvidenceVault?: boolean;
+  isStandaloneEvidenceVaultRoute?: boolean;
+}> = ({
   id,
+  initialShowEvidenceVault = false,
+  isStandaloneEvidenceVaultRoute = false,
 }) => {
   const router = useRouter();
   const pathname = usePathname();
@@ -45,7 +51,9 @@ export const CentreApplicationRouteView: React.FC<{ id: string }> = ({
   const reviewMutation = useReviewApplication();
 
   const [showCandidateForm, setShowCandidateForm] = useUrlModal(APPLICATION_CANDIDATE_FORM_VIEW);
-  const [showEvidenceVault, setShowEvidenceVault] = useState(false);
+  const [showEvidenceVault, setShowEvidenceVault] = useState(
+    initialShowEvidenceVault || searchParams.get("view") === "evidence_vault",
+  );
   const [showSelfAssessmentForm, setShowSelfAssessmentForm] = useState(false);
   const [isPromptCreatePanelModalOpen, setIsPromptCreatePanelModalOpen] =
     useState(false);
@@ -135,6 +143,21 @@ export const CentreApplicationRouteView: React.FC<{ id: string }> = ({
     else setIsScheduleInterviewModalOpen(true);
   };
 
+  const handleOpenEvidenceVault = () => {
+    router.push(`/applications/${id}/evidence-vault?from=centre`);
+  };
+
+  const handleBackFromEvidenceVault = () => {
+    if (
+      isStandaloneEvidenceVaultRoute ||
+      pathname?.includes("/evidence-vault")
+    ) {
+      router.push(`/applications/${id}?from=centre`);
+    } else {
+      setShowEvidenceVault(false);
+    }
+  };
+
   const handleBackToList = () => {
     router.push("/assessment-centre/dashboard/applications");
   };
@@ -165,7 +188,7 @@ export const CentreApplicationRouteView: React.FC<{ id: string }> = ({
           onBackFromInterview={handleBackToList}
           onBackFromUnit={() => setSelectedUnitNumber(null)}
           onBackFromSelfAssessment={() => setShowSelfAssessmentForm(false)}
-          onBackFromEvidenceVault={() => setShowEvidenceVault(false)}
+          onBackFromEvidenceVault={handleBackFromEvidenceVault}
           onBackFromCandidateForm={() => setShowCandidateForm(false)}
           onAcceptApplication={() => {
             reviewMutation.mutate(
@@ -250,7 +273,7 @@ export const CentreApplicationRouteView: React.FC<{ id: string }> = ({
           <EvidenceVaultView
             id={id}
             candidateName={candidateName ?? undefined}
-            onBack={() => setShowEvidenceVault(false)}
+            onBack={handleBackFromEvidenceVault}
             onOpenSelfAssessmentForm={() => setShowSelfAssessmentForm(true)}
           />
         ) : showCandidateForm ? (
@@ -272,7 +295,7 @@ export const CentreApplicationRouteView: React.FC<{ id: string }> = ({
             candidateName={candidateName ?? undefined}
             onBack={handleBackToList}
             onOpenCandidateForm={() => setShowCandidateForm(true)}
-            onOpenEvidenceVault={() => setShowEvidenceVault(true)}
+            onOpenEvidenceVault={handleOpenEvidenceVault}
           />
         )}
       </div>

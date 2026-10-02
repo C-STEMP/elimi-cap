@@ -4,12 +4,15 @@ import React from "react";
 import { FiCalendar } from "react-icons/fi";
 import { Avatar } from "@/src/components/ui/avatar";
 import { CalendarWidget } from "@/features/candidate/features/Dashboard/components/CalendarWidget";
+import { StaffFacilitatorCard } from "@/src/features/shared/applications/components/StaffFacilitatorCard";
+import type { NormalizedFacilitator } from "@/src/features/shared/applications/utils/facilitator";
 import type { ApplicationDetail } from "@/src/features/shared/applications/api/types";
 
 interface Props {
-  activeFacilitator?: {
+  activeFacilitator?: NormalizedFacilitator | {
     name?: string;
-    avatar?: string;
+    avatar?: string | null;
+    photoUrl?: string | null;
     trade?: string;
   } | null;
   appDetail?: ApplicationDetail | null;
@@ -46,41 +49,10 @@ export const EvidenceSidebarWidgets: React.FC<Props> = ({
       </div>
 
       {/* 3. Facilitator Card */}
-      {activeFacilitator ? (
-        <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-2xs flex flex-col gap-4">
-          <h3 className="text-sm sm:text-base font-extrabold text-black tracking-tight">Facilitator</h3>
-          <div className="flex items-center gap-3 bg-[#F8F9FA] rounded-2xl p-3 border border-gray-100">
-            <Avatar
-              src={activeFacilitator.avatar}
-              name={activeFacilitator.name}
-              className="w-12 h-12 border border-gray-200 shrink-0"
-              alt={activeFacilitator.name}
-            />
-            <div className="flex flex-col gap-1 min-w-0">
-              <span className="text-xs sm:text-sm font-extrabold text-black truncate">
-                {activeFacilitator.name}
-              </span>
-              <span className="text-[10px] sm:text-xs text-gray-500 font-medium truncate">
-                {["Facilitator", tradeTitle].filter(Boolean).join(" · ")}
-              </span>
-              <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
-                {tradeTitle && (
-                  <span className="bg-[#FCE8EB] text-[#A31D38] text-[9px] font-bold px-2 py-0.5 rounded-full">
-                    {tradeTitle}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-2xs flex flex-col gap-2">
-          <h3 className="text-sm sm:text-base font-extrabold text-black tracking-tight">Facilitator</h3>
-          <p className="text-xs text-gray-400 font-normal leading-relaxed">
-            No facilitator assigned to this candidate yet.
-          </p>
-        </div>
-      )}
+      <StaffFacilitatorCard
+        facilitator={activeFacilitator as any}
+        tradeName={tradeTitle}
+      />
     </div>
   );
 };

@@ -7,6 +7,7 @@ import {
   useGetApplicationById,
   APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
 } from "@/src/features/shared/applications/hooks";
+import { extractFacilitatorFromApplication } from "@/src/features/shared/applications/utils/facilitator";
 import type { EvidenceRecord } from "@/src/features/shared/evidence-vault/utils/evidenceConstants";
 
 export function useEvidenceVaultViewState(id: string = "") {
@@ -19,7 +20,10 @@ export function useEvidenceVaultViewState(id: string = "") {
 
   const [previewItem, setPreviewItem] = useState<EvidenceRecord | null>(null);
 
-  const activeFacilitator = appDetail?.facilitator ?? null;
+  const activeFacilitator = useMemo(
+    () => extractFacilitatorFromApplication(appDetail),
+    [appDetail],
+  );
 
   // General evidence rows from GET /applications/{id}/evidence; status is the
   // backend's own review status.

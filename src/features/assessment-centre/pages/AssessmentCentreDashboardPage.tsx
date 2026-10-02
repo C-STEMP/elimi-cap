@@ -500,7 +500,15 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
             onCloseCandidateForm={() => setShowCandidateForm(false)}
             onOpenCandidateForm={() => setShowCandidateForm(true)}
             onCloseEvidenceVault={() => setShowEvidenceVault(false)}
-            onOpenEvidenceVault={() => setShowEvidenceVault(true)}
+            onOpenEvidenceVault={() => {
+              if (selectedApplicationId) {
+                router.push(
+                  `/applications/${selectedApplicationId}/evidence-vault?from=centre`,
+                );
+              } else {
+                setShowEvidenceVault(true);
+              }
+            }}
             onCloseSelfAssessmentForm={() => setShowSelfAssessmentForm(false)}
             onOpenSelfAssessmentForm={() => setShowSelfAssessmentForm(true)}
             onOpenCreatePanel={() => setIsCreatePanelModalOpen(true)}

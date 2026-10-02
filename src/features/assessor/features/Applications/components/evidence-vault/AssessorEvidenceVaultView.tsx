@@ -1,20 +1,27 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { ResourcesSection } from "./ResourcesSection";
-import { EvidenceListSection } from "./EvidenceListSection";
-import { type EvidenceItem } from "./EvidenceItemCard";
-import { ConfirmMarkCompleteModal } from "./ConfirmMarkCompleteModal";
-import { FolderCompleteSuccessModal } from "./FolderCompleteSuccessModal";
+import { useToast } from "@/src/components/ui/toast";
+import { StaffFacilitatorCard } from "@/src/features/shared/applications/components/StaffFacilitatorCard";
+import {
+  useGetApplicationById,
+  useGetEvidenceVault,
+  useGetSelfAssessment,
+  useGetThirdPartyReport,
+  useReviewApplication,
+} from "@/src/features/shared/applications/hooks";
+import { extractFacilitatorFromApplication } from "@/src/features/shared/applications/utils/facilitator";
+import { PreviewEvidenceModal } from "@/src/features/shared/evidence-vault/components/PreviewEvidenceModal";
+import type { EvidenceRecord } from "@/src/features/shared/evidence-vault/utils/evidenceConstants";
+import React, { useEffect, useState } from "react";
 import {
   AssessorCalendarWidget,
   AssessorUpcomingEventsWidget,
 } from "../detail";
-import { PreviewEvidenceModal } from "@/src/features/shared/evidence-vault/components/PreviewEvidenceModal";
-import type { EvidenceRecord } from "@/src/features/shared/evidence-vault/utils/evidenceConstants";
-import { useToast } from "@/src/components/ui/toast";
-
-import { useGetEvidenceVault, useGetSelfAssessment, useGetThirdPartyReport, useReviewApplication } from "@/src/features/shared/applications/hooks";
+import { ConfirmMarkCompleteModal } from "./ConfirmMarkCompleteModal";
+import { type EvidenceItem } from "./EvidenceItemCard";
+import { EvidenceListSection } from "./EvidenceListSection";
+import { FolderCompleteSuccessModal } from "./FolderCompleteSuccessModal";
+import { ResourcesSection } from "./ResourcesSection";
 
 interface AssessorEvidenceVaultViewProps {
   applicationId?: string;
@@ -43,19 +50,26 @@ export const AssessorEvidenceVaultView: React.FC<
 }) => {
   const { toast } = useToast();
 
-  const { data: remoteEvidence, isLoading: isLoadingEvidence } = useGetEvidenceVault(applicationId || "");
-  const { data: selfAssessmentData } = useGetSelfAssessment(applicationId || "");
-  const { data: thirdPartyReportData } = useGetThirdPartyReport(applicationId || "");
+  const { data: appDetail } = useGetApplicationById(applicationId || "");
+  const { data: remoteEvidence, isLoading: isLoadingEvidence } =
+    useGetEvidenceVault(applicationId || "");
+  const { data: selfAssessmentData } = useGetSelfAssessment(
+    applicationId || "",
+  );
+  const { data: thirdPartyReportData } = useGetThirdPartyReport(
+    applicationId || "",
+  );
   const reviewMutation = useReviewApplication();
+
+  const activeFacilitator = React.useMemo(
+    () => extractFacilitatorFromApplication(appDetail),
+    [appDetail],
+  );
 
   const [evidenceItems, setEvidenceItems] = useState<EvidenceItem[]>([]);
   const [previewItem, setPreviewItem] = useState<EvidenceRecord | null>(null);
 
   useEffect(() => {
-    // Self-assessment and third-party report records are structured form
-    // data, not uploaded files — they have no resolvable URL/assetId and no
-    // matching GeneralEvidence record, so previewing/approving them here
-    // always fails. They're already surfaced via the Resources section above.
     const isGeneralEvidence = (e: any) =>
       e.kind === "general" ||
       (!e.kind && (e.documentName || e.name || e.assetId));
@@ -64,7 +78,12 @@ export const AssessorEvidenceVaultView: React.FC<
       .filter(isGeneralEvidence)
       .map((e: any) => {
         const docName = (
-          e.documentName || e.name || e.title || e.filename || e.originalName || ""
+          e.documentName ||
+          e.name ||
+          e.title ||
+          e.filename ||
+          e.originalName ||
+          ""
         ).trim();
         const feedback: string[] = (
           Array.isArray(e.feedback)
@@ -79,8 +98,7 @@ export const AssessorEvidenceVaultView: React.FC<
         ).filter(Boolean);
         const status = String(e.status || "");
         const isItemApproved =
-          isStageAlreadyComplete ||
-          /approv|accepted|successful/i.test(status);
+          isStageAlreadyComplete || /approv|accepted|successful/i.test(status);
         const rawStatus = isItemApproved
           ? "Approved"
           : feedback.length > 0
@@ -105,15 +123,11 @@ export const AssessorEvidenceVaultView: React.FC<
     setEvidenceItems(mapped);
   }, [remoteEvidence, isStageAlreadyComplete]);
 
-  // Mark Folder As Complete Flow State
   const [isConfirmMarkCompleteOpen, setIsConfirmMarkCompleteOpen] =
     useState(false);
   const [isFolderCompleteSuccessOpen, setIsFolderCompleteSuccessOpen] =
     useState(false);
 
-  // The backend reviews the folder as a whole (POST /review with
-  // folder_arrangement); there is no per-item approval, so the folder can be
-  // marked complete once the candidate has uploaded evidence.
   const allApproved = !isStageAlreadyComplete && evidenceItems.length > 0;
 
   useEffect(() => {
@@ -127,7 +141,6 @@ export const AssessorEvidenceVaultView: React.FC<
     }
   }, [triggerMarkComplete, onResetTriggerMarkComplete]);
 
-  // View Evidence Preview
   const handleViewEvidence = (item: EvidenceItem) => {
     setPreviewItem({
       id: item.id,
@@ -149,7 +162,6 @@ export const AssessorEvidenceVaultView: React.FC<
     });
   };
 
-  // Handle Mark As Complete Flow
   const handleConfirmMarkComplete = async () => {
     if (!applicationId) return;
     try {
@@ -197,9 +209,7 @@ export const AssessorEvidenceVaultView: React.FC<
 
   return (
     <div className="w-full flex flex-col gap-6 select-text">
-      {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Column: Resources and Evidence Items */}
         <div className="lg:col-span-8 flex flex-col gap-8">
           <ResourcesSection
             applicationId={applicationId}
@@ -213,21 +223,27 @@ export const AssessorEvidenceVaultView: React.FC<
           />
         </div>
 
-        {/* Right Column: Calendar and Events Widgets */}
         <div className="lg:col-span-4 flex flex-col gap-6">
           <AssessorCalendarWidget />
           <AssessorUpcomingEventsWidget applicationId={applicationId} />
+          <StaffFacilitatorCard
+            facilitator={activeFacilitator}
+            tradeName={
+              (appDetail as any)?.trade?.name ||
+              (typeof (appDetail as any)?.trade === "string"
+                ? (appDetail as any).trade
+                : "")
+            }
+          />
         </div>
       </div>
 
-      {/* Document Preview Modal */}
       <PreviewEvidenceModal
         item={previewItem}
         applicationId={applicationId}
         onClose={() => setPreviewItem(null)}
       />
 
-      {/* --- Mark Folder As Complete Modals --- */}
       <ConfirmMarkCompleteModal
         isOpen={isConfirmMarkCompleteOpen}
         onClose={() => setIsConfirmMarkCompleteOpen(false)}
