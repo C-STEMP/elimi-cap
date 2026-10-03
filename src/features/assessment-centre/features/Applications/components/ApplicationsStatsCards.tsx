@@ -96,11 +96,11 @@ export const ApplicationsStatsCards: React.FC<Props> = ({
                 : "border-white/15"
             }`}
           >
-            <div className="flex flex-col min-w-0">
-              <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80 truncate">
+            <div className="flex flex-col min-w-0 flex-1">
+              <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80 leading-snug lg:truncate">
                 {card.label}
               </span>
-              <div className="flex items-baseline gap-1.5 mt-1">
+              <div className="flex flex-wrap items-baseline gap-x-1.5 mt-1">
                 <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
                   {card.count.toLocaleString()}
                 </span>

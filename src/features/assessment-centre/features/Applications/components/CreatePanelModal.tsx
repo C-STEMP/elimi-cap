@@ -73,7 +73,7 @@ export const CreatePanelModal: React.FC<CreatePanelModalProps> = (props) => {
 
                 <Select
                   label="Lead Panelist *"
-                  placeholder={s.isLoadingAssessors ? "Loading Assessors..." : "Select Lead Panelist"}
+                  placeholder={s.isLoadingAssessors ? "Loading Quality Assurers..." : "Select Lead Panelist"}
                   value={s.leadPanelistId}
                   onChange={(e) => s.setLeadPanelistId(e.target.value)}
                   options={s.assessorOptions
@@ -83,7 +83,7 @@ export const CreatePanelModal: React.FC<CreatePanelModalProps> = (props) => {
 
                 <Select
                   label="Panel Member *"
-                  placeholder={s.isLoadingAssessors ? "Loading Assessors..." : "Select Panel Member"}
+                  placeholder={s.isLoadingAssessors ? "Loading Quality Assurers..." : "Select Panel Member"}
                   value={s.panelMemberId}
                   onChange={(e) => s.setPanelMemberId(e.target.value)}
                   options={s.assessorOptions
@@ -93,7 +93,7 @@ export const CreatePanelModal: React.FC<CreatePanelModalProps> = (props) => {
 
                 <Select
                   label="Internal Verifier *"
-                  placeholder={s.isLoadingAssessors ? "Loading Assessors..." : "Select Internal Verifier"}
+                  placeholder={s.isLoadingAssessors ? "Loading Quality Assurers..." : "Select Internal Verifier"}
                   value={s.internalVerifierId}
                   onChange={(e) => s.setInternalVerifierId(e.target.value)}
                   options={s.assessorOptions
@@ -109,9 +109,9 @@ export const CreatePanelModal: React.FC<CreatePanelModalProps> = (props) => {
 
                 {s.selectedIvAssessor && !s.isSelectedIvQualified && (
                   <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800">
-                    <p className="font-bold mb-0.5">⚠️ Assessor Lacks IV Qualification</p>
+                    <p className="font-bold mb-0.5">⚠️ Quality Assurer Lacks IV Qualification</p>
                     <p>
-                      <strong>{s.selectedIvAssessor.label}</strong> holds ({s.selectedIvAssessor.qualifications.join(", ") || "No qualifications"}). The backend requires <strong>AssessorQualification.IV</strong> for the Internal Verifier. Update their profile or select an IV-qualified assessor.
+                      <strong>{s.selectedIvAssessor.label}</strong> holds ({s.selectedIvAssessor.qualifications.join(", ") || "No qualifications"}). The backend requires <strong>AssessorQualification.IV</strong> for the Internal Verifier. Update their profile or select an IV-qualified quality assurer.
                     </p>
                   </div>
                 )}

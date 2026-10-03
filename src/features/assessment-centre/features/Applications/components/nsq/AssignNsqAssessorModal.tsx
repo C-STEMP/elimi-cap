@@ -109,7 +109,7 @@ export const AssignNsqAssessorModal: React.FC<AssignNsqAssessorModalProps> = ({
         title: "Assignment Failed",
         description:
           err?.message ||
-          `Unable to assign this ${isQaa ? "QAA" : "IQA"} assessor. Please try again.`,
+          `Unable to assign this ${isQaa ? "QAA" : "IQA"} quality assurer. Please try again.`,
       });
     } finally {
       setIsSubmitting(false);
@@ -125,7 +125,7 @@ export const AssignNsqAssessorModal: React.FC<AssignNsqAssessorModalProps> = ({
 
     toast({
       type: "success",
-      title: `${isQaa ? "QAA Assessor" : "IQA Assessor"} Assigned`,
+      title: `${isQaa ? "QAA Assessor" : "IQA Quality Assurer"} Assigned`,
       description: `${chosen.name} has been assigned successfully.`,
     });
 
@@ -175,10 +175,10 @@ export const AssignNsqAssessorModal: React.FC<AssignNsqAssessorModalProps> = ({
             <div className="flex flex-col gap-5 pt-2">
               <div className="flex flex-col items-center text-center">
                 <h3 className="text-xl font-bold text-gray-900 tracking-tight">
-                  {isQaa ? "Assign Assessors" : "Assign IQA Assessor"}
+                  {isQaa ? "Assign Quality Assurers" : "Assign IQA Quality Assurer"}
                 </h3>
                 <p className="text-xs text-gray-400 mt-1 font-normal">
-                  Assign an assessor to this candidate
+                  Assign a quality assurer to this candidate
                 </p>
               </div>
 
@@ -204,7 +204,7 @@ export const AssignNsqAssessorModal: React.FC<AssignNsqAssessorModalProps> = ({
                     </div>
                   ) : assessorsPool.length === 0 ? (
                     <div className="w-full bg-[#F8F9FA] border border-gray-200 rounded-xl px-4 py-3 text-xs text-gray-400">
-                      No approved retained assessors at this centre yet.
+                      No approved retained quality assurers at this centre yet.
                     </div>
                   ) : (
                     <Select
@@ -214,7 +214,7 @@ export const AssignNsqAssessorModal: React.FC<AssignNsqAssessorModalProps> = ({
                         label: assessor.name,
                         value: assessor.id,
                       }))}
-                      placeholder="Select an assessor"
+                      placeholder="Select a quality assurer"
                     />
                   )}
                 </div>
@@ -229,7 +229,7 @@ export const AssignNsqAssessorModal: React.FC<AssignNsqAssessorModalProps> = ({
                   variant="amber"
                   className="w-full py-3.5 bg-[#fbab2a] hover:bg-[#e89b1f] text-white text-xs font-bold rounded-xl shadow-md cursor-pointer border-none disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Assign Assessor
+                  Assign Quality Assurer
                 </Button>
               </div>
             </div>

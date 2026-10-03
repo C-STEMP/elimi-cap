@@ -1114,7 +1114,7 @@ export const NsqCentreApplicationDetailView: React.FC<
               <div className="bg-white rounded-2xl p-6 shadow-xs border border-gray-100 flex flex-col gap-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-base font-bold text-gray-900">
-                    Assessors
+                    Quality Assurers
                   </h3>
                   {(assignedAssessor || assignedIqa) && (
                     <button
@@ -1127,7 +1127,7 @@ export const NsqCentreApplicationDetailView: React.FC<
                       }
                       className="text-xs font-semibold text-[#fbab2a] hover:text-[#e89b1f] hover:underline cursor-pointer"
                     >
-                      Reassign Assessors
+                      Reassign Quality Assurers
                     </button>
                   )}
                 </div>
@@ -1154,10 +1154,10 @@ export const NsqCentreApplicationDetailView: React.FC<
                   ) : (
                     <div className="bg-[#F8F9FA] rounded-xl p-5 border border-gray-100 flex flex-col items-center text-center justify-center gap-1.5 min-h-25">
                       <span className="font-bold text-sm text-gray-800">
-                        No assessor assigned
+                        No quality assurer assigned
                       </span>
                       <span className="text-xs text-gray-400">
-                        Assign an assessor to begin the verification process.
+                        Assign a quality assurer to begin the verification process.
                       </span>
                       <button
                         type="button"
@@ -1193,10 +1193,10 @@ export const NsqCentreApplicationDetailView: React.FC<
                   ) : (
                     <div className="bg-[#F8F9FA] rounded-xl p-5 border border-gray-100 flex flex-col items-center text-center justify-center gap-1.5 min-h-25">
                       <span className="font-bold text-sm text-gray-800">
-                        No assessor assigned
+                        No quality assurer assigned
                       </span>
                       <span className="text-xs text-gray-400">
-                        Assign an assessor to begin the verification process.
+                        Assign a quality assurer to begin the verification process.
                       </span>
                       <button
                         type="button"
@@ -1206,7 +1206,7 @@ export const NsqCentreApplicationDetailView: React.FC<
                         className="text-[#fbab2a] hover:text-[#e89b1f] text-xs font-bold flex items-center gap-1.5 mt-2 cursor-pointer"
                       >
                         <FiUserPlus className="w-3.5 h-3.5" />
-                        <span>Assign IQA assessor</span>
+                        <span>Assign IQA quality assurer</span>
                       </button>
                     </div>
                   )}

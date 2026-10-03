@@ -79,7 +79,7 @@ const AssessorDetailHeader: React.FC<AssessorDetailHeaderProps> = ({
   const assessorName =
     assessorDetail?.name ||
     (assessorDetail?.email ? assessorDetail.email.split("@")[0] : null) ||
-    "Assessor";
+    "Quality Assurer";
 
   const assessorStatus = assessorDetail?.status
     ? assessorDetail.status === "revoked" || assessorDetail.status === "pending"
@@ -108,7 +108,7 @@ const AssessorDetailHeader: React.FC<AssessorDetailHeaderProps> = ({
               onClick={onBack}
               className="hover:underline cursor-pointer"
             >
-              Assessor
+              Quality Assurers
             </span>
             <span>&gt;</span>
             <span className="font-semibold text-white">
@@ -145,11 +145,11 @@ const AssessorDetailHeader: React.FC<AssessorDetailHeaderProps> = ({
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
         <div className="col-span-2 sm:col-span-1 bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
-          <div className="flex flex-col min-w-0">
-            <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80 truncate">
+          <div className="flex flex-col min-w-0 flex-1">
+            <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80 leading-snug lg:truncate">
               Assigned Candidates
             </span>
-            <div className="flex items-baseline gap-1.5 mt-1">
+            <div className="flex flex-wrap items-baseline gap-x-1.5 mt-1">
               <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
                 {assignedCount}
               </span>
@@ -164,11 +164,11 @@ const AssessorDetailHeader: React.FC<AssessorDetailHeaderProps> = ({
         </div>
 
         <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
-          <div className="flex flex-col min-w-0">
-            <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80 truncate">
+          <div className="flex flex-col min-w-0 flex-1">
+            <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80 leading-snug lg:truncate">
               Ongoing
             </span>
-            <div className="flex items-baseline gap-1.5 mt-1">
+            <div className="flex flex-wrap items-baseline gap-x-1.5 mt-1">
               <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
                 {ongoingCount}
               </span>
@@ -183,11 +183,11 @@ const AssessorDetailHeader: React.FC<AssessorDetailHeaderProps> = ({
         </div>
 
         <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
-          <div className="flex flex-col min-w-0">
-            <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80 truncate">
+          <div className="flex flex-col min-w-0 flex-1">
+            <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80 leading-snug lg:truncate">
               Completed
             </span>
-            <div className="flex items-baseline gap-1.5 mt-1">
+            <div className="flex flex-wrap items-baseline gap-x-1.5 mt-1">
               <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
                 {completedCount}
               </span>
@@ -233,28 +233,28 @@ const AssessorsListHeader: React.FC<AssessorsListHeaderProps> = ({
   const stats = [
     {
       id: "total",
-      label: "Total Assessors",
+      label: "Total Quality Assurance",
       count: totalAssessors,
       status: "All",
       icon: <FiFlag className="w-5 h-5 text-white/90" />,
     },
     {
       id: "active",
-      label: "Active Assessors",
+      label: "Quality Assurance (Active)",
       count: activeAssessors,
       status: "Active",
       icon: <FiCheckCircle className="w-5 h-5 text-white/90" />,
     },
     {
       id: "pending",
-      label: "Pending Assessors",
+      label: "Pending Request",
       count: pendingAssessors,
       status: "Pending",
       icon: <FiClock className="w-5 h-5 text-white/90" />,
     },
     {
       id: "inactive",
-      label: "Inactive Assessors",
+      label: "Archived Assurers",
       count: inactiveAssessors,
       status: "Inactive",
       icon: <FiSlash className="w-5 h-5 text-white/90" />,
@@ -264,7 +264,7 @@ const AssessorsListHeader: React.FC<AssessorsListHeaderProps> = ({
   return (
     <div className="flex flex-col gap-6 pt-2">
       <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
-        Assessors
+        Quality Assurers
       </h1>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -292,16 +292,16 @@ const AssessorsListHeader: React.FC<AssessorsListHeaderProps> = ({
                   : "border-white/15"
               }`}
             >
-              <div className="flex flex-col min-w-0">
-                <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80 truncate">
+              <div className="flex flex-col min-w-0 flex-1">
+                <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80 leading-snug lg:truncate">
                   {item.label}
                 </span>
-                <div className="flex items-baseline gap-1.5 mt-1">
+                <div className="flex flex-wrap items-baseline gap-x-1.5 mt-1">
                   <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
                     {item.count}
                   </span>
                   <span className="text-xs lg:text-sm font-normal text-white/90">
-                    assessors
+                    requests
                   </span>
                 </div>
               </div>

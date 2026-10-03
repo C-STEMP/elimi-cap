@@ -57,7 +57,7 @@ export const AssessorsListView: React.FC<AssessorsListViewProps> = ({
 
   const assessors: AssessorItem[] = remoteAssessors.map((item) => {
     const sectorsStr = (item.sectors || []).map((s) => s.name).join(", ");
-    const primaryRole = (item.qualifications?.[0] as any) || "Assessor";
+    const primaryRole = (item.qualifications?.[0] as any) || "Quality Assurer";
     return {
       id: item.id,
       name: item.name || "",
@@ -146,7 +146,7 @@ export const AssessorsListView: React.FC<AssessorsListViewProps> = ({
       case "Inactive":
         return (
           <span className="bg-[#E5E7EB] text-[#4B5563] font-semibold px-3 py-1 rounded-full text-xs inline-block">
-            Inactive
+            Archived
           </span>
         );
       default:
@@ -183,7 +183,7 @@ export const AssessorsListView: React.FC<AssessorsListViewProps> = ({
             <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search assessors..."
+              placeholder="Search quality assurers..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-[#F8F9FA] border border-gray-200/80 focus:border-gray-400 rounded-xl pl-10 pr-3.5 py-2.5 text-xs sm:text-sm text-neutral-primary outline-none transition-all"
@@ -201,7 +201,7 @@ export const AssessorsListView: React.FC<AssessorsListViewProps> = ({
                 { label: "All", value: "All" },
                 { label: "Active", value: "Active" },
                 { label: "Pending", value: "Pending" },
-                { label: "Inactive", value: "Inactive" },
+                { label: "Archived", value: "Inactive" },
               ]}
             />
 
@@ -251,7 +251,7 @@ export const AssessorsListView: React.FC<AssessorsListViewProps> = ({
 
         {filteredAssessors.length === 0 ? (
           <div className="py-16 flex flex-col items-center justify-center text-center">
-            <p className="text-gray-400 font-normal">No assessors found.</p>
+            <p className="text-gray-400 font-normal">No quality assurers found.</p>
           </div>
         ) : viewMode === "grid" ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -322,7 +322,7 @@ export const AssessorsListView: React.FC<AssessorsListViewProps> = ({
                       className="w-4 h-4 rounded border-gray-300 text-[#a31d38] focus:ring-0 cursor-pointer"
                     />
                   </th>
-                  <th className="p-3.5 whitespace-nowrap">Assessor Name</th>
+                  <th className="p-3.5 whitespace-nowrap">Quality Assurer Name</th>
                   <th className="p-3.5 whitespace-nowrap">Email</th>
                   <th className="p-3.5 whitespace-nowrap">Trade</th>
                   <th className="p-3.5 whitespace-nowrap">Role</th>

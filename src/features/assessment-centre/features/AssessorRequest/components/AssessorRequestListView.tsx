@@ -217,7 +217,7 @@ export const AssessorRequestListView: React.FC<
         {filteredItems.length === 0 ? (
           <div className="py-16 flex flex-col items-center justify-center text-center">
             <p className="text-gray-400 font-normal">
-              No assessor requests found.
+              No quality assurer requests found.
             </p>
           </div>
         ) : viewMode === "grid" ? (
@@ -311,7 +311,7 @@ export const AssessorRequestListView: React.FC<
                       className="w-4 h-4 rounded border-gray-300 text-[#a31d38] focus:ring-0 cursor-pointer"
                     />
                   </th>
-                  <th className="p-3.5 whitespace-nowrap">Assessor Name</th>
+                  <th className="p-3.5 whitespace-nowrap">Quality Assurer Name</th>
                   <th className="p-3.5 whitespace-nowrap">Email</th>
                   <th className="p-3.5 whitespace-nowrap">Trade</th>
                   <th className="p-3.5 whitespace-nowrap">Role</th>

@@ -44,7 +44,7 @@ export const AssignFacilitatorModal: React.FC<AssignFacilitatorModalProps> = ({
 
   // Real, approved centre assessors only — no fabricated fallback names.
   const assessorOptions = centreAssessors.map((a) => ({
-    label: a.name || "Assessor",
+    label: a.name || "Quality Assurer",
     value: a.id || (a as any).assessorId || (a as any).userId,
   }));
 
@@ -54,7 +54,7 @@ export const AssignFacilitatorModal: React.FC<AssignFacilitatorModalProps> = ({
       toast({
         type: "error",
         title: "Selection Required",
-        description: "Please select an assessor to assign as facilitator.",
+        description: "Please select a quality assurer to assign as facilitator.",
       });
       return;
     }
@@ -134,12 +134,12 @@ export const AssignFacilitatorModal: React.FC<AssignFacilitatorModalProps> = ({
 
                 {!isLoadingAssessors && assessorOptions.length === 0 ? (
                   <div className="w-full bg-[#F8F9FA] border border-gray-200 rounded-xl px-4 py-3 text-xs text-gray-400">
-                    No approved retained assessors at this centre yet.
+                    No approved retained quality assurers at this centre yet.
                   </div>
                 ) : (
                   <Select
                     label="Select Facilitator"
-                    placeholder={isLoadingAssessors ? "Loading Assessors..." : "Select"}
+                    placeholder={isLoadingAssessors ? "Loading Quality Assurers..." : "Select"}
                     value={selectedAssessorId}
                     onChange={(e) => setSelectedAssessorId(e.target.value)}
                     options={assessorOptions}

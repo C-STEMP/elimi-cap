@@ -122,7 +122,7 @@ const ApplicantDetailHeader: React.FC<ApplicantDetailHeaderProps> = ({
           onClick={onBack}
           className="hover:underline cursor-pointer"
         >
-          Assessor
+          Quality Assurer
         </span>
         <span>&gt;</span>
         <span className="font-semibold text-white">{applicantName}</span>
@@ -159,7 +159,7 @@ const JobDetailHeader: React.FC<JobDetailHeaderProps> = ({
             className="flex items-center gap-2 text-white font-bold text-2xl lg:text-3xl tracking-tight hover:opacity-90 text-left cursor-pointer"
           >
             <span className="text-xl font-bold">&lt;</span>
-            <span>Assessor Request</span>
+            <span>Quality Assurer Request</span>
           </button>
           <div className="flex items-center gap-2 text-xs lg:text-sm text-white/90 font-normal">
             <span
@@ -169,7 +169,7 @@ const JobDetailHeader: React.FC<JobDetailHeaderProps> = ({
               Requests
             </span>
             <span>&gt;</span>
-            <span className="font-semibold text-white">Assessor</span>
+            <span className="font-semibold text-white">Quality Assurer</span>
           </div>
         </div>
 

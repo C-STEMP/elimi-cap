@@ -65,18 +65,31 @@ export const AssessorApplicationFilters: React.FC<
           />
         </div>
 
-        {/* Assessment Type Filter */}
-        <div className="w-36">
-          <Select
-            size="sm"
-            placeholder="Assessment Type"
-            value={filterCriteria.assessmentType || ""}
-            onChange={(e) =>
-              onFilterChange({ assessmentType: e.target.value })
-            }
-            options={availableTypes.map((t) => ({ label: t, value: t }))}
-            allowClear
-          />
+        {/* Assessment Type Toggle — switch between RPL and standard NSQ candidates */}
+        <div className="flex items-center gap-1 bg-gray-100/80 p-1 rounded-xl shrink-0">
+          {[
+            { label: "All", value: "" },
+            ...availableTypes.map((t) => ({ label: t, value: t })),
+          ].map((option) => {
+            const isActive =
+              (filterCriteria.assessmentType || "").toLowerCase() ===
+              option.value.toLowerCase();
+            return (
+              <button
+                key={option.label}
+                type="button"
+                onClick={() => onFilterChange({ assessmentType: option.value })}
+                className={`px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm transition-all cursor-pointer ${
+                  isActive
+                    ? "bg-[#FDF2F4] text-[#A31D38] font-bold shadow-2xs"
+                    : "text-gray-500 font-medium hover:text-gray-700"
+                }`}
+                aria-pressed={isActive}
+              >
+                {option.label}
+              </button>
+            );
+          })}
         </div>
 
         {/* Status Filter */}

@@ -261,7 +261,7 @@ export const JobListingDetailView: React.FC<JobListingDetailViewProps> = ({
                       className="w-4 h-4 rounded border-gray-300 text-[#a31d38] focus:ring-0 cursor-pointer"
                     />
                   </th>
-                  <th className="p-3.5">Assessor Name</th>
+                  <th className="p-3.5">Quality Assurer Name</th>
                   <th className="p-3.5">Trade</th>
                   <th className="p-3.5">Experience</th>
                   <th className="p-3.5">Certificates</th>
@@ -334,7 +334,7 @@ export const JobListingDetailView: React.FC<JobListingDetailViewProps> = ({
                                       toast({
                                         type: "success",
                                         title: "Applicant Shortlisted",
-                                        description: "Assessor has been shortlisted.",
+                                        description: "Quality Assurer has been shortlisted.",
                                       });
                                     },
                                   },

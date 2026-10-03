@@ -42,6 +42,7 @@ interface ProfileSettingsTabProps {
   profileCities: (string | SelectOption)[];
   handleSaveProfileSettings: () => void;
   isSavingProfile: boolean;
+  detailsTitle?: string;
 }
 
 export const ProfileSettingsTab: React.FC<ProfileSettingsTabProps> = ({
@@ -53,13 +54,14 @@ export const ProfileSettingsTab: React.FC<ProfileSettingsTabProps> = ({
   emailNotifications, setEmailNotifications, sessionReminders, setSessionReminders,
   countries, profileStates, profileCities,
   handleSaveProfileSettings, isSavingProfile,
+  detailsTitle = "Personal Details",
 }) => {
   return (
     <div className="w-full flex flex-col gap-8">
       {/* Personal Details */}
       <div className="flex flex-col gap-4 lg:gap-6">
         <h3 className="text-xl lg:text-2xl font-extrabold text-neutral-primary tracking-tight">
-          Personal Details
+          {detailsTitle}
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input label="First Name*" placeholder="First name" value={firstName} onChange={(e) => setFirstName(e.target.value)} />

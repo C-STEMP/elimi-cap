@@ -89,6 +89,10 @@ export const ApplicationsTab: React.FC<ApplicationsTabProps> = ({
           candidateName={selectedCandidateName}
           onBack={onCloseEvidenceVault}
           onOpenSelfAssessmentForm={onOpenSelfAssessmentForm}
+          onOpenCandidateForm={() => {
+            onCloseEvidenceVault();
+            onOpenCandidateForm();
+          }}
         />
       ) : selectedCandidateName && showCandidateForm ? (
         <CandidateFormView

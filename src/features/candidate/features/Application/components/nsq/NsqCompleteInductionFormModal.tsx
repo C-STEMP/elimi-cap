@@ -365,7 +365,7 @@ export const NsqCompleteInductionFormModal: React.FC<
                 helperText={isNameLocked ? "Names come from your saved profile and can't be changed here." : undefined}
               />
               <Input
-                label="Registration No."
+                label="Reg Code"
                 placeholder="Type here"
                 value={registrationNo}
                 onChange={(e) => setRegistrationNo(e.target.value)}

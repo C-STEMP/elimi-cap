@@ -158,6 +158,20 @@ export const CentreApplicationRouteView: React.FC<{
     }
   };
 
+  const handleOpenCandidateFormFromEvidenceVault = () => {
+    if (
+      isStandaloneEvidenceVaultRoute ||
+      pathname?.includes("/evidence-vault")
+    ) {
+      router.push(
+        `/applications/${id}?from=centre&modal=${APPLICATION_CANDIDATE_FORM_VIEW}`,
+      );
+    } else {
+      setShowEvidenceVault(false);
+      setShowCandidateForm(true);
+    }
+  };
+
   const handleBackToList = () => {
     router.push("/assessment-centre/dashboard/applications");
   };
@@ -275,6 +289,7 @@ export const CentreApplicationRouteView: React.FC<{
             candidateName={candidateName ?? undefined}
             onBack={handleBackFromEvidenceVault}
             onOpenSelfAssessmentForm={() => setShowSelfAssessmentForm(true)}
+            onOpenCandidateForm={handleOpenCandidateFormFromEvidenceVault}
           />
         ) : showCandidateForm ? (
           <CandidateFormView

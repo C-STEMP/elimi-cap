@@ -20,7 +20,7 @@ interface BroadcastModalProps {
 
 const RECIPIENT_MAP: Record<string, string> = {
   "All Candidates": "all_candidates",
-  "All Assessors": "all_assessors",
+  "All Quality Assurers": "all_assessors",
   "All Staff": "all_staff",
   "Specific Trade Group": "trade_group",
 };
@@ -130,7 +130,7 @@ export const BroadcastModal: React.FC<BroadcastModalProps> = ({
                   placeholder="Select"
                   options={[
                     "All Candidates",
-                    "All Assessors",
+                    "All Quality Assurers",
                     "All Staff",
                     "Specific Trade Group",
                   ]}

@@ -81,6 +81,44 @@ export const ResourcesSection: React.FC<ResourcesSectionProps> = ({
         Resources
       </h2>
       <div className="flex flex-col gap-3.5">
+        {/* Candidate Application Form — pinned to the top of the portfolio */}
+        {applicationId && (
+          <div className="bg-input-bg rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+            <div className="flex items-center gap-3.5 min-w-0 flex-1 w-full">
+              <div className="w-11 sm:w-12 h-11 sm:h-12 bg-red-50 text-red-600 rounded-xl flex items-center justify-center font-bold text-xs shrink-0">
+                <Image
+                  src={ASSETS_URL.pdfImg}
+                  width={24}
+                  height={24}
+                  alt="pdf_img"
+                  className="w-5 sm:w-6 h-5 sm:h-6 object-contain"
+                />
+              </div>
+              <div className="flex flex-col min-w-0">
+                <h4 className="text-[#191918] font-bold text-sm sm:text-base md:text-lg leading-snug">
+                  Candidate Application Form
+                </h4>
+                <span className="text-gray-400 text-xs mt-0.5">NBTE/RPL/01</span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end sm:justify-start w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-200/50 sm:border-transparent shrink-0">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() =>
+                  router.push(
+                    `/dashboard/applications/${applicationId}/application-form`,
+                  )
+                }
+                className="w-full sm:w-auto text-center"
+              >
+                View Form
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Self-Assessment Form */}
         <div className="bg-input-bg rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
           <div className="flex items-center gap-3.5 min-w-0 flex-1 w-full">

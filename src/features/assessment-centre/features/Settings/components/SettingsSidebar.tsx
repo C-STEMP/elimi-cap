@@ -13,6 +13,7 @@ interface SettingsSidebarProps {
   activeSubTab: SettingsSubTab;
   setActiveSubTab: (tab: SettingsSubTab) => void;
   onOpenDeleteModal: () => void;
+  profileTabLabel?: string;
 }
 
 export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
@@ -22,6 +23,7 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
   activeSubTab,
   setActiveSubTab,
   onOpenDeleteModal,
+  profileTabLabel = "Profile Information",
 }) => {
   return (
     <div className="lg:col-span-4 xl:col-span-3 bg-white rounded-3xl p-6 shadow-2xs border border-gray-100/80 flex flex-col gap-6 w-full">
@@ -86,7 +88,7 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
               : "text-black font-medium hover:bg-gray-50"
           }`}
         >
-          Profile Information
+          {profileTabLabel}
         </button>
 
         <button

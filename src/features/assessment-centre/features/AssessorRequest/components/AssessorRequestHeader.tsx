@@ -22,7 +22,7 @@ export const AssessorRequestHeader: React.FC<AssessorRequestHeaderProps> = ({
       requestDetail?.assessor?.name ||
       (requestDetail?.assessor?.email
         ? requestDetail.assessor.email.split("@")[0]
-        : "Assessor");
+        : "Quality Assurer");
 
     return (
       <div className="flex flex-col gap-1 pt-2">
@@ -42,7 +42,7 @@ export const AssessorRequestHeader: React.FC<AssessorRequestHeaderProps> = ({
             Requests
           </span>
           <span>&gt;</span>
-          <span>Assessor</span>
+          <span>Quality Assurer</span>
           <span>&gt;</span>
           <span className="font-semibold text-white">{assessorName}</span>
         </div>
@@ -54,7 +54,7 @@ export const AssessorRequestHeader: React.FC<AssessorRequestHeaderProps> = ({
     <div className="flex flex-col gap-6 pt-2">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
-          Assessor Request
+          Quality Assurer Request
         </h1>
       </div>
     </div>

@@ -9,6 +9,7 @@ import { useThirdPartyReportDownload } from "@/src/features/shared/evidence-vaul
 
 interface ResourcesSectionProps {
   applicationId?: string;
+  onViewApplicationForm?: () => void;
   onViewSelfAssessment?: () => void;
   onViewThirdPartyReport?: () => void;
   onDownloadThirdPartyReport?: () => void;
@@ -16,6 +17,7 @@ interface ResourcesSectionProps {
 
 export const ResourcesSection: React.FC<ResourcesSectionProps> = ({
   applicationId,
+  onViewApplicationForm,
   onViewSelfAssessment,
   onViewThirdPartyReport,
   onDownloadThirdPartyReport,
@@ -51,6 +53,47 @@ export const ResourcesSection: React.FC<ResourcesSectionProps> = ({
       <h3 className="text-lg font-bold text-neutral-primary">
         Resources
       </h3>
+
+      {/* Candidate Application Form — pinned to the top of the portfolio */}
+      {onViewApplicationForm && (
+        <div
+          onClick={onViewApplicationForm}
+          className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-100 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 transition-all cursor-pointer group"
+        >
+          <div className="flex items-center gap-3.5 sm:gap-4 min-w-0 flex-1">
+            <div className="w-11 sm:w-12 h-11 sm:h-12 rounded-xl bg-[#FFF5F6] border border-rose-100 flex items-center justify-center shrink-0">
+              <Image
+                src={ASSETS_URL.pdfImg}
+                alt="PDF"
+                width={24}
+                height={24}
+                className="w-5 sm:w-6 h-5 sm:h-6 object-contain"
+              />
+            </div>
+            <div className="flex flex-col gap-0.5 min-w-0">
+              <h4 className="text-sm sm:text-base md:text-lg font-bold text-neutral-primary group-hover:text-primary transition-colors">
+                Candidate Application Form
+              </h4>
+              <span className="text-xs text-neutral-secondary font-normal">
+                NBTE/RPL/01
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end sm:justify-start pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100/70 sm:border-transparent shrink-0">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onViewApplicationForm();
+              }}
+              className="w-full sm:w-auto text-center bg-white text-[#FBAB2A] border border-gray-200 hover:bg-orange-50/50 font-bold text-xs sm:text-sm px-6 py-2 rounded-xl transition-all cursor-pointer shadow-2xs"
+            >
+              View
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Resource Card 1: Self-Assessment Form */}
       <div

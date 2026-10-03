@@ -2,6 +2,10 @@
 
 import React from "react";
 import { EvidenceItemCard, type EvidenceItem } from "./EvidenceItemCard";
+import {
+  EvidenceTypeFilter,
+  useEvidenceTypeFilter,
+} from "@/src/features/shared/evidence-vault/components/EvidenceTypeFilter";
 
 interface EvidenceListSectionProps {
   items: EvidenceItem[];
@@ -14,6 +18,8 @@ export const EvidenceListSection: React.FC<EvidenceListSectionProps> = ({
   onView,
   isLoading = false,
 }) => {
+  const typeFilter = useEvidenceTypeFilter(items);
+
   return (
     <div className="flex flex-col gap-4 w-full">
       <h3 className="text-lg font-bold text-neutral-primary">
@@ -44,7 +50,13 @@ export const EvidenceListSection: React.FC<EvidenceListSectionProps> = ({
         </div>
       ) : items.length > 0 ? (
         <div className="flex flex-col gap-3.5 w-full">
-          {items.map((item) => (
+          <EvidenceTypeFilter
+            types={typeFilter.types}
+            activeType={typeFilter.activeType}
+            onChange={typeFilter.setActiveType}
+            totalCount={typeFilter.totalCount}
+          />
+          {typeFilter.filteredItems.map((item) => (
             <EvidenceItemCard
               key={item.id}
               item={item}

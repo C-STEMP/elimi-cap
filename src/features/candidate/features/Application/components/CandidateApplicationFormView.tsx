@@ -8,6 +8,7 @@ import { useGetApplicationById } from "@/src/features/candidate/features/Applica
 import { useAppSelector } from "@/src/store/hooks";
 import { downloadFormElement, printFormElement } from "@/src/lib/formPrintDownload";
 import { CandidateFormCard } from "@/src/features/assessment-centre/features/Applications/components/CandidateFormCard";
+import { useCandidateProfile, useCandidateProfileSignature } from "@/src/features/shared/onboarding/hooks";
 
 interface CandidateApplicationFormViewProps {
   applicationId: string;
@@ -28,6 +29,9 @@ export const CandidateApplicationFormView: React.FC<
     (state) => state.onboarding.startApplication,
   );
   const authUser = useAppSelector((state) => state.auth.user);
+  const { data: profileSignature } = useCandidateProfileSignature();
+  const { data: candidateProfile } = useCandidateProfile(true);
+  const profileUln = (candidateProfile as any)?.onboarding?.data?.previousAssessmentStatus?.uniqueLearnerId;
 
   if (isLoading) {
     return (
@@ -149,6 +153,8 @@ export const CandidateApplicationFormView: React.FC<
         <CandidateFormCard
           appDetail={appData}
           formCandidateName={candidateFullName}
+          uniqueLearnerNumber={profileUln}
+          signatureUrl={profileSignature?.url}
           className="w-full flex flex-col gap-6 printable-application-card"
         />
       </div>

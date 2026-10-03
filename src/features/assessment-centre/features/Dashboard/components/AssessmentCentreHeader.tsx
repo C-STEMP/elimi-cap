@@ -9,6 +9,7 @@ import {
   FiClipboard,
   FiFlag,
   FiUser,
+  FiUsers,
   FiDollarSign,
   FiMenu,
   FiX,
@@ -103,6 +104,9 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
     assessorSummary?.total ??
     assessorSummary?.active ??
     assessors.length;
+  const totalCandidatesCount = new Set(
+    applications.map((app) => app.candidateId).filter(Boolean),
+  ).size;
   const totalStaffCount =
     dashboardData?.kpis?.staff ?? staffSummary?.total ?? staff.length;
 
@@ -128,10 +132,18 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
       tab: "applications",
     },
     {
+      id: "total-candidates",
+      label: "Total Candidates",
+      count: totalCandidatesCount.toLocaleString(),
+      unit: "candidates",
+      icon: "users",
+      tab: "applications",
+    },
+    {
       id: "total-assessors",
-      label: "Total Assessors",
+      label: "Total Quality Assurance",
       count: totalAssessorsCount.toLocaleString(),
-      unit: "assessors",
+      unit: "quality assurers",
       icon: "flag",
       tab: "assessors",
     },
@@ -158,8 +170,8 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
   const allNavItems: { id: AssessmentCentreTab; label: string }[] = [
     { id: "overview", label: "Overview" },
     { id: "applications", label: "Applications" },
-    { id: "assessor-request", label: "Assessor Request" },
-    { id: "assessors", label: "Assessors" },
+    { id: "assessor-request", label: "Quality Assurer Request" },
+    { id: "assessors", label: "Quality Assurers" },
     { id: "job-listing", label: "Job Listing" },
     { id: "staff", label: "Staff" },
     { id: "payments", label: "Payments" },
@@ -178,6 +190,8 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
         return <FiFlag className="w-5 h-5 text-white/90" />;
       case "user":
         return <FiUser className="w-5 h-5 text-white/90" />;
+      case "users":
+        return <FiUsers className="w-5 h-5 text-white/90" />;
       case "money":
         return <FiDollarSign className="w-5 h-5 text-white/90" />;
       default:
@@ -188,7 +202,7 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
   return (
     <header className="w-full bg-[#900B27] text-white shadow-md select-none transition-all relative">
       <div className="max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 flex flex-col gap-6">
-        <div className="flex items-center justify-between gap-2 xl:gap-3 2xl:gap-4 border-b border-white/10 pb-5 min-w-0">
+        <div className="flex items-center justify-between gap-2 xl:gap-3 2xl:gap-4 pb-5 min-w-0">
           <div className="shrink-0 cursor-pointer">
             <Logo theme="light" width={118} href="/" />
           </div>
@@ -376,7 +390,7 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
             {displayTitle}
           </h1>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
             {dynamicStats.map((stat) => {
               const canNavigate = permittedTabs.includes(stat.tab);
               return (
@@ -386,27 +400,30 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
                 onClick={
                   canNavigate ? () => onSelectTab(stat.tab) : undefined
                 }
-                className={`bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs text-left w-full ${
+                className={`bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs text-left w-full last:col-span-2 md:last:col-span-1 ${
                   canNavigate ? "cursor-pointer active:scale-[0.98]" : "cursor-default"
                 }`}
               >
-                <div className="flex flex-col">
-                  <span className="text-xs sm:text-sm lg:text-lg font-medium text-white/80">
+                <div className="flex flex-col min-w-0 flex-1">
+                  <span
+                    title={stat.label}
+                    className="text-xs sm:text-sm lg:text-base 2xl:text-lg font-medium text-white/80 leading-snug lg:truncate"
+                  >
                     {stat.label}
                   </span>
-                  <div className="flex items-baseline gap-1.5 mt-1">
-                    <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
+                  <div className="flex flex-wrap lg:flex-nowrap items-baseline gap-x-1.5 mt-1 min-w-0">
+                    <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white lg:truncate">
                       {stat.count}
                     </span>
                     {stat.unit && (
-                      <span className="text-xs lg:text-white font-normal text-white">
+                      <span className="text-xs lg:text-white font-normal text-white lg:truncate">
                         {stat.unit}
                       </span>
                     )}
                   </div>
                 </div>
 
-                <div className="w-9 h-9 flex items-center justify-center shrink-0">
+                <div className="w-9 h-9 flex items-center justify-center shrink-0 ml-2">
                   {renderStatIcon(stat.icon)}
                 </div>
               </button>

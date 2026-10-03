@@ -71,7 +71,7 @@ export const RplSpecialSupportCard: React.FC<RplSpecialSupportCardProps> = ({
 
           {form.completedBefore === "yes" && (
             <Input
-              label={<span>If Yes, Enter Unique Learner ID<span className="text-primary-solid ml-0.5">*</span></span>}
+              label={<span>If Yes, Enter Unique Learner Number (ULN)<span className="text-primary-solid ml-0.5">*</span></span>}
               placeholder="000000000"
               value={form.learnerId}
               error={errors.learnerId}

@@ -8,11 +8,17 @@ import { ProfileSettingsTab } from "./ProfileSettingsTab";
 import { CentreSettingsTab } from "./CentreSettingsTab";
 import { PricingSettingsTab } from "./PricingSettingsTab";
 import { SecuritySettingsTab } from "./SecuritySettingsTab";
+import { useAppSelector } from "@/src/store/hooks";
+import { normalizeRole } from "@/features/assessment-centre/utils/rbac";
 
 export type { SettingsSubTab };
 
 export const SettingsView: React.FC = () => {
   const state = useSettingsViewState();
+  const authUser = useAppSelector((s) => s.auth.user);
+  // The centre account's profile is the named Centre Manager; staff keep their own profile wording.
+  const isCentreManager =
+    normalizeRole(authUser?.centreRole || authUser?.role) === "centre";
 
   return (
     <div className="w-full flex flex-col gap-6 select-text">
@@ -24,12 +30,18 @@ export const SettingsView: React.FC = () => {
           activeSubTab={state.activeSubTab}
           setActiveSubTab={state.setActiveSubTab}
           onOpenDeleteModal={() => state.setIsDeleteModalOpen(true)}
+          profileTabLabel={
+            isCentreManager ? "Centre Manager Information" : "Profile Information"
+          }
         />
 
         {/* Right Content Panel */}
         <div className="lg:col-span-8 xl:col-span-9 bg-white rounded-3xl p-6 sm:p-8 shadow-2xs border border-gray-100/80 flex flex-col gap-6">
           {state.activeSubTab === "profile" && (
             <ProfileSettingsTab
+              detailsTitle={
+                isCentreManager ? "Centre Manager Details" : "Personal Details"
+              }
               firstName={state.firstName}
               setFirstName={state.setFirstName}
               lastName={state.lastName}
