@@ -3,7 +3,14 @@
 import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
 import { useThirdPartyReportDownload } from "@/src/features/shared/evidence-vault/hooks/useThirdPartyReportDownload";
-import type { EvidenceRecord } from "@/src/features/shared/evidence-vault/utils/evidenceConstants";
+import {
+  getEvidenceTypeName,
+  type EvidenceRecord,
+} from "@/src/features/shared/evidence-vault/utils/evidenceConstants";
+import {
+  EvidenceTypeFilter,
+  useEvidenceTypeFilter,
+} from "@/src/features/shared/evidence-vault/components/EvidenceTypeFilter";
 import React from "react";
 import { FiDownload, FiFileText, FiLoader } from "react-icons/fi";
 
@@ -11,6 +18,7 @@ interface Props {
   applicationId?: string;
   selfAssessment: any;
   onOpenSelfAssessmentForm: () => void;
+  onOpenCandidateForm?: () => void;
   isLoadingEvidence: boolean;
   evidenceItems: any[];
   onSelectPreview: (item: EvidenceRecord) => void;
@@ -20,6 +28,7 @@ export const EvidenceItemsList: React.FC<Props> = ({
   applicationId,
   selfAssessment,
   onOpenSelfAssessmentForm,
+  onOpenCandidateForm,
   isLoadingEvidence,
   evidenceItems,
   onSelectPreview,
@@ -32,6 +41,7 @@ export const EvidenceItemsList: React.FC<Props> = ({
     downloadUrl,
     reportData,
   } = useThirdPartyReportDownload(applicationId);
+  const typeFilter = useEvidenceTypeFilter(evidenceItems);
 
   return (
     <div className="lg:col-span-8 xl:col-span-9 flex flex-col gap-8">
@@ -40,6 +50,42 @@ export const EvidenceItemsList: React.FC<Props> = ({
         <h2 className="text-lg font-extrabold text-black tracking-tight">
           Resources
         </h2>
+
+        {/* Candidate Application Form — pinned to the top of the portfolio */}
+        {onOpenCandidateForm && (
+          <div
+            onClick={onOpenCandidateForm}
+            className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-100 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 transition-all cursor-pointer group"
+          >
+            <div className="flex items-center gap-3.5 sm:gap-4 min-w-0 flex-1 w-full">
+              <div className="w-11 sm:w-12 h-11 sm:h-12 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
+                <FiFileText className="w-5 sm:w-6 h-5 sm:h-6 text-[#a31d38]" />
+              </div>
+              <div className="flex flex-col gap-1 min-w-0">
+                <h3 className="text-sm sm:text-base md:text-lg font-bold text-black tracking-tight group-hover:text-primary transition-colors">
+                  Candidate Application Form
+                </h3>
+                <span className="text-xs text-gray-400 font-normal">
+                  NBTE/RPL/01
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center justify-end sm:justify-start w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100/70 sm:border-transparent shrink-0">
+              <Button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenCandidateForm();
+                }}
+                variant="outline"
+                size="sm"
+                className="w-full sm:w-auto bg-white! text-[#fbab2a]! border border-gray-200! hover:bg-gray-50! font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl transition-all cursor-pointer shadow-none! shrink-0 text-center"
+              >
+                View
+              </Button>
+            </div>
+          </div>
+        )}
 
         <div
           onClick={onOpenSelfAssessmentForm}
@@ -168,7 +214,15 @@ export const EvidenceItemsList: React.FC<Props> = ({
             ))}
           </div>
         ) : evidenceItems.length > 0 ? (
-          evidenceItems.map((item, idx) => {
+          <>
+          <EvidenceTypeFilter
+            types={typeFilter.types}
+            activeType={typeFilter.activeType}
+            onChange={typeFilter.setActiveType}
+            totalCount={typeFilter.totalCount}
+          />
+          {typeFilter.filteredItems.map((item) => {
+            const idx = evidenceItems.indexOf(item);
             const statusStr = (item.status as string)?.toLowerCase() || "";
             const isApproved =
               statusStr === "approved" ||
@@ -256,6 +310,9 @@ export const EvidenceItemsList: React.FC<Props> = ({
                       </div>
                       <span className="text-xs text-gray-400 font-normal">
                         {displaySize}
+                        {item.evidenceType
+                          ? ` · Evidence Type: ${getEvidenceTypeName(item.evidenceType)}`
+                          : ""}
                       </span>
                     </div>
                   </div>
@@ -284,7 +341,8 @@ export const EvidenceItemsList: React.FC<Props> = ({
                 )}
               </div>
             );
-          })
+          })}
+          </>
         ) : (
           <div className="bg-white rounded-2xl p-8 border border-gray-100 text-center text-gray-400 font-normal">
             No uploaded evidence files found for this candidate.

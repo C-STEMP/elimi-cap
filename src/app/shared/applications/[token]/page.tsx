@@ -503,6 +503,7 @@ export default function SharedApplicationDossierPage() {
               appDetail={application}
               formCandidateName={candidateName}
               resolvedPassportUrl={candidatePhotoUrl}
+              resolveUnitNumbers={false}
               className="w-full flex flex-col gap-6 printable-application-card"
             />
           </div>

@@ -221,7 +221,7 @@ export function useRplPersonalInfoState(onSuccess?: () => void) {
       setPassportError("");
     }
     if (form.completedBefore === "yes" && !form.learnerId.trim()) {
-      newErrors.learnerId = "Learner ID is required";
+      newErrors.learnerId = "Unique Learner Number (ULN) is required";
       valid = false;
     }
     if (selectedImpairments.length === 0) {
@@ -256,7 +256,7 @@ export function useRplPersonalInfoState(onSuccess?: () => void) {
         firstName: "First Name", lastName: "Last Name", dob: "Date of Birth", gender: "Gender",
         nationality: "Nationality", phoneNumber: "Phone Number", country: "Country",
         state: "State of Residence", lga: "City / LGA", streetAddress: "Residential Address",
-        impairment: "Impairment status", otherImpairment: "Other impairment specification", learnerId: "Learner ID",
+        impairment: "Impairment status", otherImpairment: "Other impairment specification", learnerId: "Unique Learner Number (ULN)",
       };
       const missing = Object.keys(formErrors).map((k) => fieldLabels[k] || k).filter(Boolean);
       let desc = "";

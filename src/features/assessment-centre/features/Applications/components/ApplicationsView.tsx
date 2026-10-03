@@ -32,7 +32,7 @@ export const ApplicationsView: React.FC<ApplicationsViewProps> = ({
   return (
     <div className="w-full flex flex-col gap-6 select-text">
       {/* Filter tabs */}
-      <div className="w-full max-w-2xl bg-[#F8F9FA] border border-gray-200/80 rounded-2xl p-1.5 flex items-center gap-1.5 overflow-x-auto no-scrollbar scroll-smooth">
+      <div className="w-full lg:w-fit max-w-full bg-[#F8F9FA] border border-gray-200/80 rounded-2xl p-1.5 flex items-center gap-1.5 overflow-x-auto no-scrollbar scroll-smooth">
         {FILTER_TABS.map((tab) => (
           <button
             key={tab}

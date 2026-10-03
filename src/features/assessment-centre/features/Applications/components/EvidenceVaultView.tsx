@@ -11,11 +11,13 @@ interface Props {
   candidateName?: string;
   onBack: () => void;
   onOpenSelfAssessmentForm: () => void;
+  onOpenCandidateForm?: () => void;
 }
 
 export const EvidenceVaultView: React.FC<Props> = ({
   id = "",
   onOpenSelfAssessmentForm,
+  onOpenCandidateForm,
 }) => {
   const s = useEvidenceVaultViewState(id);
 
@@ -26,6 +28,7 @@ export const EvidenceVaultView: React.FC<Props> = ({
           applicationId={id}
           selfAssessment={s.selfAssessment}
           onOpenSelfAssessmentForm={onOpenSelfAssessmentForm}
+          onOpenCandidateForm={onOpenCandidateForm}
           isLoadingEvidence={s.isLoadingEvidence}
           evidenceItems={s.evidenceItems}
           onSelectPreview={(item) => s.setPreviewItem(item)}

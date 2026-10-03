@@ -13,9 +13,10 @@ import {
   FiVideo,
 } from "react-icons/fi";
 import {
-  EVIDENCE_TYPE_LABELS,
   EvidenceRecord,
+  getEvidenceTypeName,
 } from "../utils/evidenceConstants";
+import { EvidenceTypeFilter, useEvidenceTypeFilter } from "./EvidenceTypeFilter";
 
 interface EvidenceSectionProps {
   evidences: EvidenceRecord[];
@@ -46,18 +47,14 @@ function getFileTypeIcon(mimeType?: string, name?: string) {
   return <FiFileText className="w-5 h-5 text-primary" />;
 }
 
-function getEvidenceTypeLabel(evidenceType?: string): string {
-  if (!evidenceType) return "";
-  const code = evidenceType.trim().toUpperCase();
-  return EVIDENCE_TYPE_LABELS[code] || evidenceType;
-}
-
 export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
   evidences,
   onPreview,
   onDelete,
   onOpenUploadModal,
 }) => {
+  const typeFilter = useEvidenceTypeFilter(evidences);
+
   return (
     <div className="border border-[#F7F4EF] p-4 sm:p-6 rounded-2xl bg-white flex flex-col gap-4">
       <div className="flex flex-col gap-1">
@@ -71,7 +68,13 @@ export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
 
       {evidences.length > 0 ? (
         <div className="flex flex-col gap-4">
-          {evidences.map((item) => {
+          <EvidenceTypeFilter
+            types={typeFilter.types}
+            activeType={typeFilter.activeType}
+            onChange={typeFilter.setActiveType}
+            totalCount={typeFilter.totalCount}
+          />
+          {typeFilter.filteredItems.map((item) => {
             const s = (item.status || "").toLowerCase().replace(/_/g, " ");
             const isApproved =
               s.includes("approv") ||
@@ -104,7 +107,7 @@ export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
                     ? "text-[#1D4ED8]"
                     : "text-[#F9A825]";
 
-            const evidenceTypeLabel = getEvidenceTypeLabel(item.evidenceType);
+            const evidenceTypeLabel = getEvidenceTypeName(item.evidenceType);
 
             return (
               <div
@@ -130,7 +133,7 @@ export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
 
                       {evidenceTypeLabel && (
                         <span className="text-[#191918]/50 text-xs mt-1">
-                          {evidenceTypeLabel}
+                          Evidence Type: {evidenceTypeLabel}
                         </span>
                       )}
                     </div>

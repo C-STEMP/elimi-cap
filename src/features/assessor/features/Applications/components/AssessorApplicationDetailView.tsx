@@ -475,6 +475,7 @@ export const AssessorApplicationDetailView: React.FC<
         applicationId={application.id}
         candidateName={application.candidateName}
         onBack={() => setSubView("stages")}
+        onViewApplicationForm={() => setSubView("application_form")}
         onViewSelfAssessment={() => setSubView("self_assessment_form")}
         onAllApprovedChange={onAllApprovedChange}
         onMarkAsComplete={onMarkAsComplete}

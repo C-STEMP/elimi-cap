@@ -131,11 +131,11 @@ const StaffDetailHeader: React.FC<StaffDetailHeaderProps> = ({
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
         <div className="col-span-2 sm:col-span-1 bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
-          <div className="flex flex-col min-w-0">
-            <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80 truncate">
+          <div className="flex flex-col min-w-0 flex-1">
+            <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80 leading-snug lg:truncate">
               Reviewed Applications
             </span>
-            <div className="flex items-baseline gap-1.5 mt-1">
+            <div className="flex flex-wrap items-baseline gap-x-1.5 mt-1">
               <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
                 {reviewedCount}
               </span>
@@ -150,11 +150,11 @@ const StaffDetailHeader: React.FC<StaffDetailHeaderProps> = ({
         </div>
 
         <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
-          <div className="flex flex-col min-w-0">
-            <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80 truncate">
+          <div className="flex flex-col min-w-0 flex-1">
+            <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80 leading-snug lg:truncate">
               Pending Applications
             </span>
-            <div className="flex items-baseline gap-1.5 mt-1">
+            <div className="flex flex-wrap items-baseline gap-x-1.5 mt-1">
               <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
                 {pendingCount}
               </span>
@@ -169,11 +169,11 @@ const StaffDetailHeader: React.FC<StaffDetailHeaderProps> = ({
         </div>
 
         <div className="bg-white/10 hover:bg-white/15 backdrop-blur-xs rounded-2xl p-4 sm:p-5 flex items-center justify-between text-white border border-white/15 transition-all shadow-xs">
-          <div className="flex flex-col min-w-0">
-            <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80 truncate">
+          <div className="flex flex-col min-w-0 flex-1">
+            <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80 leading-snug lg:truncate">
               Requires Attention
             </span>
-            <div className="flex items-baseline gap-1.5 mt-1">
+            <div className="flex flex-wrap items-baseline gap-x-1.5 mt-1">
               <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
                 {requiresAttentionCount}
               </span>
@@ -290,11 +290,11 @@ const StaffListHeader: React.FC<StaffListHeaderProps> = ({
                   : "border-white/15"
               }`}
             >
-              <div className="flex flex-col min-w-0">
-                <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80 truncate">
+              <div className="flex flex-col min-w-0 flex-1">
+                <span className="text-xs sm:text-sm lg:text-base font-medium text-white/80 leading-snug lg:truncate">
                   {item.label}
                 </span>
-                <div className="flex items-baseline gap-1.5 mt-1">
+                <div className="flex flex-wrap items-baseline gap-x-1.5 mt-1">
                   <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
                     {item.count}
                   </span>

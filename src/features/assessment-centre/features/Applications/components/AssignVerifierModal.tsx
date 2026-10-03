@@ -58,7 +58,7 @@ export const AssignVerifierModal: React.FC<AssignVerifierModalProps> = ({
     verifierType === "internal" ? "Internal Verifier" : "External Verifier";
 
   const assessorOptions = centreAssessors.map((a) => ({
-    label: a.name || "Assessor",
+    label: a.name || "Quality Assurer",
     value: a.id || (a as any).assessorId || (a as any).userId,
   }));
 
@@ -68,7 +68,7 @@ export const AssignVerifierModal: React.FC<AssignVerifierModalProps> = ({
       toast({
         type: "error",
         title: "Selection Required",
-        description: `Please select an assessor to assign as ${verifierLabel}.`,
+        description: `Please select a quality assurer to assign as ${verifierLabel}.`,
       });
       return;
     }
@@ -139,7 +139,7 @@ export const AssignVerifierModal: React.FC<AssignVerifierModalProps> = ({
                 Assign {verifierLabel}
               </h2>
               <p className="text-xs sm:text-sm text-neutral-secondary">
-                Select an approved assessor to assign as {verifierLabel.toLowerCase()} for this application.
+                Select an approved quality assurer to assign as {verifierLabel.toLowerCase()} for this application.
               </p>
             </div>
 
@@ -148,13 +148,13 @@ export const AssignVerifierModal: React.FC<AssignVerifierModalProps> = ({
                 {!isLoadingAssessors && assessorOptions.length === 0 ? (
                   <div className="w-full bg-[#F8F9FA] border border-gray-200 rounded-xl px-4 py-3 text-xs text-gray-400">
                     No approved {verifierType === "internal" ? "IV" : "EV"}-qualified
-                    assessors at this centre yet.
+                    quality assurers at this centre yet.
                   </div>
                 ) : (
                   <Select
-                    label="Select Assessor"
+                    label="Select Quality Assurer"
                     placeholder={
-                      isLoadingAssessors ? "Loading Assessors..." : "Select an assessor"
+                      isLoadingAssessors ? "Loading Quality Assurers..." : "Select a quality assurer"
                     }
                     value={selectedAssessorId}
                     onChange={(e) => setSelectedAssessorId(e.target.value)}
@@ -213,7 +213,7 @@ export const AssignVerifierModal: React.FC<AssignVerifierModalProps> = ({
 
             <p className="text-xs sm:text-sm text-neutral-secondary">
               <span className="font-bold text-neutral-primary">
-                {assignedInfo?.name || "Assessor"}
+                {assignedInfo?.name || "Quality Assurer"}
               </span>{" "}
               has been successfully assigned as the {verifierLabel.toLowerCase()}.
             </p>

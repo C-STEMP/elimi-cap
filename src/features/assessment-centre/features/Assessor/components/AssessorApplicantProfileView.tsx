@@ -118,7 +118,7 @@ export const AssessorApplicantProfileView: React.FC<
     return (
       <div className="w-full bg-white rounded-3xl p-12 flex flex-col items-center justify-center gap-4 text-center min-h-80 shadow-2xs border border-gray-100/80">
         <p className="text-gray-500 font-medium text-sm">
-          Assessor profile details could not be found.
+          Quality Assurer profile details could not be found.
         </p>
         <Button
           type="button"
@@ -142,7 +142,7 @@ export const AssessorApplicantProfileView: React.FC<
     assessorSnapshot?.name ||
     (assessorSnapshot?.email
       ? assessorSnapshot.email.split("@")[0]
-      : "Assessor");
+      : "Quality Assurer");
 
   const assessorEmail =
     assessorSnapshot?.email || "No email provided";
@@ -318,7 +318,7 @@ export const AssessorApplicantProfileView: React.FC<
 
         {certificates.length === 0 ? (
           <p className="text-xs sm:text-sm text-gray-400 font-normal py-3">
-            No uploaded certificates available for this assessor.
+            No uploaded certificates available for this quality assurer.
           </p>
         ) : (
           <div className="flex flex-col gap-3">
@@ -375,7 +375,7 @@ export const AssessorApplicantProfileView: React.FC<
         </h3>
         <p className="text-xs text-gray-500 font-normal">
           {isAssessorRequest
-            ? "Approve or decline this assessor's application to join your retained roster."
+            ? "Approve or decline this quality assurer's application to join your retained roster."
             : "Review this applicant and record your hiring or shortlisting decision."}
         </p>
 

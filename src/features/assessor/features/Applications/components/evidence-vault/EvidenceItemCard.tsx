@@ -1,6 +1,7 @@
 "use client";
 
 import { ASSETS_URL } from "@/src/assets";
+import { getEvidenceTypeName } from "@/src/features/shared/evidence-vault/utils/evidenceConstants";
 import Image from "next/image";
 import React from "react";
 import {
@@ -141,7 +142,11 @@ export const EvidenceItemCard: React.FC<EvidenceItemCardProps> = ({
               </span>
             </div>
             <span className="text-xs text-neutral-secondary font-normal">
-              {item.size} {item.evidenceType ? `• ${item.evidenceType}` : ""}
+              {item.size}
+              {item.size && item.evidenceType ? " · " : ""}
+              {item.evidenceType
+                ? `Evidence Type: ${getEvidenceTypeName(item.evidenceType)}`
+                : ""}
             </span>
           </div>
         </div>

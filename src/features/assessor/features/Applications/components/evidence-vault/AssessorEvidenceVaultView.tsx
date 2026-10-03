@@ -27,6 +27,7 @@ interface AssessorEvidenceVaultViewProps {
   applicationId?: string;
   candidateName?: string;
   onBack: () => void;
+  onViewApplicationForm?: () => void;
   onViewSelfAssessment?: () => void;
   onAllApprovedChange?: (allApproved: boolean) => void;
   onMarkAsComplete?: () => void;
@@ -41,6 +42,7 @@ export const AssessorEvidenceVaultView: React.FC<
   applicationId,
   candidateName = "Candidate",
   onBack,
+  onViewApplicationForm,
   onViewSelfAssessment,
   onAllApprovedChange,
   onMarkAsComplete,
@@ -213,6 +215,7 @@ export const AssessorEvidenceVaultView: React.FC<
         <div className="lg:col-span-8 flex flex-col gap-8">
           <ResourcesSection
             applicationId={applicationId}
+            onViewApplicationForm={onViewApplicationForm}
             onViewSelfAssessment={onViewSelfAssessment}
             onViewThirdPartyReport={handleViewThirdPartyReport}
           />

@@ -168,7 +168,7 @@ export const CenterPersonalInfo: React.FC = () => {
         type: "error",
         title: "Missing Required Fields",
         description:
-          "Please fill in all required fields for Centre Owner Information.",
+          "Please fill in all required fields for Centre Manager Information.",
       });
       return;
     }
@@ -226,10 +226,10 @@ export const CenterPersonalInfo: React.FC = () => {
 
           <div className="flex flex-col gap-1 pt-1">
             <h1 className="text-2xl xl:text-3xl font-extrabold tracking-tight text-neutral-primary">
-              Centre Owner Info
+              Centre Manager Information
             </h1>
             <p className="text-neutral-secondary text-xs sm:text-sm font-normal mt-1">
-              Collect essential information about the centre owner/administrator.
+              Collect essential information about the centre manager.
             </p>
           </div>
         </div>

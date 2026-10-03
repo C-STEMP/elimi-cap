@@ -22,11 +22,11 @@ function isIdLike(val: string): boolean {
 function formatActionText(action: string): string {
   if (!action) return "Activity logged";
   const actionMap: Record<string, string> = {
-    "retained_request.decided": "Decided on assessor request",
-    "retained_request.approved": "Approved assessor request",
-    "retained_request.rejected": "Rejected assessor request",
+    "retained_request.decided": "Decided on quality assurer request",
+    "retained_request.approved": "Approved quality assurer request",
+    "retained_request.rejected": "Rejected quality assurer request",
     "retained_request.submitted": "Submitted request to join centre",
-    "retained_request.created": "Created assessor request",
+    "retained_request.created": "Created quality assurer request",
     "application.reviewed": "Reviewed candidate application",
     "application.approved": "Approved candidate application",
     "application.accepted": "Accepted candidate application",

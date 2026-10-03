@@ -46,7 +46,7 @@ export const ObservationFormHeaderCard: React.FC<
         </div>
         <div>
           <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
-            REGISTRATION NO.
+            REG CODE
           </span>
           <span className="text-xs sm:text-sm font-bold text-neutral-primary mt-0.5 block">
             {registrationNo}

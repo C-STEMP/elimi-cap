@@ -32,6 +32,13 @@ export const EVIDENCE_TYPE_LABELS: Record<string, string> = {
   SIM: "Simulation (SIM)",
 };
 
+/** Full evidence type name without the short code, e.g. "ASS" -> "Assignment". */
+export function getEvidenceTypeName(evidenceType?: string): string {
+  if (!evidenceType) return "";
+  const label = EVIDENCE_TYPE_LABELS[evidenceType.trim().toUpperCase()];
+  return label ? label.replace(/\s*\([^)]*\)\s*$/, "") : evidenceType;
+}
+
 export const RESOURCES_LIST: ResourceRecord[] = [
   {
     id: "res-1",

@@ -58,7 +58,7 @@ export const AssessorProfileDetailView: React.FC<
   const assessorName =
     remoteDetail?.name ||
     (remoteDetail?.email ? remoteDetail.email.split("@")[0] : null) ||
-    "Assessor";
+    "Quality Assurer";
   const assessorEmail = remoteDetail?.email || "No email provided";
   const assessorExperience = remoteDetail?.yearsOfExperience ?? 0;
   const qualifications = remoteDetail?.qualifications || [];
@@ -105,7 +105,7 @@ export const AssessorProfileDetailView: React.FC<
       const roleName =
         Array.isArray(app.roles) && app.roles.length > 0
           ? app.roles[0].replace(/_/g, " ")
-          : "Assessor";
+          : "Quality Assurer";
       return {
         id: app.id,
         role: roleName.charAt(0).toUpperCase() + roleName.slice(1),
@@ -249,7 +249,7 @@ export const AssessorProfileDetailView: React.FC<
 
         {certificates.length === 0 ? (
           <p className="text-xs sm:text-sm text-gray-400 font-normal py-3">
-            No uploaded certificates available for this assessor.
+            No uploaded certificates available for this quality assurer.
           </p>
         ) : (
           <div className="flex flex-col gap-3">

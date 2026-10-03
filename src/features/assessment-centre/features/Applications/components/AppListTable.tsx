@@ -97,9 +97,6 @@ export const AppListTable: React.FC<Props> = ({
                     <span className="text-xs text-gray-500">
                       Assessor: {app.assessorName && app.assessorName !== "—" ? app.assessorName : "-"}
                     </span>
-                    <span className="text-xs text-gray-500">
-                      Internal Verifier: {app.internalVerifierName && app.internalVerifierName !== "—" ? app.internalVerifierName : "-"}
-                    </span>
                     <span className="text-xs text-gray-500">Trade: {app.trade}</span>
                     <span className="text-xs text-gray-500">
                       Type: {app.assessmentType}
@@ -134,7 +131,6 @@ export const AppListTable: React.FC<Props> = ({
   const tableHeaders = [
     "Candidate Name",
     "Assessor",
-    "Internal Verifier",
     "Trade",
     "Assessment Type",
     "Status",
@@ -170,7 +166,7 @@ export const AppListTable: React.FC<Props> = ({
             {isLoading
               ? Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="animate-pulse">
-                    {Array.from({ length: 9 }).map((__, j) => (
+                    {Array.from({ length: 8 }).map((__, j) => (
                       <td key={j} className="p-4">
                         <div className="h-3.5 bg-gray-200 rounded w-24" />
                       </td>
@@ -208,11 +204,6 @@ export const AppListTable: React.FC<Props> = ({
                         : "-"}
                     </td>
                     <td className="p-4 text-gray-600">
-                      {app.internalVerifierName && app.internalVerifierName !== "—"
-                        ? app.internalVerifierName
-                        : "-"}
-                    </td>
-                    <td className="p-4 text-gray-600">
                       {app.trade && app.trade !== "—" ? app.trade : "-"}
                     </td>
                     <td className="p-4 text-gray-600">{app.assessmentType}</td>
@@ -242,7 +233,7 @@ export const AppListTable: React.FC<Props> = ({
                 ))
               : (
                 <tr>
-                  <td colSpan={9} className="p-8 text-center text-gray-400">
+                  <td colSpan={8} className="p-8 text-center text-gray-400">
                     No applications found.
                   </td>
                 </tr>

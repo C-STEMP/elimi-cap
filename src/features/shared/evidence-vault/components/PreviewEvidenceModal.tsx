@@ -11,7 +11,7 @@ import {
   FiCheckCircle,
 } from "react-icons/fi";
 import { Button } from "@/src/components/ui/button";
-import { EvidenceRecord } from "../utils/evidenceConstants";
+import { EvidenceRecord, getEvidenceTypeName } from "../utils/evidenceConstants";
 import { getGeneralEvidenceByIdApi } from "@/src/features/shared/applications/api";
 import { resolveAssetsApi } from "@/src/features/shared/storage/api/storage.api";
 import { getAccessToken } from "@/src/lib/auth-storage";
@@ -199,7 +199,8 @@ export const PreviewEvidenceModal: React.FC<PreviewEvidenceModalProps> = ({
                   </span>
                 </div>
                 <span className="text-xs text-gray-400 font-medium">
-                  {item.size} • {item.evidenceType || "General Evidence"}
+                  {item.size ? `${item.size} · ` : ""}Evidence Type:{" "}
+                  {getEvidenceTypeName(item.evidenceType) || "General Evidence"}
                 </span>
               </div>
             </div>

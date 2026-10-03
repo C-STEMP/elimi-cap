@@ -1,7 +1,7 @@
 "use client";
 
-import React from "react";
-import { FiCalendar } from "react-icons/fi";
+import React, { useEffect, useRef, useState } from "react";
+import { FiCalendar, FiChevronDown, FiPlus } from "react-icons/fi";
 import { useGetApplications } from "@/src/features/shared/applications/hooks";
 import { useGetCentreApplicationsSummary } from "@/src/features/shared/centre/hooks";
 import { ApplicationsHeaderBreadcrumb } from "./ApplicationsHeaderBreadcrumb";
@@ -49,6 +49,45 @@ export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = (props) => 
     onSelectFilterTab,
   } = props;
 
+  const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
+  const actionsMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        actionsMenuRef.current &&
+        !actionsMenuRef.current.contains(event.target as Node)
+      ) {
+        setIsActionsMenuOpen(false);
+      }
+    };
+    if (isActionsMenuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isActionsMenuOpen]);
+
+  // Mobile collapses the header actions into one "Actions" menu.
+  const mobileActions = [
+    onScheduleInterview && {
+      label: "Schedule Interview",
+      icon: <FiCalendar className="w-4 h-4 text-[#F59E0B]" />,
+      onClick: onScheduleInterview,
+    },
+    onCreateInterview && {
+      label: "Create Interview",
+      icon: <FiPlus className="w-4 h-4 text-gray-500" />,
+      onClick: onCreateInterview,
+    },
+    onCreatePanel && {
+      label: "Create Panel",
+      icon: <FiPlus className="w-4 h-4 text-[#F59E0B]" />,
+      onClick: onCreatePanel,
+    },
+  ].filter(Boolean) as { label: string; icon: React.ReactNode; onClick: () => void }[];
+
   const { data: applications = [] } = useGetApplications();
   const { data: appSummary } = useGetCentreApplicationsSummary();
 
@@ -81,7 +120,47 @@ export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = (props) => 
           Applications
         </h1>
 
-        <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
+        {mobileActions.length > 0 && (
+          <div ref={actionsMenuRef} className="relative sm:hidden shrink-0">
+            <button
+              type="button"
+              onClick={() => setIsActionsMenuOpen((open) => !open)}
+              aria-haspopup="menu"
+              aria-expanded={isActionsMenuOpen}
+              className="bg-[#F59E0B] hover:bg-[#D97706] text-white font-bold text-xs px-4 py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-md shadow-amber-500/20"
+            >
+              <span>Actions</span>
+              <FiChevronDown
+                className={`w-4 h-4 transition-transform ${isActionsMenuOpen ? "rotate-180" : ""}`}
+              />
+            </button>
+
+            {isActionsMenuOpen && (
+              <div
+                role="menu"
+                className="absolute right-0 top-12 w-56 max-w-[calc(100vw-2rem)] bg-white rounded-xl shadow-lg border border-gray-100 py-1.5 z-20 flex flex-col text-left animate-in fade-in zoom-in-95 duration-150"
+              >
+                {mobileActions.map((action) => (
+                  <button
+                    key={action.label}
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setIsActionsMenuOpen(false);
+                      action.onClick();
+                    }}
+                    className="px-4 py-2.5 text-sm text-neutral-primary hover:bg-gray-50 text-left transition-colors cursor-pointer font-medium flex items-center justify-between gap-3"
+                  >
+                    <span>{action.label}</span>
+                    {action.icon}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="hidden sm:flex items-center gap-2.5 sm:gap-3 flex-wrap">
           {onScheduleInterview && (
             <button
               type="button"

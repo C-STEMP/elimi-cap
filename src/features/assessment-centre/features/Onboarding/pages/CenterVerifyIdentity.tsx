@@ -480,7 +480,7 @@ export const CenterVerifyIdentity: React.FC = () => {
                       }}
                       className="w-full h-11 bg-secondary hover:bg-secondary-hover text-white font-semibold text-sm rounded-lg shadow-lg cursor-pointer"
                     >
-                      Review Centre Owner Info
+                      Review Centre Manager Information
                     </Button>
                     <button
                       type="button"
