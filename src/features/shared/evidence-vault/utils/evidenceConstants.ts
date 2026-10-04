@@ -52,3 +52,21 @@ export const RESOURCES_LIST: ResourceRecord[] = [
   },
 ];
 
+
+const CV_TYPE_CODES = new Set(["CV", "RESUME", "CURRICULUM_VITAE"]);
+const CV_NAME_PATTERN = /\b(cv|resume|résumé|curriculum\s+vitae)\b/i;
+
+/**
+ * The candidate's CV is uploaded as ordinary evidence — the portfolio shows
+ * it under "Candidate Profile" instead of the evidences list. Matches on an
+ * explicit CV/Resume evidence type, or a document name that says so.
+ */
+export function isCvEvidence(item: {
+  evidenceType?: string;
+  name?: string;
+  documentName?: string;
+}): boolean {
+  const code = (item.evidenceType || "").trim().toUpperCase().replace(/[\s/-]+/g, "_");
+  if (CV_TYPE_CODES.has(code)) return true;
+  return CV_NAME_PATTERN.test(item.documentName || item.name || "");
+}

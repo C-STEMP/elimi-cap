@@ -27,6 +27,8 @@ interface AssessorAssessmentFormViewProps {
   isReadOnly?: boolean;
   isCandidate?: boolean;
   applicationTrade?: string;
+  /** Observers outside the interview (e.g. the centre) — read-only, no sign controls. */
+  viewOnly?: boolean;
 }
 
 const FORM_MAP: Record<
@@ -53,6 +55,7 @@ export const AssessorAssessmentFormView: React.FC<
   isReadOnly = false,
   isCandidate = false,
   applicationTrade,
+  viewOnly = false,
 }) => {
   const { toast } = useToast();
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
@@ -69,7 +72,7 @@ export const AssessorAssessmentFormView: React.FC<
   // Signing these forms is an "interview stage" action on the backend — once
   // the application has moved on (e.g. to external verification), signing
   // always fails, so the sign controls must not be offered any more.
-  const isInterviewStage = applicationData?.currentStageKey === "interview";
+  const isInterviewStage = !viewOnly && applicationData?.currentStageKey === "interview";
 
   const formType = FORM_MAP[formId] || "records";
   // Unit dropdowns list the trade's NOS units, candidate-preferred ones first.
@@ -88,7 +91,7 @@ export const AssessorAssessmentFormView: React.FC<
 
   const matchedRemoteForm = remoteForms?.find((f) => f.formType === formType);
   const isCandidateSigned = Boolean(matchedRemoteForm?.candidateSignedAt);
-  const effectiveReadOnly = isReadOnly || isCandidateSigned;
+  const effectiveReadOnly = viewOnly || isReadOnly || isCandidateSigned;
 
   const handleRequestSubmit = (data: Record<string, any>) => {
     if (effectiveReadOnly) return;

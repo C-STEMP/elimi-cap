@@ -343,7 +343,7 @@ export const CenterInformation: React.FC = () => {
       valid = false;
     }
     if (!form.regNo.trim()) {
-      newErrors.regNo = "Registration No is required";
+      newErrors.regNo = "Centre Code is required";
       valid = false;
     }
     if (!form.country) {
@@ -359,7 +359,7 @@ export const CenterInformation: React.FC = () => {
       valid = false;
     }
     if (!form.streetAddress.trim()) {
-      newErrors.streetAddress = "Street Address is required";
+      newErrors.streetAddress = "Address is required";
       valid = false;
     }
     if (!form.supportEmail.trim()) {
@@ -534,7 +534,7 @@ export const CenterInformation: React.FC = () => {
           <Input
             label={
               <span>
-                Registration No
+                Centre Code
                 <span className="text-primary-solid ml-0.5">*</span>
               </span>
             }
@@ -603,12 +603,12 @@ export const CenterInformation: React.FC = () => {
           <Input
             label={
               <span>
-                Street Address
+                Address
                 <span className="text-primary-solid ml-0.5">*</span>
               </span>
             }
             type="text"
-            placeholder="Street Address"
+            placeholder="Address"
             value={form.streetAddress}
             error={errors.streetAddress}
             onChange={(e) => update("streetAddress", e.target.value)}

@@ -1,4 +1,4 @@
-export * from "./ResourcesSection";
+export * from "./AssessorThirdPartyReportCard";
 export * from "./EvidenceItemCard";
 export * from "./EvidenceListSection";
 export * from "./ConfirmMarkCompleteModal";

@@ -145,7 +145,7 @@ export const EvidenceItemCard: React.FC<EvidenceItemCardProps> = ({
               {item.size}
               {item.size && item.evidenceType ? " · " : ""}
               {item.evidenceType
-                ? `Evidence Type: ${getEvidenceTypeName(item.evidenceType)}`
+                ? getEvidenceTypeName(item.evidenceType)
                 : ""}
             </span>
           </div>

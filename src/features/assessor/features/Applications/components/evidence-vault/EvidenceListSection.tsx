@@ -22,8 +22,8 @@ export const EvidenceListSection: React.FC<EvidenceListSectionProps> = ({
 
   return (
     <div className="flex flex-col gap-4 w-full">
-      <h3 className="text-lg font-bold text-neutral-primary">
-        Evidence
+      <h3 className="text-base sm:text-lg font-bold text-neutral-primary">
+        Evidences ({items.length})
       </h3>
 
       {isLoading ? (

@@ -153,7 +153,7 @@ export const CenterPersonalInfo: React.FC = () => {
       valid = false;
     }
     if (!form.streetAddress.trim()) {
-      newErrors.streetAddress = "Street Address is required";
+      newErrors.streetAddress = "Address is required";
       valid = false;
     }
 
@@ -419,12 +419,12 @@ export const CenterPersonalInfo: React.FC = () => {
             <Input
               label={
                 <span>
-                  Street Address
+                  Address
                   <span className="text-primary-solid ml-0.5">*</span>
                 </span>
               }
               type="text"
-              placeholder="Street Address"
+              placeholder="Address"
               value={form.streetAddress}
               error={errors.streetAddress}
               onChange={(e) => update("streetAddress", e.target.value)}

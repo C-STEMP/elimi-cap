@@ -19,7 +19,6 @@ interface Props {
   onDeletePanels?: () => void;
   onSelectAll: () => void;
   selectedCount?: number;
-  totalCount?: number;
   onBulkCertify?: () => void;
   isBulkCertifying?: boolean;
   hasActiveFilters?: boolean;
@@ -41,14 +40,13 @@ export const AppsFilterBar: React.FC<Props> = ({
   onDeletePanels,
   onSelectAll,
   selectedCount = 0,
-  totalCount,
   onBulkCertify,
   isBulkCertifying,
   hasActiveFilters = false,
   onClearFilters,
 }) => (
   <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-gray-100 shadow-2xs flex flex-col gap-4">
-    {/* Card Header: Tab Title + Count + Clear filters indicator */}
+    {/* Card Header: Tab Title + Clear filters indicator */}
     <div className="flex items-center justify-between gap-3">
       <div className="flex items-center gap-2.5">
         <h2 className="text-base sm:text-lg font-bold text-gray-900 tracking-tight">
@@ -60,11 +58,6 @@ export const AppsFilterBar: React.FC<Props> = ({
             ? "Panels"
             : `RPL ${activeFilterTab} Applications`}
         </h2>
-        {typeof totalCount === "number" && (
-          <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-600">
-            {totalCount}
-          </span>
-        )}
       </div>
 
       {hasActiveFilters && onClearFilters && (

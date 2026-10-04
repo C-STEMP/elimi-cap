@@ -21,12 +21,16 @@ import {
   useGetInterviewSchedule,
 } from "@/src/features/shared/applications/hooks";
 import { useUploadFile } from "@/src/features/shared/storage/hooks";
-import { EvidenceRecord } from "../utils/evidenceConstants";
+import { EvidenceRecord, isCvEvidence } from "../utils/evidenceConstants";
 import { UploadEvidenceModal } from "../components/UploadEvidenceModal";
 import { DeleteEvidenceModal } from "../components/DeleteEvidenceModal";
 import { PreviewEvidenceModal } from "../components/PreviewEvidenceModal";
-import { ResourcesSection } from "../components/ResourcesSection";
+import {
+  CandidateSelfAssessmentCard,
+  CandidateThirdPartyReportCard,
+} from "../components/CandidateReportCards";
 import { EvidenceSection } from "../components/EvidenceSection";
+import { PortfolioVault } from "../components/portfolio";
 import { useUrlModal } from "@/src/lib/hooks/usePersistentModal";
 import { UPLOAD_EVIDENCE_MODAL } from "@/src/lib/modal-keys";
 
@@ -197,6 +201,12 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
     };
   });
 
+  // The CV is shown under "Candidate Profile", not in the evidences list.
+  const cvEvidence = evidences.find(isCvEvidence) || null;
+  const otherEvidences = cvEvidence
+    ? evidences.filter((e) => e !== cvEvidence)
+    : evidences;
+
   const handleUploadSubmit = async (
     docName: string,
     evidenceType: string,
@@ -310,18 +320,37 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
       <div className="max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1 flex flex-col gap-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           <div className="lg:col-span-8 xl:col-span-9 flex flex-col gap-6">
-            <ResourcesSection
+            <PortfolioVault
+              viewer="candidate"
               applicationId={application.id}
-              isSelfAssessmentCompleted={isSelfAssessmentCompleted}
-            />
-            <EvidenceSection
-              evidences={evidences}
+              application={apiApp}
+              cvEvidence={cvEvidence}
               onPreview={(item) => setPreviewItem(item)}
-              onDelete={(item) => {
-                setItemToDelete(item);
-                setIsDeleteModalOpen(true);
-              }}
-              onOpenUploadModal={() => setIsUploadModalOpen(true)}
+              onViewApplicationForm={
+                application.id
+                  ? () => router.push(`/dashboard/applications/${application.id}/application-form`)
+                  : undefined
+              }
+              selfAssessmentCard={
+                <CandidateSelfAssessmentCard
+                  applicationId={application.id}
+                  isCompleted={isSelfAssessmentCompleted}
+                />
+              }
+              thirdPartyReportCard={
+                <CandidateThirdPartyReportCard applicationId={application.id} />
+              }
+              evidenceList={
+                <EvidenceSection
+                  evidences={otherEvidences}
+                  onPreview={(item) => setPreviewItem(item)}
+                  onDelete={(item) => {
+                    setItemToDelete(item);
+                    setIsDeleteModalOpen(true);
+                  }}
+                  onOpenUploadModal={() => setIsUploadModalOpen(true)}
+                />
+              }
             />
           </div>
 

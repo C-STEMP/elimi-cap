@@ -71,7 +71,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                 </span>
               </div>
               <p className="text-xs text-[#B45309] font-normal">
-                Centre ID: <span className="font-semibold">{centreProfile?.registrationNo || "AC-NBTE-0042"}</span> • Your centre credentials are under review by NBTE &amp; Sector Skills Council.
+                Centre Code: <span className="font-semibold">{centreProfile?.registrationNo || "AC-NBTE-0042"}</span> • Your centre credentials are under review by NBTE &amp; Sector Skills Council.
               </p>
             </div>
           </div>
@@ -99,7 +99,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                 </span>
               </div>
               <p className="text-xs text-gray-500 font-normal">
-                Centre ID: <span className="font-semibold text-gray-800">{centreProfile?.registrationNo || "AC-NBTE-0042"}</span> • Recognized by NBTE &amp; Sector Skills Council
+                Centre Code: <span className="font-semibold text-gray-800">{centreProfile?.registrationNo || "AC-NBTE-0042"}</span> • Recognized by NBTE &amp; Sector Skills Council
               </p>
             </div>
           </div>

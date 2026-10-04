@@ -64,13 +64,6 @@ export const ApplicationsView: React.FC<ApplicationsViewProps> = ({
         onDeletePanels={state.handleDeleteSelectedPanels}
         onSelectAll={state.toggleSelectAll}
         selectedCount={state.selectedIds.length}
-        totalCount={
-          state.activeFilterTab === "Interviews"
-            ? state.filteredInterviews.length
-            : state.activeFilterTab === "Panel"
-            ? state.filteredPanels.length
-            : state.filteredApplications.length
-        }
         hasActiveFilters={state.hasActiveFilters}
         onClearFilters={state.handleResetFilters}
         onBulkCertify={state.handleBulkCertify}
