@@ -58,11 +58,11 @@ export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
   return (
     <div className="border border-[#F7F4EF] p-4 sm:p-6 rounded-2xl bg-white flex flex-col gap-4">
       <div className="flex flex-col gap-1">
-        <h2 className="text-xl sm:text-2xl font-extrabold text-neutral-primary tracking-tight">
-          Evidence Items ({evidences.length})
-        </h2>
+        <h3 className="text-base sm:text-lg font-bold text-neutral-primary tracking-tight">
+          Evidences ({evidences.length})
+        </h3>
         <p className="text-xs sm:text-sm text-gray-500">
-          Upload all relevant documents, certificates, and work samples.
+          Upload all relevant documents, certificates, work samples, videos, pictures and audio.
         </p>
       </div>
 
@@ -133,7 +133,7 @@ export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
 
                       {evidenceTypeLabel && (
                         <span className="text-[#191918]/50 text-xs mt-1">
-                          Evidence Type: {evidenceTypeLabel}
+                          {evidenceTypeLabel}
                         </span>
                       )}
                     </div>

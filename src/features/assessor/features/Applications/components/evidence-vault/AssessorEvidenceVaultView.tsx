@@ -11,7 +11,15 @@ import {
 } from "@/src/features/shared/applications/hooks";
 import { extractFacilitatorFromApplication } from "@/src/features/shared/applications/utils/facilitator";
 import { PreviewEvidenceModal } from "@/src/features/shared/evidence-vault/components/PreviewEvidenceModal";
-import type { EvidenceRecord } from "@/src/features/shared/evidence-vault/utils/evidenceConstants";
+import {
+  isCvEvidence,
+  type EvidenceRecord,
+} from "@/src/features/shared/evidence-vault/utils/evidenceConstants";
+import {
+  PortfolioActionButton,
+  PortfolioDocCard,
+  PortfolioVault,
+} from "@/src/features/shared/evidence-vault/components/portfolio";
 import React, { useEffect, useState } from "react";
 import {
   AssessorCalendarWidget,
@@ -21,7 +29,7 @@ import { ConfirmMarkCompleteModal } from "./ConfirmMarkCompleteModal";
 import { type EvidenceItem } from "./EvidenceItemCard";
 import { EvidenceListSection } from "./EvidenceListSection";
 import { FolderCompleteSuccessModal } from "./FolderCompleteSuccessModal";
-import { ResourcesSection } from "./ResourcesSection";
+import { AssessorThirdPartyReportCard } from "./AssessorThirdPartyReportCard";
 
 interface AssessorEvidenceVaultViewProps {
   applicationId?: string;
@@ -143,26 +151,34 @@ export const AssessorEvidenceVaultView: React.FC<
     }
   }, [triggerMarkComplete, onResetTriggerMarkComplete]);
 
+  const toPreviewRecord = (item: EvidenceItem): EvidenceRecord => ({
+    id: item.id,
+    name: item.name,
+    size: item.size,
+    status: item.status,
+    statusBg: item.status.toLowerCase().includes("approv")
+      ? "bg-[#D1FAE5]"
+      : "bg-[#FEF3C7]",
+    statusText: item.status.toLowerCase().includes("approv")
+      ? "text-[#047857]"
+      : "text-[#D97706]",
+    issues: item.feedback,
+    url: item.url || item.fileUrl || item.dataUrl,
+    dataUrl: item.dataUrl || item.url || item.fileUrl,
+    assetId: item.assetId,
+    mimeType: item.mimeType,
+    evidenceType: item.evidenceType,
+  });
+
   const handleViewEvidence = (item: EvidenceItem) => {
-    setPreviewItem({
-      id: item.id,
-      name: item.name,
-      size: item.size,
-      status: item.status,
-      statusBg: item.status.toLowerCase().includes("approv")
-        ? "bg-[#D1FAE5]"
-        : "bg-[#FEF3C7]",
-      statusText: item.status.toLowerCase().includes("approv")
-        ? "text-[#047857]"
-        : "text-[#D97706]",
-      issues: item.feedback,
-      url: item.url || item.fileUrl || item.dataUrl,
-      dataUrl: item.dataUrl || item.url || item.fileUrl,
-      assetId: item.assetId,
-      mimeType: item.mimeType,
-      evidenceType: item.evidenceType,
-    });
+    setPreviewItem(toPreviewRecord(item));
   };
+
+  // The CV is shown under "Candidate Profile", not in the evidences list.
+  const cvItem = evidenceItems.find((item) => isCvEvidence(item));
+  const otherEvidenceItems = cvItem
+    ? evidenceItems.filter((item) => item !== cvItem)
+    : evidenceItems;
 
   const handleConfirmMarkComplete = async () => {
     if (!applicationId) return;
@@ -213,16 +229,42 @@ export const AssessorEvidenceVaultView: React.FC<
     <div className="w-full flex flex-col gap-6 select-text">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         <div className="lg:col-span-8 flex flex-col gap-8">
-          <ResourcesSection
-            applicationId={applicationId}
+          <PortfolioVault
+            viewer="assessor"
+            applicationId={applicationId || ""}
+            application={appDetail}
+            cvEvidence={cvItem ? toPreviewRecord(cvItem) : null}
+            onPreview={setPreviewItem}
             onViewApplicationForm={onViewApplicationForm}
-            onViewSelfAssessment={onViewSelfAssessment}
-            onViewThirdPartyReport={handleViewThirdPartyReport}
-          />
-          <EvidenceListSection
-            items={evidenceItems}
-            onView={handleViewEvidence}
-            isLoading={isLoadingEvidence}
+            selfAssessmentCard={
+              <PortfolioDocCard
+                title="Self-Assessment of Competency Form"
+                subtitle="Filled by the candidate"
+                badge={
+                  selfAssessmentData?.submittedAt
+                    ? { label: "Submitted", tone: "success" }
+                    : { label: "Not Submitted", tone: "neutral" }
+                }
+                actions={
+                  onViewSelfAssessment && (
+                    <PortfolioActionButton onClick={onViewSelfAssessment}>View</PortfolioActionButton>
+                  )
+                }
+              />
+            }
+            thirdPartyReportCard={
+              <AssessorThirdPartyReportCard
+                applicationId={applicationId}
+                onView={handleViewThirdPartyReport}
+              />
+            }
+            evidenceList={
+              <EvidenceListSection
+                items={otherEvidenceItems}
+                onView={handleViewEvidence}
+                isLoading={isLoadingEvidence}
+              />
+            }
           />
         </div>
 

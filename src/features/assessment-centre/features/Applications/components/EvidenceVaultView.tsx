@@ -26,6 +26,7 @@ export const EvidenceVaultView: React.FC<Props> = ({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         <EvidenceItemsList
           applicationId={id}
+          appDetail={s.appDetail}
           selfAssessment={s.selfAssessment}
           onOpenSelfAssessmentForm={onOpenSelfAssessmentForm}
           onOpenCandidateForm={onOpenCandidateForm}

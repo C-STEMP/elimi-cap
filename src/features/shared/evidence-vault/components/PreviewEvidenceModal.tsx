@@ -1,20 +1,22 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  FiX,
-  FiFileText,
-  FiDownload,
-  FiExternalLink,
-  FiLoader,
-  FiCheckCircle,
-} from "react-icons/fi";
 import { Button } from "@/src/components/ui/button";
-import { EvidenceRecord, getEvidenceTypeName } from "../utils/evidenceConstants";
 import { getGeneralEvidenceByIdApi } from "@/src/features/shared/applications/api";
 import { resolveAssetsApi } from "@/src/features/shared/storage/api/storage.api";
-import { getAccessToken } from "@/src/lib/auth-storage";
+import { AnimatePresence, motion } from "framer-motion";
+import React, { useEffect, useState } from "react";
+import {
+  FiCheckCircle,
+  FiDownload,
+  FiExternalLink,
+  FiFileText,
+  FiLoader,
+  FiX,
+} from "react-icons/fi";
+import {
+  EvidenceRecord,
+  getEvidenceTypeName,
+} from "../utils/evidenceConstants";
 
 interface PreviewEvidenceModalProps {
   item: EvidenceRecord | null;
@@ -49,12 +51,7 @@ export const PreviewEvidenceModal: React.FC<PreviewEvidenceModalProps> = ({
       let targetAssetId = item.assetId || "";
 
       // 1. If we don't have url or assetId on list item, fetch individual evidence item detail from CAP backend
-      if (
-        !targetUrl &&
-        !targetAssetId &&
-        applicationId &&
-        item.id
-      ) {
+      if (!targetUrl && !targetAssetId && applicationId && item.id) {
         try {
           const detail = await getGeneralEvidenceByIdApi(
             applicationId,
@@ -77,12 +74,11 @@ export const PreviewEvidenceModal: React.FC<PreviewEvidenceModalProps> = ({
         try {
           const res: any = await resolveAssetsApi([targetAssetId]);
           if (!isMounted) return;
-          const assets: { assetId: string; url: string }[] =
-            Array.isArray(res)
-              ? res
-              : Array.isArray(res?.assets)
-                ? res.assets
-                : [];
+          const assets: { assetId: string; url: string }[] = Array.isArray(res)
+            ? res
+            : Array.isArray(res?.assets)
+              ? res.assets
+              : [];
           const match =
             assets.find((a) => a.assetId === targetAssetId) || assets[0];
           if (match?.url) {
@@ -188,26 +184,25 @@ export const PreviewEvidenceModal: React.FC<PreviewEvidenceModalProps> = ({
                     className={`${
                       isGreen
                         ? "bg-[#1E7F4C]/10 text-[#1E7F4C]"
-                        : item.statusBg || "bg-[#F9A825]/10"
+                        : item.statusBg || "bg-secondary/10"
                     } ${
                       isGreen
                         ? "text-[#1E7F4C]"
-                        : item.statusText || "text-[#F9A825]"
+                        : item.statusText || "text-secondary"
                     } text-xs font-semibold px-2.5 py-0.5 rounded-full capitalize`}
                   >
                     {item.status || (isGreen ? "Approved" : "Pending")}
                   </span>
                 </div>
                 <span className="text-xs text-gray-400 font-medium">
-                  {item.size ? `${item.size} · ` : ""}Evidence Type:{" "}
+                  {item.size ? `${item.size} · ` : ""}
                   {getEvidenceTypeName(item.evidenceType) || "General Evidence"}
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Document Preview Area */}
-          <div className="flex-1 overflow-y-auto bg-gray-50 rounded-2xl border border-gray-100 p-4 flex flex-col items-center justify-center min-h-[350px]">
+          <div className="flex-1 overflow-y-auto bg-gray-50 rounded-2xl border border-gray-100 p-4 flex flex-col items-center justify-center min-h-87.5">
             {isResolving ? (
               <div className="flex flex-col items-center justify-center gap-3 py-10">
                 <FiLoader className="w-8 h-8 text-[#a31d38] animate-spin" />
@@ -217,7 +212,6 @@ export const PreviewEvidenceModal: React.FC<PreviewEvidenceModalProps> = ({
               </div>
             ) : fileUrl && !hasImageError && !isPdf ? (
               <div className="relative w-full flex items-center justify-center rounded-2xl overflow-hidden bg-white p-2 border border-gray-200 shadow-xs">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={fileUrl}
                   alt={item.name}
@@ -238,7 +232,8 @@ export const PreviewEvidenceModal: React.FC<PreviewEvidenceModalProps> = ({
                 </div>
                 <h5 className="font-bold text-sm text-gray-800">{item.name}</h5>
                 <p className="text-xs text-gray-500 max-w-xs text-center">
-                  This document can be opened directly or downloaded to your device.
+                  This document can be opened directly or downloaded to your
+                  device.
                 </p>
                 <a
                   href={fileUrl}
@@ -257,7 +252,8 @@ export const PreviewEvidenceModal: React.FC<PreviewEvidenceModalProps> = ({
                 </div>
                 <h5 className="font-bold text-sm text-gray-800">{item.name}</h5>
                 <p className="text-xs text-gray-500 max-w-xs text-center">
-                  Document has been registered and is awaiting reviewer inspection.
+                  Document has been registered and is awaiting reviewer
+                  inspection.
                 </p>
               </div>
             )}

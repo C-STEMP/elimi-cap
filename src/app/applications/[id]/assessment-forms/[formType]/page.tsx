@@ -81,8 +81,11 @@ export default function AssessmentFormDedicatedRoutePage() {
     ) || false;
 
   const fromParam = searchParams.get("from");
+  // Centre staff open these forms from the evidence vault to read them only.
+  const isCentreViewer = fromParam === "centre";
   const isCandidateUser = Boolean(
     fromParam !== "assessor" &&
+    !isCentreViewer &&
     (fromParam === "candidate" ||
     user?.role?.toLowerCase() === "candidate" ||
       (application &&
@@ -110,7 +113,7 @@ export default function AssessmentFormDedicatedRoutePage() {
 
   // Same rule as the application page's "Fill Form" link: only the lead
   // panelist fills these forms; everyone else gets the read-only document.
-  const isReadOnly = isCandidateUser || !isUserLeadPanelist;
+  const isReadOnly = isCentreViewer || isCandidateUser || !isUserLeadPanelist;
 
   const handleBack = () => {
     if (typeof window !== "undefined" && window.history.length > 1) {
@@ -141,6 +144,7 @@ export default function AssessmentFormDedicatedRoutePage() {
         isReadOnly={isReadOnly}
         isCandidate={isCandidateUser}
         applicationTrade={resolvedTrade}
+        viewOnly={isCentreViewer}
       />
     </div>
   );

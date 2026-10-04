@@ -126,7 +126,7 @@ export const ProfileSettingsTab: React.FC<ProfileSettingsTabProps> = ({
             disabled={!profileState}
             onChange={(e) => setProfileLga(e.target.value)}
           />
-          <Input label="Street Address*" placeholder="Street Address" value={profileStreet} onChange={(e) => setProfileStreet(e.target.value)} />
+          <Input label="Address*" placeholder="Address" value={profileStreet} onChange={(e) => setProfileStreet(e.target.value)} />
         </div>
       </div>
 

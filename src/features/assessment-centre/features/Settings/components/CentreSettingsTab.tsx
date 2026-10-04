@@ -59,7 +59,7 @@ export const CentreSettingsTab: React.FC<CentreSettingsTabProps> = ({
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input label="Name Of Assessment Center*" placeholder="Type Here" value={centreName} onChange={(e) => setCentreName(e.target.value)} />
-          <Input label="Registration No*" placeholder="Type Here" value={regNo} onChange={(e) => setRegNo(e.target.value)} />
+          <Input label="Centre Code*" placeholder="Type Here" value={regNo} onChange={(e) => setRegNo(e.target.value)} />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Select
@@ -94,7 +94,7 @@ export const CentreSettingsTab: React.FC<CentreSettingsTabProps> = ({
             disabled={!centreState}
             onChange={(e) => setCentreLga(e.target.value)}
           />
-          <Input label="Street Address*" placeholder="Street Address" value={centreStreet} onChange={(e) => setCentreStreet(e.target.value)} />
+          <Input label="Address*" placeholder="Address" value={centreStreet} onChange={(e) => setCentreStreet(e.target.value)} />
         </div>
       </div>
 
