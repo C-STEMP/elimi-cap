@@ -27,6 +27,9 @@ export interface StartApplicationState {
   tradeName?: string;
   sectorName?: string;
   centreName?: string;
+  level?: string;
+  levelNumber?: number;
+  qualificationLevelId?: string;
 }
 
 export interface CentreInformationState {

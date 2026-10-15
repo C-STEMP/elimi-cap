@@ -8,6 +8,7 @@ import { PersonalDetailsSection } from "./PersonalDetailsSection";
 import { ContactInfoSection } from "./ContactInfoSection";
 import { ResidentialAddressSection } from "./ResidentialAddressSection";
 import { AccessibilitySection } from "./AccessibilitySection";
+import { SignatureSection } from "./SignatureSection";
 import { NotificationPrefSection } from "./NotificationPrefSection";
 import { Button } from "@/src/components/ui/button";
 
@@ -41,6 +42,8 @@ export const ProfileInfoTab: React.FC<ProfileInfoTabProps> = ({
       <ResidentialAddressSection formData={formData} onChange={onChange} />
       <hr className="border-gray-100 my-1" />
       <AccessibilitySection formData={formData} onChange={onChange} />
+      <hr className="border-gray-100 my-1" />
+      <SignatureSection />
       <hr className="border-gray-100 my-1" />
       <NotificationPrefSection formData={formData} onChange={onChange} />
 

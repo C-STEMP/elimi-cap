@@ -18,9 +18,14 @@ import {
 } from "@/src/features/shared/applications/hooks";
 import {
   useGetEvidenceTypesByTrade,
+  useGetTradeDetail,
   useGetUnitsByTrade,
 } from "@/src/features/shared/reference/hooks";
 import { EVIDENCE_TYPE_LABELS } from "@/src/features/shared/evidence-vault/utils/evidenceConstants";
+import {
+  resolveAppliedTradeLevel,
+  getRplScopedUnits,
+} from "@/src/features/shared/applications/utils/rplTradeLevel";
 
 interface SelfAssessmentPageProps {
   id?: string;
@@ -35,30 +40,40 @@ export const SelfAssessmentPage: React.FC<SelfAssessmentPageProps> = ({
   const { data: savedSelfAssessment } = useGetSelfAssessment(id);
   const saveSelfAssessmentMutation = useSaveSelfAssessment(id);
 
-  const tradeId = apiApp?.tradeId || "";
-  const { data: tradeUnits = [], isLoading: isLoadingUnits } =
-    useGetUnitsByTrade(tradeId);
+  const tradeId = apiApp?.tradeId || (apiApp?.trade as any)?.id || "";
+  const { data: tradeDetail, isLoading: isLoadingTradeDetail } =
+    useGetTradeDetail(tradeId);
+
+  const { levelNumber, levelLabel } = resolveAppliedTradeLevel(
+    apiApp,
+    tradeDetail,
+  );
+
+  const { data: rawTradeUnits = [], isLoading: isLoadingUnits } =
+    useGetUnitsByTrade(tradeId, levelNumber);
   const { data: tradeEvidenceTypes = [] } = useGetEvidenceTypesByTrade(tradeId);
 
-  // Competencies are the trade's NOS units (narrowed to the candidate's unit
-  // preferences when they picked any). A saved self-assessment keeps its own
-  // titles so previously submitted answers stay aligned by index.
+  // Scoped strictly to the trade level the candidate is applying for
+  const scopedUnits = React.useMemo(
+    () =>
+      getRplScopedUnits({
+        tradeUnits: rawTradeUnits,
+        tradeDetail,
+        levelNumber,
+        preferredUnitIds: apiApp?.unitIds,
+      }),
+    [rawTradeUnits, tradeDetail, levelNumber, apiApp?.unitIds],
+  );
+
+  // Competencies are strictly the units of the level the candidate is applying for
   const competencyTitles = React.useMemo(() => {
-    const saved = Array.isArray(savedSelfAssessment?.competencies)
-      ? (savedSelfAssessment.competencies as any[])
-      : [];
-    if (saved.length > 0 && saved.every((c) => c?.title)) {
-      return saved.map((c) => String(c.title));
+    if (scopedUnits.length > 0) {
+      return scopedUnits.map((u) =>
+        u.referenceNumber ? `${u.referenceNumber}: ${u.title}` : u.title,
+      );
     }
-    const preferred = new Set(apiApp?.unitIds ?? []);
-    const units =
-      preferred.size > 0
-        ? tradeUnits.filter((u) => preferred.has(u.id))
-        : tradeUnits;
-    return units.map((u) =>
-      u.referenceNumber ? `${u.referenceNumber}: ${u.title}` : u.title,
-    );
-  }, [savedSelfAssessment?.competencies, apiApp?.unitIds, tradeUnits]);
+    return [];
+  }, [scopedUnits]);
 
   const evidenceOptions = React.useMemo(
     () => [
@@ -115,19 +130,47 @@ export const SelfAssessmentPage: React.FC<SelfAssessmentPageProps> = ({
   };
 
   const initialCompetencies = React.useMemo(() => {
-    if (!savedSelfAssessment?.competencies || !Array.isArray(savedSelfAssessment.competencies)) {
+    if (
+      !savedSelfAssessment?.competencies ||
+      !Array.isArray(savedSelfAssessment.competencies)
+    ) {
       return undefined;
     }
-    return savedSelfAssessment.competencies.reduce((acc: any, item: any, idx: number) => {
-      const index = item.index !== undefined ? item.index : idx;
-      acc[index] = {
-        confidence: item.confidence || "",
-        evidence: item.evidence || "",
-        experience: item.experience || "",
-      };
-      return acc;
-    }, {});
-  }, [savedSelfAssessment?.competencies]);
+    const savedList = savedSelfAssessment.competencies as any[];
+    const result: Record<
+      number,
+      { confidence: string; evidence: string; experience: string }
+    > = {};
+
+    competencyTitles.forEach((title, idx) => {
+      const unit = scopedUnits[idx];
+      const matched =
+        savedList.find((s) => {
+          if (!s) return false;
+          if (s.title === title) return true;
+          if (unit?.referenceNumber && s.title?.includes(unit.referenceNumber)) {
+            return true;
+          }
+          if (
+            unit?.title &&
+            s.title?.toLowerCase().includes(unit.title.toLowerCase())
+          ) {
+            return true;
+          }
+          return false;
+        }) || (savedList[idx]?.title === title ? savedList[idx] : undefined);
+
+      if (matched) {
+        result[idx] = {
+          confidence: matched.confidence || "",
+          evidence: matched.evidence || "",
+          experience: matched.experience || "",
+        };
+      }
+    });
+
+    return Object.keys(result).length > 0 ? result : undefined;
+  }, [savedSelfAssessment?.competencies, competencyTitles, scopedUnits]);
 
   return (
     <div
@@ -162,7 +205,13 @@ export const SelfAssessmentPage: React.FC<SelfAssessmentPageProps> = ({
           {currentStep === 2 && (
             <Step2Competencies
               competencies={competencyTitles}
-              isLoading={Boolean(tradeId) && isLoadingUnits}
+              levelLabel={levelLabel}
+              tradeName={apiApp?.trade?.name || tradeDetail?.name}
+              isLoading={
+                Boolean(tradeId) &&
+                (isLoadingUnits || isLoadingTradeDetail) &&
+                competencyTitles.length === 0
+              }
               initialData={initialCompetencies}
               onNext={(data) => {
                 if (data) setCompetenciesData(data);

@@ -21,6 +21,7 @@ import {
   useGetSectors,
   useGetCentres,
   useGetTradesBySector,
+  useGetTradeDetail,
   useCandidateLocation,
 } from "@/src/features/shared/reference/hooks";
 import { useCountryStateCity } from "@/src/lib/hooks/useCountryStateCity";
@@ -180,8 +181,11 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
   };
 
   const selectedSectorId = Form.useWatch("sector", form);
+  const selectedTradeId = Form.useWatch("trade", form);
   const { data: remoteTrades = [], isLoading: isLoadingTrades } =
     useGetTradesBySector(selectedSectorId);
+  const { data: tradeDetail, isLoading: isLoadingTradeDetail } =
+    useGetTradeDetail(selectedTradeId);
 
   const sectorOptions: SelectOption[] = remoteSectors.map((s) => ({
     label: s.name,
@@ -192,6 +196,23 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
     label: t.name,
     value: t.id,
   }));
+
+  const levelOptions: SelectOption[] = React.useMemo(() => {
+    const levels =
+      tradeDetail?.activeNosDocument?.qualificationLevels ||
+      (tradeDetail as any)?.qualificationLevels ||
+      [];
+    if (Array.isArray(levels) && levels.length > 0) {
+      return levels.map((lvl) => ({
+        label: `Level ${lvl.level}${lvl.purpose ? ` - ${lvl.purpose}` : ""}`,
+        value: String(lvl.level),
+      }));
+    }
+    return [1, 2, 3, 4, 5].map((lvl) => ({
+      label: `Level ${lvl}`,
+      value: String(lvl),
+    }));
+  }, [tradeDetail]);
 
   const { data: existingApps = [] } = useGetApplications();
 
@@ -232,6 +253,9 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
       ) {
         valuesToSet.trade = savedStartApplication.trade;
       }
+      if (savedStartApplication.level) {
+        valuesToSet.level = savedStartApplication.level;
+      }
       if (Object.keys(valuesToSet).length > 0) {
         form.setFieldsValue(valuesToSet);
       }
@@ -241,6 +265,10 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
   const handleValuesChange = (changedValues: Record<string, string>) => {
     if ("sector" in changedValues) {
       form.setFieldValue("trade", "");
+      form.setFieldValue("level", "");
+    }
+    if ("trade" in changedValues) {
+      form.setFieldValue("level", "");
     }
     const currentValues = form.getFieldsValue();
     const tradeObj = remoteTrades.find((t) => t.id === currentValues.trade);
@@ -250,6 +278,13 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
     );
 
     const resolvedTradeName = tradeObj?.name || currentValues.trade || "";
+    const selectedLevelStr = currentValues.level || "";
+    const selectedLevelNum = selectedLevelStr ? parseInt(selectedLevelStr, 10) : undefined;
+    const matchedQLevel = (
+      tradeDetail?.activeNosDocument?.qualificationLevels ||
+      (tradeDetail as any)?.qualificationLevels ||
+      []
+    ).find((ql: any) => String(ql.level) === selectedLevelStr || ql.id === selectedLevelStr);
 
     dispatch(
       setStartApplication({
@@ -257,6 +292,9 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
         tradeName: resolvedTradeName,
         sectorName: sectorObj?.name || currentValues.sector,
         centreName: centreObj?.name || currentValues.assessmentCenter,
+        level: selectedLevelStr,
+        levelNumber: selectedLevelNum,
+        qualificationLevelId: matchedQLevel?.id,
       }),
     );
 
@@ -273,6 +311,7 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
     assessmentCenter: string;
     sector: string;
     trade: string;
+    level?: string;
   }) => {
     if (!values.assessmentCenter || !values.sector || !values.trade) {
       toast({
@@ -292,6 +331,14 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
     );
     const centreName = centreObj?.name || values.assessmentCenter;
 
+    const selectedLevelStr = values.level || "";
+    const selectedLevelNum = selectedLevelStr ? parseInt(selectedLevelStr, 10) : undefined;
+    const matchedQLevel = (
+      tradeDetail?.activeNosDocument?.qualificationLevels ||
+      (tradeDetail as any)?.qualificationLevels ||
+      []
+    ).find((ql: any) => String(ql.level) === selectedLevelStr || ql.id === selectedLevelStr);
+
     setIsSubmitting(true);
     dispatch(
       setStartApplication({
@@ -299,6 +346,9 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
         tradeName,
         sectorName,
         centreName,
+        level: selectedLevelStr,
+        levelNumber: selectedLevelNum,
+        qualificationLevelId: matchedQLevel?.id,
       }),
     );
     dispatch(
@@ -573,6 +623,26 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
             }
             disabled={!selectedSectorId || isLoadingTrades}
             options={tradeOptions}
+          />
+        </Form.Item>
+
+        <Form.Item name="level" rules={[rule]}>
+          <FormSelect
+            label={
+              <span>
+                Level
+              </span>
+            }
+            loading={isLoadingTradeDetail}
+            placeholder={
+              isLoadingTradeDetail
+                ? "Loading levels..."
+                : selectedTradeId
+                ? "Select a Level"
+                : "Select a Trade first"
+            }
+            disabled={!selectedTradeId || isLoadingTradeDetail}
+            options={levelOptions}
           />
         </Form.Item>
 

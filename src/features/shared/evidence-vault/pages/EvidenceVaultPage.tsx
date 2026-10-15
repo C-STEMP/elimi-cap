@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { FiPlus } from "react-icons/fi";
 import { useRouter, usePathname } from "next/navigation";
 import { HeaderBanner } from "@/features/candidate/features/Dashboard/components/HeaderBanner";
 import { CalendarWidget } from "@/features/candidate/features/Dashboard/components/CalendarWidget";
@@ -10,7 +9,6 @@ import { UpcomingCard } from "@/features/candidate/features/Dashboard/components
 import { FacilitatorCard } from "@/features/candidate/features/Dashboard/components/FacilitatorCard";
 import { buildFacilitatorData } from "@/features/candidate/features/Application/utils/applicationDetailsHelpers";
 import { StatusModal } from "@/components/status-modal";
-import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
 import {
   useGetApplicationById,
@@ -50,7 +48,9 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
   const { data: remoteVault = [] } = useGetEvidenceVault(applicationId);
   const { data: interviewSchedule } = useGetInterviewSchedule(applicationId, { enabled: Boolean(applicationId) });
   const uploadFileMutation = useUploadFile();
-  const createGeneralEvidenceMutation = useCreateGeneralEvidence(applicationId);
+  const createGeneralEvidenceMutation = useCreateGeneralEvidence(applicationId, {
+    showToast: false,
+  });
   const deleteGeneralEvidenceMutation = useDeleteGeneralEvidence(applicationId);
 
   const resolvedTradeId =
@@ -110,6 +110,7 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
   );
 
   const [isUploadModalOpen, setIsUploadModalOpen] = useUrlModal(UPLOAD_EVIDENCE_MODAL);
+  const [uploadInitialDocName, setUploadInitialDocName] = useState<string>("");
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<EvidenceRecord | null>(null);
   const [previewItem, setPreviewItem] = useState<EvidenceRecord | null>(null);
@@ -169,21 +170,25 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
       (combinedIssues.length > 0 && !isApproved);
     const isInProgress = s.includes("review") || s.includes("progress");
 
-    const statusBg = isApproved || isSubmitted
+    const statusBg = isApproved
       ? "bg-[#1E7F4C]/10"
-      : isAttention
-        ? "bg-[#FEE2E2]"
-        : isInProgress
-          ? "bg-[#EFF6FF]"
-          : "bg-[#F9A825]/10";
+      : isSubmitted
+        ? "bg-[#EFF6FF]"
+        : isAttention
+          ? "bg-[#FEE2E2]"
+          : isInProgress
+            ? "bg-[#EFF6FF]"
+            : "bg-[#F9A825]/10";
 
-    const statusText = isApproved || isSubmitted
+    const statusText = isApproved
       ? "text-[#1E7F4C]"
-      : isAttention
-        ? "text-[#B91C1C]"
-        : isInProgress
-          ? "text-[#1D4ED8]"
-          : "text-[#F9A825]";
+      : isSubmitted
+        ? "text-[#1D4ED8]"
+        : isAttention
+          ? "text-[#B91C1C]"
+          : isInProgress
+            ? "text-[#1D4ED8]"
+            : "text-[#D97706]";
 
     return {
       id: item.id || item.assetId,
@@ -208,15 +213,14 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
     : evidences;
 
   const handleUploadSubmit = async (
-    docName: string,
+    items: Array<{ file: File; docName: string }>,
     evidenceType: string,
-    file: File | null,
   ) => {
-    if (!file || !applicationId) {
+    if (!items.length || !applicationId) {
       toast({
         type: "error",
         title: "Upload Failed",
-        description: "Please choose a valid file to upload.",
+        description: "Please choose at least one valid file to upload.",
       });
       return;
     }
@@ -224,25 +228,33 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
     try {
       setIsUploading(true);
 
-      const finalDocName = docName.trim() || file.name.replace(/\.[^/.]+$/, "");
+      for (const item of items) {
+        const finalDocName =
+          item.docName.trim() || item.file.name.replace(/\.[^/.]+$/, "");
 
-      const asset = await uploadFileMutation.mutateAsync({
-        file,
-        purpose: "evidence",
-      });
-      const assetId = asset?.assetId || (asset as any)?.id;
-      if (!assetId) throw new Error("The file upload did not return an asset id.");
+        const asset = await uploadFileMutation.mutateAsync({
+          file: item.file,
+          purpose: "evidence",
+        });
+        const assetId = asset?.assetId || (asset as any)?.id;
+        if (!assetId)
+          throw new Error("The file upload did not return an asset id.");
 
-      await createGeneralEvidenceMutation.mutateAsync({
-        documentName: finalDocName,
-        evidenceType,
-        assetId,
-      });
+        await createGeneralEvidenceMutation.mutateAsync({
+          documentName: finalDocName,
+          evidenceType,
+          assetId,
+        });
+      }
 
+      const count = items.length;
       toast({
         type: "success",
         title: "Evidence Uploaded",
-        description: `"${finalDocName}" has been successfully added to your Evidence Vault.`,
+        description:
+          count === 1
+            ? `"${items[0].docName.trim() || items[0].file.name.replace(/\.[^/.]+$/, "")}" has been successfully added to your Evidence Vault.`
+            : `${count} evidence documents have been successfully added to your Evidence Vault.`,
       });
 
       setIsUploadModalOpen(false);
@@ -250,7 +262,8 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
       toast({
         type: "error",
         title: "Upload Failed",
-        description: err?.message || "Could not upload your evidence. Please try again.",
+        description:
+          err?.message || "Could not upload your evidence. Please try again.",
       });
     } finally {
       setIsUploading(false);
@@ -303,18 +316,6 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
           { label: "Evidence Vault" },
         ]}
         showCreateButton={false}
-        rightAction={
-          <Button
-            type="button"
-            variant="amber"
-            size="md"
-            rightIcon={<FiPlus className="w-4 h-4 stroke-3" />}
-            onClick={() => setIsUploadModalOpen(true)}
-            className="bg-[#fbab2a] hover:bg-[#e89b1f] text-white font-bold px-5 py-2.5 rounded-xl shadow-xs"
-          >
-            Upload Evidence
-          </Button>
-        }
       />
 
       <div className="max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1 flex flex-col gap-6">
@@ -331,6 +332,10 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
                   ? () => router.push(`/dashboard/applications/${application.id}/application-form`)
                   : undefined
               }
+              onUploadCv={() => {
+                setUploadInitialDocName("CV");
+                setIsUploadModalOpen(true);
+              }}
               selfAssessmentCard={
                 <CandidateSelfAssessmentCard
                   applicationId={application.id}
@@ -348,7 +353,10 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
                     setItemToDelete(item);
                     setIsDeleteModalOpen(true);
                   }}
-                  onOpenUploadModal={() => setIsUploadModalOpen(true)}
+                  onOpenUploadModal={() => {
+                    setUploadInitialDocName("");
+                    setIsUploadModalOpen(true);
+                  }}
                 />
               }
             />
@@ -387,10 +395,14 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
 
       <UploadEvidenceModal
         isOpen={isUploadModalOpen}
-        onClose={() => setIsUploadModalOpen(false)}
+        onClose={() => {
+          setIsUploadModalOpen(false);
+          setUploadInitialDocName("");
+        }}
         onUploadSubmit={handleUploadSubmit}
         isUploading={isUploading}
         tradeId={resolvedTradeId}
+        initialDocName={uploadInitialDocName}
       />
 
       <DeleteEvidenceModal

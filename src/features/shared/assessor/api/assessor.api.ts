@@ -251,3 +251,28 @@ export async function updateAssessorProfileSectorsApi(
   });
   return Array.isArray(res) ? res : (res as any)?.data || [];
 }
+
+// ─── 16. Assessor Profile Signature: GET & PUT /assessor/profile/signature ────
+export interface AssessorProfileSignature {
+  assetId: string | null;
+  url: string | null;
+}
+
+export async function getAssessorProfileSignatureApi(): Promise<AssessorProfileSignature> {
+  try {
+    return await capFetch<AssessorProfileSignature>("/assessor/profile/signature", {
+      method: "GET",
+    });
+  } catch {
+    return { assetId: null, url: null };
+  }
+}
+
+export async function putAssessorProfileSignatureApi(payload: {
+  assetId: string;
+}): Promise<void> {
+  await capFetch<void>("/assessor/profile/signature", {
+    method: "PUT",
+    data: payload,
+  });
+}

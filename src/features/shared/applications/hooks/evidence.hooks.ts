@@ -21,7 +21,10 @@ export function useGetEvidenceVault(
   });
 }
 
-export function useCreateGeneralEvidence(applicationId: string) {
+export function useCreateGeneralEvidence(
+  applicationId: string,
+  options?: { showToast?: boolean },
+) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -41,11 +44,13 @@ export function useCreateGeneralEvidence(applicationId: string) {
       queryClient.invalidateQueries({
         queryKey: APPLICATION_QUERY_KEYS.detail(applicationId),
       });
-      toast({
-        type: "success",
-        title: "Evidence Uploaded",
-        description: "Your evidence has been uploaded successfully.",
-      });
+      if (options?.showToast !== false) {
+        toast({
+          type: "success",
+          title: "Evidence Uploaded",
+          description: "Your evidence has been uploaded successfully.",
+        });
+      }
     },
 
     onError: (error: Error) => {

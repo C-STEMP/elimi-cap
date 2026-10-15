@@ -10,6 +10,7 @@ import {
   useReviewApplication,
 } from "@/src/features/shared/applications/hooks";
 import { extractFacilitatorFromApplication } from "@/src/features/shared/applications/utils/facilitator";
+import { reviewUnitEvidenceApi } from "@/src/features/shared/applications/api/nsq.api";
 import { PreviewEvidenceModal } from "@/src/features/shared/evidence-vault/components/PreviewEvidenceModal";
 import {
   isCvEvidence,
@@ -127,6 +128,7 @@ export const AssessorEvidenceVaultView: React.FC<
           mimeType: e.mimeType,
           evidenceType: e.evidenceType || e.type,
           feedback,
+          unitId: e.unitId,
         };
       })
       .filter((e: any) => e.id || e.assetId || e.name);
@@ -137,8 +139,15 @@ export const AssessorEvidenceVaultView: React.FC<
     useState(false);
   const [isFolderCompleteSuccessOpen, setIsFolderCompleteSuccessOpen] =
     useState(false);
+  const [isApprovingEvidence, setIsApprovingEvidence] = useState(false);
+  const [isRejectingEvidence, setIsRejectingEvidence] = useState(false);
 
-  const allApproved = !isStageAlreadyComplete && evidenceItems.length > 0;
+  const allApproved =
+    !isStageAlreadyComplete &&
+    evidenceItems.length > 0 &&
+    evidenceItems.every((item) =>
+      item.status.toLowerCase().includes("approv"),
+    );
 
   useEffect(() => {
     onAllApprovedChange?.(allApproved);
@@ -158,9 +167,15 @@ export const AssessorEvidenceVaultView: React.FC<
     status: item.status,
     statusBg: item.status.toLowerCase().includes("approv")
       ? "bg-[#D1FAE5]"
+      : item.status.toLowerCase().includes("attenti") ||
+        item.status.toLowerCase().includes("reject")
+      ? "bg-[#FEE2E2]"
       : "bg-[#FEF3C7]",
     statusText: item.status.toLowerCase().includes("approv")
       ? "text-[#047857]"
+      : item.status.toLowerCase().includes("attenti") ||
+        item.status.toLowerCase().includes("reject")
+      ? "text-[#B91C1C]"
       : "text-[#D97706]",
     issues: item.feedback,
     url: item.url || item.fileUrl || item.dataUrl,
@@ -168,7 +183,91 @@ export const AssessorEvidenceVaultView: React.FC<
     assetId: item.assetId,
     mimeType: item.mimeType,
     evidenceType: item.evidenceType,
+    unitId: item.unitId,
   });
+
+  const handleApproveEvidence = async (item: EvidenceRecord) => {
+    setIsApprovingEvidence(true);
+    try {
+      const matched = evidenceItems.find((e) => e.id === item.id);
+      const unitId = (matched as any)?.unitId;
+      if (unitId && applicationId) {
+        await reviewUnitEvidenceApi(applicationId, unitId, item.id, {
+          decision: "approve",
+        });
+      }
+      setEvidenceItems((prev) =>
+        prev.map((it) =>
+          it.id === item.id ? { ...it, status: "Approved", feedback: [] } : it,
+        ),
+      );
+      if (previewItem && previewItem.id === item.id) {
+        setPreviewItem({
+          ...previewItem,
+          status: "Approved",
+          statusBg: "bg-[#D1FAE5]",
+          statusText: "text-[#047857]",
+          issues: [],
+        });
+      }
+      toast({
+        type: "success",
+        title: "Evidence Approved",
+        description: `"${item.name}" has been approved.`,
+      });
+    } catch (err: any) {
+      toast({
+        type: "error",
+        title: "Approval Failed",
+        description: err?.message || "Failed to approve evidence.",
+      });
+    } finally {
+      setIsApprovingEvidence(false);
+    }
+  };
+
+  const handleRejectEvidence = async (item: EvidenceRecord, comment: string) => {
+    setIsRejectingEvidence(true);
+    try {
+      const matched = evidenceItems.find((e) => e.id === item.id);
+      const unitId = (matched as any)?.unitId;
+      if (unitId && applicationId) {
+        await reviewUnitEvidenceApi(applicationId, unitId, item.id, {
+          decision: "reject",
+          comment,
+        });
+      }
+      setEvidenceItems((prev) =>
+        prev.map((it) =>
+          it.id === item.id
+            ? { ...it, status: "Attention Required", feedback: [comment] }
+            : it,
+        ),
+      );
+      if (previewItem && previewItem.id === item.id) {
+        setPreviewItem({
+          ...previewItem,
+          status: "Attention Required",
+          statusBg: "bg-[#FEE2E2]",
+          statusText: "text-[#B91C1C]",
+          issues: [comment],
+        });
+      }
+      toast({
+        type: "info",
+        title: "Evidence Needs Attention",
+        description: `"${item.name}" marked as needing attention.`,
+      });
+    } catch (err: any) {
+      toast({
+        type: "error",
+        title: "Rejection Failed",
+        description: err?.message || "Failed to reject evidence.",
+      });
+    } finally {
+      setIsRejectingEvidence(false);
+    }
+  };
 
   const handleViewEvidence = (item: EvidenceItem) => {
     setPreviewItem(toPreviewRecord(item));
@@ -287,6 +386,10 @@ export const AssessorEvidenceVaultView: React.FC<
         item={previewItem}
         applicationId={applicationId}
         onClose={() => setPreviewItem(null)}
+        onApprove={handleApproveEvidence}
+        isApproving={isApprovingEvidence}
+        onReject={handleRejectEvidence}
+        isRejecting={isRejectingEvidence}
       />
 
       <ConfirmMarkCompleteModal

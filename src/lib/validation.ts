@@ -137,6 +137,7 @@ export const startApplicationSchema = z.object({
   assessmentCenter: requiredSchema("Assessment centre"),
   sector: requiredSchema("Sector"),
   trade: requiredSchema("Trade"),
+  level: z.string().optional(),
 });
 
 

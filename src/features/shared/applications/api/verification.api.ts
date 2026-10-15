@@ -12,6 +12,9 @@ export async function assignIvApi(
   return capFetch<Application>(`/applications/${id}/iv`, {
     method: "POST",
     data: { assessorId },
+    headers: {
+      "X-CAP-PERSONA": "centre",
+    },
   });
 }
 
@@ -32,6 +35,9 @@ export async function assignEvApi(
   return capFetch<Application>(`/applications/${id}/ev`, {
     method: "POST",
     data: { assessorId },
+    headers: {
+      "X-CAP-PERSONA": "centre",
+    },
   });
 }
 

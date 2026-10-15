@@ -103,16 +103,29 @@ export default function AssessmentFormDedicatedRoutePage() {
 
   const leadMember = interviewPanel?.members?.find((m: any) => m.isLead);
 
+  const isAssessorUser = Boolean(
+    fromParam === "assessor" ||
+    user?.role?.toLowerCase()?.includes("assessor") ||
+    isAssignedLead ||
+    (application as any)?.assignedAssessors?.some(
+      (a: any) =>
+        (a.assessorId && a.assessorId === currentAssessorId) ||
+        (a.email && a.email.toLowerCase() === currentAssessorEmail) ||
+        (a.user?.email && a.user.email.toLowerCase() === currentAssessorEmail),
+    ),
+  );
+
   const isUserLeadPanelist =
     !isCandidateUser &&
     Boolean(
       (leadMember && isMemberMatch(leadMember)) ||
       (!leadMember && isAssignedLead) ||
-      (!leadMember && (application as any).role?.toLowerCase()?.includes("lead"))
+      (!leadMember && (application as any).role?.toLowerCase()?.includes("lead")) ||
+      (!leadMember && isAssessorUser),
     );
 
-  // Same rule as the application page's "Fill Form" link: only the lead
-  // panelist fills these forms; everyone else gets the read-only document.
+  // Lead panelist (or acting assessor if no explicit panel lead is designated)
+  // fills these forms; candidates and centre staff get the read-only document.
   const isReadOnly = isCentreViewer || isCandidateUser || !isUserLeadPanelist;
 
   const handleBack = () => {

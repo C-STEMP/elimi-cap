@@ -11,6 +11,7 @@ import {
   FiAlertCircle,
   FiFileText,
   FiRefreshCw,
+  FiEdit3,
 } from "react-icons/fi";
 import { Input } from "@/src/components/ui/input";
 import { Select } from "@/src/components/ui/select";
@@ -28,6 +29,8 @@ import {
   useUpdateAssessorProfileSectors,
   useGetAssessorProfile,
   usePatchAssessorProfile,
+  useAssessorProfileSignature,
+  useSetAssessorProfileSignature,
 } from "@/src/features/shared/assessor/hooks";
 import {
   useGetMeProfile,
@@ -36,7 +39,7 @@ import {
 import { useAssessorOnboarding } from "@/src/features/assessor/features/Onboarding/hooks/useOnboarding";
 import { useCountryStateCity } from "@/src/lib/hooks/useCountryStateCity";
 import { formatToIsoDate } from "@/src/lib/validation";
-import { useUploadFile } from "@/src/features/shared/storage/hooks";
+import { useUploadFile, useResolveAssets } from "@/src/features/shared/storage/hooks";
 import { updateUser } from "@/src/store/slices/authSlice";
 import { setAssessorPersonalInfo } from "@/src/store/slices/onboardingSlice";
 import { CameraCaptureModal } from "@/src/components/ui/camera-capture-modal";
@@ -66,6 +69,80 @@ export const AssessorSettingsView: React.FC = () => {
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [previewCertificate, setPreviewCertificate] =
     useState<CertificatePreviewData | null>(null);
+
+  const { data: assessorSignatureData, isLoading: isAssessorSigLoading } =
+    useAssessorProfileSignature();
+  const setAssessorSignatureMutation = useSetAssessorProfileSignature();
+  const signatureFileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingSignature, setIsUploadingSignature] = useState(false);
+
+  const assessorSigAssetIds = React.useMemo(() => {
+    return assessorSignatureData?.assetId && !assessorSignatureData.url
+      ? [assessorSignatureData.assetId]
+      : [];
+  }, [assessorSignatureData?.assetId, assessorSignatureData?.url]);
+
+  const { data: resolvedSigAssets } = useResolveAssets(assessorSigAssetIds);
+
+  const assessorDisplaySigUrl =
+    assessorSignatureData?.url ||
+    (assessorSignatureData?.assetId && resolvedSigAssets
+      ? resolvedSigAssets.find((a) => a.assetId === assessorSignatureData.assetId)?.url
+      : null);
+
+  const hasAssessorSig = Boolean(
+    assessorDisplaySigUrl || assessorSignatureData?.assetId,
+  );
+
+  const handleAssessorSignatureUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast({
+        type: "error",
+        title: "Invalid File Type",
+        description: "Please upload an image file (PNG, JPG, or JPEG).",
+      });
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        type: "error",
+        title: "File Too Large",
+        description: "Signature file size must be less than 5MB.",
+      });
+      return;
+    }
+
+    setIsUploadingSignature(true);
+    try {
+      const asset = await uploadFileMutation.mutateAsync({
+        file,
+        purpose: "signature",
+      });
+      if (!asset?.assetId) {
+        throw new Error("Upload did not return an asset ID.");
+      }
+      await setAssessorSignatureMutation.mutateAsync({
+        assetId: asset.assetId,
+        url: asset.url,
+      });
+    } catch (err: any) {
+      toast({
+        type: "error",
+        title: "Upload Failed",
+        description:
+          err?.message || "Failed to upload signature. Please try again.",
+      });
+    } finally {
+      setIsUploadingSignature(false);
+    }
+  };
 
   type ReplaceableCertKind = "qaa" | "iqm" | "ev" | "rpl" | "resume";
   const replaceFileInputRef = useRef<HTMLInputElement>(null);
@@ -1085,6 +1162,98 @@ export const AssessorSettingsView: React.FC = () => {
                   className="hidden"
                   onChange={onReplaceCertificateFileChange}
                 />
+              </div>
+
+              {/* Assessor Digital Signature Section */}
+              <div className="flex flex-col gap-4 lg:gap-6 pt-4 border-t border-gray-100">
+                <div className="flex flex-col gap-1">
+                  <h3 className="text-xl lg:text-2xl font-extrabold text-neutral-primary tracking-tight">
+                    Digital Signature
+                  </h3>
+                  <p className="text-xs text-gray-400 font-medium leading-relaxed">
+                    Upload your official assessor signature for signing off interview evaluations, RPL portfolios, and observation forms.
+                  </p>
+                </div>
+
+                <input
+                  ref={signatureFileInputRef}
+                  type="file"
+                  accept="image/png, image/jpeg, image/jpg"
+                  className="hidden"
+                  onChange={handleAssessorSignatureUpload}
+                />
+
+                <div className="rounded-2xl border border-gray-100 bg-[#F8F9FA] p-5 flex flex-col sm:flex-row items-center justify-between gap-5">
+                  <div className="flex items-center gap-4 w-full sm:w-auto">
+                    <div className="w-32 h-20 sm:w-40 sm:h-24 bg-white rounded-xl border border-gray-200/80 shadow-2xs flex items-center justify-center p-2 overflow-hidden shrink-0">
+                      {isAssessorSigLoading ? (
+                        <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                      ) : hasAssessorSig && assessorDisplaySigUrl ? (
+                        <Image
+                          src={assessorDisplaySigUrl}
+                          alt="Assessor Signature"
+                          width={160}
+                          height={96}
+                          className="max-h-full max-w-full object-contain"
+                          unoptimized
+                        />
+                      ) : (
+                        <div className="flex flex-col items-center justify-center gap-1 text-gray-400">
+                          <FiEdit3 className="w-6 h-6 stroke-[1.5]" />
+                          <span className="text-[10px] font-semibold text-gray-400">
+                            No Signature
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-extrabold text-sm text-neutral-primary">
+                          {hasAssessorSig ? "Signature Active" : "No Signature Uploaded"}
+                        </span>
+                        {hasAssessorSig && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <FiCheckCircle className="w-3 h-3" />
+                            Saved
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-400 font-medium">
+                        {hasAssessorSig
+                          ? "Your official signature is stored and ready to be used on assessment evaluations."
+                          : "Upload a photo or scanned copy of your signature on a clean white background."}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => signatureFileInputRef.current?.click()}
+                      loading={isUploadingSignature}
+                      disabled={isUploadingSignature}
+                      className="bg-[#fbab2a]! hover:bg-[#e89b1f]! text-white font-semibold px-5 py-2.5 rounded-xl flex items-center gap-2 text-xs shadow-xs cursor-pointer transition-all"
+                    >
+                      {hasAssessorSig ? (
+                        <>
+                          <FiRefreshCw
+                            className={`w-3.5 h-3.5 ${
+                              isUploadingSignature ? "animate-spin" : ""
+                            }`}
+                          />
+                          <span>Replace Signature</span>
+                        </>
+                      ) : (
+                        <>
+                          <FiUpload className="w-3.5 h-3.5" />
+                          <span>Upload Signature</span>
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
               </div>
 
               <div className="flex items-center justify-end mt-2 flex-wrap gap-4">

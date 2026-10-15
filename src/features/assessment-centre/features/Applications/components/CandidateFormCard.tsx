@@ -6,6 +6,7 @@ import { ASSETS_URL } from "@/assets";
 import { Avatar } from "@/src/components/ui/avatar";
 import { FiCheckCircle, FiClock } from "react-icons/fi";
 import { useGetUnitsByTrade } from "@/src/features/shared/reference/hooks";
+import { useResolveAssets } from "@/src/features/shared/storage/hooks/useStorage";
 
 export interface CandidateFormCardProps {
   appDetail?: any;
@@ -59,14 +60,48 @@ export const CandidateFormCard: React.FC<CandidateFormCardProps> = ({
     detail?.uniqueLearnerId ||
     "";
 
-  const resolvedSignatureUrl: string =
+  const rawSignatureAssetId: string =
+    detail?.candidate?.signature?.assetId ||
+    detail?.candidate?.signatureAssetId ||
+    detail?.candidateSignature?.assetId ||
+    detail?.candidateSignatureAssetId ||
+    detail?.signature?.assetId ||
+    detail?.signatureAssetId ||
+    detail?.declaration?.signature?.assetId ||
+    detail?.declaration?.signatureAssetId ||
+    frozen?.signature?.assetId ||
+    frozen?.signatureAssetId ||
+    "";
+
+  const initialSignatureUrl: string =
     signatureUrl ||
     detail?.candidate?.signature?.url ||
+    detail?.candidate?.signatureUrl ||
     detail?.candidateSignature?.url ||
     detail?.signature?.url ||
+    detail?.signatureUrl ||
     detail?.declaration?.signature?.url ||
+    detail?.declaration?.signatureUrl ||
     frozen?.signature?.url ||
+    frozen?.signatureUrl ||
     "";
+
+  const shouldResolveSignatureAsset =
+    resolveUnitNumbers &&
+    !initialSignatureUrl &&
+    Boolean(rawSignatureAssetId) &&
+    rawSignatureAssetId !== "default";
+
+  const { data: resolvedSignatureAssets = [] } = useResolveAssets(
+    shouldResolveSignatureAsset ? [rawSignatureAssetId] : [],
+  );
+
+  const resolvedSignatureUrl =
+    initialSignatureUrl || resolvedSignatureAssets[0]?.url || "";
+
+  const hasSignature = Boolean(
+    resolvedSignatureUrl || (rawSignatureAssetId && rawSignatureAssetId !== "default"),
+  );
 
   const selectedUnitIds: string[] = Array.isArray(detail?.unitIds) ? detail.unitIds : [];
   const tradeId: string =
@@ -90,8 +125,11 @@ export const CandidateFormCard: React.FC<CandidateFormCardProps> = ({
       : `${selectedUnitIds.length} Specified Qualification Unit(s)`;
 
   const isSignatureVerified =
-    signatureVerified ??
-    Boolean(resolvedSignatureUrl || detail?.identityVerified || detail?.candidate?.identityVerified);
+    hasSignature &&
+    Boolean(
+      signatureVerified ??
+        (detail?.signatureVerified || detail?.candidate?.signatureVerified),
+    );
   const pDetails =
     personalDetails ||
     detail?.personalInformation?.personalDetails ||
@@ -275,21 +313,27 @@ export const CandidateFormCard: React.FC<CandidateFormCardProps> = ({
             <div className="flex items-end gap-2 border-b border-dashed border-gray-300 pb-1 text-xs sm:text-sm min-h-8">
               <span className="font-semibold text-black shrink-0">Signature:</span>
               <div className="flex items-center gap-2 flex-wrap">
-                {resolvedSignatureUrl && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={resolvedSignatureUrl}
-                    alt={`${name} signature`}
-                    className="h-10 max-w-40 object-contain"
-                  />
-                )}
-                {isSignatureVerified ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
-                    <FiCheckCircle className="w-3 h-3" /> Signature Verified
-                  </span>
+                {resolvedSignatureUrl ? (
+                  <>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={resolvedSignatureUrl}
+                      alt={`${name} signature`}
+                      className="h-10 max-w-40 object-contain"
+                    />
+                    {isSignatureVerified ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+                        <FiCheckCircle className="w-3 h-3" /> Signature Verified
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
+                        <FiClock className="w-3 h-3" /> Pending Verification
+                      </span>
+                    )}
+                  </>
                 ) : (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
-                    <FiClock className="w-3 h-3" /> Pending Verification
+                  <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 border border-gray-200 px-2.5 py-0.5 text-[11px] font-medium text-gray-500">
+                    Not Uploaded
                   </span>
                 )}
               </div>

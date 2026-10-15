@@ -12,6 +12,7 @@ import {
   FiFileText,
   FiLoader,
   FiX,
+  FiAlertCircle,
 } from "react-icons/fi";
 import {
   EvidenceRecord,
@@ -24,6 +25,8 @@ interface PreviewEvidenceModalProps {
   onClose: () => void;
   onApprove?: (item: EvidenceRecord) => void;
   isApproving?: boolean;
+  onReject?: (item: EvidenceRecord, comment: string) => Promise<void> | void;
+  isRejecting?: boolean;
 }
 
 export const PreviewEvidenceModal: React.FC<PreviewEvidenceModalProps> = ({
@@ -32,10 +35,14 @@ export const PreviewEvidenceModal: React.FC<PreviewEvidenceModalProps> = ({
   onClose,
   onApprove,
   isApproving = false,
+  onReject,
+  isRejecting = false,
 }) => {
   const [resolvedUrl, setResolvedUrl] = useState<string>("");
   const [isResolving, setIsResolving] = useState<boolean>(false);
   const [blobUrl, setBlobUrl] = useState<string>("");
+  const [isRejectMode, setIsRejectMode] = useState(false);
+  const [rejectComment, setRejectComment] = useState("");
 
   useEffect(() => {
     let isMounted = true;
@@ -142,15 +149,32 @@ export const PreviewEvidenceModal: React.FC<PreviewEvidenceModalProps> = ({
 
   const s = (item.status as string)?.toLowerCase() || "";
   const isApproved =
-    item.status === "Approved" ||
+    s === "approved" ||
     s.includes("approv") ||
     s.includes("accept") ||
     s.includes("successful");
-  const isGreen =
-    isApproved ||
-    s.includes("complet") ||
-    s.includes("verifi") ||
-    s.includes("submi");
+  const isSubmitted = s.includes("submi");
+  const isAttention =
+    s.includes("reject") ||
+    s.includes("attenti") ||
+    s.includes("fail") ||
+    s.includes("declin");
+
+  const badgeBg = isApproved
+    ? "bg-[#1E7F4C]/10"
+    : isSubmitted
+      ? "bg-[#EFF6FF]"
+      : isAttention
+        ? "bg-[#FEE2E2]"
+        : "bg-[#F9A825]/10";
+
+  const badgeText = isApproved
+    ? "text-[#1E7F4C]"
+    : isSubmitted
+      ? "text-[#1D4ED8]"
+      : isAttention
+        ? "text-[#B91C1C]"
+        : "text-[#D97706]";
 
   return (
     <AnimatePresence>
@@ -181,17 +205,9 @@ export const PreviewEvidenceModal: React.FC<PreviewEvidenceModalProps> = ({
                     {item.name}
                   </h4>
                   <span
-                    className={`${
-                      isGreen
-                        ? "bg-[#1E7F4C]/10 text-[#1E7F4C]"
-                        : item.statusBg || "bg-secondary/10"
-                    } ${
-                      isGreen
-                        ? "text-[#1E7F4C]"
-                        : item.statusText || "text-secondary"
-                    } text-xs font-semibold px-2.5 py-0.5 rounded-full capitalize`}
+                    className={`${badgeBg} ${badgeText} text-xs font-semibold px-2.5 py-0.5 rounded-full capitalize`}
                   >
-                    {item.status || (isGreen ? "Approved" : "Pending")}
+                    {item.status || "Pending"}
                   </span>
                 </div>
                 <span className="text-xs text-gray-400 font-medium">
@@ -259,6 +275,50 @@ export const PreviewEvidenceModal: React.FC<PreviewEvidenceModalProps> = ({
             )}
           </div>
 
+          {/* Rejection comment input */}
+          {isRejectMode && (
+            <div className="w-full mt-3 p-3 bg-red-50/70 border border-red-200 rounded-2xl flex flex-col gap-2">
+              <label className="text-xs font-semibold text-red-900">
+                Rejection Feedback (Required):
+              </label>
+              <textarea
+                value={rejectComment}
+                onChange={(e) => setRejectComment(e.target.value)}
+                placeholder="Explain what is missing or needs correction..."
+                className="w-full text-xs p-2.5 rounded-xl border border-red-200 focus:outline-none focus:ring-1 focus:ring-red-400 bg-white"
+                rows={2}
+              />
+              <div className="flex items-center justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setIsRejectMode(false);
+                    setRejectComment("");
+                  }}
+                  className="rounded-xl text-xs"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={!rejectComment.trim() || isRejecting}
+                  onClick={async () => {
+                    if (!rejectComment.trim()) return;
+                    await onReject?.(item, rejectComment.trim());
+                    setIsRejectMode(false);
+                    setRejectComment("");
+                  }}
+                  className="bg-[#B91C1C] hover:bg-[#991B1B] text-white text-xs font-bold rounded-xl"
+                >
+                  {isRejecting ? "Rejecting..." : "Confirm Reject"}
+                </Button>
+              </div>
+            </div>
+          )}
+
           {/* Footer Controls */}
           <div className="flex items-center justify-between gap-3 mt-5 pt-3 border-t border-gray-100 flex-wrap">
             {fileUrl ? (
@@ -277,7 +337,21 @@ export const PreviewEvidenceModal: React.FC<PreviewEvidenceModalProps> = ({
             )}
 
             <div className="flex items-center gap-2.5 ml-auto">
-              {onApprove && !isApproved && (
+              {onReject && !isAttention && !isRejectMode && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsRejectMode(true)}
+                  disabled={isRejecting}
+                  className="border-red-200 text-[#B91C1C] hover:bg-red-50 font-bold text-xs sm:text-sm px-4 py-2 rounded-xl flex items-center gap-1.5 cursor-pointer shadow-xs"
+                >
+                  <FiAlertCircle className="w-4 h-4" />
+                  <span>Reject</span>
+                </Button>
+              )}
+
+              {onApprove && !isApproved && !isRejectMode && (
                 <Button
                   type="button"
                   variant="primary"

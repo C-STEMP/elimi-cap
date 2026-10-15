@@ -40,6 +40,7 @@ interface PortfolioVaultProps {
   cvEvidence?: EvidenceRecord | null;
   onPreview: (item: EvidenceRecord) => void;
   onViewApplicationForm?: () => void;
+  onUploadCv?: () => void;
   /** Role-specific cards — each view keeps its own fill/upload behaviour. */
   selfAssessmentCard: React.ReactNode;
   thirdPartyReportCard: React.ReactNode;
@@ -68,6 +69,7 @@ export const PortfolioVault: React.FC<PortfolioVaultProps> = ({
   cvEvidence,
   onPreview,
   onViewApplicationForm,
+  onUploadCv,
   selfAssessmentCard,
   thirdPartyReportCard,
   evidenceList,
@@ -84,6 +86,7 @@ export const PortfolioVault: React.FC<PortfolioVaultProps> = ({
 
   const formCard = (formType: InterviewFormType, title: string, subtitle: string) => {
     const record = interviewForms.find((f) => f.formType === formType);
+    const canAccess = Boolean(record) || viewer === "assessor";
     return (
       <PortfolioDocCard
         key={formType}
@@ -92,14 +95,14 @@ export const PortfolioVault: React.FC<PortfolioVaultProps> = ({
         badge={formBadge(record)}
         actions={
           <PortfolioActionButton
-            disabled={!record}
+            disabled={!canAccess}
             onClick={() =>
               router.push(
                 `/applications/${applicationId}/assessment-forms/${FORM_ROUTE_IDS[formType]}?from=${viewer}`,
               )
             }
           >
-            View
+            {record?.status === "completed" ? "View" : viewer === "assessor" ? "Fill Form" : "View"}
           </PortfolioActionButton>
         }
       />
@@ -179,12 +182,17 @@ export const PortfolioVault: React.FC<PortfolioVaultProps> = ({
               : { label: "Not Uploaded", tone: "neutral" }
           }
           actions={
-            <PortfolioActionButton
-              disabled={!cvEvidence}
-              onClick={() => cvEvidence && onPreview(cvEvidence)}
-            >
-              View
-            </PortfolioActionButton>
+            cvEvidence ? (
+              <PortfolioActionButton onClick={() => onPreview(cvEvidence)}>
+                View
+              </PortfolioActionButton>
+            ) : viewer === "candidate" && onUploadCv ? (
+              <PortfolioActionButton onClick={onUploadCv}>
+                Upload CV
+              </PortfolioActionButton>
+            ) : (
+              <PortfolioActionButton disabled>View</PortfolioActionButton>
+            )
           }
         />
         <PortfolioDocCard
