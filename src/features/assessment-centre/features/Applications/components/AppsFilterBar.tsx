@@ -15,6 +15,8 @@ interface Props {
   selectedInterviewIds: string[];
   filteredInterviewsLength: number;
   onDeleteInterviews: () => void;
+  selectedInductionIds?: string[];
+  onDeleteInductions?: () => void;
   selectedPanelIds?: string[];
   onDeletePanels?: () => void;
   onSelectAll: () => void;
@@ -36,6 +38,8 @@ export const AppsFilterBar: React.FC<Props> = ({
   selectedInterviewIds,
   filteredInterviewsLength: _filteredInterviewsLength,
   onDeleteInterviews,
+  selectedInductionIds = [],
+  onDeleteInductions,
   selectedPanelIds = [],
   onDeletePanels,
   onSelectAll,
@@ -54,6 +58,8 @@ export const AppsFilterBar: React.FC<Props> = ({
             ? "Applications"
             : activeFilterTab === "Interviews"
             ? "Interviews"
+            : activeFilterTab === "Induction"
+            ? "Induction"
             : activeFilterTab === "Panel"
             ? "Panels"
             : `RPL ${activeFilterTab} Applications`}
@@ -81,6 +87,8 @@ export const AppsFilterBar: React.FC<Props> = ({
           placeholder={
             activeFilterTab === "Interviews"
               ? "Search interviews..."
+              : activeFilterTab === "Induction"
+              ? "Search inductions..."
               : activeFilterTab === "Panel"
               ? "Search panels..."
               : "Search candidates..."
@@ -172,6 +180,24 @@ export const AppsFilterBar: React.FC<Props> = ({
                 type="button"
                 disabled={selectedInterviewIds.length === 0}
                 onClick={onDeleteInterviews}
+                className="text-gray-500 hover:text-red-600 cursor-pointer disabled:opacity-40 transition-colors"
+              >
+                Delete
+              </button>
+            </>
+          ) : activeFilterTab === "Induction" ? (
+            <>
+              <button
+                type="button"
+                disabled={selectedInductionIds.length !== 1}
+                className="hover:text-black cursor-pointer disabled:opacity-40 transition-colors"
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                disabled={selectedInductionIds.length === 0}
+                onClick={onDeleteInductions}
                 className="text-gray-500 hover:text-red-600 cursor-pointer disabled:opacity-40 transition-colors"
               >
                 Delete

@@ -72,6 +72,12 @@ import {
   type PatchCentrePanelPayload,
   type CreateCentreInterviewPayload,
   type ScheduleCentreInterviewPayload,
+  getCentreInductionsApi,
+  postCentreInductionsApi,
+  getCentreInductionDetailApi,
+  patchCentreInductionApi,
+  deleteCentreInductionApi,
+  type CreateCentreInductionPayload,
 } from "../api/centre.api";
 import {
   createShareTokenApi,
@@ -112,6 +118,8 @@ export const CENTRE_QUERY_KEYS = {
   panelDetail: (id: string) => ["centre", "panel-detail", id] as const,
   interviews: (params?: unknown) => ["centre", "interviews", params] as const,
   interviewDetail: (id: string) => ["centre", "interview-detail", id] as const,
+  inductions: (params?: unknown) => ["centre", "inductions", params] as const,
+  inductionDetail: (id: string) => ["centre", "induction-detail", id] as const,
   interviewBookings: (params?: unknown) =>
     ["centre", "interview-bookings", params] as const,
   interviewBookingDetail: (id: string) =>
@@ -1293,6 +1301,115 @@ export function useDeleteShareToken(applicationId: string) {
   });
 }
 
+export function useGetCentreInductions(
+  params?: {
+    cursor?: string;
+    limit?: number;
+    q?: string;
+    from?: string;
+    to?: string;
+    scheduledAt?: string;
+    order?: "asc" | "desc";
+  },
+  options?: { enabled?: boolean },
+) {
+  return useQuery({
+    queryKey: CENTRE_QUERY_KEYS.inductions(params),
+    queryFn: () => getCentreInductionsApi(params),
+    enabled: options?.enabled ?? true,
+  });
+}
+
+export function useGetCentreInductionDetail(id: string) {
+  return useQuery({
+    queryKey: CENTRE_QUERY_KEYS.inductionDetail(id),
+    queryFn: () => getCentreInductionDetailApi(id),
+    enabled: Boolean(id),
+  });
+}
+
+export function useCreateCentreInduction() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (payload: CreateCentreInductionPayload) =>
+      postCentreInductionsApi(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["centre", "inductions"] });
+      toast({
+        type: "success",
+        title: "Induction Scheduled",
+        description: "Induction session scheduled successfully.",
+      });
+    },
+    onError: (error: ApiError) => {
+      toast({
+        type: "error",
+        title: "Failed to Schedule Induction",
+        description: error.message || "Could not schedule induction.",
+      });
+    },
+  });
+}
+
+export function usePatchCentreInduction() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: Partial<CreateCentreInductionPayload>;
+    }) => patchCentreInductionApi(id, payload),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ["centre", "inductions"] });
+      queryClient.invalidateQueries({
+        queryKey: CENTRE_QUERY_KEYS.inductionDetail(id),
+      });
+      toast({
+        type: "success",
+        title: "Induction Updated",
+        description: "Induction session updated successfully.",
+      });
+    },
+    onError: (error: ApiError) => {
+      toast({
+        type: "error",
+        title: "Failed to Update Induction",
+        description: error.message || "Could not update induction session.",
+      });
+    },
+  });
+}
+
+export function useDeleteCentreInduction() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (id: string) => deleteCentreInductionApi(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["centre", "inductions"] });
+      toast({
+        type: "success",
+        title: "Induction Deleted",
+        description: "Induction session deleted successfully.",
+      });
+    },
+    onError: (error: ApiError) => {
+      toast({
+        type: "error",
+        title: "Failed to Delete Induction",
+        description: error.message || "Could not delete induction session.",
+      });
+    },
+  });
+}
+
 // ─── Composite Hook ──────────────────────────────────────────────────────────
 export function useCentre() {
   const addStaff = useAddCentreStaff();
@@ -1304,6 +1421,7 @@ export function useCentre() {
   const createPanel = useCreateCentrePanel();
   const createInterview = useCreateCentreInterview();
   const scheduleInterview = useScheduleCentreInterviewFromTemplate();
+  const createInduction = useCreateCentreInduction();
 
   return {
     addStaff,
@@ -1315,6 +1433,8 @@ export function useCentre() {
     createPanel,
     createInterview,
     scheduleInterview,
+    createInduction,
   };
 }
+
 

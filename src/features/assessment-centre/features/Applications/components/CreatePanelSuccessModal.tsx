@@ -7,11 +7,15 @@ import { FiCheck } from "react-icons/fi";
 interface CreatePanelSuccessModalProps {
   isOpen: boolean;
   onContinue: () => void;
+  title?: string;
+  description?: string;
 }
 
 export const CreatePanelSuccessModal: React.FC<CreatePanelSuccessModalProps> = ({
   isOpen,
   onContinue,
+  title = "Congratulations",
+  description = "You have successfully created a panel",
 }) => {
   if (!isOpen) return null;
 
@@ -34,10 +38,10 @@ export const CreatePanelSuccessModal: React.FC<CreatePanelSuccessModalProps> = (
           </div>
 
           <h3 className="text-xl sm:text-2xl font-black text-black tracking-tight mb-2">
-            Congratulations
+            {title}
           </h3>
           <p className="text-gray-500 text-xs sm:text-sm font-normal leading-relaxed mb-8 max-w-xs">
-            You have successfully created a panel
+            {description}
           </p>
 
           <button

@@ -3,6 +3,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { InterviewDetailView } from "./InterviewDetailView";
+import { InductionDetailView } from "./InductionDetailView";
 import { SelfAssessmentFormView } from "./SelfAssessmentFormView";
 import { EvidenceVaultView } from "./EvidenceVaultView";
 import { CandidateFormView } from "./CandidateFormView";
@@ -11,15 +12,18 @@ import { NsqCentreApplicationDetailView } from "./nsq/NsqCentreApplicationDetail
 import { useGetApplicationById } from "@/src/features/shared/applications/hooks";
 import { ApplicationsView } from "./ApplicationsView";
 import { type InterviewRowData } from "./ViewInterviewDetailModal";
+import { type InductionRowData } from "./ViewInductionDetailModal";
 
 interface ApplicationsTabProps {
   selectedInterview: InterviewRowData | null;
+  selectedInduction?: InductionRowData | null;
   selectedCandidateName: string | null;
   selectedApplicationId: string | null;
   showCandidateForm: boolean;
   showEvidenceVault: boolean;
   showSelfAssessmentForm: boolean;
   onSelectInterview: (interview: InterviewRowData | null) => void;
+  onSelectInduction?: (induction: InductionRowData | null) => void;
   onSelectCandidate: (name: string | null, id?: string | null) => void;
   onCloseCandidateForm: () => void;
   onOpenCandidateForm: () => void;
@@ -30,18 +34,21 @@ interface ApplicationsTabProps {
   onOpenCreatePanel: () => void;
   onOpenCreateInterview?: () => void;
   onOpenScheduleInterview: () => void;
+  onOpenScheduleInduction?: () => void;
   activeFilterTab?: string;
   onTabChange?: (tab: string) => void;
 }
 
 export const ApplicationsTab: React.FC<ApplicationsTabProps> = ({
   selectedInterview,
+  selectedInduction,
   selectedCandidateName,
   selectedApplicationId,
   showCandidateForm,
   showEvidenceVault,
   showSelfAssessmentForm,
   onSelectInterview,
+  onSelectInduction,
   onSelectCandidate,
   onCloseCandidateForm,
   onOpenCandidateForm,
@@ -52,6 +59,7 @@ export const ApplicationsTab: React.FC<ApplicationsTabProps> = ({
   onOpenCreatePanel,
   onOpenCreateInterview,
   onOpenScheduleInterview,
+  onOpenScheduleInduction,
   activeFilterTab,
   onTabChange,
 }) => {
@@ -74,6 +82,15 @@ export const ApplicationsTab: React.FC<ApplicationsTabProps> = ({
           onBack={() => onSelectInterview(null)}
           onSelectCandidate={(name, id) => {
             onSelectInterview(null);
+            onSelectCandidate(name, id || null);
+          }}
+        />
+      ) : selectedInduction ? (
+        <InductionDetailView
+          induction={selectedInduction}
+          onBack={() => onSelectInduction?.(null)}
+          onSelectCandidate={(name, id) => {
+            onSelectInduction?.(null);
             onSelectCandidate(name, id || null);
           }}
         />
@@ -119,9 +136,11 @@ export const ApplicationsTab: React.FC<ApplicationsTabProps> = ({
         <ApplicationsView
           onSelectCandidate={(name, id) => onSelectCandidate(name, id || null)}
           onSelectInterview={(interview) => onSelectInterview(interview)}
+          onSelectInduction={(induction) => onSelectInduction?.(induction)}
           onOpenCreatePanel={onOpenCreatePanel}
           onOpenCreateInterview={onOpenCreateInterview}
           onOpenScheduleInterview={onOpenScheduleInterview}
+          onOpenScheduleInduction={onOpenScheduleInduction}
           activeFilterTab={activeFilterTab}
           onTabChange={onTabChange}
         />

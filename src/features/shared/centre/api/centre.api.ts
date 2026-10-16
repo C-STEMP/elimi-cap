@@ -1067,3 +1067,153 @@ export async function bulkCertifyApplicationsApi(
   });
 }
 
+// ─── Inductions API ──────────────────────────────────────────────────────────
+
+export interface CentreInduction {
+  id: string;
+  centreId?: string;
+  name: string;
+  title?: string;
+  description?: string | null;
+  scheduledAt?: string | null;
+  mode?: "physical" | "online" | "virtual" | null;
+  link?: string | null;
+  location?: string | null;
+  country?: string | null;
+  state?: string | null;
+  lga?: string | null;
+  streetAddress?: string | null;
+  useCentreAddress?: boolean;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface CreateCentreInductionPayload {
+  name: string;
+  title?: string;
+  description?: string | null;
+  scheduledAt?: string | null;
+  mode?: "physical" | "online" | "virtual" | null;
+  location?: string;
+  country?: string;
+  state?: string;
+  lga?: string;
+  streetAddress?: string;
+  useCentreAddress?: boolean;
+  link?: string;
+  durationMinutes?: number | null;
+}
+
+const LOCAL_INDUCTIONS_STORAGE_KEY = "cap_centre_inductions_v1";
+
+function readLocalInductions(): CentreInduction[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(LOCAL_INDUCTIONS_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeLocalInductions(items: CentreInduction[]): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(
+      LOCAL_INDUCTIONS_STORAGE_KEY,
+      JSON.stringify(items),
+    );
+  } catch {
+    // Ignore storage write errors
+  }
+}
+
+export async function getCentreInductionsApi(params?: {
+  cursor?: string;
+  limit?: number;
+  q?: string;
+  from?: string;
+  to?: string;
+  scheduledAt?: string;
+  order?: "asc" | "desc";
+}): Promise<CentreInduction[]> {
+  const localItems = readLocalInductions();
+  if (params?.q) {
+    const q = params.q.toLowerCase();
+    return localItems.filter(
+      (item) =>
+        item.name?.toLowerCase().includes(q) ||
+        item.title?.toLowerCase().includes(q) ||
+        item.description?.toLowerCase().includes(q),
+    );
+  }
+  return localItems;
+}
+
+export async function postCentreInductionsApi(
+  payload: CreateCentreInductionPayload,
+): Promise<CentreInduction> {
+  const createdItem: CentreInduction = {
+    id: `ind-${Date.now()}`,
+    name: payload.name || payload.title || "Induction Session",
+    title: payload.title || payload.name || "Induction Session",
+    description: payload.description || null,
+    scheduledAt: payload.scheduledAt || new Date().toISOString(),
+    mode: payload.mode || "physical",
+    link: payload.link || null,
+    location: payload.location || null,
+    country: payload.country || null,
+    state: payload.state || null,
+    lga: payload.lga || null,
+    streetAddress: payload.streetAddress || null,
+    useCentreAddress: payload.useCentreAddress ?? true,
+    createdAt: new Date().toISOString(),
+  };
+  const existing = readLocalInductions();
+  writeLocalInductions([createdItem, ...existing]);
+  return createdItem;
+}
+
+export async function getCentreInductionDetailApi(
+  id: string,
+): Promise<CentreInduction> {
+  const localMatch = readLocalInductions().find((i) => i.id === id);
+  if (localMatch) return localMatch;
+  throw new Error("Induction not found");
+}
+
+export async function patchCentreInductionApi(
+  id: string,
+  payload: Partial<CreateCentreInductionPayload>,
+): Promise<CentreInduction> {
+  const existing = readLocalInductions();
+  const updatedList = existing.map((item) =>
+    item.id === id
+      ? {
+          ...item,
+          ...payload,
+          name: payload.name || payload.title || item.name,
+          title: payload.title || payload.name || item.title,
+          updatedAt: new Date().toISOString(),
+        }
+      : item,
+  );
+  writeLocalInductions(updatedList);
+  return (
+    updatedList.find((i) => i.id === id) || {
+      id,
+      name: payload.name || "Induction Session",
+      createdAt: new Date().toISOString(),
+    }
+  );
+}
+
+export async function deleteCentreInductionApi(id: string): Promise<void> {
+  const existing = readLocalInductions();
+  writeLocalInductions(existing.filter((i) => i.id !== id));
+}
+
+
+
