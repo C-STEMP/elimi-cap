@@ -9,6 +9,7 @@ import { useAppSelector } from "@/src/store/hooks";
 import { downloadFormElement, printFormElement } from "@/src/lib/formPrintDownload";
 import { CandidateFormCard } from "@/src/features/assessment-centre/features/Applications/components/CandidateFormCard";
 import { useCandidateProfile, useCandidateProfileSignature } from "@/src/features/shared/onboarding/hooks";
+import { useResolveAssets } from "@/src/features/shared/storage/hooks";
 
 interface CandidateApplicationFormViewProps {
   applicationId: string;
@@ -32,6 +33,20 @@ export const CandidateApplicationFormView: React.FC<
   const { data: profileSignature } = useCandidateProfileSignature();
   const { data: candidateProfile } = useCandidateProfile(true);
   const profileUln = (candidateProfile as any)?.onboarding?.data?.previousAssessmentStatus?.uniqueLearnerId;
+
+  const signatureAssetsToResolve = React.useMemo(() => {
+    return profileSignature?.assetId && !profileSignature.url
+      ? [profileSignature.assetId]
+      : [];
+  }, [profileSignature?.assetId, profileSignature?.url]);
+
+  const { data: resolvedSignatureAssets } = useResolveAssets(signatureAssetsToResolve);
+
+  const resolvedSignatureUrl =
+    profileSignature?.url ||
+    (profileSignature?.assetId && resolvedSignatureAssets
+      ? resolvedSignatureAssets.find((a) => a.assetId === profileSignature.assetId)?.url
+      : undefined);
 
   if (isLoading) {
     return (
@@ -154,7 +169,7 @@ export const CandidateApplicationFormView: React.FC<
           appDetail={appData}
           formCandidateName={candidateFullName}
           uniqueLearnerNumber={profileUln}
-          signatureUrl={profileSignature?.url}
+          signatureUrl={resolvedSignatureUrl}
           className="w-full flex flex-col gap-6 printable-application-card"
         />
       </div>

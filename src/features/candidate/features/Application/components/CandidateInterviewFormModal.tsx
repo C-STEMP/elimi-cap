@@ -1,12 +1,25 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import { FiX, FiCheckCircle, FiUpload, FiTrash2, FiFileText, FiCheck } from "react-icons/fi";
+import {
+  FiX,
+  FiCheckCircle,
+  FiUpload,
+  FiTrash2,
+  FiFileText,
+  FiCheck,
+  FiEdit3,
+  FiRefreshCw,
+} from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
 import { useSignoffInterviewForm } from "@/src/features/shared/applications/hooks";
-import { useUploadFile } from "@/src/features/shared/storage/hooks";
+import { useUploadFile, useResolveAssets } from "@/src/features/shared/storage/hooks";
+import {
+  useCandidateProfileSignature,
+  useSetCandidateProfileSignature,
+} from "@/src/features/shared/onboarding/hooks";
 import type { InterviewForm } from "@/src/features/shared/applications/api/types";
 
 interface CandidateInterviewFormModalProps {
@@ -33,15 +46,35 @@ export const CandidateInterviewFormModal: React.FC<
   const { toast } = useToast();
   const signoffMutation = useSignoffInterviewForm(applicationId);
   const uploadMutation = useUploadFile();
+  const { data: profileSignature, isLoading: isSignatureLoading } =
+    useCandidateProfileSignature(isOpen);
+  const setProfileSignatureMutation = useSetCandidateProfileSignature();
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadedAssetId, setUploadedAssetId] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const signatureAssetsToResolve = React.useMemo(() => {
+    return profileSignature?.assetId && !profileSignature.url
+      ? [profileSignature.assetId]
+      : [];
+  }, [profileSignature?.assetId, profileSignature?.url]);
+
+  const { data: resolvedSignatureAssets } = useResolveAssets(signatureAssetsToResolve);
+
+  const savedSignatureUrl =
+    profileSignature?.url ||
+    (profileSignature?.assetId && resolvedSignatureAssets
+      ? resolvedSignatureAssets.find((a) => a.assetId === profileSignature.assetId)?.url
+      : null);
+
   if (!isOpen) return null;
 
   const isAlreadySigned = Boolean(formRecord?.candidateSignedAt);
+  const hasSavedSignature = Boolean(profileSignature?.assetId);
+  const isUsingSavedSignature = hasSavedSignature && !selectedFile;
+  const canSubmit = isUsingSavedSignature || Boolean(uploadedAssetId);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -57,7 +90,12 @@ export const CandidateInterviewFormModal: React.FC<
     try {
       const asset = await uploadMutation.mutateAsync({ file, purpose: "signature" });
       setUploadedAssetId(asset.assetId);
-      toast({ type: "success", title: "Signature Uploaded", description: "Your signature file is ready to submit." });
+      try {
+        await setProfileSignatureMutation.mutateAsync(asset.assetId);
+      } catch {
+        // Keep form signoff flow unblocked even if default profile update fails
+      }
+      toast({ type: "success", title: "Signature Ready", description: "Your signature file is ready to append." });
     } catch {
       toast({ type: "error", title: "Upload Failed", description: "Could not upload signature file. Please try again." });
       setSelectedFile(null);
@@ -76,20 +114,33 @@ export const CandidateInterviewFormModal: React.FC<
   };
 
   const handleSignoff = async () => {
-    if (!uploadedAssetId) {
-      toast({ type: "error", title: "Upload Required", description: "Please upload your signature file before submitting." });
+    if (!canSubmit) {
+      toast({
+        type: "error",
+        title: "Signature Required",
+        description: "Please upload or append your signature before submitting.",
+      });
       return;
     }
     try {
-      await signoffMutation.mutateAsync({
-        formType,
-        payload: {
-          signatureMode: "upload",
-          signatureAssetId: uploadedAssetId,
-        },
-      });
-      toast({ type: "success", title: "Form Signed", description: "You have successfully signed this assessment form." });
-      onClose();
+      if (isUsingSavedSignature) {
+        await signoffMutation.mutateAsync({
+          formType,
+          payload: {
+            signatureMode: "default",
+          },
+        });
+      } else {
+        await signoffMutation.mutateAsync({
+          formType,
+          payload: {
+            signatureMode: "upload",
+            signatureAssetId: uploadedAssetId!,
+          },
+        });
+      }
+      toast({ type: "success", title: "Signature Appended", description: "You have successfully signed this assessment form." });
+      handleClose();
     } catch (err: any) {
       toast({ type: "error", title: "Signoff Failed", description: err?.message || "Failed to sign assessment form." });
     }
@@ -123,7 +174,7 @@ export const CandidateInterviewFormModal: React.FC<
 
           {/* Title */}
           <h3 className="text-[#1A1A1A] font-extrabold text-lg sm:text-xl text-center mt-1 mb-1 tracking-tight pr-6">
-            Upload Signature
+            Append Signature
           </h3>
           <p className="text-gray-400 text-xs sm:text-sm text-center leading-relaxed mb-6 font-normal">
             {formTitle}
@@ -142,7 +193,6 @@ export const CandidateInterviewFormModal: React.FC<
             </div>
           ) : (
             <>
-              {/* Upload Drop Zone / Selected File */}
               <div className="flex flex-col gap-3 mb-6">
                 <input
                   type="file"
@@ -152,7 +202,49 @@ export const CandidateInterviewFormModal: React.FC<
                   className="hidden"
                 />
 
-                {selectedFile ? (
+                {isSignatureLoading ? (
+                  <div className="bg-gray-50 rounded-2xl p-8 flex items-center justify-center border border-gray-200/80">
+                    <span className="w-5 h-5 border-2 border-[#A31D38] border-t-transparent rounded-full animate-spin" />
+                  </div>
+                ) : isUsingSavedSignature ? (
+                  <div className="bg-amber-50/60 border border-amber-200 rounded-2xl p-4 flex flex-col gap-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        {savedSignatureUrl ? (
+                          <div className="w-20 h-12 rounded-xl bg-white border border-amber-200/80 flex items-center justify-center p-1.5 shrink-0 overflow-hidden">
+                            <img
+                              src={savedSignatureUrl}
+                              alt="Saved Signature"
+                              className="max-w-full max-h-full object-contain"
+                            />
+                          </div>
+                        ) : (
+                          <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
+                            <FiEdit3 className="w-4 h-4" />
+                          </div>
+                        )}
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-xs font-extrabold text-neutral-primary">
+                            Saved Signature Ready
+                          </span>
+                          <span className="text-[11px] text-[#047857] font-semibold flex items-center gap-1 mt-0.5">
+                            <FiCheck className="w-3.5 h-3.5 stroke-3" />
+                            Will be appended to this form
+                          </span>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => !isUploading && fileInputRef.current?.click()}
+                        className="text-xs font-bold text-[#A31D38] hover:underline flex items-center gap-1 shrink-0 cursor-pointer"
+                      >
+                        <FiRefreshCw className="w-3 h-3" />
+                        <span>Change</span>
+                      </button>
+                    </div>
+                  </div>
+                ) : selectedFile ? (
                   <div className="bg-gray-50 rounded-2xl p-4 flex items-center justify-between border border-gray-200/80">
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="w-9 h-9 rounded-xl bg-[#fdf2f4] text-[#a31d38] flex items-center justify-center shrink-0 border border-[#fce3e7]">
@@ -229,12 +321,12 @@ export const CandidateInterviewFormModal: React.FC<
                 <Button
                   type="button"
                   size="md"
-                  disabled={isUploading || !uploadedAssetId || signoffMutation.isPending}
+                  disabled={isUploading || !canSubmit || signoffMutation.isPending}
                   loading={signoffMutation.isPending}
                   onClick={handleSignoff}
                   className="w-full h-11 rounded-xl bg-[#FBAB2A]! hover:bg-[#E89B1F]! text-white! font-bold cursor-pointer text-xs sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Sign & Submit
+                  Append Signature
                 </Button>
               </div>
             </>

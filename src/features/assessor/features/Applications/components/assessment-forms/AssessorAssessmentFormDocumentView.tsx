@@ -436,7 +436,7 @@ export const AssessorAssessmentFormDocumentView: React.FC<
                   className="h-9 bg-[#FFF8EB] border border-[#FBAB2A] hover:bg-[#FDEED5] text-[#FBAB2A] font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                 >
                   <FiEdit3 className="w-3.5 h-3.5" />
-                  Sign Document
+                  Append Signature
                 </button>
               ) : (
                 <div className="flex items-center gap-2 text-amber-700 font-semibold text-xs bg-amber-50 border border-amber-200 px-3 py-2 rounded-xl">

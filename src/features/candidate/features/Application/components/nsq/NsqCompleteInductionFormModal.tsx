@@ -190,7 +190,7 @@ export const NsqCompleteInductionFormModal: React.FC<
   };
 
   const handleAppendSignature = () => {
-    if (profileSignature?.assetId) {
+    if (profileSignature?.assetId && !signatureAssetId) {
       setSignatureAssetId(profileSignature.assetId);
       setSignatureUrl(profileSignature.url || null);
       toast({
