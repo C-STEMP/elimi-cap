@@ -19,6 +19,8 @@ export interface InductionRowData {
   lga?: string;
   streetAddress?: string;
   link?: string;
+  candidates?: any[];
+  candidatesCount?: number;
 }
 
 interface ViewInductionDetailModalProps {

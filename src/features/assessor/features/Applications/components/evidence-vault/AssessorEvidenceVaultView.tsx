@@ -8,6 +8,7 @@ import {
   useGetSelfAssessment,
   useGetThirdPartyReport,
   useReviewApplication,
+  useReviewGeneralEvidence,
 } from "@/src/features/shared/applications/hooks";
 import { extractFacilitatorFromApplication } from "@/src/features/shared/applications/utils/facilitator";
 import { reviewUnitEvidenceApi } from "@/src/features/shared/applications/api/nsq.api";
@@ -43,6 +44,7 @@ interface AssessorEvidenceVaultViewProps {
   triggerMarkComplete?: boolean;
   onResetTriggerMarkComplete?: () => void;
   isStageAlreadyComplete?: boolean;
+  isLeadPanelist?: boolean;
 }
 
 export const AssessorEvidenceVaultView: React.FC<
@@ -58,6 +60,7 @@ export const AssessorEvidenceVaultView: React.FC<
   triggerMarkComplete,
   onResetTriggerMarkComplete,
   isStageAlreadyComplete = false,
+  isLeadPanelist,
 }) => {
   const { toast } = useToast();
 
@@ -71,6 +74,9 @@ export const AssessorEvidenceVaultView: React.FC<
     applicationId || "",
   );
   const reviewMutation = useReviewApplication();
+  const reviewGeneralEvidenceMutation = useReviewGeneralEvidence(
+    applicationId || "",
+  );
 
   const activeFacilitator = React.useMemo(
     () => extractFacilitatorFromApplication(appDetail),
@@ -107,14 +113,17 @@ export const AssessorEvidenceVaultView: React.FC<
                   ? e.issues
                   : []
         ).filter(Boolean);
-        const status = String(e.status || "");
+        const status = String(e.reviewStatus || e.status || "");
         const isItemApproved =
           isStageAlreadyComplete || /approv|accepted|successful/i.test(status);
+        const isItemRejected =
+          !isItemApproved &&
+          (/reject|attenti|declin|fail/i.test(status) || feedback.length > 0);
         const rawStatus = isItemApproved
           ? "Approved"
-          : feedback.length > 0
+          : isItemRejected
             ? "Attention Required"
-            : status || "Pending";
+            : "Pending";
         return {
           id: e.id,
           name: docName,
@@ -142,10 +151,16 @@ export const AssessorEvidenceVaultView: React.FC<
   const [isApprovingEvidence, setIsApprovingEvidence] = useState(false);
   const [isRejectingEvidence, setIsRejectingEvidence] = useState(false);
 
+  // The CV is shown under "Candidate Profile", not in the evidences list.
+  const cvItem = evidenceItems.find((item) => isCvEvidence(item));
+  const otherEvidenceItems = cvItem
+    ? evidenceItems.filter((item) => item !== cvItem)
+    : evidenceItems;
+
   const allApproved =
     !isStageAlreadyComplete &&
-    evidenceItems.length > 0 &&
-    evidenceItems.every((item) =>
+    otherEvidenceItems.length > 0 &&
+    otherEvidenceItems.every((item) =>
       item.status.toLowerCase().includes("approv"),
     );
 
@@ -190,9 +205,14 @@ export const AssessorEvidenceVaultView: React.FC<
     setIsApprovingEvidence(true);
     try {
       const matched = evidenceItems.find((e) => e.id === item.id);
-      const unitId = (matched as any)?.unitId;
+      const unitId = (matched as any)?.unitId || item.unitId;
       if (unitId && applicationId) {
         await reviewUnitEvidenceApi(applicationId, unitId, item.id, {
+          decision: "approve",
+        });
+      } else if (applicationId && item.id) {
+        await reviewGeneralEvidenceMutation.mutateAsync({
+          evidenceId: item.id,
           decision: "approve",
         });
       }
@@ -230,9 +250,15 @@ export const AssessorEvidenceVaultView: React.FC<
     setIsRejectingEvidence(true);
     try {
       const matched = evidenceItems.find((e) => e.id === item.id);
-      const unitId = (matched as any)?.unitId;
+      const unitId = (matched as any)?.unitId || item.unitId;
       if (unitId && applicationId) {
         await reviewUnitEvidenceApi(applicationId, unitId, item.id, {
+          decision: "reject",
+          comment,
+        });
+      } else if (applicationId && item.id) {
+        await reviewGeneralEvidenceMutation.mutateAsync({
+          evidenceId: item.id,
           decision: "reject",
           comment,
         });
@@ -273,14 +299,35 @@ export const AssessorEvidenceVaultView: React.FC<
     setPreviewItem(toPreviewRecord(item));
   };
 
-  // The CV is shown under "Candidate Profile", not in the evidences list.
-  const cvItem = evidenceItems.find((item) => isCvEvidence(item));
-  const otherEvidenceItems = cvItem
-    ? evidenceItems.filter((item) => item !== cvItem)
-    : evidenceItems;
+  const cvEvidenceRecord: EvidenceRecord | null = appDetail?.cv?.assetId
+    ? {
+        id: appDetail.cv.assetId,
+        name: cvItem?.name || "Candidate CV / Resume",
+        size: cvItem?.size || "Uploaded document",
+        status: "Uploaded",
+        statusBg: "bg-[#D1FAE5]",
+        statusText: "text-[#047857]",
+        assetId: appDetail.cv.assetId,
+        url: appDetail.cv.url || cvItem?.url,
+        dataUrl: appDetail.cv.url || cvItem?.dataUrl,
+        evidenceType: "CV",
+      }
+    : cvItem
+      ? toPreviewRecord(cvItem)
+      : null;
 
   const handleConfirmMarkComplete = async () => {
     if (!applicationId) return;
+    if (!allApproved) {
+      toast({
+        type: "error",
+        title: "Evidence Review Incomplete",
+        description:
+          "All general evidence files must be approved before passing the folder arrangement stage.",
+      });
+      setIsConfirmMarkCompleteOpen(false);
+      return;
+    }
     try {
       await reviewMutation.mutateAsync({
         id: applicationId,
@@ -332,7 +379,8 @@ export const AssessorEvidenceVaultView: React.FC<
             viewer="assessor"
             applicationId={applicationId || ""}
             application={appDetail}
-            cvEvidence={cvItem ? toPreviewRecord(cvItem) : null}
+            cvEvidence={cvEvidenceRecord}
+            isLeadPanelist={isLeadPanelist}
             onPreview={setPreviewItem}
             onViewApplicationForm={onViewApplicationForm}
             selfAssessmentCard={

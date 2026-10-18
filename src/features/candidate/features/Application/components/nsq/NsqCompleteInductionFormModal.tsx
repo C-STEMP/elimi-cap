@@ -126,6 +126,22 @@ export const NsqCompleteInductionFormModal: React.FC<
       ? defaultSelectedUnitIds
       : unitsForSelectedLevel.map((u) => u.id),
   );
+
+  React.useEffect(() => {
+    if (!selectedLevelId && (defaultQualificationLevelId || qualificationLevels[0]?.id)) {
+      setSelectedLevelId(defaultQualificationLevelId || qualificationLevels[0]?.id || "");
+    }
+  }, [defaultQualificationLevelId, qualificationLevels, selectedLevelId, setSelectedLevelId]);
+
+  React.useEffect(() => {
+    if (selectedUnitIds.length === 0 && assessmentType !== "Modular") {
+      if (defaultSelectedUnitIds && defaultSelectedUnitIds.length > 0) {
+        setSelectedUnitIds(defaultSelectedUnitIds);
+      } else if (unitsForSelectedLevel.length > 0) {
+        setSelectedUnitIds(unitsForSelectedLevel.map((u) => u.id));
+      }
+    }
+  }, [defaultSelectedUnitIds, unitsForSelectedLevel, selectedUnitIds.length, assessmentType, setSelectedUnitIds]);
   const [relevantQualification, setRelevantQualification] = useModalDraft(NSQ_INDUCTION_FORM_MODAL, "relevantQualification", "");
   const [impairment, setImpairment] = useModalDraft(NSQ_INDUCTION_FORM_MODAL, "impairment", "None");
   const [learningStrengths, setLearningStrengths] = useModalDraft<string[]>(NSQ_INDUCTION_FORM_MODAL, "learningStrengths", []);

@@ -597,14 +597,7 @@ export const NsqCentreApplicationDetailView: React.FC<
         criteriaApproved: u.criteriaApproved,
         criteriaTotal: u.criteriaTotal,
       }))
-    : remoteUnits.length > 0
-      ? (remoteUnits as any[]).map((u: any, i: number) => ({
-          id: u.id,
-          unitNo: u.referenceNumber || u.code || `UNIT ${i + 1}`,
-          title: u.title || u.name || `Unit ${i + 1}`,
-          status: "Not Started" as const,
-        }))
-      : [];
+    : [];
 
   // Real per-criterion evidence for the unit currently drilled into — GET
   // /applications/{id}/units/{unitId}/criteria. This view is read-only for

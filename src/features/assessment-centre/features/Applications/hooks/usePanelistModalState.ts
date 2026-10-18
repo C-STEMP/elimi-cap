@@ -33,7 +33,13 @@ export function usePanelistModalState({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { data: centreProfile } = useGetCentreProfile();
-  const { data: centreAssessors = [], isLoading: isLoadingAssessors } = useGetCentreAssessors({ status: "all" });
+  const { data: approvedAssessors = [], isLoading: isLoadingApproved } =
+    useGetCentreAssessors({ status: "approved" });
+  const { data: allAssessors = [], isLoading: isLoadingAll } =
+    useGetCentreAssessors({ status: "all" });
+  const centreAssessors =
+    approvedAssessors.length > 0 ? approvedAssessors : allAssessors;
+  const isLoadingAssessors = isLoadingApproved && isLoadingAll;
 
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -63,13 +69,8 @@ export function usePanelistModalState({
         avatar: (a as any)?.photo?.url || (a as any).avatar || (a as any).photoUrl || undefined,
       }));
     }
-    return [
-      { label: "RUQOYAT BABALOLA", value: "assessor-ruqoyat", sectors: [{ id: "sec-1", name: tradeName }], avatar: undefined },
-      { label: "Angela Jones", value: "assessor-angela", sectors: [{ id: "sec-1", name: tradeName }], avatar: undefined },
-      { label: "Amina Bello", value: "assessor-amina", sectors: [{ id: "sec-1", name: tradeName }], avatar: undefined },
-      { label: "David Adeleke", value: "assessor-david", sectors: [{ id: "sec-1", name: tradeName }], avatar: undefined },
-    ];
-  }, [centreAssessors, tradeName]);
+    return [];
+  }, [centreAssessors]);
 
   // Skip the on-open reset when a draft was restored after a page reload.
   const restoredDraft = useRef(hasModalDraft(ASSIGN_PANELIST_MODAL));

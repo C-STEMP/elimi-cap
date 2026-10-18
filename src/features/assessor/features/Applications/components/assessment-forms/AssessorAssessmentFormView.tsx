@@ -91,7 +91,9 @@ export const AssessorAssessmentFormView: React.FC<
 
   const matchedRemoteForm = remoteForms?.find((f) => f.formType === formType);
   const isCandidateSigned = Boolean(matchedRemoteForm?.candidateSignedAt);
-  const effectiveReadOnly = viewOnly || isReadOnly || isCandidateSigned;
+  const isAssessmentMapping = formType === "assessment_grid";
+  const effectiveReadOnly =
+    isAssessmentMapping || viewOnly || isReadOnly || isCandidateSigned;
 
   const handleRequestSubmit = (data: Record<string, any>) => {
     if (effectiveReadOnly) return;

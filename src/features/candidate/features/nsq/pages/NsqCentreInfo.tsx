@@ -69,8 +69,31 @@ export const NsqCentreInfo: React.FC = () => {
     };
   }, [filterCountry, filterState, filterLga, candidateLoc]);
 
-  const { data: remoteCentres = [], isLoading: isLoadingCentres } =
+  const { data: allLocationCentres = [], isLoading: isLoadingAllCentres } =
     useGetCentres(queryLocation);
+  const { data: tradeFilteredCentres = [], isLoading: isLoadingTradeCentres } =
+    useGetCentres(
+      {
+        ...queryLocation,
+        tradeId: tradeId || undefined,
+      },
+      { enabled: Boolean(tradeId) },
+    );
+
+  const remoteCentres = useMemo(() => {
+    const tradeList = Array.isArray(tradeFilteredCentres)
+      ? tradeFilteredCentres
+      : (tradeFilteredCentres as any)?.data || [];
+    if (tradeId && tradeList.length > 0) {
+      return tradeList;
+    }
+    return Array.isArray(allLocationCentres)
+      ? allLocationCentres
+      : (allLocationCentres as any)?.data || [];
+  }, [tradeId, tradeFilteredCentres, allLocationCentres]);
+
+  const isLoadingCentres =
+    isLoadingAllCentres || (Boolean(tradeId) && isLoadingTradeCentres);
   const { data: remoteSectors = [], isLoading: isLoadingSectors } =
     useGetSectors();
   const { data: remoteTrades = [], isLoading: isLoadingTrades } =
@@ -197,7 +220,7 @@ export const NsqCentreInfo: React.FC = () => {
   };
 
   const handleConfirmSendRequest = async () => {
-    const selectedCentre = remoteCentres.find((c) => c.id === centreId);
+    const selectedCentre = remoteCentres.find((c: { id: string; name?: string }) => c.id === centreId);
     const selectedSector = remoteSectors.find((s) => s.id === sectorId);
     const selectedTrade = remoteTrades.find((t) => t.id === tradeId);
 

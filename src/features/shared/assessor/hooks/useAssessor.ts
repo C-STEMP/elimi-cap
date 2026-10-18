@@ -310,20 +310,7 @@ export function useAssessorProfileSignature(enabled = true) {
     queryKey: ASSESSOR_QUERY_KEYS.signature,
     queryFn: async () => {
       const serverSig = await getAssessorProfileSignatureApi();
-      if (serverSig?.assetId || serverSig?.url) {
-        return serverSig;
-      }
-      if (typeof window !== "undefined") {
-        try {
-          const cached = localStorage.getItem("cap_assessor_signature");
-          if (cached) {
-            return JSON.parse(cached) as { assetId: string | null; url: string | null };
-          }
-        } catch {
-          /* ignore storage read error */
-        }
-      }
-      return { assetId: null, url: null };
+      return serverSig ?? { assetId: null, url: null };
     },
     enabled,
     staleTime: 1000 * 60 * 5,
@@ -336,21 +323,7 @@ export function useSetAssessorProfileSignature() {
 
   return useMutation({
     mutationFn: async (payload: { assetId: string; url?: string | null }) => {
-      if (typeof window !== "undefined") {
-        try {
-          localStorage.setItem(
-            "cap_assessor_signature",
-            JSON.stringify({ assetId: payload.assetId, url: payload.url || null }),
-          );
-        } catch {
-          /* ignore storage write error */
-        }
-      }
-      try {
-        await putAssessorProfileSignatureApi({ assetId: payload.assetId });
-      } catch {
-        // Fallback: endpoint may not be implemented on the backend yet
-      }
+      return putAssessorProfileSignatureApi({ assetId: payload.assetId });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({

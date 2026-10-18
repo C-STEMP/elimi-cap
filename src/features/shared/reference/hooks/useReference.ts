@@ -8,6 +8,10 @@ import {
   getEvidenceTypesByTradeApi,
   getCentresApi,
   type GetCentresParams,
+  getCatalogueCentreOfferingsApi,
+  type GetCatalogueCentreOfferingsParams,
+  getAdminCentresApi,
+  type GetAdminCentresParams,
   getAwardingBodiesApi,
   getThirdPartyReportTemplateApi,
   getBanksApi,
@@ -28,6 +32,10 @@ export const REFERENCE_QUERY_KEYS = {
     ["catalogue", "evidence-types", tradeId] as const,
   centres: (params?: GetCentresParams) =>
     ["catalogue", "centres", params] as const,
+  centreOfferings: (params?: GetCatalogueCentreOfferingsParams) =>
+    ["catalogue", "centre-offerings", params] as const,
+  adminCentres: (params?: GetAdminCentresParams) =>
+    ["admin", "centres", params] as const,
   awardingBodies: ["reference", "awarding-bodies"] as const,
   template: ["reference", "third-party-template"] as const,
   banks: (country?: string) => ["reference", "banks", country] as const,
@@ -93,6 +101,30 @@ export function useGetCentres(
     queryFn: () => getCentresApi(params),
     enabled: options?.enabled ?? true,
     staleTime: 1000 * 60 * 10,
+  });
+}
+
+export function useGetCatalogueCentreOfferings(
+  params?: GetCatalogueCentreOfferingsParams,
+  options?: { enabled?: boolean },
+) {
+  return useQuery({
+    queryKey: REFERENCE_QUERY_KEYS.centreOfferings(params),
+    queryFn: () => getCatalogueCentreOfferingsApi(params),
+    enabled: options?.enabled ?? true,
+    staleTime: 1000 * 60 * 10,
+  });
+}
+
+export function useGetAdminCentres(
+  params?: GetAdminCentresParams,
+  options?: { enabled?: boolean },
+) {
+  return useQuery({
+    queryKey: REFERENCE_QUERY_KEYS.adminCentres(params),
+    queryFn: () => getAdminCentresApi(params),
+    enabled: options?.enabled ?? true,
+    staleTime: 1000 * 60 * 5,
   });
 }
 

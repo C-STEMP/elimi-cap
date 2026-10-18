@@ -1,29 +1,92 @@
 "use client";
 
-import React from "react";
+import React, { useRef, useState } from "react";
 import Image from "next/image";
+import { FiCheckCircle, FiUpload } from "react-icons/fi";
 import { ASSETS_URL } from "@/src/assets";
 import { Button } from "@/src/components/ui/button";
+import { useToast } from "@/src/components/ui/toast";
 import { useModalDraft } from "@/src/lib/hooks/usePersistentModal";
 import { MARK_INCOMPETENT_MODAL } from "@/src/lib/modal-keys";
+import {
+  useAssessorProfileSignature,
+  useSetAssessorProfileSignature,
+} from "@/src/features/shared/assessor/hooks";
+import { useUploadFile } from "@/src/features/shared/storage/hooks";
 
 interface ConfirmMarkCandidateIncompetentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (data: { reason: string; recommendation: string }) => void;
+  onConfirm: (data: {
+    reason: string;
+    recommendation: string;
+    signatureAssetId?: string;
+  }) => void;
   isLoading?: boolean;
 }
 
 export const ConfirmMarkCandidateIncompetentModal: React.FC<
   ConfirmMarkCandidateIncompetentModalProps
 > = ({ isOpen, onClose, onConfirm, isLoading = false }) => {
+  const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { data: profileSig } = useAssessorProfileSignature(isOpen);
+  const setProfileSig = useSetAssessorProfileSignature();
+  const uploadFile = useUploadFile();
+
+  const [uploadedAssetId, setUploadedAssetId] = useState<string | null>(null);
+  const [uploadedFileName, setUploadedFileName] = useState<string>("");
+  const [isUploadingSig, setIsUploadingSig] = useState(false);
+
   const [reason, setReason] = useModalDraft(MARK_INCOMPETENT_MODAL, "reason", "");
   const [recommendation, setRecommendation] = useModalDraft(MARK_INCOMPETENT_MODAL, "recommendation", "");
 
   if (!isOpen) return null;
 
+  const activeSignatureAssetId = uploadedAssetId || profileSig?.assetId || "";
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    setIsUploadingSig(true);
+    try {
+      const asset = await uploadFile.mutateAsync({
+        file,
+        purpose: "signature",
+      });
+      if (!asset?.assetId) {
+        throw new Error("Signature upload did not return an asset ID.");
+      }
+      setUploadedAssetId(asset.assetId);
+      setUploadedFileName(file.name);
+      await setProfileSig.mutateAsync({
+        assetId: asset.assetId,
+        url: asset.url,
+      });
+    } catch (err: any) {
+      toast({
+        type: "error",
+        title: "Signature Upload Failed",
+        description: err?.message || "Could not upload signature file.",
+      });
+    } finally {
+      setIsUploadingSig(false);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!activeSignatureAssetId) {
+      toast({
+        type: "error",
+        title: "Signature Required",
+        description:
+          "Please upload your official assessor signature to sign off on this evaluation.",
+      });
+      return;
+    }
     onConfirm({
       reason:
         reason.trim() ||
@@ -31,6 +94,7 @@ export const ConfirmMarkCandidateIncompetentModal: React.FC<
       recommendation:
         recommendation ||
         "Advanced Joinery Finishing and Workshop Safety Documentation",
+      signatureAssetId: activeSignatureAssetId,
     });
   };
 
@@ -53,6 +117,14 @@ export const ConfirmMarkCandidateIncompetentModal: React.FC<
         <p className="text-xs sm:text-sm text-neutral-secondary font-normal mb-5">
           Confirm you want to mark as incompetent
         </p>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/png,image/jpeg,image/jpg"
+          onChange={handleFileChange}
+          className="hidden"
+        />
 
         <form onSubmit={handleSubmit} className="w-full flex flex-col gap-4 text-left">
           <div className="flex flex-col gap-1.5">
@@ -104,12 +176,41 @@ export const ConfirmMarkCandidateIncompetentModal: React.FC<
             </div>
           </div>
 
+          <div className="w-full bg-[#F8F9FA] border border-gray-200 rounded-xl p-3 flex items-center justify-between gap-2 text-left">
+            <div className="flex items-center gap-2 min-w-0">
+              {activeSignatureAssetId ? (
+                <FiCheckCircle className="w-4 h-4 text-[#1E7F4C] shrink-0" />
+              ) : (
+                <FiUpload className="w-4 h-4 text-amber-600 shrink-0" />
+              )}
+              <span className="text-xs font-semibold text-neutral-primary truncate">
+                {uploadedFileName
+                  ? `Signature: ${uploadedFileName}`
+                  : profileSig?.assetId
+                    ? "Using saved profile signature"
+                    : "Assessor signature required"}
+              </span>
+            </div>
+            <button
+              type="button"
+              disabled={isUploadingSig || isLoading}
+              onClick={() => fileInputRef.current?.click()}
+              className="text-xs font-bold text-[#8A1538] hover:underline shrink-0 cursor-pointer disabled:opacity-50"
+            >
+              {isUploadingSig
+                ? "Uploading..."
+                : activeSignatureAssetId
+                  ? "Change"
+                  : "Upload"}
+            </button>
+          </div>
+
           <div className="flex flex-col gap-2.5 w-full mt-2">
             <Button
               type="submit"
               variant="amber"
-              loading={isLoading}
-              disabled={isLoading}
+              loading={isLoading || isUploadingSig}
+              disabled={isLoading || isUploadingSig}
               fullWidth
               className="h-12 bg-[#FBAB2A] hover:bg-[#E89B1F] text-white font-bold text-sm sm:text-base rounded-xl shadow-md cursor-pointer transition-all"
             >
@@ -119,7 +220,7 @@ export const ConfirmMarkCandidateIncompetentModal: React.FC<
             <button
               type="button"
               onClick={onClose}
-              disabled={isLoading}
+              disabled={isLoading || isUploadingSig}
               className="h-12 w-full border border-[#FBAB2A] text-[#FBAB2A] hover:bg-orange-50/60 font-bold text-sm sm:text-base rounded-xl transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               No

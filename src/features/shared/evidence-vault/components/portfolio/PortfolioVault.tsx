@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  useGetApplicationPortfolio,
   useGetApplicationReceipt,
   useGetInterviewForms,
 } from "@/src/features/shared/applications/hooks";
@@ -38,6 +39,7 @@ interface PortfolioVaultProps {
   application?: ApplicationDetail | null;
   /** The upload recognised as the candidate's CV (see isCvEvidence). */
   cvEvidence?: EvidenceRecord | null;
+  isLeadPanelist?: boolean;
   onPreview: (item: EvidenceRecord) => void;
   onViewApplicationForm?: () => void;
   onUploadCv?: () => void;
@@ -51,8 +53,10 @@ interface PortfolioVaultProps {
   verificationReportCard?: React.ReactNode;
 }
 
-function formBadge(record?: InterviewForm): { label: string; tone: PortfolioBadgeTone } {
-  if (!record) return { label: "Not Started", tone: "neutral" };
+function formBadge(record?: { status?: string }): { label: string; tone: PortfolioBadgeTone } {
+  if (!record || record.status === "not_started") {
+    return { label: "Not Started", tone: "neutral" };
+  }
   if (record.status === "completed") return { label: "Completed", tone: "success" };
   return { label: "In Progress", tone: "warning" };
 }
@@ -67,6 +71,7 @@ export const PortfolioVault: React.FC<PortfolioVaultProps> = ({
   applicationId,
   application,
   cvEvidence,
+  isLeadPanelist,
   onPreview,
   onViewApplicationForm,
   onUploadCv,
@@ -81,12 +86,68 @@ export const PortfolioVault: React.FC<PortfolioVaultProps> = ({
 
   // Assessors don't see the payment receipt.
   const showReceipt = viewer !== "assessor";
+  const { data: portfolio } = useGetApplicationPortfolio(applicationId);
   const { data: receipt } = useGetApplicationReceipt(applicationId, { enabled: showReceipt });
   const { data: interviewForms = [] } = useGetInterviewForms(applicationId);
 
+  const portfolioCv = portfolio?.candidateProfile?.cv || application?.cv;
+  const resolvedCv: EvidenceRecord | null =
+    cvEvidence ||
+    (portfolioCv?.assetId
+      ? {
+          id: portfolioCv.assetId,
+          name: "Candidate CV / Resume",
+          size: "Uploaded document",
+          status: "Uploaded",
+          statusBg: "bg-[#1E7F4C]/10",
+          statusText: "text-[#1E7F4C]",
+          assetId: portfolioCv.assetId,
+          url: portfolioCv.url || undefined,
+          dataUrl: portfolioCv.url || undefined,
+          evidenceType: "CV",
+        }
+      : null);
+
+  const resolvedReceipt = receipt || portfolio?.inductionDocuments?.paymentReceipt || null;
+
   const formCard = (formType: InterviewFormType, title: string, subtitle: string) => {
-    const record = interviewForms.find((f) => f.formType === formType);
-    const canAccess = Boolean(record) || viewer === "assessor";
+    if (formType === "assessment_grid") {
+      const isMappingAvailable =
+        portfolio?.standards?.assessmentMappingAvailable !== false;
+      return (
+        <PortfolioDocCard
+          key={formType}
+          title={title}
+          subtitle={subtitle}
+          badge={
+            isMappingAvailable
+              ? { label: "Available", tone: "success" }
+              : { label: "Not Started", tone: "neutral" }
+          }
+          actions={
+            <PortfolioActionButton
+              disabled={!applicationId}
+              onClick={() =>
+                router.push(
+                  `/applications/${applicationId}/assessment-forms/${FORM_ROUTE_IDS[formType]}?from=${viewer}`,
+                )
+              }
+            >
+              View
+            </PortfolioActionButton>
+          }
+        />
+      );
+    }
+
+    const record =
+      interviewForms.find((f) => f.formType === formType) ||
+      portfolio?.assessmentReports?.interviewForms?.find(
+        (f) => f.formType === formType,
+      );
+    const hasStarted = Boolean(record && record.status !== "not_started");
+    const canEdit = viewer === "assessor" && Boolean(isLeadPanelist);
+    const canAccess = hasStarted || viewer === "assessor";
     return (
       <PortfolioDocCard
         key={formType}
@@ -102,15 +163,19 @@ export const PortfolioVault: React.FC<PortfolioVaultProps> = ({
               )
             }
           >
-            {record?.status === "completed" ? "View" : viewer === "assessor" ? "Fill Form" : "View"}
+            {record?.status === "completed"
+              ? "View"
+              : canEdit
+                ? "Fill Form"
+                : "View"}
           </PortfolioActionButton>
         }
       />
     );
   };
 
-  const isReceiptPaid = receipt?.status === "completed";
-  const canViewReceipt = Boolean(receipt?.assetId || receipt?.url);
+  const isReceiptPaid = resolvedReceipt?.status === "completed";
+  const canViewReceipt = Boolean(resolvedReceipt?.assetId || resolvedReceipt?.url);
 
   return (
     <div className="flex flex-col gap-8 w-full">
@@ -129,14 +194,14 @@ export const PortfolioVault: React.FC<PortfolioVaultProps> = ({
           <PortfolioDocCard
             title="Payment Receipt"
             subtitle={
-              receipt?.paidAt
-                ? `Paid on ${new Date(receipt.paidAt).toLocaleDateString("en-GB")}`
+              resolvedReceipt?.paidAt
+                ? `Paid on ${new Date(resolvedReceipt.paidAt).toLocaleDateString("en-GB")}`
                 : "Assessment fee receipt"
             }
             badge={
               isReceiptPaid
                 ? { label: "Paid", tone: "success" }
-                : receipt?.status === "pending"
+                : resolvedReceipt?.status === "pending"
                   ? { label: "Pending", tone: "warning" }
                   : { label: "Not Paid", tone: "neutral" }
             }
@@ -144,16 +209,18 @@ export const PortfolioVault: React.FC<PortfolioVaultProps> = ({
               <PortfolioActionButton
                 disabled={!canViewReceipt}
                 onClick={() =>
-                  receipt &&
+                  resolvedReceipt &&
                   onPreview({
-                    id: receipt.paymentId || "payment-receipt",
+                    id:
+                      ("paymentId" in resolvedReceipt && resolvedReceipt.paymentId) ||
+                      "payment-receipt",
                     name: "Payment Receipt",
                     size: "PDF",
                     status: isReceiptPaid ? "Paid" : "Pending",
                     statusBg: isReceiptPaid ? "bg-[#D1FAE5]" : "bg-[#FEF3C7]",
                     statusText: isReceiptPaid ? "text-[#047857]" : "text-[#D97706]",
-                    assetId: receipt.assetId || undefined,
-                    url: receipt.url || undefined,
+                    assetId: resolvedReceipt.assetId || undefined,
+                    url: resolvedReceipt.url || undefined,
                     evidenceType: "Payment Receipt",
                   })
                 }
@@ -170,20 +237,20 @@ export const PortfolioVault: React.FC<PortfolioVaultProps> = ({
         <PortfolioDocCard
           title="CV / Resume"
           subtitle={
-            cvEvidence
-              ? cvEvidence.name
+            resolvedCv
+              ? resolvedCv.name
               : viewer === "candidate"
-                ? "Upload your CV as evidence with the type or name “CV”"
+                ? "Upload your CV / Resume for your candidate profile"
                 : "The candidate has not uploaded a CV yet"
           }
           badge={
-            cvEvidence
-              ? { label: cvEvidence.status || "Uploaded", tone: "success" }
+            resolvedCv
+              ? { label: resolvedCv.status || "Uploaded", tone: "success" }
               : { label: "Not Uploaded", tone: "neutral" }
           }
           actions={
-            cvEvidence ? (
-              <PortfolioActionButton onClick={() => onPreview(cvEvidence)}>
+            resolvedCv ? (
+              <PortfolioActionButton onClick={() => onPreview(resolvedCv)}>
                 View
               </PortfolioActionButton>
             ) : viewer === "candidate" && onUploadCv ? (
@@ -234,9 +301,55 @@ export const PortfolioVault: React.FC<PortfolioVaultProps> = ({
       </PortfolioSection>
 
       {/* 5. Verification Report */}
-      {verificationReportCard && (
+      {(verificationReportCard ||
+        portfolio?.verification?.internalVerifier ||
+        portfolio?.verification?.externalVerifier ||
+        portfolio?.verification?.ivOutcome ||
+        portfolio?.verification?.evOutcome) && (
         <PortfolioSection number={5} title="Verification Report">
-          {verificationReportCard}
+          {verificationReportCard || (
+            <>
+              <PortfolioDocCard
+                title="Internal Verification (IV)"
+                subtitle={
+                  portfolio?.verification?.internalVerifier?.assignedAt
+                    ? `Assigned on ${new Date(
+                        portfolio.verification.internalVerifier.assignedAt,
+                      ).toLocaleDateString("en-GB")}`
+                    : "Internal Quality Assurance review"
+                }
+                badge={
+                  portfolio?.verification?.ivOutcome?.toLowerCase() === "approved"
+                    ? { label: "Approved", tone: "success" }
+                    : portfolio?.verification?.ivOutcome?.toLowerCase() === "rejected"
+                      ? { label: "Rejected", tone: "warning" }
+                      : portfolio?.verification?.internalVerifier
+                        ? { label: "In Progress", tone: "warning" }
+                        : { label: "Not Started", tone: "neutral" }
+                }
+              />
+              {portfolio?.verification?.externalVerifier ||
+              portfolio?.verification?.evOutcome ? (
+                <PortfolioDocCard
+                  title="External Verification (EV)"
+                  subtitle={
+                    portfolio?.verification?.externalVerifier?.assignedAt
+                      ? `Assigned on ${new Date(
+                          portfolio.verification.externalVerifier.assignedAt,
+                        ).toLocaleDateString("en-GB")}`
+                      : "Awarding Body External Quality Assurance review"
+                  }
+                  badge={
+                    portfolio?.verification?.evOutcome?.toLowerCase() === "approved"
+                      ? { label: "Approved", tone: "success" }
+                      : portfolio?.verification?.evOutcome?.toLowerCase() === "rejected"
+                        ? { label: "Rejected", tone: "warning" }
+                        : { label: "In Progress", tone: "warning" }
+                  }
+                />
+              ) : null}
+            </>
+          )}
         </PortfolioSection>
       )}
 
@@ -244,6 +357,7 @@ export const PortfolioVault: React.FC<PortfolioVaultProps> = ({
         isOpen={isProfileOpen}
         onClose={() => setIsProfileOpen(false)}
         application={application}
+        personalDetails={portfolio?.candidateProfile?.personalDetails}
       />
     </div>
   );

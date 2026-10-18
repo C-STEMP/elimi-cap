@@ -120,13 +120,15 @@ export default function AssessmentFormDedicatedRoutePage() {
     Boolean(
       (leadMember && isMemberMatch(leadMember)) ||
       (!leadMember && isAssignedLead) ||
-      (!leadMember && (application as any).role?.toLowerCase()?.includes("lead")) ||
-      (!leadMember && isAssessorUser),
+      (!leadMember && (application as any).role?.toLowerCase()?.includes("lead")),
     );
 
-  // Lead panelist (or acting assessor if no explicit panel lead is designated)
-  // fills these forms; candidates and centre staff get the read-only document.
-  const isReadOnly = isCentreViewer || isCandidateUser || !isUserLeadPanelist;
+  const isAssessmentMapping =
+    formType === "assessment_mapping" || formType === "assessment_grid";
+
+  // Only the lead panelist edits interview forms; Assessment Mapping is always read-only.
+  const isReadOnly =
+    isAssessmentMapping || isCentreViewer || isCandidateUser || !isUserLeadPanelist;
 
   const handleBack = () => {
     if (typeof window !== "undefined" && window.history.length > 1) {

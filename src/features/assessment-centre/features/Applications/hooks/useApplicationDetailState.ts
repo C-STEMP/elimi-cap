@@ -14,11 +14,21 @@ import {
   useGetCentreAssessors,
   useGetCentrePanels,
   useGetCentreInterviews,
+  useGetCentreInductions,
 } from "@/src/features/shared/centre/hooks";
 import { ScheduledPanelistInfo } from "../components/AssignPanelistModal";
 import { computeStageCalculations } from "../utils/detailHelpers";
 import { useUrlModal } from "@/src/lib/hooks/usePersistentModal";
-import { ASSIGN_PANELIST_MODAL, RESCHEDULE_INTERVIEW_MODAL, SCHEDULE_INTERVIEW_MODAL, CREATE_PANEL_MODAL, ASSIGN_FACILITATOR_MODAL, ASSIGN_VERIFIER_MODAL, REVIEW_VERIFIER_MODAL } from "@/src/lib/modal-keys";
+import {
+  ASSIGN_PANELIST_MODAL,
+  RESCHEDULE_INTERVIEW_MODAL,
+  SCHEDULE_INTERVIEW_MODAL,
+  CREATE_PANEL_MODAL,
+  ASSIGN_FACILITATOR_MODAL,
+  ASSIGN_VERIFIER_MODAL,
+  REVIEW_VERIFIER_MODAL,
+  SCHEDULE_INDUCTION_MODAL,
+} from "@/src/lib/modal-keys";
 import { extractFacilitatorFromApplication } from "@/src/features/shared/applications/utils/facilitator";
 
 export function useApplicationDetailState(id: string, candidateNameProp = "Candidate") {
@@ -57,6 +67,7 @@ export function useApplicationDetailState(id: string, candidateNameProp = "Candi
   const { data: centreAssessors = [] } = useGetCentreAssessors({ status: "all" });
   const { data: centrePanels = [] } = useGetCentrePanels();
   const { data: centreInterviews = [] } = useGetCentreInterviews();
+  const { data: centreInductions = [] } = useGetCentreInductions();
 
   // Modals
   const [isAssignFacilitatorOpen, setIsAssignFacilitatorOpen] = useUrlModal(ASSIGN_FACILITATOR_MODAL);
@@ -70,6 +81,7 @@ export function useApplicationDetailState(id: string, candidateNameProp = "Candi
   const [activeVerifierType, setActiveVerifierType] = useState<"internal" | "external">("internal");
   const [isPromptCreatePanelOpen, setIsPromptCreatePanelOpen] = useState(false);
   const [isScheduleInterviewModalOpen, setIsScheduleInterviewModalOpen] = useUrlModal(SCHEDULE_INTERVIEW_MODAL);
+  const [isScheduleInductionModalOpen, setIsScheduleInductionModalOpen] = useUrlModal(SCHEDULE_INDUCTION_MODAL);
   const [isCreatePanelModalOpen, setIsCreatePanelModalOpen] = useUrlModal(CREATE_PANEL_MODAL);
 
   // Calendar
@@ -166,6 +178,16 @@ export function useApplicationDetailState(id: string, candidateNameProp = "Candi
 
   const activeFacilitator = extractFacilitatorFromApplication(appDetail, assignedFacilitator);
 
+  const activeInduction = useMemo(() => {
+    const fromList = centreInductions.find((ind: any) =>
+      Array.isArray(ind.candidates) &&
+      ind.candidates.some((c: any) => (c.applicationId || c.id) === id),
+    );
+    if (fromList) return fromList;
+    if ((appDetail as any)?.induction) return (appDetail as any).induction;
+    return null;
+  }, [centreInductions, id, appDetail]);
+
   const handleOpenScheduleModal = () => {
     const hasPanels = (centrePanels && centrePanels.length > 0) || (centreInterviews && centreInterviews.length > 0);
     if (!hasPanels) setIsPromptCreatePanelOpen(true);
@@ -212,6 +234,7 @@ export function useApplicationDetailState(id: string, candidateNameProp = "Candi
     interviewTimeFormatted,
     interviewEventDateFormatted,
     activeFacilitator,
+    activeInduction,
     ...stageCalculations,
     currentMonth,
     daysOfWeek,
@@ -235,6 +258,8 @@ export function useApplicationDetailState(id: string, candidateNameProp = "Candi
     setIsPromptCreatePanelOpen,
     isScheduleInterviewModalOpen,
     setIsScheduleInterviewModalOpen,
+    isScheduleInductionModalOpen,
+    setIsScheduleInductionModalOpen,
     isCreatePanelModalOpen,
     setIsCreatePanelModalOpen,
     handleOpenScheduleModal,

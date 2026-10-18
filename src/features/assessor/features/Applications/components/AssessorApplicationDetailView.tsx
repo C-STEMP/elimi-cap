@@ -1,7 +1,10 @@
 "use client";
 
 import { SelfAssessmentFormView } from "@/src/features/assessment-centre/features/Applications/components/SelfAssessmentFormView";
-import { usePanelMemberMatch } from "@/src/features/assessor/hooks";
+import {
+  useAssessorProfileSignature,
+  usePanelMemberMatch,
+} from "@/src/features/assessor/hooks";
 import {
   reviewEvApi,
   reviewIvApi,
@@ -332,10 +335,17 @@ export const AssessorApplicationDetailView: React.FC<
     setIsEvCompetentSuccessOpen(true);
   };
 
-  const handleConfirmCandidateCompetent = async () => {
+  const { data: profileSignature } = useAssessorProfileSignature();
+
+  const handleConfirmCandidateCompetent = async (signatureAssetId?: string) => {
     try {
       const isLead = isUserLeadPanelist;
       const uName = user?.fullName || (user as any)?.name || "Assessor";
+      const resolvedSignatureAssetId =
+        signatureAssetId || profileSignature?.assetId || "";
+      if (!resolvedSignatureAssetId) {
+        return;
+      }
       const payload: {
         feedback: string;
         signatureAssetId: string;
@@ -344,7 +354,7 @@ export const AssessorApplicationDetailView: React.FC<
         feedback: isLead
           ? "Candidate demonstrated all required competencies."
           : `Interview evaluated and approved by panel member (${uName}).`,
-        signatureAssetId: "default",
+        signatureAssetId: resolvedSignatureAssetId,
       };
 
       if (isLead) {
@@ -409,8 +419,14 @@ export const AssessorApplicationDetailView: React.FC<
   const handleConfirmCandidateIncompetent = async (data: {
     reason: string;
     recommendation: string;
+    signatureAssetId?: string;
   }) => {
     try {
+      const resolvedSignatureAssetId =
+        data.signatureAssetId || profileSignature?.assetId || "";
+      if (!resolvedSignatureAssetId) {
+        return;
+      }
       setInterviewFeedback({
         title: "Interview Inconclusive",
         reason: data.reason,
@@ -420,7 +436,7 @@ export const AssessorApplicationDetailView: React.FC<
         decision: "reject",
         outcome: "inconclusive",
         feedback: data.reason || "Candidate evaluation inconclusive.",
-        signatureAssetId: "default",
+        signatureAssetId: resolvedSignatureAssetId,
       });
       setIsConfirmCandidateIncompetentOpen(false);
       setInterviewOutcome("inconclusive");
@@ -482,6 +498,7 @@ export const AssessorApplicationDetailView: React.FC<
         triggerMarkComplete={triggerMarkComplete}
         onResetTriggerMarkComplete={onResetTriggerMarkComplete}
         isStageAlreadyComplete={isFolderArrangementDone}
+        isLeadPanelist={isUserLeadPanelist}
       />
     );
   }

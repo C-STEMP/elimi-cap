@@ -58,6 +58,9 @@ export function useEvaluateInterview(id: string) {
       queryClient.invalidateQueries({
         queryKey: ["applications", "interview-panel", id],
       });
+      queryClient.invalidateQueries({
+        queryKey: APPLICATION_QUERY_KEYS.portfolio(id),
+      });
       const message =
         data?.message ||
         (data as any)?.data?.message ||
@@ -122,6 +125,9 @@ export function useUpdateInterviewForm(id: string) {
       queryClient.invalidateQueries({
         queryKey: ["applications", "interview-forms", id],
       });
+      queryClient.invalidateQueries({
+        queryKey: APPLICATION_QUERY_KEYS.portfolio(id),
+      });
       toast({
         type: "success",
         title: "Form Saved",
@@ -171,6 +177,9 @@ export function useSignoffInterviewForm(id: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["applications", "interview-forms", id],
+      });
+      queryClient.invalidateQueries({
+        queryKey: APPLICATION_QUERY_KEYS.portfolio(id),
       });
       toast({
         type: "success",

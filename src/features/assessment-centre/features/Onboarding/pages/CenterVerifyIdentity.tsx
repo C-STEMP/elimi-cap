@@ -154,7 +154,13 @@ export const CenterVerifyIdentity: React.FC = () => {
             name: centreInformation.centerName,
             registrationNo: centreInformation.regNo,
             logoAssetId: centreInformation.logoAssetId,
+            ...(centreInformation.certificateAssetId
+              ? { certificateAssetId: centreInformation.certificateAssetId }
+              : {}),
           },
+          ...(centreInformation.tradeIds && centreInformation.tradeIds.length > 0
+            ? { tradeIds: centreInformation.tradeIds }
+            : {}),
           centreResidentialAddress: {
             country: centreInformation.country,
             state: centreInformation.state,

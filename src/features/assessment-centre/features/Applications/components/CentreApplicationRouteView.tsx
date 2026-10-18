@@ -341,6 +341,7 @@ export const CentreApplicationRouteView: React.FC<{
       <ScheduleInductionModal
         isOpen={isScheduleInductionModalOpen}
         onClose={() => setIsScheduleInductionModalOpen(false)}
+        initialApplicationId={id}
         modalKey={APPLICATION_SCHEDULE_INDUCTION_MODAL}
       />
       <CreateInterviewModal

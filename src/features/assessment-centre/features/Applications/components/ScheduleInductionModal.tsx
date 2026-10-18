@@ -2,7 +2,7 @@
 
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FiX } from "react-icons/fi";
+import { FiX, FiPlus } from "react-icons/fi";
 import { Select } from "@/src/components/ui/select";
 import { useScheduleInductionState } from "../hooks/useScheduleInductionState";
 import { ConfirmCreatePanelModal } from "./ConfirmCreatePanelModal";
@@ -13,6 +13,7 @@ interface ScheduleInductionModalProps {
   modalKey?: string;
   onClose: () => void;
   onSuccess?: () => void;
+  initialApplicationId?: string;
 }
 
 export const ScheduleInductionModal: React.FC<ScheduleInductionModalProps> = (props) => {
@@ -31,27 +32,27 @@ export const ScheduleInductionModal: React.FC<ScheduleInductionModalProps> = (pr
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.2, ease: "easeOut" }}
-              className="bg-white rounded-[28px] p-6 sm:p-8 max-w-lg w-full shadow-2xl relative border border-gray-100 my-auto text-left"
+              className="bg-white rounded-[28px] p-6 sm:p-8 max-w-lg w-full shadow-2xl relative border border-gray-100 my-auto text-left max-h-[90vh] flex flex-col"
             >
               <button
                 type="button"
                 onClick={onClose}
                 aria-label="Close"
-                className="w-9 h-9 bg-[#FCE8EC] hover:bg-[#FAD1D8] rounded-xl flex items-center justify-center text-[#A31D38] cursor-pointer absolute top-6 right-6 transition-colors select-none"
+                className="w-9 h-9 bg-[#FCE8EC] hover:bg-[#FAD1D8] rounded-xl flex items-center justify-center text-[#A31D38] cursor-pointer absolute top-6 right-6 transition-colors select-none z-10"
               >
                 <FiX className="w-5 h-5 stroke-[2.5]" />
               </button>
 
-              <div className="text-center mb-6 pr-6">
+              <div className="text-center mb-6 pr-6 shrink-0">
                 <h3 className="text-xl sm:text-2xl font-black text-black tracking-tight mb-1">
                   Schedule Induction
                 </h3>
                 <p className="text-gray-400 text-xs sm:text-sm font-normal">
-                  Schedule induction session for candidates
+                  Schedule induction session for paid RPL candidates (shared start time)
                 </p>
               </div>
 
-              <form onSubmit={s.handleTriggerSubmit} className="flex flex-col gap-4">
+              <form onSubmit={s.handleTriggerSubmit} className="flex flex-col gap-4 overflow-y-auto pr-1 flex-1">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-semibold text-gray-700">
                     Title
@@ -95,7 +96,7 @@ export const ScheduleInductionModal: React.FC<ScheduleInductionModalProps> = (pr
 
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-semibold text-gray-700">
-                      Time
+                      Start Time (Shared)
                     </label>
                     <input
                       type="time"
@@ -207,10 +208,70 @@ export const ScheduleInductionModal: React.FC<ScheduleInductionModalProps> = (pr
                   </div>
                 )}
 
+                <div className="flex flex-col gap-2 pt-1">
+                  <label className="text-xs font-semibold text-gray-700">
+                    Candidates (Paid RPL Applications)
+                  </label>
+                  {s.selectedCandidates.length > 0 && (
+                    <div className="flex flex-col gap-2 max-h-36 overflow-y-auto pr-1">
+                      {s.selectedCandidates.map((cand) => (
+                        <div
+                          key={cand.applicationId}
+                          className="flex items-center gap-2 w-full"
+                        >
+                          <div className="flex-1 h-10 px-3.5 rounded-xl border border-gray-200 bg-[#F9FAFB] text-xs sm:text-sm text-gray-900 font-medium flex items-center justify-between truncate">
+                            <span className="truncate font-semibold">{cand.name}</span>
+                            <span className="text-[11px] text-gray-500 bg-gray-200/60 px-2 py-0.5 rounded-md ml-2 shrink-0">
+                              {cand.tradeName}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => s.handleRemoveCandidate(cand.applicationId)}
+                            className="w-10 h-10 bg-[#FCE8EC] hover:bg-[#FAD1D8] text-[#A31D38] rounded-xl flex items-center justify-center cursor-pointer transition-colors shrink-0"
+                          >
+                            <FiX className="w-4 h-4 stroke-[2.5]" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {s.unselectedCandidates.length > 0 ? (
+                    <div className="flex items-center gap-2 w-full">
+                      <div className="flex-1">
+                        <Select
+                          placeholder="Select paid RPL candidate to add..."
+                          value={s.candidatePickerId}
+                          onChange={(e) => s.handleSelectCandidate(e.target.value)}
+                          options={s.unselectedCandidates.map((c) => ({
+                            label: c.label,
+                            value: c.value,
+                          }))}
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={s.handleAddCandidate}
+                        disabled={!s.candidatePickerId}
+                        className="w-11 h-11 bg-[#F59E0B] hover:bg-[#D97706] disabled:opacity-50 text-white rounded-xl flex items-center justify-center cursor-pointer shadow-xs transition-all shrink-0"
+                      >
+                        <FiPlus className="w-5 h-5 stroke-[2.5]" />
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-gray-400 italic">
+                      {s.selectedCandidates.length > 0
+                        ? "All eligible paid RPL candidates have been selected."
+                        : "No unassigned paid RPL candidates available right now."}
+                    </p>
+                  )}
+                </div>
+
                 <button
                   type="submit"
                   disabled={s.isSubmitting}
-                  className="w-full bg-[#F59E0B] hover:bg-[#D97706] active:scale-[0.99] text-white font-bold text-sm sm:text-base h-12.5 rounded-xl mt-3 cursor-pointer transition-all shadow-md shadow-amber-500/20 select-none disabled:opacity-50"
+                  className="w-full bg-[#F59E0B] hover:bg-[#D97706] active:scale-[0.99] text-white font-bold text-sm sm:text-base h-12.5 rounded-xl mt-3 cursor-pointer transition-all shadow-md shadow-amber-500/20 select-none disabled:opacity-50 shrink-0"
                 >
                   {s.isSubmitting ? "Scheduling Induction..." : "Schedule Induction"}
                 </button>
@@ -239,3 +300,4 @@ export const ScheduleInductionModal: React.FC<ScheduleInductionModalProps> = (pr
     </>
   );
 };
+

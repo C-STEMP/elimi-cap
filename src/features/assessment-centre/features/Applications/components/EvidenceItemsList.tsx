@@ -77,21 +77,35 @@ export const EvidenceItemsList: React.FC<Props> = ({
   const otherItems = cvItem
     ? evidenceItems.filter((item) => item !== cvItem)
     : evidenceItems;
-  const cvEvidence: EvidenceRecord | null = cvItem
+  const cvEvidence: EvidenceRecord | null = appDetail?.cv?.assetId
     ? {
-        id: cvItem.id || cvItem.assetId || "cv",
-        name: cvItem.documentName,
-        size: cvItem.size || cvItem.fileSize || "Uploaded document",
-        status: cvItem.status ? String(cvItem.status).replace(/_/g, " ") : "Uploaded",
+        id: appDetail.cv.assetId,
+        name: cvItem?.documentName || "Candidate CV / Resume",
+        size: cvItem?.size || cvItem?.fileSize || "Uploaded document",
+        status: "Uploaded",
         statusBg: "bg-[#1E7F4C]/10",
         statusText: "text-[#1E7F4C]",
-        assetId: cvItem.assetId,
-        url: cvItem.url,
-        dataUrl: cvItem.dataUrl,
-        mimeType: cvItem.mimeType,
-        evidenceType: cvItem.evidenceType,
+        assetId: appDetail.cv.assetId,
+        url: appDetail.cv.url || cvItem?.url,
+        dataUrl: appDetail.cv.url || cvItem?.dataUrl,
+        mimeType: cvItem?.mimeType,
+        evidenceType: "CV",
       }
-    : null;
+    : cvItem
+      ? {
+          id: cvItem.id || cvItem.assetId || "cv",
+          name: cvItem.documentName,
+          size: cvItem.size || cvItem.fileSize || "Uploaded document",
+          status: cvItem.status ? String(cvItem.status).replace(/_/g, " ") : "Uploaded",
+          statusBg: "bg-[#1E7F4C]/10",
+          statusText: "text-[#1E7F4C]",
+          assetId: cvItem.assetId,
+          url: cvItem.url,
+          dataUrl: cvItem.dataUrl,
+          mimeType: cvItem.mimeType,
+          evidenceType: cvItem.evidenceType,
+        }
+      : null;
 
   const iqamCard = (toolId: IqamToolId, key: IqamFormSummaryItem["key"]) => (
     <PortfolioDocCard
@@ -266,7 +280,8 @@ const CentreEvidenceList: React.FC<CentreEvidenceListProps> = ({
         />
         {typeFilter.filteredItems.map((item) => {
           const idx = items.indexOf(item);
-          const statusStr = (item.status as string)?.toLowerCase() || "";
+          const rawItemStatus = (item.reviewStatus || item.status) as string | undefined;
+          const statusStr = rawItemStatus?.toLowerCase() || "";
           const isApproved =
             statusStr === "approved" ||
             statusStr === "accepted" ||
@@ -293,18 +308,20 @@ const CentreEvidenceList: React.FC<CentreEvidenceListProps> = ({
               ? "Attention Required"
               : isSubmitted
                 ? "Submitted"
-                : item.status
-                  ? item.status.replace(/_/g, " ")
+                : rawItemStatus
+                  ? rawItemStatus.replace(/_/g, " ")
                   : "Pending";
-          const badgeBg =
-            isApproved || isSubmitted
-              ? "bg-[#1E7F4C]/10"
+          const badgeBg = isApproved
+            ? "bg-[#1E7F4C]/10"
+            : isSubmitted
+              ? "bg-[#EFF6FF]"
               : isAttention
                 ? "bg-[#FCE8EB]"
                 : "bg-[#F9A825]/10";
-          const badgeText =
-            isApproved || isSubmitted
-              ? "text-[#1E7F4C]"
+          const badgeText = isApproved
+            ? "text-[#1E7F4C]"
+            : isSubmitted
+              ? "text-[#1D4ED8]"
               : isAttention
                 ? "text-[#A31D38]"
                 : "text-[#F9A825]";

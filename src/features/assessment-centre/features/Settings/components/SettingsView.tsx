@@ -108,6 +108,14 @@ export const SettingsView: React.FC = () => {
               countries={state.countries}
               centreStates={state.centreStates}
               centreCities={state.centreCities}
+              availableTrades={state.availableTrades}
+              selectedTradeIds={state.selectedTradeIds}
+              setSelectedTradeIds={state.setSelectedTradeIds}
+              certificateAssetId={state.certificateAssetId}
+              certificateUrl={state.certificateUrl}
+              certificateName={state.certificateName}
+              isUploadingCertificate={state.isUploadingCertificate}
+              handleCertificateUpload={state.handleCertificateUpload}
               handleSaveCentreSettings={state.handleSaveCentreSettings}
               isSavingCentre={state.isSavingCentre}
             />

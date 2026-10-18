@@ -10,6 +10,7 @@ import { ReviewVerifierModal } from "./ReviewVerifierModal";
 import { PromptCreatePanelModal } from "./PromptCreatePanelModal";
 import { CreatePanelModal } from "./CreatePanelModal";
 import { ScheduleInterviewModal } from "./ScheduleInterviewModal";
+import { ScheduleInductionModal } from "./ScheduleInductionModal";
 
 interface ApplicationModalsProps {
   id: string;
@@ -124,6 +125,18 @@ export const ApplicationModals: React.FC<ApplicationModalsProps> = ({
           queryClient.invalidateQueries({ queryKey: ["applications", id] });
           queryClient.invalidateQueries({ queryKey: ["applications"] });
           state.setIsScheduleInterviewModalOpen(false);
+        }}
+      />
+
+      <ScheduleInductionModal
+        isOpen={Boolean(state.isScheduleInductionModalOpen)}
+        onClose={() => state.setIsScheduleInductionModalOpen?.(false)}
+        initialApplicationId={id}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ["centre", "inductions"] });
+          queryClient.invalidateQueries({ queryKey: ["applications", id] });
+          queryClient.invalidateQueries({ queryKey: ["centre", "applications", "detail", id] });
+          state.setIsScheduleInductionModalOpen?.(false);
         }}
       />
     </>

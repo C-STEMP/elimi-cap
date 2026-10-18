@@ -76,6 +76,8 @@ export const AssessorAssessmentFormsWidget: React.FC<
 
       <div className="flex flex-col gap-2.5 w-full">
         {forms.map((form) => {
+          const isMappingForm =
+            form.id === "assessment_mapping" || form.id === "assessment_grid";
           const typeKey = FORM_TYPE_MAP[form.id] || form.id;
           const matchedRemote = remoteForms?.find(
             (rf) => rf.formType === typeKey || rf.formType === form.id,
@@ -111,7 +113,11 @@ export const AssessorAssessmentFormsWidget: React.FC<
                 <span className="text-xs sm:text-sm font-semibold text-neutral-primary group-hover:text-primary transition-colors truncate">
                   {form.name}
                 </span>
-                {isFullySigned ? (
+                {isMappingForm ? (
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 shrink-0">
+                    Available
+                  </span>
+                ) : isFullySigned ? (
                   <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 shrink-0">
                     Signed
                   </span>
@@ -138,7 +144,7 @@ export const AssessorAssessmentFormsWidget: React.FC<
                 }}
                 className="text-[#FBAB2A] hover:text-[#E89B1F] font-semibold text-xs sm:text-sm transition-colors cursor-pointer shrink-0"
               >
-                {isReadOnly || isCandidateSigned
+                {isMappingForm || isReadOnly || isCandidateSigned
                   ? "View"
                   : isSubmitted
                   ? "Edit"

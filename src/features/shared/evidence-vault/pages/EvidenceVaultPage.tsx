@@ -16,6 +16,7 @@ import {
   useGetEvidenceVault,
   useCreateGeneralEvidence,
   useDeleteGeneralEvidence,
+  useUploadApplicationCv,
   useGetInterviewSchedule,
 } from "@/src/features/shared/applications/hooks";
 import { useUploadFile } from "@/src/features/shared/storage/hooks";
@@ -49,6 +50,9 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
   const { data: interviewSchedule } = useGetInterviewSchedule(applicationId, { enabled: Boolean(applicationId) });
   const uploadFileMutation = useUploadFile();
   const createGeneralEvidenceMutation = useCreateGeneralEvidence(applicationId, {
+    showToast: false,
+  });
+  const uploadApplicationCvMutation = useUploadApplicationCv(applicationId, {
     showToast: false,
   });
   const deleteGeneralEvidenceMutation = useDeleteGeneralEvidence(applicationId);
@@ -149,6 +153,7 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
 
     const defaultPendingStatus = "Pending";
     const rawStatus: string =
+      (item.reviewStatus as string) ||
       (item.status as string) ||
       (combinedIssues.length > 0 ? "Attention Required" : defaultPendingStatus);
     const statusLabel = rawStatus
@@ -207,9 +212,23 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
   });
 
   // The CV is shown under "Candidate Profile", not in the evidences list.
-  const cvEvidence = evidences.find(isCvEvidence) || null;
-  const otherEvidences = cvEvidence
-    ? evidences.filter((e) => e !== cvEvidence)
+  const legacyCvEvidence = evidences.find(isCvEvidence) || null;
+  const cvEvidence: EvidenceRecord | null = apiApp?.cv?.assetId
+    ? {
+        id: apiApp.cv.assetId,
+        name: legacyCvEvidence?.name || "Candidate CV / Resume",
+        size: legacyCvEvidence?.size || "Uploaded document",
+        status: "Uploaded",
+        statusBg: "bg-[#1E7F4C]/10",
+        statusText: "text-[#1E7F4C]",
+        assetId: apiApp.cv.assetId,
+        url: apiApp.cv.url || legacyCvEvidence?.url,
+        dataUrl: apiApp.cv.url || legacyCvEvidence?.dataUrl,
+        evidenceType: "CV",
+      }
+    : legacyCvEvidence;
+  const otherEvidences = legacyCvEvidence
+    ? evidences.filter((e) => e !== legacyCvEvidence)
     : evidences;
 
   const handleUploadSubmit = async (
@@ -231,6 +250,9 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
       for (const item of items) {
         const finalDocName =
           item.docName.trim() || item.file.name.replace(/\.[^/.]+$/, "");
+        const isCvUpload =
+          uploadInitialDocName.trim().toUpperCase() === "CV" ||
+          isCvEvidence({ name: finalDocName, evidenceType });
 
         const asset = await uploadFileMutation.mutateAsync({
           file: item.file,
@@ -240,11 +262,15 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
         if (!assetId)
           throw new Error("The file upload did not return an asset id.");
 
-        await createGeneralEvidenceMutation.mutateAsync({
-          documentName: finalDocName,
-          evidenceType,
-          assetId,
-        });
+        if (isCvUpload) {
+          await uploadApplicationCvMutation.mutateAsync(assetId);
+        } else {
+          await createGeneralEvidenceMutation.mutateAsync({
+            documentName: finalDocName,
+            evidenceType,
+            assetId,
+          });
+        }
       }
 
       const count = items.length;

@@ -1,9 +1,13 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useToast } from "@/src/components/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { useGetCentreProfile } from "@/src/features/shared/centre/hooks";
+import {
+  useGetCentreProfile,
+  useGetCentreInductions,
+} from "@/src/features/shared/centre/hooks";
+import { useGetApplications } from "@/src/features/shared/applications/hooks";
 import { postCentreInductionsApi } from "@/src/features/shared/centre/api";
 import { useCountryStateCity } from "@/src/lib/hooks/useCountryStateCity";
 import { hasModalDraft, useModalDraft } from "@/src/lib/hooks/usePersistentModal";
@@ -14,6 +18,7 @@ interface Props {
   modalKey?: string;
   onClose: () => void;
   onSuccess?: () => void;
+  initialApplicationId?: string;
 }
 
 export function useScheduleInductionState({
@@ -21,11 +26,14 @@ export function useScheduleInductionState({
   modalKey = SCHEDULE_INDUCTION_MODAL,
   onClose,
   onSuccess,
+  initialApplicationId,
 }: Props) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const { data: centreProfile } = useGetCentreProfile();
+  const { data: applications = [] } = useGetApplications();
+  const { data: existingInductions = [] } = useGetCentreInductions();
 
   const [title, setTitle] = useModalDraft(modalKey, "title", "");
   const [description, setDescription] = useModalDraft(modalKey, "description", "");
@@ -62,6 +70,12 @@ export function useScheduleInductionState({
     centreProfile?.formattedAddress || centreProfile?.address?.address || "",
   );
   const [meetingLink, setMeetingLink] = useModalDraft(modalKey, "meetingLink", "");
+  const [selectedApplicationIds, setSelectedApplicationIds] = useModalDraft<string[]>(
+    modalKey,
+    "selectedApplicationIds",
+    [],
+  );
+  const [candidatePickerId, setCandidatePickerId] = useState("");
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -70,6 +84,117 @@ export function useScheduleInductionState({
     selectedCountry || "Nigeria",
     selectedState,
   );
+
+  // Applications that already belong to an existing induction (one induction per application)
+  const alreadyInductedAppIds = useMemo(() => {
+    const ids = new Set<string>();
+    existingInductions.forEach((ind: any) => {
+      if (Array.isArray(ind.candidates)) {
+        ind.candidates.forEach((c: any) => {
+          const appId = c.applicationId || c.id;
+          if (appId) ids.add(appId);
+        });
+      }
+      if (Array.isArray(ind.applicationIds)) {
+        ind.applicationIds.forEach((appId: string) => {
+          if (appId) ids.add(appId);
+        });
+      }
+    });
+    return ids;
+  }, [existingInductions]);
+
+  // Eligible RPL applications with completed payment and not already in an induction
+  const eligibleCandidates = useMemo(() => {
+    return applications
+      .filter((app: any) => {
+        const appType = (app.type || app.assessmentType || "RPL").toUpperCase();
+        if (appType !== "RPL") return false;
+        if (app.status === "rejected" || app.status === "withdrawn") return false;
+        if (alreadyInductedAppIds.has(app.id)) return false;
+
+        const isPaidExplicit =
+          app.paymentStatus === "paid" ||
+          app.paymentStatus === "successful" ||
+          app.isPaid === true ||
+          app.payment?.status === "successful" ||
+          app.payment?.status === "paid";
+        const isPastPaymentStage = Boolean(
+          app.currentStageKey &&
+            ![
+              "draft",
+              "submitted",
+              "application_form",
+              "application_review",
+              "payment",
+            ].includes(app.currentStageKey),
+        );
+
+        return isPaidExplicit || isPastPaymentStage || app.id === initialApplicationId;
+      })
+      .map((app: any) => {
+        const name =
+          app.candidate?.name ||
+          `${app.candidate?.firstName || ""} ${app.candidate?.lastName || ""}`.trim() ||
+          "Candidate";
+        const tradeName =
+          app.trade?.name ||
+          (typeof app.trade === "string" ? app.trade : null) ||
+          "General";
+        return {
+          applicationId: app.id,
+          name,
+          tradeName,
+          label: `${name} — ${tradeName}`,
+          value: app.id,
+        };
+      });
+  }, [applications, alreadyInductedAppIds, initialApplicationId]);
+
+  const selectedCandidates = useMemo(() => {
+    return selectedApplicationIds.map((appId) => {
+      const found = eligibleCandidates.find((c) => c.applicationId === appId);
+      if (found) return found;
+      const rawApp = applications.find((a: any) => a.id === appId) as any;
+      const name =
+        rawApp?.candidate?.name ||
+        `${rawApp?.candidate?.firstName || ""} ${rawApp?.candidate?.lastName || ""}`.trim() ||
+        "Candidate";
+      const tradeName =
+        rawApp?.trade?.name ||
+        (typeof rawApp?.trade === "string" ? rawApp.trade : null) ||
+        "General";
+      return {
+        applicationId: appId,
+        name,
+        tradeName,
+        label: `${name} — ${tradeName}`,
+        value: appId,
+      };
+    });
+  }, [selectedApplicationIds, eligibleCandidates, applications]);
+
+  const unselectedCandidates = useMemo(() => {
+    const selectedSet = new Set(selectedApplicationIds);
+    return eligibleCandidates.filter((c) => !selectedSet.has(c.applicationId));
+  }, [eligibleCandidates, selectedApplicationIds]);
+
+  const handleSelectCandidate = (appId: string) => {
+    if (!appId) return;
+    setSelectedApplicationIds((prev) =>
+      prev.includes(appId) ? prev : [...prev, appId],
+    );
+    setCandidatePickerId("");
+  };
+
+  const handleAddCandidate = () => {
+    if (!candidatePickerId) return;
+    handleSelectCandidate(candidatePickerId);
+  };
+
+  const handleRemoveCandidate = (appId: string) => {
+    setSelectedApplicationIds((prev) => prev.filter((id) => id !== appId));
+  };
 
   const restoredDraft = useRef(hasModalDraft(modalKey));
 
@@ -85,14 +210,23 @@ export function useScheduleInductionState({
       setInterviewMode("Virtual");
       setSameAsCompanyAddress(true);
       setMeetingLink("");
+      setCandidatePickerId("");
+      if (initialApplicationId && !alreadyInductedAppIds.has(initialApplicationId)) {
+        setSelectedApplicationIds([initialApplicationId]);
+      } else {
+        setSelectedApplicationIds([]);
+      }
     }
   }, [
     isOpen,
+    initialApplicationId,
+    alreadyInductedAppIds,
     setDate,
     setDescription,
     setInterviewMode,
     setMeetingLink,
     setSameAsCompanyAddress,
+    setSelectedApplicationIds,
     setTime,
     setTitle,
   ]);
@@ -205,9 +339,13 @@ export function useScheduleInductionState({
         useCentreAddress: sameAsCompanyAddress,
         link: formattedLink,
         durationMinutes: 60,
+        applicationIds:
+          selectedApplicationIds.length > 0 ? selectedApplicationIds : undefined,
       });
 
       queryClient.invalidateQueries({ queryKey: ["centre", "inductions"] });
+      queryClient.invalidateQueries({ queryKey: ["applications"] });
+      queryClient.invalidateQueries({ queryKey: ["centre", "applications"] });
       toast({
         type: "success",
         title: "Induction Scheduled",
@@ -257,6 +395,13 @@ export function useScheduleInductionState({
     setStreetAddress,
     meetingLink,
     setMeetingLink,
+    selectedCandidates,
+    unselectedCandidates,
+    candidatePickerId,
+    setCandidatePickerId,
+    handleSelectCandidate,
+    handleAddCandidate,
+    handleRemoveCandidate,
     isConfirmOpen,
     setIsConfirmOpen,
     isSuccessOpen,
@@ -270,3 +415,4 @@ export function useScheduleInductionState({
     handleContinueSuccess,
   };
 }
+

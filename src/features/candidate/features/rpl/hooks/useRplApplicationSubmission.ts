@@ -14,6 +14,7 @@ import {
   getCentresApi,
   getSectorsApi,
   getTradesBySectorApi,
+  getTradeDetailApi,
 } from "@/src/features/shared/reference/api";
 import {
   setCurrentApplication,
@@ -22,6 +23,7 @@ import {
 import {
   setPersonalInfo,
   setRPLExperienceTrade,
+  setStartApplication,
 } from "@/store/slices/onboardingSlice";
 import { getOnboardingPersonaApi } from "@/src/features/shared/onboarding/api";
 import { formatToIsoDate } from "@/src/lib/validation";
@@ -101,6 +103,41 @@ export function useRplApplicationSubmission() {
       );
     }
 
+    let qualificationLevelId = startApp.qualificationLevelId;
+    if (!qualificationLevelId && tradeId) {
+      try {
+        const td = await getTradeDetailApi(tradeId);
+        const qLevels =
+          td?.activeNosDocument?.qualificationLevels ||
+          (td as any)?.qualificationLevels ||
+          [];
+        const targetLvlNum =
+          startApp.levelNumber ||
+          (startApp.level ? parseInt(startApp.level, 10) : undefined);
+        const matchedQl =
+          qLevels.find(
+            (ql: any) =>
+              (targetLvlNum && ql.level === targetLvlNum) ||
+              String(ql.level) === String(startApp.level) ||
+              ql.id === startApp.level,
+          ) ||
+          qLevels.find((ql: any) => ql.level === 3) ||
+          qLevels[0];
+        if (matchedQl?.id) {
+          qualificationLevelId = matchedQl.id;
+          dispatch(
+            setStartApplication({
+              qualificationLevelId: matchedQl.id,
+              levelNumber: matchedQl.level,
+              level: String(matchedQl.level),
+            }),
+          );
+        }
+      } catch {
+        // Ignore trade detail error
+      }
+    }
+
     // 4. Create draft application on backend
     try {
       const created = await createApplicationApi({
@@ -108,6 +145,7 @@ export function useRplApplicationSubmission() {
         centreId,
         sectorId,
         tradeId,
+        ...(qualificationLevelId ? { qualificationLevelId } : {}),
         unitIds: [],
       });
 
@@ -399,6 +437,10 @@ export function useRplApplicationSubmission() {
     }
 
     const experienceAndTrade: Record<string, unknown> = {};
+
+    if (startApp.qualificationLevelId) {
+      experienceAndTrade.qualificationLevelId = startApp.qualificationLevelId;
+    }
 
     if (validUnitIds.length > 0) {
       experienceAndTrade.unitIds = validUnitIds;

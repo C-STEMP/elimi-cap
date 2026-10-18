@@ -11,14 +11,32 @@ import type {
   ReviewDecisionPayload,
   ApplicationShareToken,
   ApplicationDossier,
+  ApplicationAssessmentMapping,
+  ApplicationPortfolio,
 } from "./types";
 
 export async function createApplicationApi(
   payload: CreateApplicationPayload,
 ): Promise<Application> {
+  const requestBody: {
+    type: ApplicationType;
+    sectorId: string;
+    tradeId: string;
+    centreId: string;
+    qualificationLevelId?: string;
+  } = {
+    type: payload.type,
+    sectorId: payload.sectorId,
+    tradeId: payload.tradeId,
+    centreId: payload.centreId,
+    ...(payload.type === "RPL" && payload.qualificationLevelId
+      ? { qualificationLevelId: payload.qualificationLevelId }
+      : {}),
+  };
+
   return capFetch<Application>("/applications", {
     method: "POST",
-    data: payload,
+    data: requestBody,
   });
 }
 
@@ -121,6 +139,25 @@ export async function getSharedApplicationApi(
   token: string,
 ): Promise<ApplicationDossier> {
   return capFetch<ApplicationDossier>(`/shared/applications/${token}`, {
+    method: "GET",
+  });
+}
+
+export async function getApplicationAssessmentMappingApi(
+  id: string,
+): Promise<ApplicationAssessmentMapping> {
+  return capFetch<ApplicationAssessmentMapping>(
+    `/applications/${id}/assessment-mapping`,
+    {
+      method: "GET",
+    },
+  );
+}
+
+export async function getApplicationPortfolioApi(
+  id: string,
+): Promise<ApplicationPortfolio> {
+  return capFetch<ApplicationPortfolio>(`/applications/${id}/portfolio`, {
     method: "GET",
   });
 }

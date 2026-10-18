@@ -1,5 +1,6 @@
 import { capFetch } from "@/src/lib/api/cap";
 import type {
+  ApplicationDetail,
   EvidenceVaultItem,
   GeneralEvidence,
   ThirdPartyReportEvidence,
@@ -18,6 +19,16 @@ export async function getEvidenceVaultApi(
   });
 }
 
+export async function uploadApplicationCvApi(
+  id: string,
+  assetId: string,
+): Promise<ApplicationDetail> {
+  return capFetch<ApplicationDetail>(`/applications/${id}/cv`, {
+    method: "POST",
+    data: { assetId },
+  });
+}
+
 export async function createGeneralEvidenceApi(
   id: string,
   payload: {
@@ -32,6 +43,43 @@ export async function createGeneralEvidenceApi(
     method: "POST",
     data: payload,
   });
+}
+
+export async function patchGeneralEvidenceApi(
+  id: string,
+  evidenceId: string,
+  payload: {
+    documentName?: string;
+    evidenceType?: string;
+    assetId?: string | null;
+    formData?: Record<string, unknown> | null;
+    textValue?: string | null;
+  },
+): Promise<GeneralEvidence> {
+  return capFetch<GeneralEvidence>(
+    `/applications/${id}/evidence/${evidenceId}`,
+    {
+      method: "PATCH",
+      data: payload,
+    },
+  );
+}
+
+export async function reviewGeneralEvidenceApi(
+  id: string,
+  evidenceId: string,
+  payload: {
+    decision: "approve" | "reject";
+    comment?: string;
+  },
+): Promise<GeneralEvidence> {
+  return capFetch<GeneralEvidence>(
+    `/applications/${id}/evidence/${evidenceId}/review`,
+    {
+      method: "PATCH",
+      data: payload,
+    },
+  );
 }
 
 export async function getGeneralEvidenceByIdApi(

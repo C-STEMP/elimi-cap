@@ -25,8 +25,18 @@ export function useCreatePanelState({
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: centreAssessors = [], isLoading: isLoadingAssessors } =
+  const { data: approvedAssessors = [], isLoading: isLoadingApproved } =
+    useGetCentreAssessors({ status: "approved" });
+  const { data: allAssessors = [], isLoading: isLoadingAll } =
     useGetCentreAssessors({ status: "all" });
+  const { data: ivQualifiedAssessors = [] } = useGetCentreAssessors({
+    status: "approved",
+    qualification: "IV",
+  });
+
+  const centreAssessors =
+    approvedAssessors.length > 0 ? approvedAssessors : allAssessors;
+  const isLoadingAssessors = isLoadingApproved && isLoadingAll;
 
   const [title, setTitle] = useModalDraft(modalKey, "title", "");
   const [description, setDescription] = useModalDraft(modalKey, "description", "");
@@ -70,10 +80,26 @@ export function useCreatePanelState({
     if (assessorOptions.length >= 3) {
       setLeadPanelistId(assessorOptions[0]?.value || "");
       setPanelMemberId(assessorOptions[1]?.value || "");
-      const iv = assessorOptions.find(
-        (a) => a.qualifications?.some((q) => q.toUpperCase() === "IV") &&
-          a.value !== assessorOptions[0]?.value && a.value !== assessorOptions[1]?.value,
-      );
+      const ivFromFiltered = ivQualifiedAssessors.find((a) => {
+        const val = a.id || (a as any).assessorId || (a as any).userId;
+        return val !== assessorOptions[0]?.value && val !== assessorOptions[1]?.value;
+      });
+      const iv =
+        (ivFromFiltered
+          ? assessorOptions.find(
+              (a) =>
+                a.value ===
+                (ivFromFiltered.id ||
+                  (ivFromFiltered as any).assessorId ||
+                  (ivFromFiltered as any).userId),
+            )
+          : undefined) ||
+        assessorOptions.find(
+          (a) =>
+            a.qualifications?.some((q) => q.toUpperCase() === "IV") &&
+            a.value !== assessorOptions[0]?.value &&
+            a.value !== assessorOptions[1]?.value,
+        );
       setInternalVerifierId(iv?.value || assessorOptions[2]?.value || "");
     } else {
       setLeadPanelistId(assessorOptions[0]?.value || "");
@@ -83,6 +109,7 @@ export function useCreatePanelState({
   }, [
     isOpen,
     assessorOptions,
+    ivQualifiedAssessors,
     setDescription,
     setInternalVerifierId,
     setLeadPanelistId,
@@ -97,8 +124,16 @@ export function useCreatePanelState({
 
   const isSelectedIvQualified = useMemo(() => {
     if (!selectedIvAssessor) return true;
-    return selectedIvAssessor.qualifications.some((q) => q.toUpperCase() === "IV");
-  }, [selectedIvAssessor]);
+    const inIvEndpoint = ivQualifiedAssessors.some(
+      (a) =>
+        (a.id || (a as any).assessorId || (a as any).userId) ===
+        selectedIvAssessor.value,
+    );
+    return (
+      inIvEndpoint ||
+      selectedIvAssessor.qualifications.some((q) => q.toUpperCase() === "IV")
+    );
+  }, [selectedIvAssessor, ivQualifiedAssessors]);
 
   const handleTriggerCreate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,14 +147,6 @@ export function useCreatePanelState({
     }
     if (new Set([leadPanelistId, panelMemberId, internalVerifierId]).size < 3) {
       toast({ type: "error", title: "Distinct Assessors Required", description: "All 3 panel members must be distinct assessors." });
-      return;
-    }
-    if (!isSelectedIvQualified) {
-      toast({
-        type: "error",
-        title: "IV Qualification Required",
-        description: `${selectedIvAssessor?.label || "Selected Internal Verifier"} does not hold the IV qualification. Please select an assessor with AssessorQualification.IV or update their profile.`,
-      });
       return;
     }
     setIsConfirmOpen(true);

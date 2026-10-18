@@ -99,6 +99,13 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
 
   const candidateLoc = useCandidateLocation();
 
+  const selectedSectorId = Form.useWatch("sector", form);
+  const selectedTradeId = Form.useWatch("trade", form);
+  const { data: remoteTrades = [], isLoading: isLoadingTrades } =
+    useGetTradesBySector(selectedSectorId);
+  const { data: tradeDetail, isLoading: isLoadingTradeDetail } =
+    useGetTradeDetail(selectedTradeId);
+
   const queryLocation = React.useMemo(() => {
     return {
       country: filterCountry || candidateLoc.country || undefined,
@@ -107,8 +114,32 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
     };
   }, [filterCountry, filterState, filterLga, candidateLoc]);
 
-  const { data: remoteCentres = [], isLoading: isLoadingCentres } =
+  const { data: allLocationCentres = [], isLoading: isLoadingAllCentres } =
     useGetCentres(queryLocation);
+
+  const { data: tradeFilteredCentres = [], isLoading: isLoadingTradeCentres } =
+    useGetCentres(
+      {
+        ...queryLocation,
+        tradeId: selectedTradeId || undefined,
+      },
+      { enabled: Boolean(selectedTradeId) },
+    );
+
+  const remoteCentres = React.useMemo(() => {
+    const tradeList = Array.isArray(tradeFilteredCentres)
+      ? tradeFilteredCentres
+      : (tradeFilteredCentres as any)?.data || [];
+    if (selectedTradeId && tradeList.length > 0) {
+      return tradeList;
+    }
+    return Array.isArray(allLocationCentres)
+      ? allLocationCentres
+      : (allLocationCentres as any)?.data || [];
+  }, [selectedTradeId, tradeFilteredCentres, allLocationCentres]);
+
+  const isLoadingCentres =
+    isLoadingAllCentres || (Boolean(selectedTradeId) && isLoadingTradeCentres);
 
   const matchingCentres = React.useMemo(() => {
     let list = Array.isArray(remoteCentres)
@@ -179,13 +210,6 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
     setFilterState("");
     setFilterLga("");
   };
-
-  const selectedSectorId = Form.useWatch("sector", form);
-  const selectedTradeId = Form.useWatch("trade", form);
-  const { data: remoteTrades = [], isLoading: isLoadingTrades } =
-    useGetTradesBySector(selectedSectorId);
-  const { data: tradeDetail, isLoading: isLoadingTradeDetail } =
-    useGetTradeDetail(selectedTradeId);
 
   const sectorOptions: SelectOption[] = remoteSectors.map((s) => ({
     label: s.name,
@@ -274,7 +298,7 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
     const tradeObj = remoteTrades.find((t) => t.id === currentValues.trade);
     const sectorObj = remoteSectors.find((s) => s.id === currentValues.sector);
     const centreObj = remoteCentres.find(
-      (c) => c.id === currentValues.assessmentCenter,
+      (c: any) => c.id === currentValues.assessmentCenter,
     );
 
     const resolvedTradeName = tradeObj?.name || currentValues.trade || "";
@@ -302,6 +326,9 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
       dispatch(
         setRPLExperienceTrade({
           qualificationTitle: resolvedTradeName,
+          ...( ("level" in changedValues || "trade" in changedValues)
+            ? { individualUnit: [] }
+            : {}),
         }),
       );
     }
@@ -313,6 +340,8 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
     trade: string;
     level?: string;
   }) => {
+    const appType = assessmentType === "nsq" ? "NSQ" : "RPL";
+
     if (!values.assessmentCenter || !values.sector || !values.trade) {
       toast({
         type: "error",
@@ -322,22 +351,37 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
       return;
     }
 
+    const qLevels =
+      tradeDetail?.activeNosDocument?.qualificationLevels ||
+      (tradeDetail as any)?.qualificationLevels ||
+      [];
+    const selectedLevelStr = values.level || "";
+    const selectedLevelNum = selectedLevelStr ? parseInt(selectedLevelStr, 10) : undefined;
+    const matchedQLevel =
+      qLevels.find(
+        (ql: any) =>
+          String(ql.level) === selectedLevelStr || ql.id === selectedLevelStr,
+      ) ||
+      qLevels.find((ql: any) => ql.level === 3) ||
+      qLevels[0];
+
+    if (appType === "RPL" && !matchedQLevel?.id) {
+      toast({
+        type: "error",
+        title: "Level Required",
+        description: "Please select a qualification level to continue.",
+      });
+      return;
+    }
+
     const tradeObj = remoteTrades.find((t) => t.id === values.trade);
     const tradeName = tradeObj?.name || values.trade;
     const sectorObj = remoteSectors.find((s) => s.id === values.sector);
     const sectorName = sectorObj?.name || values.sector;
     const centreObj = remoteCentres.find(
-      (c) => c.id === values.assessmentCenter,
+      (c: any) => c.id === values.assessmentCenter,
     );
     const centreName = centreObj?.name || values.assessmentCenter;
-
-    const selectedLevelStr = values.level || "";
-    const selectedLevelNum = selectedLevelStr ? parseInt(selectedLevelStr, 10) : undefined;
-    const matchedQLevel = (
-      tradeDetail?.activeNosDocument?.qualificationLevels ||
-      (tradeDetail as any)?.qualificationLevels ||
-      []
-    ).find((ql: any) => String(ql.level) === selectedLevelStr || ql.id === selectedLevelStr);
 
     setIsSubmitting(true);
     dispatch(
@@ -346,8 +390,8 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
         tradeName,
         sectorName,
         centreName,
-        level: selectedLevelStr,
-        levelNumber: selectedLevelNum,
+        level: selectedLevelStr || (matchedQLevel ? String(matchedQLevel.level) : ""),
+        levelNumber: selectedLevelNum ?? matchedQLevel?.level,
         qualificationLevelId: matchedQLevel?.id,
       }),
     );
@@ -356,8 +400,6 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
         qualificationTitle: tradeName,
       }),
     );
-
-    const appType = assessmentType === "nsq" ? "NSQ" : "RPL";
 
     const existingApp = existingApps.find(
       (a) => (a.type || "RPL").toUpperCase() === appType.toUpperCase(),
@@ -395,6 +437,9 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
         centreId: values.assessmentCenter,
         sectorId: values.sector,
         tradeId: values.trade,
+        ...(appType === "RPL" && matchedQLevel?.id
+          ? { qualificationLevelId: matchedQLevel.id }
+          : {}),
         unitIds: [],
       },
       {

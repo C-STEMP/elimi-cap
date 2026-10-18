@@ -350,22 +350,16 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
               : u.status === "in_progress" || u.criteriaPending > 0
                 ? "In Progress"
                 : "Not Started";
+          const remoteMatch = remoteUnits.find((ru) => ru.id === u.id);
           return {
             id: u.id,
             unitNo: u.referenceNumber,
             title: u.title,
             status,
+            structure: remoteMatch?.structure,
           };
         })
-      : remoteUnits && remoteUnits.length > 0
-        ? remoteUnits.map((u, idx) => ({
-            id: u.id,
-            unitNo: u.referenceNumber || `UNIT ${idx + 1}`,
-            title: u.title,
-            status: "Not Started" as const,
-            structure: u.structure,
-          }))
-        : [];
+      : [];
 
   const resolveUnitLabel = (id: string, index: number) => {
     const match =
@@ -921,7 +915,9 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                   ))
                 ) : (
                   <p className="text-xs text-gray-400 font-medium py-2">
-                    Units will appear here once your qualification standard is loaded.
+                    {inductionForm?.submittedAt
+                      ? "Units will appear here once your qualification standard is loaded."
+                      : "Complete and submit your Candidate Induction Form to view your selected qualification units."}
                   </p>
                 )}
               </div>
@@ -1183,10 +1179,11 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                 title: u.title,
                 qualificationLevelId: u.qualificationLevelId,
               }))
-            : unitsList.map((u) => ({
+            : remoteUnits.map((u, idx) => ({
                 id: u.id,
-                unitNo: u.unitNo,
+                unitNo: u.referenceNumber || `UNIT ${idx + 1}`,
                 title: u.title,
+                qualificationLevelId: u.qualificationLevelId,
               }))
         }
         defaultSelectedUnitIds={

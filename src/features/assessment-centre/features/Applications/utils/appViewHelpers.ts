@@ -83,6 +83,13 @@ export function mapInductionItem(item: any): InductionRowData {
     lga: item.lga || undefined,
     streetAddress: item.streetAddress || undefined,
     link: item.link || undefined,
+    candidates: Array.isArray(item.candidates) ? item.candidates : [],
+    candidatesCount:
+      typeof item.candidatesCount === "number"
+        ? item.candidatesCount
+        : Array.isArray(item.candidates)
+          ? item.candidates.length
+          : 0,
   };
 }
 

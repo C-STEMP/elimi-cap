@@ -48,6 +48,7 @@ export interface Unit {
   referenceNumber: string;
   title: string;
   isMandatory: boolean;
+  qualificationLevelId?: string;
   creditValue?: number;
   guidedLearningHours?: number;
   purpose?: string;
@@ -93,9 +94,32 @@ export interface Centre {
   logoAssetId?: string | null;
   status: "pending" | "approved" | "suspended" | "rejected";
   address?: CentreAddress | null;
+  formattedAddress?: string | null;
   logo?: {
+    id?: string;
+    assetId?: string;
+    url?: string | null;
+  } | null;
+  certificateAssetId?: string | null;
+  certificate?: {
+    assetId: string;
+    url?: string | null;
+  } | null;
+  trades?: Array<{
     id: string;
-    url: string;
+    name: string;
+    slug: string;
+  }>;
+}
+
+export interface CatalogueCentreOffering extends Centre {
+  rplPrice?: {
+    amountMinorUnits: string;
+    currency: string;
+  } | null;
+  nsqPrice?: {
+    amountMinorUnits: string;
+    currency: string;
   } | null;
 }
 
@@ -225,6 +249,7 @@ export interface GetCentresParams {
   country?: string;
   state?: string;
   lga?: string;
+  tradeId?: string;
 }
 
 /**
@@ -237,6 +262,7 @@ export async function getCentresApi(params?: GetCentresParams): Promise<Centre[]
   if (params?.country) searchParams.set("country", params.country);
   if (params?.state) searchParams.set("state", params.state);
   if (params?.lga) searchParams.set("lga", params.lga);
+  if (params?.tradeId) searchParams.set("tradeId", params.tradeId);
   const query = searchParams.toString() ? `?${searchParams.toString()}` : "";
 
   try {
@@ -254,6 +280,65 @@ export async function getCentresApi(params?: GetCentresParams): Promise<Centre[]
     }
     throw error;
   }
+}
+
+export interface GetCatalogueCentreOfferingsParams {
+  cursor?: string;
+  limit?: number;
+  q?: string;
+  tradeId?: string;
+}
+
+/**
+ * Catalogue: List centre offerings with optional ?tradeId= filter
+ */
+export async function getCatalogueCentreOfferingsApi(
+  params?: GetCatalogueCentreOfferingsParams,
+): Promise<CatalogueCentreOffering[]> {
+  const searchParams = new URLSearchParams();
+  if (params?.cursor) searchParams.set("cursor", params.cursor);
+  if (params?.limit) searchParams.set("limit", String(params.limit));
+  if (params?.q) searchParams.set("q", params.q);
+  if (params?.tradeId) searchParams.set("tradeId", params.tradeId);
+  const query = searchParams.toString() ? `?${searchParams.toString()}` : "";
+
+  const res = await capFetch<
+    CatalogueCentreOffering[] | { data: CatalogueCentreOffering[]; meta?: unknown }
+  >(`/catalogue/centre-offerings${query}`, {
+    method: "GET",
+  });
+  return Array.isArray(res) ? res : (res as any)?.data || [];
+}
+
+export interface GetAdminCentresParams {
+  cursor?: string;
+  limit?: number;
+  status?: "pending" | "approved" | "suspended" | "rejected";
+  q?: string;
+  tradeId?: string;
+}
+
+/**
+ * Admin: List centres with optional ?tradeId= filter
+ */
+export async function getAdminCentresApi(
+  params?: GetAdminCentresParams,
+): Promise<Centre[]> {
+  const searchParams = new URLSearchParams();
+  if (params?.cursor) searchParams.set("cursor", params.cursor);
+  if (params?.limit) searchParams.set("limit", String(params.limit));
+  if (params?.status) searchParams.set("status", params.status);
+  if (params?.q) searchParams.set("q", params.q);
+  if (params?.tradeId) searchParams.set("tradeId", params.tradeId);
+  const query = searchParams.toString() ? `?${searchParams.toString()}` : "";
+
+  const res = await capFetch<Centre[] | { data: Centre[]; meta?: unknown }>(
+    `/admin/centres${query}`,
+    {
+      method: "GET",
+    },
+  );
+  return Array.isArray(res) ? res : (res as any)?.data || [];
 }
 
 /**
