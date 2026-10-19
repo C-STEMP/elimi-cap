@@ -27,6 +27,9 @@ export interface StartApplicationState {
   tradeName?: string;
   sectorName?: string;
   centreName?: string;
+  level?: string;
+  levelNumber?: number;
+  qualificationLevelId?: string;
 }
 
 export interface CentreInformationState {
@@ -43,6 +46,10 @@ export interface CentreInformationState {
   nameOnAccount: string;
   logoAssetId?: string;
   logoPreview?: string;
+  certificateAssetId?: string;
+  certificateName?: string;
+  certificateUrl?: string;
+  tradeIds?: string[];
 }
 
 export interface CentrePersonalInfoState {
@@ -218,6 +225,10 @@ const initialState: OnboardingState = {
     nameOnAccount: "",
     logoAssetId: "",
     logoPreview: "",
+    certificateAssetId: "",
+    certificateName: "",
+    certificateUrl: "",
+    tradeIds: [],
   },
   centrePersonalInfo: {
     firstName: "",

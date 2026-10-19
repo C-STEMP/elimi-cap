@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
-import { FiArrowLeft, FiArrowRight, FiCheck, FiEdit2 } from "react-icons/fi";
+import { FiArrowLeft, FiArrowRight, FiCheck, FiEdit2, FiEdit3 } from "react-icons/fi";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -15,7 +15,12 @@ import { saveOnboardedStatus } from "@/src/lib/auth-storage";
 
 import { StatusModal } from "@/components/status-modal";
 
-import { useCandidateProfile } from "@/src/features/shared/onboarding/hooks";
+import {
+  useCandidateProfile,
+  useCandidateProfileSignature,
+} from "@/src/features/shared/onboarding/hooks";
+import { useResolveAssets } from "@/src/features/shared/storage/hooks";
+import { UploadSignatureModal } from "@/src/features/candidate/features/Application/components/UploadSignatureModal";
 import { markVerified } from "@/store/slices/authSlice";
 import { setPersonalInfo, setRPLExperienceTrade } from "@/store/slices/onboardingSlice";
 import { useRplApplicationSubmission } from "../hooks/useRplApplicationSubmission";
@@ -36,6 +41,41 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
   const { toast } = useToast();
   const { getOnboarding, submitOnboarding } = useOnboarding();
   const { data: candidateProfile } = useCandidateProfile(true);
+  const { data: profileSignature } = useCandidateProfileSignature(true);
+
+  const [signatureAppended, setSignatureAppended] = useState(false);
+  const [appendedSignatureUrl, setAppendedSignatureUrl] = useState<string | null>(null);
+  const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
+
+  const signatureAssetsToResolve = React.useMemo(() => {
+    return profileSignature?.assetId && !profileSignature.url
+      ? [profileSignature.assetId]
+      : [];
+  }, [profileSignature?.assetId, profileSignature?.url]);
+
+  const { data: resolvedSignatureAssets } = useResolveAssets(signatureAssetsToResolve);
+
+  const resolvedSignatureUrl =
+    appendedSignatureUrl ||
+    profileSignature?.url ||
+    (profileSignature?.assetId && resolvedSignatureAssets
+      ? resolvedSignatureAssets.find((a) => a.assetId === profileSignature.assetId)?.url
+      : null);
+
+  const isSignatureAppended = Boolean(signatureAppended || profileSignature?.assetId);
+
+  const handleAppendSignature = () => {
+    if (profileSignature?.assetId && !signatureAppended) {
+      setSignatureAppended(true);
+      toast({
+        type: "success",
+        title: "Signature Appended",
+        description: "Your saved signature has been appended.",
+      });
+      return;
+    }
+    setIsSignatureModalOpen(true);
+  };
 
   const user = useAppSelector((s) => s.auth.user);
   const personalInfo = useAppSelector((s) => s.onboarding.personalInfo);
@@ -440,6 +480,42 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
             </span>
           </label>
         </div>
+
+        {/* Append Signature */}
+        <div className="flex flex-col gap-2 mt-4">
+          <label className="text-text-dark font-semibold text-xs xl:text-sm leading-[1.4] select-none">
+            Append Signature<span className="text-primary-solid ml-0.5">*</span>
+          </label>
+          <div
+            onClick={handleAppendSignature}
+            className={`w-full min-h-14 rounded-xl border-2 border-dashed flex items-center justify-center gap-2 text-xs sm:text-sm font-bold transition-all cursor-pointer select-none py-3 px-4 ${
+              signatureAppended
+                ? "bg-amber-50/70 border-amber-400 text-amber-800"
+                : "bg-[#fffaf0] border-[#fbab2a]/40 text-[#d98200] hover:bg-[#fff5e0] hover:border-[#fbab2a]"
+            }`}
+          >
+            {signatureAppended ? (
+              <div className="flex items-center gap-3">
+                {resolvedSignatureUrl && (
+                  <img
+                    src={resolvedSignatureUrl}
+                    alt="Signature"
+                    className="h-9 max-w-[120px] object-contain border border-amber-200/80 rounded-md bg-white p-1"
+                  />
+                )}
+                <div className="flex items-center gap-1.5 text-amber-800">
+                  <FiEdit3 className="w-4 h-4" />
+                  <span>Signature Appended (Click to update)</span>
+                </div>
+              </div>
+            ) : (
+              <>
+                <FiEdit3 className="w-4 h-4" />
+                <span>Append Signature</span>
+              </>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Bottom Actions */}
@@ -519,6 +595,18 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
         variant="application-submitted"
         onClose={() => setShowSubmitModal(false)}
         onAction={() => router.push("/dashboard?status=submitted")}
+      />
+
+      <UploadSignatureModal
+        isOpen={isSignatureModalOpen}
+        onClose={() => setIsSignatureModalOpen(false)}
+        onUploadSuccess={(sig) => {
+          setSignatureAppended(true);
+          if (sig?.url) {
+            setAppendedSignatureUrl(sig.url);
+          }
+          setIsSignatureModalOpen(false);
+        }}
       />
     </motion.div>
   );

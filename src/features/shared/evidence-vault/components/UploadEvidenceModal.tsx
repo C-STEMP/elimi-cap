@@ -2,10 +2,37 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FiX, FiUpload, FiFileText, FiCheck, FiTrash2 } from "react-icons/fi";
+import {
+  FiX,
+  FiUpload,
+  FiFileText,
+  FiCheck,
+  FiTrash2,
+  FiImage,
+  FiVideo,
+} from "react-icons/fi";
 import { Input } from "@/src/components/ui/input";
 import { Select } from "@/src/components/ui/select";
 import { Button } from "@/src/components/ui/button";
+
+function renderFileTypeIcon(mimeType?: string, name?: string) {
+  const mime = mimeType?.toLowerCase() || "";
+  const ext = (name?.split(".").pop() || "").toLowerCase();
+
+  if (
+    mime.startsWith("image/") ||
+    ["jpg", "jpeg", "png", "gif", "webp", "svg", "bmp"].includes(ext)
+  ) {
+    return <FiImage className="w-5 h-5 text-primary" />;
+  }
+  if (
+    mime.startsWith("video/") ||
+    ["mp4", "mov", "avi", "mkv", "webm"].includes(ext)
+  ) {
+    return <FiVideo className="w-5 h-5 text-primary" />;
+  }
+  return <FiFileText className="w-5 h-5 text-primary" />;
+}
 
 import { useGetEvidenceTypesByTrade } from "@/src/features/shared/reference/hooks";
 import { useModalDraft } from "@/src/lib/hooks/usePersistentModal";
@@ -15,6 +42,12 @@ export interface SelectedFileType {
   name: string;
   size: string;
   completed: boolean;
+}
+
+export interface SelectedFileItem {
+  file: File;
+  name: string;
+  size: string;
 }
 
 const EVIDENCE_TYPE_LABELS: Record<string, string> = {
@@ -42,13 +75,13 @@ interface UploadEvidenceModalProps {
   isOpen: boolean;
   onClose: () => void;
   onUploadSubmit: (
-    docName: string,
+    items: Array<{ file: File; docName: string }>,
     evidenceType: string,
-    file: File | null,
   ) => Promise<void> | void;
   isUploading?: boolean;
   tradeId?: string;
   evidenceTypes?: string[];
+  initialDocName?: string;
 }
 
 export const UploadEvidenceModal: React.FC<UploadEvidenceModalProps> = ({
@@ -58,6 +91,7 @@ export const UploadEvidenceModal: React.FC<UploadEvidenceModalProps> = ({
   isUploading = false,
   tradeId = "",
   evidenceTypes,
+  initialDocName,
 }) => {
   const { data: tradeEvidenceTypes } = useGetEvidenceTypesByTrade(tradeId);
 
@@ -83,14 +117,18 @@ export const UploadEvidenceModal: React.FC<UploadEvidenceModalProps> = ({
   const defaultType = evidenceTypeOptions[0]?.value || "PS";
   const [docName, setDocName] = useModalDraft(UPLOAD_EVIDENCE_MODAL, "docName", "");
   const [evidenceType, setEvidenceType] = useModalDraft(UPLOAD_EVIDENCE_MODAL, "evidenceType", defaultType);
-  const [realFile, setRealFile] = useState<File | null>(null);
-  const [selectedFile, setSelectedFile] = useState<SelectedFileType | null>(
-    null,
-  );
+  const [selectedFiles, setSelectedFiles] = useState<SelectedFileItem[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
   const [errors, setErrors] = useState<{
     file?: string;
     docName?: string;
   }>({});
+
+  React.useEffect(() => {
+    if (isOpen && initialDocName) {
+      setDocName(initialDocName);
+    }
+  }, [isOpen, initialDocName, setDocName]);
 
   React.useEffect(() => {
     if (
@@ -109,53 +147,110 @@ export const UploadEvidenceModal: React.FC<UploadEvidenceModalProps> = ({
     fileInputRef.current?.click();
   };
 
-  const handleRealFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Validate file size (5MB max)
-      const maxSize = 5 * 1024 * 1024;
-      if (file.size > maxSize) {
-        setErrors({ file: "File size must be less than 5MB" });
-        e.target.value = "";
-        return;
-      }
+  const addFiles = (incomingFiles: File[]) => {
+    if (!incomingFiles.length) return;
 
+    const maxSize = 5 * 1024 * 1024;
+    const oversized = incomingFiles.filter((f) => f.size > maxSize);
+    if (oversized.length > 0) {
+      setErrors({
+        file:
+          oversized.length === 1
+            ? `"${oversized[0].name}" exceeds the 5MB size limit.`
+            : `${oversized.length} files exceed the 5MB size limit.`,
+      });
+      return;
+    }
+
+    const newItems: SelectedFileItem[] = incomingFiles.map((file) => {
       const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
       const sizeStr =
         file.size > 1024 * 1024
           ? `${sizeMb} mb`
           : `${Math.round(file.size / 1024)} kb`;
-      setRealFile(file);
-      setSelectedFile({
+      return {
+        file,
         name: file.name,
         size: sizeStr,
-        completed: true,
-      });
-      if (!docName) {
-        setDocName(file.name.replace(/\.[^/.]+$/, ""));
+      };
+    });
+
+    setSelectedFiles((prev) => {
+      const existing = new Set(
+        prev.map((p) => `${p.file.name}_${p.file.size}_${p.file.lastModified}`),
+      );
+      const filtered = newItems.filter(
+        (n) => !existing.has(`${n.file.name}_${n.file.size}_${n.file.lastModified}`),
+      );
+      const combined = [...prev, ...filtered];
+      if (combined.length === 1 && !docName) {
+        setDocName(combined[0].file.name.replace(/\.[^/.]+$/, ""));
       }
-      setErrors({});
+      return combined;
+    });
+
+    setErrors({});
+  };
+
+  const handleRealFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files ? Array.from(e.target.files) : [];
+    if (files.length > 0) {
+      addFiles(files);
       e.target.value = "";
     }
   };
 
-  const handleSubmit = async () => {
-    const newErrors: { file?: string; docName?: string } = {};
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
 
-    if (!realFile && !selectedFile) {
-      newErrors.file = "Please select a file to upload";
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      addFiles(Array.from(e.dataTransfer.files));
     }
+  };
 
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
+  const handleRemoveFile = (index: number) => {
+    setSelectedFiles((prev) => {
+      const next = prev.filter((_, i) => i !== index);
+      if (next.length === 1 && !docName) {
+        setDocName(next[0].file.name.replace(/\.[^/.]+$/, ""));
+      } else if (next.length === 0) {
+        setDocName("");
+      }
+      return next;
+    });
+  };
+
+  const handleSubmit = async () => {
+    if (selectedFiles.length === 0) {
+      setErrors({ file: "Please select at least one file to upload" });
       return;
     }
 
-    await onUploadSubmit(docName, evidenceType, realFile);
+    const items = selectedFiles.map((item) => ({
+      file: item.file,
+      docName:
+        selectedFiles.length === 1 && docName.trim()
+          ? docName.trim()
+          : item.file.name.replace(/\.[^/.]+$/, ""),
+    }));
+
+    await onUploadSubmit(items, evidenceType);
     setDocName("");
     setEvidenceType(defaultType);
-    setRealFile(null);
-    setSelectedFile(null);
+    setSelectedFiles([]);
     setErrors({});
   };
 
@@ -163,8 +258,7 @@ export const UploadEvidenceModal: React.FC<UploadEvidenceModalProps> = ({
     if (isUploading) return;
     setDocName("");
     setEvidenceType(defaultType);
-    setRealFile(null);
-    setSelectedFile(null);
+    setSelectedFiles([]);
     setErrors({});
     onClose();
   };
@@ -196,12 +290,14 @@ export const UploadEvidenceModal: React.FC<UploadEvidenceModalProps> = ({
           </p>
 
           <div className="space-y-4 text-left">
-            <Input
-              label="Document Name (optional)"
-              placeholder="Type The Document Name Here"
-              value={docName}
-              onChange={(e) => setDocName(e.target.value)}
-            />
+            {selectedFiles.length <= 1 && (
+              <Input
+                label="Document Name (optional)"
+                placeholder="Type The Document Name Here"
+                value={docName}
+                onChange={(e) => setDocName(e.target.value)}
+              />
+            )}
 
             <Select
               label="Evidence Type"
@@ -216,6 +312,7 @@ export const UploadEvidenceModal: React.FC<UploadEvidenceModalProps> = ({
               ref={fileInputRef}
               onChange={handleRealFileChange}
               accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.mp4,.webp,image/*,application/pdf"
+              multiple
               className="hidden"
             />
 
@@ -225,20 +322,25 @@ export const UploadEvidenceModal: React.FC<UploadEvidenceModalProps> = ({
               </label>
               <div
                 onClick={handleSelectFileClick}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
                 className={`border-2 border-dashed ${
                   errors.file
                     ? "border-red-400 bg-red-50"
-                    : "border-[#F4B4C0] bg-[#FFF5F7]"
+                    : isDragging
+                      ? "border-[#BE185D] bg-[#FFF0F4]"
+                      : "border-[#F4B4C0] bg-[#FFF5F7]"
                 } hover:bg-[#FFEBF0] rounded-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-colors`}
               >
                 <div className="w-8 h-8 rounded-full flex items-center justify-center text-[#BE185D] mb-2">
                   <FiUpload className="w-6 h-6 stroke-2" />
                 </div>
                 <span className="font-semibold text-xs text-[#BE185D] mb-1">
-                  Upload Evidence
+                  {selectedFiles.length > 0 ? "Add More Files" : "Upload Evidence"}
                 </span>
                 <span className="text-[11px] text-gray-400">
-                  JPG, PNG, PDF, Docs, Mp4, or WebP (Max 5MB)
+                  JPG, PNG, PDF, Docs, Mp4, or WebP (Max 5MB each)
                 </span>
               </div>
               {errors.file && (
@@ -246,42 +348,58 @@ export const UploadEvidenceModal: React.FC<UploadEvidenceModalProps> = ({
               )}
             </div>
 
-            {selectedFile && (
-              <motion.div
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-input-bg rounded-2xl p-4 flex items-center justify-between border border-gray-200/50"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-[#fdf2f4] text-[#a31d38] flex items-center justify-center font-bold text-[10px] shrink-0 border border-[#fce3e7]">
-                    <FiFileText className="w-5 h-5" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-black font-bold text-xs">
-                      {selectedFile.name}
-                    </span>
-                    <div className="flex items-center gap-1.5 text-[11px] text-gray-400">
-                      <span>{selectedFile.size}</span>
-                      <span>•</span>
-                      <span className="text-[#047857] font-semibold flex items-center gap-1">
-                        <FiCheck className="w-3.5 h-3.5 stroke-3 text-[#047857]" />
-                        Completed
-                      </span>
-                    </div>
-                  </div>
+            {selectedFiles.length > 0 && (
+              <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
+                <div className="flex items-center justify-between text-xs text-gray-500 font-medium px-1">
+                  <span>Selected Files ({selectedFiles.length})</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedFiles([]);
+                      setDocName("");
+                    }}
+                    className="text-red-500 hover:text-red-700 cursor-pointer font-medium"
+                  >
+                    Clear All
+                  </button>
                 </div>
+                {selectedFiles.map((item, idx) => (
+                  <motion.div
+                    key={`${item.name}-${idx}`}
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-input-bg rounded-2xl p-3 sm:p-4 flex items-center justify-between border border-gray-200/50 gap-3"
+                  >
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="w-9 h-9 rounded-xl bg-[#fdf2f4] text-[#a31d38] flex items-center justify-center font-bold text-[10px] shrink-0 border border-[#fce3e7]">
+                        {renderFileTypeIcon(item.file.type, item.file.name)}
+                      </div>
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <span className="text-black font-bold text-xs truncate" title={item.name}>
+                          {item.name}
+                        </span>
+                        <div className="flex items-center gap-1.5 text-[11px] text-gray-400">
+                          <span>{item.size}</span>
+                          <span>•</span>
+                          <span className="text-[#047857] font-semibold flex items-center gap-1">
+                            <FiCheck className="w-3.5 h-3.5 stroke-3 text-[#047857]" />
+                            Ready
+                          </span>
+                        </div>
+                      </div>
+                    </div>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedFile(null);
-                    setRealFile(null);
-                  }}
-                  className="text-gray-400 hover:text-gray-700 p-1 cursor-pointer"
-                >
-                  <FiTrash2 className="w-4 h-4" />
-                </button>
-              </motion.div>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveFile(idx)}
+                      className="text-gray-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition-colors cursor-pointer shrink-0"
+                      aria-label={`Remove ${item.name}`}
+                    >
+                      <FiTrash2 className="w-4 h-4" />
+                    </button>
+                  </motion.div>
+                ))}
+              </div>
             )}
 
             <Button
@@ -292,7 +410,11 @@ export const UploadEvidenceModal: React.FC<UploadEvidenceModalProps> = ({
               disabled={isUploading}
               className="w-full bg-[#fbab2a] hover:bg-[#e89b1f] text-white font-bold text-sm sm:text-base h-12.5 rounded-xl mt-6 cursor-pointer"
             >
-              {isUploading ? "Uploading..." : "Upload"}
+              {isUploading
+                ? "Uploading..."
+                : selectedFiles.length > 1
+                  ? `Upload ${selectedFiles.length} Evidences`
+                  : "Upload"}
             </Button>
           </div>
         </motion.div>

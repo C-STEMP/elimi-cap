@@ -10,6 +10,7 @@ import { ApplicationsStatsCards } from "./ApplicationsStatsCards";
 interface ApplicationsHeaderProps {
   selectedCandidateName: string | null;
   selectedInterviewTitle?: string | null;
+  selectedInductionTitle?: string | null;
   selectedUnitNumber?: string | null;
   selectedTradeName?: string | null;
   showSelfAssessmentForm: boolean;
@@ -23,12 +24,14 @@ interface ApplicationsHeaderProps {
   isNsqIvApproved?: boolean;
   onBackToList: () => void;
   onBackFromInterview?: () => void;
+  onBackFromInduction?: () => void;
   onBackFromUnit?: () => void;
   onBackFromSelfAssessment: () => void;
   onBackFromEvidenceVault: () => void;
   onBackFromCandidateForm: () => void;
   onAcceptApplication?: () => void;
   onScheduleInterview?: () => void;
+  onScheduleInduction?: () => void;
   onCreateInterview?: () => void;
   onCreatePanel?: () => void;
   activeFilterTab?: string;
@@ -39,10 +42,12 @@ export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = (props) => 
   const {
     selectedCandidateName,
     selectedInterviewTitle,
+    selectedInductionTitle,
     showSelfAssessmentForm,
     showEvidenceVault,
     showCandidateForm,
     onScheduleInterview,
+    onScheduleInduction,
     onCreateInterview,
     onCreatePanel,
     activeFilterTab,
@@ -71,6 +76,11 @@ export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = (props) => 
 
   // Mobile collapses the header actions into one "Actions" menu.
   const mobileActions = [
+    onScheduleInduction && {
+      label: "Schedule Induction",
+      icon: <FiCalendar className="w-4 h-4 text-[#F59E0B]" />,
+      onClick: onScheduleInduction,
+    },
     onScheduleInterview && {
       label: "Schedule Interview",
       icon: <FiCalendar className="w-4 h-4 text-[#F59E0B]" />,
@@ -104,6 +114,7 @@ export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = (props) => 
 
   const isDetailView = Boolean(
     selectedInterviewTitle ||
+      selectedInductionTitle ||
       (selectedCandidateName &&
         (showSelfAssessmentForm || showEvidenceVault || showCandidateForm)) ||
       selectedCandidateName,
@@ -161,6 +172,17 @@ export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = (props) => 
         )}
 
         <div className="hidden sm:flex items-center gap-2.5 sm:gap-3 flex-wrap">
+          {onScheduleInduction && (
+            <button
+              type="button"
+              onClick={onScheduleInduction}
+              className="bg-[#8B182E]/90 hover:bg-[#8B182E] border border-[#F59E0B] text-[#F59E0B] font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-xs"
+            >
+              <span>Schedule Induction</span>
+              <FiCalendar className="w-4 h-4 text-[#F59E0B]" />
+            </button>
+          )}
+
           {onScheduleInterview && (
             <button
               type="button"

@@ -6,8 +6,12 @@ import { FiArrowLeft, FiCheckCircle, FiClock, FiFileText, FiEdit3 } from "react-
 import { ASSETS_URL } from "@/src/assets";
 import { FormHeaderActions } from "../form/FormHeaderActions";
 import { CandidateInterviewFormModal } from "@/src/features/candidate/features/Application/components/CandidateInterviewFormModal";
-import type { InterviewForm } from "@/src/features/shared/applications/api/types";
+import type {
+  ApplicationAssessmentMapping,
+  InterviewForm,
+} from "@/src/features/shared/applications/api/types";
 import {
+  useGetApplicationAssessmentMapping,
   useUpdateInterviewForm,
   useGetInterviewPanel,
 } from "@/src/features/shared/applications/hooks";
@@ -64,12 +68,12 @@ const FORM_TITLES: Record<string, { title: string; subtitle: string; code: strin
   },
   assessment_mapping: {
     title: "RPL Assessment Grid / Mapping Form",
-    subtitle: "Matrix linking candidate evidence artifacts to National Occupational Standards and Performance Criteria.",
+    subtitle: "Read-only matrix assembling candidate personal details and National Occupational Standards performance criteria.",
     code: "NBTE/RPL/AGM-04",
   },
   assessment_grid: {
     title: "RPL Assessment Grid / Mapping Form",
-    subtitle: "Matrix linking candidate evidence artifacts to National Occupational Standards and Performance Criteria.",
+    subtitle: "Read-only matrix assembling candidate personal details and National Occupational Standards performance criteria.",
     code: "NBTE/RPL/AGM-04",
   },
 };
@@ -109,6 +113,16 @@ export const AssessorAssessmentFormDocumentView: React.FC<
   React.useEffect(() => {
     setFormData(initialFormData);
   }, [initialFormData]);
+
+  const isAssessmentMapping =
+    formId === "assessment_mapping" ||
+    formId === "assessment_grid" ||
+    FORM_BACKEND_MAP[formId] === "assessment_grid";
+
+  const { data: mappingData, isLoading: isLoadingMapping } =
+    useGetApplicationAssessmentMapping(applicationId || "", {
+      enabled: isAssessmentMapping && Boolean(applicationId),
+    });
 
   const { data: interviewPanel } = useGetInterviewPanel(applicationId || "");
   const updateFormMutation = useUpdateInterviewForm(applicationId || "");
@@ -170,9 +184,13 @@ export const AssessorAssessmentFormDocumentView: React.FC<
   const isMatchIV = Boolean(ivMember && isMemberMatch(ivMember));
   const isMatchPanelMember = Boolean(panelMember && isMemberMatch(panelMember));
 
-  const canSignLead = isAssessorUser && isInterviewStage && !isCandidateSigned && !isAssessorSigned && (
-    leadMember ? isMatchLead : true
-  );
+  const canSignLead =
+    !isAssessmentMapping &&
+    isAssessorUser &&
+    isInterviewStage &&
+    !isCandidateSigned &&
+    !isAssessorSigned &&
+    isMatchLead;
 
   const canSignPanelMember = isAssessorUser && isInterviewStage && !isCandidateSigned && !isAssessorSigned && (
     panelMember ? isMatchPanelMember : (!isMatchLead && !isMatchIV)
@@ -268,8 +286,15 @@ export const AssessorAssessmentFormDocumentView: React.FC<
     formId === "interview_record" ||
     FORM_BACKEND_MAP[formId] === "records";
   const meta = FORM_TITLES[formId] || FORM_TITLES.records;
+
+  const pd = (mappingData?.personalDetails || {}) as Record<string, any>;
+  const pdFullName = [pd.firstName, pd.middleName, pd.lastName]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+
   const candidateFullName =
-    formData?.candidateFullName || candidateName || "Candidate";
+    pdFullName || formData?.candidateFullName || candidateName || "Candidate";
   const assessorName =
     formData?.assessorName || formData?.interviewerNames || "Assessor";
   const unitTitleCode =
@@ -305,7 +330,7 @@ export const AssessorAssessmentFormDocumentView: React.FC<
         </button>
 
         <div className="flex items-center gap-2 sm:gap-3 shrink-0 flex-wrap justify-end">
-          {isCandidate && !isCandidateSigned && isInterviewStage && (
+          {!isAssessmentMapping && isCandidate && !isCandidateSigned && isInterviewStage && (
             <button
               type="button"
               onClick={() => setIsCandidateSignModalOpen(true)}
@@ -353,103 +378,175 @@ export const AssessorAssessmentFormDocumentView: React.FC<
         {/* Section 1: Particulars */}
         <div className="flex flex-col gap-3">
           <h3 className="text-[11px] font-bold text-neutral-primary uppercase tracking-widest border-b border-gray-100 pb-2">
-            Assessment Information & Particulars
+            {isAssessmentMapping
+              ? "Candidate Personal Details"
+              : "Assessment Information & Particulars"}
           </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 bg-[#F8F9FA] rounded-2xl p-4 border border-gray-100 text-xs">
-            <div>
-              <span className="font-semibold text-neutral-secondary block mb-0.5">Candidate Name:</span>
-              <span className="font-bold text-neutral-primary text-sm">{candidateFullName}</span>
+          {isAssessmentMapping ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 bg-[#F8F9FA] rounded-2xl p-4 border border-gray-100 text-xs">
+              <div>
+                <span className="font-semibold text-neutral-secondary block mb-0.5">Candidate Name:</span>
+                <span className="font-bold text-neutral-primary text-sm">{candidateFullName}</span>
+              </div>
+              {applicationTrade && (
+                <div>
+                  <span className="font-semibold text-neutral-secondary block mb-0.5">Trade / Occupation:</span>
+                  <span className="font-bold text-neutral-primary text-sm">{applicationTrade}</span>
+                </div>
+              )}
+              {(pd.email || pd.emailAddress) && (
+                <div>
+                  <span className="font-semibold text-neutral-secondary block mb-0.5">Email:</span>
+                  <span className="font-medium text-neutral-primary">{pd.email || pd.emailAddress}</span>
+                </div>
+              )}
+              {(pd.phoneNumber || pd.phone) && (
+                <div>
+                  <span className="font-semibold text-neutral-secondary block mb-0.5">Phone Number:</span>
+                  <span className="font-medium text-neutral-primary">
+                    {typeof pd.phoneNumber === "object"
+                      ? `${pd.phoneNumber.countryCode || ""} ${pd.phoneNumber.number || ""}`.trim()
+                      : pd.phoneNumber || pd.phone}
+                  </span>
+                </div>
+              )}
+              {pd.gender && (
+                <div>
+                  <span className="font-semibold text-neutral-secondary block mb-0.5">Gender:</span>
+                  <span className="font-medium text-neutral-primary">{pd.gender}</span>
+                </div>
+              )}
+              {(pd.dateOfBirth || pd.dob) && (
+                <div>
+                  <span className="font-semibold text-neutral-secondary block mb-0.5">Date of Birth:</span>
+                  <span className="font-medium text-neutral-primary">{pd.dateOfBirth || pd.dob}</span>
+                </div>
+              )}
+              {pd.nationality && (
+                <div>
+                  <span className="font-semibold text-neutral-secondary block mb-0.5">Nationality:</span>
+                  <span className="font-medium text-neutral-primary">{pd.nationality}</span>
+                </div>
+              )}
+              {(pd.stateOfResidence || pd.state) && (
+                <div>
+                  <span className="font-semibold text-neutral-secondary block mb-0.5">State of Residence:</span>
+                  <span className="font-medium text-neutral-primary">{pd.stateOfResidence || pd.state}</span>
+                </div>
+              )}
+              {(pd.localGovernment || pd.lga) && (
+                <div>
+                  <span className="font-semibold text-neutral-secondary block mb-0.5">Local Government:</span>
+                  <span className="font-medium text-neutral-primary">{pd.localGovernment || pd.lga}</span>
+                </div>
+              )}
+              {(pd.address || pd.residentialAddress || pd.streetAddress) && (
+                <div className="sm:col-span-2">
+                  <span className="font-semibold text-neutral-secondary block mb-0.5">Residential Address:</span>
+                  <span className="font-medium text-neutral-primary">
+                    {pd.address || pd.residentialAddress || pd.streetAddress}
+                  </span>
+                </div>
+              )}
             </div>
-            <div>
-              <span className="font-semibold text-neutral-secondary block mb-0.5">Assessor / Interviewer:</span>
-              <span className="font-bold text-neutral-primary text-sm">{assessorName}</span>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 bg-[#F8F9FA] rounded-2xl p-4 border border-gray-100 text-xs">
+              <div>
+                <span className="font-semibold text-neutral-secondary block mb-0.5">Candidate Name:</span>
+                <span className="font-bold text-neutral-primary text-sm">{candidateFullName}</span>
+              </div>
+              <div>
+                <span className="font-semibold text-neutral-secondary block mb-0.5">Assessor / Interviewer:</span>
+                <span className="font-bold text-neutral-primary text-sm">{assessorName}</span>
+              </div>
+              <div>
+                <span className="font-semibold text-neutral-secondary block mb-0.5">Unit / Level:</span>
+                <span className="font-bold text-neutral-primary text-sm">{unitTitleCode}</span>
+              </div>
+              <div>
+                <span className="font-semibold text-neutral-secondary block mb-0.5">Assessment Date:</span>
+                <span className="font-medium text-neutral-primary">{dateStr}</span>
+              </div>
+              <div className="sm:col-span-2">
+                <span className="font-semibold text-neutral-secondary block mb-0.5">Location / Facility / Workplace:</span>
+                <span className="font-medium text-neutral-primary">{locationStr}</span>
+              </div>
             </div>
-            <div>
-              <span className="font-semibold text-neutral-secondary block mb-0.5">Unit / Level:</span>
-              <span className="font-bold text-neutral-primary text-sm">{unitTitleCode}</span>
-            </div>
-            <div>
-              <span className="font-semibold text-neutral-secondary block mb-0.5">Assessment Date:</span>
-              <span className="font-medium text-neutral-primary">{dateStr}</span>
-            </div>
-            <div className="sm:col-span-2">
-              <span className="font-semibold text-neutral-secondary block mb-0.5">Location / Facility / Workplace:</span>
-              <span className="font-medium text-neutral-primary">{locationStr}</span>
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Section 2: Form Content */}
-        {renderFormContent(formId, formData)}
+        {renderFormContent(formId, formData, mappingData, isLoadingMapping)}
 
         {/* Section 3: Signatures */}
-        <div className="flex flex-col gap-3 pt-4 border-t border-gray-100">
-          <h3 className="text-[11px] font-bold text-neutral-primary uppercase tracking-widest border-b border-gray-100 pb-2">
-            Signatures & Verification
-          </h3>
-          {/* Section 3: Signatures & Verification */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Lead Panelist / Assessor */}
-            <div className="bg-[#F8F9FA] rounded-2xl p-4 border border-gray-100 flex flex-col gap-2">
-              <span className="text-[11px] font-semibold text-neutral-secondary">
-                {isInterviewRecord ? "Lead Panelist:" : "Assessor:"}
-              </span>
-              {isAssessorSigned ? (
-                <div className="flex items-center gap-2 text-emerald-700 font-bold text-xs bg-emerald-50 border border-emerald-200 px-3 py-2 rounded-xl">
-                  <FiCheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                  <span>
-                    Signed
-                    {formData?.leadPanelistName ? ` by ${formData.leadPanelistName}` : formData?.assessorName ? ` by ${formData.assessorName}` : assessorName ? ` by ${assessorName}` : ""}
-                    {formData?.leadPanelistSignedAt || formData?.assessorSignedAt || formData?.submittedAt || formRecord?.candidateSignedAt ? ` · ${new Date(formData?.leadPanelistSignedAt || formData?.assessorSignedAt || formData?.submittedAt || formRecord?.candidateSignedAt || "").toLocaleDateString("en-GB")}` : ""}
-                  </span>
-                </div>
-              ) : canSignLead ? (
-                <button
-                  type="button"
-                  disabled={Boolean(isSigningRole)}
-                  onClick={() => handleSignAsRole(isInterviewRecord ? "lead" : "assessor")}
-                  className="h-9 bg-[#FFF8EB] border border-[#FBAB2A] hover:bg-[#FDEED5] text-[#FBAB2A] font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
-                >
-                  <FiEdit3 className="w-3.5 h-3.5" />
-                  {isSigningRole ? "Signing..." : isInterviewRecord ? "Sign as Lead Panelist" : "Sign as Assessor"}
-                </button>
-              ) : (
-                <div className="flex items-center gap-2 text-amber-700 font-semibold text-xs bg-amber-50 border border-amber-200 px-3 py-2 rounded-xl">
-                  <FiClock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                  <span>Pending Signature</span>
-                </div>
-              )}
-            </div>
+        {!isAssessmentMapping && (
+          <div className="flex flex-col gap-3 pt-4 border-t border-gray-100">
+            <h3 className="text-[11px] font-bold text-neutral-primary uppercase tracking-widest border-b border-gray-100 pb-2">
+              Signatures & Verification
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Lead Panelist / Assessor */}
+              <div className="bg-[#F8F9FA] rounded-2xl p-4 border border-gray-100 flex flex-col gap-2">
+                <span className="text-[11px] font-semibold text-neutral-secondary">
+                  {isInterviewRecord ? "Lead Panelist:" : "Assessor:"}
+                </span>
+                {isAssessorSigned ? (
+                  <div className="flex items-center gap-2 text-emerald-700 font-bold text-xs bg-emerald-50 border border-emerald-200 px-3 py-2 rounded-xl">
+                    <FiCheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span>
+                      Signed
+                      {formData?.leadPanelistName ? ` by ${formData.leadPanelistName}` : formData?.assessorName ? ` by ${formData.assessorName}` : assessorName ? ` by ${assessorName}` : ""}
+                      {formData?.leadPanelistSignedAt || formData?.assessorSignedAt || formData?.submittedAt || formRecord?.candidateSignedAt ? ` · ${new Date(formData?.leadPanelistSignedAt || formData?.assessorSignedAt || formData?.submittedAt || formRecord?.candidateSignedAt || "").toLocaleDateString("en-GB")}` : ""}
+                    </span>
+                  </div>
+                ) : canSignLead ? (
+                  <button
+                    type="button"
+                    disabled={Boolean(isSigningRole)}
+                    onClick={() => handleSignAsRole(isInterviewRecord ? "lead" : "assessor")}
+                    className="h-9 bg-[#FFF8EB] border border-[#FBAB2A] hover:bg-[#FDEED5] text-[#FBAB2A] font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    <FiEdit3 className="w-3.5 h-3.5" />
+                    {isSigningRole ? "Signing..." : isInterviewRecord ? "Sign as Lead Panelist" : "Sign as Assessor"}
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-2 text-amber-700 font-semibold text-xs bg-amber-50 border border-amber-200 px-3 py-2 rounded-xl">
+                    <FiClock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                    <span>Pending Signature</span>
+                  </div>
+                )}
+              </div>
 
-            {/* Candidate */}
-            <div className="bg-[#F8F9FA] rounded-2xl p-4 border border-gray-100 flex flex-col gap-2">
-              <span className="text-[11px] font-semibold text-neutral-secondary">Candidate:</span>
-              {isCandidateSigned ? (
-                <div className="flex items-center gap-2 text-emerald-700 font-bold text-xs bg-emerald-50 border border-emerald-200 px-3 py-2 rounded-xl">
-                  <FiCheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                  <span>Signed · {new Date(formData?.candidateSignedAt || formRecord?.candidateSignedAt || Date.now()).toLocaleDateString("en-GB")}</span>
-                </div>
-              ) : isCandidate && isInterviewStage ? (
-                <button
-                  type="button"
-                  onClick={() => setIsCandidateSignModalOpen(true)}
-                  className="h-9 bg-[#FFF8EB] border border-[#FBAB2A] hover:bg-[#FDEED5] text-[#FBAB2A] font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-                >
-                  <FiEdit3 className="w-3.5 h-3.5" />
-                  Sign Document
-                </button>
-              ) : (
-                <div className="flex items-center gap-2 text-amber-700 font-semibold text-xs bg-amber-50 border border-amber-200 px-3 py-2 rounded-xl">
-                  <FiClock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                  <span>Awaiting Signature</span>
-                </div>
-              )}
+              {/* Candidate */}
+              <div className="bg-[#F8F9FA] rounded-2xl p-4 border border-gray-100 flex flex-col gap-2">
+                <span className="text-[11px] font-semibold text-neutral-secondary">Candidate:</span>
+                {isCandidateSigned ? (
+                  <div className="flex items-center gap-2 text-emerald-700 font-bold text-xs bg-emerald-50 border border-emerald-200 px-3 py-2 rounded-xl">
+                    <FiCheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span>Signed · {new Date(formData?.candidateSignedAt || formRecord?.candidateSignedAt || Date.now()).toLocaleDateString("en-GB")}</span>
+                  </div>
+                ) : isCandidate && isInterviewStage ? (
+                  <button
+                    type="button"
+                    onClick={() => setIsCandidateSignModalOpen(true)}
+                    className="h-9 bg-[#FFF8EB] border border-[#FBAB2A] hover:bg-[#FDEED5] text-[#FBAB2A] font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                  >
+                    <FiEdit3 className="w-3.5 h-3.5" />
+                    Append Signature
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-2 text-amber-700 font-semibold text-xs bg-amber-50 border border-amber-200 px-3 py-2 rounded-xl">
+                    <FiClock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                    <span>Awaiting Signature</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
-      {applicationId && (
+      {applicationId && !isAssessmentMapping && (
         <CandidateInterviewFormModal
           isOpen={isCandidateSignModalOpen}
           onClose={() => setIsCandidateSignModalOpen(false)}
@@ -464,7 +561,12 @@ export const AssessorAssessmentFormDocumentView: React.FC<
   );
 };
 
-function renderFormContent(formId: string, formData?: Record<string, any>) {
+function renderFormContent(
+  formId: string,
+  formData?: Record<string, any>,
+  mappingData?: ApplicationAssessmentMapping,
+  isLoadingMapping?: boolean,
+) {
   switch (formId) {
     case "skills_demo":
     case "skill_demonstration":
@@ -766,17 +868,123 @@ function renderFormContent(formId: string, formData?: Record<string, any>) {
       );
 
     case "assessment_mapping":
-    case "assessment_grid":
+    case "assessment_grid": {
+      const apiUnits = mappingData?.units || [];
       return (
         <div className="flex flex-col gap-6">
-          {/* Occupational Units & Mapping Grid */}
           <div className="flex flex-col gap-3">
             <h4 className="text-xs font-bold text-neutral-primary uppercase tracking-wide">
-              Occupational Units &amp; Competency Grid
+              National Occupational Standards &amp; Performance Criteria Mapping
             </h4>
-            <div className="flex flex-col gap-3.5">
-              {Array.isArray(formData?.units) && formData.units.length > 0 ? (
-                formData.units.map((unit: any, idx: number) => (
+            {isLoadingMapping ? (
+              <p className="text-xs text-gray-400 italic bg-[#F8F9FA] p-4 rounded-xl">
+                Loading assessment mapping...
+              </p>
+            ) : apiUnits.length > 0 ? (
+              <div className="flex flex-col gap-5">
+                {apiUnits.map((unit, idx) => (
+                  <div
+                    key={unit.id || idx}
+                    className="bg-[#F8F9FA] rounded-2xl p-4 sm:p-5 border border-gray-100 flex flex-col gap-4 text-xs"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-200/70 pb-3">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-[11px] font-bold text-[#8A1538] uppercase tracking-wider">
+                          {unit.referenceNumber || `Unit #${idx + 1}`}
+                        </span>
+                        <span className="font-bold text-neutral-primary text-sm sm:text-base">
+                          {unit.title}
+                        </span>
+                      </div>
+                      {Array.isArray(unit.assessmentMethods) &&
+                        unit.assessmentMethods.length > 0 && (
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {unit.assessmentMethods.map((method, mIdx) => (
+                              <span
+                                key={mIdx}
+                                className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200 capitalize"
+                              >
+                                {String(method).replace(/_/g, " ")}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                    </div>
+
+                    {Array.isArray(unit.learningObjectives) &&
+                    unit.learningObjectives.length > 0 ? (
+                      <div className="flex flex-col gap-4">
+                        {unit.learningObjectives.map((lo, loIdx) => (
+                          <div
+                            key={lo.code || loIdx}
+                            className="bg-white rounded-xl p-3.5 sm:p-4 border border-gray-100 flex flex-col gap-2.5"
+                          >
+                            <div className="font-bold text-neutral-primary text-xs sm:text-sm">
+                              {lo.code ? `${lo.code}: ` : `LO ${loIdx + 1}: `}
+                              {lo.text || lo.title || "Learning Objective"}
+                            </div>
+
+                            {Array.isArray(lo.performanceCriteria) &&
+                            lo.performanceCriteria.length > 0 ? (
+                              <div className="overflow-x-auto rounded-xl border border-gray-100">
+                                <table className="w-full text-left text-xs border-collapse">
+                                  <thead>
+                                    <tr className="bg-[#F8F9FA] text-neutral-secondary font-bold border-b border-gray-200">
+                                      <th className="p-2.5 w-20">Code</th>
+                                      <th className="p-2.5">Performance Criterion</th>
+                                      <th className="p-2.5 w-48">Evidence Types</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-gray-100">
+                                    {lo.performanceCriteria.map((pc, pcIdx) => (
+                                      <tr key={pc.code || pcIdx} className="hover:bg-gray-50/50">
+                                        <td className="p-2.5 font-bold text-neutral-secondary whitespace-nowrap">
+                                          {pc.code || `${loIdx + 1}.${pcIdx + 1}`}
+                                        </td>
+                                        <td className="p-2.5 text-neutral-primary font-medium">
+                                          {pc.text || "—"}
+                                        </td>
+                                        <td className="p-2.5">
+                                          {Array.isArray(pc.evidenceTypes) &&
+                                          pc.evidenceTypes.length > 0 ? (
+                                            <div className="flex flex-wrap gap-1">
+                                              {pc.evidenceTypes.map((et, etIdx) => (
+                                                <span
+                                                  key={etIdx}
+                                                  className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 capitalize"
+                                                >
+                                                  {String(et).replace(/_/g, " ")}
+                                                </span>
+                                              ))}
+                                            </div>
+                                          ) : (
+                                            <span className="text-gray-400 italic">—</span>
+                                          )}
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            ) : (
+                              <p className="text-xs text-gray-400 italic">
+                                No performance criteria listed.
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-gray-400 italic">
+                        No learning objectives listed for this unit.
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : Array.isArray(formData?.units) && formData.units.length > 0 ? (
+              <div className="flex flex-col gap-3.5">
+                {formData.units.map((unit: any, idx: number) => (
                   <div
                     key={unit.id || idx}
                     className="bg-[#F8F9FA] rounded-2xl p-4 sm:p-5 border border-gray-100 flex flex-col gap-3 text-xs"
@@ -830,30 +1038,17 @@ function renderFormContent(formId: string, formData?: Record<string, any>) {
                       </div>
                     )}
                   </div>
-                ))
-              ) : (
-                <p className="text-xs text-gray-400 italic bg-[#F8F9FA] p-4 rounded-xl">
-                  No competency units recorded.
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Overall Comments */}
-          {formData?.overallComments && (
-            <div className="flex flex-col gap-2">
-              <h4 className="text-xs font-bold text-neutral-primary uppercase tracking-wide">
-                Overall Grid Summary
-              </h4>
-              <div className="bg-[#F8F9FA] rounded-2xl p-4 sm:p-5 border border-gray-100 text-xs">
-                <p className="text-neutral-primary font-medium whitespace-pre-wrap">
-                  {formData.overallComments}
-                </p>
+                ))}
               </div>
-            </div>
-          )}
+            ) : (
+              <p className="text-xs text-gray-400 italic bg-[#F8F9FA] p-4 rounded-xl">
+                No competency units mapped yet.
+              </p>
+            )}
+          </div>
         </div>
       );
+    }
 
     default:
       return null;

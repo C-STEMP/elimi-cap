@@ -55,7 +55,8 @@ export interface CreateApplicationPayload {
   type: ApplicationType;
   sectorId: string;
   tradeId: string;
-  unitIds: string[];
+  qualificationLevelId?: string;
+  unitIds?: string[];
   centreId: string;
 }
 
@@ -168,6 +169,16 @@ export interface IqamFormSummaryItem {
 }
 
 export interface ApplicationDetail extends Application {
+  qualificationLevelId?: string | null;
+  qualificationLevel?: {
+    id: string;
+    level: number;
+    purpose?: string | null;
+  } | null;
+  cv?: {
+    assetId: string;
+    url?: string | null;
+  } | null;
   unitIds?: string[];
   identityVerified?: boolean;
   identityFieldsLocked?: boolean;
@@ -275,11 +286,14 @@ export interface EvidenceVaultItem {
   documentName?: string;
   evidenceType?: string;
   status?: string;
+  reviewStatus?: "pending" | "approved" | "rejected" | string;
   name?: string;
   title?: string;
   category?: string;
   feedback?: string;
-  reviewComment?: string;
+  reviewComment?: string | null;
+  reviewedBy?: string | null;
+  reviewedAt?: string | null;
   size?: string;
   assetId?: string;
   createdAt: string;
@@ -293,6 +307,10 @@ export interface GeneralEvidence {
   assetId?: string | null;
   formData?: Record<string, unknown> | null;
   textValue?: string | null;
+  reviewStatus?: "pending" | "approved" | "rejected";
+  reviewComment?: string | null;
+  reviewedBy?: string | null;
+  reviewedAt?: string | null;
   createdAt: string;
   updatedAt?: string;
 }
@@ -341,6 +359,26 @@ export interface InterviewForm {
   assessorSignedAt?: string | null;
   signatureMode?: "upload" | "default" | "typed" | null;
   typedSignatureName?: string | null;
+}
+
+export interface InterviewFormRecord {
+  id: string;
+  assessorId: string;
+  isLead: boolean;
+  isObserver: boolean;
+  formType:
+    | "records"
+    | "assessment_grid"
+    | "practical_observation"
+    | "skill_demonstration";
+  data: Record<string, unknown>;
+  updatedAt: string;
+  createdAt: string;
+}
+
+export interface InterviewFormsList {
+  forms: InterviewForm[];
+  panelistRecords: InterviewFormRecord[];
 }
 
 export interface ApplicationShareToken {
@@ -760,4 +798,137 @@ export interface CentreIqamFinalPortfolio {
   status: string;
   submittedAt: string | null;
   [key: string]: unknown;
+}
+
+export interface AssessmentMappingPerformanceCriterion {
+  code?: string | null;
+  text?: string | null;
+  evidenceTypes: string[];
+}
+
+export interface AssessmentMappingLearningObjective {
+  code?: string | null;
+  text?: string | null;
+  title?: string | null;
+  performanceCriteria: AssessmentMappingPerformanceCriterion[];
+}
+
+export interface AssessmentMappingUnit {
+  id: string;
+  referenceNumber: string;
+  title: string;
+  assessmentMethods: string[];
+  learningObjectives: AssessmentMappingLearningObjective[];
+}
+
+export interface ApplicationAssessmentMapping {
+  applicationId: string;
+  personalDetails: {
+    firstName?: string | null;
+    middleName?: string | null;
+    lastName?: string | null;
+    dob?: string | null;
+    dateOfBirth?: string | null;
+    gender?: string | null;
+    nationality?: string | null;
+    email?: string | null;
+    phoneNumber?: string | null;
+    address?: string | null;
+    country?: string | null;
+    state?: string | null;
+    lga?: string | null;
+  };
+  units: AssessmentMappingUnit[];
+}
+
+export interface ApplicationPortfolio {
+  applicationId: string;
+  inductionDocuments: {
+    applicationForm: {
+      submittedAt: string | null;
+      status: "pending" | "submitted" | "draft" | "approved" | "rejected" | string;
+    };
+    paymentReceipt: {
+      assetId: string | null;
+      url: string | null;
+      paidAt: string | null;
+      status: "unpaid" | "pending" | "completed" | "failed" | string;
+    };
+  };
+  candidateProfile: {
+    personalDetails: {
+      firstName?: string | null;
+      middleName?: string | null;
+      lastName?: string | null;
+      dob?: string | null;
+      dateOfBirth?: string | null;
+      gender?: string | null;
+      nationality?: string | null;
+      email?: string | null;
+      phoneNumber?: string | null;
+      address?: string | null;
+      country?: string | null;
+      state?: string | null;
+      lga?: string | null;
+    };
+    cv: {
+      assetId: string;
+      url: string | null;
+    } | null;
+  };
+  standards: {
+    nosDocument: {
+      id: string;
+      title: string;
+      version: number;
+    } | null;
+    assessmentMappingAvailable: boolean;
+  };
+  assessmentReports: {
+    selfAssessment: {
+      status: "pending" | "submitted" | "not_started" | "draft" | string;
+      submittedAt: string | null;
+    };
+    thirdPartyReport: {
+      status: "pending" | "submitted" | "not_started" | string;
+      submittedAt: string | null;
+    };
+    generalEvidence: {
+      total: number;
+      pending: number;
+      approved: number;
+      rejected: number;
+    };
+    interviewForms: Array<{
+      formType:
+        | "records"
+        | "assessment_grid"
+        | "practical_observation"
+        | "skill_demonstration";
+      status: "not_started" | "draft" | "completed" | string;
+    }>;
+    panelistFormRecords: Array<{
+      assessorId: string;
+      formType:
+        | "records"
+        | "assessment_grid"
+        | "practical_observation"
+        | "skill_demonstration";
+      updatedAt: string;
+    }>;
+  };
+  verification: {
+    internalVerifier: {
+      assessorId: string;
+      name?: string;
+      assignedAt: string;
+    } | null;
+    externalVerifier: {
+      assessorId: string;
+      userId?: string;
+      assignedAt: string;
+    } | null;
+    ivOutcome: string | null;
+    evOutcome: string | null;
+  };
 }

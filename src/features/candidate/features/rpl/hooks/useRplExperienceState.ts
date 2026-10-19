@@ -50,9 +50,10 @@ export function useRplExperienceState(onContinue?: () => void) {
   const { getOnboarding } = useOnboarding();
   const { saveDraft } = useRplApplicationSubmission();
 
-  const savedTrade = useAppSelector((s) => s.onboarding.startApplication.trade);
-  const savedTradeName = useAppSelector((s) => s.onboarding.startApplication.tradeName);
-  const savedSector = useAppSelector((s) => s.onboarding.startApplication.sector);
+  const savedStartApp = useAppSelector((s) => s.onboarding.startApplication);
+  const savedTrade = savedStartApp.trade;
+  const savedTradeName = savedStartApp.tradeName;
+  const savedSector = savedStartApp.sector;
   const savedRPLExperienceTrade = useAppSelector((s) => s.onboarding.rplExperienceTrade);
   const currentAppId = useAppSelector((s) => s.application.currentApplicationId);
 
@@ -68,11 +69,46 @@ export function useRplExperienceState(onContinue?: () => void) {
 
   const { data: tradeDetail } = useGetTradeDetail(effectiveTradeId);
   const { data: remoteTrades = [] } = useGetTradesBySector(effectiveSectorId);
-  const { data: remoteUnits = [], isLoading: isLoadingUnits, isFetching: isFetchingUnits } = useGetUnitsByTrade(effectiveTradeId);
+
+  const selectedLevelNumber = React.useMemo(() => {
+    const qLevels = tradeDetail?.activeNosDocument?.qualificationLevels || [];
+    if (savedStartApp.qualificationLevelId && qLevels.length > 0) {
+      const matched = qLevels.find((ql) => ql.id === savedStartApp.qualificationLevelId);
+      if (matched) return matched.level;
+    }
+    if (typeof savedStartApp.levelNumber === "number" && !isNaN(savedStartApp.levelNumber)) {
+      return savedStartApp.levelNumber;
+    }
+    if (savedStartApp.level) {
+      const parsed = parseInt(String(savedStartApp.level).replace(/\D+/g, ""), 10);
+      if (!isNaN(parsed) && parsed > 0) return parsed;
+    }
+    const appQl = (activeApp as any)?.qualificationLevel;
+    if (appQl && typeof appQl.level === "number") {
+      return appQl.level;
+    }
+    return undefined;
+  }, [savedStartApp, tradeDetail, activeApp]);
+
+  const { data: remoteUnits = [], isLoading: isLoadingUnits, isFetching: isFetchingUnits } =
+    useGetUnitsByTrade(effectiveTradeId, selectedLevelNumber);
   const isUnitsLoading = isLoadingUnits || isFetchingUnits;
 
-  const unitOptions = remoteUnits?.length
-    ? remoteUnits.map((u) => ({
+  const scopedUnits = React.useMemo(() => {
+    const qLevels = tradeDetail?.activeNosDocument?.qualificationLevels || [];
+    const targetLevel = qLevels.find(
+      (ql) =>
+        (savedStartApp.qualificationLevelId && ql.id === savedStartApp.qualificationLevelId) ||
+        (selectedLevelNumber && ql.level === selectedLevelNumber),
+    );
+    if (targetLevel?.units && targetLevel.units.length > 0) {
+      return targetLevel.units;
+    }
+    return remoteUnits || [];
+  }, [tradeDetail, savedStartApp.qualificationLevelId, selectedLevelNumber, remoteUnits]);
+
+  const unitOptions = scopedUnits?.length
+    ? scopedUnits.map((u) => ({
         label: u.referenceNumber ? `${u.referenceNumber}: ${u.title}` : u.title,
         value: u.id,
       }))

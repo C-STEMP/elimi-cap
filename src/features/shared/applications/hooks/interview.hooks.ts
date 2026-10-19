@@ -5,7 +5,7 @@ import {
   getInterviewPanelApi,
   getInterviewScheduleApi,
   evaluateInterviewApi,
-  getInterviewFormsApi,
+  getInterviewFormsBundleApi,
   updateInterviewFormApi,
   signoffInterviewFormApi,
   getInterviewObserverCommentsApi,
@@ -58,6 +58,9 @@ export function useEvaluateInterview(id: string) {
       queryClient.invalidateQueries({
         queryKey: ["applications", "interview-panel", id],
       });
+      queryClient.invalidateQueries({
+        queryKey: APPLICATION_QUERY_KEYS.portfolio(id),
+      });
       const message =
         data?.message ||
         (data as any)?.data?.message ||
@@ -91,10 +94,24 @@ export function useEvaluateInterview(id: string) {
   });
 }
 
+export function useGetInterviewFormsBundle(
+  id: string,
+  options?: { enabled?: boolean },
+) {
+  return useQuery({
+    queryKey: ["applications", "interview-forms", id],
+    queryFn: () => getInterviewFormsBundleApi(id),
+    enabled: Boolean(id) && (options?.enabled ?? true),
+    retry: false,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 export function useGetInterviewForms(id: string, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["applications", "interview-forms", id],
-    queryFn: () => getInterviewFormsApi(id),
+    queryFn: () => getInterviewFormsBundleApi(id),
+    select: (bundle) => bundle.forms,
     enabled: Boolean(id) && (options?.enabled ?? true),
     retry: false,
     staleTime: 5 * 60 * 1000,
@@ -121,6 +138,9 @@ export function useUpdateInterviewForm(id: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["applications", "interview-forms", id],
+      });
+      queryClient.invalidateQueries({
+        queryKey: APPLICATION_QUERY_KEYS.portfolio(id),
       });
       toast({
         type: "success",
@@ -171,6 +191,9 @@ export function useSignoffInterviewForm(id: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["applications", "interview-forms", id],
+      });
+      queryClient.invalidateQueries({
+        queryKey: APPLICATION_QUERY_KEYS.portfolio(id),
       });
       toast({
         type: "success",

@@ -10,6 +10,8 @@ import {
   getApplicationHistoryApi,
   getApplicationStagesApi,
   reviewApplicationApi,
+  getApplicationAssessmentMappingApi,
+  getApplicationPortfolioApi,
   type CreateApplicationPayload,
   type ReviewDecisionPayload,
   type ApplicationStatus,
@@ -225,6 +227,29 @@ export function useReviewApplication() {
         });
       }
     },
+  });
+}
+
+export function useGetApplicationAssessmentMapping(
+  id: string,
+  options?: { enabled?: boolean },
+) {
+  return useQuery({
+    queryKey: APPLICATION_QUERY_KEYS.assessmentMapping(id),
+    queryFn: () => getApplicationAssessmentMappingApi(id),
+    enabled: Boolean(id) && (options?.enabled ?? true),
+  });
+}
+
+export function useGetApplicationPortfolio(
+  id: string,
+  options?: { enabled?: boolean; refetchInterval?: number | false },
+) {
+  return useQuery({
+    queryKey: APPLICATION_QUERY_KEYS.portfolio(id),
+    queryFn: () => getApplicationPortfolioApi(id),
+    enabled: Boolean(id) && (options?.enabled ?? true),
+    refetchInterval: options?.refetchInterval,
   });
 }
 

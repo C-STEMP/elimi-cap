@@ -48,6 +48,11 @@ const ScheduleInterviewModal = dynamic(() =>
     (m) => m.ScheduleInterviewModal,
   ),
 );
+const ScheduleInductionModal = dynamic(() =>
+  import("../features/Applications/components/ScheduleInductionModal").then(
+    (m) => m.ScheduleInductionModal,
+  ),
+);
 const PromptCreatePanelModal = dynamic(() =>
   import("../features/Applications/components/PromptCreatePanelModal").then(
     (m) => m.PromptCreatePanelModal,
@@ -130,6 +135,7 @@ import { MessagesHeader } from "../features/Dashboard/components/MessagesHeader"
 
 import { AssessmentCentreTab, PaymentTransaction } from "../types";
 import { type InterviewRowData } from "../features/Applications/components/ViewInterviewDetailModal";
+import { type InductionRowData } from "../features/Applications/components/ViewInductionDetailModal";
 import { useAppSelector } from "@/src/store/hooks";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -152,7 +158,16 @@ import {
 } from "@/src/lib/auth-storage";
 import { getPermittedTabs, normalizeRole, RoleType } from "../utils/rbac";
 import { useUrlModal } from "@/src/lib/hooks/usePersistentModal";
-import { DASHBOARD_CREATE_PANEL_MODAL, CREATE_INTERVIEW_MODAL, DASHBOARD_SCHEDULE_INTERVIEW_MODAL, BROADCAST_MODAL, ADD_STAFF_MODAL, POST_JOB_MODAL, WITHDRAW_MODAL } from "@/src/lib/modal-keys";
+import {
+  DASHBOARD_CREATE_PANEL_MODAL,
+  CREATE_INTERVIEW_MODAL,
+  DASHBOARD_SCHEDULE_INTERVIEW_MODAL,
+  DASHBOARD_SCHEDULE_INDUCTION_MODAL,
+  BROADCAST_MODAL,
+  ADD_STAFF_MODAL,
+  POST_JOB_MODAL,
+  WITHDRAW_MODAL,
+} from "@/src/lib/modal-keys";
 
 export const AssessmentCentreDashboardPage: React.FC = () => {
   const router = useRouter();
@@ -268,8 +283,12 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
     useState(false);
   const [isScheduleInterviewModalOpen, setIsScheduleInterviewModalOpen] =
     useUrlModal(DASHBOARD_SCHEDULE_INTERVIEW_MODAL);
+  const [isScheduleInductionModalOpen, setIsScheduleInductionModalOpen] =
+    useUrlModal(DASHBOARD_SCHEDULE_INDUCTION_MODAL);
   const [selectedInterview, setSelectedInterview] =
     useState<InterviewRowData | null>(null);
+  const [selectedInduction, setSelectedInduction] =
+    useState<InductionRowData | null>(null);
   const [selectedAssessorId, setSelectedAssessorId] = useState<string | null>(
     null,
   );
@@ -324,6 +343,7 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
           <ApplicationsHeader
             selectedCandidateName={selectedCandidateName}
             selectedInterviewTitle={selectedInterview?.title || null}
+            selectedInductionTitle={selectedInduction?.title || null}
             showSelfAssessmentForm={showSelfAssessmentForm}
             showEvidenceVault={showEvidenceVault}
             showCandidateForm={showCandidateForm}
@@ -332,8 +352,10 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
               setSelectedCandidateName(null);
               setSelectedApplicationId(null);
               setSelectedInterview(null);
+              setSelectedInduction(null);
             }}
             onBackFromInterview={() => setSelectedInterview(null)}
+            onBackFromInduction={() => setSelectedInduction(null)}
             onBackFromSelfAssessment={() => setShowSelfAssessmentForm(false)}
             onBackFromEvidenceVault={() => setShowEvidenceVault(false)}
             onBackFromCandidateForm={() => setShowCandidateForm(false)}
@@ -375,6 +397,7 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
             onCreatePanel={() => setIsCreatePanelModalOpen(true)}
             onCreateInterview={() => setIsCreateInterviewModalOpen(true)}
             onScheduleInterview={handleOpenScheduleInterview}
+            onScheduleInduction={() => setIsScheduleInductionModalOpen(true)}
             activeFilterTab={applicationsFilterTab}
             onSelectFilterTab={setApplicationsFilterTab}
           />
@@ -483,12 +506,14 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
         {activeTab === "applications" && (
           <ApplicationsTab
             selectedInterview={selectedInterview}
+            selectedInduction={selectedInduction}
             selectedCandidateName={selectedCandidateName}
             selectedApplicationId={selectedApplicationId}
             showCandidateForm={showCandidateForm}
             showEvidenceVault={showEvidenceVault}
             showSelfAssessmentForm={showSelfAssessmentForm}
             onSelectInterview={setSelectedInterview}
+            onSelectInduction={setSelectedInduction}
             onSelectCandidate={(name, id) => {
               if (id) {
                 router.push(`/applications/${id}?from=centre`);
@@ -514,6 +539,7 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
             onOpenCreatePanel={() => setIsCreatePanelModalOpen(true)}
             onOpenCreateInterview={() => setIsCreateInterviewModalOpen(true)}
             onOpenScheduleInterview={handleOpenScheduleInterview}
+            onOpenScheduleInduction={() => setIsScheduleInductionModalOpen(true)}
             activeFilterTab={applicationsFilterTab}
             onTabChange={setApplicationsFilterTab}
           />
@@ -599,6 +625,13 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
           isOpen={isScheduleInterviewModalOpen}
           modalKey={DASHBOARD_SCHEDULE_INTERVIEW_MODAL}
           onClose={() => setIsScheduleInterviewModalOpen(false)}
+        />
+      )}
+      {isScheduleInductionModalOpen && (
+        <ScheduleInductionModal
+          isOpen={isScheduleInductionModalOpen}
+          modalKey={DASHBOARD_SCHEDULE_INDUCTION_MODAL}
+          onClose={() => setIsScheduleInductionModalOpen(false)}
         />
       )}
       {isWithdrawModalOpen && (

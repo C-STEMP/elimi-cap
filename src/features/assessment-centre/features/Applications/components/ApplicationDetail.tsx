@@ -85,6 +85,8 @@ export const ApplicationDetail: React.FC<ApplicationDetailProps> = ({
           onOpenAssignFacilitator={() => state.setIsAssignFacilitatorOpen(true)}
           onOpenRescheduleModal={() => state.setIsRescheduleModalOpen(true)}
           onOpenScheduleModal={state.handleOpenScheduleModal}
+          activeInduction={state.activeInduction}
+          onOpenScheduleInduction={() => state.setIsScheduleInductionModalOpen(true)}
           onOpenAssignVerifier={(type) => {
             state.setActiveVerifierType(type);
             state.setIsAssignVerifierOpen(true);

@@ -154,7 +154,11 @@ export default function SharedApplicationDossierPage() {
 
   const interviewSchedule = (interview as any)?.schedule;
   const interviewPanel = (interview as any)?.panel;
-  const interviewForms: InterviewForm[] = (interview as any)?.forms || [];
+  const interviewForms: InterviewForm[] = Array.isArray((interview as any)?.forms)
+    ? (interview as any).forms
+    : Array.isArray((interview as any)?.forms?.forms)
+      ? (interview as any).forms.forms
+      : [];
   const interviewEvaluations: any[] = (interview as any)?.evaluations || [];
 
   const generalEvidence: any[] = (evidence as any)?.general || [];

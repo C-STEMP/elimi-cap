@@ -25,4 +25,7 @@ export const APPLICATION_QUERY_KEYS = {
     ["applications", "direct-observations", id, sessionId] as const,
   centreIqam: (id: string, tool: string) =>
     ["centre", "applications", id, "iqam", tool] as const,
+  assessmentMapping: (id: string) =>
+    ["applications", "assessment-mapping", id] as const,
+  portfolio: (id: string) => ["applications", "portfolio", id] as const,
 };

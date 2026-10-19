@@ -16,7 +16,11 @@ import {
   usePatchMeProfile,
 } from "@/src/features/shared/account/hooks";
 import { useUploadFile } from "@/src/features/shared/storage/hooks";
-import { useGetBanks, useResolveBankAccount } from "@/src/features/shared/reference/hooks";
+import {
+  useGetBanks,
+  useResolveBankAccount,
+  useGetAllTrades,
+} from "@/src/features/shared/reference/hooks";
 import { useAppDispatch, useAppSelector } from "@/src/store/hooks";
 import {
   setCentreInformation,
@@ -33,6 +37,7 @@ export function useSettingsViewState() {
   const { data: meProfile } = useGetMeProfile();
   const { data: centreProfile } = useGetCentreProfile();
   const { data: pricingList = [] } = useGetCentrePricing();
+  const { data: availableTrades = [] } = useGetAllTrades();
   const setCentrePricingMutation = useSetCentrePricing();
   const uploadFileMutation = useUploadFile();
   const patchMeProfileMutation = usePatchMeProfile();
@@ -92,6 +97,19 @@ export function useSettingsViewState() {
   const [bank, setBank] = useState(savedCentreInfo.bank || "");
   const [accountNumber, setAccountNumber] = useState(savedCentreInfo.accountNumber || "");
   const [accountName, setAccountName] = useState(savedCentreInfo.nameOnAccount || "");
+  const [selectedTradeIds, setSelectedTradeIds] = useState<string[]>(
+    savedCentreInfo.tradeIds || [],
+  );
+  const [certificateAssetId, setCertificateAssetId] = useState<string | null>(
+    savedCentreInfo.certificateAssetId || null,
+  );
+  const [certificateUrl, setCertificateUrl] = useState<string | null>(
+    savedCentreInfo.certificateUrl || null,
+  );
+  const [certificateName, setCertificateName] = useState<string>(
+    savedCentreInfo.certificateName || "",
+  );
+  const [isUploadingCertificate, setIsUploadingCertificate] = useState(false);
   const [isResolvingAccount, setIsResolvingAccount] = useState(false);
   const [accountResolveSuccess, setAccountResolveSuccess] = useState(false);
 
@@ -195,6 +213,17 @@ export function useSettingsViewState() {
       if (centreProfile.accountDetails?.bank) setBank(centreProfile.accountDetails.bank);
       if (centreProfile.accountDetails?.accountNo) setAccountNumber(centreProfile.accountDetails.accountNo);
       if (centreProfile.accountDetails?.nameOfAccount) setAccountName(centreProfile.accountDetails.nameOfAccount);
+      if (Array.isArray(centreProfile.trades)) {
+        setSelectedTradeIds(centreProfile.trades.map((t) => t.id));
+      }
+      if (centreProfile.certificateAssetId || centreProfile.certificate?.assetId) {
+        setCertificateAssetId(
+          centreProfile.certificateAssetId || centreProfile.certificate?.assetId || null,
+        );
+      }
+      if (centreProfile.certificate?.url) {
+        setCertificateUrl(centreProfile.certificate.url);
+      }
     }
   }, [meProfile, centreProfile]);
 
@@ -238,14 +267,61 @@ export function useSettingsViewState() {
         address: { country: centreCountry, state: centreState, lga: centreLga, address: centreStreet },
         supportContact: { emailAddress: supportEmail, phoneNumber: { countryCode: "+234", number: supportPhone } },
         accountDetails: { bank, accountNo: accountNumber, nameOfAccount: accountName },
+        tradeIds: selectedTradeIds,
+        certificateAssetId: certificateAssetId || undefined,
       },
       {
         onSuccess: () => {
-          dispatch(setCentreInformation({ centerName: centreName, regNo, country: centreCountry, state: centreState, lga: centreLga, streetAddress: centreStreet, supportEmail, phoneNumber: supportPhone, bank, accountNumber, nameOnAccount: accountName }));
+          dispatch(
+            setCentreInformation({
+              centerName: centreName,
+              regNo,
+              country: centreCountry,
+              state: centreState,
+              lga: centreLga,
+              streetAddress: centreStreet,
+              supportEmail,
+              phoneNumber: supportPhone,
+              bank,
+              accountNumber,
+              nameOnAccount: accountName,
+              tradeIds: selectedTradeIds,
+              certificateAssetId: certificateAssetId || "",
+              certificateUrl: certificateUrl || "",
+              certificateName,
+            }),
+          );
           toast({ type: "success", title: "Centre Details Saved", description: "Your centre profile has been updated." });
         },
       }
     );
+  };
+
+  const handleCertificateUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setIsUploadingCertificate(true);
+      setCertificateName(file.name);
+      try {
+        const asset = await uploadFileMutation.mutateAsync({
+          file,
+          purpose: "certificate",
+        });
+        if (asset?.assetId) {
+          setCertificateAssetId(asset.assetId);
+          if (asset.url) setCertificateUrl(asset.url);
+          patchCentreProfileMutation.mutate({ certificateAssetId: asset.assetId });
+        }
+      } catch (err: any) {
+        toast({
+          type: "error",
+          title: "Upload Failed",
+          description: err?.message || "Failed to upload accreditation certificate.",
+        });
+      } finally {
+        setIsUploadingCertificate(false);
+      }
+    }
   };
 
   const handleSavePricingSettings = () => {
@@ -295,6 +371,8 @@ export function useSettingsViewState() {
     centreState, setCentreState, centreLga, setCentreLga, centreStreet, setCentreStreet,
     supportEmail, setSupportEmail, supportPhone, setSupportPhone,
     bank, setBank, accountNumber, setAccountNumber, accountName, setAccountName,
+    availableTrades, selectedTradeIds, setSelectedTradeIds,
+    certificateAssetId, certificateUrl, certificateName, isUploadingCertificate, handleCertificateUpload,
     isResolvingAccount, accountResolveSuccess, bankOptions,
     rplCurrency, setRplCurrency, rplAmount, setRplAmount,
     standardCurrency, setStandardCurrency, standardAmount, setStandardAmount,
@@ -308,3 +386,4 @@ export function useSettingsViewState() {
     isSavingPricing: setCentrePricingMutation.isPending,
   };
 }
+

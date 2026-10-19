@@ -11,6 +11,7 @@ export interface EvidenceRecord {
   evidenceType?: string;
   mimeType?: string;
   dataUrl?: string;
+  unitId?: string;
 }
 
 export interface ResourceRecord {

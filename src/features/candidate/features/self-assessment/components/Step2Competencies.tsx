@@ -18,6 +18,8 @@ interface Step2Props {
   onNext: (data?: any) => void;
   onBack: () => void;
   initialData?: any;
+  levelLabel?: string;
+  tradeName?: string;
 }
 
 const CONFIDENCE_OPTIONS = [
@@ -37,6 +39,8 @@ export const Step2Competencies: React.FC<Step2Props> = ({
   onNext,
   onBack,
   initialData,
+  levelLabel,
+  tradeName,
 }) => {
   const router = useRouter();
   const { toast } = useToast();
@@ -152,9 +156,16 @@ export const Step2Competencies: React.FC<Step2Props> = ({
           any learning gaps, and prepare you for the RPL assessment.
         </p>
 
-        <h2 className="text-xl xl:text-2xl font-bold tracking-tight text-neutral-primary mt-4 flex items-center gap-1.5">
-          Competency Assessment <InfoIcon sectionName="Competency Assessment" />
-        </h2>
+        <div className="flex items-center gap-2.5 mt-4 flex-wrap">
+          <h2 className="text-xl xl:text-2xl font-bold tracking-tight text-neutral-primary flex items-center gap-1.5">
+            Competency Assessment <InfoIcon sectionName="Competency Assessment" />
+          </h2>
+          {levelLabel && (
+            <span className="px-2.5 py-0.5 rounded-md bg-[#EDE9FE] text-[#6D28D9] font-bold text-xs tracking-wide">
+              {levelLabel}
+            </span>
+          )}
+        </div>
       </div>
 
       <form onSubmit={handleContinue} className="flex flex-col gap-6">
@@ -209,7 +220,7 @@ export const Step2Competencies: React.FC<Step2Props> = ({
 
             <div className="flex flex-col gap-1.5">
               <label className="text-text-dark font-medium text-xs xl:text-sm leading-[1.4] select-none">
-                Tell us about your experience{" "}
+                Tell us about your experience with {title}{" "}
                 <span className="text-primary-solid ml-0.5">*</span>
               </label>
               <textarea

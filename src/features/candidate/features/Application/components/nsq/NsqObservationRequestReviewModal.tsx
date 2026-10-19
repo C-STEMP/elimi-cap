@@ -125,10 +125,11 @@ export const NsqObservationRequestReviewModal: React.FC<
     setIsSubmitting(true);
     try {
       if (applicationId && details.id) {
+        const useDefaultSig = Boolean(profileSignature?.assetId && !uploadedAssetId);
         await signDirectObservationApi(applicationId, details.id, {
           role: "learner",
-          signatureMode: profileSignature?.assetId ? "default" : "upload",
-          signatureAssetId: profileSignature?.assetId || uploadedAssetId || undefined,
+          signatureMode: useDefaultSig ? "default" : "upload",
+          ...(useDefaultSig ? {} : { signatureAssetId: uploadedAssetId || undefined }),
           signedAt: new Date().toISOString(),
         });
       }

@@ -102,18 +102,61 @@ export default function AssessmentFormDedicatedRoutePage() {
   );
 
   const leadMember = interviewPanel?.members?.find((m: any) => m.isLead);
+  const matchedPanelMember = interviewPanel?.members?.find((m: any) =>
+    isMemberMatch(m),
+  );
+
+  const isAssessorUser = Boolean(
+    fromParam === "assessor" ||
+    user?.role?.toLowerCase()?.includes("assessor") ||
+    isAssignedLead ||
+    (application as any)?.assignedAssessors?.some(
+      (a: any) =>
+        (a.assessorId && a.assessorId === currentAssessorId) ||
+        (a.email && a.email.toLowerCase() === currentAssessorEmail) ||
+        (a.user?.email && a.user.email.toLowerCase() === currentAssessorEmail),
+    ),
+  );
 
   const isUserLeadPanelist =
     !isCandidateUser &&
+    !isCentreViewer &&
     Boolean(
       (leadMember && isMemberMatch(leadMember)) ||
       (!leadMember && isAssignedLead) ||
-      (!leadMember && (application as any).role?.toLowerCase()?.includes("lead"))
+      (!leadMember && (application as any).role?.toLowerCase()?.includes("lead")),
     );
 
-  // Same rule as the application page's "Fill Form" link: only the lead
-  // panelist fills these forms; everyone else gets the read-only document.
-  const isReadOnly = isCentreViewer || isCandidateUser || !isUserLeadPanelist;
+  const isAssignedNonFacilitator =
+    (application as any)?.assignedAssessors?.some(
+      (a: any) =>
+        a.role !== "FACILITATOR" &&
+        a.role !== "facilitator" &&
+        ((a.assessorId && a.assessorId === currentAssessorId) ||
+          (a.email && a.email.toLowerCase() === currentAssessorEmail) ||
+          (a.user?.email && a.user.email.toLowerCase() === currentAssessorEmail)),
+    ) || false;
+
+  const isSeatedPanelMember =
+    !isCandidateUser &&
+    !isCentreViewer &&
+    Boolean(
+      matchedPanelMember ||
+      isUserLeadPanelist ||
+      (!interviewPanel?.members?.length &&
+        (isAssignedNonFacilitator || isAssessorUser)),
+    );
+
+  const isAssessmentMapping =
+    formType === "assessment_mapping" || formType === "assessment_grid";
+
+  // Seated panel members (lead, voting panelists, and IV observer) can PUT interview forms;
+  // Assessment Mapping is always read-only.
+  const isReadOnly =
+    isAssessmentMapping ||
+    isCentreViewer ||
+    isCandidateUser ||
+    !isSeatedPanelMember;
 
   const handleBack = () => {
     if (typeof window !== "undefined" && window.history.length > 1) {
@@ -143,6 +186,7 @@ export default function AssessmentFormDedicatedRoutePage() {
         onBack={handleBack}
         isReadOnly={isReadOnly}
         isCandidate={isCandidateUser}
+        isLeadPanelist={isUserLeadPanelist}
         applicationTrade={resolvedTrade}
         viewOnly={isCentreViewer}
       />

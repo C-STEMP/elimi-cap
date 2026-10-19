@@ -1,7 +1,10 @@
 "use client";
 
 import { SelfAssessmentFormView } from "@/src/features/assessment-centre/features/Applications/components/SelfAssessmentFormView";
-import { usePanelMemberMatch } from "@/src/features/assessor/hooks";
+import {
+  useAssessorProfileSignature,
+  usePanelMemberMatch,
+} from "@/src/features/assessor/hooks";
 import {
   reviewEvApi,
   reviewIvApi,
@@ -12,7 +15,7 @@ import {
   useEvaluateInterview,
   useGetApplicationById,
   useGetApplicationStages,
-  useGetInterviewForms,
+  useGetInterviewFormsBundle,
   useGetInterviewPanel,
   useGetInterviewSchedule,
   useResolveAppeal,
@@ -103,9 +106,14 @@ export const AssessorApplicationDetailView: React.FC<
   const { data: interviewSchedule } = useGetInterviewSchedule(application.id, {
     enabled: isInterviewStage,
   });
-  const { data: remoteForms } = useGetInterviewForms(application.id, {
-    enabled: isInterviewStage,
-  });
+  const { data: interviewFormsBundle } = useGetInterviewFormsBundle(
+    application.id,
+    {
+      enabled: isInterviewStage,
+    },
+  );
+  const remoteForms = interviewFormsBundle?.forms;
+  const panelistRecords = interviewFormsBundle?.panelistRecords;
   const evaluateInterview = useEvaluateInterview(application.id);
   const resolveAppeal = useResolveAppeal(application.id);
 
@@ -125,6 +133,9 @@ export const AssessorApplicationDetailView: React.FC<
     (m: any) => !m.isLead && !m.isObserver,
   );
   const ivMember = interviewPanel?.members?.find((m: any) => m.isObserver);
+  const matchedPanelMember = interviewPanel?.members?.find((m: any) =>
+    isMemberMatch(m),
+  );
 
   const isUserIV = Boolean(
     user?.role?.toLowerCase() === "iv" ||
@@ -147,6 +158,23 @@ export const AssessorApplicationDetailView: React.FC<
       (user?.role?.toLowerCase()?.includes("assessor") ||
         application.role?.toLowerCase()?.includes("panel"))),
   );
+
+  const isSeatedOnPanel = Boolean(
+    matchedPanelMember ||
+    isUserLeadPanelist ||
+    (!interviewPanel?.members?.length && (isUserPanelMember || isUserIV)),
+  );
+
+  const myPanelistRecords = React.useMemo(() => {
+    if (!panelistRecords?.length) return [];
+    return panelistRecords.filter(
+      (r) =>
+        isMemberMatch({ assessorId: r.assessorId }) ||
+        (matchedPanelMember?.assessorId &&
+          r.assessorId === matchedPanelMember.assessorId) ||
+        (!matchedPanelMember && isUserIV && r.isObserver),
+    );
+  }, [panelistRecords, isMemberMatch, matchedPanelMember, isUserIV]);
 
   const interviewStageRow = stagesData?.find(
     (s) =>
@@ -193,8 +221,8 @@ export const AssessorApplicationDetailView: React.FC<
     appStatus === "withdrawn",
   );
 
-  // Assessment forms are to be filled by Lead Panelist & viewed by IV, Facilitator, and other panel members
-  const isAssessmentFormReadOnly = !isUserLeadPanelist;
+  // Seated panel members (lead, voting panelists, and IV observer) can all PUT forms
+  const isAssessmentFormReadOnly = !isSeatedOnPanel;
 
   const [internalSubView, setInternalSubView] =
     useState<AssessorDetailSubView>("stages");
@@ -332,10 +360,17 @@ export const AssessorApplicationDetailView: React.FC<
     setIsEvCompetentSuccessOpen(true);
   };
 
-  const handleConfirmCandidateCompetent = async () => {
+  const { data: profileSignature } = useAssessorProfileSignature();
+
+  const handleConfirmCandidateCompetent = async (signatureAssetId?: string) => {
     try {
       const isLead = isUserLeadPanelist;
       const uName = user?.fullName || (user as any)?.name || "Assessor";
+      const resolvedSignatureAssetId =
+        signatureAssetId || profileSignature?.assetId || "";
+      if (!resolvedSignatureAssetId) {
+        return;
+      }
       const payload: {
         feedback: string;
         signatureAssetId: string;
@@ -344,7 +379,7 @@ export const AssessorApplicationDetailView: React.FC<
         feedback: isLead
           ? "Candidate demonstrated all required competencies."
           : `Interview evaluated and approved by panel member (${uName}).`,
-        signatureAssetId: "default",
+        signatureAssetId: resolvedSignatureAssetId,
       };
 
       if (isLead) {
@@ -409,8 +444,14 @@ export const AssessorApplicationDetailView: React.FC<
   const handleConfirmCandidateIncompetent = async (data: {
     reason: string;
     recommendation: string;
+    signatureAssetId?: string;
   }) => {
     try {
+      const resolvedSignatureAssetId =
+        data.signatureAssetId || profileSignature?.assetId || "";
+      if (!resolvedSignatureAssetId) {
+        return;
+      }
       setInterviewFeedback({
         title: "Interview Inconclusive",
         reason: data.reason,
@@ -420,7 +461,7 @@ export const AssessorApplicationDetailView: React.FC<
         decision: "reject",
         outcome: "inconclusive",
         feedback: data.reason || "Candidate evaluation inconclusive.",
-        signatureAssetId: "default",
+        signatureAssetId: resolvedSignatureAssetId,
       });
       setIsConfirmCandidateIncompetentOpen(false);
       setInterviewOutcome("inconclusive");
@@ -482,6 +523,7 @@ export const AssessorApplicationDetailView: React.FC<
         triggerMarkComplete={triggerMarkComplete}
         onResetTriggerMarkComplete={onResetTriggerMarkComplete}
         isStageAlreadyComplete={isFolderArrangementDone}
+        isLeadPanelist={isUserLeadPanelist}
       />
     );
   }
@@ -494,6 +536,7 @@ export const AssessorApplicationDetailView: React.FC<
         candidateName={application.candidateName}
         onBack={() => setSubView("stages")}
         isReadOnly={isAssessmentFormReadOnly}
+        isLeadPanelist={isUserLeadPanelist}
         applicationTrade={application.trade || appDetail?.trade?.name || ""}
       />
     );
@@ -679,6 +722,8 @@ export const AssessorApplicationDetailView: React.FC<
             applicationId={application.id}
             isReadOnly={isAssessmentFormReadOnly}
             remoteForms={remoteForms}
+            panelistRecords={myPanelistRecords}
+            isLeadPanelist={isUserLeadPanelist}
             isInterviewDone={Boolean(
               (interviewStageRow?.status === "successful" ||
                 interviewOutcome === "competent") &&

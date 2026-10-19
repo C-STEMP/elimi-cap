@@ -23,6 +23,7 @@ export interface EvidenceItem {
   assetId?: string;
   url?: string;
   dataUrl?: string;
+  unitId?: string;
 }
 
 function getFileTypeIcon(mimeType?: string, name?: string) {
@@ -71,8 +72,8 @@ function getStatusBadge(status: string) {
   }
   if (s.includes("submi")) {
     return {
-      bg: "bg-[#1E7F4C]/10",
-      text: "text-[#1E7F4C]",
+      bg: "bg-[#EFF6FF]",
+      text: "text-[#1D4ED8]",
       label: status || "Submitted",
     };
   }

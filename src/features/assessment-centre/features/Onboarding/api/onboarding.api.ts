@@ -9,6 +9,7 @@ export interface CentreInformationPayload {
   name: string;
   registrationNo: string;
   logoAssetId?: string;
+  certificateAssetId?: string;
 }
 
 export interface CentreResidentialAddressPayload {
@@ -48,6 +49,7 @@ export interface CentreOwnerPayload {
 export interface CentreOnboardingPayload {
   centre?: {
     centreInformation?: CentreInformationPayload;
+    tradeIds?: string[];
     centreResidentialAddress?: CentreResidentialAddressPayload;
     centreSupportInformation?: CentreSupportInformationPayload;
     centreAccountDetails?: CentreAccountDetailsPayload;

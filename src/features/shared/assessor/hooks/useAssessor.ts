@@ -17,6 +17,8 @@ import {
   patchAssessorProfileApi,
   getAssessorProfileSectorsApi,
   updateAssessorProfileSectorsApi,
+  getAssessorProfileSignatureApi,
+  putAssessorProfileSignatureApi,
   type AssessorSelfProfilePatch,
   type RequestRetainedAssessorPayload,
 } from "../api/assessor.api";
@@ -35,6 +37,7 @@ export const ASSESSOR_QUERY_KEYS = {
   retainedRequests: (params?: unknown) => ["assessor", "retained-requests", params] as const,
   profile: ["assessor", "profile"] as const,
   sectors: ["assessor", "profile", "sectors"] as const,
+  signature: ["assessor", "profile", "signature"] as const,
 };
 
 // ─── 1. Assessor Summary Hook ────────────────────────────────────────────────
@@ -301,6 +304,48 @@ export function useUpdateAssessorProfileSectors() {
   });
 }
 
+// ─── 16. Assessor Profile Signature Hooks ────────────────────────────────────
+export function useAssessorProfileSignature(enabled = true) {
+  return useQuery({
+    queryKey: ASSESSOR_QUERY_KEYS.signature,
+    queryFn: async () => {
+      const serverSig = await getAssessorProfileSignatureApi();
+      return serverSig ?? { assetId: null, url: null };
+    },
+    enabled,
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+export function useSetAssessorProfileSignature() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (payload: { assetId: string; url?: string | null }) => {
+      return putAssessorProfileSignatureApi({ assetId: payload.assetId });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ASSESSOR_QUERY_KEYS.signature,
+      });
+      toast({
+        type: "success",
+        title: "Signature Updated",
+        description: "Your official assessor signature has been saved.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        type: "error",
+        title: "Signature Update Failed",
+        description:
+          error.message || "Failed to update signature. Please try again.",
+      });
+    },
+  });
+}
+
 /**
  * Composite hook grouping Assessor operations
  */
@@ -310,6 +355,8 @@ export function useAssessor() {
   const requestRetainedAssessor = useRequestRetainedAssessor();
   const updateSectors = useUpdateAssessorProfileSectors();
   const patchProfile = usePatchAssessorProfile();
+  const signature = useAssessorProfileSignature();
+  const setSignature = useSetAssessorProfileSignature();
 
   return {
     summary,
@@ -317,5 +364,7 @@ export function useAssessor() {
     requestRetainedAssessor,
     updateSectors,
     patchProfile,
+    signature,
+    setSignature,
   };
 }

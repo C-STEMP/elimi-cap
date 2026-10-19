@@ -8,18 +8,22 @@ import {
 } from "@/features/assessment-centre/features/Applications/hooks";
 import {
   useGetCentreInterviews,
+  useGetCentreInductions,
   useGetCentrePanels,
   useDeleteCentreInterview,
+  useDeleteCentreInduction,
   useDeleteCentrePanel,
   useBulkCertifyApplications,
 } from "@/src/features/shared/centre/hooks";
 import {
   mapInterviewItem,
+  mapInductionItem,
   mapApplicationItem,
   mapPanelItem,
   type PanelRowData,
 } from "../utils/appViewHelpers";
 import type { InterviewRowData } from "../components/ViewInterviewDetailModal";
+import type { InductionRowData } from "../components/ViewInductionDetailModal";
 
 export function useApplicationsViewState(
   externalFilterTab?: string,
@@ -48,8 +52,10 @@ export function useApplicationsViewState(
 
   const { data: remoteApps, isLoading } = useGetApplications(appQueryParams);
   const { data: remoteInterviews = [], isLoading: isLoadingInterviews } = useGetCentreInterviews();
+  const { data: remoteInductions = [], isLoading: isLoadingInductions } = useGetCentreInductions();
   const { data: remotePanels = [], isLoading: isLoadingPanels } = useGetCentrePanels();
   const deleteInterviewMutation = useDeleteCentreInterview();
+  const deleteInductionMutation = useDeleteCentreInduction();
   const deletePanelMutation = useDeleteCentrePanel();
   const bulkCertifyMutation = useBulkCertifyApplications();
   const [searchQuery, setSearchQuery] = useState("");
@@ -57,8 +63,10 @@ export function useApplicationsViewState(
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectedInterviewIds, setSelectedInterviewIds] = useState<string[]>([]);
+  const [selectedInductionIds, setSelectedInductionIds] = useState<string[]>([]);
   const [selectedPanelIds, setSelectedPanelIds] = useState<string[]>([]);
   const [viewingInterview, setViewingInterview] = useState<InterviewRowData | null>(null);
+  const [viewingInduction, setViewingInduction] = useState<InductionRowData | null>(null);
   const [viewingPanel, setViewingPanel] = useState<PanelRowData | null>(null);
 
   const panelsList: PanelRowData[] = useMemo(
@@ -96,6 +104,23 @@ export function useApplicationsViewState(
         i.mode.toLowerCase().includes(q),
     );
   }, [interviewsList, searchQuery]);
+
+  const inductionsList: InductionRowData[] = useMemo(
+    () => remoteInductions.map((item) => mapInductionItem(item)),
+    [remoteInductions],
+  );
+
+  const filteredInductions = useMemo(() => {
+    if (!searchQuery.trim()) return inductionsList;
+    const q = searchQuery.toLowerCase();
+    return inductionsList.filter(
+      (ind) =>
+        ind.title.toLowerCase().includes(q) ||
+        ind.description.toLowerCase().includes(q) ||
+        ind.mode.toLowerCase().includes(q) ||
+        (ind.location && ind.location.toLowerCase().includes(q)),
+    );
+  }, [inductionsList, searchQuery]);
 
   const [modalFilters, setModalFilters] = useState<{
     assessmentType: string;
@@ -202,6 +227,30 @@ export function useApplicationsViewState(
     }
   };
 
+  const toggleSelectAllInductions = () =>
+    setSelectedInductionIds(
+      selectedInductionIds.length === filteredInductions.length
+        ? []
+        : filteredInductions.map((i) => i.id),
+    );
+
+  const toggleSelectInductionRow = (id: string) =>
+    setSelectedInductionIds((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]));
+
+  const handleDeleteSelectedInductions = async () => {
+    if (selectedInductionIds.length === 0) {
+      toast({ type: "info", title: "No Inductions Selected", description: "Please select induction rows to delete." });
+      return;
+    }
+    try {
+      await Promise.all(selectedInductionIds.map((id) => deleteInductionMutation.mutateAsync(id)));
+      setSelectedInductionIds([]);
+      toast({ type: "success", title: "Deleted", description: "Selected inductions have been removed." });
+    } catch (err: any) {
+      toast({ type: "error", title: "Delete Failed", description: err?.message || "Failed to delete selected inductions." });
+    }
+  };
+
   const toggleSelectAllPanels = () =>
     setSelectedPanelIds(
       selectedPanelIds.length === filteredPanels.length
@@ -261,19 +310,21 @@ export function useApplicationsViewState(
   };
 
   return {
-    isLoading, isLoadingInterviews, isLoadingPanels,
+    isLoading, isLoadingInterviews, isLoadingInductions, isLoadingPanels,
     activeFilterTab, setActiveFilterTab,
     searchQuery, setSearchQuery,
     viewMode, setViewMode,
     isFilterModalOpen, setIsFilterModalOpen,
-    selectedIds, selectedInterviewIds, selectedPanelIds,
+    selectedIds, selectedInterviewIds, selectedInductionIds, selectedPanelIds,
     viewingInterview, setViewingInterview,
+    viewingInduction, setViewingInduction,
     viewingPanel, setViewingPanel,
-    filteredInterviews, filteredPanels, filteredApplications,
+    filteredInterviews, filteredInductions, filteredPanels, filteredApplications,
     toggleSelectAll, toggleSelectRow,
     toggleSelectAllInterviews, toggleSelectInterviewRow,
+    toggleSelectAllInductions, toggleSelectInductionRow,
     toggleSelectAllPanels, toggleSelectPanelRow,
-    handleDeleteSelectedInterviews, handleDeleteSelectedPanels,
+    handleDeleteSelectedInterviews, handleDeleteSelectedInductions, handleDeleteSelectedPanels,
     handleNotifyAwardingBody,
     handleBulkCertify,
     isBulkCertifying: bulkCertifyMutation.isPending,

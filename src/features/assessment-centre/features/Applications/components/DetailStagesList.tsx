@@ -47,6 +47,8 @@ interface DetailStagesListProps {
   onOpenAssignFacilitator: () => void;
   onOpenRescheduleModal: () => void;
   onOpenScheduleModal: () => void;
+  activeInduction?: any;
+  onOpenScheduleInduction?: () => void;
   onOpenAssignVerifier: (type: "internal" | "external") => void;
   onOpenReviewVerifier: (type: "internal" | "external") => void;
 }
@@ -84,6 +86,8 @@ export const DetailStagesList: React.FC<DetailStagesListProps> = ({
   onOpenAssignFacilitator,
   onOpenRescheduleModal,
   onOpenScheduleModal,
+  activeInduction,
+  onOpenScheduleInduction,
   onOpenAssignVerifier,
   onOpenReviewVerifier,
 }) => {
@@ -247,33 +251,51 @@ export const DetailStagesList: React.FC<DetailStagesListProps> = ({
                 : "Awaiting centre approval"}
           </p>
         </div>
-        <div className="flex sm:self-center self-end shrink-0">
+        <div className="flex items-center gap-2 flex-wrap sm:self-center self-end shrink-0">
           {paymentStatus === "Successful" ? (
-            activeFacilitator ||
-            isAtInterviewStage ||
-            isInterviewScheduled ||
-            evidenceStatus === "Marked as complete" ? (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={onOpenAssignFacilitator}
-                className="bg-white! text-[#fbab2a]! border border-gray-200! hover:bg-gray-50! font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl flex items-center gap-1.5 cursor-pointer shrink-0 shadow-none!"
-              >
-                <FiFlag className="w-4 h-4 text-[#fbab2a]" />
-                <span>Change Facilitator</span>
-              </Button>
-            ) : (
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={onOpenAssignFacilitator}
-                className="bg-[#fbab2a]! hover:bg-[#e89b1f]! text-white! font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl cursor-pointer shrink-0 shadow-none!"
-              >
-                Assign Facilitator
-              </Button>
-            )
+            <>
+              {onOpenScheduleInduction && !activeInduction && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={onOpenScheduleInduction}
+                  className="bg-white! text-[#A31D38]! border border-gray-200! hover:bg-gray-50! font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl cursor-pointer shrink-0 shadow-none!"
+                >
+                  Schedule Induction
+                </Button>
+              )}
+              {activeInduction && (
+                <span className="bg-[#E6F4EA] text-[#1E7F4C] text-xs font-semibold px-3 py-1.5 rounded-xl">
+                  Induction: {activeInduction.title || activeInduction.name || "Scheduled"}
+                </span>
+              )}
+              {activeFacilitator ||
+              isAtInterviewStage ||
+              isInterviewScheduled ||
+              evidenceStatus === "Marked as complete" ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={onOpenAssignFacilitator}
+                  className="bg-white! text-[#fbab2a]! border border-gray-200! hover:bg-gray-50! font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl flex items-center gap-1.5 cursor-pointer shrink-0 shadow-none!"
+                >
+                  <FiFlag className="w-4 h-4 text-[#fbab2a]" />
+                  <span>Change Facilitator</span>
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={onOpenAssignFacilitator}
+                  className="bg-[#fbab2a]! hover:bg-[#e89b1f]! text-white! font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl cursor-pointer shrink-0 shadow-none!"
+                >
+                  Assign Facilitator
+                </Button>
+              )}
+            </>
           ) : (
             <span className="text-gray-400 font-bold text-sm shrink-0">
               {paymentDate}

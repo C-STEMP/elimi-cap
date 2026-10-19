@@ -11,6 +11,7 @@ import { APPLICATION_QUERY_KEYS } from "@/src/features/shared/applications/hooks
 interface Props {
   selectedCandidateName: string | null;
   selectedInterviewTitle?: string | null;
+  selectedInductionTitle?: string | null;
   selectedUnitNumber?: string | null;
   selectedTradeName?: string | null;
   showSelfAssessmentForm: boolean;
@@ -24,6 +25,7 @@ interface Props {
   isNsqIvApproved?: boolean;
   onBackToList: () => void;
   onBackFromInterview?: () => void;
+  onBackFromInduction?: () => void;
   onBackFromUnit?: () => void;
   onBackFromSelfAssessment: () => void;
   onBackFromEvidenceVault: () => void;
@@ -34,6 +36,7 @@ interface Props {
 export const ApplicationsHeaderBreadcrumb: React.FC<Props> = ({
   selectedCandidateName,
   selectedInterviewTitle,
+  selectedInductionTitle,
   selectedUnitNumber,
   selectedTradeName,
   showSelfAssessmentForm,
@@ -47,6 +50,7 @@ export const ApplicationsHeaderBreadcrumb: React.FC<Props> = ({
   isNsqIvApproved,
   onBackToList,
   onBackFromInterview,
+  onBackFromInduction,
   onBackFromUnit,
   onBackFromSelfAssessment,
   onBackFromEvidenceVault,
@@ -150,6 +154,27 @@ export const ApplicationsHeaderBreadcrumb: React.FC<Props> = ({
           </span>
           <span>&gt;</span>
           <span className="font-semibold text-white">{selectedInterviewTitle}</span>
+        </div>
+      </div>
+    );
+  }
+  if (selectedInductionTitle) {
+    return (
+      <div className="flex flex-col gap-1 pt-2">
+        <button
+          type="button"
+          onClick={onBackFromInduction}
+          className="flex items-center gap-2 text-white font-bold text-2xl lg:text-3xl tracking-tight hover:opacity-90 text-left cursor-pointer"
+        >
+          <span className="text-xl font-bold">&lt;</span>
+          <span>{selectedInductionTitle}</span>
+        </button>
+        <div className="flex items-center gap-2 text-xs lg:text-sm text-white/90 font-normal">
+          <span onClick={onBackFromInduction} className="hover:underline cursor-pointer">
+            Applications
+          </span>
+          <span>&gt;</span>
+          <span className="font-semibold text-white">{selectedInductionTitle}</span>
         </div>
       </div>
     );

@@ -1,4 +1,5 @@
 import type { InterviewRowData } from "../components/ViewInterviewDetailModal";
+import type { InductionRowData } from "../components/ViewInductionDetailModal";
 
 export const FILTER_TABS = [
   "All",
@@ -8,6 +9,7 @@ export const FILTER_TABS = [
   "Completed",
   "Archived",
   "Interviews",
+  "Induction",
   "Panel",
 ];
 
@@ -51,6 +53,43 @@ export function mapInterviewItem(item: any, remotePanels: any[]): InterviewRowDa
     scheduledAt: item.scheduledAt || undefined,
     location: item.location || (item.useCentreAddress ? "Centre Address" : "Physical Location"),
     link: item.link || undefined,
+  };
+}
+
+export function mapInductionItem(item: any): InductionRowData {
+  const modeLower = item.mode?.toLowerCase();
+  const isVirtual = modeLower === "virtual" || modeLower === "online";
+
+  return {
+    id: item.id,
+    title: item.name || item.title || "Untitled Induction",
+    description: item.description || "—",
+    mode: isVirtual ? "Virtual" : "Physical",
+    createdAt: item.createdAt
+      ? new Date(item.createdAt).toLocaleDateString("en-US", {
+          month: "2-digit",
+          day: "2-digit",
+          year: "numeric",
+        })
+      : "—",
+    scheduledAt: item.scheduledAt || undefined,
+    scheduledDate: item.scheduledDate || undefined,
+    scheduledTime: item.scheduledTime || undefined,
+    location:
+      item.location ||
+      (item.useCentreAddress ? "Centre Address" : "Physical Location"),
+    country: item.country || undefined,
+    state: item.state || undefined,
+    lga: item.lga || undefined,
+    streetAddress: item.streetAddress || undefined,
+    link: item.link || undefined,
+    candidates: Array.isArray(item.candidates) ? item.candidates : [],
+    candidatesCount:
+      typeof item.candidatesCount === "number"
+        ? item.candidatesCount
+        : Array.isArray(item.candidates)
+          ? item.candidates.length
+          : 0,
   };
 }
 

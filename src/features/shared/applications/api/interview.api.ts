@@ -2,6 +2,8 @@ import { capFetch } from "@/src/lib/api/cap";
 import type {
   Application,
   InterviewForm,
+  InterviewFormRecord,
+  InterviewFormsList,
   InterviewObserverComment,
   InterviewPanel,
   InterviewSchedule,
@@ -64,7 +66,14 @@ export interface EvaluateInterviewResponse {
 
 export async function evaluateInterviewApi(
   id: string,
+): Promise<EvaluateInterviewResponse>;
+export async function evaluateInterviewApi(
+  id: string,
   payload: EvaluateInterviewPayload,
+): Promise<EvaluateInterviewResponse>;
+export async function evaluateInterviewApi(
+  id: string,
+  payload?: EvaluateInterviewPayload,
 ): Promise<EvaluateInterviewResponse> {
   return await capFetch<EvaluateInterviewResponse>(`/applications/${id}/interview/evaluate`, {
     method: "POST",
@@ -72,25 +81,53 @@ export async function evaluateInterviewApi(
   });
 }
 
-export async function getInterviewFormsApi(
+export async function getInterviewFormsBundleApi(
   id: string,
-): Promise<InterviewForm[]> {
+): Promise<InterviewFormsList> {
   try {
-    const res = await capFetch<InterviewForm[] | { data: InterviewForm[] }>(
-      `/applications/${id}/interview/forms`,
-      { method: "GET" },
-    );
-    return Array.isArray(res) ? res : (res as any)?.data || [];
+    const res = await capFetch<
+      | InterviewFormsList
+      | InterviewForm[]
+      | { data: InterviewFormsList | InterviewForm[] }
+    >(`/applications/${id}/interview/forms`, { method: "GET" });
+
+    if (Array.isArray(res)) {
+      return { forms: res, panelistRecords: [] };
+    }
+    const unwrapped =
+      res && typeof res === "object" && "data" in res && !("forms" in res)
+        ? (res as any).data
+        : res;
+
+    if (Array.isArray(unwrapped)) {
+      return { forms: unwrapped, panelistRecords: [] };
+    }
+
+    return {
+      forms: Array.isArray((unwrapped as any)?.forms)
+        ? (unwrapped as any).forms
+        : [],
+      panelistRecords: Array.isArray((unwrapped as any)?.panelistRecords)
+        ? (unwrapped as any).panelistRecords
+        : [],
+    };
   } catch (err: any) {
     if (
       err?.statusCode === 404 ||
       err?.status === 404 ||
       err?.error?.code?.includes("not_found")
     ) {
-      return [];
+      return { forms: [], panelistRecords: [] };
     }
     throw err;
   }
+}
+
+export async function getInterviewFormsApi(
+  id: string,
+): Promise<InterviewForm[]> {
+  const bundle = await getInterviewFormsBundleApi(id);
+  return bundle.forms;
 }
 
 export async function updateInterviewFormApi(
@@ -101,8 +138,8 @@ export async function updateInterviewFormApi(
     | "practical_observation"
     | "skill_demonstration",
   payload: { data: Record<string, unknown> },
-): Promise<InterviewForm> {
-  return capFetch<InterviewForm>(
+): Promise<InterviewForm | InterviewFormRecord> {
+  return capFetch<InterviewForm | InterviewFormRecord>(
     `/applications/${id}/interview/forms/${formType}`,
     { method: "PUT", data: payload },
   );

@@ -8,6 +8,7 @@ import { CreateInterviewModal } from "@/src/features/assessment-centre/features/
 import { EvidenceVaultView } from "@/src/features/assessment-centre/features/Applications/components/EvidenceVaultView";
 import { PromptCreatePanelModal } from "@/src/features/assessment-centre/features/Applications/components/PromptCreatePanelModal";
 import { ScheduleInterviewModal } from "@/src/features/assessment-centre/features/Applications/components/ScheduleInterviewModal";
+import { ScheduleInductionModal } from "@/src/features/assessment-centre/features/Applications/components/ScheduleInductionModal";
 import { SelfAssessmentFormView } from "@/src/features/assessment-centre/features/Applications/components/SelfAssessmentFormView";
 import { AssessmentCentreHeader } from "@/src/features/assessment-centre/features/Dashboard/components/AssessmentCentreHeader";
 import {
@@ -26,7 +27,12 @@ import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import React, { useState } from "react";
 import { NsqCentreApplicationDetailView } from "./nsq/NsqCentreApplicationDetailView";
 import { useUrlModal } from "@/src/lib/hooks/usePersistentModal";
-import { APPLICATION_SCHEDULE_INTERVIEW_MODAL, CREATE_INTERVIEW_MODAL, APPLICATION_CANDIDATE_FORM_VIEW } from "@/src/lib/modal-keys";
+import {
+  APPLICATION_SCHEDULE_INTERVIEW_MODAL,
+  APPLICATION_SCHEDULE_INDUCTION_MODAL,
+  CREATE_INTERVIEW_MODAL,
+  APPLICATION_CANDIDATE_FORM_VIEW,
+} from "@/src/lib/modal-keys";
 import { closeUrlSubView, openUrlSubView } from "@/src/lib/navigation/url-sub-view";
 export const CentreApplicationRouteView: React.FC<{
   id: string;
@@ -59,6 +65,8 @@ export const CentreApplicationRouteView: React.FC<{
     useState(false);
   const [isScheduleInterviewModalOpen, setIsScheduleInterviewModalOpen] =
     useUrlModal(APPLICATION_SCHEDULE_INTERVIEW_MODAL);
+  const [isScheduleInductionModalOpen, setIsScheduleInductionModalOpen] =
+    useUrlModal(APPLICATION_SCHEDULE_INDUCTION_MODAL);
   const [isCreateInterviewModalOpen, setIsCreateInterviewModalOpen] =
     useUrlModal(CREATE_INTERVIEW_MODAL);
   const [selectedUnitNumber, setInternalSelectedUnitNumber] = useState<
@@ -234,6 +242,7 @@ export const CentreApplicationRouteView: React.FC<{
           }}
           onCreateInterview={() => setIsCreateInterviewModalOpen(true)}
           onScheduleInterview={handleOpenScheduleInterview}
+          onScheduleInduction={() => setIsScheduleInductionModalOpen(true)}
         />
       </AssessmentCentreHeader>
 
@@ -328,6 +337,12 @@ export const CentreApplicationRouteView: React.FC<{
         onClose={() => setIsScheduleInterviewModalOpen(false)}
         initialApplicationId={id}
         modalKey={APPLICATION_SCHEDULE_INTERVIEW_MODAL}
+      />
+      <ScheduleInductionModal
+        isOpen={isScheduleInductionModalOpen}
+        onClose={() => setIsScheduleInductionModalOpen(false)}
+        initialApplicationId={id}
+        modalKey={APPLICATION_SCHEDULE_INDUCTION_MODAL}
       />
       <CreateInterviewModal
         isOpen={isCreateInterviewModalOpen}

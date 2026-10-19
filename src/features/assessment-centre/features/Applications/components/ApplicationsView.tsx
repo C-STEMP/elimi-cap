@@ -6,17 +6,21 @@ import { useApplicationsViewState } from "../hooks/useApplicationsViewState";
 import { AppsFilterBar } from "./AppsFilterBar";
 import { AppListTable } from "./AppListTable";
 import { InterviewListTable } from "./InterviewListTable";
+import { InductionListTable } from "./InductionListTable";
 import { PanelListTable } from "./PanelListTable";
 import { FilterModal } from "./FilterModal";
 import { ViewInterviewDetailModal, type InterviewRowData } from "./ViewInterviewDetailModal";
+import { ViewInductionDetailModal, type InductionRowData } from "./ViewInductionDetailModal";
 import { ViewPanelDetailModal } from "./ViewPanelDetailModal";
 
 interface ApplicationsViewProps {
   onSelectCandidate: (candidateName: string, id?: string) => void;
   onSelectInterview?: (interview: InterviewRowData) => void;
+  onSelectInduction?: (induction: InductionRowData) => void;
   onOpenCreatePanel?: () => void;
   onOpenCreateInterview?: () => void;
   onOpenScheduleInterview?: () => void;
+  onOpenScheduleInduction?: () => void;
   activeFilterTab?: string;
   onTabChange?: (tab: string) => void;
 }
@@ -24,6 +28,7 @@ interface ApplicationsViewProps {
 export const ApplicationsView: React.FC<ApplicationsViewProps> = ({
   onSelectCandidate,
   onSelectInterview,
+  onSelectInduction,
   activeFilterTab,
   onTabChange,
 }) => {
@@ -60,6 +65,8 @@ export const ApplicationsView: React.FC<ApplicationsViewProps> = ({
         selectedInterviewIds={state.selectedInterviewIds}
         filteredInterviewsLength={state.filteredInterviews.length}
         onDeleteInterviews={state.handleDeleteSelectedInterviews}
+        selectedInductionIds={state.selectedInductionIds}
+        onDeleteInductions={state.handleDeleteSelectedInductions}
         selectedPanelIds={state.selectedPanelIds}
         onDeletePanels={state.handleDeleteSelectedPanels}
         onSelectAll={state.toggleSelectAll}
@@ -80,6 +87,17 @@ export const ApplicationsView: React.FC<ApplicationsViewProps> = ({
           onToggleSelect={state.toggleSelectInterviewRow}
           onSelectInterview={onSelectInterview}
           onSetViewing={state.setViewingInterview}
+        />
+      ) : state.activeFilterTab === "Induction" ? (
+        <InductionListTable
+          filteredInductions={state.filteredInductions}
+          isLoadingInductions={state.isLoadingInductions}
+          viewMode={state.viewMode}
+          selectedInductionIds={state.selectedInductionIds}
+          onToggleSelectAll={state.toggleSelectAllInductions}
+          onToggleSelect={state.toggleSelectInductionRow}
+          onSelectInduction={onSelectInduction}
+          onSetViewing={state.setViewingInduction}
         />
       ) : state.activeFilterTab === "Panel" ? (
         <PanelListTable
@@ -112,6 +130,11 @@ export const ApplicationsView: React.FC<ApplicationsViewProps> = ({
         isOpen={Boolean(state.viewingInterview)}
         interview={state.viewingInterview}
         onClose={() => state.setViewingInterview(null)}
+      />
+      <ViewInductionDetailModal
+        isOpen={Boolean(state.viewingInduction)}
+        induction={state.viewingInduction}
+        onClose={() => state.setViewingInduction(null)}
       />
       <ViewPanelDetailModal
         isOpen={Boolean(state.viewingPanel)}

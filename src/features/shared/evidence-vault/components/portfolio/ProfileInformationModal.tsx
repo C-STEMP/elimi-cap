@@ -8,6 +8,15 @@ interface ProfileInformationModalProps {
   isOpen: boolean;
   onClose: () => void;
   application?: ApplicationDetail | null;
+  personalDetails?: {
+    firstName?: string | null;
+    middleName?: string | null;
+    lastName?: string | null;
+    dob?: string | null;
+    dateOfBirth?: string | null;
+    gender?: string | null;
+    nationality?: string | null;
+  } | null;
 }
 
 function Field({ label, value }: { label: string; value?: React.ReactNode }) {
@@ -28,7 +37,7 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
   );
 }
 
-const formatDate = (value?: string) => {
+const formatDate = (value?: string | null) => {
   if (!value) return "";
   const d = new Date(value);
   return Number.isNaN(d.getTime()) ? value : d.toLocaleDateString("en-GB");
@@ -39,10 +48,11 @@ export const ProfileInformationModal: React.FC<ProfileInformationModalProps> = (
   isOpen,
   onClose,
   application,
+  personalDetails,
 }) => {
   if (!isOpen) return null;
 
-  const details = application?.personalInformation?.personalDetails;
+  const details = personalDetails || application?.personalInformation?.personalDetails;
   const contact = application?.personalInformation?.contactInformation;
   const address = application?.personalInformation?.residentialAddress;
   const occupation = application?.currentOccupation;

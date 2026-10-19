@@ -9,6 +9,8 @@ interface ConfirmCreatePanelModalProps {
   isSubmitting?: boolean;
   title?: string;
   description?: string;
+  confirmText?: string;
+  submittingText?: string;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -18,6 +20,8 @@ export const ConfirmCreatePanelModal: React.FC<ConfirmCreatePanelModalProps> = (
   isSubmitting = false,
   title = "Are you sure?",
   description = "Confirm you want to create panel",
+  confirmText = "Yes, Create",
+  submittingText = "Creating...",
   onConfirm,
   onCancel,
 }) => {
@@ -56,7 +60,7 @@ export const ConfirmCreatePanelModal: React.FC<ConfirmCreatePanelModalProps> = (
               onClick={onConfirm}
               className="w-full bg-[#F59E0B] hover:bg-[#D97706] active:scale-[0.99] text-white font-bold text-sm sm:text-base h-12 rounded-xl transition-all cursor-pointer shadow-md shadow-amber-500/20 disabled:opacity-50"
             >
-              {isSubmitting ? "Creating..." : "Yes, Create"}
+              {isSubmitting ? submittingText : confirmText}
             </button>
 
             <button

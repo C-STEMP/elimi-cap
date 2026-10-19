@@ -47,11 +47,29 @@ export const AssignNsqAssessorModal: React.FC<AssignNsqAssessorModalProps> = ({
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: remoteAssessors = [], isLoading: isLoadingAssessors } =
+  const { data: qualifiedAssessors = [], isLoading: isLoadingQualified } =
     useGetCentreAssessors({
       status: "approved",
       qualification: roleType === "QAA" ? "QAA" : "IQM",
     });
+  const { data: ivQualifiedAssessors = [], isLoading: isLoadingIv } =
+    useGetCentreAssessors({
+      status: "approved",
+      qualification: "IV",
+    });
+  const { data: allApprovedAssessors = [], isLoading: isLoadingAll } =
+    useGetCentreAssessors({
+      status: "approved",
+    });
+
+  const remoteAssessors =
+    qualifiedAssessors.length > 0
+      ? qualifiedAssessors
+      : roleType === "IQA" && ivQualifiedAssessors.length > 0
+        ? ivQualifiedAssessors
+        : allApprovedAssessors;
+  const isLoadingAssessors =
+    isLoadingQualified && isLoadingAll && (roleType !== "IQA" || isLoadingIv);
 
   const [selectedAssessorId, setSelectedAssessorId] = useState<string>(
     currentAssignedId || "",

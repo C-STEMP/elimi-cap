@@ -17,11 +17,16 @@ import { ASSESSMENT_CENTRE_ROUTES } from "@/features/assessment-centre/utils/cen
 
 import { useOnboarding } from "@/src/features/assessment-centre/features/Onboarding/hooks";
 import { useUploadFile } from "@/src/features/shared/storage/hooks";
-import { useGetBanks, useResolveBankAccount } from "@/src/features/shared/reference/hooks";
+import {
+  useGetBanks,
+  useResolveBankAccount,
+  useGetAllTrades,
+} from "@/src/features/shared/reference/hooks";
 import { patchCentreProfileApi } from "@/src/features/shared/centre/api";
 import { useAppDispatch, useAppSelector } from "@/src/store/hooks";
 import { setCentreInformation } from "@/src/store/slices/onboardingSlice";
 import { SelectOption } from "@/src/components/ui/select";
+import { FiX, FiFileText, FiCheckCircle } from "react-icons/fi";
 
 export const CenterInformation: React.FC = () => {
   const router = useRouter();
@@ -33,6 +38,7 @@ export const CenterInformation: React.FC = () => {
   const [accountResolveSuccess, setAccountResolveSuccess] = useState(false);
   const uploadFileMutation = useUploadFile();
   const savedCentreInfo = useAppSelector((s) => s.onboarding.centreInformation);
+  const { data: availableTrades = [] } = useGetAllTrades();
 
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(
@@ -41,6 +47,20 @@ export const CenterInformation: React.FC = () => {
   const [logoAssetId, setLogoAssetId] = useState<string | undefined>(
     savedCentreInfo.logoAssetId || undefined,
   );
+  const [certificateAssetId, setCertificateAssetId] = useState<string | undefined>(
+    savedCentreInfo.certificateAssetId || undefined,
+  );
+  const [certificateName, setCertificateName] = useState<string>(
+    savedCentreInfo.certificateName || "",
+  );
+  const [certificateUrl, setCertificateUrl] = useState<string>(
+    savedCentreInfo.certificateUrl || "",
+  );
+  const [isUploadingCert, setIsUploadingCert] = useState(false);
+  const [selectedTradeIds, setSelectedTradeIds] = useState<string[]>(
+    savedCentreInfo.tradeIds || [],
+  );
+  const [tradePickerId, setTradePickerId] = useState<string>("");
 
   const [form, setForm] = useState({
     centerName: savedCentreInfo.centerName || "",
@@ -257,6 +277,22 @@ export const CenterInformation: React.FC = () => {
         setLogoAssetId(cInfo.logoAssetId);
         dispatch(setCentreInformation({ logoAssetId: cInfo.logoAssetId }));
       }
+      const hydratedCertAssetId =
+        cInfo?.certificateAssetId || apiData?.centre?.certificateAssetId;
+      if (hydratedCertAssetId) {
+        setCertificateAssetId(hydratedCertAssetId);
+        dispatch(setCentreInformation({ certificateAssetId: hydratedCertAssetId }));
+      }
+      const hydratedTrades =
+        cInfo?.tradeIds ||
+        apiData?.centre?.tradeIds ||
+        (Array.isArray(apiData?.centre?.trades)
+          ? apiData.centre.trades.map((t: any) => t.id || t)
+          : undefined);
+      if (Array.isArray(hydratedTrades) && hydratedTrades.length > 0) {
+        setSelectedTradeIds(hydratedTrades);
+        dispatch(setCentreInformation({ tradeIds: hydratedTrades }));
+      }
     }
   }, [getOnboarding.data, dispatch]);
 
@@ -285,11 +321,6 @@ export const CenterInformation: React.FC = () => {
         if (asset?.assetId) {
           setLogoAssetId(asset.assetId);
           dispatch(setCentreInformation({ logoAssetId: asset.assetId }));
-          try {
-            await patchCentreProfileApi({ logoAssetId: asset.assetId });
-          } catch {
-            // Non-blocking
-          }
         }
         if (asset?.url) {
           setLogoPreview(asset.url);
@@ -299,6 +330,57 @@ export const CenterInformation: React.FC = () => {
         // Fallback to local preview
       }
     }
+  };
+
+  const handleCertificateChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setIsUploadingCert(true);
+      setCertificateName(file.name);
+      dispatch(setCentreInformation({ certificateName: file.name }));
+      try {
+        const asset = await uploadFileMutation.mutateAsync({
+          file,
+          purpose: "certificate",
+        });
+        if (asset?.assetId) {
+          setCertificateAssetId(asset.assetId);
+          dispatch(
+            setCentreInformation({
+              certificateAssetId: asset.assetId,
+              certificateUrl: asset.url || "",
+            }),
+          );
+          if (asset.url) setCertificateUrl(asset.url);
+        }
+      } catch (err: any) {
+        toast({
+          type: "error",
+          title: "Upload Failed",
+          description: err?.message || "Failed to upload accreditation certificate.",
+        });
+      } finally {
+        setIsUploadingCert(false);
+      }
+    }
+  };
+
+  const handleAddTrade = (tradeId: string) => {
+    if (!tradeId) return;
+    setSelectedTradeIds((prev) => {
+      const next = prev.includes(tradeId) ? prev : [...prev, tradeId];
+      dispatch(setCentreInformation({ tradeIds: next }));
+      return next;
+    });
+    setTradePickerId("");
+  };
+
+  const handleRemoveTrade = (tradeId: string) => {
+    setSelectedTradeIds((prev) => {
+      const next = prev.filter((id) => id !== tradeId);
+      dispatch(setCentreInformation({ tradeIds: next }));
+      return next;
+    });
   };
 
   const update = (field: keyof typeof form, value: string) => {
@@ -409,7 +491,9 @@ export const CenterInformation: React.FC = () => {
             name: form.centerName,
             registrationNo: form.regNo,
             logoAssetId,
+            ...(certificateAssetId ? { certificateAssetId } : {}),
           },
+          ...(selectedTradeIds.length > 0 ? { tradeIds: selectedTradeIds } : {}),
           centreResidentialAddress: {
             country: form.country,
             state: form.state,
@@ -721,6 +805,99 @@ export const CenterInformation: React.FC = () => {
                 </span>
               )}
             </div>
+          </div>
+        </div>
+
+        {/* Section 4: Trades Offered & Accreditation Certificate (Optional) */}
+        <div className="flex flex-col gap-4 mt-2">
+          <h2 className="text-base sm:text-lg font-bold text-neutral-primary flex items-center gap-1.5">
+            Trades Offered &amp; Accreditation (Optional)
+          </h2>
+
+          <div className="flex flex-col gap-2">
+            <Select
+              label="Trades Offered (Optional)"
+              placeholder="Select trade(s) offered by this centre..."
+              value={tradePickerId}
+              onChange={(e) => handleAddTrade(e.target.value)}
+              options={availableTrades
+                .filter((t) => !selectedTradeIds.includes(t.id))
+                .map((t) => ({ label: t.name, value: t.id }))}
+            />
+            {selectedTradeIds.length > 0 && (
+              <div className="flex flex-wrap gap-2 pt-1">
+                {selectedTradeIds.map((tId) => {
+                  const tradeObj = availableTrades.find((t) => t.id === tId);
+                  return (
+                    <span
+                      key={tId}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-xs font-semibold"
+                    >
+                      <span>{tradeObj?.name || tId}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveTrade(tId)}
+                        className="text-amber-700 hover:text-red-600 cursor-pointer"
+                      >
+                        <FiX className="w-3.5 h-3.5" />
+                      </button>
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs sm:text-sm font-medium text-neutral-primary">
+              Accreditation Certificate (Optional)
+            </label>
+            <label className="w-full p-4 border-2 border-dashed border-gray-200 hover:border-amber-400 rounded-xl bg-gray-50/60 flex items-center justify-between gap-3 cursor-pointer transition-all">
+              <input
+                type="file"
+                accept=".pdf,image/*"
+                className="hidden"
+                onChange={handleCertificateChange}
+              />
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                  <FiFileText className="w-5 h-5" />
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <span className="text-xs sm:text-sm font-semibold text-gray-800 truncate">
+                    {isUploadingCert
+                      ? "Uploading certificate..."
+                      : certificateName ||
+                        (certificateAssetId
+                          ? "Accreditation Certificate Uploaded"
+                          : "Upload Accreditation Certificate")}
+                  </span>
+                  <span className="text-[11px] text-gray-400">
+                    PDF, PNG, or JPG (max 5MB)
+                  </span>
+                </div>
+              </div>
+              {certificateAssetId && !isUploadingCert ? (
+                <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 shrink-0">
+                  <FiCheckCircle className="w-4 h-4" />
+                  Uploaded
+                </span>
+              ) : (
+                <span className="text-xs font-bold text-primary-solid shrink-0">
+                  Browse
+                </span>
+              )}
+            </label>
+            {certificateUrl && (
+              <a
+                href={certificateUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs font-semibold text-primary-solid hover:underline self-start"
+              >
+                View uploaded certificate
+              </a>
+            )}
           </div>
         </div>
 

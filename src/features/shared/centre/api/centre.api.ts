@@ -307,6 +307,16 @@ export interface CentreProfile {
     assetId: string;
     url?: string | null;
   } | null;
+  certificateAssetId?: string | null;
+  certificate?: {
+    assetId: string;
+    url?: string | null;
+  } | null;
+  trades?: Array<{
+    id: string;
+    name: string;
+    slug: string;
+  }>;
   status: "pending" | "approved" | "suspended" | "rejected";
   ownerIdentityVerified: boolean;
   onboarding?: any;
@@ -319,6 +329,8 @@ export interface CentreProfile {
 export interface CentreProfilePatch {
   name?: string;
   logoAssetId?: string | null;
+  certificateAssetId?: string | null;
+  tradeIds?: string[];
   address?: ResidentialAddress;
   supportContact?: ContactInformation;
   accountDetails?: CentreAccountDetails;
@@ -1066,4 +1078,237 @@ export async function bulkCertifyApplicationsApi(
     data: { ids, action: "certify" },
   });
 }
+
+// ─── Inductions API ──────────────────────────────────────────────────────────
+
+export interface CentreInductionAttendee {
+  applicationId: string;
+  candidateId: string;
+  candidateName: string;
+  addedAt: string;
+}
+
+export interface CentreInduction {
+  id: string;
+  centreId?: string;
+  name: string;
+  title?: string;
+  description?: string | null;
+  scheduledAt?: string | null;
+  mode?: "physical" | "online" | "virtual" | null;
+  link?: string | null;
+  location?: string | null;
+  country?: string | null;
+  state?: string | null;
+  lga?: string | null;
+  streetAddress?: string | null;
+  useCentreAddress?: boolean;
+  attendees?: CentreInductionAttendee[];
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface CreateCentreInductionPayload {
+  name?: string;
+  title?: string;
+  description?: string | null;
+  scheduledAt?: string | null;
+  mode?: "physical" | "online" | "virtual" | null;
+  location?: string | null;
+  country?: string;
+  state?: string;
+  lga?: string;
+  streetAddress?: string;
+  useCentreAddress?: boolean;
+  link?: string | null;
+  durationMinutes?: number | null;
+  applicationIds?: string[];
+}
+
+function normalizeCentreInduction(raw: any): CentreInduction {
+  if (!raw || typeof raw !== "object") {
+    return {
+      id: "",
+      name: "Induction Session",
+      title: "Induction Session",
+      createdAt: new Date().toISOString(),
+      attendees: [],
+    };
+  }
+  const resolvedTitle = raw.title || raw.name || "Induction Session";
+  return {
+    ...raw,
+    name: resolvedTitle,
+    title: resolvedTitle,
+    attendees: Array.isArray(raw.attendees) ? raw.attendees : [],
+  };
+}
+
+export async function getCentreInductionsApi(params?: {
+  cursor?: string;
+  limit?: number;
+  q?: string;
+  from?: string;
+  to?: string;
+  scheduledAt?: string;
+  order?: "asc" | "desc";
+}): Promise<CentreInduction[]> {
+  const queryParams: Record<string, unknown> = {};
+  if (params?.cursor) queryParams.cursor = params.cursor;
+  if (params?.limit) queryParams.limit = params.limit;
+  if (params?.q) queryParams.q = params.q;
+  if (params?.order) queryParams.order = params.order;
+
+  const list = await capFetchAll<CentreInduction>(
+    "/centre/inductions",
+    queryParams,
+  );
+  return list.map(normalizeCentreInduction);
+}
+
+export async function postCentreInductionsApi(
+  payload: CreateCentreInductionPayload,
+): Promise<CentreInduction> {
+  const title = (payload.title || payload.name || "Induction Ceremony").trim();
+  const mode: "physical" | "online" =
+    payload.mode === "online" || payload.mode === "virtual"
+      ? "online"
+      : "physical";
+
+  const composedLocation =
+    payload.location ||
+    [payload.streetAddress, payload.lga, payload.state, payload.country]
+      .filter(Boolean)
+      .join(", ");
+
+  const body: Record<string, unknown> = {
+    title,
+    scheduledAt: payload.scheduledAt || new Date().toISOString(),
+    mode,
+  };
+
+  if (payload.description !== undefined && payload.description !== "") {
+    body.description = payload.description;
+  }
+
+  if (mode === "physical") {
+    body.useCentreAddress = Boolean(payload.useCentreAddress);
+    if (!payload.useCentreAddress && composedLocation) {
+      body.location = composedLocation;
+    }
+  } else if (payload.link) {
+    body.link = payload.link;
+  }
+
+  const res = await capFetch<CentreInduction | { data: CentreInduction }>(
+    "/centre/inductions",
+    {
+      method: "POST",
+      data: body,
+    },
+  );
+  let created = normalizeCentreInduction((res as any)?.data || res);
+
+  if (Array.isArray(payload.applicationIds) && payload.applicationIds.length > 0 && created.id) {
+    created = await addCentreInductionCandidatesApi(
+      created.id,
+      payload.applicationIds,
+    );
+  }
+
+  return created;
+}
+
+export async function getCentreInductionDetailApi(
+  id: string,
+): Promise<CentreInduction> {
+  const res = await capFetch<CentreInduction | { data: CentreInduction }>(
+    `/centre/inductions/${id}`,
+    {
+      method: "GET",
+    },
+  );
+  return normalizeCentreInduction((res as any)?.data || res);
+}
+
+export async function patchCentreInductionApi(
+  id: string,
+  payload: Partial<CreateCentreInductionPayload>,
+): Promise<CentreInduction> {
+  const body: Record<string, unknown> = {};
+  const title = payload.title ?? payload.name;
+  if (title !== undefined) {
+    body.title = title;
+  }
+  if (payload.description !== undefined) {
+    body.description = payload.description;
+  }
+  if (payload.scheduledAt !== undefined && payload.scheduledAt !== null) {
+    body.scheduledAt = payload.scheduledAt;
+  }
+  if (payload.mode !== undefined && payload.mode !== null) {
+    body.mode =
+      payload.mode === "online" || payload.mode === "virtual"
+        ? "online"
+        : "physical";
+  }
+  if (payload.useCentreAddress !== undefined) {
+    body.useCentreAddress = payload.useCentreAddress;
+  }
+  const composedLocation =
+    payload.location ??
+    ([payload.streetAddress, payload.lga, payload.state, payload.country]
+      .filter(Boolean)
+      .join(", ") ||
+      undefined);
+  if (composedLocation !== undefined) {
+    body.location = composedLocation;
+  }
+  if (payload.link !== undefined) {
+    body.link = payload.link;
+  }
+
+  const res = await capFetch<CentreInduction | { data: CentreInduction }>(
+    `/centre/inductions/${id}`,
+    {
+      method: "PATCH",
+      data: body,
+    },
+  );
+  return normalizeCentreInduction((res as any)?.data || res);
+}
+
+export async function deleteCentreInductionApi(id: string): Promise<void> {
+  await capFetch<void>(`/centre/inductions/${id}`, {
+    method: "DELETE",
+  });
+}
+
+export async function addCentreInductionCandidatesApi(
+  id: string,
+  applicationIds: string[],
+): Promise<CentreInduction> {
+  const res = await capFetch<CentreInduction | { data: CentreInduction }>(
+    `/centre/inductions/${id}/candidates`,
+    {
+      method: "POST",
+      data: { applicationIds },
+    },
+  );
+  return normalizeCentreInduction((res as any)?.data || res);
+}
+
+export async function removeCentreInductionCandidateApi(
+  id: string,
+  applicationId: string,
+): Promise<{ message?: string }> {
+  return capFetch<{ message?: string }>(
+    `/centre/inductions/${id}/candidates/${applicationId}`,
+    {
+      method: "DELETE",
+    },
+  );
+}
+
+
 

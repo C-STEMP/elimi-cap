@@ -14,6 +14,8 @@ import {
   usePatchAssessorProfile as useSharedPatchAssessorProfile,
   useGetAssessorProfileSectors as useSharedGetAssessorProfileSectors,
   useUpdateAssessorProfileSectors as useSharedUpdateAssessorProfileSectors,
+  useAssessorProfileSignature as useSharedAssessorProfileSignature,
+  useSetAssessorProfileSignature as useSharedSetAssessorProfileSignature,
   useAssessor as useSharedAssessor,
 } from "@/src/features/shared/assessor/hooks";
 
@@ -119,6 +121,14 @@ export function useGetAssessorProfileSectors() {
 
 export function useUpdateAssessorProfileSectors() {
   return useSharedUpdateAssessorProfileSectors();
+}
+
+export function useAssessorProfileSignature(enabled = true) {
+  return useSharedAssessorProfileSignature(enabled);
+}
+
+export function useSetAssessorProfileSignature() {
+  return useSharedSetAssessorProfileSignature();
 }
 
 export function useAssessor() {

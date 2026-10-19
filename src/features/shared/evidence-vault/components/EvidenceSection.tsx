@@ -9,6 +9,7 @@ import {
   FiFileText,
   FiFolder,
   FiImage,
+  FiPlus,
   FiTrash2,
   FiVideo,
 } from "react-icons/fi";
@@ -57,13 +58,25 @@ export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
 
   return (
     <div className="border border-[#F7F4EF] p-4 sm:p-6 rounded-2xl bg-white flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <h3 className="text-base sm:text-lg font-bold text-neutral-primary tracking-tight">
-          Evidences ({evidences.length})
-        </h3>
-        <p className="text-xs sm:text-sm text-gray-500">
-          Upload all relevant documents, certificates, work samples, videos, pictures and audio.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex flex-col gap-1">
+          <h3 className="text-base sm:text-lg font-bold text-neutral-primary tracking-tight">
+            Evidences ({evidences.length})
+          </h3>
+          <p className="text-xs sm:text-sm text-gray-500">
+            Upload all relevant documents, certificates, work samples, videos, pictures and audio.
+          </p>
+        </div>
+        <Button
+          type="button"
+          variant="amber"
+          size="md"
+          rightIcon={<FiPlus className="w-4 h-4 stroke-3" />}
+          onClick={onOpenUploadModal}
+          className="bg-[#fbab2a] hover:bg-[#e89b1f] text-white font-bold px-4 py-2.5 rounded-xl shadow-xs shrink-0 self-start sm:self-auto cursor-pointer"
+        >
+          Upload Evidence
+        </Button>
       </div>
 
       {evidences.length > 0 ? (
@@ -90,22 +103,24 @@ export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
               (item.issues && item.issues.length > 0 && !isApproved);
             const isInProgress = s.includes("review") || s.includes("progress");
 
-            const badgeBg =
-              isApproved || isSubmitted
-                ? "bg-[#1E7F4C]/10"
+            const badgeBg = isApproved
+              ? "bg-[#1E7F4C]/10"
+              : isSubmitted
+                ? "bg-[#EFF6FF]"
                 : isAttention
                   ? "bg-[#FEE2E2]"
                   : isInProgress
                     ? "bg-[#EFF6FF]"
                     : "bg-[#F9A825]/10";
-            const badgeText =
-              isApproved || isSubmitted
-                ? "text-[#1E7F4C]"
+            const badgeText = isApproved
+              ? "text-[#1E7F4C]"
+              : isSubmitted
+                ? "text-[#1D4ED8]"
                 : isAttention
                   ? "text-[#B91C1C]"
                   : isInProgress
                     ? "text-[#1D4ED8]"
-                    : "text-[#F9A825]";
+                    : "text-[#D97706]";
 
             const evidenceTypeLabel = getEvidenceTypeName(item.evidenceType);
 
@@ -184,15 +199,16 @@ export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
             No Evidence Uploaded Yet
           </h3>
           <p className="text-gray-400 text-xs sm:text-sm max-w-sm mb-6">
-            Click &quot;Upload Evidence&quot; in the top header to upload all
-            your evidence.
+            Click &quot;Upload Evidence&quot; to upload your certificates, work
+            samples, and supporting documents.
           </p>
           <Button
             type="button"
             variant="amber"
             size="md"
+            rightIcon={<FiPlus className="w-4 h-4 stroke-3" />}
             onClick={onOpenUploadModal}
-            className="bg-[#fbab2a] hover:bg-[#e89b1f] text-white font-bold px-6 py-3 rounded-xl shadow-xs"
+            className="bg-[#fbab2a] hover:bg-[#e89b1f] text-white font-bold px-6 py-3 rounded-xl shadow-xs cursor-pointer"
           >
             Upload Evidence
           </Button>

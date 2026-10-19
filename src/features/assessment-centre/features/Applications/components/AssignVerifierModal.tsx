@@ -39,11 +39,20 @@ export const AssignVerifierModal: React.FC<AssignVerifierModalProps> = ({
   // and EV assignment needs the EV credential the same way. Without this,
   // the picker offers assessors the backend will then reject with a
   // "qualification required" error on submit.
-  const { data: centreAssessors = [], isLoading: isLoadingAssessors } =
+  const { data: qualifiedAssessors = [], isLoading: isLoadingQualified } =
     useGetCentreAssessors({
       status: "approved",
       qualification: verifierType === "internal" ? "IV" : "EV",
     });
+
+  const { data: allApprovedAssessors = [], isLoading: isLoadingAll } =
+    useGetCentreAssessors({
+      status: "approved",
+    });
+
+  const centreAssessors =
+    qualifiedAssessors.length > 0 ? qualifiedAssessors : allApprovedAssessors;
+  const isLoadingAssessors = isLoadingQualified && isLoadingAll;
 
   const [selectedAssessorId, setSelectedAssessorId] = useModalDraft(ASSIGN_VERIFIER_MODAL, "selectedAssessorId", "");
   const [isSubmitting, setIsSubmitting] = useState(false);
