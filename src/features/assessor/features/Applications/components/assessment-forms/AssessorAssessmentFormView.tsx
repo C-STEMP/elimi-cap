@@ -10,10 +10,12 @@ import { FormSubmittedSuccessModal } from "./FormSubmittedSuccessModal";
 import { AssessorAssessmentFormDocumentView } from "./AssessorAssessmentFormDocumentView";
 
 import {
-  useGetInterviewForms,
+  useGetInterviewFormsBundle,
+  useGetInterviewPanel,
   useUpdateInterviewForm,
   useGetApplicationById,
 } from "@/src/features/shared/applications/hooks";
+import { usePanelMemberMatch } from "@/src/features/assessor/hooks";
 import { useToast } from "@/src/components/ui/toast";
 import { useGetUnitsByTrade } from "@/src/features/shared/reference/hooks";
 import { toUnitLabel } from "./utils";
@@ -26,6 +28,7 @@ interface AssessorAssessmentFormViewProps {
   onBack: () => void;
   isReadOnly?: boolean;
   isCandidate?: boolean;
+  isLeadPanelist?: boolean;
   applicationTrade?: string;
   /** Observers outside the interview (e.g. the centre) — read-only, no sign controls. */
   viewOnly?: boolean;
@@ -54,6 +57,7 @@ export const AssessorAssessmentFormView: React.FC<
   onBack,
   isReadOnly = false,
   isCandidate = false,
+  isLeadPanelist,
   applicationTrade,
   viewOnly = false,
 }) => {
@@ -61,8 +65,38 @@ export const AssessorAssessmentFormView: React.FC<
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [pendingFormData, setPendingFormData] = useState<Record<string, any> | null>(null);
+  const [activeRecordTab, setActiveRecordTab] = useState<"own" | "canonical">("own");
 
   const { data: applicationData } = useGetApplicationById(applicationId);
+  const { data: interviewPanel } = useGetInterviewPanel(applicationId);
+  const isMemberMatch = usePanelMemberMatch();
+  const user = useAppSelector((state) => state.auth.user);
+
+  const isCandidateUser = user?.role?.toLowerCase() === "candidate";
+  const effectiveIsCandidate = isCandidate || isCandidateUser;
+
+  const leadMember = interviewPanel?.members?.find((m: any) => m.isLead);
+  const matchedPanelMember = interviewPanel?.members?.find((m: any) =>
+    isMemberMatch(m),
+  );
+  const ivMember = interviewPanel?.members?.find((m: any) => m.isObserver);
+  const isObserverUser = Boolean(
+    user?.role?.toLowerCase() === "iv" ||
+      user?.role?.toLowerCase() === "verifier" ||
+      (ivMember && isMemberMatch(ivMember)),
+  );
+
+  const effectiveIsLead =
+    isLeadPanelist !== undefined
+      ? isLeadPanelist
+      : !effectiveIsCandidate &&
+        !viewOnly &&
+        Boolean(
+          (leadMember && isMemberMatch(leadMember)) ||
+            (!leadMember &&
+              (applicationData as any)?.role?.toLowerCase()?.includes("lead")),
+        );
+
   const resolvedTrade =
     applicationTrade ||
     applicationData?.trade?.name ||
@@ -86,14 +120,51 @@ export const AssessorAssessmentFormView: React.FC<
       .map(toUnitLabel);
   }, [tradeUnits, applicationData?.unitIds]);
 
-  const { data: remoteForms } = useGetInterviewForms(applicationId);
+  const { data: formsBundle } = useGetInterviewFormsBundle(applicationId);
+  const remoteForms = formsBundle?.forms;
+  const panelistRecords = formsBundle?.panelistRecords;
   const updateFormMutation = useUpdateInterviewForm(applicationId);
 
-  const matchedRemoteForm = remoteForms?.find((f) => f.formType === formType);
-  const isCandidateSigned = Boolean(matchedRemoteForm?.candidateSignedAt);
+  const matchedCanonicalForm = remoteForms?.find((f) => f.formType === formType);
+  const myPanelistRecord = React.useMemo(() => {
+    if (!panelistRecords?.length) return undefined;
+    return panelistRecords.find(
+      (r) =>
+        r.formType === formType &&
+        (isMemberMatch({ assessorId: r.assessorId }) ||
+          (matchedPanelMember?.assessorId &&
+            r.assessorId === matchedPanelMember.assessorId) ||
+          (!matchedPanelMember && isObserverUser && r.isObserver)),
+    );
+  }, [
+    panelistRecords,
+    formType,
+    isMemberMatch,
+    matchedPanelMember,
+    isObserverUser,
+  ]);
+
+  const isCandidateSigned = Boolean(matchedCanonicalForm?.candidateSignedAt);
   const isAssessmentMapping = formType === "assessment_grid";
+  const isNonLeadSeatedMember =
+    !effectiveIsCandidate && !viewOnly && !isReadOnly && !effectiveIsLead;
+
+  // Lead is blocked after candidate signoff; non-lead panelists & IV observer
+  // upsert their own optional InterviewFormRecord (not candidate-signed).
   const effectiveReadOnly =
-    isAssessmentMapping || viewOnly || isReadOnly || isCandidateSigned;
+    isAssessmentMapping ||
+    viewOnly ||
+    isReadOnly ||
+    (effectiveIsLead && isCandidateSigned);
+
+  const activeFormData = isNonLeadSeatedMember
+    ? myPanelistRecord?.data
+    : matchedCanonicalForm?.data;
+
+  const hasCanonicalFormData = Boolean(
+    matchedCanonicalForm?.data &&
+      Object.keys(matchedCanonicalForm.data).length > 0,
+  );
 
   const handleRequestSubmit = (data: Record<string, any>) => {
     if (effectiveReadOnly) return;
@@ -106,19 +177,34 @@ export const AssessorAssessmentFormView: React.FC<
     try {
       const now = new Date().toISOString();
       const uName = user?.fullName || (user as any)?.name || "";
+      const baseData = effectiveIsLead
+        ? matchedCanonicalForm?.data || {}
+        : myPanelistRecord?.data || {};
+
       await updateFormMutation.mutateAsync({
         formType,
         data: {
-          ...(matchedRemoteForm?.data || {}),
+          ...baseData,
           ...(pendingFormData || {}),
           submittedAt: now,
           status: "submitted",
           assessorSigned: true,
           assessorSignedAt: pendingFormData?.assessorSignedAt || now,
-          assessorName: pendingFormData?.assessorName || uName || (matchedRemoteForm?.data as any)?.assessorName,
-          leadPanelistSigned: true,
-          leadPanelistSignedAt: pendingFormData?.leadPanelistSignedAt || now,
-          leadPanelistName: pendingFormData?.leadPanelistName || uName || (matchedRemoteForm?.data as any)?.leadPanelistName,
+          assessorName:
+            pendingFormData?.assessorName ||
+            uName ||
+            (baseData as any)?.assessorName,
+          ...(effectiveIsLead
+            ? {
+                leadPanelistSigned: true,
+                leadPanelistSignedAt:
+                  pendingFormData?.leadPanelistSignedAt || now,
+                leadPanelistName:
+                  pendingFormData?.leadPanelistName ||
+                  uName ||
+                  (baseData as any)?.leadPanelistName,
+              }
+            : {}),
         },
       });
       setIsSuccessModalOpen(true);
@@ -136,22 +222,18 @@ export const AssessorAssessmentFormView: React.FC<
     onBack();
   };
 
-  const user = useAppSelector((state) => state.auth.user);
-  const isCandidateUser = user?.role?.toLowerCase() === "candidate";
-  const effectiveIsCandidate = isCandidate || isCandidateUser;
-
   if (effectiveReadOnly || effectiveIsCandidate) {
     return (
       <AssessorAssessmentFormDocumentView
         applicationId={applicationId}
         formId={formId}
         candidateName={candidateName}
-        formData={matchedRemoteForm?.data}
+        formData={matchedCanonicalForm?.data}
         onBack={onBack}
         isCandidate={effectiveIsCandidate}
-        formRecord={matchedRemoteForm}
+        formRecord={matchedCanonicalForm}
         applicationTrade={resolvedTrade}
-            unitLabels={unitLabels}
+        unitLabels={unitLabels}
         isInterviewStage={isInterviewStage}
       />
     );
@@ -165,7 +247,7 @@ export const AssessorAssessmentFormView: React.FC<
             candidateName={candidateName}
             onBack={onBack}
             onSubmit={handleRequestSubmit}
-            formData={matchedRemoteForm?.data}
+            formData={activeFormData}
             isReadOnly={effectiveReadOnly}
             applicationTrade={resolvedTrade}
             unitLabels={unitLabels}
@@ -177,7 +259,7 @@ export const AssessorAssessmentFormView: React.FC<
             candidateName={candidateName}
             onBack={onBack}
             onSubmit={handleRequestSubmit}
-            formData={matchedRemoteForm?.data}
+            formData={activeFormData}
             isReadOnly={effectiveReadOnly}
             applicationTrade={resolvedTrade}
             unitLabels={unitLabels}
@@ -189,7 +271,7 @@ export const AssessorAssessmentFormView: React.FC<
             candidateName={candidateName}
             onBack={onBack}
             onSubmit={handleRequestSubmit}
-            formData={matchedRemoteForm?.data}
+            formData={activeFormData}
             isReadOnly={effectiveReadOnly}
             applicationTrade={resolvedTrade}
             unitLabels={unitLabels}
@@ -202,7 +284,7 @@ export const AssessorAssessmentFormView: React.FC<
             candidateName={candidateName}
             onBack={onBack}
             onSubmit={handleRequestSubmit}
-            formData={matchedRemoteForm?.data}
+            formData={activeFormData}
             isReadOnly={effectiveReadOnly}
           />
         );
@@ -211,7 +293,56 @@ export const AssessorAssessmentFormView: React.FC<
 
   return (
     <div className="w-full flex flex-col">
-      {renderForm()}
+      {isNonLeadSeatedMember && hasCanonicalFormData && (
+        <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 pt-4">
+          <div className="bg-white border border-gray-200 rounded-2xl p-2 flex items-center justify-between gap-2 flex-wrap shadow-2xs">
+            <span className="text-xs font-semibold text-neutral-secondary px-2">
+              Viewing mode:
+            </span>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setActiveRecordTab("own")}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                  activeRecordTab === "own"
+                    ? "bg-[#8A1538] text-white"
+                    : "bg-gray-100 text-neutral-primary hover:bg-gray-200"
+                }`}
+              >
+                My Panelist Record
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveRecordTab("canonical")}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                  activeRecordTab === "canonical"
+                    ? "bg-[#8A1538] text-white"
+                    : "bg-gray-100 text-neutral-primary hover:bg-gray-200"
+                }`}
+              >
+                Lead Form (Canonical)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isNonLeadSeatedMember && activeRecordTab === "canonical" ? (
+        <AssessorAssessmentFormDocumentView
+          applicationId={applicationId}
+          formId={formId}
+          candidateName={candidateName}
+          formData={matchedCanonicalForm?.data}
+          onBack={onBack}
+          isCandidate={false}
+          formRecord={matchedCanonicalForm}
+          applicationTrade={resolvedTrade}
+          unitLabels={unitLabels}
+          isInterviewStage={false}
+        />
+      ) : (
+        renderForm()
+      )}
 
       <ConfirmSubmitFormModal
         isOpen={isConfirmModalOpen}

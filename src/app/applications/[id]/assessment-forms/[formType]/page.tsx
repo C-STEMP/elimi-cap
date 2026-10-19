@@ -102,6 +102,9 @@ export default function AssessmentFormDedicatedRoutePage() {
   );
 
   const leadMember = interviewPanel?.members?.find((m: any) => m.isLead);
+  const matchedPanelMember = interviewPanel?.members?.find((m: any) =>
+    isMemberMatch(m),
+  );
 
   const isAssessorUser = Boolean(
     fromParam === "assessor" ||
@@ -117,18 +120,43 @@ export default function AssessmentFormDedicatedRoutePage() {
 
   const isUserLeadPanelist =
     !isCandidateUser &&
+    !isCentreViewer &&
     Boolean(
       (leadMember && isMemberMatch(leadMember)) ||
       (!leadMember && isAssignedLead) ||
       (!leadMember && (application as any).role?.toLowerCase()?.includes("lead")),
     );
 
+  const isAssignedNonFacilitator =
+    (application as any)?.assignedAssessors?.some(
+      (a: any) =>
+        a.role !== "FACILITATOR" &&
+        a.role !== "facilitator" &&
+        ((a.assessorId && a.assessorId === currentAssessorId) ||
+          (a.email && a.email.toLowerCase() === currentAssessorEmail) ||
+          (a.user?.email && a.user.email.toLowerCase() === currentAssessorEmail)),
+    ) || false;
+
+  const isSeatedPanelMember =
+    !isCandidateUser &&
+    !isCentreViewer &&
+    Boolean(
+      matchedPanelMember ||
+      isUserLeadPanelist ||
+      (!interviewPanel?.members?.length &&
+        (isAssignedNonFacilitator || isAssessorUser)),
+    );
+
   const isAssessmentMapping =
     formType === "assessment_mapping" || formType === "assessment_grid";
 
-  // Only the lead panelist edits interview forms; Assessment Mapping is always read-only.
+  // Seated panel members (lead, voting panelists, and IV observer) can PUT interview forms;
+  // Assessment Mapping is always read-only.
   const isReadOnly =
-    isAssessmentMapping || isCentreViewer || isCandidateUser || !isUserLeadPanelist;
+    isAssessmentMapping ||
+    isCentreViewer ||
+    isCandidateUser ||
+    !isSeatedPanelMember;
 
   const handleBack = () => {
     if (typeof window !== "undefined" && window.history.length > 1) {
@@ -158,6 +186,7 @@ export default function AssessmentFormDedicatedRoutePage() {
         onBack={handleBack}
         isReadOnly={isReadOnly}
         isCandidate={isCandidateUser}
+        isLeadPanelist={isUserLeadPanelist}
         applicationTrade={resolvedTrade}
         viewOnly={isCentreViewer}
       />

@@ -361,6 +361,26 @@ export interface InterviewForm {
   typedSignatureName?: string | null;
 }
 
+export interface InterviewFormRecord {
+  id: string;
+  assessorId: string;
+  isLead: boolean;
+  isObserver: boolean;
+  formType:
+    | "records"
+    | "assessment_grid"
+    | "practical_observation"
+    | "skill_demonstration";
+  data: Record<string, unknown>;
+  updatedAt: string;
+  createdAt: string;
+}
+
+export interface InterviewFormsList {
+  forms: InterviewForm[];
+  panelistRecords: InterviewFormRecord[];
+}
+
 export interface ApplicationShareToken {
   token: string;
   applicationId: string;

@@ -3,7 +3,10 @@
 import React from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/src/components/ui/toast";
-import type { InterviewForm } from "@/src/features/shared/applications/api/types";
+import type {
+  InterviewForm,
+  InterviewFormRecord,
+} from "@/src/features/shared/applications/api/types";
 
 export interface AssessmentFormItem {
   id: string;
@@ -34,6 +37,8 @@ interface AssessorAssessmentFormsWidgetProps {
   onViewForm?: (form: AssessmentFormItem) => void;
   isReadOnly?: boolean;
   remoteForms?: InterviewForm[];
+  panelistRecords?: InterviewFormRecord[];
+  isLeadPanelist?: boolean;
   isAwaitingPanelSignatures?: boolean;
   isInterviewDone?: boolean;
 }
@@ -46,6 +51,8 @@ export const AssessorAssessmentFormsWidget: React.FC<
   onViewForm,
   isReadOnly = false,
   remoteForms,
+  panelistRecords,
+  isLeadPanelist = true,
   isAwaitingPanelSignatures = false,
   isInterviewDone = false,
 }) => {
@@ -82,6 +89,10 @@ export const AssessorAssessmentFormsWidget: React.FC<
           const matchedRemote = remoteForms?.find(
             (rf) => rf.formType === typeKey || rf.formType === form.id,
           );
+          const matchedPanelistRecord = panelistRecords?.find(
+            (pr) => pr.formType === typeKey || pr.formType === form.id,
+          );
+
           const isCandidateSigned = Boolean(matchedRemote?.candidateSignedAt);
           const isAssessorSigned = Boolean(
             matchedRemote?.assessorSignedAt ||
@@ -97,11 +108,24 @@ export const AssessorAssessmentFormsWidget: React.FC<
             matchedRemote?.data && Object.keys(matchedRemote.data).length > 0,
           );
 
+          const hasMyRecord = Boolean(
+            matchedPanelistRecord?.data &&
+              Object.keys(matchedPanelistRecord.data).length > 0,
+          );
+          const isMyRecordSubmitted = Boolean(
+            hasMyRecord &&
+              ((matchedPanelistRecord?.data as any)?.status === "submitted" ||
+                (matchedPanelistRecord?.data as any)?.submittedAt ||
+                (matchedPanelistRecord?.data as any)?.assessorSigned),
+          );
+
           // If candidate signed:
           // A form is only fully completed/signed when candidate has signed AND interview stage is completed.
           // While interview stage is ongoing or awaiting panel signatures, it must show "Candidate Signed".
           const isFullySigned = isCandidateSigned && isInterviewDone && !isAwaitingPanelSignatures;
           const isPendingPanel = isCandidateSigned && (!isInterviewDone || isAwaitingPanelSignatures);
+
+          const isNonLeadEditable = !isLeadPanelist && !isReadOnly;
 
           return (
             <div
@@ -116,6 +140,14 @@ export const AssessorAssessmentFormsWidget: React.FC<
                 {isMappingForm ? (
                   <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 shrink-0">
                     Available
+                  </span>
+                ) : isNonLeadEditable && isMyRecordSubmitted ? (
+                  <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 shrink-0">
+                    Submitted
+                  </span>
+                ) : isNonLeadEditable && hasMyRecord ? (
+                  <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 shrink-0">
+                    Draft
                   </span>
                 ) : isFullySigned ? (
                   <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 shrink-0">
@@ -144,11 +176,17 @@ export const AssessorAssessmentFormsWidget: React.FC<
                 }}
                 className="text-[#FBAB2A] hover:text-[#E89B1F] font-semibold text-xs sm:text-sm transition-colors cursor-pointer shrink-0"
               >
-                {isMappingForm || isReadOnly || isCandidateSigned
+                {isMappingForm || isReadOnly
                   ? "View"
-                  : isSubmitted
-                  ? "Edit"
-                  : "Fill Form"}
+                  : isNonLeadEditable
+                    ? hasMyRecord
+                      ? "Edit"
+                      : "Fill Form"
+                    : isCandidateSigned
+                      ? "View"
+                      : isSubmitted
+                        ? "Edit"
+                        : "Fill Form"}
               </button>
             </div>
           );

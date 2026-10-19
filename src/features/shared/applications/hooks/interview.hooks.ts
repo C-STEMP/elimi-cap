@@ -5,7 +5,7 @@ import {
   getInterviewPanelApi,
   getInterviewScheduleApi,
   evaluateInterviewApi,
-  getInterviewFormsApi,
+  getInterviewFormsBundleApi,
   updateInterviewFormApi,
   signoffInterviewFormApi,
   getInterviewObserverCommentsApi,
@@ -94,10 +94,24 @@ export function useEvaluateInterview(id: string) {
   });
 }
 
+export function useGetInterviewFormsBundle(
+  id: string,
+  options?: { enabled?: boolean },
+) {
+  return useQuery({
+    queryKey: ["applications", "interview-forms", id],
+    queryFn: () => getInterviewFormsBundleApi(id),
+    enabled: Boolean(id) && (options?.enabled ?? true),
+    retry: false,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 export function useGetInterviewForms(id: string, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["applications", "interview-forms", id],
-    queryFn: () => getInterviewFormsApi(id),
+    queryFn: () => getInterviewFormsBundleApi(id),
+    select: (bundle) => bundle.forms,
     enabled: Boolean(id) && (options?.enabled ?? true),
     retry: false,
     staleTime: 5 * 60 * 1000,
