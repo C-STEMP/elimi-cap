@@ -19,6 +19,9 @@ import {
   useSaveDirectObservationForm,
   useSignDirectObservation,
 } from "@/src/features/shared/applications/hooks";
+import { useToast } from "@/src/components/ui/toast";
+import { useAssessorProfileSignature } from "@/src/features/shared/assessor/hooks";
+import { useCandidateProfileSignature } from "@/src/features/shared/onboarding/hooks";
 import { useAppSelector } from "@/src/store/hooks";
 
 interface NsqAssessorObservationFormsViewProps {
@@ -34,18 +37,6 @@ interface NsqAssessorObservationFormsViewProps {
   onSubmitSuccess?: () => void;
 }
 
-const DEFAULT_PCS: ObservationCriterionDef[] = [
-  { id: "default_PC_1.1", code: "PC 1.1", desc: "Wear Clean, Smart And Appropriate Personal Protective Equipment." },
-  { id: "default_PC_1.2", code: "PC 1.2", desc: "Adhere to environmental safety, tool calibration, and equipment maintenance protocols." },
-  { id: "default_PC_1.3", code: "PC 1.3", desc: "Inspect work environment for hazard identification and execute standard risk controls." },
-  { id: "default_PC_1.4", code: "PC 1.4", desc: "Select, clean, inspect, and safely store hand and power tools according to manufacturer instructions." },
-  { id: "default_PC_1.5", code: "PC 1.5", desc: "Ensure workspace floor area is free of debris, trip hazards, and flammable contaminants." },
-  { id: "default_PC_1.6", code: "PC 1.6", desc: "Demonstrate proper manual handling, posture alignment, and safe lifting ergonomics." },
-  { id: "default_PC_1.7", code: "PC 1.7", desc: "Follow emergency evacuation protocols, report incidents, and maintain fire extinguisher awareness." },
-  { id: "default_PC_1.8", code: "PC 1.8", desc: "Dispose of industrial waste, excess mortar, and hazardous chemicals in compliance with environmental laws." },
-  { id: "default_PC_1.9", code: "PC 1.9", desc: "Maintain clear communication with supervisors and team members throughout operational tasks." },
-];
-
 export const NsqAssessorObservationFormsView: React.FC<
   NsqAssessorObservationFormsViewProps
 > = ({
@@ -60,6 +51,7 @@ export const NsqAssessorObservationFormsView: React.FC<
   onSubmitSuccess,
 }) => {
   const isViewOnly = isCandidate || readOnly;
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<"arf02a" | "arf04a">("arf02a");
 
   const { data: directObsList } = useGetDirectObservations(applicationId, {
@@ -98,11 +90,7 @@ export const NsqAssessorObservationFormsView: React.FC<
   const { criteriaDefs, criterionUnitMap } = useMemo(() => {
     const catalogue = sessionDetail?.catalogue;
     if (!catalogue || catalogue.length === 0) {
-      const unitMap: Record<string, string> = {};
-      DEFAULT_PCS.forEach((pc) => {
-        unitMap[pc.id || pc.code] = "";
-      });
-      return { criteriaDefs: DEFAULT_PCS, criterionUnitMap: unitMap };
+      return { criteriaDefs: [] as ObservationCriterionDef[], criterionUnitMap: {} as Record<string, string> };
     }
     const defs: ObservationCriterionDef[] = [];
     const unitMap: Record<string, string> = {};
@@ -135,29 +123,13 @@ export const NsqAssessorObservationFormsView: React.FC<
   }, [sessionDetail]);
 
   // ARF 02A Criteria state
-  const [arf02Criteria, setArf02Criteria] = useState<Record<string, Arf02CriteriaState>>(() => {
-    const initial: Record<string, Arf02CriteriaState> = {};
-    DEFAULT_PCS.forEach((pc) => {
-      const key = pc.id || pc.code;
-      initial[key] = { fulfilled: false, comment: "" };
-      initial[pc.code] = { fulfilled: false, comment: "" };
-    });
-    return initial;
-  });
+  const [arf02Criteria, setArf02Criteria] = useState<Record<string, Arf02CriteriaState>>({});
 
   // ARF 04A Criteria state
-  const [arf04Criteria, setArf04Criteria] = useState<Record<string, Arf04CriteriaState>>(() => {
-    const initial: Record<string, Arf04CriteriaState> = {};
-    DEFAULT_PCS.forEach((pc) => {
-      const key = pc.id || pc.code;
-      initial[key] = { satisfactory: false, question: "", answer: "" };
-      initial[pc.code] = { satisfactory: false, question: "", answer: "" };
-    });
-    return initial;
-  });
+  const [arf04Criteria, setArf04Criteria] = useState<Record<string, Arf04CriteriaState>>({});
 
   useEffect(() => {
-    if (criteriaDefs === DEFAULT_PCS) return;
+    if (criteriaDefs.length === 0) return;
 
     const physicalByKey = new Map(
       (sessionDetail?.physical?.rows || []).map((r) => [
@@ -223,6 +195,8 @@ export const NsqAssessorObservationFormsView: React.FC<
   const [isWitnessSigned, setIsWitnessSigned] = useState(false);
 
   const authUser = useAppSelector((state) => state.auth.user);
+  const { data: assessorProfileSig } = useAssessorProfileSignature(!isCandidate && !isViewOnly);
+  const { data: candidateProfileSig } = useCandidateProfileSignature(Boolean(isCandidate));
   const assessorDisplayName =
     authUser?.fullName || authUser?.email?.split("@")[0] || "Assessor";
   const candidateDisplayName =
@@ -242,27 +216,51 @@ export const NsqAssessorObservationFormsView: React.FC<
 
   const handleSignAsAssessor = async () => {
     try {
+      const hasSavedSig = Boolean(assessorProfileSig?.assetId);
       await signObservation({
         role: "unit_assessor",
-        signatureMode: "typed",
-        typedName: assessorDisplayName,
+        signatureMode: hasSavedSig ? "default" : "typed",
+        ...(hasSavedSig
+          ? { signatureAssetId: assessorProfileSig?.assetId || undefined }
+          : { typedName: assessorDisplayName }),
         signedAt: new Date().toISOString(),
       });
-    } catch {
-      /* empty */
+      toast({
+        type: "success",
+        title: "Signed Successfully",
+        description: "You have signed off on this observation report.",
+      });
+    } catch (err: any) {
+      toast({
+        type: "error",
+        title: "Signature Failed",
+        description: err?.message || "Could not sign observation report.",
+      });
     }
   };
 
   const handleSignAsCandidate = async () => {
     try {
+      const hasSavedSig = Boolean(candidateProfileSig?.assetId);
       await signObservation({
         role: "learner",
-        signatureMode: "typed",
-        typedName: candidateDisplayName,
+        signatureMode: hasSavedSig ? "default" : "typed",
+        ...(hasSavedSig
+          ? { signatureAssetId: candidateProfileSig?.assetId || undefined }
+          : { typedName: candidateDisplayName }),
         signedAt: new Date().toISOString(),
       });
-    } catch {
-      /* empty */
+      toast({
+        type: "success",
+        title: "Signed Successfully",
+        description: "You have reviewed and signed off on this observation report.",
+      });
+    } catch (err: any) {
+      toast({
+        type: "error",
+        title: "Signature Failed",
+        description: err?.message || "Could not sign observation report.",
+      });
     }
   };
 

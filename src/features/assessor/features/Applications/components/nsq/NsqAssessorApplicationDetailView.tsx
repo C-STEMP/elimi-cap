@@ -45,6 +45,7 @@ import {
 } from "react-icons/fi";
 import { useGetMeProfile } from "@/src/features/shared/account/hooks";
 import { useGetAssessorProfile } from "@/src/features/assessor/hooks";
+import { useAssessorProfileSignature } from "@/src/features/shared/assessor/hooks";
 import { useAppSelector } from "@/src/store/hooks";
 import { getAssessorRoleContext } from "@/src/features/shared/applications/utils/assessorRole";
 import { IqamToolsDashboard } from "../../../iqam/IqamToolsDashboard";
@@ -196,6 +197,7 @@ export const NsqAssessorApplicationDetailView: React.FC<
   const user = useAppSelector((state) => state.auth.user);
   const { data: meProfile } = useGetMeProfile();
   const { data: assessorProfile } = useGetAssessorProfile();
+  const { data: assessorProfileSig } = useAssessorProfileSignature();
 
   const roleCtx = useMemo(() => {
     return getAssessorRoleContext({
@@ -437,14 +439,16 @@ export const NsqAssessorApplicationDetailView: React.FC<
   const [isConfirmSignoffOpen, setIsConfirmSignoffOpen] = useState(false);
   const [isSignoffSuccessOpen, setIsSignoffSuccessOpen] = useState(false);
 
-  const signOffAllUnits = async (): Promise<boolean> => {
+  const signOffAllUnits = async (signatureAssetId?: string | null): Promise<boolean> => {
     try {
       const signedAt = new Date().toISOString();
+      const resolvedAssetId = signatureAssetId || assessorProfileSig?.assetId || undefined;
       await Promise.all(
         unitsList.map((u) =>
           submitUnitSignoffApi(application.id, u.id, {
             role: "unit_assessor",
             signedAt,
+            ...(resolvedAssetId ? { signatureAssetId: resolvedAssetId } : {}),
           }),
         ),
       );
@@ -472,10 +476,10 @@ export const NsqAssessorApplicationDetailView: React.FC<
     return true;
   };
 
-  const handleConfirmSignoffAll = async () => {
+  const handleConfirmSignoffAll = async (signatureAssetId?: string) => {
     setIsConfirmSignoffOpen(false);
     setIsSigningOffUnits(true);
-    const ok = await signOffAllUnits();
+    const ok = await signOffAllUnits(signatureAssetId);
     setIsSigningOffUnits(false);
     if (ok) setIsSignoffSuccessOpen(true);
   };
@@ -596,7 +600,7 @@ export const NsqAssessorApplicationDetailView: React.FC<
 
     setIsMovingToIqam(true);
 
-    if (!hasSignedOffUnits && !(await signOffAllUnits())) {
+    if (!hasSignedOffUnits && !(await signOffAllUnits(assessorProfileSig?.assetId))) {
       setIsMovingToIqam(false);
       return;
     }
@@ -1697,6 +1701,7 @@ export const NsqAssessorApplicationDetailView: React.FC<
         unitLabel={`All ${unitsList.length} Unit(s)`}
         description="You're confirming every criterion in every unit has been reviewed and its evidence approved. This cannot be undone."
         confirmLabel="Yes, Sign Off All Units"
+        isLoading={isSigningOffUnits}
       />
       <UnitSignedOffSuccessModal
         isOpen={isSignoffSuccessOpen}
