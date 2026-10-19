@@ -174,15 +174,7 @@ function parseCriteriaToLearningOutcomes(
     criteria: groups[key].criteria,
   }));
 
-  return outcomeList.length > 0
-    ? outcomeList
-    : [
-        {
-          id: "lo-1",
-          title: `LO 1: Core Occupational Competencies for ${tradeName}`,
-          criteria: [],
-        },
-      ];
+  return outcomeList;
 }
 
 export const NsqUnitDetailView: React.FC<NsqUnitDetailViewProps> = ({
@@ -354,7 +346,12 @@ export const NsqUnitDetailView: React.FC<NsqUnitDetailViewProps> = ({
       />
 
       <div className="w-full max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-4">
-        {learningOutcomes.map((lo) => {
+        {learningOutcomes.length === 0 ? (
+          <div className="bg-white rounded-2xl p-8 border border-gray-100 text-center text-sm text-neutral-secondary">
+            No performance criteria found for this unit.
+          </div>
+        ) : (
+          learningOutcomes.map((lo) => {
           const isLoExpanded = expandedLoIds.includes(lo.id);
           return (
             <div
@@ -590,7 +587,8 @@ export const NsqUnitDetailView: React.FC<NsqUnitDetailViewProps> = ({
               </AnimatePresence>
             </div>
           );
-        })}
+        })
+      )}
       </div>
 
       {/* Upload Evidence Modal */}

@@ -105,6 +105,14 @@ export const Arf02MatrixLog: React.FC<Arf02MatrixLogProps> = ({
   const toggleLo = (unitIdx: number, loIdx: number, loKey: string) =>
     setExpandedLos((prev) => ({ ...prev, [loKey]: !isLoOpen(unitIdx, loIdx, loKey) }));
 
+  if (groupedUnits.length === 0) {
+    return (
+      <div className="p-8 border border-gray-100 rounded-2xl bg-gray-50/50 text-center text-xs text-neutral-secondary">
+        No performance criteria defined for this observation session.
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-4">
       {groupedUnits.map((unit, unitIdx) => {

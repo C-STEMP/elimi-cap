@@ -10,6 +10,7 @@ import { useToast } from "@/src/components/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAppDispatch, useAppSelector } from "@/src/store/hooks";
 import { setNsqApplication } from "@/src/store/slices/onboardingSlice";
+import { setCurrentApplication } from "@/src/store/slices/applicationSlice";
 import {
   useGetCentres,
   useGetSectors,
@@ -134,14 +135,23 @@ export const NsqCentreInfo: React.FC = () => {
   }, [remoteCentres, filterState, filterLga]);
 
   const centreOptions: SelectOption[] = useMemo(() => {
-    return matchingCentres.map((c: any) => {
-      const locParts = [c.address?.lga, c.address?.state].filter(Boolean);
-      const locSuffix = locParts.length > 0 ? ` (${locParts.join(", ")})` : "";
-      return {
-        label: `${c.name}${locSuffix}`,
-        value: c.id,
-      };
-    });
+    const seen = new Set<string>();
+    const uniqueOptions: SelectOption[] = [];
+
+    for (const c of matchingCentres) {
+      if (!c || !c.name) continue;
+      const normalized = c.name.trim().toLowerCase();
+      if (!seen.has(normalized)) {
+        seen.add(normalized);
+        const locParts = [c.address?.lga, c.address?.state].filter(Boolean);
+        const locSuffix = locParts.length > 0 ? ` (${locParts.join(", ")})` : "";
+        uniqueOptions.push({
+          label: `${c.name.trim()}${locSuffix}`,
+          value: c.id,
+        });
+      }
+    }
+    return uniqueOptions;
   }, [matchingCentres]);
 
   const sectorOptions: SelectOption[] = remoteSectors.map((s) => ({
@@ -220,7 +230,9 @@ export const NsqCentreInfo: React.FC = () => {
   };
 
   const handleConfirmSendRequest = async () => {
-    const selectedCentre = remoteCentres.find((c: { id: string; name?: string }) => c.id === centreId);
+    const selectedCentre = remoteCentres.find(
+      (c: { id: string; name?: string }) => c.id === centreId,
+    );
     const selectedSector = remoteSectors.find((s) => s.id === sectorId);
     const selectedTrade = remoteTrades.find((t) => t.id === tradeId);
 
@@ -249,6 +261,7 @@ export const NsqCentreInfo: React.FC = () => {
         });
         if (app?.id) {
           appId = app.id;
+          dispatch(setCurrentApplication(app.id));
           // POST /applications always creates a DRAFT — it still needs to be
           // submitted before the centre can see or act on it.
           needsSubmit = true;
@@ -271,6 +284,7 @@ export const NsqCentreInfo: React.FC = () => {
           );
           if (match?.id) {
             appId = match.id;
+            dispatch(setCurrentApplication(match.id));
             needsSubmit = match.status === "draft";
           } else throw createErr;
         } else {
