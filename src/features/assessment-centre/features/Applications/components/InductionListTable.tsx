@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { FiVideo, FiMapPin } from "react-icons/fi";
+import { FiVideo, FiMapPin, FiTrash2 } from "react-icons/fi";
 import type { InductionRowData } from "./ViewInductionDetailModal";
 import { TablePagination } from "@/src/components/ui/table-pagination";
 import { usePagination } from "@/src/lib/hooks/usePagination";
@@ -15,6 +15,7 @@ interface Props {
   onToggleSelect: (id: string) => void;
   onSelectInduction?: (item: InductionRowData) => void;
   onSetViewing: (item: InductionRowData) => void;
+  onDeleteInduction?: (item: InductionRowData) => void;
 }
 
 export const InductionListTable: React.FC<Props> = ({
@@ -26,6 +27,7 @@ export const InductionListTable: React.FC<Props> = ({
   onToggleSelect,
   onSelectInduction,
   onSetViewing,
+  onDeleteInduction,
 }) => {
   const { pageItems, pagination } = usePagination(filteredInductions);
 
@@ -88,16 +90,31 @@ export const InductionListTable: React.FC<Props> = ({
                       Created: {item.createdAt}
                     </span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleView(item);
-                    }}
-                    className="text-xs text-black font-bold underline hover:text-[#a31d38] cursor-pointer mt-auto self-start"
-                  >
-                    View
-                  </button>
+                  <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-100/80">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleView(item);
+                      }}
+                      className="text-xs text-black font-bold underline hover:text-[#a31d38] cursor-pointer"
+                    >
+                      View
+                    </button>
+                    {onDeleteInduction && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeleteInduction(item);
+                        }}
+                        title="Delete induction"
+                        className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                      >
+                        <FiTrash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))
             : (
@@ -199,16 +216,31 @@ export const InductionListTable: React.FC<Props> = ({
                     </td>
                     <td className="p-4 text-gray-600">{item.createdAt}</td>
                     <td className="p-4 text-right">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleView(item);
-                        }}
-                        className="font-semibold text-black underline underline-offset-2 hover:text-primary cursor-pointer"
-                      >
-                        View
-                      </button>
+                      <div className="flex items-center justify-end gap-2.5">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleView(item);
+                          }}
+                          className="font-semibold text-black underline underline-offset-2 hover:text-primary cursor-pointer"
+                        >
+                          View
+                        </button>
+                        {onDeleteInduction && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onDeleteInduction(item);
+                            }}
+                            title="Delete induction"
+                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                          >
+                            <FiTrash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))

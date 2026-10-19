@@ -89,6 +89,12 @@ export function useScheduleInductionState({
   const alreadyInductedAppIds = useMemo(() => {
     const ids = new Set<string>();
     existingInductions.forEach((ind: any) => {
+      if (Array.isArray(ind.attendees)) {
+        ind.attendees.forEach((att: any) => {
+          const appId = att.applicationId || att.id;
+          if (appId) ids.add(appId);
+        });
+      }
       if (Array.isArray(ind.candidates)) {
         ind.candidates.forEach((c: any) => {
           const appId = c.applicationId || c.id;
@@ -130,7 +136,7 @@ export function useScheduleInductionState({
             ].includes(app.currentStageKey),
         );
 
-        return isPaidExplicit || isPastPaymentStage || app.id === initialApplicationId;
+        return isPaidExplicit || isPastPaymentStage;
       })
       .map((app: any) => {
         const name =
@@ -278,6 +284,18 @@ export function useScheduleInductionState({
       });
       return;
     }
+
+    const selectedDateTime = new Date(`${date}T${time}:00`);
+    const now = new Date();
+    // Allow up to 5 minutes grace for clock drift today
+    if (isNaN(selectedDateTime.getTime()) || selectedDateTime.getTime() < now.getTime() - 5 * 60 * 1000) {
+      toast({
+        type: "error",
+        title: "Future Date Required",
+        description: "Induction date and time must be in the future.",
+      });
+      return;
+    }
     if (interviewMode === "Virtual" && !meetingLink.trim()) {
       toast({
         type: "error",
@@ -325,7 +343,7 @@ export function useScheduleInductionState({
           ? `https://${meetingLink}`
           : undefined;
 
-      await postCentreInductionsApi({
+      const created = await postCentreInductionsApi({
         name: title.trim(),
         title: title.trim(),
         description: description.trim() || undefined,
@@ -346,10 +364,11 @@ export function useScheduleInductionState({
       queryClient.invalidateQueries({ queryKey: ["centre", "inductions"] });
       queryClient.invalidateQueries({ queryKey: ["applications"] });
       queryClient.invalidateQueries({ queryKey: ["centre", "applications"] });
+
       toast({
         type: "success",
         title: "Induction Scheduled",
-        description: "Induction session has been scheduled successfully.",
+        description: "You have successfully scheduled an induction.",
       });
 
       setIsConfirmOpen(false);

@@ -1210,10 +1210,15 @@ export async function postCentreInductionsApi(
   let created = normalizeCentreInduction((res as any)?.data || res);
 
   if (Array.isArray(payload.applicationIds) && payload.applicationIds.length > 0 && created.id) {
-    created = await addCentreInductionCandidatesApi(
-      created.id,
-      payload.applicationIds,
-    );
+    try {
+      created = await addCentreInductionCandidatesApi(
+        created.id,
+        payload.applicationIds,
+      );
+    } catch (candidateErr) {
+      console.warn("Could not add candidates to induction immediately:", candidateErr);
+      // The induction session was created successfully on the server; retain it
+    }
   }
 
   return created;

@@ -68,6 +68,9 @@ export function useApplicationsViewState(
   const [viewingInterview, setViewingInterview] = useState<InterviewRowData | null>(null);
   const [viewingInduction, setViewingInduction] = useState<InductionRowData | null>(null);
   const [viewingPanel, setViewingPanel] = useState<PanelRowData | null>(null);
+  const [isDeleteInductionModalOpen, setIsDeleteInductionModalOpen] = useState(false);
+  const [inductionToDelete, setInductionToDelete] = useState<InductionRowData | null>(null);
+  const [isDeletingInductions, setIsDeletingInductions] = useState(false);
 
   const panelsList: PanelRowData[] = useMemo(
     () => remotePanels.map(mapPanelItem),
@@ -237,18 +240,75 @@ export function useApplicationsViewState(
   const toggleSelectInductionRow = (id: string) =>
     setSelectedInductionIds((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]));
 
-  const handleDeleteSelectedInductions = async () => {
+  const handleRequestDeleteSelectedInductions = () => {
     if (selectedInductionIds.length === 0) {
-      toast({ type: "info", title: "No Inductions Selected", description: "Please select induction rows to delete." });
+      toast({
+        type: "info",
+        title: "No Inductions Selected",
+        description: "Please select induction rows to delete.",
+      });
       return;
     }
-    try {
-      await Promise.all(selectedInductionIds.map((id) => deleteInductionMutation.mutateAsync(id)));
-      setSelectedInductionIds([]);
-      toast({ type: "success", title: "Deleted", description: "Selected inductions have been removed." });
-    } catch (err: any) {
-      toast({ type: "error", title: "Delete Failed", description: err?.message || "Failed to delete selected inductions." });
+    setInductionToDelete(null);
+    setIsDeleteInductionModalOpen(true);
+  };
+
+  const handleRequestDeleteSingleInduction = (induction: InductionRowData) => {
+    setInductionToDelete(induction);
+    setIsDeleteInductionModalOpen(true);
+  };
+
+  const handleConfirmDeleteInductions = async () => {
+    const idsToDelete = inductionToDelete
+      ? [inductionToDelete.id]
+      : selectedInductionIds;
+
+    if (idsToDelete.length === 0) {
+      setIsDeleteInductionModalOpen(false);
+      return;
     }
+
+    setIsDeletingInductions(true);
+    try {
+      await Promise.all(
+        idsToDelete.map((id) => deleteInductionMutation.mutateAsync(id)),
+      );
+      if (inductionToDelete) {
+        setSelectedInductionIds((prev) =>
+          prev.filter((id) => id !== inductionToDelete.id),
+        );
+        if (viewingInduction?.id === inductionToDelete.id) {
+          setViewingInduction(null);
+        }
+      } else {
+        setSelectedInductionIds([]);
+      }
+      setIsDeleteInductionModalOpen(false);
+      setInductionToDelete(null);
+      toast({
+        type: "success",
+        title: "Induction Deleted",
+        description:
+          idsToDelete.length > 1
+            ? `${idsToDelete.length} scheduled inductions have been removed.`
+            : "The scheduled induction has been successfully removed.",
+      });
+    } catch (err: any) {
+      toast({
+        type: "error",
+        title: "Delete Failed",
+        description:
+          err?.message || "Failed to delete scheduled induction.",
+      });
+    } finally {
+      setIsDeletingInductions(false);
+    }
+  };
+
+  const handleCancelDeleteInductions = () => {
+    if (isDeletingInductions) return;
+    setIsDeleteInductionModalOpen(false);
+    setInductionToDelete(null);
   };
 
   const toggleSelectAllPanels = () =>
@@ -324,7 +384,16 @@ export function useApplicationsViewState(
     toggleSelectAllInterviews, toggleSelectInterviewRow,
     toggleSelectAllInductions, toggleSelectInductionRow,
     toggleSelectAllPanels, toggleSelectPanelRow,
-    handleDeleteSelectedInterviews, handleDeleteSelectedInductions, handleDeleteSelectedPanels,
+    handleDeleteSelectedInterviews,
+    handleDeleteSelectedInductions: handleRequestDeleteSelectedInductions,
+    handleRequestDeleteSingleInduction,
+    handleConfirmDeleteInductions,
+    handleCancelDeleteInductions,
+    isDeleteInductionModalOpen,
+    setIsDeleteInductionModalOpen,
+    inductionToDelete,
+    isDeletingInductions,
+    handleDeleteSelectedPanels,
     handleNotifyAwardingBody,
     handleBulkCertify,
     isBulkCertifying: bulkCertifyMutation.isPending,

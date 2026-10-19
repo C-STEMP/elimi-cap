@@ -2,7 +2,7 @@
 
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FiX, FiCalendar, FiClock, FiMapPin, FiVideo, FiFileText } from "react-icons/fi";
+import { FiX, FiCalendar, FiClock, FiMapPin, FiVideo, FiFileText, FiTrash2 } from "react-icons/fi";
 
 export interface InductionRowData {
   id: string;
@@ -27,12 +27,14 @@ interface ViewInductionDetailModalProps {
   isOpen: boolean;
   induction: InductionRowData | null;
   onClose: () => void;
+  onDelete?: (induction: InductionRowData) => void;
 }
 
 export const ViewInductionDetailModal: React.FC<ViewInductionDetailModalProps> = ({
   isOpen,
   induction,
   onClose,
+  onDelete,
 }) => {
   if (!isOpen || !induction) return null;
 
@@ -146,7 +148,19 @@ export const ViewInductionDetailModal: React.FC<ViewInductionDetailModalProps> =
             </div>
           </div>
 
-          <div className="mt-6 flex justify-end">
+          <div className="mt-6 flex items-center justify-between gap-3">
+            {onDelete ? (
+              <button
+                type="button"
+                onClick={() => onDelete(induction)}
+                className="px-4 py-2.5 rounded-xl border border-red-200 text-red-600 hover:bg-red-50 font-semibold text-xs sm:text-sm cursor-pointer transition-colors flex items-center gap-1.5"
+              >
+                <FiTrash2 className="w-4 h-4" />
+                <span>Delete</span>
+              </button>
+            ) : (
+              <div />
+            )}
             <button
               type="button"
               onClick={onClose}

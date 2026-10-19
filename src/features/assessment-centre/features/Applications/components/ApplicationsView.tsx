@@ -12,6 +12,7 @@ import { FilterModal } from "./FilterModal";
 import { ViewInterviewDetailModal, type InterviewRowData } from "./ViewInterviewDetailModal";
 import { ViewInductionDetailModal, type InductionRowData } from "./ViewInductionDetailModal";
 import { ViewPanelDetailModal } from "./ViewPanelDetailModal";
+import { ConfirmDeleteInductionModal } from "./ConfirmDeleteInductionModal";
 
 interface ApplicationsViewProps {
   onSelectCandidate: (candidateName: string, id?: string) => void;
@@ -98,6 +99,7 @@ export const ApplicationsView: React.FC<ApplicationsViewProps> = ({
           onToggleSelect={state.toggleSelectInductionRow}
           onSelectInduction={onSelectInduction}
           onSetViewing={state.setViewingInduction}
+          onDeleteInduction={state.handleRequestDeleteSingleInduction}
         />
       ) : state.activeFilterTab === "Panel" ? (
         <PanelListTable
@@ -135,11 +137,29 @@ export const ApplicationsView: React.FC<ApplicationsViewProps> = ({
         isOpen={Boolean(state.viewingInduction)}
         induction={state.viewingInduction}
         onClose={() => state.setViewingInduction(null)}
+        onDelete={state.handleRequestDeleteSingleInduction}
       />
       <ViewPanelDetailModal
         isOpen={Boolean(state.viewingPanel)}
         panel={state.viewingPanel}
         onClose={() => state.setViewingPanel(null)}
+      />
+      <ConfirmDeleteInductionModal
+        isOpen={state.isDeleteInductionModalOpen}
+        isSubmitting={state.isDeletingInductions}
+        count={
+          state.inductionToDelete ? 1 : state.selectedInductionIds.length
+        }
+        inductionTitle={
+          state.inductionToDelete?.title ||
+          (state.selectedInductionIds.length === 1
+            ? state.filteredInductions.find(
+                (i) => i.id === state.selectedInductionIds[0],
+              )?.title
+            : undefined)
+        }
+        onConfirm={state.handleConfirmDeleteInductions}
+        onCancel={state.handleCancelDeleteInductions}
       />
     </div>
   );

@@ -11,9 +11,12 @@ import {
   useGetCentreInductions,
   useAddCentreInductionCandidates,
   useRemoveCentreInductionCandidate,
+  useDeleteCentreInduction,
 } from "@/src/features/shared/centre/hooks";
 import { useGetAllTrades } from "@/src/features/shared/reference/hooks";
 import { Select } from "@/src/components/ui/select";
+import { useToast } from "@/src/components/ui/toast";
+import { ConfirmDeleteInductionModal } from "./ConfirmDeleteInductionModal";
 
 interface Props {
   induction: InductionRowData;
@@ -23,6 +26,7 @@ interface Props {
 
 export const InductionDetailView: React.FC<Props> = ({
   induction,
+  onBack,
   onSelectCandidate,
 }) => {
   const { data: applications = [] } = useGetApplications();
@@ -32,7 +36,10 @@ export const InductionDetailView: React.FC<Props> = ({
   const { data: allInductions = [] } = useGetCentreInductions();
   const addCandidatesMutation = useAddCentreInductionCandidates();
   const removeCandidateMutation = useRemoveCentreInductionCandidate();
+  const deleteInductionMutation = useDeleteCentreInduction();
+  const { toast } = useToast();
 
+  const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTrade, setSelectedTrade] = useState<string>("All");
   const [selectedAssessmentType, setSelectedAssessmentType] = useState<string>("All");
@@ -293,9 +300,48 @@ export const InductionDetailView: React.FC<Props> = ({
     );
   };
 
+  const handleDeleteInduction = async () => {
+    try {
+      await deleteInductionMutation.mutateAsync(induction.id);
+      setIsConfirmDeleteOpen(false);
+      toast({
+        type: "success",
+        title: "Induction Deleted",
+        description: "The scheduled induction has been successfully deleted.",
+      });
+      onBack();
+    } catch (err: any) {
+      toast({
+        type: "error",
+        title: "Delete Failed",
+        description: err?.message || "Failed to delete scheduled induction.",
+      });
+    }
+  };
+
   return (
     <div className="w-full flex flex-col gap-6 select-text">
       <div className="bg-white rounded-3xl p-6 sm:p-7 border border-gray-100 shadow-2xs flex flex-col gap-6">
+        <div className="flex items-center justify-between gap-4 pb-5 border-b border-gray-100">
+          <div className="flex flex-col gap-1">
+            <span className="text-[11px] font-bold text-gray-400 tracking-wider uppercase">
+              Induction Details
+            </span>
+            <h2 className="text-lg sm:text-xl font-bold text-gray-950">
+              {effectiveTitle || "Induction Session"}
+            </h2>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsConfirmDeleteOpen(true)}
+            disabled={deleteInductionMutation.isPending}
+            className="h-9 px-3.5 border border-red-200 text-red-600 hover:bg-red-50 font-semibold text-xs rounded-xl flex items-center gap-1.5 cursor-pointer transition-colors shrink-0 disabled:opacity-50"
+          >
+            <FiTrash2 className="w-3.5 h-3.5" />
+            <span>Delete Induction</span>
+          </button>
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-6 gap-x-8">
           <div className="flex flex-col gap-1">
             <span className="text-[11px] font-bold text-gray-400 tracking-wider uppercase">
@@ -438,6 +484,15 @@ export const InductionDetailView: React.FC<Props> = ({
         toggleSelectAll={toggleSelectAll}
         toggleSelectRow={toggleSelectRow}
         onSelectCandidate={onSelectCandidate}
+      />
+
+      <ConfirmDeleteInductionModal
+        isOpen={isConfirmDeleteOpen}
+        isSubmitting={deleteInductionMutation.isPending}
+        count={1}
+        inductionTitle={effectiveTitle}
+        onConfirm={handleDeleteInduction}
+        onCancel={() => setIsConfirmDeleteOpen(false)}
       />
     </div>
   );
