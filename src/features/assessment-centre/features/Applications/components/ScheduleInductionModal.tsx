@@ -87,6 +87,7 @@ export const ScheduleInductionModal: React.FC<ScheduleInductionModalProps> = (pr
                     </label>
                     <input
                       type="date"
+                      min={new Date().toISOString().split("T")[0]}
                       value={s.date}
                       onChange={(e) => s.setDate(e.target.value)}
                       required
