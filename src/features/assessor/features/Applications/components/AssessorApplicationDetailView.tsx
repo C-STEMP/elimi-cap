@@ -402,14 +402,8 @@ export const AssessorApplicationDetailView: React.FC<
 
       if (isAwaitingSignatures) {
         setInterviewOutcome("awaiting_signature");
-        const pendingNames = res?.pendingSignatures
-          ?.map((s: { name?: string }) => s.name)
-          .filter(Boolean)
-          .join(", ");
-        const detailedMsg = pendingNames
-          ? `Interview evaluation recorded. Awaiting signature from: ${pendingNames}.`
-          : msg ||
-            "Interview evaluation recorded; awaiting remaining panel signatures.";
+        const detailedMsg =
+          "Interview evaluation recorded. Awaiting Assessor signature.";
 
         setCompetentSuccessModalConfig({
           title: "Evaluation Recorded",

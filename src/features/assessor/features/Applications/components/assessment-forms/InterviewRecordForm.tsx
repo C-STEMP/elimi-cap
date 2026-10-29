@@ -1,17 +1,18 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useMemo } from "react";
-import { AssessorAssessmentFormLayout } from "./AssessorAssessmentFormLayout";
 import { useToast } from "@/src/components/ui/toast";
-import { FiPlus, FiTrash2 } from "react-icons/fi";
 import type { AssessmentMappingUnit } from "@/src/features/shared/applications/api/types";
 import type { Unit } from "@/src/features/shared/reference/api";
 import { useResolveAssets } from "@/src/features/shared/storage/hooks";
-import { useAssessorSignature } from "./useAssessorSignature";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { FiPlus, FiTrash2 } from "react-icons/fi";
+import { AssessorAssessmentFormLayout } from "./AssessorAssessmentFormLayout";
 import { AssessorSignatureModal } from "./AssessorSignatureModal";
 import { DigitalSignaturePad } from "./DigitalSignaturePad";
+import { useAssessorSignature } from "./useAssessorSignature";
 import {
   buildUnitInterviewQuestions,
+  cleanQuestionTitle,
   type GeneratedQuestionItem,
 } from "./utils";
 
@@ -30,6 +31,10 @@ interface InterviewRecordFormProps {
   levelLabel?: string;
   defaultInterviewerNames?: string;
   defaultDate?: string;
+  leadMemberName?: string;
+  panelMemberName?: string;
+  internalVerifierName?: string;
+  currentUserRole?: "lead" | "panel" | "iv";
 }
 
 export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
@@ -44,6 +49,10 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
   levelLabel = "Level 1",
   defaultInterviewerNames = "",
   defaultDate = "",
+  leadMemberName,
+  panelMemberName,
+  internalVerifierName,
+  currentUserRole = "lead",
 }) => {
   const { toast } = useToast();
 
@@ -65,7 +74,6 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
       new Date().toISOString().split("T")[0],
   );
 
-  // Sync Personal Details with resolved application/panel/schedule data
   useEffect(() => {
     if (candidateName) setCandidateFullName(candidateName);
   }, [candidateName]);
@@ -100,12 +108,21 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
 
   const [questions, setQuestions] = useState<InterviewQuestionItem[]>(() => {
     if (hasSavedQuestions) {
-      return formData!.questions.map((q: any, i: number) => ({
-        id: q.id || `q-${i + 1}`,
-        question: q.question ?? "",
-        candidateResponse: q.candidateResponse || q.response || "",
-        isCustom: Boolean(q.isCustom),
-      }));
+      const seen = new Set<string>();
+      const deduped: InterviewQuestionItem[] = [];
+      formData!.questions.forEach((q: any, i: number) => {
+        const cleaned = cleanQuestionTitle(q.question ?? "");
+        const key = cleaned.toLowerCase().trim();
+        if (key && seen.has(key)) return;
+        if (key) seen.add(key);
+        deduped.push({
+          id: q.id || `q-${i + 1}`,
+          question: cleaned,
+          candidateResponse: q.candidateResponse || q.response || "",
+          isCustom: Boolean(q.isCustom),
+        });
+      });
+      return deduped;
     }
     return generatedDefaults;
   });
@@ -114,7 +131,12 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
     if (!hasSavedQuestions && !hasUserEditedQuestions && !isReadOnly) {
       setQuestions(generatedDefaults);
     }
-  }, [generatedDefaults, hasSavedQuestions, hasUserEditedQuestions, isReadOnly]);
+  }, [
+    generatedDefaults,
+    hasSavedQuestions,
+    hasUserEditedQuestions,
+    isReadOnly,
+  ]);
 
   const [strengths, setStrengths] = useState<string>(
     formData?.strengths ?? formData?.panelistSummaryNotes ?? "",
@@ -136,8 +158,8 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
   const [leadPanelistSigned, setLeadPanelistSigned] = useState<boolean>(
     Boolean(
       formData?.leadPanelistSigned ||
-        formData?.assessorSigned ||
-        formData?.assessorSignedAt,
+      formData?.assessorSigned ||
+      formData?.assessorSignedAt,
     ),
   );
   const [leadPanelistSignedAt, setLeadPanelistSignedAt] = useState<string>(
@@ -170,25 +192,25 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
   const [internalVerifierSigned, setInternalVerifierSigned] = useState<boolean>(
     Boolean(
       formData?.internalVerifierSigned ||
-        formData?.ivSigned ||
-        formData?.internalVerifierSignedAt,
+      formData?.ivSigned ||
+      formData?.internalVerifierSignedAt,
     ),
   );
   const [internalVerifierSignedAt, setInternalVerifierSignedAt] =
     useState<string>(
       formData?.internalVerifierSignedAt || formData?.ivSignedAt || "",
     );
-  const [internalVerifierSignatureAssetId, setInternalVerifierSignatureAssetId] =
-    useState<string>(
-      formData?.internalVerifierSignatureAssetId ||
-        formData?.ivSignatureAssetId ||
-        "",
-    );
+  const [
+    internalVerifierSignatureAssetId,
+    setInternalVerifierSignatureAssetId,
+  ] = useState<string>(
+    formData?.internalVerifierSignatureAssetId ||
+      formData?.ivSignatureAssetId ||
+      "",
+  );
   const [internalVerifierSignatureUrl, setInternalVerifierSignatureUrl] =
     useState<string>(
-      formData?.internalVerifierSignatureUrl ||
-        formData?.ivSignatureUrl ||
-        "",
+      formData?.internalVerifierSignatureUrl || formData?.ivSignatureUrl || "",
     );
 
   const sigAssetsToResolve = useMemo(() => {
@@ -213,21 +235,28 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
   ]);
   const { data: resolvedSigAssets } = useResolveAssets(sigAssetsToResolve);
 
+  const safeSigAssetsList: Array<{ assetId: string; url?: string }> =
+    Array.isArray(resolvedSigAssets)
+      ? resolvedSigAssets
+      : Array.isArray((resolvedSigAssets as any)?.assets)
+        ? (resolvedSigAssets as any).assets
+        : [];
+
   const activeLeadSignatureUrl =
     leadPanelistSignatureUrl ||
-    resolvedSigAssets?.find((a) => a.assetId === leadPanelistSignatureAssetId)
+    safeSigAssetsList.find((a) => a.assetId === leadPanelistSignatureAssetId)
       ?.url ||
     (leadPanelistSigned ? profileSignatureUrl : null);
 
   const activePanelSignatureUrl =
     panelMemberSignatureUrl ||
-    resolvedSigAssets?.find((a) => a.assetId === panelMemberSignatureAssetId)
+    safeSigAssetsList.find((a) => a.assetId === panelMemberSignatureAssetId)
       ?.url ||
     (panelMemberSigned ? profileSignatureUrl : null);
 
   const activeIvSignatureUrl =
     internalVerifierSignatureUrl ||
-    resolvedSigAssets?.find(
+    safeSigAssetsList.find(
       (a) => a.assetId === internalVerifierSignatureAssetId,
     )?.url ||
     (internalVerifierSigned ? profileSignatureUrl : null);
@@ -296,8 +325,30 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
     setQuestions((prev) => prev.filter((q) => q.id !== id));
   };
 
+  const canSignLead = !isReadOnly && currentUserRole === "lead";
+  const canSignPanel = !isReadOnly && currentUserRole === "panel";
+  const canSignIv = !isReadOnly && currentUserRole === "iv";
+
+  const resolvedLeadName =
+    leadMemberName ||
+    formData?.leadPanelistName ||
+    (currentUserRole === "lead" ? interviewerNames : "") ||
+    "Lead Panelist";
+
+  const resolvedPanelName =
+    panelMemberName ||
+    formData?.panelMemberName ||
+    (currentUserRole === "panel" ? interviewerNames : "") ||
+    "Panel Member";
+
+  const resolvedIvName =
+    internalVerifierName ||
+    formData?.internalVerifierName ||
+    (currentUserRole === "iv" ? interviewerNames : "") ||
+    "Internal Verifier";
+
   const handleAppendSignature = () => {
-    if (isReadOnly) return;
+    if (!canSignLead) return;
     if (
       !hasProfileSignature &&
       !activeLeadSignatureUrl &&
@@ -323,7 +374,7 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
   };
 
   const handleAppendPanelMemberSignature = () => {
-    if (isReadOnly) return;
+    if (!canSignPanel) return;
     if (
       !hasProfileSignature &&
       !activePanelSignatureUrl &&
@@ -349,7 +400,7 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
   };
 
   const handleAppendIvSignature = () => {
-    if (isReadOnly) return;
+    if (!canSignIv) return;
     if (
       !hasProfileSignature &&
       !activeIvSignatureUrl &&
@@ -400,18 +451,46 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
 
   const handleSubmit = () => {
     if (isReadOnly) return;
-    if (!leadPanelistSigned && !activeLeadSignatureUrl) {
+
+    if (currentUserRole === "lead" && !leadPanelistSigned && !activeLeadSignatureUrl) {
       toast({
         type: "error",
         title: "Signature Required",
         description:
-          "Please append your lead panelist signature before submitting.",
+          "Please append your Lead Panelist signature before submitting.",
       });
       if (!hasProfileSignature) {
         setSignatureModalTarget("lead");
       }
       return;
     }
+
+    if (currentUserRole === "panel" && !panelMemberSigned && !activePanelSignatureUrl) {
+      toast({
+        type: "error",
+        title: "Signature Required",
+        description:
+          "Please append your Panel Member signature before submitting.",
+      });
+      if (!hasProfileSignature) {
+        setSignatureModalTarget("panel");
+      }
+      return;
+    }
+
+    if (currentUserRole === "iv" && !internalVerifierSigned && !activeIvSignatureUrl) {
+      toast({
+        type: "error",
+        title: "Signature Required",
+        description:
+          "Please append your Internal Verifier signature before submitting.",
+      });
+      if (!hasProfileSignature) {
+        setSignatureModalTarget("iv");
+      }
+      return;
+    }
+
     const now = new Date().toISOString();
     onSubmit({
       candidateFullName,
@@ -421,40 +500,56 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
       questions,
       strengths,
       areasForDevelopment,
-      leadPanelistSigned: true,
-      leadPanelistSignedAt: leadPanelistSignedAt || now,
+      leadPanelistSigned: leadPanelistSigned || currentUserRole === "lead",
+      leadPanelistSignedAt: leadPanelistSigned
+        ? leadPanelistSignedAt || now
+        : currentUserRole === "lead"
+          ? now
+          : undefined,
       leadPanelistSignatureAssetId:
-        leadPanelistSignatureAssetId || profileSignatureAssetId || undefined,
-      leadPanelistSignatureUrl: activeLeadSignatureUrl || undefined,
-      panelMemberSigned,
+        leadPanelistSignatureAssetId ||
+        (currentUserRole === "lead" ? profileSignatureAssetId : undefined) ||
+        undefined,
+      leadPanelistSignatureUrl:
+        activeLeadSignatureUrl ||
+        (currentUserRole === "lead" ? profileSignatureUrl : undefined) ||
+        undefined,
+      leadPanelistName: resolvedLeadName,
+      panelMemberSigned: panelMemberSigned || currentUserRole === "panel",
       panelMemberSignedAt: panelMemberSigned
         ? panelMemberSignedAt || now
-        : undefined,
-      panelMemberSignatureAssetId: panelMemberSigned
-        ? panelMemberSignatureAssetId || undefined
-        : undefined,
-      panelMemberSignatureUrl: panelMemberSigned
-        ? activePanelSignatureUrl || undefined
-        : undefined,
-      facilitatorSigned: panelMemberSigned,
-      facilitatorSignedAt: panelMemberSigned
-        ? panelMemberSignedAt || now
-        : undefined,
-      internalVerifierSigned,
+        : currentUserRole === "panel"
+          ? now
+          : undefined,
+      panelMemberSignatureAssetId:
+        panelMemberSignatureAssetId ||
+        (currentUserRole === "panel" ? profileSignatureAssetId : undefined) ||
+        undefined,
+      panelMemberSignatureUrl:
+        activePanelSignatureUrl ||
+        (currentUserRole === "panel" ? profileSignatureUrl : undefined) ||
+        undefined,
+      panelMemberName: resolvedPanelName,
+      internalVerifierSigned:
+        internalVerifierSigned || currentUserRole === "iv",
       internalVerifierSignedAt: internalVerifierSigned
         ? internalVerifierSignedAt || now
-        : undefined,
-      internalVerifierSignatureAssetId: internalVerifierSigned
-        ? internalVerifierSignatureAssetId || undefined
-        : undefined,
-      internalVerifierSignatureUrl: internalVerifierSigned
-        ? activeIvSignatureUrl || undefined
-        : undefined,
+        : currentUserRole === "iv"
+          ? now
+          : undefined,
+      internalVerifierSignatureAssetId:
+        internalVerifierSignatureAssetId ||
+        (currentUserRole === "iv" ? profileSignatureAssetId : undefined) ||
+        undefined,
+      internalVerifierSignatureUrl:
+        activeIvSignatureUrl ||
+        (currentUserRole === "iv" ? profileSignatureUrl : undefined) ||
+        undefined,
+      internalVerifierName: resolvedIvName,
       assessorSigned: true,
-      assessorSignedAt: leadPanelistSignedAt || now,
-      assessorSignatureAssetId:
-        leadPanelistSignatureAssetId || profileSignatureAssetId || undefined,
-      assessorSignatureUrl: activeLeadSignatureUrl || undefined,
+      assessorSignedAt: now,
+      assessorSignatureAssetId: profileSignatureAssetId || undefined,
+      assessorSignatureUrl: profileSignatureUrl || undefined,
     });
   };
 
@@ -576,7 +671,7 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
                       </span>
                       {!isEditableTitle ? (
                         <span className="text-xs sm:text-sm font-bold text-neutral-primary">
-                          {q.question}
+                          {cleanQuestionTitle(q.question)}
                           <span className="text-rose-500">*</span>
                         </span>
                       ) : (
@@ -667,66 +762,80 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
       </div>
 
       {/* 4. Interviewer Declaration */}
-      <div className="flex flex-col gap-4 pt-4 border-t border-gray-100">
+      <div className="flex flex-col gap-2 pt-4 border-t border-gray-100">
         <h3 className="text-sm sm:text-base font-bold text-neutral-primary">
           Interviewer Declaration
         </h3>
-
-        <p className="text-xs text-neutral-secondary italic">
+        <p className="text-xs text-neutral-secondary">
           I confirm that the information provided in this assessment is true and
-          based on my own participation
+          based on my own participation.
         </p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-1">
           {/* Lead Panelist */}
           <DigitalSignaturePad
             label="Lead Panelist"
-            required
+            required={currentUserRole === "lead"}
             isSigned={leadPanelistSigned}
-            signerName={formData?.leadPanelistName || interviewerNames || "Lead Panelist"}
             signedAt={leadPanelistSignedAt}
             signatureUrl={activeLeadSignatureUrl}
-            isReadOnly={isReadOnly}
+            isReadOnly={!canSignLead}
             onAppendSignature={handleAppendSignature}
-            onChangeSignature={() => setSignatureModalTarget("lead")}
-            onClearSignature={() => {
-              setLeadPanelistSigned(false);
-              setLeadPanelistSignedAt("");
-            }}
+            onChangeSignature={
+              canSignLead ? () => setSignatureModalTarget("lead") : undefined
+            }
+            onClearSignature={
+              canSignLead
+                ? () => {
+                    setLeadPanelistSigned(false);
+                    setLeadPanelistSignedAt("");
+                  }
+                : undefined
+            }
           />
 
           {/* Panel Member */}
           <DigitalSignaturePad
             label="Panel Member"
-            required
+            required={currentUserRole === "panel"}
             isSigned={panelMemberSigned}
-            signerName={formData?.panelMemberName || "Panel Member"}
             signedAt={panelMemberSignedAt}
             signatureUrl={activePanelSignatureUrl}
-            isReadOnly={isReadOnly}
+            isReadOnly={!canSignPanel}
             onAppendSignature={handleAppendPanelMemberSignature}
-            onChangeSignature={() => setSignatureModalTarget("panel")}
-            onClearSignature={() => {
-              setPanelMemberSigned(false);
-              setPanelMemberSignedAt("");
-            }}
+            onChangeSignature={
+              canSignPanel ? () => setSignatureModalTarget("panel") : undefined
+            }
+            onClearSignature={
+              canSignPanel
+                ? () => {
+                    setPanelMemberSigned(false);
+                    setPanelMemberSignedAt("");
+                  }
+                : undefined
+            }
           />
 
           {/* Internal Verifier */}
           <DigitalSignaturePad
             label="Internal Verifier"
-            required
+            required={currentUserRole === "iv"}
             isSigned={internalVerifierSigned}
-            signerName={formData?.internalVerifierName || "Internal Verifier"}
             signedAt={internalVerifierSignedAt}
             signatureUrl={activeIvSignatureUrl}
-            isReadOnly={isReadOnly}
+            isReadOnly={!canSignIv}
             onAppendSignature={handleAppendIvSignature}
-            onChangeSignature={() => setSignatureModalTarget("iv")}
-            onClearSignature={() => {
-              setInternalVerifierSigned(false);
-              setInternalVerifierSignedAt("");
-            }}
+            onChangeSignature={
+              canSignIv ? () => setSignatureModalTarget("iv") : undefined
+            }
+            onClearSignature={
+              canSignIv
+                ? () => {
+                    setInternalVerifierSigned(false);
+                    setInternalVerifierSignedAt("");
+                  }
+                : undefined
+            }
           />
         </div>
       </div>

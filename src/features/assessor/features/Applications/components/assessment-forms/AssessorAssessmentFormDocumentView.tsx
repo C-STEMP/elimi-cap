@@ -1,39 +1,40 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
-import Image from "next/image";
-import { FiArrowLeft, FiCheckCircle, FiClock, FiFileText, FiEdit3 } from "react-icons/fi";
 import { ASSETS_URL } from "@/src/assets";
-import { FormHeaderActions } from "../form/FormHeaderActions";
+import { useToast } from "@/src/components/ui/toast";
 import { CandidateInterviewFormModal } from "@/src/features/candidate/features/Application/components/CandidateInterviewFormModal";
-import { useAssessorSignature } from "./useAssessorSignature";
-import { AssessorSignatureModal } from "./AssessorSignatureModal";
-import { useResolveAssets } from "@/src/features/shared/storage/hooks";
 import type {
   ApplicationAssessmentMapping,
-  AssessmentMappingUnit,
+  AssessmentMappingEvidenceItem,
   AssessmentMappingLearningObjective,
   AssessmentMappingPerformanceCriterion,
-  AssessmentMappingEvidenceItem,
+  AssessmentMappingUnit,
   InterviewForm,
 } from "@/src/features/shared/applications/api/types";
 import {
   useGetApplicationAssessmentMapping,
-  useUpdateInterviewForm,
-  useGetInterviewPanel,
   useGetApplicationById,
+  useGetInterviewPanel,
+  useUpdateInterviewForm,
 } from "@/src/features/shared/applications/hooks";
+import {
+  getRplScopedUnits,
+  resolveAppliedTradeLevel,
+} from "@/src/features/shared/applications/utils/rplTradeLevel";
+import type { Unit } from "@/src/features/shared/reference/api";
 import {
   useGetTradeDetail,
   useGetUnitsByTrade,
 } from "@/src/features/shared/reference/hooks";
-import {
-  resolveAppliedTradeLevel,
-  getRplScopedUnits,
-} from "@/src/features/shared/applications/utils/rplTradeLevel";
-import type { Unit } from "@/src/features/shared/reference/api";
-import { useToast } from "@/src/components/ui/toast";
+import { useResolveAssets } from "@/src/features/shared/storage/hooks";
 import { useAppSelector } from "@/src/store/hooks";
+import Image from "next/image";
+import React, { useMemo, useState } from "react";
+import { FiArrowLeft, FiCheckCircle, FiClock, FiEdit3 } from "react-icons/fi";
+import { FormHeaderActions } from "../form/FormHeaderActions";
+import { AssessorSignatureModal } from "./AssessorSignatureModal";
+import { useAssessorSignature } from "./useAssessorSignature";
+import { cleanQuestionTitle } from "./utils";
 
 interface AssessorAssessmentFormDocumentViewProps {
   applicationId?: string;
@@ -45,59 +46,69 @@ interface AssessorAssessmentFormDocumentViewProps {
   formRecord?: InterviewForm | null;
   applicationTrade?: string;
   unitLabels?: string[];
-  // Signing is an "interview stage" action on the backend — once the
-  // application has moved past that stage, signing always fails. Defaults
-  // to true so callers that don't track stage (e.g. the public shared
-  // dossier view) keep their existing behaviour.
   isInterviewStage?: boolean;
 }
 
-const FORM_TITLES: Record<string, { title: string; subtitle: string; code: string }> = {
+const FORM_TITLES: Record<
+  string,
+  { title: string; subtitle: string; code: string }
+> = {
   skills_demo: {
     title: "Skills Demonstration Records Form",
-    subtitle: "Assessor record of occupational performance demonstration against designated occupational standards.",
+    subtitle:
+      "Assessor record of occupational performance demonstration against designated occupational standards.",
     code: "NBTE/RPL/SDR-01",
   },
   skill_demonstration: {
     title: "Skills Demonstration Records Form",
-    subtitle: "Assessor record of occupational performance demonstration against designated occupational standards.",
+    subtitle:
+      "Assessor record of occupational performance demonstration against designated occupational standards.",
     code: "NBTE/RPL/SDR-01",
   },
   observation_checklist: {
     title: "Practical Observation Record",
-    subtitle: "Assessor on-site observation of real-time occupational tasks under industrial conditions.",
+    subtitle:
+      "Assessor on-site observation of real-time occupational tasks under industrial conditions.",
     code: "NBTE/RPL/POR-02",
   },
   practical_observation: {
     title: "Practical Observation Record",
-    subtitle: "Assessor on-site observation of real-time occupational tasks under industrial conditions.",
+    subtitle:
+      "Assessor on-site observation of real-time occupational tasks under industrial conditions.",
     code: "NBTE/RPL/POR-02",
   },
   interview_record: {
     title: "Interview Question Bank & Record Sheet",
-    subtitle: "Structured oral questioning instrument assessing theoretical knowledge, safety protocols, and problem-solving.",
+    subtitle:
+      "Structured oral questioning instrument assessing theoretical knowledge, safety protocols, and problem-solving.",
     code: "NBTE/RPL/IQB-03",
   },
   records: {
     title: "Interview Question Bank & Record Sheet",
-    subtitle: "Structured oral questioning instrument assessing theoretical knowledge, safety protocols, and problem-solving.",
+    subtitle:
+      "Structured oral questioning instrument assessing theoretical knowledge, safety protocols, and problem-solving.",
     code: "NBTE/RPL/IQB-03",
   },
   assessment_mapping: {
     title: "RPL Assessment Grid / Mapping Form",
-    subtitle: "Read-only matrix assembling candidate personal details and National Occupational Standards performance criteria.",
+    subtitle:
+      "Read-only matrix assembling candidate personal details and National Occupational Standards performance criteria.",
     code: "NBTE/RPL/AGM-04",
   },
   assessment_grid: {
     title: "RPL Assessment Grid / Mapping Form",
-    subtitle: "Read-only matrix assembling candidate personal details and National Occupational Standards performance criteria.",
+    subtitle:
+      "Read-only matrix assembling candidate personal details and National Occupational Standards performance criteria.",
     code: "NBTE/RPL/AGM-04",
   },
 };
 
 const FORM_BACKEND_MAP: Record<
   string,
-  "skill_demonstration" | "assessment_grid" | "practical_observation" | "records"
+  | "skill_demonstration"
+  | "assessment_grid"
+  | "practical_observation"
+  | "records"
 > = {
   skills_demo: "skill_demonstration",
   skill_demonstration: "skill_demonstration",
@@ -132,13 +143,18 @@ function transformScopedUnitToMappingUnit(su: Unit): AssessmentMappingUnit {
 
     const performanceCriteria = rawPcs.map((pc: any, pcIdx: number) => {
       const code =
-        typeof pc === "object" && pc?.code ? pc.code : `${loIdx + 1}.${pcIdx + 1}`;
+        typeof pc === "object" && pc?.code
+          ? pc.code
+          : `${loIdx + 1}.${pcIdx + 1}`;
       const text =
-        typeof pc === "string" ? pc : pc?.text || pc?.title || pc?.description || "";
+        typeof pc === "string"
+          ? pc
+          : pc?.text || pc?.title || pc?.description || "";
       const evidenceTypes =
         Array.isArray(pc?.evidenceTypes) && pc.evidenceTypes.length > 0
           ? pc.evidenceTypes
-          : Array.isArray(su.assessmentMethods) && su.assessmentMethods.length > 0
+          : Array.isArray(su.assessmentMethods) &&
+              su.assessmentMethods.length > 0
             ? su.assessmentMethods
             : ["DO", "QA", "WT"];
 
@@ -177,9 +193,12 @@ function transformScopedUnitToMappingUnit(su: Unit): AssessmentMappingUnit {
       : [
           {
             code: "1.0",
-            text: su.purpose || `Demonstrate core occupational skills for ${su.title}`,
+            text:
+              su.purpose ||
+              `Demonstrate core occupational skills for ${su.title}`,
             title:
-              su.purpose || `Demonstrate core occupational skills for ${su.title}`,
+              su.purpose ||
+              `Demonstrate core occupational skills for ${su.title}`,
             performanceCriteria: [
               {
                 code: "1.1",
@@ -231,7 +250,9 @@ export const AssessorAssessmentFormDocumentView: React.FC<
 }) => {
   const { toast } = useToast();
   const user = useAppSelector((state) => state.auth.user);
-  const [formData, setFormData] = useState<Record<string, any> | undefined>(initialFormData);
+  const [formData, setFormData] = useState<Record<string, any> | undefined>(
+    initialFormData,
+  );
 
   React.useEffect(() => {
     setFormData(initialFormData);
@@ -247,9 +268,7 @@ export const AssessorAssessmentFormDocumentView: React.FC<
       enabled: isAssessmentMapping && Boolean(applicationId),
     });
 
-  const { data: applicationData } = useGetApplicationById(
-    applicationId || "",
-  );
+  const { data: applicationData } = useGetApplicationById(applicationId || "");
   const resolvedTradeId =
     applicationData?.tradeId || (applicationData?.trade as any)?.id || "";
   const { data: tradeDetail } = useGetTradeDetail(resolvedTradeId);
@@ -292,8 +311,8 @@ export const AssessorAssessmentFormDocumentView: React.FC<
   );
   const shouldFetchInterviewPanel = Boolean(
     applicationId &&
-      !isAssessmentMapping &&
-      (effectiveIsInterviewStage || isInterviewForm),
+    !isAssessmentMapping &&
+    (effectiveIsInterviewStage || isInterviewForm),
   );
   const { data: interviewPanel } = useGetInterviewPanel(applicationId || "", {
     enabled: shouldFetchInterviewPanel,
@@ -301,32 +320,51 @@ export const AssessorAssessmentFormDocumentView: React.FC<
   const updateFormMutation = useUpdateInterviewForm(applicationId || "");
   const [isSigningRole, setIsSigningRole] = useState<string | null>(null);
 
-  const currentAssessorId = (user as any)?.assessorId || (user as any)?.profileId || user?.id;
+  const currentAssessorId =
+    (user as any)?.assessorId || (user as any)?.profileId || user?.id;
   const currentAssessorEmail = user?.email?.toLowerCase();
 
   const isMemberMatch = (m: any) => {
     if (!m) return false;
-    const mAssessorId = (m.assessorId || m.userId || m.id || "").toString().toLowerCase().trim();
+    const mAssessorId = (m.assessorId || m.userId || m.id || "")
+      .toString()
+      .toLowerCase()
+      .trim();
     const mEmail = (m.email || "").toLowerCase().trim();
     const mName = (m.name || "").toLowerCase().trim();
 
-    if (currentAssessorEmail && mEmail && mEmail === currentAssessorEmail) return true;
-    if (currentAssessorId && (mAssessorId === currentAssessorId.toString().toLowerCase().trim())) return true;
-    if (user?.id && (mAssessorId === user.id.toLowerCase().trim())) return true;
+    if (currentAssessorEmail && mEmail && mEmail === currentAssessorEmail)
+      return true;
+    if (
+      currentAssessorId &&
+      mAssessorId === currentAssessorId.toString().toLowerCase().trim()
+    )
+      return true;
+    if (user?.id && mAssessorId === user.id.toLowerCase().trim()) return true;
     const userNames = [
       user?.fullName,
       (user as any)?.name,
       (user as any)?.firstName,
       (user as any)?.lastName,
       `${(user as any)?.firstName || ""} ${(user as any)?.lastName || ""}`.trim(),
-    ].filter(Boolean).map((n) => (n as string).toLowerCase().trim());
+    ]
+      .filter(Boolean)
+      .map((n) => (n as string).toLowerCase().trim());
 
-    if (mName && userNames.some((n) => n === mName || n.includes(mName) || mName.includes(n))) return true;
+    if (
+      mName &&
+      userNames.some(
+        (n) => n === mName || n.includes(mName) || mName.includes(n),
+      )
+    )
+      return true;
     return false;
   };
 
   const leadMember = interviewPanel?.members?.find((m: any) => m.isLead);
-  const panelMember = interviewPanel?.members?.find((m: any) => !m.isLead && !m.isObserver);
+  const panelMember = interviewPanel?.members?.find(
+    (m: any) => !m.isLead && !m.isObserver,
+  );
   const ivMember = interviewPanel?.members?.find((m: any) => m.isObserver);
 
   const isCandidateSigned = Boolean(
@@ -342,16 +380,18 @@ export const AssessorAssessmentFormDocumentView: React.FC<
     formRecord?.candidateSignedAt ||
     formRecord?.status === "completed" ||
     formData?.submittedAt ||
-    Boolean(formRecord?.populatedBy)
+    Boolean(formRecord?.populatedBy),
   );
 
-  const isAssessorUser = !isCandidate && Boolean(
-    user?.role?.toLowerCase()?.includes("assessor") ||
-    user?.role?.toLowerCase()?.includes("centre") ||
-    user?.role?.toLowerCase()?.includes("center") ||
-    user?.role?.toLowerCase()?.includes("facilitator") ||
-    user?.role?.toLowerCase()?.includes("admin")
-  );
+  const isAssessorUser =
+    !isCandidate &&
+    Boolean(
+      user?.role?.toLowerCase()?.includes("assessor") ||
+      user?.role?.toLowerCase()?.includes("centre") ||
+      user?.role?.toLowerCase()?.includes("center") ||
+      user?.role?.toLowerCase()?.includes("facilitator") ||
+      user?.role?.toLowerCase()?.includes("admin"),
+    );
 
   const isMatchLead = Boolean(leadMember && isMemberMatch(leadMember));
   const isMatchIV = Boolean(ivMember && isMemberMatch(ivMember));
@@ -365,17 +405,6 @@ export const AssessorAssessmentFormDocumentView: React.FC<
     !isAssessorSigned &&
     isMatchLead;
 
-  const canSignPanelMember = isAssessorUser && isInterviewStage && !isCandidateSigned && !isAssessorSigned && (
-    panelMember ? isMatchPanelMember : (!isMatchLead && !isMatchIV)
-  );
-
-  const canSignIV = isAssessorUser && isInterviewStage && !isCandidateSigned && !isAssessorSigned && (
-    ivMember
-      ? isMatchIV
-      : user?.role?.toLowerCase()?.includes("iv") ||
-        user?.role?.toLowerCase()?.includes("verifier")
-  );
-
   const {
     signatureUrl: profileSignatureUrl,
     signatureAssetId: profileSignatureAssetId,
@@ -383,7 +412,9 @@ export const AssessorAssessmentFormDocumentView: React.FC<
   } = useAssessorSignature();
 
   const [isAssessorSigModalOpen, setIsAssessorSigModalOpen] = useState(false);
-  const [pendingRoleToSign, setPendingRoleToSign] = useState<"lead" | "assessor" | null>(null);
+  const [pendingRoleToSign, setPendingRoleToSign] = useState<
+    "lead" | "assessor" | null
+  >(null);
 
   const assetsToResolve = useMemo(() => {
     const ids: string[] = [];
@@ -409,10 +440,18 @@ export const AssessorAssessmentFormDocumentView: React.FC<
 
   const { data: resolvedSignatureAssets } = useResolveAssets(assetsToResolve);
 
+  const sigAssetsList: Array<{ assetId: string; url?: string }> = Array.isArray(
+    resolvedSignatureAssets,
+  )
+    ? resolvedSignatureAssets
+    : Array.isArray((resolvedSignatureAssets as any)?.assets)
+      ? (resolvedSignatureAssets as any).assets
+      : [];
+
   const displayAssessorSigUrl =
     (formData as any)?.assessorSignatureUrl ||
     (formData as any)?.leadPanelistSignatureUrl ||
-    resolvedSignatureAssets?.find(
+    sigAssetsList.find(
       (a) =>
         a.assetId === (formData as any)?.assessorSignatureAssetId ||
         a.assetId === (formData as any)?.leadPanelistSignatureAssetId,
@@ -421,7 +460,7 @@ export const AssessorAssessmentFormDocumentView: React.FC<
 
   const displayCandidateSigUrl =
     (formData as any)?.candidateSignatureUrl ||
-    resolvedSignatureAssets?.find(
+    sigAssetsList.find(
       (a) =>
         a.assetId === formRecord?.candidateSignatureAssetId ||
         a.assetId === (formData as any)?.candidateSignatureAssetId,
@@ -433,14 +472,19 @@ export const AssessorAssessmentFormDocumentView: React.FC<
     sigOverride?: { assetId: string; url?: string },
   ) => {
     if (!applicationId) {
-      toast({ type: "error", title: "Missing Application", description: "Application ID is required to sign." });
+      toast({
+        type: "error",
+        title: "Missing Application",
+        description: "Application ID is required to sign.",
+      });
       return;
     }
     if (isCandidateSigned) {
       toast({
         type: "info",
         title: "Form Completed",
-        description: "This form has already been signed by the candidate and cannot be modified.",
+        description:
+          "This form has already been signed by the candidate and cannot be modified.",
       });
       return;
     }
@@ -553,7 +597,8 @@ export const AssessorAssessmentFormDocumentView: React.FC<
     setIsAssessorSigModalOpen(false);
   };
 
-  const [isCandidateSignModalOpen, setIsCandidateSignModalOpen] = useState(false);
+  const [isCandidateSignModalOpen, setIsCandidateSignModalOpen] =
+    useState(false);
   const isInterviewRecord =
     formId === "records" ||
     formId === "interview_record" ||
@@ -591,7 +636,6 @@ export const AssessorAssessmentFormDocumentView: React.FC<
 
   return (
     <div className="w-full max-w-5xl mx-auto flex flex-col gap-6 py-6 px-4 sm:px-6 select-text">
-      {/* Top Header Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 flex-wrap no-print">
         <button
           type="button"
@@ -603,16 +647,19 @@ export const AssessorAssessmentFormDocumentView: React.FC<
         </button>
 
         <div className="flex items-center gap-2 sm:gap-3 shrink-0 flex-wrap justify-end">
-          {!isAssessmentMapping && isCandidate && !isCandidateSigned && isInterviewStage && (
-            <button
-              type="button"
-              onClick={() => setIsCandidateSignModalOpen(true)}
-              className="bg-[#8A1538] hover:bg-[#72112d] text-white font-bold text-xs sm:text-sm px-4 py-2 rounded-xl inline-flex items-center gap-2 transition-all cursor-pointer shadow-xs whitespace-nowrap shrink-0"
-            >
-              <FiEdit3 className="w-3.5 h-3.5 shrink-0" />
-              <span>Sign Document</span>
-            </button>
-          )}
+          {!isAssessmentMapping &&
+            isCandidate &&
+            !isCandidateSigned &&
+            isInterviewStage && (
+              <button
+                type="button"
+                onClick={() => setIsCandidateSignModalOpen(true)}
+                className="bg-[#8A1538] hover:bg-[#72112d] text-white font-bold text-xs sm:text-sm px-4 py-2 rounded-xl inline-flex items-center gap-2 transition-all cursor-pointer shadow-xs whitespace-nowrap shrink-0"
+              >
+                <FiEdit3 className="w-3.5 h-3.5 shrink-0" />
+                <span>Sign Document</span>
+              </button>
+            )}
           <FormHeaderActions
             formName={safeFormName}
             elementId="printable-assessment-form"
@@ -620,12 +667,10 @@ export const AssessorAssessmentFormDocumentView: React.FC<
         </div>
       </div>
 
-      {/* Printable Document Container */}
       <div
         id="printable-assessment-form"
         className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-10 border border-gray-100 shadow-xs flex flex-col gap-6 sm:gap-8 w-full printable-container"
       >
-        {/* Document Header */}
         <div className="flex flex-col items-center text-center gap-2 border-b border-gray-100 pb-6">
           <div className="flex justify-center mb-1">
             <Image
@@ -648,7 +693,6 @@ export const AssessorAssessmentFormDocumentView: React.FC<
           </p>
         </div>
 
-        {/* Section 1: Particulars */}
         <div className="flex flex-col gap-3">
           <h3 className="text-[11px] font-bold text-neutral-primary uppercase tracking-widest border-b border-gray-100 pb-2">
             {isAssessmentMapping
@@ -658,24 +702,38 @@ export const AssessorAssessmentFormDocumentView: React.FC<
           {isAssessmentMapping ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 bg-[#F8F9FA] rounded-2xl p-4 border border-gray-100 text-xs">
               <div>
-                <span className="font-semibold text-neutral-secondary block mb-0.5">Candidate Name:</span>
-                <span className="font-bold text-neutral-primary text-sm">{candidateFullName}</span>
+                <span className="font-semibold text-neutral-secondary block mb-0.5">
+                  Candidate Name:
+                </span>
+                <span className="font-bold text-neutral-primary text-sm">
+                  {candidateFullName}
+                </span>
               </div>
               {applicationTrade && (
                 <div>
-                  <span className="font-semibold text-neutral-secondary block mb-0.5">Trade / Occupation:</span>
-                  <span className="font-bold text-neutral-primary text-sm">{applicationTrade}</span>
+                  <span className="font-semibold text-neutral-secondary block mb-0.5">
+                    Trade / Occupation:
+                  </span>
+                  <span className="font-bold text-neutral-primary text-sm">
+                    {applicationTrade}
+                  </span>
                 </div>
               )}
               {(pd.email || pd.emailAddress) && (
                 <div>
-                  <span className="font-semibold text-neutral-secondary block mb-0.5">Email:</span>
-                  <span className="font-medium text-neutral-primary">{pd.email || pd.emailAddress}</span>
+                  <span className="font-semibold text-neutral-secondary block mb-0.5">
+                    Email:
+                  </span>
+                  <span className="font-medium text-neutral-primary">
+                    {pd.email || pd.emailAddress}
+                  </span>
                 </div>
               )}
               {(pd.phoneNumber || pd.phone) && (
                 <div>
-                  <span className="font-semibold text-neutral-secondary block mb-0.5">Phone Number:</span>
+                  <span className="font-semibold text-neutral-secondary block mb-0.5">
+                    Phone Number:
+                  </span>
                   <span className="font-medium text-neutral-primary">
                     {typeof pd.phoneNumber === "object"
                       ? `${pd.phoneNumber.countryCode || ""} ${pd.phoneNumber.number || ""}`.trim()
@@ -685,37 +743,59 @@ export const AssessorAssessmentFormDocumentView: React.FC<
               )}
               {pd.gender && (
                 <div>
-                  <span className="font-semibold text-neutral-secondary block mb-0.5">Gender:</span>
-                  <span className="font-medium text-neutral-primary">{pd.gender}</span>
+                  <span className="font-semibold text-neutral-secondary block mb-0.5">
+                    Gender:
+                  </span>
+                  <span className="font-medium text-neutral-primary">
+                    {pd.gender}
+                  </span>
                 </div>
               )}
               {(pd.dateOfBirth || pd.dob) && (
                 <div>
-                  <span className="font-semibold text-neutral-secondary block mb-0.5">Date of Birth:</span>
-                  <span className="font-medium text-neutral-primary">{pd.dateOfBirth || pd.dob}</span>
+                  <span className="font-semibold text-neutral-secondary block mb-0.5">
+                    Date of Birth:
+                  </span>
+                  <span className="font-medium text-neutral-primary">
+                    {pd.dateOfBirth || pd.dob}
+                  </span>
                 </div>
               )}
               {pd.nationality && (
                 <div>
-                  <span className="font-semibold text-neutral-secondary block mb-0.5">Nationality:</span>
-                  <span className="font-medium text-neutral-primary">{pd.nationality}</span>
+                  <span className="font-semibold text-neutral-secondary block mb-0.5">
+                    Nationality:
+                  </span>
+                  <span className="font-medium text-neutral-primary">
+                    {pd.nationality}
+                  </span>
                 </div>
               )}
               {(pd.stateOfResidence || pd.state) && (
                 <div>
-                  <span className="font-semibold text-neutral-secondary block mb-0.5">State of Residence:</span>
-                  <span className="font-medium text-neutral-primary">{pd.stateOfResidence || pd.state}</span>
+                  <span className="font-semibold text-neutral-secondary block mb-0.5">
+                    State of Residence:
+                  </span>
+                  <span className="font-medium text-neutral-primary">
+                    {pd.stateOfResidence || pd.state}
+                  </span>
                 </div>
               )}
               {(pd.localGovernment || pd.lga) && (
                 <div>
-                  <span className="font-semibold text-neutral-secondary block mb-0.5">Local Government:</span>
-                  <span className="font-medium text-neutral-primary">{pd.localGovernment || pd.lga}</span>
+                  <span className="font-semibold text-neutral-secondary block mb-0.5">
+                    Local Government:
+                  </span>
+                  <span className="font-medium text-neutral-primary">
+                    {pd.localGovernment || pd.lga}
+                  </span>
                 </div>
               )}
               {(pd.address || pd.residentialAddress || pd.streetAddress) && (
                 <div className="sm:col-span-2">
-                  <span className="font-semibold text-neutral-secondary block mb-0.5">Residential Address:</span>
+                  <span className="font-semibold text-neutral-secondary block mb-0.5">
+                    Residential Address:
+                  </span>
                   <span className="font-medium text-neutral-primary">
                     {pd.address || pd.residentialAddress || pd.streetAddress}
                   </span>
@@ -725,30 +805,49 @@ export const AssessorAssessmentFormDocumentView: React.FC<
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 bg-[#F8F9FA] rounded-2xl p-4 border border-gray-100 text-xs">
               <div>
-                <span className="font-semibold text-neutral-secondary block mb-0.5">Candidate Name:</span>
-                <span className="font-bold text-neutral-primary text-sm">{candidateFullName}</span>
+                <span className="font-semibold text-neutral-secondary block mb-0.5">
+                  Candidate Name:
+                </span>
+                <span className="font-bold text-neutral-primary text-sm">
+                  {candidateFullName}
+                </span>
               </div>
               <div>
-                <span className="font-semibold text-neutral-secondary block mb-0.5">Assessor / Interviewer:</span>
-                <span className="font-bold text-neutral-primary text-sm">{assessorName}</span>
+                <span className="font-semibold text-neutral-secondary block mb-0.5">
+                  Assessor / Interviewer:
+                </span>
+                <span className="font-bold text-neutral-primary text-sm">
+                  {assessorName}
+                </span>
               </div>
               <div>
-                <span className="font-semibold text-neutral-secondary block mb-0.5">Unit / Level:</span>
-                <span className="font-bold text-neutral-primary text-sm">{unitTitleCode}</span>
+                <span className="font-semibold text-neutral-secondary block mb-0.5">
+                  Unit / Level:
+                </span>
+                <span className="font-bold text-neutral-primary text-sm">
+                  {unitTitleCode}
+                </span>
               </div>
               <div>
-                <span className="font-semibold text-neutral-secondary block mb-0.5">Assessment Date:</span>
-                <span className="font-medium text-neutral-primary">{dateStr}</span>
+                <span className="font-semibold text-neutral-secondary block mb-0.5">
+                  Assessment Date:
+                </span>
+                <span className="font-medium text-neutral-primary">
+                  {dateStr}
+                </span>
               </div>
               <div className="sm:col-span-2">
-                <span className="font-semibold text-neutral-secondary block mb-0.5">Location / Facility / Workplace:</span>
-                <span className="font-medium text-neutral-primary">{locationStr}</span>
+                <span className="font-semibold text-neutral-secondary block mb-0.5">
+                  Location / Facility / Workplace:
+                </span>
+                <span className="font-medium text-neutral-primary">
+                  {locationStr}
+                </span>
               </div>
             </div>
           )}
         </div>
 
-        {/* Section 2: Form Content */}
         {renderFormContent(
           formId,
           formData,
@@ -757,14 +856,12 @@ export const AssessorAssessmentFormDocumentView: React.FC<
           resolvedMappingUnits,
         )}
 
-        {/* Section 3: Signatures */}
         {!isAssessmentMapping && (
           <div className="flex flex-col gap-3 pt-4 border-t border-gray-100">
             <h3 className="text-[11px] font-bold text-neutral-primary uppercase tracking-widest border-b border-gray-100 pb-2">
               Signatures & Verification
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Lead Panelist / Assessor */}
               <div className="bg-[#F8F9FA] rounded-2xl p-4 border border-gray-100 flex flex-col gap-2.5">
                 <span className="text-[11px] font-semibold text-neutral-secondary">
                   {isInterviewRecord ? "Lead Panelist:" : "Assessor:"}
@@ -775,8 +872,12 @@ export const AssessorAssessmentFormDocumentView: React.FC<
                       <FiCheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                       <span>
                         Signed
-                        {formData?.leadPanelistName ? ` by ${formData.leadPanelistName}` : formData?.assessorName ? ` by ${formData.assessorName}` : assessorName ? ` by ${assessorName}` : ""}
-                        {formData?.leadPanelistSignedAt || formData?.assessorSignedAt || formData?.submittedAt || formRecord?.candidateSignedAt ? ` · ${new Date(formData?.leadPanelistSignedAt || formData?.assessorSignedAt || formData?.submittedAt || formRecord?.candidateSignedAt || "").toLocaleDateString("en-GB")}` : ""}
+                        {formData?.leadPanelistSignedAt ||
+                        formData?.assessorSignedAt ||
+                        formData?.submittedAt ||
+                        formRecord?.candidateSignedAt
+                          ? ` · ${new Date(formData?.leadPanelistSignedAt || formData?.assessorSignedAt || formData?.submittedAt || formRecord?.candidateSignedAt || "").toLocaleDateString("en-GB")}`
+                          : ""}
                       </span>
                     </div>
                     {displayAssessorSigUrl && (
@@ -793,28 +894,42 @@ export const AssessorAssessmentFormDocumentView: React.FC<
                   <button
                     type="button"
                     disabled={Boolean(isSigningRole)}
-                    onClick={() => handleSignClick(isInterviewRecord ? "lead" : "assessor")}
+                    onClick={() =>
+                      handleSignClick(isInterviewRecord ? "lead" : "assessor")
+                    }
                     className="h-9 bg-[#FFF8EB] border border-[#FBAB2A] hover:bg-[#FDEED5] text-[#FBAB2A] font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
                   >
                     <FiEdit3 className="w-3.5 h-3.5" />
-                    {isSigningRole ? "Signing..." : isInterviewRecord ? "Sign as Lead Panelist" : "Sign as Assessor"}
+                    {isSigningRole
+                      ? "Signing..."
+                      : isInterviewRecord
+                        ? "Sign as Lead Panelist"
+                        : "Sign as Assessor"}
                   </button>
                 ) : (
                   <div className="flex items-center gap-2 text-amber-700 font-semibold text-xs bg-amber-50 border border-amber-200 px-3 py-2 rounded-xl">
                     <FiClock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                    <span>Pending Signature</span>
+                    <span>Awaiting Assessor</span>
                   </div>
                 )}
               </div>
 
-              {/* Candidate */}
               <div className="bg-[#F8F9FA] rounded-2xl p-4 border border-gray-100 flex flex-col gap-2.5">
-                <span className="text-[11px] font-semibold text-neutral-secondary">Candidate:</span>
+                <span className="text-[11px] font-semibold text-neutral-secondary">
+                  Candidate:
+                </span>
                 {isCandidateSigned ? (
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-2 text-emerald-700 font-bold text-xs bg-emerald-50 border border-emerald-200 px-3 py-2 rounded-xl">
                       <FiCheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <span>Signed · {new Date(formData?.candidateSignedAt || formRecord?.candidateSignedAt || Date.now()).toLocaleDateString("en-GB")}</span>
+                      <span>
+                        Signed ·{" "}
+                        {new Date(
+                          formData?.candidateSignedAt ||
+                            formRecord?.candidateSignedAt ||
+                            Date.now(),
+                        ).toLocaleDateString("en-GB")}
+                      </span>
                     </div>
                     {displayCandidateSigUrl && (
                       <div className="bg-white rounded-xl p-2.5 flex items-center justify-center border border-dashed border-gray-200 h-20 max-h-22 overflow-hidden shadow-2xs">
@@ -838,7 +953,7 @@ export const AssessorAssessmentFormDocumentView: React.FC<
                 ) : (
                   <div className="flex items-center gap-2 text-amber-700 font-semibold text-xs bg-amber-50 border border-amber-200 px-3 py-2 rounded-xl">
                     <FiClock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                    <span>Awaiting Signature</span>
+                    <span>Awaiting Candidate</span>
                   </div>
                 )}
               </div>
@@ -885,7 +1000,6 @@ function renderFormContent(
     case "skill_demonstration":
       return (
         <div className="flex flex-col gap-6">
-          {/* Demonstration Details */}
           {(formData?.taskDemonstrated ||
             formData?.workplaceDescription ||
             formData?.toolsUsed) && (
@@ -928,7 +1042,6 @@ function renderFormContent(
             </div>
           )}
 
-          {/* Criteria Checklist Table */}
           <div className="flex flex-col gap-3">
             <h4 className="text-xs font-bold text-neutral-primary uppercase tracking-wide">
               Demonstration Criteria &amp; Standards Checklist
@@ -952,7 +1065,7 @@ function renderFormContent(
                           {idx + 1}
                         </td>
                         <td className="p-3 font-semibold text-neutral-primary">
-                          {item.title}
+                          {cleanQuestionTitle(item.title)}
                         </td>
                         <td className="p-3 text-center">
                           <span
@@ -972,7 +1085,10 @@ function renderFormContent(
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={4} className="p-4 text-center text-gray-400 italic">
+                      <td
+                        colSpan={4}
+                        className="p-4 text-center text-gray-400 italic"
+                      >
                         No criteria items recorded.
                       </td>
                     </tr>
@@ -982,7 +1098,6 @@ function renderFormContent(
             </div>
           </div>
 
-          {/* Verdict & Technical Notes */}
           <div className="flex flex-col gap-3">
             <h4 className="text-xs font-bold text-neutral-primary uppercase tracking-wide">
               Verdict &amp; Technical Notes
@@ -1021,7 +1136,6 @@ function renderFormContent(
     case "practical_observation":
       return (
         <div className="flex flex-col gap-6">
-          {/* Checklist Table */}
           <div className="flex flex-col gap-3">
             <h4 className="text-xs font-bold text-neutral-primary uppercase tracking-wide">
               Observation Criteria &amp; Standards Checklist
@@ -1045,7 +1159,7 @@ function renderFormContent(
                           {idx + 1}
                         </td>
                         <td className="p-3 font-semibold text-neutral-primary">
-                          {item.title}
+                          {cleanQuestionTitle(item.title)}
                         </td>
                         <td className="p-3 text-center">
                           <span
@@ -1065,7 +1179,10 @@ function renderFormContent(
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={4} className="p-4 text-center text-gray-400 italic">
+                      <td
+                        colSpan={4}
+                        className="p-4 text-center text-gray-400 italic"
+                      >
                         No checklist items recorded.
                       </td>
                     </tr>
@@ -1075,7 +1192,6 @@ function renderFormContent(
             </div>
           </div>
 
-          {/* Verdict & Notes */}
           <div className="flex flex-col gap-3">
             <h4 className="text-xs font-bold text-neutral-primary uppercase tracking-wide">
               Practical Observation Verdict &amp; Notes
@@ -1114,7 +1230,6 @@ function renderFormContent(
     case "records":
       return (
         <div className="flex flex-col gap-6">
-          {/* Question Bank & Live Responses */}
           <div className="flex flex-col gap-3">
             <h4 className="text-xs font-bold text-neutral-primary uppercase tracking-wide">
               Question Bank &amp; Live Responses
@@ -1128,7 +1243,7 @@ function renderFormContent(
                     className="bg-[#F8F9FA] rounded-2xl p-4 border border-gray-100 flex flex-col gap-1.5 text-xs"
                   >
                     <span className="font-bold text-neutral-primary">
-                      {idx + 1}. {q.question}
+                      {idx + 1}. {cleanQuestionTitle(q.question)}
                     </span>
                     <p className="text-neutral-secondary pl-3 border-l-2 border-[#8A1538] py-0.5 whitespace-pre-wrap font-medium">
                       {q.candidateResponse || (
@@ -1147,7 +1262,6 @@ function renderFormContent(
             </div>
           </div>
 
-          {/* Overall Assessment */}
           {(formData?.strengths || formData?.areasForDevelopment) && (
             <div className="flex flex-col gap-3">
               <h4 className="text-xs font-bold text-neutral-primary uppercase tracking-wide">
@@ -1198,142 +1312,184 @@ function renderFormContent(
               </p>
             ) : unitsToRender.length > 0 ? (
               <div className="flex flex-col gap-5">
-                {unitsToRender.map((unit: AssessmentMappingUnit, idx: number) => (
-                  <div
-                    key={unit.id || idx}
-                    className="bg-[#F8F9FA] rounded-2xl p-4 sm:p-5 border border-gray-100 flex flex-col gap-4 text-xs"
-                  >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-200/70 pb-3">
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-[11px] font-bold text-[#8A1538] uppercase tracking-wider">
-                          {unit.referenceNumber || `Unit #${idx + 1}`}
-                        </span>
-                        <span className="font-bold text-neutral-primary text-sm sm:text-base">
-                          {unit.title}
-                        </span>
+                {unitsToRender.map(
+                  (unit: AssessmentMappingUnit, idx: number) => (
+                    <div
+                      key={unit.id || idx}
+                      className="bg-[#F8F9FA] rounded-2xl p-4 sm:p-5 border border-gray-100 flex flex-col gap-4 text-xs"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-200/70 pb-3">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-[11px] font-bold text-[#8A1538] uppercase tracking-wider">
+                            {unit.referenceNumber || `Unit #${idx + 1}`}
+                          </span>
+                          <span className="font-bold text-neutral-primary text-sm sm:text-base">
+                            {unit.title}
+                          </span>
+                        </div>
+                        {Array.isArray(unit.assessmentMethods) &&
+                          unit.assessmentMethods.length > 0 && (
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {unit.assessmentMethods.map(
+                                (method: string, mIdx: number) => (
+                                  <span
+                                    key={mIdx}
+                                    className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200 capitalize"
+                                  >
+                                    {String(method).replace(/_/g, " ")}
+                                  </span>
+                                ),
+                              )}
+                            </div>
+                          )}
                       </div>
-                      {Array.isArray(unit.assessmentMethods) &&
-                        unit.assessmentMethods.length > 0 && (
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            {unit.assessmentMethods.map((method: string, mIdx: number) => (
-                              <span
-                                key={mIdx}
-                                className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200 capitalize"
+
+                      {Array.isArray(unit.learningObjectives) &&
+                      unit.learningObjectives.length > 0 ? (
+                        <div className="flex flex-col gap-4">
+                          {unit.learningObjectives.map(
+                            (
+                              lo: AssessmentMappingLearningObjective,
+                              loIdx: number,
+                            ) => (
+                              <div
+                                key={lo.code || loIdx}
+                                className="bg-white rounded-xl p-3.5 sm:p-4 border border-gray-100 flex flex-col gap-2.5"
                               >
-                                {String(method).replace(/_/g, " ")}
-                              </span>
-                            ))}
+                                <div className="font-bold text-neutral-primary text-xs sm:text-sm">
+                                  {lo.code
+                                    ? `${lo.code}: `
+                                    : `LO ${loIdx + 1}: `}
+                                  {lo.text || lo.title || "Learning Objective"}
+                                </div>
+
+                                {Array.isArray(lo.performanceCriteria) &&
+                                lo.performanceCriteria.length > 0 ? (
+                                  <div className="overflow-x-auto rounded-xl border border-gray-100">
+                                    <table className="w-full text-left text-xs border-collapse">
+                                      <thead>
+                                        <tr className="bg-[#F8F9FA] text-neutral-secondary font-bold border-b border-gray-200">
+                                          <th className="p-2.5 w-20">Code</th>
+                                          <th className="p-2.5">
+                                            Performance Criterion
+                                          </th>
+                                          <th className="p-2.5 w-48">
+                                            Evidence Types
+                                          </th>
+                                        </tr>
+                                      </thead>
+                                      <tbody className="divide-y divide-gray-100">
+                                        {lo.performanceCriteria.map(
+                                          (
+                                            pc: AssessmentMappingPerformanceCriterion,
+                                            pcIdx: number,
+                                          ) => (
+                                            <tr
+                                              key={pc.code || pcIdx}
+                                              className="hover:bg-gray-50/50"
+                                            >
+                                              <td className="p-2.5 font-bold text-neutral-secondary whitespace-nowrap">
+                                                {pc.code ||
+                                                  `${loIdx + 1}.${pcIdx + 1}`}
+                                              </td>
+                                              <td className="p-2.5 text-neutral-primary font-medium">
+                                                {pc.text || "—"}
+                                              </td>
+                                              <td className="p-2.5">
+                                                {Array.isArray(
+                                                  pc.evidenceTypes,
+                                                ) &&
+                                                pc.evidenceTypes.length > 0 ? (
+                                                  <div className="flex flex-wrap gap-1">
+                                                    {pc.evidenceTypes.map(
+                                                      (
+                                                        et: string,
+                                                        etIdx: number,
+                                                      ) => (
+                                                        <span
+                                                          key={etIdx}
+                                                          className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 capitalize"
+                                                        >
+                                                          {String(et).replace(
+                                                            /_/g,
+                                                            " ",
+                                                          )}
+                                                        </span>
+                                                      ),
+                                                    )}
+                                                  </div>
+                                                ) : (
+                                                  <span className="text-gray-400 italic">
+                                                    —
+                                                  </span>
+                                                )}
+                                              </td>
+                                            </tr>
+                                          ),
+                                        )}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                ) : (
+                                  <p className="text-xs text-gray-400 italic">
+                                    No performance criteria listed.
+                                  </p>
+                                )}
+                              </div>
+                            ),
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-gray-400 italic">
+                          No learning objectives listed for this unit.
+                        </p>
+                      )}
+
+                      {/* Claimed General Evidence tagged to this unit */}
+                      {Array.isArray(unit.evidence) &&
+                        unit.evidence.length > 0 && (
+                          <div className="flex flex-col gap-2 pt-2 border-t border-gray-100">
+                            <span className="text-[11px] font-bold text-neutral-secondary uppercase tracking-wider">
+                              Claimed Evidence ({unit.evidence.length})
+                            </span>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              {unit.evidence.map(
+                                (
+                                  ev: AssessmentMappingEvidenceItem,
+                                  evIdx: number,
+                                ) => (
+                                  <div
+                                    key={ev.id || evIdx}
+                                    className="p-2.5 rounded-xl bg-white border border-gray-100 flex items-center justify-between gap-2"
+                                  >
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <span className="text-xs font-bold text-neutral-primary truncate">
+                                        {ev.documentName}
+                                      </span>
+                                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200">
+                                        {ev.evidenceType}
+                                      </span>
+                                    </div>
+                                    <span
+                                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full capitalize ${
+                                        ev.reviewStatus === "approved"
+                                          ? "bg-emerald-100 text-emerald-800"
+                                          : ev.reviewStatus === "rejected"
+                                            ? "bg-rose-100 text-rose-800"
+                                            : "bg-amber-100 text-amber-800"
+                                      }`}
+                                    >
+                                      {ev.reviewStatus || "pending"}
+                                    </span>
+                                  </div>
+                                ),
+                              )}
+                            </div>
                           </div>
                         )}
                     </div>
-
-                    {Array.isArray(unit.learningObjectives) &&
-                    unit.learningObjectives.length > 0 ? (
-                      <div className="flex flex-col gap-4">
-                        {unit.learningObjectives.map((lo: AssessmentMappingLearningObjective, loIdx: number) => (
-                          <div
-                            key={lo.code || loIdx}
-                            className="bg-white rounded-xl p-3.5 sm:p-4 border border-gray-100 flex flex-col gap-2.5"
-                          >
-                            <div className="font-bold text-neutral-primary text-xs sm:text-sm">
-                              {lo.code ? `${lo.code}: ` : `LO ${loIdx + 1}: `}
-                              {lo.text || lo.title || "Learning Objective"}
-                            </div>
-
-                            {Array.isArray(lo.performanceCriteria) &&
-                            lo.performanceCriteria.length > 0 ? (
-                              <div className="overflow-x-auto rounded-xl border border-gray-100">
-                                <table className="w-full text-left text-xs border-collapse">
-                                  <thead>
-                                    <tr className="bg-[#F8F9FA] text-neutral-secondary font-bold border-b border-gray-200">
-                                      <th className="p-2.5 w-20">Code</th>
-                                      <th className="p-2.5">Performance Criterion</th>
-                                      <th className="p-2.5 w-48">Evidence Types</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody className="divide-y divide-gray-100">
-                                    {lo.performanceCriteria.map((pc: AssessmentMappingPerformanceCriterion, pcIdx: number) => (
-                                      <tr key={pc.code || pcIdx} className="hover:bg-gray-50/50">
-                                        <td className="p-2.5 font-bold text-neutral-secondary whitespace-nowrap">
-                                          {pc.code || `${loIdx + 1}.${pcIdx + 1}`}
-                                        </td>
-                                        <td className="p-2.5 text-neutral-primary font-medium">
-                                          {pc.text || "—"}
-                                        </td>
-                                        <td className="p-2.5">
-                                          {Array.isArray(pc.evidenceTypes) &&
-                                          pc.evidenceTypes.length > 0 ? (
-                                            <div className="flex flex-wrap gap-1">
-                                              {pc.evidenceTypes.map((et: string, etIdx: number) => (
-                                                <span
-                                                  key={etIdx}
-                                                  className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 capitalize"
-                                                >
-                                                  {String(et).replace(/_/g, " ")}
-                                                </span>
-                                              ))}
-                                            </div>
-                                          ) : (
-                                            <span className="text-gray-400 italic">—</span>
-                                          )}
-                                        </td>
-                                      </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
-                              </div>
-                            ) : (
-                              <p className="text-xs text-gray-400 italic">
-                                No performance criteria listed.
-                              </p>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-gray-400 italic">
-                        No learning objectives listed for this unit.
-                      </p>
-                    )}
-
-                    {/* Claimed General Evidence tagged to this unit */}
-                    {Array.isArray(unit.evidence) && unit.evidence.length > 0 && (
-                      <div className="flex flex-col gap-2 pt-2 border-t border-gray-100">
-                        <span className="text-[11px] font-bold text-neutral-secondary uppercase tracking-wider">
-                          Claimed Evidence ({unit.evidence.length})
-                        </span>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          {unit.evidence.map((ev: AssessmentMappingEvidenceItem, evIdx: number) => (
-                            <div
-                              key={ev.id || evIdx}
-                              className="p-2.5 rounded-xl bg-white border border-gray-100 flex items-center justify-between gap-2"
-                            >
-                              <div className="flex items-center gap-2 min-w-0">
-                                <span className="text-xs font-bold text-neutral-primary truncate">
-                                  {ev.documentName}
-                                </span>
-                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200">
-                                  {ev.evidenceType}
-                                </span>
-                              </div>
-                              <span
-                                className={`text-[10px] font-bold px-2 py-0.5 rounded-full capitalize ${
-                                  ev.reviewStatus === "approved"
-                                    ? "bg-emerald-100 text-emerald-800"
-                                    : ev.reviewStatus === "rejected"
-                                      ? "bg-rose-100 text-rose-800"
-                                      : "bg-amber-100 text-amber-800"
-                                }`}
-                              >
-                                {ev.reviewStatus || "pending"}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
+                  ),
+                )}
               </div>
             ) : Array.isArray(formData?.units) && formData.units.length > 0 ? (
               <div className="flex flex-col gap-3.5">
@@ -1344,7 +1500,8 @@ function renderFormContent(
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-neutral-primary text-sm">
-                        Unit #{idx + 1}: {unit.occupationalUnit || "Untitled Unit"}
+                        Unit #{idx + 1}:{" "}
+                        {unit.occupationalUnit || "Untitled Unit"}
                       </span>
                       <span
                         className={`px-3 py-1 rounded-full text-[11px] font-bold ${

@@ -65,7 +65,10 @@ export function useUploadMultipleFiles() {
 export function useResolveAssets(assetIds: string[]) {
   return useQuery({
     queryKey: STORAGE_QUERY_KEYS.assets(assetIds),
-    queryFn: () => resolveAssetsApi(assetIds),
+    queryFn: async () => {
+      const res = await resolveAssetsApi(assetIds);
+      return Array.isArray(res) ? res : [];
+    },
     enabled: assetIds.length > 0,
   });
 }

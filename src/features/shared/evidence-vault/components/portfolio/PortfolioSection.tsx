@@ -27,7 +27,7 @@ export const PortfolioSection: React.FC<PortfolioSectionProps> = ({
     <section
       className={
         isAccordion
-          ? "bg-white rounded-2xl p-4 sm:p-5 border border-gray-100 shadow-2xs flex flex-col gap-4 w-full transition-all"
+          ? "bg-[#F8F9FA] rounded-[20px] p-4 sm:p-6 border border-gray-100/70 shadow-2xs flex flex-col gap-4 w-full transition-all"
           : "flex flex-col gap-4 w-full"
       }
     >
@@ -38,11 +38,11 @@ export const PortfolioSection: React.FC<PortfolioSectionProps> = ({
         }`}
       >
         <div className="flex flex-col gap-1 min-w-0 flex-1">
-          <h2 className="text-lg sm:text-xl font-extrabold text-neutral-primary tracking-tight">
+          <h2 className="text-black font-bold text-base sm:text-xl lg:text-2xl tracking-tight wrap-break-word">
             {number}. {title}
           </h2>
           {description && (
-            <p className="text-xs sm:text-sm text-gray-500">{description}</p>
+            <p className="text-gray-400 text-xs sm:text-sm font-normal mt-0.5 wrap-break-word">{description}</p>
           )}
         </div>
 
@@ -55,7 +55,7 @@ export const PortfolioSection: React.FC<PortfolioSectionProps> = ({
             }}
             aria-expanded={isOpen}
             aria-label={`Toggle ${title}`}
-            className="p-2 text-gray-500 hover:text-gray-800 transition-colors cursor-pointer rounded-lg hover:bg-gray-100 shrink-0"
+            className="p-1 sm:p-2 text-gray-500 hover:text-gray-800 transition-colors cursor-pointer rounded-lg hover:bg-gray-200/50 shrink-0"
           >
             {isOpen ? (
               <FiChevronUp className="w-5 h-5" />
@@ -69,7 +69,7 @@ export const PortfolioSection: React.FC<PortfolioSectionProps> = ({
       {(!isAccordion || isOpen) && (
         <div
           className={`flex flex-col gap-3.5 ${
-            isAccordion ? "pt-3 border-t border-gray-100" : ""
+            isAccordion ? "pt-3 border-t border-gray-200/60" : ""
           }`}
         >
           {children}

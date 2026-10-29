@@ -36,7 +36,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
 
   const resolvedSignatureUrl =
     profileSignature?.url ||
-    (profileSignature?.assetId && resolvedSignatureAssets
+    (profileSignature?.assetId && Array.isArray(resolvedSignatureAssets)
       ? resolvedSignatureAssets.find((a) => a.assetId === profileSignature.assetId)?.url
       : undefined);
 

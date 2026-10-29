@@ -22,6 +22,23 @@ export function getUnitOptions(
   return options;
 }
 
+/**
+ * Strips bracketed or unbracketed unit code prefixes
+ * (e.g. "[CBT/COS/005/L1] Define hairdressing." -> "Define hairdressing.")
+ */
+export function cleanQuestionTitle(title: string): string {
+  if (!title) return "";
+  let cleaned = title.trim();
+
+  // Strip bracketed unit code prefix: e.g. "[CBT/COS/005/L1] Define hairdressing." -> "Define hairdressing."
+  cleaned = cleaned.replace(/^\[[A-Za-z0-9_\/-]+\]\s*[:-]?\s*/, "");
+
+  // Strip unbracketed slash-separated unit code prefix: e.g. "CBT/COS/005/L1: Define hairdressing." -> "Define hairdressing."
+  cleaned = cleaned.replace(/^[A-Za-z0-9]{2,}\/[A-Za-z0-9_\/-]{2,}\s*[:-]?\s*/, "");
+
+  return cleaned.trim();
+}
+
 export interface GeneratedChecklistItem {
   id: string;
   title: string;
@@ -134,7 +151,18 @@ function extractUnitCriteriaList(
     }
   }
 
-  return results;
+  // Deduplicate criteria text to prevent overcrowded / repetitive entries
+  const seenTexts = new Set<string>();
+  const uniqueResults: typeof results = [];
+  for (const r of results) {
+    const key = cleanQuestionTitle(r.text).toLowerCase().trim();
+    if (key && !seenTexts.has(key)) {
+      seenTexts.add(key);
+      uniqueResults.push(r);
+    }
+  }
+
+  return uniqueResults;
 }
 
 /**
@@ -149,11 +177,9 @@ export function buildUnitObservationChecklist({
 }: BuildUnitItemsParams): GeneratedChecklistItem[] {
   const extracted = extractUnitCriteriaList(scopedUnits, mappingUnits);
   if (extracted.length > 0) {
-    return extracted.slice(0, 8).map((item, idx) => ({
+    return extracted.slice(0, 5).map((item, idx) => ({
       id: `obs-${idx + 1}`,
-      title: item.unitCode
-        ? `[${item.unitCode}] ${item.text}`
-        : item.text,
+      title: cleanQuestionTitle(item.text),
       demonstrated: true,
       comments: "",
       isCustom: false,
@@ -165,6 +191,14 @@ export function buildUnitObservationChecklist({
   const tradeContext = tradeName ? `${tradeName} (${levelLabel})` : levelLabel;
 
   if (unitsSource.length > 0) {
+    const seenU = new Set<string>();
+    const uniqueUnits = unitsSource.filter((u) => {
+      const lbl = toUnitLabel(u).toLowerCase().trim();
+      if (!lbl || seenU.has(lbl)) return false;
+      seenU.add(lbl);
+      return true;
+    });
+
     const items: GeneratedChecklistItem[] = [
       {
         id: "obs-safety",
@@ -173,7 +207,7 @@ export function buildUnitObservationChecklist({
         comments: "",
         isCustom: false,
       },
-      ...unitsSource.slice(0, 6).map((u, idx) => ({
+      ...uniqueUnits.slice(0, 3).map((u, idx) => ({
         id: `obs-unit-${idx + 1}`,
         title: `Demonstrates practical competency in ${toUnitLabel(u)} (${levelLabel})`,
         demonstrated: true,
@@ -249,11 +283,9 @@ export function buildUnitSkillsCriteria({
 }: BuildUnitItemsParams): GeneratedChecklistItem[] {
   const extracted = extractUnitCriteriaList(scopedUnits, mappingUnits);
   if (extracted.length > 0) {
-    return extracted.slice(0, 8).map((item, idx) => ({
+    return extracted.slice(0, 5).map((item, idx) => ({
       id: `crit-${idx + 1}`,
-      title: item.unitCode
-        ? `[${item.unitCode}] ${item.text}`
-        : item.text,
+      title: cleanQuestionTitle(item.text),
       demonstrated: true,
       comments: "",
       isCustom: false,
@@ -265,6 +297,14 @@ export function buildUnitSkillsCriteria({
   const tradeContext = tradeName ? `${tradeName} (${levelLabel})` : levelLabel;
 
   if (unitsSource.length > 0) {
+    const seenU = new Set<string>();
+    const uniqueUnits = unitsSource.filter((u) => {
+      const lbl = toUnitLabel(u).toLowerCase().trim();
+      if (!lbl || seenU.has(lbl)) return false;
+      seenU.add(lbl);
+      return true;
+    });
+
     return [
       {
         id: "crit-1",
@@ -280,7 +320,7 @@ export function buildUnitSkillsCriteria({
         comments: "",
         isCustom: false,
       },
-      ...unitsSource.slice(0, 5).map((u, idx) => ({
+      ...uniqueUnits.slice(0, 3).map((u, idx) => ({
         id: `crit-unit-${idx + 1}`,
         title: `Executed practical task to NOS standard for ${toUnitLabel(u)} (${levelLabel})`,
         demonstrated: true,
@@ -358,6 +398,14 @@ export function buildUnitInterviewQuestions({
   const tradeContext = tradeName ? `${tradeName} (${levelLabel})` : levelLabel;
 
   if (unitsSource.length > 0) {
+    const seenU = new Set<string>();
+    const uniqueUnits = unitsSource.filter((u) => {
+      const lbl = toUnitLabel(u).toLowerCase().trim();
+      if (!lbl || seenU.has(lbl)) return false;
+      seenU.add(lbl);
+      return true;
+    });
+
     const questions: GeneratedQuestionItem[] = [
       {
         id: "q-intro",
@@ -371,7 +419,7 @@ export function buildUnitInterviewQuestions({
         candidateResponse: "",
         isCustom: false,
       },
-      ...unitsSource.slice(0, 6).map((u, idx) => ({
+      ...uniqueUnits.slice(0, 3).map((u, idx) => ({
         id: `q-unit-${idx + 1}`,
         question: `Regarding ${toUnitLabel(u)} (${levelLabel}): explain the standard procedure, tools required, and key quality checks you perform.`,
         candidateResponse: "",

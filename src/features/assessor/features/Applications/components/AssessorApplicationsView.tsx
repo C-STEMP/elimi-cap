@@ -122,6 +122,7 @@ export const AssessorApplicationsView: React.FC<
 
       const matchesTrade =
         !filterCriteria.trade ||
+        filterCriteria.trade === "All" ||
         app.trade.toLowerCase() === filterCriteria.trade.toLowerCase();
 
       const matchesType =
@@ -143,11 +144,16 @@ export const AssessorApplicationsView: React.FC<
     <div className="w-full bg-white rounded-3xl p-6 sm:p-8 shadow-xs border border-gray-100 flex flex-col gap-6 select-text">
       {/* Assigned Candidates Header Row */}
       <div className="flex items-center justify-between gap-4">
-        <h2 className="text-lg sm:text-xl font-bold text-neutral-primary">
-          Assigned Candidates
-        </h2>
-        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-[#E8F8F0] text-[#12B76A]">
-          Active
+        <div className="flex items-center gap-3">
+          <h2 className="text-lg sm:text-xl font-bold text-neutral-primary">
+            Assigned Candidates
+          </h2>
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#E8F8F0] text-[#12B76A]">
+            Active
+          </span>
+        </div>
+        <span className="text-xs text-gray-400 font-medium hidden sm:inline-block">
+          {filteredApps.length} {filteredApps.length === 1 ? "candidate" : "candidates"}
         </span>
       </div>
 

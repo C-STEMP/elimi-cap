@@ -32,27 +32,36 @@ export const AssessorAssessmentFormLayout: React.FC<
       suppressHydrationWarning
       className="min-h-screen w-full flex flex-col lg:flex-row bg-primary-solid lg:bg-white font-sans antialiased overflow-hidden select-text"
     >
-      {/* Mobile Top Header */}
+      {/* Mobile Top Header - Sleek, Compact, and Professional */}
       <div
         suppressHydrationWarning
-        className="w-full bg-primary-solid pt-4 pb-5 px-4 sm:px-6 flex flex-col gap-2.5 lg:hidden shrink-0 text-white relative overflow-hidden"
+        className="w-full bg-gradient-to-b from-[#8A1538] via-[#7E1331] to-[#6C0F29] pt-3.5 pb-7 px-4 sm:px-6 flex flex-col gap-2.5 lg:hidden shrink-0 text-white relative overflow-hidden"
       >
-        <FloatingCircles />
+        {/* Navigation Bar Row: Back Button on left, Logo on right */}
         <div className="relative z-10 flex items-center justify-between">
-          <Logo theme="light" href="/" />
           <button
             type="button"
             onClick={onBack}
-            className="text-white/80 hover:text-white flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 text-white text-xs font-bold transition-all backdrop-blur-xs border border-white/15 cursor-pointer shadow-2xs"
           >
-            <FiArrowLeft className="w-4 h-4" /> Back
+            <FiArrowLeft className="w-3.5 h-3.5 stroke-[2.5]" />
+            <span>Back</span>
           </button>
+
+          <Logo theme="light" href="/" />
         </div>
-        <div className="relative z-10 flex flex-col gap-1 mt-1 sm:mt-2">
-          <h2 className="text-lg sm:text-xl font-extrabold tracking-tight text-white leading-tight">
+
+        {/* Form Title & Context */}
+        <div className="relative z-10 flex flex-col gap-1 mt-0.5">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-[#FBAB2A]/20 text-[#FBAB2A] text-[10px] font-extrabold uppercase tracking-wider border border-[#FBAB2A]/30">
+              Assessment Form
+            </span>
+          </div>
+          <h1 className="text-base sm:text-lg font-black tracking-tight text-white leading-snug">
             {title}
-          </h2>
-          <p className="text-white/80 text-xs font-normal leading-relaxed">
+          </h1>
+          <p className="text-white/80 text-xs font-normal leading-relaxed line-clamp-2">
             {subtitle}
           </p>
         </div>
@@ -88,8 +97,11 @@ export const AssessorAssessmentFormLayout: React.FC<
       {/* Right Scrollable Form Body */}
       <div
         suppressHydrationWarning
-        className="flex-1 w-full max-w-full h-screen overflow-y-auto bg-white rounded-t-4xl lg:rounded-none -mt-4 lg:mt-0 p-4 sm:p-8 md:p-12 xl:p-16 flex flex-col justify-between relative shadow-md lg:shadow-none"
+        className="flex-1 w-full max-w-full h-screen overflow-y-auto bg-white rounded-t-[28px] lg:rounded-none -mt-3.5 lg:mt-0 p-4 sm:p-8 md:p-12 xl:p-16 flex flex-col justify-between relative shadow-lg lg:shadow-none"
       >
+        {/* Subtle mobile sheet handle indicator */}
+        <div className="w-10 h-1 rounded-full bg-gray-200/90 mx-auto mb-3 lg:hidden shrink-0" />
+
         <div className="w-full max-w-3xl mx-auto flex flex-col gap-6 sm:gap-10 pb-12">
           {isReadOnly && (
             <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3.5 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 sm:gap-3 text-amber-900 text-xs sm:text-sm font-medium">

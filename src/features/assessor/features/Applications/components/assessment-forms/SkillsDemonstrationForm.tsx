@@ -12,6 +12,7 @@ import { AssessorSignatureModal } from "./AssessorSignatureModal";
 import { DigitalSignaturePad } from "./DigitalSignaturePad";
 import {
   buildUnitSkillsCriteria,
+  cleanQuestionTitle,
   type GeneratedChecklistItem,
 } from "./utils";
 
@@ -129,7 +130,19 @@ export const SkillsDemonstrationForm: React.FC<
 
   const [criteria, setCriteria] = useState<CriteriaItem[]>(() => {
     if (hasSavedCriteria) {
-      return formData!.criteria;
+      const seen = new Set<string>();
+      const deduped: CriteriaItem[] = [];
+      formData!.criteria.forEach((item: any) => {
+        const cleaned = cleanQuestionTitle(item.title || "");
+        const key = cleaned.toLowerCase().trim();
+        if (key && seen.has(key)) return;
+        if (key) seen.add(key);
+        deduped.push({
+          ...item,
+          title: cleaned,
+        });
+      });
+      return deduped;
     }
     if (isReadOnly) return [];
     return generatedDefaults;
@@ -508,7 +521,7 @@ export const SkillsDemonstrationForm: React.FC<
                       </span>
                       {!isEditableTitle ? (
                         <span className="text-xs sm:text-sm font-bold text-neutral-primary">
-                          {item.title}
+                          {cleanQuestionTitle(item.title)}
                         </span>
                       ) : (
                         <input

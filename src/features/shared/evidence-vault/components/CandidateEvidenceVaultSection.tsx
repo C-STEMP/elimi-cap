@@ -40,6 +40,7 @@ interface CandidateEvidenceVaultSectionProps {
   isApplicationLoading?: boolean;
   accordion?: boolean;
   defaultOpenSection?: number;
+  hideVerificationSection?: boolean;
 }
 
 export const CandidateEvidenceVaultSection: React.FC<
@@ -50,6 +51,7 @@ export const CandidateEvidenceVaultSection: React.FC<
   isApplicationLoading = false,
   accordion = true,
   defaultOpenSection = 4,
+  hideVerificationSection = true,
 }) => {
   const { toast } = useToast();
   const router = useRouter();
@@ -333,6 +335,7 @@ export const CandidateEvidenceVaultSection: React.FC<
         cvEvidence={cvEvidence}
         accordion={accordion}
         defaultOpenSection={defaultOpenSection}
+        hideVerificationSection={hideVerificationSection}
         onPreview={(item) => setPreviewItem(item)}
         onViewApplicationForm={
           applicationId

@@ -58,7 +58,7 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
   const resolvedSignatureUrl =
     appendedSignatureUrl ||
     profileSignature?.url ||
-    (profileSignature?.assetId && resolvedSignatureAssets
+    (profileSignature?.assetId && Array.isArray(resolvedSignatureAssets)
       ? resolvedSignatureAssets.find((a) => a.assetId === profileSignature.assetId)?.url
       : null);
 

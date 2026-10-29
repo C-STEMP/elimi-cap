@@ -21,7 +21,7 @@ export const DigitalSignaturePad: React.FC<DigitalSignaturePadProps> = ({
   label,
   required = true,
   isSigned,
-  signerName,
+  signerName: _signerName,
   signedAt,
   signatureUrl,
   isReadOnly = false,
@@ -30,6 +30,9 @@ export const DigitalSignaturePad: React.FC<DigitalSignaturePadProps> = ({
   onClearSignature,
   className = "",
 }) => {
+  const isCandidate = label.toLowerCase().includes("candidate");
+  const waitingText = isCandidate ? "Awaiting Candidate" : "Awaiting Assessor";
+
   return (
     <div className={`flex flex-col gap-1.5 ${className}`}>
       <label className="text-xs font-medium text-neutral-primary">
@@ -64,9 +67,9 @@ export const DigitalSignaturePad: React.FC<DigitalSignaturePadProps> = ({
           )}
         </div>
       ) : isReadOnly ? (
-        <div className="h-11 sm:h-12 bg-[#FFF8EB] border border-[#FBAB2A]/60 text-[#FBAB2A] font-semibold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2 select-none">
-          <FiClock className="w-4 h-4 text-[#FBAB2A] shrink-0" />
-          <span>Awaiting Signature</span>
+        <div className="h-11 sm:h-12 bg-gray-50 border border-gray-200 text-gray-500 font-medium text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2 select-none px-3">
+          <FiClock className="w-4 h-4 text-gray-400 shrink-0" />
+          <span className="truncate">{waitingText}</span>
         </div>
       ) : (
         <button

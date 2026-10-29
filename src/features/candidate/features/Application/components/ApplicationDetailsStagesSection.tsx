@@ -62,12 +62,14 @@ export const ApplicationDetailsStagesSection: React.FC<ApplicationDetailsStagesS
           </div>
         ) : null}
 
+        {/* 1..4 Portfolio Sections (Induction, Candidate Profile, Standards, Assessment Reports/Evidences) */}
+        {children}
+
+        {/* Stages below number 4: Interview Stage, Internal Verifier, External Verifier, Certification */}
         {stages.map((stage) => (
           <ApplicationStageCard key={stage.id} stage={stage} />
         ))}
       </div>
-
-      {children}
     </div>
   );
 };

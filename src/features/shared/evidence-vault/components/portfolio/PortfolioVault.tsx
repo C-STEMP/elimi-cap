@@ -58,6 +58,8 @@ interface PortfolioVaultProps {
   accordion?: boolean;
   /** Section number (1–5) open by default when `accordion` is enabled. */
   defaultOpenSection?: number;
+  /** When true, section 5 (Verification Report) is hidden (e.g. candidate detail view with stages below number 4). */
+  hideVerificationSection?: boolean;
 }
 
 function formBadge(record?: { status?: string }): { label: string; tone: PortfolioBadgeTone } {
@@ -89,6 +91,7 @@ export const PortfolioVault: React.FC<PortfolioVaultProps> = ({
   verificationReportCard,
   accordion = false,
   defaultOpenSection = 4,
+  hideVerificationSection = false,
 }) => {
   const router = useRouter();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -345,11 +348,12 @@ export const PortfolioVault: React.FC<PortfolioVaultProps> = ({
       </PortfolioSection>
 
       {/* 5. Verification Report */}
-      {(verificationReportCard ||
-        portfolio?.verification?.internalVerifier ||
-        portfolio?.verification?.externalVerifier ||
-        portfolio?.verification?.ivOutcome ||
-        portfolio?.verification?.evOutcome) && (
+      {!hideVerificationSection &&
+        (verificationReportCard ||
+          portfolio?.verification?.internalVerifier ||
+          portfolio?.verification?.externalVerifier ||
+          portfolio?.verification?.ivOutcome ||
+          portfolio?.verification?.evOutcome) && (
         <PortfolioSection
           number={5}
           title="Verification Report"

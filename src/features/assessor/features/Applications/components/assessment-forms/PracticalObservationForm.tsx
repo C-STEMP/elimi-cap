@@ -12,6 +12,7 @@ import { AssessorSignatureModal } from "./AssessorSignatureModal";
 import { DigitalSignaturePad } from "./DigitalSignaturePad";
 import {
   buildUnitObservationChecklist,
+  cleanQuestionTitle,
   type GeneratedChecklistItem,
 } from "./utils";
 
@@ -119,7 +120,19 @@ export const PracticalObservationForm: React.FC<
 
   const [checklist, setChecklist] = useState<ObservationChecklistItem[]>(() => {
     if (hasSavedChecklist) {
-      return formData!.checklist;
+      const seen = new Set<string>();
+      const deduped: ObservationChecklistItem[] = [];
+      formData!.checklist.forEach((item: any) => {
+        const cleaned = cleanQuestionTitle(item.title || "");
+        const key = cleaned.toLowerCase().trim();
+        if (key && seen.has(key)) return;
+        if (key) seen.add(key);
+        deduped.push({
+          ...item,
+          title: cleaned,
+        });
+      });
+      return deduped;
     }
     if (isReadOnly) return [];
     return generatedDefaults;
@@ -442,7 +455,7 @@ export const PracticalObservationForm: React.FC<
                       </span>
                       {!isEditableTitle ? (
                         <span className="text-xs sm:text-sm font-bold text-neutral-primary">
-                          {item.title}
+                          {cleanQuestionTitle(item.title)}
                         </span>
                       ) : (
                         <input

@@ -44,7 +44,7 @@ export const CandidateApplicationFormView: React.FC<
 
   const resolvedSignatureUrl =
     profileSignature?.url ||
-    (profileSignature?.assetId && resolvedSignatureAssets
+    (profileSignature?.assetId && Array.isArray(resolvedSignatureAssets)
       ? resolvedSignatureAssets.find((a) => a.assetId === profileSignature.assetId)?.url
       : undefined);
 

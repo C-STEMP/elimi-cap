@@ -47,7 +47,7 @@ export const Step4Declaration: React.FC<Step4Props> = ({
   const resolvedSignatureUrl =
     appendedSignatureUrl ||
     profileSignature?.url ||
-    (profileSignature?.assetId && resolvedSignatureAssets
+    (profileSignature?.assetId && Array.isArray(resolvedSignatureAssets)
       ? resolvedSignatureAssets.find((a) => a.assetId === profileSignature.assetId)?.url
       : null);
 

@@ -104,6 +104,9 @@ export const AssessorAssessmentFormView: React.FC<
   const effectiveIsCandidate = isCandidate || isCandidateUser;
 
   const leadMember = interviewPanel?.members?.find((m: any) => m.isLead);
+  const seatedPanelMember = interviewPanel?.members?.find(
+    (m: any) => !m.isLead && !m.isObserver,
+  );
   const matchedPanelMember = interviewPanel?.members?.find((m: any) =>
     isMemberMatch(m),
   );
@@ -124,6 +127,34 @@ export const AssessorAssessmentFormView: React.FC<
             (!leadMember &&
               (applicationData as any)?.role?.toLowerCase()?.includes("lead")),
         );
+
+  const isMatchPanelMember = Boolean(
+    seatedPanelMember && isMemberMatch(seatedPanelMember),
+  );
+  const isMatchIV = Boolean(
+    isObserverUser || (ivMember && isMemberMatch(ivMember)),
+  );
+
+  const currentUserRole: "lead" | "panel" | "iv" = React.useMemo(() => {
+    if (isMatchIV) return "iv";
+    if (isMatchPanelMember && !effectiveIsLead) return "panel";
+    return "lead";
+  }, [isMatchIV, isMatchPanelMember, effectiveIsLead]);
+
+  const leadName =
+    leadMember?.name ||
+    (effectiveIsLead ? user?.fullName || (user as any)?.name : "") ||
+    "Lead Panelist";
+  const panelMemberName =
+    seatedPanelMember?.name ||
+    (!effectiveIsLead && !isMatchIV
+      ? user?.fullName || (user as any)?.name
+      : "") ||
+    "Panel Member";
+  const ivName =
+    ivMember?.name ||
+    (isMatchIV ? user?.fullName || (user as any)?.name : "") ||
+    "Internal Verifier";
 
   const resolvedTrade =
     applicationTrade ||
@@ -432,6 +463,10 @@ export const AssessorAssessmentFormView: React.FC<
             levelLabel={levelLabel}
             defaultInterviewerNames={defaultInterviewerNames}
             defaultDate={defaultDate}
+            leadMemberName={leadName}
+            panelMemberName={panelMemberName}
+            internalVerifierName={ivName}
+            currentUserRole={currentUserRole}
           />
         );
     }
