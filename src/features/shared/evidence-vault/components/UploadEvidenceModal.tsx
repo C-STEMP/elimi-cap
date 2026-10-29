@@ -35,8 +35,10 @@ function renderFileTypeIcon(mimeType?: string, name?: string) {
 }
 
 import { useGetEvidenceTypesByTrade } from "@/src/features/shared/reference/hooks";
+import type { Unit } from "@/src/features/shared/reference/api";
 import { useModalDraft } from "@/src/lib/hooks/usePersistentModal";
 import { UPLOAD_EVIDENCE_MODAL } from "@/src/lib/modal-keys";
+import { getEvidenceTypeOptionLabel } from "../utils/evidenceConstants";
 
 export interface SelectedFileType {
   name: string;
@@ -77,11 +79,26 @@ interface UploadEvidenceModalProps {
   onUploadSubmit: (
     items: Array<{ file: File; docName: string }>,
     evidenceType: string,
+    unitIds?: string[],
   ) => Promise<void> | void;
   isUploading?: boolean;
   tradeId?: string;
   evidenceTypes?: string[];
+  /**
+   * Authoritative list from GET /applications/{id}/evidence-types `allowed`
+   * (RPL). When provided, values are offered verbatim — no filtering,
+   * re-casing or defaults — because the backend validates against it.
+   */
+  allowedEvidenceTypes?: string[];
+  /** True while `allowedEvidenceTypes` is still being fetched. */
+  isLoadingEvidenceTypes?: boolean;
+  /**
+   * Hide the evidence type picker (e.g. CV upload, which goes to
+   * POST /applications/{id}/cv and carries no evidence type).
+   */
+  hideEvidenceType?: boolean;
   initialDocName?: string;
+  availableUnits?: Unit[];
 }
 
 export const UploadEvidenceModal: React.FC<UploadEvidenceModalProps> = ({
@@ -91,11 +108,29 @@ export const UploadEvidenceModal: React.FC<UploadEvidenceModalProps> = ({
   isUploading = false,
   tradeId = "",
   evidenceTypes,
+  allowedEvidenceTypes,
+  isLoadingEvidenceTypes = false,
+  hideEvidenceType = false,
   initialDocName,
+  availableUnits = [],
 }) => {
-  const { data: tradeEvidenceTypes } = useGetEvidenceTypesByTrade(tradeId);
+  const hasAllowedList = Array.isArray(allowedEvidenceTypes);
+  // The trade catalogue is only the legacy fallback (NSQ / endpoint unavailable).
+  const useLegacyTypes = !hasAllowedList && !isLoadingEvidenceTypes;
+  const { data: tradeEvidenceTypes } = useGetEvidenceTypesByTrade(
+    useLegacyTypes ? tradeId : "",
+  );
 
   const evidenceTypeOptions = React.useMemo(() => {
+    if (isLoadingEvidenceTypes) return [];
+    if (hasAllowedList) {
+      const seen = new Set<string>();
+      return (allowedEvidenceTypes || [])
+        .filter((t): t is string => typeof t === "string" && t.trim() !== "")
+        .map((t) => t.trim())
+        .filter((t) => (seen.has(t) ? false : (seen.add(t), true)))
+        .map((value) => ({ label: getEvidenceTypeOptionLabel(value), value }));
+    }
     const types = evidenceTypes || tradeEvidenceTypes;
     if (Array.isArray(types) && types.length > 0) {
       const filtered = types.filter(
@@ -112,16 +147,33 @@ export const UploadEvidenceModal: React.FC<UploadEvidenceModalProps> = ({
       }
     }
     return DEFAULT_EVIDENCE_TYPE_OPTIONS;
-  }, [evidenceTypes, tradeEvidenceTypes]);
+  }, [
+    evidenceTypes,
+    tradeEvidenceTypes,
+    hasAllowedList,
+    allowedEvidenceTypes,
+    isLoadingEvidenceTypes,
+  ]);
 
-  const defaultType = evidenceTypeOptions[0]?.value || "PS";
+  // Legacy path always has options, so its "PS" fallback is unchanged; with an
+  // API-driven list we never invent a value the backend did not allow.
+  const defaultType =
+    evidenceTypeOptions[0]?.value ||
+    (hasAllowedList || isLoadingEvidenceTypes ? "" : "PS");
+  const noEvidenceTypesAvailable =
+    !hideEvidenceType &&
+    !isLoadingEvidenceTypes &&
+    hasAllowedList &&
+    evidenceTypeOptions.length === 0;
   const [docName, setDocName] = useModalDraft(UPLOAD_EVIDENCE_MODAL, "docName", "");
   const [evidenceType, setEvidenceType] = useModalDraft(UPLOAD_EVIDENCE_MODAL, "evidenceType", defaultType);
+  const [selectedUnitIds, setSelectedUnitIds] = useState<string[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<SelectedFileItem[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [errors, setErrors] = useState<{
     file?: string;
     docName?: string;
+    evidenceType?: string;
   }>({});
 
   React.useEffect(() => {
@@ -239,6 +291,19 @@ export const UploadEvidenceModal: React.FC<UploadEvidenceModalProps> = ({
       return;
     }
 
+    if (
+      !hideEvidenceType &&
+      (!evidenceType ||
+        !evidenceTypeOptions.some((opt) => opt.value === evidenceType))
+    ) {
+      setErrors({
+        evidenceType: noEvidenceTypesAvailable
+          ? "No evidence types are available for this application."
+          : "Please select an evidence type",
+      });
+      return;
+    }
+
     const items = selectedFiles.map((item) => ({
       file: item.file,
       docName:
@@ -247,9 +312,10 @@ export const UploadEvidenceModal: React.FC<UploadEvidenceModalProps> = ({
           : item.file.name.replace(/\.[^/.]+$/, ""),
     }));
 
-    await onUploadSubmit(items, evidenceType);
+    await onUploadSubmit(items, evidenceType, selectedUnitIds);
     setDocName("");
     setEvidenceType(defaultType);
+    setSelectedUnitIds([]);
     setSelectedFiles([]);
     setErrors({});
   };
@@ -258,6 +324,7 @@ export const UploadEvidenceModal: React.FC<UploadEvidenceModalProps> = ({
     if (isUploading) return;
     setDocName("");
     setEvidenceType(defaultType);
+    setSelectedUnitIds([]);
     setSelectedFiles([]);
     setErrors({});
     onClose();
@@ -271,17 +338,17 @@ export const UploadEvidenceModal: React.FC<UploadEvidenceModalProps> = ({
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.94 }}
           transition={{ duration: 0.2, ease: "easeOut" }}
-          className="bg-white rounded-[28px] p-6 sm:p-8 max-w-lg w-full shadow-2xl relative border border-gray-100"
+          className="bg-white rounded-2xl sm:rounded-[28px] p-4 sm:p-8 max-w-lg w-full shadow-2xl relative border border-gray-100 max-h-[92vh] overflow-y-auto"
         >
           <button
             type="button"
             onClick={handleCloseModal}
-            className="w-11 h-11 bg-primary/10 hover:bg-[#fce3e7] rounded-xl flex items-center justify-center text-primary cursor-pointer absolute top-6 right-6 transition-colors"
+            className="w-9 h-9 sm:w-11 sm:h-11 bg-primary/10 hover:bg-[#fce3e7] rounded-xl flex items-center justify-center text-primary cursor-pointer absolute top-4 right-4 sm:top-6 sm:right-6 transition-colors z-10"
           >
-            <FiX className="w-6 h-6 stroke-[2.5]" />
+            <FiX className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.5]" />
           </button>
 
-          <h3 className="text-xl lg:mt-10 lg:text-2xl font-extrabold text-black tracking-tight text-center mb-1">
+          <h3 className="text-xl sm:text-2xl font-extrabold text-black tracking-tight text-center mt-2 sm:mt-0 lg:mt-6 mb-1 pr-8 sm:pr-0">
             Upload Evidence
           </h3>
           <p className="text-gray-400 text-xs sm:text-sm text-center leading-relaxed mb-6 max-w-sm mx-auto">
@@ -299,13 +366,81 @@ export const UploadEvidenceModal: React.FC<UploadEvidenceModalProps> = ({
               />
             )}
 
-            <Select
-              label="Evidence Type"
-              placeholder="Select"
-              value={evidenceType}
-              onChange={(e) => setEvidenceType(e.target.value)}
-              options={evidenceTypeOptions}
-            />
+            {!hideEvidenceType && (
+              <Select
+                label="Evidence Type"
+                placeholder={isLoadingEvidenceTypes ? "Loading evidence types..." : "Select"}
+                value={evidenceType || undefined}
+                onChange={(e) => {
+                  setEvidenceType(e.target.value);
+                  setErrors((prev) => ({ ...prev, evidenceType: undefined }));
+                }}
+                options={evidenceTypeOptions}
+                loading={isLoadingEvidenceTypes}
+                disabled={isLoadingEvidenceTypes || noEvidenceTypesAvailable}
+                error={errors.evidenceType}
+                helperText={
+                  noEvidenceTypesAvailable
+                    ? "No evidence types are available for this application yet. Please contact your assessment centre."
+                    : undefined
+                }
+              />
+            )}
+
+            {!hideEvidenceType && availableUnits && availableUnits.length > 0 && (
+              <div className="flex flex-col gap-1.5 w-full">
+                <div className="flex items-center justify-between">
+                  <label className="font-sans text-text-dark font-medium text-xs xl:text-sm leading-[1.4] select-none">
+                    Target Units (Optional)
+                  </label>
+                  <span className="text-[11px] text-gray-500 font-medium">
+                    {selectedUnitIds.length} of {availableUnits.length} selected
+                  </span>
+                </div>
+                <div className="max-h-36 overflow-y-auto rounded-xl border border-gray-200/80 bg-input-bg p-2 flex flex-col gap-1">
+                  {availableUnits.map((u) => {
+                    const isChecked = selectedUnitIds.includes(u.id);
+                    return (
+                      <label
+                        key={u.id}
+                        className={`flex items-start gap-2.5 p-2 rounded-lg cursor-pointer transition-colors text-xs select-none ${
+                          isChecked
+                            ? "bg-white shadow-2xs border border-primary/20"
+                            : "hover:bg-white/60"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => {
+                            setSelectedUnitIds((prev) =>
+                              prev.includes(u.id)
+                                ? prev.filter((id) => id !== u.id)
+                                : [...prev, u.id],
+                            );
+                          }}
+                          className="w-4 h-4 mt-0.5 rounded border-gray-300 text-primary focus:ring-primary accent-[#8A1538]"
+                        />
+                        <div className="flex flex-col min-w-0">
+                          <span className="font-semibold text-neutral-primary leading-tight">
+                            {u.referenceNumber ? `${u.referenceNumber}: ` : ""}
+                            {u.title}
+                          </span>
+                          {u.isMandatory && (
+                            <span className="text-[10px] text-pink-700 font-medium">
+                              Mandatory Unit
+                            </span>
+                          )}
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+                <p className="text-[11px] text-gray-400">
+                  Select the qualification unit(s) this evidence demonstrates competency for.
+                </p>
+              </div>
+            )}
 
             <input
               type="file"
@@ -407,7 +542,11 @@ export const UploadEvidenceModal: React.FC<UploadEvidenceModalProps> = ({
               variant="secondary"
               size="md"
               onClick={handleSubmit}
-              disabled={isUploading}
+              disabled={
+                isUploading ||
+                (!hideEvidenceType && isLoadingEvidenceTypes) ||
+                noEvidenceTypesAvailable
+              }
               className="w-full bg-[#fbab2a] hover:bg-[#e89b1f] text-white font-bold text-sm sm:text-base h-12.5 rounded-xl mt-6 cursor-pointer"
             >
               {isUploading

@@ -327,9 +327,7 @@ export const AssessorApplicationStagesList: React.FC<
       badgeText: currentInterviewStatus,
       dateText:
         interviewOutcome === "awaiting_signature"
-          ? (pendingSignatures && pendingSignatures.length > 0
-              ? `Awaiting signature from: ${pendingSignatures.map((s) => s.name || "Panel Member").join(", ")}`
-              : "Awaiting remaining panel signatures")
+          ? "Awaiting Assessor Signature"
           : isInterviewOnlyScheduled && interviewSchedule?.scheduledAt
             ? `Scheduled for: ${formatFriendlyDate(interviewSchedule.scheduledAt)}`
             : undefined,

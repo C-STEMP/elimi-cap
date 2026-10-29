@@ -1,10 +1,10 @@
 import { createApiInstance, unwrap, unwrapEnvelope } from "./client";
 
-export const capClient = createApiInstance(
+export const CAP_BASE_URL =
   process.env.NEXT_PUBLIC_CAP_URL ||
-    "https://www.staging-api.elimi-ecosystem.e-limi.africa/v1/cap",
-  { isCap: true },
-);
+  "https://www.staging-api.elimi-ecosystem.e-limi.africa/v1/cap";
+
+export const capClient = createApiInstance(CAP_BASE_URL, { isCap: true });
 
 export interface CapFetchOptions {
   method: string;

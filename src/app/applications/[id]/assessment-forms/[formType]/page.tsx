@@ -29,7 +29,23 @@ export default function AssessmentFormDedicatedRoutePage() {
 
   const user = useAppSelector((state) => state.auth.user);
   const { data: application, isLoading } = useGetApplicationById(id);
-  const { data: interviewPanel } = useGetInterviewPanel(id);
+
+  const isAssessmentMapping =
+    formType === "assessment_mapping" || formType === "assessment_grid";
+  const isInterviewForm =
+    formType === "interview_record" || formType === "records";
+  const isInterviewStage = application?.currentStageKey === "interview";
+
+  const shouldFetchInterviewPanel = Boolean(
+    id &&
+      application &&
+      !isAssessmentMapping &&
+      (isInterviewStage || isInterviewForm),
+  );
+
+  const { data: interviewPanel } = useGetInterviewPanel(id, {
+    enabled: shouldFetchInterviewPanel,
+  });
   const isMemberMatch = usePanelMemberMatch();
 
   if (isLoading) {
@@ -147,13 +163,8 @@ export default function AssessmentFormDedicatedRoutePage() {
         (isAssignedNonFacilitator || isAssessorUser)),
     );
 
-  const isAssessmentMapping =
-    formType === "assessment_mapping" || formType === "assessment_grid";
-
   // Seated panel members (lead, voting panelists, and IV observer) can PUT interview forms;
-  // Assessment Mapping is always read-only.
   const isReadOnly =
-    isAssessmentMapping ||
     isCentreViewer ||
     isCandidateUser ||
     !isSeatedPanelMember;

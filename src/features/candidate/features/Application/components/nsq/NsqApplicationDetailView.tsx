@@ -444,7 +444,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
       ? application?.trade
       : "") ||
     savedOnboarding?.tradeName ||
-    "Masonry";
+    "";
 
   const resolvedSectorName =
     (tradeDetail as any)?.sector?.name ||

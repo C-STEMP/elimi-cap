@@ -1,14 +1,32 @@
-import { landingImg1 } from "@/assets";
-import Image from "next/image";
+"use client";
 
-const STATS = [
-  { value: "14,800+", label: "Accredited Centres" },
-  { value: "280+", label: "Certification Programmes" },
-  { value: "45+", label: "Trade Curriculums" },
-  { value: "100%", label: "Credential Safety" },
-];
+import { landingImg1 } from "@/assets";
+import { useCapPublicStats } from "@/src/features/shared/public-stats";
+import Image from "next/image";
+import CountUp from "react-countup";
 
 export function InfrastructureSection() {
+  const { data: stats } = useCapPublicStats();
+
+  const metrics = [
+    {
+      end: stats ? stats.centres.byStatus.approved : null,
+      label: "Accredited Centres",
+    },
+    {
+      end: stats ? stats.catalogue.qualificationLevels : null,
+      label: "Certification Programmes",
+    },
+    {
+      end: stats ? stats.catalogue.trades.active : null,
+      label: "Trade Curriculums",
+    },
+    {
+      end: stats ? stats.catalogue.units : null,
+      label: "NOS Competency Units",
+    },
+  ];
+
   return (
     <section className="bg-white py-16 lg:py-24" id="about">
       <div className="mx-auto px-4 sm:px-6 lg:px-8 xl:px-16">
@@ -45,7 +63,7 @@ export function InfrastructureSection() {
 
             {/* 2x2 Metric Cards Grid */}
             <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4">
-              {STATS.map((stat, idx) => (
+              {metrics.map((stat, idx) => (
                 <div
                   key={idx}
                   data-aos="zoom-in"
@@ -53,7 +71,20 @@ export function InfrastructureSection() {
                   className="rounded-[10px] bg-input-bg p-3.5 sm:p-4 md:p-4 lg:p-5 text-center transition-all hover:bg-slate-100/80"
                 >
                   <span className="block text-xl sm:text-2xl md:text-2xl lg:text-[44px] font-bold text-black leading-tight">
-                    {stat.value}
+                    {stat.end !== null ? (
+                      <CountUp
+                        end={stat.end}
+                        duration={2.5}
+                        separator=","
+                        enableScrollSpy
+                        scrollSpyOnce
+                      />
+                    ) : (
+                      <span
+                        className="mx-auto block h-7 sm:h-8 lg:h-11 w-16 sm:w-24 rounded-md bg-gray-200 animate-pulse"
+                        aria-hidden="true"
+                      />
+                    )}
                   </span>
                   <span className="mt-1 block text-[11px] sm:text-xs md:text-xs lg:text-base font-semibold text-black tracking-wider">
                     {stat.label}

@@ -1,31 +1,31 @@
 "use client";
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Logo } from "@/src/components/ui/logo";
-import { SelfAssessmentSidebar } from "../components/SelfAssessmentSidebar";
-import { Step1PersonalInfo } from "../components/Step1PersonalInfo";
-import { Step2Competencies } from "../components/Step2Competencies";
-import { Step3Reflection } from "../components/Step3Reflection";
-import { Step4Declaration } from "../components/Step4Declaration";
-import { SelfAssessmentSuccessModal } from "../components/SelfAssessmentSuccessModal";
-import { useAppSelector, useAppDispatch } from "@/store/hooks";
-import { markSelfAssessmentComplete } from "@/store/slices/applicationSlice";
 import {
   useGetApplicationById,
   useGetSelfAssessment,
   useSaveSelfAssessment,
 } from "@/src/features/shared/applications/hooks";
 import {
+  getRplScopedUnits,
+  resolveAppliedTradeLevel,
+} from "@/src/features/shared/applications/utils/rplTradeLevel";
+import { EVIDENCE_TYPE_LABELS } from "@/src/features/shared/evidence-vault/utils/evidenceConstants";
+import {
   useGetEvidenceTypesByTrade,
   useGetTradeDetail,
   useGetUnitsByTrade,
 } from "@/src/features/shared/reference/hooks";
-import { EVIDENCE_TYPE_LABELS } from "@/src/features/shared/evidence-vault/utils/evidenceConstants";
-import {
-  resolveAppliedTradeLevel,
-  getRplScopedUnits,
-} from "@/src/features/shared/applications/utils/rplTradeLevel";
+import { useAppDispatch } from "@/store/hooks";
+import { markSelfAssessmentComplete } from "@/store/slices/applicationSlice";
+import { useRouter } from "next/navigation";
+import React, { useState } from "react";
+import { SelfAssessmentSidebar } from "../components/SelfAssessmentSidebar";
+import { SelfAssessmentSuccessModal } from "../components/SelfAssessmentSuccessModal";
+import { Step1PersonalInfo } from "../components/Step1PersonalInfo";
+import { Step2Competencies } from "../components/Step2Competencies";
+import { Step3Reflection } from "../components/Step3Reflection";
+import { Step4Declaration } from "../components/Step4Declaration";
 
 interface SelfAssessmentPageProps {
   id?: string;
@@ -53,7 +53,6 @@ export const SelfAssessmentPage: React.FC<SelfAssessmentPageProps> = ({
     useGetUnitsByTrade(tradeId, levelNumber);
   const { data: tradeEvidenceTypes = [] } = useGetEvidenceTypesByTrade(tradeId);
 
-  // Scoped strictly to the trade level the candidate is applying for
   const scopedUnits = React.useMemo(
     () =>
       getRplScopedUnits({
@@ -65,7 +64,6 @@ export const SelfAssessmentPage: React.FC<SelfAssessmentPageProps> = ({
     [rawTradeUnits, tradeDetail, levelNumber, apiApp?.unitIds],
   );
 
-  // Competencies are strictly the units of the level the candidate is applying for
   const competencyTitles = React.useMemo(() => {
     if (scopedUnits.length > 0) {
       return scopedUnits.map((u) =>
@@ -96,7 +94,7 @@ export const SelfAssessmentPage: React.FC<SelfAssessmentPageProps> = ({
     if (id) {
       dispatch(markSelfAssessmentComplete(id));
     }
-    router.push(`/dashboard/applications/${id}/evidence-vault`);
+    router.push(`/dashboard/applications/${id}#evidence-vault-section`);
   };
 
   const handleSubmitSelfAssessment = (finalDeclaration?: any) => {
@@ -148,7 +146,10 @@ export const SelfAssessmentPage: React.FC<SelfAssessmentPageProps> = ({
         savedList.find((s) => {
           if (!s) return false;
           if (s.title === title) return true;
-          if (unit?.referenceNumber && s.title?.includes(unit.referenceNumber)) {
+          if (
+            unit?.referenceNumber &&
+            s.title?.includes(unit.referenceNumber)
+          ) {
             return true;
           }
           if (

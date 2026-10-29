@@ -1,21 +1,21 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { AssessorAssessmentFormLayout } from "./AssessorAssessmentFormLayout";
 import { useToast } from "@/src/components/ui/toast";
-import { Select } from "@/src/components/ui/select";
-import { FiPlus, FiTrash2 } from "react-icons/fi";
+import { FiPlus, FiTrash2, FiEdit3, FiCheckCircle } from "react-icons/fi";
+import type { AssessmentMappingUnit } from "@/src/features/shared/applications/api/types";
+import type { Unit } from "@/src/features/shared/reference/api";
+import { useResolveAssets } from "@/src/features/shared/storage/hooks";
+import { useAssessorSignature } from "./useAssessorSignature";
+import { AssessorSignatureModal } from "./AssessorSignatureModal";
+import { DigitalSignaturePad } from "./DigitalSignaturePad";
+import {
+  buildUnitMappingItems,
+  type GeneratedUnitMappingItem,
+} from "./utils";
 
-export interface UnitMappingItem {
-  id: string;
-  occupationalUnit: string;
-  performanceCriteria: string;
-  typeOfEvidence: string;
-  description: string;
-  status: "Satisfied" | "Not Satisfied";
-}
-
-import { getUnitOptions } from "./utils";
+export type UnitMappingItem = GeneratedUnitMappingItem;
 
 interface AssessmentMappingFormProps {
   candidateName: string;
@@ -25,6 +25,12 @@ interface AssessmentMappingFormProps {
   isReadOnly?: boolean;
   applicationTrade?: string;
   unitLabels?: string[];
+  scopedUnits?: Unit[];
+  mappingUnits?: AssessmentMappingUnit[];
+  levelLabel?: string;
+  defaultAssessorName?: string;
+  defaultDate?: string;
+  defaultSite?: string;
 }
 
 export const AssessmentMappingForm: React.FC<AssessmentMappingFormProps> = ({
@@ -35,75 +41,162 @@ export const AssessmentMappingForm: React.FC<AssessmentMappingFormProps> = ({
   isReadOnly = false,
   applicationTrade,
   unitLabels = [],
+  scopedUnits = [],
+  mappingUnits = [],
+  levelLabel = "Level 1",
+  defaultAssessorName = "",
+  defaultDate = "",
+  defaultSite = "",
 }) => {
   const { toast } = useToast();
 
-  const autoUnit = unitLabels[0] ?? "";
+  const resolvedUnitDisplay = React.useMemo(() => {
+    if (unitLabels.length > 0) {
+      return unitLabels.join(" | ");
+    }
+    if (formData?.unitTitleCode && formData.unitTitleCode !== "Select") {
+      return formData.unitTitleCode;
+    }
+    return applicationTrade
+      ? `${applicationTrade} — ${levelLabel}`
+      : levelLabel;
+  }, [unitLabels, formData?.unitTitleCode, applicationTrade, levelLabel]);
+
   const [candidateFullName, setCandidateFullName] = useState<string>(
-    formData?.candidateFullName ?? candidateName ?? "",
+    candidateName || formData?.candidateFullName || "",
   );
   const [assessorName, setAssessorName] = useState<string>(
-    formData?.assessorName ?? "",
+    defaultAssessorName || formData?.assessorName || "",
   );
-  const [unitTitleCode, setUnitTitleCode] = useState<string>(
-    formData?.unitTitleCode && formData.unitTitleCode !== "Select"
-      ? formData.unitTitleCode
-      : autoUnit,
-  );
-
-  React.useEffect(() => {
-    if (formData?.unitTitleCode && formData.unitTitleCode !== "Select") {
-      setUnitTitleCode(formData.unitTitleCode);
-    } else if (!unitTitleCode && autoUnit) {
-      setUnitTitleCode(autoUnit);
-    }
-  }, [formData?.unitTitleCode, autoUnit]);
-
-  const unitOptions = React.useMemo(() => {
-    return getUnitOptions(unitTitleCode, unitLabels);
-  }, [unitTitleCode, unitLabels]);
+  const [unitTitleCode, setUnitTitleCode] = useState<string>(resolvedUnitDisplay);
   const [dateCollected, setDateCollected] = useState<string>(
-    formData?.dateCollected ?? "",
+    defaultDate ||
+      formData?.dateCollected ||
+      new Date().toISOString().split("T")[0],
   );
   const [workplaceContext, setWorkplaceContext] = useState<string>(
-    formData?.workplaceContext ?? "",
+    defaultSite || formData?.workplaceContext || "",
   );
 
-  const [units, setUnits] = useState<UnitMappingItem[]>(
-    Array.isArray(formData?.units) && formData.units.length > 0
-      ? formData.units
-      : isReadOnly
-      ? []
-      : [
-          {
-            id: "unit-1",
-            occupationalUnit: "",
-            performanceCriteria: "",
-            typeOfEvidence: "",
-            description: "",
-            status: "Satisfied",
-          },
-        ],
+  // Sync Personal Details with resolved application/panel/schedule data
+  useEffect(() => {
+    if (candidateName) setCandidateFullName(candidateName);
+  }, [candidateName]);
+
+  useEffect(() => {
+    if (defaultAssessorName) setAssessorName(defaultAssessorName);
+  }, [defaultAssessorName]);
+
+  useEffect(() => {
+    if (resolvedUnitDisplay) setUnitTitleCode(resolvedUnitDisplay);
+  }, [resolvedUnitDisplay]);
+
+  useEffect(() => {
+    if (defaultDate) setDateCollected(defaultDate);
+  }, [defaultDate]);
+
+  useEffect(() => {
+    if (defaultSite) setWorkplaceContext(defaultSite);
+  }, [defaultSite]);
+
+  const generatedDefaults = React.useMemo(
+    () =>
+      buildUnitMappingItems({
+        scopedUnits,
+        mappingUnits,
+        tradeName: applicationTrade,
+        levelLabel,
+      }),
+    [scopedUnits, mappingUnits, applicationTrade, levelLabel],
   );
+
+  const hasSavedUnits =
+    Array.isArray(formData?.units) && formData.units.length > 0;
+  const [hasUserEditedUnits, setHasUserEditedUnits] =
+    useState<boolean>(hasSavedUnits);
+
+  const [units, setUnits] = useState<UnitMappingItem[]>(() => {
+    if (hasSavedUnits) return formData!.units;
+    if (isReadOnly) return [];
+    return generatedDefaults;
+  });
+
+  useEffect(() => {
+    if (!hasSavedUnits && !hasUserEditedUnits && !isReadOnly) {
+      setUnits(generatedDefaults);
+    }
+  }, [generatedDefaults, hasSavedUnits, hasUserEditedUnits, isReadOnly]);
 
   const [overallComments, setOverallComments] = useState<string>(
     formData?.overallComments ?? "",
   );
+  const {
+    signatureUrl: profileSignatureUrl,
+    signatureAssetId: profileSignatureAssetId,
+    hasSignature: hasProfileSignature,
+  } = useAssessorSignature();
+
+  const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
   const [assessorSigned, setAssessorSigned] = useState<boolean>(
     Boolean(formData?.assessorSigned || formData?.assessorSignedAt),
   );
+  const [assessorSignedAt, setAssessorSignedAt] = useState<string>(
+    formData?.assessorSignedAt || "",
+  );
+  const [assessorSignatureAssetId, setAssessorSignatureAssetId] =
+    useState<string>(formData?.assessorSignatureAssetId || "");
+  const [assessorSignatureUrl, setAssessorSignatureUrl] = useState<string>(
+    formData?.assessorSignatureUrl || "",
+  );
+
+  const sigAssetsToResolve = useMemo(() => {
+    return assessorSignatureAssetId && !assessorSignatureUrl
+      ? [assessorSignatureAssetId]
+      : [];
+  }, [assessorSignatureAssetId, assessorSignatureUrl]);
+  const { data: resolvedSigAssets } = useResolveAssets(sigAssetsToResolve);
+
+  const activeAssessorSignatureUrl =
+    assessorSignatureUrl ||
+    resolvedSigAssets?.[0]?.url ||
+    (assessorSigned ? profileSignatureUrl : null);
+
+  const itemRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const titleInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const pendingFocusIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const targetId = pendingFocusIdRef.current;
+    if (!targetId) return;
+    pendingFocusIdRef.current = null;
+
+    const cardEl = itemRefs.current[targetId];
+    const inputEl = titleInputRefs.current[targetId];
+    if (cardEl) {
+      cardEl.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+    if (inputEl) {
+      setTimeout(() => {
+        inputEl.focus();
+      }, 150);
+    }
+  }, [units.length]);
 
   const handleAddUnit = () => {
     if (isReadOnly) return;
+    const newId = `unit-custom-${Date.now()}`;
+    setHasUserEditedUnits(true);
+    pendingFocusIdRef.current = newId;
     setUnits((prev) => [
       ...prev,
       {
-        id: `unit-${Date.now()}`,
+        id: newId,
         occupationalUnit: "",
         performanceCriteria: "",
         typeOfEvidence: "",
         description: "",
         status: "Satisfied",
+        isCustom: true,
       },
     ]);
     toast({
@@ -115,42 +208,74 @@ export const AssessmentMappingForm: React.FC<AssessmentMappingFormProps> = ({
 
   const handleRemoveUnit = (id: string) => {
     if (isReadOnly) return;
+    setHasUserEditedUnits(true);
     setUnits((prev) => prev.filter((u) => u.id !== id));
   };
 
-  const updateUnitField = (id: string, field: keyof UnitMappingItem, val: string) => {
+  const updateUnitField = (
+    id: string,
+    field: keyof UnitMappingItem,
+    val: string,
+  ) => {
     if (isReadOnly) return;
+    setHasUserEditedUnits(true);
     setUnits((prev) =>
       prev.map((u) => (u.id === id ? { ...u, [field]: val } : u)),
     );
   };
 
-  const toggleUnitStatus = (id: string) => {
-    if (isReadOnly) return;
-    setUnits((prev) =>
-      prev.map((u) =>
-        u.id === id
-          ? {
-              ...u,
-              status: u.status === "Satisfied" ? "Not Satisfied" : "Satisfied",
-            }
-          : u,
-      ),
-    );
-  };
-
   const handleAppendSignature = () => {
     if (isReadOnly) return;
+    if (
+      !hasProfileSignature &&
+      !activeAssessorSignatureUrl &&
+      !assessorSignatureAssetId
+    ) {
+      setIsSignatureModalOpen(true);
+      return;
+    }
+    const now = new Date().toISOString();
     setAssessorSigned(true);
+    setAssessorSignedAt(now);
+    setAssessorSignatureAssetId(
+      profileSignatureAssetId || assessorSignatureAssetId || "",
+    );
+    setAssessorSignatureUrl(
+      profileSignatureUrl || activeAssessorSignatureUrl || "",
+    );
     toast({
       type: "success",
       title: "Signature Appended",
-      description: "Assessor signature has been recorded.",
+      description: "Your official assessor signature has been recorded.",
     });
+  };
+
+  const handleSignatureUploadSuccess = (sig: {
+    assetId: string;
+    url?: string;
+  }) => {
+    const now = new Date().toISOString();
+    setAssessorSigned(true);
+    setAssessorSignedAt(now);
+    setAssessorSignatureAssetId(sig.assetId);
+    setAssessorSignatureUrl(sig.url || "");
+    setIsSignatureModalOpen(false);
   };
 
   const handleSubmit = () => {
     if (isReadOnly) return;
+    if (!assessorSigned && !activeAssessorSignatureUrl) {
+      toast({
+        type: "error",
+        title: "Signature Required",
+        description: "Please append your assessor signature before submitting.",
+      });
+      if (!hasProfileSignature) {
+        setIsSignatureModalOpen(true);
+      }
+      return;
+    }
+    const now = new Date().toISOString();
     onSubmit({
       candidateFullName,
       assessorName,
@@ -160,7 +285,10 @@ export const AssessmentMappingForm: React.FC<AssessmentMappingFormProps> = ({
       units,
       overallComments,
       assessorSigned: true,
-      assessorSignedAt: formData?.assessorSignedAt || new Date().toISOString(),
+      assessorSignedAt: assessorSignedAt || now,
+      assessorSignatureAssetId:
+        assessorSignatureAssetId || profileSignatureAssetId || undefined,
+      assessorSignatureUrl: activeAssessorSignatureUrl || undefined,
     });
   };
 
@@ -173,7 +301,7 @@ export const AssessmentMappingForm: React.FC<AssessmentMappingFormProps> = ({
       submitLabel="Submit Form"
       isReadOnly={isReadOnly}
     >
-      {/* 1. Personal Details */}
+      {/* 1. Personal Details (Auto-filled & Locked) */}
       <div className="flex flex-col gap-4 sm:gap-5">
         <h3 className="text-sm sm:text-base font-bold text-neutral-primary">
           Personal Details
@@ -187,10 +315,10 @@ export const AssessmentMappingForm: React.FC<AssessmentMappingFormProps> = ({
             <input
               type="text"
               value={candidateFullName}
-              disabled={isReadOnly}
-              onChange={(e) => setCandidateFullName(e.target.value)}
+              disabled
+              readOnly
               placeholder="Candidate Name"
-              className="w-full h-11 sm:h-12 bg-[#F8F9FA] border border-gray-200 rounded-xl px-3.5 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80 transition-all"
+              className="w-full h-11 sm:h-12 bg-[#F8F9FA] border border-gray-200 rounded-xl px-3.5 text-xs sm:text-sm text-neutral-primary disabled:opacity-80 disabled:cursor-not-allowed transition-all"
             />
           </div>
 
@@ -201,22 +329,26 @@ export const AssessmentMappingForm: React.FC<AssessmentMappingFormProps> = ({
             <input
               type="text"
               value={assessorName}
-              disabled={isReadOnly}
-              onChange={(e) => setAssessorName(e.target.value)}
-              placeholder="Enter Assessor Name"
-              className="w-full h-11 sm:h-12 bg-[#F8F9FA] border border-gray-200 rounded-xl px-3.5 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80 transition-all"
+              disabled
+              readOnly
+              placeholder="Assessor Name"
+              className="w-full h-11 sm:h-12 bg-[#F8F9FA] border border-gray-200 rounded-xl px-3.5 text-xs sm:text-sm text-neutral-primary disabled:opacity-80 disabled:cursor-not-allowed transition-all"
             />
           </div>
 
-          <Select
-            label={<span className="text-xs font-medium text-neutral-primary">Unit Title &amp; Code</span>}
-            placeholder="Select"
-            value={unitTitleCode}
-            disabled={isReadOnly}
-            options={unitOptions}
-            onChange={(e) => setUnitTitleCode(e.target.value || "")}
-            containerClassName="gap-2"
-          />
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-medium text-neutral-primary">
+              Unit Title &amp; Code<span className="text-rose-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={unitTitleCode}
+              disabled
+              readOnly
+              title={unitTitleCode}
+              className="w-full h-11 sm:h-12 bg-[#F8F9FA] border border-gray-200 rounded-xl px-3.5 text-xs sm:text-sm text-neutral-primary truncate disabled:opacity-80 disabled:cursor-not-allowed transition-all"
+            />
+          </div>
 
           <div className="flex flex-col gap-2">
             <label className="text-xs font-medium text-neutral-primary">
@@ -225,9 +357,9 @@ export const AssessmentMappingForm: React.FC<AssessmentMappingFormProps> = ({
             <input
               type="date"
               value={dateCollected}
-              disabled={isReadOnly}
-              onChange={(e) => setDateCollected(e.target.value)}
-              className="w-full h-11 sm:h-12 bg-[#F8F9FA] border border-gray-200 rounded-xl px-3.5 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80 transition-all"
+              disabled
+              readOnly
+              className="w-full h-11 sm:h-12 bg-[#F8F9FA] border border-gray-200 rounded-xl px-3.5 text-xs sm:text-sm text-neutral-primary disabled:opacity-80 disabled:cursor-not-allowed transition-all"
             />
           </div>
         </div>
@@ -238,29 +370,29 @@ export const AssessmentMappingForm: React.FC<AssessmentMappingFormProps> = ({
           </label>
           <input
             type="text"
-            placeholder="Enter workplace or assessment context"
             value={workplaceContext}
-            disabled={isReadOnly}
-            onChange={(e) => setWorkplaceContext(e.target.value)}
-            className="w-full h-11 sm:h-12 bg-[#F8F9FA] border border-gray-200 rounded-xl px-3.5 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80 transition-all"
+            disabled
+            readOnly
+            placeholder="Assessment Centre / Workplace Context"
+            className="w-full h-11 sm:h-12 bg-[#F8F9FA] border border-gray-200 rounded-xl px-3.5 text-xs sm:text-sm text-neutral-primary disabled:opacity-80 disabled:cursor-not-allowed transition-all"
           />
         </div>
       </div>
 
       {/* 2. Trade Units & Competency Grid */}
       <div className="flex flex-col gap-4 pt-4 border-t border-gray-100">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3">
           <h3 className="text-sm sm:text-base font-bold text-neutral-primary">
-            Trade
+            Trade Units &amp; Competency Checklist
           </h3>
           {!isReadOnly && (
             <button
               type="button"
               onClick={handleAddUnit}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#8A1538] text-[#8A1538] text-xs font-semibold hover:bg-[#8A1538]/5 transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#8A1538] text-[#8A1538] text-xs font-semibold hover:bg-[#8A1538]/5 transition-colors cursor-pointer self-start sm:self-auto"
             >
               <FiPlus className="w-3.5 h-3.5" />
-              Add Another Unit
+              Add Checklist Item
             </button>
           )}
         </div>
@@ -270,114 +402,166 @@ export const AssessmentMappingForm: React.FC<AssessmentMappingFormProps> = ({
             No competency units recorded.
           </p>
         ) : (
-          <div className="flex flex-col gap-4">
-            {units.map((unit, idx) => (
-              <div
-                key={unit.id}
-                className="bg-[#F8F9FA] rounded-2xl p-4 sm:p-5 border border-gray-100 flex flex-col gap-3.5"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-gray-400">Unit #{idx + 1}</span>
-                  {!isReadOnly && (
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveUnit(unit.id)}
-                      className="text-gray-400 hover:text-rose-600 p-1"
-                    >
-                      <FiTrash2 className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
+          <div className="flex flex-col gap-3.5">
+            {units.map((unit, idx) => {
+              const isEditableTitle =
+                unit.isCustom ||
+                unit.id.startsWith("unit-custom-") ||
+                !unit.occupationalUnit;
 
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-medium text-neutral-primary">
-                    Occupational Unit<span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={unit.occupationalUnit}
-                    disabled={isReadOnly}
-                    onChange={(e) => updateUnitField(unit.id, "occupationalUnit", e.target.value)}
-                    placeholder={isReadOnly ? "Not provided" : "e.g. Core Occupational Standards & Practical Execution"}
-                    className="w-full bg-white border border-gray-200 rounded-xl p-2.5 text-xs text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80"
-                  />
-                </div>
+              return (
+                <div
+                  key={unit.id}
+                  ref={(el) => {
+                    itemRefs.current[unit.id] = el;
+                  }}
+                  className="bg-[#F8F9FA] rounded-2xl p-4 sm:p-5 border border-gray-100 flex flex-col gap-3.5"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex-1 flex items-center gap-2">
+                      <span className="text-xs font-bold text-neutral-secondary shrink-0">
+                        #{idx + 1}
+                      </span>
+                      {!isEditableTitle ? (
+                        <span className="text-xs sm:text-sm font-bold text-neutral-primary">
+                          {unit.occupationalUnit}
+                        </span>
+                      ) : (
+                        <input
+                          ref={(el) => {
+                            titleInputRefs.current[unit.id] = el;
+                          }}
+                          type="text"
+                          value={unit.occupationalUnit}
+                          disabled={isReadOnly}
+                          onChange={(e) =>
+                            updateUnitField(
+                              unit.id,
+                              "occupationalUnit",
+                              e.target.value,
+                            )
+                          }
+                          placeholder="e.g. Core Occupational Standards & Practical Execution"
+                          className="w-full bg-white border border-gray-200 rounded-xl p-2.5 text-xs sm:text-sm font-medium text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80"
+                        />
+                      )}
+                    </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-medium text-neutral-primary">
-                      Performance Criteria
-                    </label>
-                    <input
-                      type="text"
-                      value={unit.performanceCriteria}
-                      disabled={isReadOnly}
-                      onChange={(e) => updateUnitField(unit.id, "performanceCriteria", e.target.value)}
-                      placeholder={isReadOnly ? "Not provided" : "Criteria mapped..."}
-                      className="w-full bg-white border border-gray-200 rounded-xl p-2.5 text-xs text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80"
-                    />
+                    <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto shrink-0 pt-1.5 sm:pt-0 border-t sm:border-t-0 border-gray-200/60 sm:border-transparent">
+                      <span className="text-xs text-neutral-secondary font-medium mr-1">
+                        Status:
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <div className="flex items-center rounded-lg overflow-hidden border border-gray-200 bg-white p-0.5">
+                          <button
+                            type="button"
+                            disabled={isReadOnly}
+                            onClick={() =>
+                              updateUnitField(unit.id, "status", "Satisfied")
+                            }
+                            className={`px-3 py-1 text-xs font-bold rounded-md transition-colors cursor-pointer ${
+                              unit.status === "Satisfied"
+                                ? "bg-[#8A1538] text-white"
+                                : "text-neutral-secondary hover:text-neutral-primary"
+                            } disabled:cursor-not-allowed`}
+                          >
+                            Satisfied
+                          </button>
+                          <button
+                            type="button"
+                            disabled={isReadOnly}
+                            onClick={() =>
+                              updateUnitField(unit.id, "status", "Not Satisfied")
+                            }
+                            className={`px-3 py-1 text-xs font-bold rounded-md transition-colors cursor-pointer ${
+                              unit.status === "Not Satisfied"
+                                ? "bg-[#8A1538] text-white"
+                                : "text-neutral-secondary hover:text-neutral-primary"
+                            } disabled:cursor-not-allowed`}
+                          >
+                            Not Satisfied
+                          </button>
+                        </div>
+
+                        {!isReadOnly && units.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveUnit(unit.id)}
+                            className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                            title="Delete checklist item"
+                          >
+                            <FiTrash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-medium text-neutral-primary">
-                      Type of Evidence
-                    </label>
-                    <input
-                      type="text"
-                      value={unit.typeOfEvidence}
-                      disabled={isReadOnly}
-                      onChange={(e) => updateUnitField(unit.id, "typeOfEvidence", e.target.value)}
-                      placeholder={isReadOnly ? "Not provided" : "e.g. Direct Observation, Portfolio, Third Party"}
-                      className="w-full bg-white border border-gray-200 rounded-xl p-2.5 text-xs text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80"
-                    />
-                  </div>
-                </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-medium text-neutral-primary">
+                        Performance Criteria
+                      </label>
+                      <input
+                        type="text"
+                        value={unit.performanceCriteria}
+                        disabled={isReadOnly}
+                        onChange={(e) =>
+                          updateUnitField(
+                            unit.id,
+                            "performanceCriteria",
+                            e.target.value,
+                          )
+                        }
+                        placeholder={
+                          isReadOnly ? "Not provided" : "Criteria mapped..."
+                        }
+                        className="w-full bg-white border border-gray-200 rounded-xl p-2.5 text-xs text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80"
+                      />
+                    </div>
 
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-medium text-neutral-primary">
-                    Description
-                  </label>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-medium text-neutral-primary">
+                        Type of Evidence
+                      </label>
+                      <input
+                        type="text"
+                        value={unit.typeOfEvidence}
+                        disabled={isReadOnly}
+                        onChange={(e) =>
+                          updateUnitField(
+                            unit.id,
+                            "typeOfEvidence",
+                            e.target.value,
+                          )
+                        }
+                        placeholder={
+                          isReadOnly
+                            ? "Not provided"
+                            : "e.g. Direct Observation, Portfolio, Third Party"
+                        }
+                        className="w-full bg-white border border-gray-200 rounded-xl p-2.5 text-xs text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80"
+                      />
+                    </div>
+                  </div>
+
                   <textarea
                     rows={2}
                     value={unit.description}
                     disabled={isReadOnly}
-                    onChange={(e) => updateUnitField(unit.id, "description", e.target.value)}
-                    placeholder={isReadOnly ? "Not provided" : "Type description of evidence and mapping..."}
-                    className="w-full bg-white border border-gray-200 rounded-xl p-2.5 text-xs text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] resize-none disabled:opacity-80"
+                    onChange={(e) =>
+                      updateUnitField(unit.id, "description", e.target.value)
+                    }
+                    placeholder={
+                      isReadOnly
+                        ? "Not provided"
+                        : "Type Comments / Description Here"
+                    }
+                    className="w-full bg-white border border-gray-200 rounded-xl p-3 text-xs text-neutral-primary placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] resize-none disabled:opacity-80"
                   />
                 </div>
-
-                <div className="flex items-center justify-between pt-2 border-t border-gray-200/50">
-                  <span className="text-xs font-medium text-neutral-primary">Status:</span>
-                  <div className="flex items-center rounded-lg overflow-hidden border border-gray-200 bg-white p-0.5">
-                    <button
-                      type="button"
-                      disabled={isReadOnly}
-                      onClick={() => updateUnitField(unit.id, "status", "Satisfied")}
-                      className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${
-                        unit.status === "Satisfied"
-                          ? "bg-[#1E7F4C] text-white"
-                          : "text-neutral-secondary hover:text-neutral-primary"
-                      } disabled:cursor-not-allowed`}
-                    >
-                      Satisfied
-                    </button>
-                    <button
-                      type="button"
-                      disabled={isReadOnly}
-                      onClick={() => updateUnitField(unit.id, "status", "Not Satisfied")}
-                      className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${
-                        unit.status === "Not Satisfied"
-                          ? "bg-[#8A1538] text-white"
-                          : "text-neutral-secondary hover:text-neutral-primary"
-                      } disabled:cursor-not-allowed`}
-                    >
-                      Not Satisfied
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -392,7 +576,11 @@ export const AssessmentMappingForm: React.FC<AssessmentMappingFormProps> = ({
           value={overallComments}
           disabled={isReadOnly}
           onChange={(e) => setOverallComments(e.target.value)}
-          placeholder={isReadOnly ? "No overall comments provided." : "Type overall assessment mapping remarks..."}
+          placeholder={
+            isReadOnly
+              ? "No overall comments provided."
+              : "Type overall assessment mapping remarks..."
+          }
           className="w-full bg-[#F8F9FA] border border-gray-200 rounded-xl p-3 text-xs text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] resize-none disabled:opacity-80"
         />
       </div>
@@ -404,105 +592,55 @@ export const AssessmentMappingForm: React.FC<AssessmentMappingFormProps> = ({
         </h3>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-neutral-primary">
-              Assessor Signature<span className="text-rose-500">*</span>
-            </label>
-            {assessorSigned ? (
-              <div className="h-11 bg-[#E6F4EA] border border-[#1E7F4C]/30 text-[#1E7F4C] font-bold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2 select-none shadow-2xs">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="w-4 h-4 text-[#1E7F4C]"
-                >
-                  <path d="M12 20h9" />
-                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-                </svg>
-                Signed by Assessor
-              </div>
-            ) : isReadOnly ? (
-              <div className="h-11 bg-gray-100 border border-gray-200 text-gray-500 text-xs sm:text-sm rounded-xl flex items-center justify-center">
-                Pending Assessor Signature
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={handleAppendSignature}
-                className="h-11 bg-[#FFF8EB] border border-[#FBAB2A] hover:bg-[#FDEED5] text-[#FBAB2A] font-bold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="w-4 h-4 text-[#FBAB2A]"
-                >
-                  <path d="M12 20h9" />
-                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-                </svg>
-                Append Signature
-              </button>
-            )}
-          </div>
+          <DigitalSignaturePad
+            label="Assessor Signature"
+            required
+            isSigned={assessorSigned}
+            signerName={assessorName}
+            signedAt={assessorSignedAt}
+            signatureUrl={activeAssessorSignatureUrl}
+            isReadOnly={isReadOnly}
+            onAppendSignature={handleAppendSignature}
+            onChangeSignature={() => setIsSignatureModalOpen(true)}
+            onClearSignature={() => {
+              setAssessorSigned(false);
+              setAssessorSignedAt("");
+            }}
+          />
 
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium text-neutral-primary">
               Candidate Signature<span className="text-rose-500">*</span>
             </label>
             {formData?.candidateSignedAt ? (
-              <div className="h-11 bg-[#E6F4EA] border border-[#1E7F4C]/30 text-[#1E7F4C] font-bold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2 select-none shadow-2xs">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="w-4 h-4 text-[#1E7F4C]"
-                >
-                  <path d="M12 20h9" />
-                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-                </svg>
-                Signed by Candidate ({new Date(formData.candidateSignedAt).toLocaleDateString()})
+              <div className="h-11 sm:h-12 bg-[#E6F4EA] border border-[#1E7F4C]/30 text-[#1E7F4C] font-bold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2.5 px-3.5 select-none shadow-2xs">
+                {formData?.candidateSignatureUrl ? (
+                  <img
+                    src={formData.candidateSignatureUrl}
+                    alt="Candidate Signature"
+                    className="h-7 max-w-[120px] object-contain"
+                  />
+                ) : (
+                  <FiCheckCircle className="w-4 h-4 text-[#1E7F4C] shrink-0" />
+                )}
+                <span>Signed</span>
               </div>
             ) : (
-              <div className="h-11 bg-[#FFF8EB] border border-[#FBAB2A]/60 text-[#FBAB2A] font-semibold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2 select-none">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="w-4 h-4 text-[#FBAB2A]"
-                >
-                  <path d="M12 20h9" />
-                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-                </svg>
-                Awaiting Candidate Signature
+              <div className="h-11 sm:h-12 bg-[#FFF8EB] border border-[#FBAB2A]/60 text-[#FBAB2A] font-semibold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2 select-none">
+                <FiEdit3 className="w-4 h-4 text-[#FBAB2A] shrink-0" />
+                <span>Awaiting Signature</span>
               </div>
             )}
           </div>
         </div>
       </div>
+
+      <AssessorSignatureModal
+        isOpen={isSignatureModalOpen}
+        onClose={() => setIsSignatureModalOpen(false)}
+        onSuccess={handleSignatureUploadSuccess}
+        title="Upload Assessor Signature"
+      />
     </AssessorAssessmentFormLayout>
   );
 };

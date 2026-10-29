@@ -5,13 +5,14 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { HeaderBanner } from "@/features/candidate/features/Dashboard/components/HeaderBanner";
 import { Button } from "@/src/components/ui/button";
-import { FiEdit2, FiLock } from "react-icons/fi";
+import { FiEdit2 } from "react-icons/fi";
 import { ApplicationDetailsPageProps } from "../types";
 import { useApplicationDetailsState } from "../hooks";
 import { NsqApplicationDetailView } from "../components/nsq/NsqApplicationDetailView";
 import { ApplicationDetailsStagesSection } from "../components/ApplicationDetailsStagesSection";
 import { ApplicationDetailsSidebar } from "../components/ApplicationDetailsSidebar";
 import { ApplicationDetailsModals } from "../components/ApplicationDetailsModals";
+import { CandidateEvidenceVaultSection } from "@/src/features/shared/evidence-vault/components/CandidateEvidenceVaultSection";
 
 export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({ id }) => {
   const router = useRouter();
@@ -106,7 +107,7 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({ 
           { label: "My Applications", href: "/dashboard/applications" },
           { label: state.application.title },
         ]}
-        showCreateButton={!state.isDraft}
+        showCreateButton={false}
         rightAction={
           state.isDraft ? (
             <button
@@ -117,12 +118,7 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({ 
               <FiEdit2 className="w-4 h-4" />
               <span>Edit Application</span>
             </button>
-          ) : (
-            <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-xl text-white text-xs font-semibold select-none">
-              <FiLock className="w-3.5 h-3.5" />
-              <span>Submitted & Locked</span>
-            </div>
-          )
+          ) : undefined
         }
       />
 
@@ -133,7 +129,17 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({ 
             isPaymentPaid={state.isPaymentPaid}
             onEditApplication={state.handleEditApplication}
             stages={state.stages}
-          />
+          >
+            <div id="evidence-vault-section" className="scroll-mt-24">
+              <CandidateEvidenceVaultSection
+                applicationId={state.application.id}
+                application={state.apiApp}
+                isApplicationLoading={state.isLoading}
+                accordion
+                defaultOpenSection={4}
+              />
+            </div>
+          </ApplicationDetailsStagesSection>
 
           <ApplicationDetailsSidebar
             activeInterviewSchedule={state.activeInterviewSchedule}

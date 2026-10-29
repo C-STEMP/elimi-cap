@@ -16,6 +16,8 @@ export const APPLICATION_QUERY_KEYS = {
   selfAssessment: (id: string) => ["applications", "self-assessment", id] as const,
   evidence: (id: string, params?: { cursor?: string; limit?: number }) =>
     ["applications", "evidence", id, params] as const,
+  evidenceTypes: (id: string) =>
+    ["applications", "evidence-types", id] as const,
   inductionForm: (id: string) => ["applications", "induction", id] as const,
   unitCriteria: (id: string, unitId: string) =>
     ["applications", "units", id, unitId, "criteria"] as const,

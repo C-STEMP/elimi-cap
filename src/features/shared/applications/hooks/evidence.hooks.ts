@@ -3,6 +3,7 @@ import { useToast } from "@/src/components/ui/toast";
 import { ApiError } from "@/src/lib/api/client";
 import {
   getEvidenceVaultApi,
+  getApplicationEvidenceTypesApi,
   uploadApplicationCvApi,
   createGeneralEvidenceApi,
   patchGeneralEvidenceApi,
@@ -21,6 +22,23 @@ export function useGetEvidenceVault(
     queryKey: APPLICATION_QUERY_KEYS.evidence(id, params),
     queryFn: () => getEvidenceVaultApi(id, params),
     enabled: Boolean(id),
+  });
+}
+
+/**
+ * Allowed general-evidence types for an RPL application's vault
+ * (GET /applications/{id}/evidence-types). RPL-only — the backend returns
+ * 422 for NSQ, so callers should pass `enabled: false` for NSQ applications.
+ */
+export function useGetApplicationEvidenceTypes(
+  id: string,
+  options?: { enabled?: boolean },
+) {
+  return useQuery({
+    queryKey: APPLICATION_QUERY_KEYS.evidenceTypes(id),
+    queryFn: () => getApplicationEvidenceTypesApi(id),
+    enabled: Boolean(id) && (options?.enabled ?? true),
+    retry: false,
   });
 }
 
@@ -85,6 +103,7 @@ export function useCreateGeneralEvidence(
       assetId?: string;
       formData?: Record<string, unknown>;
       textValue?: string;
+      unitIds?: string[];
     }) => createGeneralEvidenceApi(applicationId, payload),
 
     onSuccess: () => {
@@ -93,6 +112,9 @@ export function useCreateGeneralEvidence(
       });
       queryClient.invalidateQueries({
         queryKey: APPLICATION_QUERY_KEYS.detail(applicationId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["applications", "assessment-mapping", applicationId],
       });
       queryClient.invalidateQueries({
         queryKey: APPLICATION_QUERY_KEYS.portfolio(applicationId),
@@ -136,10 +158,10 @@ export function usePatchGeneralEvidence(applicationId: string) {
       evidenceId: string;
       payload: {
         documentName?: string;
-        evidenceType?: string;
-        assetId?: string | null;
-        formData?: Record<string, unknown> | null;
-        textValue?: string | null;
+        assetId?: string;
+        formData?: Record<string, unknown>;
+        textValue?: string;
+        unitIds?: string[];
       };
     }) => patchGeneralEvidenceApi(applicationId, evidenceId, payload),
 
@@ -149,6 +171,9 @@ export function usePatchGeneralEvidence(applicationId: string) {
       });
       queryClient.invalidateQueries({
         queryKey: APPLICATION_QUERY_KEYS.detail(applicationId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["applications", "assessment-mapping", applicationId],
       });
       queryClient.invalidateQueries({
         queryKey: APPLICATION_QUERY_KEYS.portfolio(applicationId),
@@ -205,6 +230,9 @@ export function useReviewGeneralEvidence(applicationId: string) {
         queryKey: APPLICATION_QUERY_KEYS.detail(applicationId),
       });
       queryClient.invalidateQueries({
+        queryKey: ["applications", "assessment-mapping", applicationId],
+      });
+      queryClient.invalidateQueries({
         queryKey: APPLICATION_QUERY_KEYS.portfolio(applicationId),
       });
       toast({
@@ -252,6 +280,9 @@ export function useDeleteGeneralEvidence(applicationId: string) {
       });
       queryClient.invalidateQueries({
         queryKey: APPLICATION_QUERY_KEYS.detail(applicationId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["applications", "assessment-mapping", applicationId],
       });
       queryClient.invalidateQueries({
         queryKey: APPLICATION_QUERY_KEYS.portfolio(applicationId),

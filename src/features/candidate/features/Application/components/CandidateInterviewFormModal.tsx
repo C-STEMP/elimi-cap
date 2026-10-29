@@ -65,7 +65,7 @@ export const CandidateInterviewFormModal: React.FC<
 
   const savedSignatureUrl =
     profileSignature?.url ||
-    (profileSignature?.assetId && resolvedSignatureAssets
+    (profileSignature?.assetId && Array.isArray(resolvedSignatureAssets)
       ? resolvedSignatureAssets.find((a) => a.assetId === profileSignature.assetId)?.url
       : null);
 
@@ -160,7 +160,7 @@ export const CandidateInterviewFormModal: React.FC<
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
-          className="bg-white rounded-[28px] p-6 sm:p-8 max-w-md w-full relative shadow-2xl flex flex-col border border-gray-100"
+          className="bg-white rounded-3xl p-5 sm:p-8 max-w-md w-full relative shadow-2xl flex flex-col border border-gray-100 max-h-[92vh] overflow-y-auto"
         >
           {/* Close Button */}
           <button

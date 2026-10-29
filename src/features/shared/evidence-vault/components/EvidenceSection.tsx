@@ -151,6 +151,15 @@ export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
                           {evidenceTypeLabel}
                         </span>
                       )}
+                      {Array.isArray(item.unitIds) && item.unitIds.length > 0 && (
+                        <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                          <span className="text-[10px] font-semibold text-neutral-secondary bg-gray-100 px-2 py-0.5 rounded-md">
+                            {item.unitIds.length === 1
+                              ? "Tagged to 1 unit"
+                              : `Tagged to ${item.unitIds.length} units`}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
 

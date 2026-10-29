@@ -77,9 +77,25 @@ export async function confirmUploadApi(
 export async function resolveAssetsApi(
   assetIds: string[],
 ): Promise<{ assetId: string; url: string }[]> {
-  return unwrap<{ assetId: string; url: string }[]>(
+  const res = await unwrap<any>(
     orchestratorClient.post("/storage/resolve", { assetIds }),
   );
+  if (Array.isArray(res)) {
+    return res;
+  }
+  if (Array.isArray(res?.assets)) {
+    return res.assets;
+  }
+  if (Array.isArray(res?.data)) {
+    return res.data;
+  }
+  if (res && typeof res === "object") {
+    return Object.entries(res).map(([assetId, val]: [string, any]) => ({
+      assetId,
+      url: typeof val === "string" ? val : val?.url || "",
+    }));
+  }
+  return [];
 }
 
 export async function deleteAssetApi(assetId: string): Promise<void> {

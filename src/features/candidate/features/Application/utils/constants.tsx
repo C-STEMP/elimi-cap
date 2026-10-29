@@ -116,6 +116,7 @@ export interface GetStagesConfigParams {
   interviewDateText?: string;
   formsToSign?: FormItem[];
   onOpenFormView?: (formId: string) => void;
+  includeTopStages?: boolean;
 }
 
 export const getStagesConfig = ({
@@ -148,6 +149,7 @@ export const getStagesConfig = ({
   assessors,
   interviewDateText,
   formsToSign,
+  includeTopStages = false,
 }: GetStagesConfigParams): StageConfig[] => {
   const formattedSubmittedDate = submittedDate
     ? new Date(submittedDate).toLocaleDateString("en-GB")
@@ -575,10 +577,22 @@ export const getStagesConfig = ({
       : null,
   };
 
+  if (includeTopStages) {
+    return [
+      appFormStage,
+      paymentStage,
+      folderStage,
+      interviewStage,
+      internalVerifierStage,
+      externalVerifierStage,
+      certificationStage,
+    ];
+  }
+
+  // Merged view: Application Form and Payment are inside 1. Induction Documents,
+  // and portfolio sections 1..4 replace the old folder arrangement card.
+  // The stages below number 4:
   return [
-    appFormStage,
-    paymentStage,
-    folderStage,
     interviewStage,
     internalVerifierStage,
     externalVerifierStage,

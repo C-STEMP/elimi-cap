@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { HeaderBanner } from "@/features/candidate/features/Dashboard/components/HeaderBanner";
 import { CalendarWidget } from "@/features/candidate/features/Dashboard/components/CalendarWidget";
 import { UpcomingCard } from "@/features/candidate/features/Dashboard/components/UpcomingCard";
@@ -12,26 +12,9 @@ import { StatusModal } from "@/components/status-modal";
 import { useToast } from "@/src/components/ui/toast";
 import {
   useGetApplicationById,
-  useGetSelfAssessment,
-  useGetEvidenceVault,
-  useCreateGeneralEvidence,
-  useDeleteGeneralEvidence,
-  useUploadApplicationCv,
   useGetInterviewSchedule,
 } from "@/src/features/shared/applications/hooks";
-import { useUploadFile } from "@/src/features/shared/storage/hooks";
-import { EvidenceRecord, isCvEvidence } from "../utils/evidenceConstants";
-import { UploadEvidenceModal } from "../components/UploadEvidenceModal";
-import { DeleteEvidenceModal } from "../components/DeleteEvidenceModal";
-import { PreviewEvidenceModal } from "../components/PreviewEvidenceModal";
-import {
-  CandidateSelfAssessmentCard,
-  CandidateThirdPartyReportCard,
-} from "../components/CandidateReportCards";
-import { EvidenceSection } from "../components/EvidenceSection";
-import { PortfolioVault } from "../components/portfolio";
-import { useUrlModal } from "@/src/lib/hooks/usePersistentModal";
-import { UPLOAD_EVIDENCE_MODAL } from "@/src/lib/modal-keys";
+import { CandidateEvidenceVaultSection } from "../components/CandidateEvidenceVaultSection";
 
 interface EvidenceVaultPageProps {
   applicationId?: string;
@@ -41,26 +24,19 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
   applicationId = "",
 }) => {
   const { toast } = useToast();
-  const router = useRouter();
   const pathname = usePathname();
 
-  const { data: apiApp } = useGetApplicationById(applicationId);
-  const { data: selfAssessment } = useGetSelfAssessment(applicationId);
-  const { data: remoteVault = [] } = useGetEvidenceVault(applicationId);
-  const { data: interviewSchedule } = useGetInterviewSchedule(applicationId, { enabled: Boolean(applicationId) });
-  const uploadFileMutation = useUploadFile();
-  const createGeneralEvidenceMutation = useCreateGeneralEvidence(applicationId, {
-    showToast: false,
+  const { data: apiApp, isLoading: isApplicationLoading } =
+    useGetApplicationById(applicationId);
+  const isInterviewStage = Boolean(
+    apiApp?.currentStageKey === "interview" ||
+      (apiApp as any)?.stages?.some(
+        (s: any) => s.key === "interview" && s.status !== "not_started",
+      ),
+  );
+  const { data: interviewSchedule } = useGetInterviewSchedule(applicationId, {
+    enabled: Boolean(applicationId && isInterviewStage),
   });
-  const uploadApplicationCvMutation = useUploadApplicationCv(applicationId, {
-    showToast: false,
-  });
-  const deleteGeneralEvidenceMutation = useDeleteGeneralEvidence(applicationId);
-
-  const resolvedTradeId =
-    apiApp?.tradeId ||
-    apiApp?.trade?.id ||
-    "";
 
   const rawTrade =
     (apiApp as any)?.trade?.name ||
@@ -103,215 +79,6 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
         updatedAt: new Date().toISOString(),
       };
 
-  const isSelfAssessmentCompleted = Boolean(
-    selfAssessment?.submittedAt ||
-    remoteVault.some(
-      (item) =>
-        item.kind === "self_assessment" &&
-        (item.status === "completed" || item.status === "submitted"),
-    ) ||
-    (apiApp as any)?.selfAssessmentCompleted,
-  );
-
-  const [isUploadModalOpen, setIsUploadModalOpen] = useUrlModal(UPLOAD_EVIDENCE_MODAL);
-  const [uploadInitialDocName, setUploadInitialDocName] = useState<string>("");
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState<EvidenceRecord | null>(null);
-  const [previewItem, setPreviewItem] = useState<EvidenceRecord | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-
-  const combinedEvidenceList = React.useMemo(
-    () =>
-      (remoteVault || [])
-        .filter(
-          (item: any) =>
-            item.kind === "general" ||
-            (!item.kind && (item.documentName || item.name || item.assetId)),
-        )
-        .map((item: any) => ({
-          ...item,
-          documentName: (
-            item.documentName || item.name || item.title || item.filename || item.originalName || ""
-          ).trim(),
-        }))
-        .filter((item: any) => item.documentName),
-    [remoteVault],
-  );
-
-  const evidences: EvidenceRecord[] = combinedEvidenceList.map((item) => {
-    const docName = item.documentName;
-
-    const combinedIssues: string[] = (
-      Array.isArray(item.issues)
-        ? item.issues
-        : item.feedback
-          ? [item.feedback]
-          : item.reviewComment
-            ? [item.reviewComment]
-            : []
-    ).filter(Boolean);
-
-    const defaultPendingStatus = "Pending";
-    const rawStatus: string =
-      (item.reviewStatus as string) ||
-      (item.status as string) ||
-      (combinedIssues.length > 0 ? "Attention Required" : defaultPendingStatus);
-    const statusLabel = rawStatus
-      .replace(/_/g, " ")
-      .replace(/\b\w/g, (c: string) => c.toUpperCase());
-
-    const s = rawStatus.toLowerCase().replace(/_/g, " ");
-    const isApproved =
-      s.includes("approv") ||
-      s.includes("accept") ||
-      s.includes("complet") ||
-      s.includes("verifi");
-    const isSubmitted = s.includes("submi");
-    const isAttention =
-      s.includes("reject") ||
-      s.includes("attenti") ||
-      s.includes("fail") ||
-      s.includes("declin") ||
-      (combinedIssues.length > 0 && !isApproved);
-    const isInProgress = s.includes("review") || s.includes("progress");
-
-    const statusBg = isApproved
-      ? "bg-[#1E7F4C]/10"
-      : isSubmitted
-        ? "bg-[#EFF6FF]"
-        : isAttention
-          ? "bg-[#FEE2E2]"
-          : isInProgress
-            ? "bg-[#EFF6FF]"
-            : "bg-[#F9A825]/10";
-
-    const statusText = isApproved
-      ? "text-[#1E7F4C]"
-      : isSubmitted
-        ? "text-[#1D4ED8]"
-        : isAttention
-          ? "text-[#B91C1C]"
-          : isInProgress
-            ? "text-[#1D4ED8]"
-            : "text-[#D97706]";
-
-    return {
-      id: item.id || item.assetId,
-      name: docName,
-      size: item.size || item.fileSize || "",
-      status: statusLabel,
-      statusBg,
-      statusText,
-      issues: combinedIssues,
-      url: item.url || item.dataUrl,
-      dataUrl: item.dataUrl || item.url,
-      mimeType: item.mimeType,
-      assetId: item.assetId,
-      evidenceType: item.evidenceType || item.type || "",
-    };
-  });
-
-  // The CV is shown under "Candidate Profile", not in the evidences list.
-  const legacyCvEvidence = evidences.find(isCvEvidence) || null;
-  const cvEvidence: EvidenceRecord | null = apiApp?.cv?.assetId
-    ? {
-        id: apiApp.cv.assetId,
-        name: legacyCvEvidence?.name || "Candidate CV / Resume",
-        size: legacyCvEvidence?.size || "Uploaded document",
-        status: "Uploaded",
-        statusBg: "bg-[#1E7F4C]/10",
-        statusText: "text-[#1E7F4C]",
-        assetId: apiApp.cv.assetId,
-        url: apiApp.cv.url || legacyCvEvidence?.url,
-        dataUrl: apiApp.cv.url || legacyCvEvidence?.dataUrl,
-        evidenceType: "CV",
-      }
-    : legacyCvEvidence;
-  const otherEvidences = legacyCvEvidence
-    ? evidences.filter((e) => e !== legacyCvEvidence)
-    : evidences;
-
-  const handleUploadSubmit = async (
-    items: Array<{ file: File; docName: string }>,
-    evidenceType: string,
-  ) => {
-    if (!items.length || !applicationId) {
-      toast({
-        type: "error",
-        title: "Upload Failed",
-        description: "Please choose at least one valid file to upload.",
-      });
-      return;
-    }
-
-    try {
-      setIsUploading(true);
-
-      for (const item of items) {
-        const finalDocName =
-          item.docName.trim() || item.file.name.replace(/\.[^/.]+$/, "");
-        const isCvUpload =
-          uploadInitialDocName.trim().toUpperCase() === "CV" ||
-          isCvEvidence({ name: finalDocName, evidenceType });
-
-        const asset = await uploadFileMutation.mutateAsync({
-          file: item.file,
-          purpose: "evidence",
-        });
-        const assetId = asset?.assetId || (asset as any)?.id;
-        if (!assetId)
-          throw new Error("The file upload did not return an asset id.");
-
-        if (isCvUpload) {
-          await uploadApplicationCvMutation.mutateAsync(assetId);
-        } else {
-          await createGeneralEvidenceMutation.mutateAsync({
-            documentName: finalDocName,
-            evidenceType,
-            assetId,
-          });
-        }
-      }
-
-      const count = items.length;
-      toast({
-        type: "success",
-        title: "Evidence Uploaded",
-        description:
-          count === 1
-            ? `"${items[0].docName.trim() || items[0].file.name.replace(/\.[^/.]+$/, "")}" has been successfully added to your Evidence Vault.`
-            : `${count} evidence documents have been successfully added to your Evidence Vault.`,
-      });
-
-      setIsUploadModalOpen(false);
-    } catch (err: any) {
-      toast({
-        type: "error",
-        title: "Upload Failed",
-        description:
-          err?.message || "Could not upload your evidence. Please try again.",
-      });
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  const handleConfirmDelete = async () => {
-    if (itemToDelete && applicationId) {
-      try {
-        await deleteGeneralEvidenceMutation.mutateAsync(itemToDelete.id);
-        setIsDeleteModalOpen(false);
-        setItemToDelete(null);
-      } catch (err: any) {
-        toast({
-          type: "error",
-          title: "Delete Failed",
-          description: err?.message || "Could not delete this evidence. Please try again.",
-        });
-      }
-    }
-  };
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
@@ -329,9 +96,7 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
         breadcrumbs={[
           {
             label: "My Applications",
-            href: pathname?.startsWith("/applications")
-              ? "/dashboard/applications"
-              : "/dashboard/applications",
+            href: "/dashboard/applications",
           },
           {
             label: application.title,
@@ -347,56 +112,30 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
       <div className="max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1 flex flex-col gap-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           <div className="lg:col-span-8 xl:col-span-9 flex flex-col gap-6">
-            <PortfolioVault
-              viewer="candidate"
+            <CandidateEvidenceVaultSection
               applicationId={application.id}
               application={apiApp}
-              cvEvidence={cvEvidence}
-              onPreview={(item) => setPreviewItem(item)}
-              onViewApplicationForm={
-                application.id
-                  ? () => router.push(`/dashboard/applications/${application.id}/application-form`)
-                  : undefined
-              }
-              onUploadCv={() => {
-                setUploadInitialDocName("CV");
-                setIsUploadModalOpen(true);
-              }}
-              selfAssessmentCard={
-                <CandidateSelfAssessmentCard
-                  applicationId={application.id}
-                  isCompleted={isSelfAssessmentCompleted}
-                />
-              }
-              thirdPartyReportCard={
-                <CandidateThirdPartyReportCard applicationId={application.id} />
-              }
-              evidenceList={
-                <EvidenceSection
-                  evidences={otherEvidences}
-                  onPreview={(item) => setPreviewItem(item)}
-                  onDelete={(item) => {
-                    setItemToDelete(item);
-                    setIsDeleteModalOpen(true);
-                  }}
-                  onOpenUploadModal={() => {
-                    setUploadInitialDocName("");
-                    setIsUploadModalOpen(true);
-                  }}
-                />
-              }
+              isApplicationLoading={isApplicationLoading}
+              accordion
+              defaultOpenSection={4}
             />
           </div>
 
           <div className="lg:col-span-4 xl:col-span-3 flex flex-col gap-6">
-            <CalendarWidget panelInterviewDate={interviewSchedule?.scheduledAt || undefined} />
+            <CalendarWidget
+              panelInterviewDate={interviewSchedule?.scheduledAt || undefined}
+            />
             <UpcomingCard
               interview={
                 interviewSchedule?.scheduledAt
                   ? {
                       title: "Panel Interview",
-                      date: new Date(interviewSchedule.scheduledAt).toLocaleDateString("en-GB"),
-                      time: new Date(interviewSchedule.scheduledAt).toLocaleTimeString("en-US", {
+                      date: new Date(
+                        interviewSchedule.scheduledAt,
+                      ).toLocaleDateString("en-GB"),
+                      time: new Date(
+                        interviewSchedule.scheduledAt,
+                      ).toLocaleTimeString("en-US", {
                         hour: "numeric",
                         minute: "2-digit",
                         hour12: true,
@@ -418,30 +157,6 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
           </div>
         </div>
       </div>
-
-      <UploadEvidenceModal
-        isOpen={isUploadModalOpen}
-        onClose={() => {
-          setIsUploadModalOpen(false);
-          setUploadInitialDocName("");
-        }}
-        onUploadSubmit={handleUploadSubmit}
-        isUploading={isUploading}
-        tradeId={resolvedTradeId}
-        initialDocName={uploadInitialDocName}
-      />
-
-      <DeleteEvidenceModal
-        isOpen={isDeleteModalOpen}
-        onClose={() => setIsDeleteModalOpen(false)}
-        onConfirmDelete={handleConfirmDelete}
-      />
-
-      <PreviewEvidenceModal
-        item={previewItem}
-        applicationId={applicationId}
-        onClose={() => setPreviewItem(null)}
-      />
 
       <StatusModal
         isOpen={isCallRequestModalOpen}
