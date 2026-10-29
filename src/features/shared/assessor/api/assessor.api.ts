@@ -271,8 +271,19 @@ export async function getAssessorProfileSignatureApi(): Promise<AssessorProfileS
 export async function putAssessorProfileSignatureApi(payload: {
   assetId: string;
 }): Promise<void> {
-  await capFetch<void>("/assessor/profile/signature", {
-    method: "PUT",
-    data: payload,
-  });
+  try {
+    await capFetch<void>("/assessor/profile/signature", {
+      method: "PUT",
+      data: payload,
+    });
+  } catch (err: any) {
+    if (err?.status === 405 || err?.statusCode === 405) {
+      await capFetch<void>("/assessor/profile/signature", {
+        method: "PATCH",
+        data: payload,
+      });
+    } else {
+      throw err;
+    }
+  }
 }

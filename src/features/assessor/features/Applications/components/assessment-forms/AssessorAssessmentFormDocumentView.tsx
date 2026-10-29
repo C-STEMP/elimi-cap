@@ -1,20 +1,37 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import Image from "next/image";
 import { FiArrowLeft, FiCheckCircle, FiClock, FiFileText, FiEdit3 } from "react-icons/fi";
 import { ASSETS_URL } from "@/src/assets";
 import { FormHeaderActions } from "../form/FormHeaderActions";
 import { CandidateInterviewFormModal } from "@/src/features/candidate/features/Application/components/CandidateInterviewFormModal";
+import { useAssessorSignature } from "./useAssessorSignature";
+import { AssessorSignatureModal } from "./AssessorSignatureModal";
+import { useResolveAssets } from "@/src/features/shared/storage/hooks";
 import type {
   ApplicationAssessmentMapping,
+  AssessmentMappingUnit,
+  AssessmentMappingLearningObjective,
+  AssessmentMappingPerformanceCriterion,
+  AssessmentMappingEvidenceItem,
   InterviewForm,
 } from "@/src/features/shared/applications/api/types";
 import {
   useGetApplicationAssessmentMapping,
   useUpdateInterviewForm,
   useGetInterviewPanel,
+  useGetApplicationById,
 } from "@/src/features/shared/applications/hooks";
+import {
+  useGetTradeDetail,
+  useGetUnitsByTrade,
+} from "@/src/features/shared/reference/hooks";
+import {
+  resolveAppliedTradeLevel,
+  getRplScopedUnits,
+} from "@/src/features/shared/applications/utils/rplTradeLevel";
+import type { Unit } from "@/src/features/shared/reference/api";
 import { useToast } from "@/src/components/ui/toast";
 import { useAppSelector } from "@/src/store/hooks";
 
@@ -92,6 +109,112 @@ const FORM_BACKEND_MAP: Record<
   assessment_grid: "assessment_grid",
 };
 
+function transformScopedUnitToMappingUnit(su: Unit): AssessmentMappingUnit {
+  const struct = su.structure as Record<string, any> | undefined;
+  const rawLos = Array.isArray(struct?.learningObjectives)
+    ? struct.learningObjectives
+    : Array.isArray(struct?.learningOutcomes)
+      ? struct.learningOutcomes
+      : Array.isArray(struct?.elements)
+        ? struct.elements
+        : Array.isArray(struct)
+          ? struct
+          : [];
+
+  const learningObjectives = rawLos.map((lo: any, loIdx: number) => {
+    const rawPcs = Array.isArray(lo?.performanceCriteria)
+      ? lo.performanceCriteria
+      : Array.isArray(lo?.criteria)
+        ? lo.criteria
+        : Array.isArray(lo?.performance_criteria)
+          ? lo.performance_criteria
+          : [];
+
+    const performanceCriteria = rawPcs.map((pc: any, pcIdx: number) => {
+      const code =
+        typeof pc === "object" && pc?.code ? pc.code : `${loIdx + 1}.${pcIdx + 1}`;
+      const text =
+        typeof pc === "string" ? pc : pc?.text || pc?.title || pc?.description || "";
+      const evidenceTypes =
+        Array.isArray(pc?.evidenceTypes) && pc.evidenceTypes.length > 0
+          ? pc.evidenceTypes
+          : Array.isArray(su.assessmentMethods) && su.assessmentMethods.length > 0
+            ? su.assessmentMethods
+            : ["DO", "QA", "WT"];
+
+      return {
+        code,
+        text,
+        evidenceTypes,
+      };
+    });
+
+    return {
+      code: lo?.code || `LO ${loIdx + 1}`,
+      text: lo?.text || lo?.title || "Core Learning Objective",
+      title: lo?.title || lo?.text || "Core Learning Objective",
+      performanceCriteria:
+        performanceCriteria.length > 0
+          ? performanceCriteria
+          : [
+              {
+                code: `${loIdx + 1}.1`,
+                text:
+                  typeof lo === "string"
+                    ? lo
+                    : lo?.text ||
+                      lo?.title ||
+                      "Demonstrate competency criteria to standard",
+                evidenceTypes: su.assessmentMethods || ["DO", "WT"],
+              },
+            ],
+    };
+  });
+
+  const finalLos =
+    learningObjectives.length > 0
+      ? learningObjectives
+      : [
+          {
+            code: "1.0",
+            text: su.purpose || `Demonstrate core occupational skills for ${su.title}`,
+            title:
+              su.purpose || `Demonstrate core occupational skills for ${su.title}`,
+            performanceCriteria: [
+              {
+                code: "1.1",
+                text: `Prepare workspace, tools, and equipment safely in accordance with ${su.referenceNumber || su.title} standard`,
+                evidenceTypes: su.assessmentMethods || ["DO", "WT"],
+              },
+              {
+                code: "1.2",
+                text: `Execute standard operational procedures and techniques required for ${su.title}`,
+                evidenceTypes: su.assessmentMethods || ["DO", "PS"],
+              },
+              {
+                code: "1.3",
+                text: `Perform quality control inspection, testing, and rectify technical errors to standard`,
+                evidenceTypes: su.assessmentMethods || ["QA", "WT"],
+              },
+              {
+                code: "1.4",
+                text: `Complete operational handover, restore work area, and comply with safety regulations`,
+                evidenceTypes: su.assessmentMethods || ["DO", "QA"],
+              },
+            ],
+          },
+        ];
+
+  return {
+    id: su.id,
+    referenceNumber: su.referenceNumber,
+    title: su.title,
+    assessmentMethods: su.assessmentMethods || ["DO", "QA", "WT", "PS"],
+    learningObjectives: finalLos,
+    evidence: [],
+  };
+}
+
 export const AssessorAssessmentFormDocumentView: React.FC<
   AssessorAssessmentFormDocumentViewProps
 > = ({
@@ -124,7 +247,57 @@ export const AssessorAssessmentFormDocumentView: React.FC<
       enabled: isAssessmentMapping && Boolean(applicationId),
     });
 
-  const { data: interviewPanel } = useGetInterviewPanel(applicationId || "");
+  const { data: applicationData } = useGetApplicationById(
+    applicationId || "",
+  );
+  const resolvedTradeId =
+    applicationData?.tradeId || (applicationData?.trade as any)?.id || "";
+  const { data: tradeDetail } = useGetTradeDetail(resolvedTradeId);
+  const { levelNumber } = resolveAppliedTradeLevel(
+    applicationData,
+    tradeDetail,
+  );
+  const { data: rawTradeUnits = [] } = useGetUnitsByTrade(
+    resolvedTradeId,
+    levelNumber,
+  );
+  const scopedUnits = React.useMemo(
+    () =>
+      getRplScopedUnits({
+        tradeUnits: rawTradeUnits,
+        tradeDetail,
+        levelNumber,
+        preferredUnitIds: applicationData?.unitIds,
+      }),
+    [rawTradeUnits, tradeDetail, levelNumber, applicationData?.unitIds],
+  );
+
+  const resolvedMappingUnits = React.useMemo(() => {
+    const apiUnits = mappingData?.units || [];
+    if (apiUnits.length > 0) {
+      const apiUnitIds = new Set(apiUnits.map((u) => u.id));
+      const missingScoped = scopedUnits.filter((su) => !apiUnitIds.has(su.id));
+      if (missingScoped.length === 0) return apiUnits;
+      return [
+        ...apiUnits,
+        ...missingScoped.map((su) => transformScopedUnitToMappingUnit(su)),
+      ];
+    }
+    return scopedUnits.map((su) => transformScopedUnitToMappingUnit(su));
+  }, [mappingData?.units, scopedUnits]);
+
+  const isInterviewForm = formId === "interview_record" || formId === "records";
+  const effectiveIsInterviewStage = Boolean(
+    isInterviewStage && applicationData?.currentStageKey === "interview",
+  );
+  const shouldFetchInterviewPanel = Boolean(
+    applicationId &&
+      !isAssessmentMapping &&
+      (effectiveIsInterviewStage || isInterviewForm),
+  );
+  const { data: interviewPanel } = useGetInterviewPanel(applicationId || "", {
+    enabled: shouldFetchInterviewPanel,
+  });
   const updateFormMutation = useUpdateInterviewForm(applicationId || "");
   const [isSigningRole, setIsSigningRole] = useState<string | null>(null);
 
@@ -203,7 +376,62 @@ export const AssessorAssessmentFormDocumentView: React.FC<
         user?.role?.toLowerCase()?.includes("verifier")
   );
 
-  const handleSignAsRole = async (role: "lead" | "assessor") => {
+  const {
+    signatureUrl: profileSignatureUrl,
+    signatureAssetId: profileSignatureAssetId,
+    hasSignature: hasProfileSignature,
+  } = useAssessorSignature();
+
+  const [isAssessorSigModalOpen, setIsAssessorSigModalOpen] = useState(false);
+  const [pendingRoleToSign, setPendingRoleToSign] = useState<"lead" | "assessor" | null>(null);
+
+  const assetsToResolve = useMemo(() => {
+    const ids: string[] = [];
+    const assessorAssetId =
+      (formData as any)?.assessorSignatureAssetId ||
+      (formData as any)?.leadPanelistSignatureAssetId;
+    const candidateAssetId =
+      formRecord?.candidateSignatureAssetId ||
+      (formData as any)?.candidateSignatureAssetId;
+
+    if (
+      assessorAssetId &&
+      !(formData as any)?.assessorSignatureUrl &&
+      !(formData as any)?.leadPanelistSignatureUrl
+    ) {
+      ids.push(assessorAssetId);
+    }
+    if (candidateAssetId && !(formData as any)?.candidateSignatureUrl) {
+      ids.push(candidateAssetId);
+    }
+    return ids;
+  }, [formData, formRecord]);
+
+  const { data: resolvedSignatureAssets } = useResolveAssets(assetsToResolve);
+
+  const displayAssessorSigUrl =
+    (formData as any)?.assessorSignatureUrl ||
+    (formData as any)?.leadPanelistSignatureUrl ||
+    resolvedSignatureAssets?.find(
+      (a) =>
+        a.assetId === (formData as any)?.assessorSignatureAssetId ||
+        a.assetId === (formData as any)?.leadPanelistSignatureAssetId,
+    )?.url ||
+    (isAssessorSigned ? profileSignatureUrl : null);
+
+  const displayCandidateSigUrl =
+    (formData as any)?.candidateSignatureUrl ||
+    resolvedSignatureAssets?.find(
+      (a) =>
+        a.assetId === formRecord?.candidateSignatureAssetId ||
+        a.assetId === (formData as any)?.candidateSignatureAssetId,
+    )?.url ||
+    null;
+
+  const handleSignAsRole = async (
+    role: "lead" | "assessor",
+    sigOverride?: { assetId: string; url?: string },
+  ) => {
     if (!applicationId) {
       toast({ type: "error", title: "Missing Application", description: "Application ID is required to sign." });
       return;
@@ -226,6 +454,22 @@ export const AssessorAssessmentFormDocumentView: React.FC<
         leadPanelistSignedAt: now,
         assessorSigned: true,
         assessorSignedAt: now,
+        assessorSignatureAssetId:
+          sigOverride?.assetId ||
+          profileSignatureAssetId ||
+          (formData as any)?.assessorSignatureAssetId,
+        assessorSignatureUrl:
+          sigOverride?.url ||
+          profileSignatureUrl ||
+          (formData as any)?.assessorSignatureUrl,
+        leadPanelistSignatureAssetId:
+          sigOverride?.assetId ||
+          profileSignatureAssetId ||
+          (formData as any)?.leadPanelistSignatureAssetId,
+        leadPanelistSignatureUrl:
+          sigOverride?.url ||
+          profileSignatureUrl ||
+          (formData as any)?.leadPanelistSignatureUrl,
       };
 
       if (uName) {
@@ -278,6 +522,35 @@ export const AssessorAssessmentFormDocumentView: React.FC<
     } finally {
       setIsSigningRole(null);
     }
+  };
+
+  const handleSignClick = (role: "lead" | "assessor") => {
+    if (isCandidateSigned) {
+      toast({
+        type: "info",
+        title: "Form Completed",
+        description:
+          "This form has already been signed by the candidate and cannot be modified.",
+      });
+      return;
+    }
+    if (!hasProfileSignature && !displayAssessorSigUrl) {
+      setPendingRoleToSign(role);
+      setIsAssessorSigModalOpen(true);
+      return;
+    }
+    handleSignAsRole(role);
+  };
+
+  const handleAssessorSigModalSuccess = (sig: {
+    assetId: string;
+    url?: string;
+  }) => {
+    if (pendingRoleToSign) {
+      handleSignAsRole(pendingRoleToSign, sig);
+    }
+    setPendingRoleToSign(null);
+    setIsAssessorSigModalOpen(false);
   };
 
   const [isCandidateSignModalOpen, setIsCandidateSignModalOpen] = useState(false);
@@ -350,7 +623,7 @@ export const AssessorAssessmentFormDocumentView: React.FC<
       {/* Printable Document Container */}
       <div
         id="printable-assessment-form"
-        className="bg-white rounded-3xl p-6 sm:p-10 border border-gray-100 shadow-xs flex flex-col gap-8 w-full printable-container"
+        className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-10 border border-gray-100 shadow-xs flex flex-col gap-6 sm:gap-8 w-full printable-container"
       >
         {/* Document Header */}
         <div className="flex flex-col items-center text-center gap-2 border-b border-gray-100 pb-6">
@@ -476,7 +749,13 @@ export const AssessorAssessmentFormDocumentView: React.FC<
         </div>
 
         {/* Section 2: Form Content */}
-        {renderFormContent(formId, formData, mappingData, isLoadingMapping)}
+        {renderFormContent(
+          formId,
+          formData,
+          mappingData,
+          isLoadingMapping,
+          resolvedMappingUnits,
+        )}
 
         {/* Section 3: Signatures */}
         {!isAssessmentMapping && (
@@ -486,24 +765,35 @@ export const AssessorAssessmentFormDocumentView: React.FC<
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Lead Panelist / Assessor */}
-              <div className="bg-[#F8F9FA] rounded-2xl p-4 border border-gray-100 flex flex-col gap-2">
+              <div className="bg-[#F8F9FA] rounded-2xl p-4 border border-gray-100 flex flex-col gap-2.5">
                 <span className="text-[11px] font-semibold text-neutral-secondary">
                   {isInterviewRecord ? "Lead Panelist:" : "Assessor:"}
                 </span>
                 {isAssessorSigned ? (
-                  <div className="flex items-center gap-2 text-emerald-700 font-bold text-xs bg-emerald-50 border border-emerald-200 px-3 py-2 rounded-xl">
-                    <FiCheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>
-                      Signed
-                      {formData?.leadPanelistName ? ` by ${formData.leadPanelistName}` : formData?.assessorName ? ` by ${formData.assessorName}` : assessorName ? ` by ${assessorName}` : ""}
-                      {formData?.leadPanelistSignedAt || formData?.assessorSignedAt || formData?.submittedAt || formRecord?.candidateSignedAt ? ` · ${new Date(formData?.leadPanelistSignedAt || formData?.assessorSignedAt || formData?.submittedAt || formRecord?.candidateSignedAt || "").toLocaleDateString("en-GB")}` : ""}
-                    </span>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2 text-emerald-700 font-bold text-xs bg-emerald-50 border border-emerald-200 px-3 py-2 rounded-xl">
+                      <FiCheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span>
+                        Signed
+                        {formData?.leadPanelistName ? ` by ${formData.leadPanelistName}` : formData?.assessorName ? ` by ${formData.assessorName}` : assessorName ? ` by ${assessorName}` : ""}
+                        {formData?.leadPanelistSignedAt || formData?.assessorSignedAt || formData?.submittedAt || formRecord?.candidateSignedAt ? ` · ${new Date(formData?.leadPanelistSignedAt || formData?.assessorSignedAt || formData?.submittedAt || formRecord?.candidateSignedAt || "").toLocaleDateString("en-GB")}` : ""}
+                      </span>
+                    </div>
+                    {displayAssessorSigUrl && (
+                      <div className="bg-white rounded-xl p-2.5 flex items-center justify-center border border-dashed border-gray-200 h-20 max-h-22 overflow-hidden shadow-2xs">
+                        <img
+                          src={displayAssessorSigUrl}
+                          alt="Assessor Signature"
+                          className="max-h-full max-w-full object-contain"
+                        />
+                      </div>
+                    )}
                   </div>
                 ) : canSignLead ? (
                   <button
                     type="button"
                     disabled={Boolean(isSigningRole)}
-                    onClick={() => handleSignAsRole(isInterviewRecord ? "lead" : "assessor")}
+                    onClick={() => handleSignClick(isInterviewRecord ? "lead" : "assessor")}
                     className="h-9 bg-[#FFF8EB] border border-[#FBAB2A] hover:bg-[#FDEED5] text-[#FBAB2A] font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
                   >
                     <FiEdit3 className="w-3.5 h-3.5" />
@@ -518,12 +808,23 @@ export const AssessorAssessmentFormDocumentView: React.FC<
               </div>
 
               {/* Candidate */}
-              <div className="bg-[#F8F9FA] rounded-2xl p-4 border border-gray-100 flex flex-col gap-2">
+              <div className="bg-[#F8F9FA] rounded-2xl p-4 border border-gray-100 flex flex-col gap-2.5">
                 <span className="text-[11px] font-semibold text-neutral-secondary">Candidate:</span>
                 {isCandidateSigned ? (
-                  <div className="flex items-center gap-2 text-emerald-700 font-bold text-xs bg-emerald-50 border border-emerald-200 px-3 py-2 rounded-xl">
-                    <FiCheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>Signed · {new Date(formData?.candidateSignedAt || formRecord?.candidateSignedAt || Date.now()).toLocaleDateString("en-GB")}</span>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2 text-emerald-700 font-bold text-xs bg-emerald-50 border border-emerald-200 px-3 py-2 rounded-xl">
+                      <FiCheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span>Signed · {new Date(formData?.candidateSignedAt || formRecord?.candidateSignedAt || Date.now()).toLocaleDateString("en-GB")}</span>
+                    </div>
+                    {displayCandidateSigUrl && (
+                      <div className="bg-white rounded-xl p-2.5 flex items-center justify-center border border-dashed border-gray-200 h-20 max-h-22 overflow-hidden shadow-2xs">
+                        <img
+                          src={displayCandidateSigUrl}
+                          alt="Candidate Signature"
+                          className="max-h-full max-w-full object-contain"
+                        />
+                      </div>
+                    )}
                   </div>
                 ) : isCandidate && isInterviewStage ? (
                   <button
@@ -557,6 +858,17 @@ export const AssessorAssessmentFormDocumentView: React.FC<
           candidateName={candidateFullName}
         />
       )}
+
+      <AssessorSignatureModal
+        isOpen={isAssessorSigModalOpen}
+        onClose={() => setIsAssessorSigModalOpen(false)}
+        onSuccess={handleAssessorSigModalSuccess}
+        title={
+          pendingRoleToSign === "lead"
+            ? "Upload Lead Panelist Signature"
+            : "Upload Assessor Signature"
+        }
+      />
     </div>
   );
 };
@@ -566,6 +878,7 @@ function renderFormContent(
   formData?: Record<string, any>,
   mappingData?: ApplicationAssessmentMapping,
   isLoadingMapping?: boolean,
+  resolvedMappingUnits: AssessmentMappingUnit[] = [],
 ) {
   switch (formId) {
     case "skills_demo":
@@ -869,20 +1182,23 @@ function renderFormContent(
 
     case "assessment_mapping":
     case "assessment_grid": {
-      const apiUnits = mappingData?.units || [];
+      const unitsToRender =
+        resolvedMappingUnits.length > 0
+          ? resolvedMappingUnits
+          : mappingData?.units || [];
       return (
         <div className="flex flex-col gap-6">
           <div className="flex flex-col gap-3">
             <h4 className="text-xs font-bold text-neutral-primary uppercase tracking-wide">
               National Occupational Standards &amp; Performance Criteria Mapping
             </h4>
-            {isLoadingMapping ? (
+            {isLoadingMapping && unitsToRender.length === 0 ? (
               <p className="text-xs text-gray-400 italic bg-[#F8F9FA] p-4 rounded-xl">
                 Loading assessment mapping...
               </p>
-            ) : apiUnits.length > 0 ? (
+            ) : unitsToRender.length > 0 ? (
               <div className="flex flex-col gap-5">
-                {apiUnits.map((unit, idx) => (
+                {unitsToRender.map((unit: AssessmentMappingUnit, idx: number) => (
                   <div
                     key={unit.id || idx}
                     className="bg-[#F8F9FA] rounded-2xl p-4 sm:p-5 border border-gray-100 flex flex-col gap-4 text-xs"
@@ -899,7 +1215,7 @@ function renderFormContent(
                       {Array.isArray(unit.assessmentMethods) &&
                         unit.assessmentMethods.length > 0 && (
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            {unit.assessmentMethods.map((method, mIdx) => (
+                            {unit.assessmentMethods.map((method: string, mIdx: number) => (
                               <span
                                 key={mIdx}
                                 className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200 capitalize"
@@ -914,7 +1230,7 @@ function renderFormContent(
                     {Array.isArray(unit.learningObjectives) &&
                     unit.learningObjectives.length > 0 ? (
                       <div className="flex flex-col gap-4">
-                        {unit.learningObjectives.map((lo, loIdx) => (
+                        {unit.learningObjectives.map((lo: AssessmentMappingLearningObjective, loIdx: number) => (
                           <div
                             key={lo.code || loIdx}
                             className="bg-white rounded-xl p-3.5 sm:p-4 border border-gray-100 flex flex-col gap-2.5"
@@ -936,7 +1252,7 @@ function renderFormContent(
                                     </tr>
                                   </thead>
                                   <tbody className="divide-y divide-gray-100">
-                                    {lo.performanceCriteria.map((pc, pcIdx) => (
+                                    {lo.performanceCriteria.map((pc: AssessmentMappingPerformanceCriterion, pcIdx: number) => (
                                       <tr key={pc.code || pcIdx} className="hover:bg-gray-50/50">
                                         <td className="p-2.5 font-bold text-neutral-secondary whitespace-nowrap">
                                           {pc.code || `${loIdx + 1}.${pcIdx + 1}`}
@@ -948,7 +1264,7 @@ function renderFormContent(
                                           {Array.isArray(pc.evidenceTypes) &&
                                           pc.evidenceTypes.length > 0 ? (
                                             <div className="flex flex-wrap gap-1">
-                                              {pc.evidenceTypes.map((et, etIdx) => (
+                                              {pc.evidenceTypes.map((et: string, etIdx: number) => (
                                                 <span
                                                   key={etIdx}
                                                   className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 capitalize"
@@ -978,6 +1294,43 @@ function renderFormContent(
                       <p className="text-xs text-gray-400 italic">
                         No learning objectives listed for this unit.
                       </p>
+                    )}
+
+                    {/* Claimed General Evidence tagged to this unit */}
+                    {Array.isArray(unit.evidence) && unit.evidence.length > 0 && (
+                      <div className="flex flex-col gap-2 pt-2 border-t border-gray-100">
+                        <span className="text-[11px] font-bold text-neutral-secondary uppercase tracking-wider">
+                          Claimed Evidence ({unit.evidence.length})
+                        </span>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {unit.evidence.map((ev: AssessmentMappingEvidenceItem, evIdx: number) => (
+                            <div
+                              key={ev.id || evIdx}
+                              className="p-2.5 rounded-xl bg-white border border-gray-100 flex items-center justify-between gap-2"
+                            >
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className="text-xs font-bold text-neutral-primary truncate">
+                                  {ev.documentName}
+                                </span>
+                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200">
+                                  {ev.evidenceType}
+                                </span>
+                              </div>
+                              <span
+                                className={`text-[10px] font-bold px-2 py-0.5 rounded-full capitalize ${
+                                  ev.reviewStatus === "approved"
+                                    ? "bg-emerald-100 text-emerald-800"
+                                    : ev.reviewStatus === "rejected"
+                                      ? "bg-rose-100 text-rose-800"
+                                      : "bg-amber-100 text-amber-800"
+                                }`}
+                              >
+                                {ev.reviewStatus || "pending"}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     )}
                   </div>
                 ))}

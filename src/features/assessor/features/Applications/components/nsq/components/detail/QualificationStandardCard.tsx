@@ -16,10 +16,10 @@ export const QualificationStandardCard: React.FC<
   QualificationStandardCardProps
 > = ({
   tradeName,
-  qualificationCode = "CON/MS001/L1",
-  evidenceTypes = "DO/QA/WT/WP/ASS",
-  sector = "Construction",
-  level = "Level 3",
+  qualificationCode = "",
+  evidenceTypes = "",
+  sector = "",
+  level = "",
   mandatoryScore = 0,
   optionalScore = 0,
 }) => {

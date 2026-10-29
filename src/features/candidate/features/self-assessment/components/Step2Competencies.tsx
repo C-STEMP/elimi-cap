@@ -1,16 +1,16 @@
 "use client";
 
-import React, { useState } from "react";
-import { FiArrowLeft, FiArrowRight } from "react-icons/fi";
+import { ASSETS_URL } from "@/assets";
+import { StatusModal } from "@/components/status-modal";
+import { Button } from "@/src/components/ui/button";
+import { InfoIcon } from "@/src/components/ui/info-icon";
+import { Select } from "@/src/components/ui/select";
+import { useToast } from "@/src/components/ui/toast";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Button } from "@/src/components/ui/button";
-import { Select } from "@/src/components/ui/select";
-import { InfoIcon } from "@/src/components/ui/info-icon";
-import { StatusModal } from "@/components/status-modal";
-import { useToast } from "@/src/components/ui/toast";
-import { ASSETS_URL } from "@/assets";
+import React, { useState } from "react";
+import { FiArrowLeft, FiArrowRight } from "react-icons/fi";
 
 interface Step2Props {
   competencies: string[];
@@ -32,6 +32,30 @@ const EVIDENCE_OPTIONS = [
   { label: "Yes", value: "yes" },
   { label: "No", value: "no" },
 ];
+
+export function getCleanCompetencyTitle(title: string): string {
+  if (!title) return "";
+
+  const colonIndex = title.indexOf(":");
+  if (colonIndex !== -1) {
+    const afterColon = title.slice(colonIndex + 1).trim();
+    if (afterColon) return afterColon;
+  }
+
+  const dashIndex = title.indexOf(" - ");
+  if (dashIndex !== -1) {
+    const afterDash = title.slice(dashIndex + 3).trim();
+    if (afterDash) return afterDash;
+  }
+
+  const codeRegex = /^[A-Z0-9_\-\/]{3,}\s+(.+)$/i;
+  const match = title.match(codeRegex);
+  if (match && match[1]) {
+    return match[1].trim();
+  }
+
+  return title;
+}
 
 export const Step2Competencies: React.FC<Step2Props> = ({
   competencies,
@@ -158,7 +182,8 @@ export const Step2Competencies: React.FC<Step2Props> = ({
 
         <div className="flex items-center gap-2.5 mt-4 flex-wrap">
           <h2 className="text-xl xl:text-2xl font-bold tracking-tight text-neutral-primary flex items-center gap-1.5">
-            Competency Assessment <InfoIcon sectionName="Competency Assessment" />
+            Competency Assessment{" "}
+            <InfoIcon sectionName="Competency Assessment" />
           </h2>
           {levelLabel && (
             <span className="px-2.5 py-0.5 rounded-md bg-[#EDE9FE] text-[#6D28D9] font-bold text-xs tracking-wide">
@@ -170,7 +195,9 @@ export const Step2Competencies: React.FC<Step2Props> = ({
 
       <form onSubmit={handleContinue} className="flex flex-col gap-6">
         {isLoading && (
-          <p className="text-sm text-neutral-secondary">Loading competencies…</p>
+          <p className="text-sm text-neutral-secondary">
+            Loading competencies…
+          </p>
         )}
         {!isLoading && competencies.length === 0 && (
           <p className="text-sm text-neutral-secondary">
@@ -220,7 +247,8 @@ export const Step2Competencies: React.FC<Step2Props> = ({
 
             <div className="flex flex-col gap-1.5">
               <label className="text-text-dark font-medium text-xs xl:text-sm leading-[1.4] select-none">
-                Tell us about your experience with {title}{" "}
+                Tell us about your experience with{" "}
+                {getCleanCompetencyTitle(title)}{" "}
                 <span className="text-primary-solid ml-0.5">*</span>
               </label>
               <textarea

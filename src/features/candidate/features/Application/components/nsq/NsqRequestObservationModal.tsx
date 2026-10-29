@@ -35,7 +35,7 @@ interface NsqRequestObservationModalProps {
 export const NsqRequestObservationModal: React.FC<NsqRequestObservationModalProps> = ({
   isOpen,
   onClose,
-  tradeName = "Masonry",
+  tradeName = "",
   availableUnits,
   onRequestSubmitted,
 }) => {

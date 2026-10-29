@@ -28,10 +28,16 @@ export const AssessorUpcomingEventsWidget: React.FC<
   AssessorUpcomingEventsWidgetProps
 > = ({ event: propEvent, applicationId }) => {
   const { data: eventsData } = useGetAssessorEvents();
+  // Only query application schedule if explicitly provided with an interview
+  const shouldFetchSchedule = Boolean(
+    applicationId &&
+      (propEvent?.title?.toLowerCase()?.includes("interview") ||
+        (propEvent as any)?.type?.toLowerCase()?.includes("interview")),
+  );
   const { data: interviewSchedule } = useGetInterviewSchedule(
     applicationId || "",
     {
-      enabled: Boolean(applicationId),
+      enabled: shouldFetchSchedule,
     },
   );
 

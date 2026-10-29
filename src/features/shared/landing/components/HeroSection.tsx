@@ -3,8 +3,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import CountUp from "react-countup";
 import { heroImg1, heroImg2, heroImg3, heroImg4 } from "@/assets";
 import { clearTokens } from "@/src/lib/auth-storage";
+import {
+  useCapPublicStats,
+  useLmsPublicStats,
+} from "@/src/features/shared/public-stats";
 import { useAppDispatch } from "@/store/hooks";
 import { logout } from "@/store/slices/authSlice";
 import { resetOnboarding } from "@/store/slices/onboardingSlice";
@@ -12,6 +17,56 @@ import { resetOnboarding } from "@/store/slices/onboardingSlice";
 export function HeroSection() {
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const { data: capStats } = useCapPublicStats();
+  const { data: lmsStats } = useLmsPublicStats();
+
+  const certificationMetric = (() => {
+    if (!capStats) {
+      return {
+        end: null as number | null,
+        suffix: "",
+        label: "Certified Candidates",
+      };
+    }
+    const certified = capStats.applications.byStatus.certified;
+    const rejected = capStats.applications.byStatus.rejected;
+    const decided = certified + rejected;
+    if (decided > 0) {
+      return {
+        end: Math.round((certified / decided) * 100),
+        suffix: "%",
+        label: "Certification Rate",
+      };
+    }
+    return {
+      end: capStats.candidates.certified,
+      suffix: "",
+      label: "Certified Candidates",
+    };
+  })();
+
+  const completionMetric = (() => {
+    if (!lmsStats) {
+      return {
+        end: null as number | null,
+        suffix: "",
+        label: "Active Enrollments",
+      };
+    }
+    const rate = lmsStats.enrollments.completionRate;
+    if (typeof rate === "number" && rate > 0) {
+      return {
+        end: Math.round(rate * 100),
+        suffix: "%",
+        label: "Course Completion Rate",
+      };
+    }
+    return {
+      end: lmsStats.enrollments.total,
+      suffix: "",
+      label: "Course Enrollments",
+    };
+  })();
 
   const handleGetStarted = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -94,10 +149,22 @@ export function HeroSection() {
             </div>
             <div className="flex flex-1 flex-col items-center justify-center rounded-xl lg:rounded-2xl bg-[#FBB040] px-2 py-1.5 md:px-3 md:py-2 text-center text-black shadow-lg select-none">
               <span className="text-xl sm:text-2xl md:text-2xl lg:text-4xl font-extrabold leading-none tracking-tight">
-                99%
+                {certificationMetric.end !== null ? (
+                  <CountUp
+                    end={certificationMetric.end}
+                    duration={2}
+                    separator=","
+                    suffix={certificationMetric.suffix}
+                  />
+                ) : (
+                  <span
+                    className="inline-block h-6 sm:h-7 lg:h-9 w-14 sm:w-20 rounded-md bg-black/15 animate-pulse align-middle"
+                    aria-hidden="true"
+                  />
+                )}
               </span>
               <span className="mt-1 text-[10px] sm:text-xs md:text-xs lg:text-sm font-bold leading-tight">
-                Certification Rate
+                {certificationMetric.label}
               </span>
             </div>
           </div>
@@ -127,10 +194,22 @@ export function HeroSection() {
           >
             <div className="flex flex-1 flex-col items-center justify-center rounded-xl lg:rounded-2xl bg-[#FDF0D5] px-2 py-1.5 md:px-3 md:py-2 text-center text-black shadow-lg select-none">
               <span className="text-xl sm:text-2xl md:text-2xl lg:text-4xl font-extrabold leading-none tracking-tight">
-                80%
+                {completionMetric.end !== null ? (
+                  <CountUp
+                    end={completionMetric.end}
+                    duration={2}
+                    separator=","
+                    suffix={completionMetric.suffix}
+                  />
+                ) : (
+                  <span
+                    className="inline-block h-6 sm:h-7 lg:h-9 w-14 sm:w-20 rounded-md bg-black/15 animate-pulse align-middle"
+                    aria-hidden="true"
+                  />
+                )}
               </span>
               <span className="mt-1 text-[10px] sm:text-xs md:text-xs lg:text-sm font-bold leading-tight">
-                Course Completion Rate
+                {completionMetric.label}
               </span>
             </div>
             <div className="relative flex-2 overflow-hidden rounded-xl lg:rounded-2xl group">

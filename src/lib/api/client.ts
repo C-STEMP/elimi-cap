@@ -200,7 +200,18 @@ export function createApiInstance(
 
         if (!persona && typeof window !== "undefined") {
           const path = window.location.pathname;
-          if (path.startsWith("/assessment-centre")) {
+          const search = window.location.search;
+          const isAssessmentForm = path.includes("/assessment-forms");
+
+          if (isAssessmentForm) {
+            if (search.includes("from=centre")) {
+              persona = "centre";
+            } else if (search.includes("from=candidate")) {
+              persona = "candidate";
+            } else {
+              persona = "assessor";
+            }
+          } else if (path.startsWith("/assessment-centre")) {
             persona = "centre";
           } else if (
             path.startsWith("/assessor") ||

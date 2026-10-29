@@ -1,7 +1,6 @@
-import { capFetch } from "@/src/lib/api/cap";
 import type {
-  PersonalDetails,
   ContactInformation,
+  PersonalDetails,
   ResidentialAddress,
 } from "@/src/features/shared/account/api";
 
@@ -280,13 +279,35 @@ export interface ApplicationProgress {
   reviewAndSubmit: number;
 }
 
+export type EvidenceType =
+  | "DO"
+  | "QA"
+  | "WT"
+  | "PS"
+  | "ASS"
+  | "RPL"
+  | "WP"
+  | "PD";
+
+export type RplDocumentKind =
+  | "workSamples"
+  | "employmentLetter"
+  | "certificates"
+  | "statementsOfAttainment"
+  | "jobDescriptions"
+  | "photosOrVideosOfWork"
+  | "other";
+
+export type VaultEvidenceType = EvidenceType | RplDocumentKind;
+
 export interface EvidenceVaultItem {
   id: string;
   kind: "self_assessment" | "third_party_report" | "general";
   documentName?: string;
-  evidenceType?: string;
+  evidenceType?: VaultEvidenceType | string;
   status?: string;
   reviewStatus?: "pending" | "approved" | "rejected" | string;
+  unitIds?: string[];
   name?: string;
   title?: string;
   category?: string;
@@ -303,16 +324,27 @@ export interface GeneralEvidence {
   id: string;
   applicationId: string;
   documentName: string;
-  evidenceType: string;
+  evidenceType: VaultEvidenceType | string;
   assetId?: string | null;
   formData?: Record<string, unknown> | null;
   textValue?: string | null;
-  reviewStatus?: "pending" | "approved" | "rejected";
+  unitIds?: string[];
+  reviewStatus: "pending" | "approved" | "rejected";
   reviewComment?: string | null;
   reviewedBy?: string | null;
   reviewedAt?: string | null;
   createdAt: string;
   updatedAt?: string;
+}
+
+export interface ApplicationEvidenceTypes {
+  nos: EvidenceType[];
+  documentKinds: RplDocumentKind[];
+  specialised: {
+    resume: boolean;
+    thirdPartyReport: boolean;
+  };
+  allowed: VaultEvidenceType[];
 }
 
 export interface ThirdPartyReportEvidence {
@@ -440,7 +472,6 @@ export interface RecommendationsResponse {
   }>;
 }
 
-
 export interface SelfAssessment {
   applicationId: string;
   personalInformation?: Record<string, unknown>;
@@ -535,7 +566,6 @@ export interface NsqEvidenceThreadItem {
   performanceCriteriaCode: string;
   evidenceType: string;
   evidenceAssetId: string;
-  /** Resolved file; url is null if the asset is missing or failed to resolve. */
   evidence?: { assetId: string; url?: string | null } | null;
   evidenceRefPage?: string | null;
   reviewStatus: "pending" | "approved" | "rejected";
@@ -736,7 +766,13 @@ export interface CentreIqamIvReportData {
   con04b?: {
     methodsSampled?: string[];
     ivSummary?: string | null;
-    actions?: Array<{ id: string; actionRequired: string; byWho: string; timeline?: string | null; achieved?: boolean | null }>;
+    actions?: Array<{
+      id: string;
+      actionRequired: string;
+      byWho: string;
+      timeline?: string | null;
+      achieved?: boolean | null;
+    }>;
     actionConfirmation?: string | null;
   };
   con04c?: {
@@ -772,7 +808,12 @@ export interface CentreIqamAssessorOutcomes {
   internalVerifier: { assessorId: string; name: string };
   centre: { id: string; name: string };
   data: {
-    questions?: Array<{ id: string; question: string; answer?: "yes" | "no" | null; comments?: string }>;
+    questions?: Array<{
+      id: string;
+      question: string;
+      answer?: "yes" | "no" | null;
+      comments?: string;
+    }>;
     [key: string]: unknown;
   };
   status: string;
@@ -790,7 +831,12 @@ export interface CentreIqamFinalPortfolio {
   qualificationLevel: { id: string; level: number };
   data: {
     fullAwardVerified?: boolean | null;
-    checkpoints?: Array<{ id: string; question: string; answer?: "yes" | "no" | null; comments?: string }>;
+    checkpoints?: Array<{
+      id: string;
+      question: string;
+      answer?: "yes" | "no" | null;
+      comments?: string;
+    }>;
     actionForAssessor?: string | null;
     planAchieved?: string | null;
     [key: string]: unknown;
@@ -813,12 +859,20 @@ export interface AssessmentMappingLearningObjective {
   performanceCriteria: AssessmentMappingPerformanceCriterion[];
 }
 
+export interface AssessmentMappingEvidenceItem {
+  id: string;
+  documentName: string;
+  evidenceType: string;
+  reviewStatus?: "pending" | "approved" | "rejected" | string;
+}
+
 export interface AssessmentMappingUnit {
   id: string;
   referenceNumber: string;
   title: string;
   assessmentMethods: string[];
   learningObjectives: AssessmentMappingLearningObjective[];
+  evidence?: AssessmentMappingEvidenceItem[];
 }
 
 export interface ApplicationAssessmentMapping {
@@ -846,7 +900,13 @@ export interface ApplicationPortfolio {
   inductionDocuments: {
     applicationForm: {
       submittedAt: string | null;
-      status: "pending" | "submitted" | "draft" | "approved" | "rejected" | string;
+      status:
+        | "pending"
+        | "submitted"
+        | "draft"
+        | "approved"
+        | "rejected"
+        | string;
     };
     paymentReceipt: {
       assetId: string | null;

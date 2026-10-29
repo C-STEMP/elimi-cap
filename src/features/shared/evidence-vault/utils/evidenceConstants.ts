@@ -12,6 +12,7 @@ export interface EvidenceRecord {
   mimeType?: string;
   dataUrl?: string;
   unitId?: string;
+  unitIds?: string[];
 }
 
 export interface ResourceRecord {
@@ -31,13 +32,68 @@ export const EVIDENCE_TYPE_LABELS: Record<string, string> = {
   PE: "Portfolio Evidence (PE)",
   TPR: "Third Party Report (TPR)",
   SIM: "Simulation (SIM)",
+  RPL: "Recognition of Prior Learning (RPL)",
 };
+
+/**
+ * Display labels for RPL wizard document kinds (`RplDocumentKind`) that
+ * GET /applications/{id}/evidence-types can return in `allowed`. Labels only —
+ * the accepted values always come from the API.
+ */
+export const RPL_DOCUMENT_KIND_LABELS: Record<string, string> = {
+  workSamples: "Work Samples",
+  employmentLetter: "Employment Letter",
+  certificates: "Certificates",
+  statementsOfAttainment: "Statements of Attainment",
+  jobDescriptions: "Job Descriptions",
+  photosOrVideosOfWork: "Photos / Videos of Work",
+  other: "Other",
+};
+
+const normalizeEvidenceKey = (value: string) =>
+  value.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+
+const NORMALIZED_DOCUMENT_KIND_LABELS: Record<string, string> = Object.fromEntries(
+  Object.entries(RPL_DOCUMENT_KIND_LABELS).map(([key, label]) => [
+    normalizeEvidenceKey(key),
+    label,
+  ]),
+);
+
+/** Turns an unknown camelCase / snake_case value into readable words. */
+function humanizeEvidenceType(value: string): string {
+  const spaced = value
+    .trim()
+    .replace(/[_-]+/g, " ")
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2");
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}
+
+/**
+ * Dropdown label for an evidence type value — NOS codes keep their short
+ * code suffix (e.g. "Witness Testimony (WT)"), document kinds use the wizard
+ * wording. Unknown values are humanized rather than hidden.
+ */
+export function getEvidenceTypeOptionLabel(evidenceType?: string): string {
+  if (!evidenceType) return "";
+  const nosLabel = EVIDENCE_TYPE_LABELS[evidenceType.trim().toUpperCase()];
+  if (nosLabel) return nosLabel;
+  const kindLabel = NORMALIZED_DOCUMENT_KIND_LABELS[normalizeEvidenceKey(evidenceType)];
+  if (kindLabel) return kindLabel;
+  return /^[A-Z0-9]+$/.test(evidenceType.trim())
+    ? evidenceType.trim()
+    : humanizeEvidenceType(evidenceType);
+}
 
 /** Full evidence type name without the short code, e.g. "ASS" -> "Assignment". */
 export function getEvidenceTypeName(evidenceType?: string): string {
   if (!evidenceType) return "";
   const label = EVIDENCE_TYPE_LABELS[evidenceType.trim().toUpperCase()];
-  return label ? label.replace(/\s*\([^)]*\)\s*$/, "") : evidenceType;
+  if (label) return label.replace(/\s*\([^)]*\)\s*$/, "");
+  // Document kinds (e.g. "workSamples") — also matches the upper-cased codes
+  // the type filter produces ("WORKSAMPLES").
+  const kindLabel = NORMALIZED_DOCUMENT_KIND_LABELS[normalizeEvidenceKey(evidenceType)];
+  return kindLabel || evidenceType;
 }
 
 export const RESOURCES_LIST: ResourceRecord[] = [

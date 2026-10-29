@@ -14,10 +14,19 @@ import {
   useGetInterviewPanel,
   useUpdateInterviewForm,
   useGetApplicationById,
+  useGetInterviewSchedule,
+  useGetApplicationAssessmentMapping,
 } from "@/src/features/shared/applications/hooks";
 import { usePanelMemberMatch } from "@/src/features/assessor/hooks";
 import { useToast } from "@/src/components/ui/toast";
-import { useGetUnitsByTrade } from "@/src/features/shared/reference/hooks";
+import {
+  useGetUnitsByTrade,
+  useGetTradeDetail,
+} from "@/src/features/shared/reference/hooks";
+import {
+  resolveAppliedTradeLevel,
+  getRplScopedUnits,
+} from "@/src/features/shared/applications/utils/rplTradeLevel";
 import { toUnitLabel } from "./utils";
 import { useAppSelector } from "@/src/store/hooks";
 
@@ -65,10 +74,29 @@ export const AssessorAssessmentFormView: React.FC<
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [pendingFormData, setPendingFormData] = useState<Record<string, any> | null>(null);
-  const [activeRecordTab, setActiveRecordTab] = useState<"own" | "canonical">("own");
 
   const { data: applicationData } = useGetApplicationById(applicationId);
-  const { data: interviewPanel } = useGetInterviewPanel(applicationId);
+
+  const isAssessmentMapping =
+    formId === "assessment_mapping" || formId === "assessment_grid";
+  const isInterviewForm =
+    formId === "interview_record" || formId === "records";
+  const isInterviewStage =
+    !viewOnly && applicationData?.currentStageKey === "interview";
+
+  const shouldFetchInterviewData = Boolean(
+    applicationId &&
+      applicationData &&
+      !isAssessmentMapping &&
+      (isInterviewStage || isInterviewForm),
+  );
+
+  const { data: interviewPanel } = useGetInterviewPanel(applicationId, {
+    enabled: shouldFetchInterviewData,
+  });
+  const { data: interviewSchedule } = useGetInterviewSchedule(applicationId, {
+    enabled: shouldFetchInterviewData,
+  });
   const isMemberMatch = usePanelMemberMatch();
   const user = useAppSelector((state) => state.auth.user);
 
@@ -103,24 +131,87 @@ export const AssessorAssessmentFormView: React.FC<
     (typeof (applicationData as any)?.trade === "string" ? (applicationData as any).trade : "") ||
     "";
 
+  const tradeId =
+    applicationData?.tradeId ||
+    (applicationData?.trade as any)?.id ||
+    "";
+  const { data: tradeDetail } = useGetTradeDetail(tradeId);
+
+  const { levelNumber, levelLabel } = resolveAppliedTradeLevel(
+    applicationData,
+    tradeDetail,
+  );
+
+  const { data: rawTradeUnits = [] } = useGetUnitsByTrade(
+    tradeId,
+    levelNumber,
+  );
+
+  const scopedUnits = React.useMemo(
+    () =>
+      getRplScopedUnits({
+        tradeUnits: rawTradeUnits,
+        tradeDetail,
+        levelNumber,
+        preferredUnitIds: applicationData?.unitIds,
+      }),
+    [rawTradeUnits, tradeDetail, levelNumber, applicationData?.unitIds],
+  );
+
+  const { data: assessmentMapping } =
+    useGetApplicationAssessmentMapping(applicationId);
+  const mappingUnits = assessmentMapping?.units ?? [];
+
   // Signing these forms is an "interview stage" action on the backend — once
   // the application has moved on (e.g. to external verification), signing
   // always fails, so the sign controls must not be offered any more.
-  const isInterviewStage = !viewOnly && applicationData?.currentStageKey === "interview";
-
   const formType = FORM_MAP[formId] || "records";
-  // Unit dropdowns list the trade's NOS units, candidate-preferred ones first.
-  const { data: tradeUnits = [] } = useGetUnitsByTrade(
-    applicationData?.tradeId || "",
-  );
+
   const unitLabels = React.useMemo(() => {
+    const unitsToUse = scopedUnits.length > 0 ? scopedUnits : rawTradeUnits;
     const preferred = new Set(applicationData?.unitIds ?? []);
-    return [...tradeUnits]
+    return [...unitsToUse]
       .sort((a, b) => Number(preferred.has(b.id)) - Number(preferred.has(a.id)))
       .map(toUnitLabel);
-  }, [tradeUnits, applicationData?.unitIds]);
+  }, [scopedUnits, rawTradeUnits, applicationData?.unitIds]);
 
-  const { data: formsBundle } = useGetInterviewFormsBundle(applicationId);
+  const defaultAssessorName = React.useMemo(() => {
+    const currentAssessorName = user?.fullName || (user as any)?.name || "";
+    if (effectiveIsLead && leadMember?.name) return leadMember.name;
+    if (matchedPanelMember?.name) return matchedPanelMember.name;
+    return currentAssessorName;
+  }, [user, effectiveIsLead, leadMember, matchedPanelMember]);
+
+  const defaultInterviewerNames = React.useMemo(() => {
+    const names =
+      interviewPanel?.members?.map((m: any) => m.name).filter(Boolean) ?? [];
+    if (names.length > 0) return names.join(", ");
+    return user?.fullName || (user as any)?.name || "";
+  }, [interviewPanel?.members, user]);
+
+  const defaultDate = React.useMemo(() => {
+    if (interviewSchedule?.scheduledAt) {
+      try {
+        return new Date(interviewSchedule.scheduledAt)
+          .toISOString()
+          .split("T")[0];
+      } catch {
+        // fallback
+      }
+    }
+    return new Date().toISOString().split("T")[0];
+  }, [interviewSchedule?.scheduledAt]);
+
+  const defaultSite = React.useMemo(() => {
+    if (interviewSchedule?.location) return interviewSchedule.location;
+    if (interviewSchedule?.mode === "online") return "Online Assessment";
+    if (applicationData?.centre?.name) return applicationData.centre.name;
+    return "Assessment Centre";
+  }, [interviewSchedule, applicationData?.centre?.name]);
+
+  const { data: formsBundle } = useGetInterviewFormsBundle(applicationId, {
+    enabled: shouldFetchInterviewData,
+  });
   const remoteForms = formsBundle?.forms;
   const panelistRecords = formsBundle?.panelistRecords;
   const updateFormMutation = useUpdateInterviewForm(applicationId);
@@ -145,14 +236,12 @@ export const AssessorAssessmentFormView: React.FC<
   ]);
 
   const isCandidateSigned = Boolean(matchedCanonicalForm?.candidateSignedAt);
-  const isAssessmentMapping = formType === "assessment_grid";
   const isNonLeadSeatedMember =
     !effectiveIsCandidate && !viewOnly && !isReadOnly && !effectiveIsLead;
 
   // Lead is blocked after candidate signoff; non-lead panelists & IV observer
   // upsert their own optional InterviewFormRecord (not candidate-signed).
   const effectiveReadOnly =
-    isAssessmentMapping ||
     viewOnly ||
     isReadOnly ||
     (effectiveIsLead && isCandidateSigned);
@@ -160,11 +249,6 @@ export const AssessorAssessmentFormView: React.FC<
   const activeFormData = isNonLeadSeatedMember
     ? myPanelistRecord?.data
     : matchedCanonicalForm?.data;
-
-  const hasCanonicalFormData = Boolean(
-    matchedCanonicalForm?.data &&
-      Object.keys(matchedCanonicalForm.data).length > 0,
-  );
 
   const handleRequestSubmit = (data: Record<string, any>) => {
     if (effectiveReadOnly) return;
@@ -181,6 +265,16 @@ export const AssessorAssessmentFormView: React.FC<
         ? matchedCanonicalForm?.data || {}
         : myPanelistRecord?.data || {};
 
+      const isAssessorSigned = Boolean(
+        pendingFormData?.assessorSigned ?? (baseData as any)?.assessorSigned
+      );
+      const isLeadSigned = Boolean(
+        pendingFormData?.leadPanelistSigned ??
+          pendingFormData?.assessorSigned ??
+          (baseData as any)?.leadPanelistSigned ??
+          (baseData as any)?.assessorSigned
+      );
+
       await updateFormMutation.mutateAsync({
         formType,
         data: {
@@ -188,21 +282,48 @@ export const AssessorAssessmentFormView: React.FC<
           ...(pendingFormData || {}),
           submittedAt: now,
           status: "submitted",
-          assessorSigned: true,
-          assessorSignedAt: pendingFormData?.assessorSignedAt || now,
+          assessorSigned: isAssessorSigned,
+          assessorSignedAt: isAssessorSigned
+            ? pendingFormData?.assessorSignedAt ||
+              (baseData as any)?.assessorSignedAt ||
+              now
+            : undefined,
           assessorName:
             pendingFormData?.assessorName ||
             uName ||
             (baseData as any)?.assessorName,
+          assessorSignatureAssetId: isAssessorSigned
+            ? pendingFormData?.assessorSignatureAssetId ||
+              (baseData as any)?.assessorSignatureAssetId
+            : undefined,
+          assessorSignatureUrl: isAssessorSigned
+            ? pendingFormData?.assessorSignatureUrl ||
+              (baseData as any)?.assessorSignatureUrl
+            : undefined,
           ...(effectiveIsLead
             ? {
-                leadPanelistSigned: true,
-                leadPanelistSignedAt:
-                  pendingFormData?.leadPanelistSignedAt || now,
+                leadPanelistSigned: isLeadSigned,
+                leadPanelistSignedAt: isLeadSigned
+                  ? pendingFormData?.leadPanelistSignedAt ||
+                    pendingFormData?.assessorSignedAt ||
+                    (baseData as any)?.leadPanelistSignedAt ||
+                    now
+                  : undefined,
                 leadPanelistName:
                   pendingFormData?.leadPanelistName ||
+                  pendingFormData?.assessorName ||
                   uName ||
                   (baseData as any)?.leadPanelistName,
+                leadPanelistSignatureAssetId: isLeadSigned
+                  ? pendingFormData?.leadPanelistSignatureAssetId ||
+                    pendingFormData?.assessorSignatureAssetId ||
+                    (baseData as any)?.leadPanelistSignatureAssetId
+                  : undefined,
+                leadPanelistSignatureUrl: isLeadSigned
+                  ? pendingFormData?.leadPanelistSignatureUrl ||
+                    pendingFormData?.assessorSignatureUrl ||
+                    (baseData as any)?.leadPanelistSignatureUrl
+                  : undefined,
               }
             : {}),
         },
@@ -251,6 +372,12 @@ export const AssessorAssessmentFormView: React.FC<
             isReadOnly={effectiveReadOnly}
             applicationTrade={resolvedTrade}
             unitLabels={unitLabels}
+            scopedUnits={scopedUnits}
+            mappingUnits={mappingUnits}
+            levelLabel={levelLabel}
+            defaultAssessorName={defaultAssessorName}
+            defaultDate={defaultDate}
+            defaultSite={defaultSite}
           />
         );
       case "assessment_mapping":
@@ -263,6 +390,12 @@ export const AssessorAssessmentFormView: React.FC<
             isReadOnly={effectiveReadOnly}
             applicationTrade={resolvedTrade}
             unitLabels={unitLabels}
+            scopedUnits={scopedUnits}
+            mappingUnits={mappingUnits}
+            levelLabel={levelLabel}
+            defaultAssessorName={defaultAssessorName}
+            defaultDate={defaultDate}
+            defaultSite={defaultSite}
           />
         );
       case "observation_checklist":
@@ -275,6 +408,12 @@ export const AssessorAssessmentFormView: React.FC<
             isReadOnly={effectiveReadOnly}
             applicationTrade={resolvedTrade}
             unitLabels={unitLabels}
+            scopedUnits={scopedUnits}
+            mappingUnits={mappingUnits}
+            levelLabel={levelLabel}
+            defaultAssessorName={defaultAssessorName}
+            defaultDate={defaultDate}
+            defaultSite={defaultSite}
           />
         );
       case "interview_record":
@@ -286,6 +425,13 @@ export const AssessorAssessmentFormView: React.FC<
             onSubmit={handleRequestSubmit}
             formData={activeFormData}
             isReadOnly={effectiveReadOnly}
+            applicationTrade={resolvedTrade}
+            unitLabels={unitLabels}
+            scopedUnits={scopedUnits}
+            mappingUnits={mappingUnits}
+            levelLabel={levelLabel}
+            defaultInterviewerNames={defaultInterviewerNames}
+            defaultDate={defaultDate}
           />
         );
     }
@@ -293,56 +439,7 @@ export const AssessorAssessmentFormView: React.FC<
 
   return (
     <div className="w-full flex flex-col">
-      {isNonLeadSeatedMember && hasCanonicalFormData && (
-        <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 pt-4">
-          <div className="bg-white border border-gray-200 rounded-2xl p-2 flex items-center justify-between gap-2 flex-wrap shadow-2xs">
-            <span className="text-xs font-semibold text-neutral-secondary px-2">
-              Viewing mode:
-            </span>
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => setActiveRecordTab("own")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
-                  activeRecordTab === "own"
-                    ? "bg-[#8A1538] text-white"
-                    : "bg-gray-100 text-neutral-primary hover:bg-gray-200"
-                }`}
-              >
-                My Panelist Record
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveRecordTab("canonical")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
-                  activeRecordTab === "canonical"
-                    ? "bg-[#8A1538] text-white"
-                    : "bg-gray-100 text-neutral-primary hover:bg-gray-200"
-                }`}
-              >
-                Lead Form (Canonical)
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {isNonLeadSeatedMember && activeRecordTab === "canonical" ? (
-        <AssessorAssessmentFormDocumentView
-          applicationId={applicationId}
-          formId={formId}
-          candidateName={candidateName}
-          formData={matchedCanonicalForm?.data}
-          onBack={onBack}
-          isCandidate={false}
-          formRecord={matchedCanonicalForm}
-          applicationTrade={resolvedTrade}
-          unitLabels={unitLabels}
-          isInterviewStage={false}
-        />
-      ) : (
-        renderForm()
-      )}
+      {renderForm()}
 
       <ConfirmSubmitFormModal
         isOpen={isConfirmModalOpen}

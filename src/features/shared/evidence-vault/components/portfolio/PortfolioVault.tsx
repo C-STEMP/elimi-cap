@@ -51,6 +51,13 @@ interface PortfolioVaultProps {
   extraReportCards?: React.ReactNode;
   /** Section 5 is rendered only when this is provided. */
   verificationReportCard?: React.ReactNode;
+  /**
+   * When true, each numbered section is rendered inside a white card with an
+   * accordion header where only one section can be open at a time.
+   */
+  accordion?: boolean;
+  /** Section number (1–5) open by default when `accordion` is enabled. */
+  defaultOpenSection?: number;
 }
 
 function formBadge(record?: { status?: string }): { label: string; tone: PortfolioBadgeTone } {
@@ -80,15 +87,32 @@ export const PortfolioVault: React.FC<PortfolioVaultProps> = ({
   evidenceList,
   extraReportCards,
   verificationReportCard,
+  accordion = false,
+  defaultOpenSection = 4,
 }) => {
   const router = useRouter();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [openSection, setOpenSection] = useState<number | null>(
+    defaultOpenSection,
+  );
+
+  const toggleSection = (sectionNumber: number) => {
+    setOpenSection((prev) => (prev === sectionNumber ? null : sectionNumber));
+  };
 
   // Assessors don't see the payment receipt.
   const showReceipt = viewer !== "assessor";
   const { data: portfolio } = useGetApplicationPortfolio(applicationId);
   const { data: receipt } = useGetApplicationReceipt(applicationId, { enabled: showReceipt });
-  const { data: interviewForms = [] } = useGetInterviewForms(applicationId);
+  const isInterviewStage = Boolean(
+    application?.currentStageKey === "interview" ||
+      (application as any)?.stages?.some(
+        (s: any) => s.key === "interview" && s.status !== "not_started",
+      ),
+  );
+  const { data: interviewForms = [] } = useGetInterviewForms(applicationId, {
+    enabled: Boolean(applicationId && isInterviewStage),
+  });
 
   const portfolioCv = portfolio?.candidateProfile?.cv || application?.cv;
   const resolvedCv: EvidenceRecord | null =
@@ -178,9 +202,14 @@ export const PortfolioVault: React.FC<PortfolioVaultProps> = ({
   const canViewReceipt = Boolean(resolvedReceipt?.assetId || resolvedReceipt?.url);
 
   return (
-    <div className="flex flex-col gap-8 w-full">
+    <div className={`flex flex-col ${accordion ? "gap-4" : "gap-8"} w-full`}>
       {/* 1. Induction Documents */}
-      <PortfolioSection number={1} title="Induction Documents">
+      <PortfolioSection
+        number={1}
+        title="Induction Documents"
+        isOpen={!accordion || openSection === 1}
+        onToggle={accordion ? () => toggleSection(1) : undefined}
+      >
         <PortfolioDocCard
           title="Candidate Application Form"
           subtitle="NBTE/RPL/01"
@@ -233,7 +262,12 @@ export const PortfolioVault: React.FC<PortfolioVaultProps> = ({
       </PortfolioSection>
 
       {/* 2. Candidate Profile */}
-      <PortfolioSection number={2} title="Candidate Profile">
+      <PortfolioSection
+        number={2}
+        title="Candidate Profile"
+        isOpen={!accordion || openSection === 2}
+        onToggle={accordion ? () => toggleSection(2) : undefined}
+      >
         <PortfolioDocCard
           title="CV / Resume"
           subtitle={
@@ -272,7 +306,12 @@ export const PortfolioVault: React.FC<PortfolioVaultProps> = ({
       </PortfolioSection>
 
       {/* 3. Standards for Assessment */}
-      <PortfolioSection number={3} title="Standards for Assessment">
+      <PortfolioSection
+        number={3}
+        title="Standards for Assessment"
+        isOpen={!accordion || openSection === 3}
+        onToggle={accordion ? () => toggleSection(3) : undefined}
+      >
         <NosStandardCard application={application} />
         {formCard(
           "assessment_grid",
@@ -282,7 +321,12 @@ export const PortfolioVault: React.FC<PortfolioVaultProps> = ({
       </PortfolioSection>
 
       {/* 4. Assessment Reports / Evidences */}
-      <PortfolioSection number={4} title="Assessment Reports/Evidences">
+      <PortfolioSection
+        number={4}
+        title="Assessment Reports/Evidences"
+        isOpen={!accordion || openSection === 4}
+        onToggle={accordion ? () => toggleSection(4) : undefined}
+      >
         {selfAssessmentCard}
         {formCard(
           "skill_demonstration",
@@ -306,7 +350,12 @@ export const PortfolioVault: React.FC<PortfolioVaultProps> = ({
         portfolio?.verification?.externalVerifier ||
         portfolio?.verification?.ivOutcome ||
         portfolio?.verification?.evOutcome) && (
-        <PortfolioSection number={5} title="Verification Report">
+        <PortfolioSection
+          number={5}
+          title="Verification Report"
+          isOpen={!accordion || openSection === 5}
+          onToggle={accordion ? () => toggleSection(5) : undefined}
+        >
           {verificationReportCard || (
             <>
               <PortfolioDocCard

@@ -1,17 +1,21 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { AssessorAssessmentFormLayout } from "./AssessorAssessmentFormLayout";
 import { useToast } from "@/src/components/ui/toast";
-import { Select } from "@/src/components/ui/select";
-import { FiPlus, FiTrash2, FiCalendar } from "react-icons/fi";
+import { FiPlus, FiTrash2, FiEdit3, FiCheckCircle } from "react-icons/fi";
+import type { AssessmentMappingUnit } from "@/src/features/shared/applications/api/types";
+import type { Unit } from "@/src/features/shared/reference/api";
+import { useResolveAssets } from "@/src/features/shared/storage/hooks";
+import { useAssessorSignature } from "./useAssessorSignature";
+import { AssessorSignatureModal } from "./AssessorSignatureModal";
+import { DigitalSignaturePad } from "./DigitalSignaturePad";
+import {
+  buildUnitSkillsCriteria,
+  type GeneratedChecklistItem,
+} from "./utils";
 
-export interface CriteriaItem {
-  id: string;
-  title: string;
-  demonstrated: boolean;
-  comments: string;
-}
+export type CriteriaItem = GeneratedChecklistItem;
 
 interface SkillsDemonstrationFormProps {
   candidateName: string;
@@ -21,54 +25,13 @@ interface SkillsDemonstrationFormProps {
   isReadOnly?: boolean;
   applicationTrade?: string;
   unitLabels?: string[];
+  scopedUnits?: Unit[];
+  mappingUnits?: AssessmentMappingUnit[];
+  levelLabel?: string;
+  defaultAssessorName?: string;
+  defaultDate?: string;
+  defaultSite?: string;
 }
-
-const DEFAULT_SKILLS_CRITERIA: CriteriaItem[] = [
-  {
-    id: "crit-1",
-    title: "Demonstrated correct use of surface preparation tools and brushes",
-    demonstrated: true,
-    comments: "",
-  },
-  {
-    id: "crit-2",
-    title: "Followed safety procedures, dust protection, and PPE requirements",
-    demonstrated: true,
-    comments: "",
-  },
-  {
-    id: "crit-3",
-    title: "Performed tasks according to workplace coating thickness specifications",
-    demonstrated: true,
-    comments: "",
-  },
-  {
-    id: "crit-4",
-    title: "Demonstrated technical skills in POP mixing and feathering",
-    demonstrated: true,
-    comments: "",
-  },
-  {
-    id: "crit-5",
-    title: "Solved problems (repaired hairline plaster shrinkage crack)",
-    demonstrated: true,
-    comments: "",
-  },
-  {
-    id: "crit-6",
-    title: "Communicated clearly and maintained clean working space",
-    demonstrated: true,
-    comments: "",
-  },
-  {
-    id: "crit-7",
-    title: "Completed task within designated 90-minute timeframe",
-    demonstrated: true,
-    comments: "",
-  },
-];
-
-import { getUnitOptions } from "./utils";
 
 export const SkillsDemonstrationForm: React.FC<
   SkillsDemonstrationFormProps
@@ -80,39 +43,64 @@ export const SkillsDemonstrationForm: React.FC<
   isReadOnly = false,
   applicationTrade,
   unitLabels = [],
+  scopedUnits = [],
+  mappingUnits = [],
+  levelLabel = "Level 1",
+  defaultAssessorName = "",
+  defaultDate = "",
+  defaultSite = "",
 }) => {
   const { toast } = useToast();
 
-  const autoUnit = unitLabels[0] ?? "";
+  const resolvedUnitDisplay = React.useMemo(() => {
+    if (unitLabels.length > 0) {
+      return unitLabels.join(" | ");
+    }
+    if (formData?.unitTitleCode && formData.unitTitleCode !== "Select") {
+      return formData.unitTitleCode;
+    }
+    return applicationTrade
+      ? `${applicationTrade} — ${levelLabel}`
+      : levelLabel;
+  }, [unitLabels, formData?.unitTitleCode, applicationTrade, levelLabel]);
+
   const [candidateFullName, setCandidateFullName] = useState<string>(
-    formData?.candidateFullName ?? candidateName ?? "",
+    candidateName || formData?.candidateFullName || "",
   );
   const [assessorName, setAssessorName] = useState<string>(
-    formData?.assessorName ?? "",
+    defaultAssessorName || formData?.assessorName || "",
   );
-  const [unitTitleCode, setUnitTitleCode] = useState<string>(
-    formData?.unitTitleCode && formData.unitTitleCode !== "Select"
-      ? formData.unitTitleCode
-      : autoUnit,
-  );
-
-  React.useEffect(() => {
-    if (formData?.unitTitleCode && formData.unitTitleCode !== "Select") {
-      setUnitTitleCode(formData.unitTitleCode);
-    } else if (!unitTitleCode && autoUnit) {
-      setUnitTitleCode(autoUnit);
-    }
-  }, [formData?.unitTitleCode, autoUnit]);
-
-  const unitOptions = React.useMemo(() => {
-    return getUnitOptions(unitTitleCode, unitLabels);
-  }, [unitTitleCode, unitLabels]);
+  const [unitTitleCode, setUnitTitleCode] = useState<string>(resolvedUnitDisplay);
   const [demonstrationDate, setDemonstrationDate] = useState<string>(
-    formData?.demonstrationDate ?? "",
+    defaultDate ||
+      formData?.demonstrationDate ||
+      new Date().toISOString().split("T")[0],
   );
   const [location, setLocation] = useState<string>(
-    formData?.location ?? "",
+    defaultSite || formData?.location || "",
   );
+
+  // Sync Personal Details with resolved application/panel/schedule data
+  useEffect(() => {
+    if (candidateName) setCandidateFullName(candidateName);
+  }, [candidateName]);
+
+  useEffect(() => {
+    if (defaultAssessorName) setAssessorName(defaultAssessorName);
+  }, [defaultAssessorName]);
+
+  useEffect(() => {
+    if (resolvedUnitDisplay) setUnitTitleCode(resolvedUnitDisplay);
+  }, [resolvedUnitDisplay]);
+
+  useEffect(() => {
+    if (defaultDate) setDemonstrationDate(defaultDate);
+  }, [defaultDate]);
+
+  useEffect(() => {
+    if (defaultSite) setLocation(defaultSite);
+  }, [defaultSite]);
+
   const [taskDemonstrated, setTaskDemonstrated] = useState<string>(
     formData?.taskDemonstrated ?? "",
   );
@@ -123,11 +111,35 @@ export const SkillsDemonstrationForm: React.FC<
     formData?.toolsUsed ?? "",
   );
 
-  const [criteria, setCriteria] = useState<CriteriaItem[]>(
-    Array.isArray(formData?.criteria) && formData.criteria.length > 0
-      ? formData.criteria
-      : DEFAULT_SKILLS_CRITERIA,
+  const generatedDefaults = React.useMemo(
+    () =>
+      buildUnitSkillsCriteria({
+        scopedUnits,
+        mappingUnits,
+        tradeName: applicationTrade,
+        levelLabel,
+      }),
+    [scopedUnits, mappingUnits, applicationTrade, levelLabel],
   );
+
+  const hasSavedCriteria =
+    Array.isArray(formData?.criteria) && formData.criteria.length > 0;
+  const [hasUserEditedCriteria, setHasUserEditedCriteria] =
+    useState<boolean>(hasSavedCriteria);
+
+  const [criteria, setCriteria] = useState<CriteriaItem[]>(() => {
+    if (hasSavedCriteria) {
+      return formData!.criteria;
+    }
+    if (isReadOnly) return [];
+    return generatedDefaults;
+  });
+
+  useEffect(() => {
+    if (!hasSavedCriteria && !hasUserEditedCriteria && !isReadOnly) {
+      setCriteria(generatedDefaults);
+    }
+  }, [generatedDefaults, hasSavedCriteria, hasUserEditedCriteria, isReadOnly]);
 
   const [verdict, setVerdict] = useState<"Competent" | "Not Competent">(
     formData?.verdict ?? "Competent",
@@ -135,36 +147,162 @@ export const SkillsDemonstrationForm: React.FC<
   const [assessorComments, setAssessorComments] = useState<string>(
     formData?.assessorComments ?? "",
   );
+  const {
+    signatureUrl: profileSignatureUrl,
+    signatureAssetId: profileSignatureAssetId,
+    hasSignature: hasProfileSignature,
+  } = useAssessorSignature();
+
+  const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
   const [assessorSigned, setAssessorSigned] = useState<boolean>(
     Boolean(formData?.assessorSigned || formData?.assessorSignedAt),
   );
+  const [assessorSignedAt, setAssessorSignedAt] = useState<string>(
+    formData?.assessorSignedAt || "",
+  );
+  const [assessorSignatureAssetId, setAssessorSignatureAssetId] =
+    useState<string>(formData?.assessorSignatureAssetId || "");
+  const [assessorSignatureUrl, setAssessorSignatureUrl] = useState<string>(
+    formData?.assessorSignatureUrl || "",
+  );
+
+  const sigAssetsToResolve = useMemo(() => {
+    return assessorSignatureAssetId && !assessorSignatureUrl
+      ? [assessorSignatureAssetId]
+      : [];
+  }, [assessorSignatureAssetId, assessorSignatureUrl]);
+  const { data: resolvedSigAssets } = useResolveAssets(sigAssetsToResolve);
+
+  const activeAssessorSignatureUrl =
+    assessorSignatureUrl ||
+    resolvedSigAssets?.[0]?.url ||
+    (assessorSigned ? profileSignatureUrl : null);
+
+  const itemRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const titleInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const pendingFocusIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const targetId = pendingFocusIdRef.current;
+    if (!targetId) return;
+    pendingFocusIdRef.current = null;
+
+    const cardEl = itemRefs.current[targetId];
+    const inputEl = titleInputRefs.current[targetId];
+    if (cardEl) {
+      cardEl.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+    if (inputEl) {
+      setTimeout(() => {
+        inputEl.focus();
+      }, 150);
+    }
+  }, [criteria.length]);
 
   const toggleDemonstrated = (id: string, value: boolean) => {
     if (isReadOnly) return;
+    setHasUserEditedCriteria(true);
     setCriteria((prev) =>
       prev.map((c) => (c.id === id ? { ...c, demonstrated: value } : c)),
     );
   };
 
+  const updateTitle = (id: string, title: string) => {
+    if (isReadOnly) return;
+    setHasUserEditedCriteria(true);
+    setCriteria((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, title } : c)),
+    );
+  };
+
   const updateComments = (id: string, text: string) => {
     if (isReadOnly) return;
+    setHasUserEditedCriteria(true);
     setCriteria((prev) =>
       prev.map((c) => (c.id === id ? { ...c, comments: text } : c)),
     );
   };
 
+  const handleAddChecklistItem = () => {
+    if (isReadOnly) return;
+    const newId = `crit-custom-${Date.now()}`;
+    setHasUserEditedCriteria(true);
+    pendingFocusIdRef.current = newId;
+    setCriteria((prev) => [
+      ...prev,
+      {
+        id: newId,
+        title: "",
+        demonstrated: true,
+        comments: "",
+        isCustom: true,
+      },
+    ]);
+    toast({
+      type: "success",
+      title: "Checklist Item Added",
+      description: "A new checklist item has been added.",
+    });
+  };
+
+  const handleRemoveChecklistItem = (id: string) => {
+    if (isReadOnly) return;
+    setHasUserEditedCriteria(true);
+    setCriteria((prev) => prev.filter((c) => c.id !== id));
+  };
+
   const handleAppendSignature = () => {
     if (isReadOnly) return;
+    if (
+      !hasProfileSignature &&
+      !activeAssessorSignatureUrl &&
+      !assessorSignatureAssetId
+    ) {
+      setIsSignatureModalOpen(true);
+      return;
+    }
+    const now = new Date().toISOString();
     setAssessorSigned(true);
+    setAssessorSignedAt(now);
+    setAssessorSignatureAssetId(
+      profileSignatureAssetId || assessorSignatureAssetId || "",
+    );
+    setAssessorSignatureUrl(
+      profileSignatureUrl || activeAssessorSignatureUrl || "",
+    );
     toast({
       type: "success",
       title: "Signature Appended",
-      description: "Assessor signature has been recorded.",
+      description: "Your official assessor signature has been recorded.",
     });
+  };
+
+  const handleSignatureUploadSuccess = (sig: {
+    assetId: string;
+    url?: string;
+  }) => {
+    const now = new Date().toISOString();
+    setAssessorSigned(true);
+    setAssessorSignedAt(now);
+    setAssessorSignatureAssetId(sig.assetId);
+    setAssessorSignatureUrl(sig.url || "");
+    setIsSignatureModalOpen(false);
   };
 
   const handleSubmit = () => {
     if (isReadOnly) return;
+    if (!assessorSigned && !activeAssessorSignatureUrl) {
+      toast({
+        type: "error",
+        title: "Signature Required",
+        description: "Please append your assessor signature before submitting.",
+      });
+      if (!hasProfileSignature) {
+        setIsSignatureModalOpen(true);
+      }
+      return;
+    }
+    const now = new Date().toISOString();
     onSubmit({
       candidateFullName,
       assessorName,
@@ -178,9 +316,16 @@ export const SkillsDemonstrationForm: React.FC<
       verdict,
       assessorComments,
       assessorSigned: true,
-      assessorSignedAt: formData?.assessorSignedAt || new Date().toISOString(),
+      assessorSignedAt: assessorSignedAt || now,
+      assessorSignatureAssetId:
+        assessorSignatureAssetId || profileSignatureAssetId || undefined,
+      assessorSignatureUrl: activeAssessorSignatureUrl || undefined,
     });
   };
+
+  const tradeContext = applicationTrade
+    ? `${applicationTrade} (${levelLabel})`
+    : levelLabel;
 
   return (
     <AssessorAssessmentFormLayout
@@ -191,7 +336,7 @@ export const SkillsDemonstrationForm: React.FC<
       submitLabel="Submit"
       isReadOnly={isReadOnly}
     >
-      {/* 1. Personal Details */}
+      {/* 1. Personal Details (Auto-filled & Locked) */}
       <div className="flex flex-col gap-4 sm:gap-5">
         <h3 className="text-sm sm:text-base font-bold text-neutral-primary">
           Personal Details
@@ -205,10 +350,10 @@ export const SkillsDemonstrationForm: React.FC<
             <input
               type="text"
               value={candidateFullName}
-              disabled={isReadOnly}
-              onChange={(e) => setCandidateFullName(e.target.value)}
-              placeholder="Type Here"
-              className="w-full h-11 sm:h-12 bg-[#F8F9FA] border border-gray-200 rounded-xl px-3.5 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80 transition-all placeholder:text-gray-400"
+              disabled
+              readOnly
+              placeholder="Candidate Name"
+              className="w-full h-11 sm:h-12 bg-[#F8F9FA] border border-gray-200 rounded-xl px-3.5 text-xs sm:text-sm text-neutral-primary disabled:opacity-80 disabled:cursor-not-allowed transition-all"
             />
           </div>
 
@@ -219,36 +364,38 @@ export const SkillsDemonstrationForm: React.FC<
             <input
               type="text"
               value={assessorName}
-              disabled={isReadOnly}
-              onChange={(e) => setAssessorName(e.target.value)}
-              placeholder="Type Here"
-              className="w-full h-11 sm:h-12 bg-[#F8F9FA] border border-gray-200 rounded-xl px-3.5 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80 transition-all placeholder:text-gray-400"
+              disabled
+              readOnly
+              placeholder="Assessor Name"
+              className="w-full h-11 sm:h-12 bg-[#F8F9FA] border border-gray-200 rounded-xl px-3.5 text-xs sm:text-sm text-neutral-primary disabled:opacity-80 disabled:cursor-not-allowed transition-all"
             />
           </div>
 
-          <Select
-            label={<span className="text-xs font-medium text-neutral-primary">Unit Title &amp; Code</span>}
-            placeholder="Select"
-            value={unitTitleCode}
-            disabled={isReadOnly}
-            options={unitOptions}
-            onChange={(e) => setUnitTitleCode(e.target.value || "")}
-            containerClassName="gap-2"
-          />
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-medium text-neutral-primary">
+              Unit Title &amp; Code<span className="text-rose-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={unitTitleCode}
+              disabled
+              readOnly
+              title={unitTitleCode}
+              className="w-full h-11 sm:h-12 bg-[#F8F9FA] border border-gray-200 rounded-xl px-3.5 text-xs sm:text-sm text-neutral-primary truncate disabled:opacity-80 disabled:cursor-not-allowed transition-all"
+            />
+          </div>
 
           <div className="flex flex-col gap-2">
             <label className="text-xs font-medium text-neutral-primary">
               Date Of Demonstration<span className="text-rose-500">*</span>
             </label>
-            <div className="relative w-full">
-              <input
-                type="date"
-                value={demonstrationDate}
-                disabled={isReadOnly}
-                onChange={(e) => setDemonstrationDate(e.target.value)}
-                className="w-full h-11 sm:h-12 bg-[#F8F9FA] border border-gray-200 rounded-xl px-3.5 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80 transition-all"
-              />
-            </div>
+            <input
+              type="date"
+              value={demonstrationDate}
+              disabled
+              readOnly
+              className="w-full h-11 sm:h-12 bg-[#F8F9FA] border border-gray-200 rounded-xl px-3.5 text-xs sm:text-sm text-neutral-primary disabled:opacity-80 disabled:cursor-not-allowed transition-all"
+            />
           </div>
         </div>
 
@@ -258,17 +405,17 @@ export const SkillsDemonstrationForm: React.FC<
           </label>
           <input
             type="text"
-            placeholder="Type Here"
             value={location}
-            disabled={isReadOnly}
-            onChange={(e) => setLocation(e.target.value)}
-            className="w-full h-11 sm:h-12 bg-[#F8F9FA] border border-gray-200 rounded-xl px-3.5 text-xs sm:text-sm text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80 transition-all placeholder:text-gray-400"
+            disabled
+            readOnly
+            placeholder="Assessment Centre / Location"
+            className="w-full h-11 sm:h-12 bg-[#F8F9FA] border border-gray-200 rounded-xl px-3.5 text-xs sm:text-sm text-neutral-primary disabled:opacity-80 disabled:cursor-not-allowed transition-all"
           />
         </div>
       </div>
 
       {/* 2. Demonstration Details */}
-      <div className="flex flex-col gap-4 sm:gap-5">
+      <div className="flex flex-col gap-4 sm:gap-5 pt-4 border-t border-gray-100">
         <h3 className="text-sm sm:text-base font-bold text-neutral-primary">
           Demonstration Details
         </h3>
@@ -279,7 +426,7 @@ export const SkillsDemonstrationForm: React.FC<
           </label>
           <textarea
             rows={3}
-            placeholder="Type Here"
+            placeholder={`Describe the ${tradeContext} practical task demonstrated against ${resolvedUnitDisplay}...`}
             value={taskDemonstrated}
             disabled={isReadOnly}
             onChange={(e) => setTaskDemonstrated(e.target.value)}
@@ -293,7 +440,7 @@ export const SkillsDemonstrationForm: React.FC<
           </label>
           <textarea
             rows={3}
-            placeholder="Type Here"
+            placeholder={`Describe the ${tradeContext} workshop or site setup...`}
             value={workplaceDescription}
             disabled={isReadOnly}
             onChange={(e) => setWorkplaceDescription(e.target.value)}
@@ -307,7 +454,7 @@ export const SkillsDemonstrationForm: React.FC<
           </label>
           <textarea
             rows={3}
-            placeholder="Type Here"
+            placeholder={`List the ${tradeContext} tools, instruments, PPE, and materials used...`}
             value={toolsUsed}
             disabled={isReadOnly}
             onChange={(e) => setToolsUsed(e.target.value)}
@@ -316,69 +463,131 @@ export const SkillsDemonstrationForm: React.FC<
         </div>
       </div>
 
-      {/* 3. Demonstration Criteria */}
-      <div className="flex flex-col gap-4 sm:gap-5">
-        <h3 className="text-sm sm:text-base font-bold text-neutral-primary">
-          Demonstration Criteria
-        </h3>
-
-        <div className="flex flex-col gap-4">
-          {criteria.map((item, idx) => (
-            <div
-              key={item.id}
-              className="bg-[#F8F9FA] rounded-2xl p-4 sm:p-5 border border-gray-100 flex flex-col gap-3"
+      {/* 3. Demonstration Criteria (Matches Practical Observation Checklist UI) */}
+      <div className="flex flex-col gap-4 pt-4 border-t border-gray-100">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3">
+          <h3 className="text-sm sm:text-base font-bold text-neutral-primary">
+            Demonstration Criteria
+          </h3>
+          {!isReadOnly && (
+            <button
+              type="button"
+              onClick={handleAddChecklistItem}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#8A1538] text-[#8A1538] text-xs font-semibold hover:bg-[#8A1538]/5 transition-colors cursor-pointer self-start sm:self-auto"
             >
-              <div className="text-xs sm:text-sm font-semibold text-neutral-primary leading-snug">
-                {item.title}
-              </div>
-
-              <div className="flex items-center justify-between gap-3 bg-white p-2.5 sm:p-3 rounded-xl border border-gray-100">
-                <span className="text-xs font-semibold text-neutral-secondary">
-                  Demonstrated
-                </span>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <button
-                    type="button"
-                    disabled={isReadOnly}
-                    onClick={() => toggleDemonstrated(item.id, true)}
-                    className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                      item.demonstrated
-                        ? "bg-[#8A1538] text-white shadow-2xs"
-                        : "bg-gray-100 hover:bg-gray-200 text-gray-700"
-                    }`}
-                  >
-                    Yes
-                  </button>
-                  <button
-                    type="button"
-                    disabled={isReadOnly}
-                    onClick={() => toggleDemonstrated(item.id, false)}
-                    className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                      !item.demonstrated
-                        ? "bg-[#8A1538] text-white shadow-2xs"
-                        : "bg-gray-100 hover:bg-gray-200 text-gray-700"
-                    }`}
-                  >
-                    No
-                  </button>
-                </div>
-              </div>
-
-              <textarea
-                rows={2}
-                value={item.comments}
-                disabled={isReadOnly}
-                onChange={(e) => updateComments(item.id, e.target.value)}
-                placeholder="Type Comments Here"
-                className="w-full bg-white border border-gray-200 rounded-xl p-3 text-xs text-neutral-primary placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] resize-none disabled:opacity-80"
-              />
-            </div>
-          ))}
+              <FiPlus className="w-3.5 h-3.5" />
+              Add Checklist Item
+            </button>
+          )}
         </div>
+
+        {criteria.length === 0 ? (
+          <div className="p-4 rounded-xl border border-dashed border-gray-200 text-center text-xs text-neutral-secondary">
+            No checklist items recorded yet.
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3.5">
+            {criteria.map((item, index) => {
+              const isEditableTitle =
+                item.isCustom ||
+                item.id.startsWith("crit-custom-") ||
+                !item.title;
+
+              return (
+                <div
+                  key={item.id}
+                  ref={(el) => {
+                    itemRefs.current[item.id] = el;
+                  }}
+                  className="bg-[#F8F9FA] rounded-2xl p-4 sm:p-5 border border-gray-100 flex flex-col gap-3"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex-1 flex items-center gap-2">
+                      <span className="text-xs font-bold text-neutral-secondary shrink-0">
+                        #{index + 1}
+                      </span>
+                      {!isEditableTitle ? (
+                        <span className="text-xs sm:text-sm font-bold text-neutral-primary">
+                          {item.title}
+                        </span>
+                      ) : (
+                        <input
+                          ref={(el) => {
+                            titleInputRefs.current[item.id] = el;
+                          }}
+                          type="text"
+                          disabled={isReadOnly}
+                          value={item.title}
+                          onChange={(e) => updateTitle(item.id, e.target.value)}
+                          placeholder="e.g. Demonstrates correct use of tools and safety procedures"
+                          className="w-full bg-white border border-gray-200 rounded-xl p-2.5 text-xs sm:text-sm font-medium text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] disabled:opacity-80"
+                        />
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto shrink-0 pt-1.5 sm:pt-0 border-t sm:border-t-0 border-gray-200/60 sm:border-transparent">
+                      <span className="text-xs text-neutral-secondary font-medium mr-1">
+                        Demonstrated:
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <div className="flex items-center rounded-lg overflow-hidden border border-gray-200 bg-white p-0.5">
+                          <button
+                            type="button"
+                            disabled={isReadOnly}
+                            onClick={() => toggleDemonstrated(item.id, true)}
+                            className={`px-3 py-1 text-xs font-bold rounded-md transition-colors cursor-pointer ${
+                              item.demonstrated
+                                ? "bg-[#8A1538] text-white"
+                                : "text-neutral-secondary hover:text-neutral-primary"
+                            } disabled:cursor-not-allowed`}
+                          >
+                            Yes
+                          </button>
+                          <button
+                            type="button"
+                            disabled={isReadOnly}
+                            onClick={() => toggleDemonstrated(item.id, false)}
+                            className={`px-3 py-1 text-xs font-bold rounded-md transition-colors cursor-pointer ${
+                              !item.demonstrated
+                                ? "bg-[#8A1538] text-white"
+                                : "text-neutral-secondary hover:text-neutral-primary"
+                            } disabled:cursor-not-allowed`}
+                          >
+                            No
+                          </button>
+                        </div>
+
+                        {!isReadOnly && criteria.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveChecklistItem(item.id)}
+                            className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                            title="Delete checklist item"
+                          >
+                            <FiTrash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <textarea
+                    rows={2}
+                    value={item.comments}
+                    disabled={isReadOnly}
+                    onChange={(e) => updateComments(item.id, e.target.value)}
+                    placeholder="Type Comments Here"
+                    className="w-full bg-white border border-gray-200 rounded-xl p-3 text-xs text-neutral-primary placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] resize-none disabled:opacity-80"
+                  />
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* 4. Assessment Decision & Assessor Notes */}
-      <div className="flex flex-col gap-4 sm:gap-5">
+      <div className="flex flex-col gap-4 sm:gap-5 pt-4 border-t border-gray-100">
         <h3 className="text-sm sm:text-base font-bold text-neutral-primary">
           Assessment Decision &amp; Assessor Notes
         </h3>
@@ -434,111 +643,61 @@ export const SkillsDemonstrationForm: React.FC<
       </div>
 
       {/* 5. Signature */}
-      <div className="flex flex-col gap-4 sm:gap-5">
+      <div className="flex flex-col gap-4 sm:gap-5 pt-4 border-t border-gray-100">
         <h3 className="text-sm sm:text-base font-bold text-neutral-primary">
           Signature
         </h3>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-neutral-primary">
-              Assessor Signature<span className="text-rose-500">*</span>
-            </label>
-            {assessorSigned ? (
-              <div className="h-11 bg-[#E6F4EA] border border-[#1E7F4C]/30 text-[#1E7F4C] font-bold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2 select-none shadow-2xs">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="w-4 h-4 text-[#1E7F4C]"
-                >
-                  <path d="M12 20h9" />
-                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-                </svg>
-                Signed by Assessor
-              </div>
-            ) : isReadOnly ? (
-              <div className="h-11 bg-gray-100 border border-gray-200 text-gray-500 text-xs sm:text-sm rounded-xl flex items-center justify-center">
-                Pending Assessor Signature
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={handleAppendSignature}
-                className="h-11 bg-[#FFF8EB] border border-[#FBAB2A] hover:bg-[#FDEED5] text-[#FBAB2A] font-bold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="w-4 h-4 text-[#FBAB2A]"
-                >
-                  <path d="M12 20h9" />
-                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-                </svg>
-                Append Signature
-              </button>
-            )}
-          </div>
+          <DigitalSignaturePad
+            label="Assessor Signature"
+            required
+            isSigned={assessorSigned}
+            signerName={assessorName}
+            signedAt={assessorSignedAt}
+            signatureUrl={activeAssessorSignatureUrl}
+            isReadOnly={isReadOnly}
+            onAppendSignature={handleAppendSignature}
+            onChangeSignature={() => setIsSignatureModalOpen(true)}
+            onClearSignature={() => {
+              setAssessorSigned(false);
+              setAssessorSignedAt("");
+            }}
+          />
 
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium text-neutral-primary">
               Candidate Signature<span className="text-rose-500">*</span>
             </label>
             {formData?.candidateSignedAt ? (
-              <div className="h-11 bg-[#E6F4EA] border border-[#1E7F4C]/30 text-[#1E7F4C] font-bold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2 select-none shadow-2xs">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="w-4 h-4 text-[#1E7F4C]"
-                >
-                  <path d="M12 20h9" />
-                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-                </svg>
-                Signed by Candidate ({new Date(formData.candidateSignedAt).toLocaleDateString()})
+              <div className="h-11 sm:h-12 bg-[#E6F4EA] border border-[#1E7F4C]/30 text-[#1E7F4C] font-bold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2.5 px-3.5 select-none shadow-2xs">
+                {formData?.candidateSignatureUrl ? (
+                  <img
+                    src={formData.candidateSignatureUrl}
+                    alt="Candidate Signature"
+                    className="h-7 max-w-[120px] object-contain"
+                  />
+                ) : (
+                  <FiCheckCircle className="w-4 h-4 text-[#1E7F4C] shrink-0" />
+                )}
+                <span>Signed</span>
               </div>
             ) : (
-              <div className="h-11 bg-[#FFF8EB] border border-[#FBAB2A]/60 text-[#FBAB2A] font-semibold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2 select-none">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="w-4 h-4 text-[#FBAB2A]"
-                >
-                  <path d="M12 20h9" />
-                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-                </svg>
-                Awaiting Signature
+              <div className="h-11 sm:h-12 bg-[#FFF8EB] border border-[#FBAB2A]/60 text-[#FBAB2A] font-semibold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2 select-none">
+                <FiEdit3 className="w-4 h-4 text-[#FBAB2A]" />
+                <span>Awaiting Signature</span>
               </div>
             )}
           </div>
         </div>
       </div>
+
+      <AssessorSignatureModal
+        isOpen={isSignatureModalOpen}
+        onClose={() => setIsSignatureModalOpen(false)}
+        onSuccess={handleSignatureUploadSuccess}
+        title="Upload Assessor Signature"
+      />
     </AssessorAssessmentFormLayout>
   );
 };

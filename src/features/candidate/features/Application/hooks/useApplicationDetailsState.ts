@@ -208,7 +208,16 @@ export function useApplicationDetailsState(id?: string) {
     onOpenFormModal: () => isDraft ? (populateOnboardingFromAppDetail(dispatch, application.id, apiApp), router.push("/rpl/personal-info")) : router.push(`/applications/${application.id}/application-form`),
     onMakePayment: handleMakePayment,
     onDownloadReceipt: () => setIsReceiptModalOpen(true),
-    onNavigateToVault: () => router.push(`/applications/${application.id}/evidence-vault`),
+    onNavigateToVault: () => {
+      if (typeof document !== "undefined") {
+        const vaultEl = document.getElementById("evidence-vault-section");
+        if (vaultEl) {
+          vaultEl.scrollIntoView({ behavior: "smooth", block: "start" });
+          return;
+        }
+      }
+      router.push(`/applications/${application.id}/evidence-vault`);
+    },
     onAppeal: () => setIsAppealModalOpen(true),
     onTakeCourse: () => toast({ type: "info", title: "Navigating to Course", description: "Redirecting to course..." }),
     onOpenSignatureModal: (formId: string) => {
@@ -249,7 +258,17 @@ export function useApplicationDetailsState(id?: string) {
     interviewForms, selectedInterviewFormType, isInterviewFormModalOpen, isAppealModalOpen,
     handleMakePayment,
     handleEditApplication: () => { if (application) { populateOnboardingFromAppDetail(dispatch, application.id, apiApp); router.push("/rpl/personal-info"); } },
-    handleStartFolderArrangement: () => { setActivePaymentModal(null); router.push(`/dashboard/applications/${application?.id}/evidence-vault`); },
+    handleStartFolderArrangement: () => {
+      setActivePaymentModal(null);
+      if (typeof document !== "undefined") {
+        const vaultEl = document.getElementById("evidence-vault-section");
+        if (vaultEl) {
+          vaultEl.scrollIntoView({ behavior: "smooth", block: "start" });
+          return;
+        }
+      }
+      router.push(`/dashboard/applications/${application?.id}/evidence-vault`);
+    },
     handleConfirmCallModal: () => { setIsCallRequestModalOpen(false); toast({ type: "success", title: "Call Requested", description: "Facilitator will contact you soon." }); },
     setActivePaymentModal, setIsCallRequestModalOpen, setIsFormModalOpen, setIsSignatureModalOpen, setIsReceiptModalOpen,
     setSelectedInterviewFormType, setIsInterviewFormModalOpen, setIsAppealModalOpen,

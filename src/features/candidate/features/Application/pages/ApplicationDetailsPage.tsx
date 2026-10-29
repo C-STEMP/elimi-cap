@@ -12,6 +12,7 @@ import { NsqApplicationDetailView } from "../components/nsq/NsqApplicationDetail
 import { ApplicationDetailsStagesSection } from "../components/ApplicationDetailsStagesSection";
 import { ApplicationDetailsSidebar } from "../components/ApplicationDetailsSidebar";
 import { ApplicationDetailsModals } from "../components/ApplicationDetailsModals";
+import { CandidateEvidenceVaultSection } from "@/src/features/shared/evidence-vault/components/CandidateEvidenceVaultSection";
 
 export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({ id }) => {
   const router = useRouter();
@@ -133,7 +134,19 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({ 
             isPaymentPaid={state.isPaymentPaid}
             onEditApplication={state.handleEditApplication}
             stages={state.stages}
-          />
+          >
+            {!state.isDraft && (
+              <div id="evidence-vault-section" className="scroll-mt-24">
+                <CandidateEvidenceVaultSection
+                  applicationId={state.application.id}
+                  application={state.apiApp}
+                  isApplicationLoading={state.isLoading}
+                  accordion
+                  defaultOpenSection={4}
+                />
+              </div>
+            )}
+          </ApplicationDetailsStagesSection>
 
           <ApplicationDetailsSidebar
             activeInterviewSchedule={state.activeInterviewSchedule}

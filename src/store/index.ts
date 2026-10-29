@@ -7,7 +7,7 @@ import { applicationReducer } from "./slices/applicationSlice";
 import { onboardingReducer } from "./slices/onboardingSlice";
 
 const persistConfig = {
-  key: "root",
+  key: "elimi_cap_root",
   storage: localStorage,
   whitelist: ["auth", "session", "application", "onboarding"],
 };

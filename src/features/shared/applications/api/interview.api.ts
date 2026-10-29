@@ -27,7 +27,12 @@ export async function getInterviewPanelApi(
     if (
       err?.statusCode === 404 ||
       err?.status === 404 ||
-      err?.error?.code?.includes("not_found")
+      err?.statusCode === 403 ||
+      err?.status === 403 ||
+      err?.code === "auth.out_of_scope" ||
+      err?.error?.code === "auth.out_of_scope" ||
+      err?.error?.code?.includes("not_found") ||
+      err?.error?.code?.includes("out_of_scope")
     ) {
       return null;
     }
@@ -46,7 +51,12 @@ export async function getInterviewScheduleApi(
     if (
       err?.statusCode === 404 ||
       err?.status === 404 ||
-      err?.error?.code?.includes("not_found")
+      err?.statusCode === 403 ||
+      err?.status === 403 ||
+      err?.code === "auth.out_of_scope" ||
+      err?.error?.code === "auth.out_of_scope" ||
+      err?.error?.code?.includes("not_found") ||
+      err?.error?.code?.includes("out_of_scope")
     ) {
       return null;
     }
@@ -115,7 +125,12 @@ export async function getInterviewFormsBundleApi(
     if (
       err?.statusCode === 404 ||
       err?.status === 404 ||
-      err?.error?.code?.includes("not_found")
+      err?.statusCode === 403 ||
+      err?.status === 403 ||
+      err?.code === "auth.out_of_scope" ||
+      err?.error?.code === "auth.out_of_scope" ||
+      err?.error?.code?.includes("not_found") ||
+      err?.error?.code?.includes("out_of_scope")
     ) {
       return { forms: [], panelistRecords: [] };
     }

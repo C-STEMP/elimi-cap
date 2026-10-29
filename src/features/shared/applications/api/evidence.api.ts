@@ -1,9 +1,11 @@
 import { capFetch } from "@/src/lib/api/cap";
 import type {
   ApplicationDetail,
+  ApplicationEvidenceTypes,
   EvidenceVaultItem,
   GeneralEvidence,
   ThirdPartyReportEvidence,
+  VaultEvidenceType,
 } from "./types";
 
 export async function getEvidenceVaultApi(
@@ -14,9 +16,23 @@ export async function getEvidenceVaultApi(
   if (params?.cursor) query.append("cursor", params.cursor);
   if (params?.limit) query.append("limit", params.limit.toString());
   const queryString = query.toString() ? `?${query.toString()}` : "";
-  return capFetch<EvidenceVaultItem[]>(`/applications/${id}/evidence${queryString}`, {
-    method: "GET",
-  });
+  return capFetch<EvidenceVaultItem[]>(
+    `/applications/${id}/evidence${queryString}`,
+    {
+      method: "GET",
+    },
+  );
+}
+
+export async function getApplicationEvidenceTypesApi(
+  id: string,
+): Promise<ApplicationEvidenceTypes> {
+  return capFetch<ApplicationEvidenceTypes>(
+    `/applications/${id}/evidence-types`,
+    {
+      method: "GET",
+    },
+  );
 }
 
 export async function uploadApplicationCvApi(
@@ -33,10 +49,11 @@ export async function createGeneralEvidenceApi(
   id: string,
   payload: {
     documentName: string;
-    evidenceType: string;
+    evidenceType: VaultEvidenceType | string;
     assetId?: string;
     formData?: Record<string, unknown>;
     textValue?: string;
+    unitIds?: string[];
   },
 ): Promise<GeneralEvidence> {
   return capFetch<GeneralEvidence>(`/applications/${id}/evidence`, {
@@ -50,10 +67,10 @@ export async function patchGeneralEvidenceApi(
   evidenceId: string,
   payload: {
     documentName?: string;
-    evidenceType?: string;
-    assetId?: string | null;
-    formData?: Record<string, unknown> | null;
-    textValue?: string | null;
+    assetId?: string;
+    formData?: Record<string, unknown>;
+    textValue?: string;
+    unitIds?: string[];
   },
 ): Promise<GeneralEvidence> {
   return capFetch<GeneralEvidence>(
