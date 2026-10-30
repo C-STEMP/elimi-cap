@@ -90,10 +90,9 @@ export function useApplicationDetailsState(id?: string) {
       (appFormStage?.status as string) === "completed" ||
       apiApp?.currentStageKey === "payment" ||
       (apiApp?.status as string) === "approved" ||
+      apiApp?.status === "certified" ||
       (apiApp?.currentStageKey &&
-        !["application_form", "application_review", "draft", "submitted"].includes(apiApp.currentStageKey)) ||
-      (apiApp?.status &&
-        ["in_progress", "interview_scheduled", "interview_completed", "certification"].includes(apiApp.status)),
+        !["application_form", "application_review", "draft", "submitted"].includes(apiApp.currentStageKey)),
   );
   const isAppFormUnderReview = Boolean(
     !isDraft && !isAppFormApproved &&

@@ -110,8 +110,7 @@ export const CentreApplicationRouteView: React.FC<{
   );
 
   const isSelectedAppApproved = application
-    ? application.status === "in_progress" ||
-      application.status === "certified" ||
+    ? application.status === "certified" ||
       (application.status as string) === "approved" ||
       isAppFormApproved
     : false;

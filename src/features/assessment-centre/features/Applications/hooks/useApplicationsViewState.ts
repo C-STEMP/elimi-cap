@@ -51,6 +51,15 @@ export function useApplicationsViewState(
     if (activeFilterTab === "IV Approved") {
       return { ivApproved: true, status: "in_progress" as const };
     }
+    if (activeFilterTab === "Pending") {
+      return { status: "in_progress" as const, stage: "application_form" };
+    }
+    if (activeFilterTab === "Ongoing") {
+      return { status: "in_progress" as const };
+    }
+    if (activeFilterTab === "Completed") {
+      return { status: "certified" as const };
+    }
     return undefined;
   }, [activeFilterTab]);
 
@@ -158,7 +167,10 @@ export function useApplicationsViewState(
   };
 
   const applicationsList = useMemo(
-    () => (remoteApps ?? []).map(mapApplicationItem),
+    () =>
+      (remoteApps ?? [])
+        .filter((app) => app.status !== "draft")
+        .map(mapApplicationItem),
     [remoteApps],
   );
 
@@ -463,7 +475,7 @@ export function useApplicationsViewState(
         });
       } else if (successful > 0) {
         toast({
-          type: "warning",
+          type: "info",
           title: "Partially Approved",
           description: `Approved ${successful} application${
             successful > 1 ? "s" : ""

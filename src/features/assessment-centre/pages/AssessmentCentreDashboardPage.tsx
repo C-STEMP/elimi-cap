@@ -256,7 +256,6 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
 
   const isSelectedAppApproved = Boolean(
     (selectedAppDetail?.status as string) === "approved" ||
-      selectedAppDetail?.status === "in_progress" ||
       selectedAppDetail?.status === "certified" ||
       selectedAppStages.some(
         (s) =>
@@ -322,13 +321,14 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
   const [isApproveAllPendingModalOpen, setIsApproveAllPendingModalOpen] = useState(false);
   const [isApprovingAllPending, setIsApprovingAllPending] = useState(false);
 
-  const pendingApps = useMemo(() => {
+  const pendingApps = React.useMemo(() => {
     return allApplications.filter(
       (a) =>
-        a.status === "draft" ||
-        (a as { currentStageKey?: string }).currentStageKey === "application_form" ||
-        (a as { currentStageKey?: string }).currentStageKey === "application_review" ||
-        (a as { stage?: string }).stage === "application_form",
+        a.status === "in_progress" &&
+        ((a as { currentStageKey?: string }).currentStageKey === "application_form" ||
+          (a as { currentStageKey?: string }).currentStageKey === "application_review" ||
+          (a as { stage?: string }).stage === "application_form" ||
+          (a as { stage?: string }).stage === "application_review"),
     );
   }, [allApplications]);
 
@@ -376,7 +376,7 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
         });
       } else if (successful > 0) {
         toast({
-          type: "warning",
+          type: "info",
           title: "Partially Approved",
           description: `Approved ${successful} application${
             successful > 1 ? "s" : ""

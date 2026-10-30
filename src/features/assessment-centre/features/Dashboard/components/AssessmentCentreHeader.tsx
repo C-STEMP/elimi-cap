@@ -23,7 +23,7 @@ import { ASSETS_URL } from "@/assets";
 import { LogoutModal } from "@/components/LogoutModal";
 import { NotificationDropdown } from "@/features/candidate/features/Dashboard/components/NotificationDropdown";
 import { AssessmentCentreTab } from "@/features/assessment-centre/types";
-import { useGetApplications } from "@/src/features/shared/applications/hooks";
+import { useGetApplications } from "@/features/assessment-centre/features/Applications/hooks";
 import {
   useGetCentreStaff,
   useGetRetainedRequests,
@@ -89,23 +89,25 @@ export const AssessmentCentreHeader: React.FC<HeaderProps> = ({
   const { data: appSummary } = useGetCentreApplicationsSummary();
   const { data: staffSummary } = useGetCentreStaffSummary();
   const { data: assessorSummary } = useGetCentreAssessorsSummary();
-  const { data: applications = [] } = useGetApplications();
+  const { data: applications = [], isFetched: isApplicationsFetched } = useGetApplications();
   const { data: assessors = [] } = useGetRetainedRequests();
   const { data: staff = [] } = useGetCentreStaff();
   const { data: wallet } = useGetCentreWallet();
   const { data: centreProfile } = useGetCentreProfile();
 
-  const totalAppsCount =
-    dashboardData?.kpis?.applications ??
-    appSummary?.total ??
-    applications.length;
+  const nonDraftApplications = applications.filter((app) => app.status !== "draft");
+  const totalAppsCount = isApplicationsFetched
+    ? nonDraftApplications.length
+    : (dashboardData?.kpis?.applications ??
+      appSummary?.total ??
+      nonDraftApplications.length);
   const totalAssessorsCount =
     dashboardData?.kpis?.assessors ??
     assessorSummary?.total ??
     assessorSummary?.active ??
     assessors.length;
   const totalCandidatesCount = new Set(
-    applications.map((app) => app.candidateId).filter(Boolean),
+    nonDraftApplications.map((app) => app.candidateId).filter(Boolean),
   ).size;
   const totalStaffCount =
     dashboardData?.kpis?.staff ?? staffSummary?.total ?? staff.length;

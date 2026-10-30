@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useToast } from "@/src/components/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { useGetApplications } from "@/src/features/shared/applications/hooks";
+import { useGetApplications } from "@/features/assessment-centre/features/Applications/hooks";
 import {
   useGetCentreInterviews,
   useGetCentrePanels,

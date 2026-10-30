@@ -56,9 +56,7 @@ export const computeStageCalculations = (
     ? "Approved"
     : appFormStage?.status === "rejected" || appDetail?.status === "rejected"
       ? "Rejected"
-      : appDetail?.status === "draft"
-        ? "Draft"
-        : "Under Review";
+      : "Under Review";
 
   const paymentStage = stages.find((s) => s.stageKey === "payment" || s.stageKey === "payment_quote");
   const isPaymentPaid = Boolean(paymentStage?.status === "successful" || appDetail?.paymentCompleted || isCompleted);

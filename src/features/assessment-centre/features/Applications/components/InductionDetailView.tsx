@@ -4,7 +4,7 @@ import React, { useState, useMemo } from "react";
 import { FiMapPin, FiVideo, FiPlus, FiTrash2 } from "react-icons/fi";
 import { type InductionRowData } from "./ViewInductionDetailModal";
 import { SittingCandidatesSection } from "./SittingCandidatesSection";
-import { useGetApplications } from "@/src/features/shared/applications/hooks";
+import { useGetApplications } from "@/features/assessment-centre/features/Applications/hooks";
 import {
   useGetCentreProfile,
   useGetCentreInductionById,

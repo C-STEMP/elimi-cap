@@ -512,7 +512,7 @@ export function useGoogleAuth() {
 
   const mutation = useMutation({
     mutationFn: async (idToken: string) => {
-      return googleAuthApi({ idToken, intents: ["cap"] });
+      return googleAuthApi({ idToken, intents: ["cap", "lms"] });
     },
 
     onSuccess: async (data) => {

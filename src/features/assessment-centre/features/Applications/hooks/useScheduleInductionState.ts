@@ -7,7 +7,7 @@ import {
   useGetCentreProfile,
   useGetCentreInductions,
 } from "@/src/features/shared/centre/hooks";
-import { useGetApplications } from "@/src/features/shared/applications/hooks";
+import { useGetApplications } from "@/features/assessment-centre/features/Applications/hooks";
 import { postCentreInductionsApi } from "@/src/features/shared/centre/api";
 import { useCountryStateCity } from "@/src/lib/hooks/useCountryStateCity";
 import { hasModalDraft, useModalDraft } from "@/src/lib/hooks/usePersistentModal";

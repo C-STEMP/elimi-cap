@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useGetApplications } from "@/src/features/shared/applications/hooks";
+import { useGetApplications } from "@/features/assessment-centre/features/Applications/hooks";
 import {
   useGetCentreInterviewDetail,
   useGetCentreInterviewBookings,

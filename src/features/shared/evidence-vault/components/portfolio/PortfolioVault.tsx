@@ -212,7 +212,10 @@ export const PortfolioVault: React.FC<PortfolioVaultProps> = ({
   const isReceiptPaid =
     isPaymentPaid ??
     (resolvedReceipt?.status === "completed" ||
-      Boolean(application?.paymentCompleted));
+      Boolean(
+        (application as { paymentCompleted?: boolean } | null | undefined)
+          ?.paymentCompleted,
+      ));
   const canViewReceipt = Boolean(
     resolvedReceipt?.assetId || resolvedReceipt?.url,
   );
