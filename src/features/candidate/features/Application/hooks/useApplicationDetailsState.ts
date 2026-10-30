@@ -57,7 +57,12 @@ export function useApplicationDetailsState(id?: string) {
   });
 
   const paymentStage = stagesData?.find((s) => s.stageKey === "payment" || s.stageKey === "payment_quote");
-  const isPaymentPaid = isPaymentConfirmed || paymentStage?.status === "successful" || Boolean((apiApp as any)?.paymentCompleted);
+  const isPaymentPaid =
+    isPaymentConfirmed ||
+    paymentStage?.status === "successful" ||
+    (paymentStage?.status as string) === "completed" ||
+    (paymentStage?.status as string) === "approved" ||
+    Boolean((apiApp as any)?.paymentCompleted);
   const isDraft = apiApp?.status === "draft" && !(apiApp as any)?.submittedAt;
   const isInterviewStageActive = Boolean(
     apiApp?.currentStageKey === "interview" || (apiApp as any)?.interviewScheduled ||
@@ -80,8 +85,15 @@ export function useApplicationDetailsState(id?: string) {
   const resolvedTrade = resolveTradeName((apiApp as any)?.trade, apiApp?.type ?? "RPL");
   const appFormStage = stagesData?.find((s) => s.stageKey === "application_form" || s.stageKey === "application_review" || s.stageKey === "application");
   const isAppFormApproved = Boolean(
-    appFormStage?.status === "successful" || (appFormStage?.status as string) === "approved" ||
-    (apiApp?.currentStageKey && !["application_form", "application_review", "draft"].includes(apiApp.currentStageKey)),
+    appFormStage?.status === "successful" ||
+      (appFormStage?.status as string) === "approved" ||
+      (appFormStage?.status as string) === "completed" ||
+      apiApp?.currentStageKey === "payment" ||
+      (apiApp?.status as string) === "approved" ||
+      (apiApp?.currentStageKey &&
+        !["application_form", "application_review", "draft", "submitted"].includes(apiApp.currentStageKey)) ||
+      (apiApp?.status &&
+        ["in_progress", "interview_scheduled", "interview_completed", "certification"].includes(apiApp.status)),
   );
   const isAppFormUnderReview = Boolean(
     !isDraft && !isAppFormApproved &&
@@ -150,8 +162,9 @@ export function useApplicationDetailsState(id?: string) {
         toast({ type: "success", title: "Payment Confirmed", description: "Your payment was processed successfully via Paystack." });
       },
       onClosedUnpaid: () => setActivePaymentModal(null),
-      onError: (err: any) => {
-        setPaymentErrorInfo({ title: "Payment Unsuccessful", description: err?.message || "Payment was not successful. Please try again." });
+      onError: (err: unknown) => {
+        const message = err instanceof Error ? err.message : (err as { message?: string })?.message;
+        setPaymentErrorInfo({ title: "Payment Unsuccessful", description: message || "Payment was not successful. Please try again." });
         setActivePaymentModal("unsuccessful");
       },
     });
@@ -251,7 +264,7 @@ export function useApplicationDetailsState(id?: string) {
   );
 
   return {
-    apiApp, application, isLoading, isDraft, isPaymentPaid, stages, activeInterviewSchedule: interviewSchedule,
+    apiApp, application, isLoading, isDraft, isPaymentPaid, isAppFormApproved, isPaymentUnlocked, paymentAmountText, stages, activeInterviewSchedule: interviewSchedule,
     applicationEvents,
     isInterviewScheduled, isAtInterviewStage, facilitatorData, activePaymentModal, paymentErrorInfo,
     isCallRequestModalOpen, isFormModalOpen, isSignatureModalOpen, isReceiptModalOpen, transactionReceipt,

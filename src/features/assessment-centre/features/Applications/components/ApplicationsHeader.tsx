@@ -36,6 +36,7 @@ interface ApplicationsHeaderProps {
   onCreatePanel?: () => void;
   activeFilterTab?: string;
   onSelectFilterTab?: (tab: string) => void;
+  onApproveAllPending?: () => void;
 }
 
 export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = (props) => {
@@ -52,6 +53,7 @@ export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = (props) => 
     onCreatePanel,
     activeFilterTab,
     onSelectFilterTab,
+    onApproveAllPending,
   } = props;
 
   const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
@@ -226,6 +228,7 @@ export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = (props) => 
         archivedCount={archivedCount}
         activeFilterTab={activeFilterTab}
         onSelectFilterTab={onSelectFilterTab}
+        onApproveAllPending={onApproveAllPending}
       />
     </div>
   );

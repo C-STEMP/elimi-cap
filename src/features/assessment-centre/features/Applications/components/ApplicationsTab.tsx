@@ -68,7 +68,7 @@ export const ApplicationsTab: React.FC<ApplicationsTabProps> = ({
   );
   const isSelectedNsq =
     selectedApp?.type === "NSQ" ||
-    (selectedApp as any)?.assessmentType === "NSQ";
+    (selectedApp as { assessmentType?: string })?.assessmentType === "NSQ";
 
   return (
     <motion.div

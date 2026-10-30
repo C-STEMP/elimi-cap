@@ -43,6 +43,10 @@ interface PortfolioVaultProps {
   onPreview: (item: EvidenceRecord) => void;
   onViewApplicationForm?: () => void;
   onUploadCv?: () => void;
+  onMakePayment?: () => void;
+  isPaymentPaid?: boolean;
+  isPaymentUnlocked?: boolean;
+  paymentAmountText?: string;
   /** Role-specific cards — each view keeps its own fill/upload behaviour. */
   selfAssessmentCard: React.ReactNode;
   thirdPartyReportCard: React.ReactNode;
@@ -84,6 +88,10 @@ export const PortfolioVault: React.FC<PortfolioVaultProps> = ({
   onPreview,
   onViewApplicationForm,
   onUploadCv,
+  onMakePayment,
+  isPaymentPaid,
+  isPaymentUnlocked,
+  paymentAmountText,
   selfAssessmentCard,
   thirdPartyReportCard,
   evidenceList,
@@ -201,8 +209,13 @@ export const PortfolioVault: React.FC<PortfolioVaultProps> = ({
     );
   };
 
-  const isReceiptPaid = resolvedReceipt?.status === "completed";
-  const canViewReceipt = Boolean(resolvedReceipt?.assetId || resolvedReceipt?.url);
+  const isReceiptPaid =
+    isPaymentPaid ??
+    (resolvedReceipt?.status === "completed" ||
+      Boolean(application?.paymentCompleted));
+  const canViewReceipt = Boolean(
+    resolvedReceipt?.assetId || resolvedReceipt?.url,
+  );
 
   return (
     <div className={`flex flex-col ${accordion ? "gap-4" : "gap-8"} w-full`}>
@@ -226,39 +239,60 @@ export const PortfolioVault: React.FC<PortfolioVaultProps> = ({
           <PortfolioDocCard
             title="Payment Receipt"
             subtitle={
-              resolvedReceipt?.paidAt
-                ? `Paid on ${new Date(resolvedReceipt.paidAt).toLocaleDateString("en-GB")}`
-                : "Assessment fee receipt"
+              isReceiptPaid
+                ? resolvedReceipt?.paidAt
+                  ? `Paid on ${new Date(resolvedReceipt.paidAt).toLocaleDateString("en-GB")}`
+                  : "Assessment fee receipt"
+                : paymentAmountText && paymentAmountText !== "—"
+                  ? `${paymentAmountText} · Assessment fee`
+                  : "Assessment fee receipt"
             }
             badge={
               isReceiptPaid
                 ? { label: "Paid", tone: "success" }
-                : resolvedReceipt?.status === "pending"
-                  ? { label: "Pending", tone: "warning" }
-                  : { label: "Not Paid", tone: "neutral" }
+                : isPaymentUnlocked
+                  ? { label: "Payment Required", tone: "warning" }
+                  : resolvedReceipt?.status === "pending"
+                    ? { label: "Pending", tone: "warning" }
+                    : { label: "Awaiting Approval", tone: "neutral" }
             }
             actions={
-              <PortfolioActionButton
-                disabled={!canViewReceipt}
-                onClick={() =>
-                  resolvedReceipt &&
-                  onPreview({
-                    id:
-                      ("paymentId" in resolvedReceipt && resolvedReceipt.paymentId) ||
-                      "payment-receipt",
-                    name: "Payment Receipt",
-                    size: "PDF",
-                    status: isReceiptPaid ? "Paid" : "Pending",
-                    statusBg: isReceiptPaid ? "bg-[#D1FAE5]" : "bg-[#FEF3C7]",
-                    statusText: isReceiptPaid ? "text-[#047857]" : "text-[#D97706]",
-                    assetId: resolvedReceipt.assetId || undefined,
-                    url: resolvedReceipt.url || undefined,
-                    evidenceType: "Payment Receipt",
-                  })
-                }
-              >
-                View
-              </PortfolioActionButton>
+              isReceiptPaid ? (
+                <PortfolioActionButton
+                  disabled={!canViewReceipt}
+                  onClick={() =>
+                    resolvedReceipt &&
+                    onPreview({
+                      id:
+                        ("paymentId" in resolvedReceipt &&
+                          resolvedReceipt.paymentId) ||
+                        "payment-receipt",
+                      name: "Payment Receipt",
+                      size: "PDF",
+                      status: "Paid",
+                      statusBg: "bg-[#D1FAE5]",
+                      statusText: "text-[#047857]",
+                      assetId: resolvedReceipt.assetId || undefined,
+                      url: resolvedReceipt.url || undefined,
+                      evidenceType: "Payment Receipt",
+                    })
+                  }
+                >
+                  View
+                </PortfolioActionButton>
+              ) : viewer === "candidate" && onMakePayment ? (
+                <PortfolioActionButton
+                  variant="amber"
+                  disabled={!isPaymentUnlocked}
+                  onClick={onMakePayment}
+                >
+                  {isPaymentUnlocked ? "Make Payment" : "Awaiting Centre Approval"}
+                </PortfolioActionButton>
+              ) : (
+                <PortfolioActionButton disabled={!canViewReceipt}>
+                  View
+                </PortfolioActionButton>
+              )
             }
           />
         )}

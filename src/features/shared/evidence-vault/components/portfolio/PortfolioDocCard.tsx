@@ -71,7 +71,7 @@ export const PortfolioDocCard: React.FC<PortfolioDocCardProps> = ({
 interface PortfolioActionButtonProps {
   onClick?: () => void;
   disabled?: boolean;
-  variant?: "primary" | "secondary";
+  variant?: "primary" | "secondary" | "amber";
   children: React.ReactNode;
   "aria-label"?: string;
 }
@@ -88,10 +88,12 @@ export const PortfolioActionButton: React.FC<PortfolioActionButtonProps> = ({
     onClick={onClick}
     disabled={disabled}
     aria-label={rest["aria-label"]}
-    className={`flex-1 sm:flex-initial justify-center inline-flex items-center gap-2 text-center border border-gray-200 font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl transition-all cursor-pointer shadow-2xs shrink-0 disabled:opacity-50 disabled:cursor-not-allowed ${
-      variant === "primary"
-        ? "bg-white text-[#FBAB2A] hover:bg-orange-50/50"
-        : "bg-[#F8F9FA] text-gray-700 hover:bg-gray-100 font-semibold"
+    className={`flex-1 sm:flex-initial justify-center inline-flex items-center gap-2 text-center border font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl transition-all cursor-pointer shadow-2xs shrink-0 disabled:opacity-50 disabled:cursor-not-allowed ${
+      variant === "amber"
+        ? "bg-[#FBAB2A] hover:bg-[#e89b1f] text-white border-transparent active:scale-95 shadow-xs"
+        : variant === "primary"
+          ? "bg-white text-[#FBAB2A] border-gray-200 hover:bg-orange-50/50"
+          : "bg-[#F8F9FA] text-gray-700 border-gray-200 hover:bg-gray-100 font-semibold"
     }`}
   >
     {children}
