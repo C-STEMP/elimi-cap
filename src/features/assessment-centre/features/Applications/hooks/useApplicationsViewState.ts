@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/src/components/ui/toast";
+import { reviewApplicationApi } from "@/src/features/shared/applications/api";
+import { APPLICATION_QUERY_KEYS } from "@/src/features/shared/applications/hooks";
 import {
   useApplication,
   useGetApplications,
@@ -30,6 +33,7 @@ export function useApplicationsViewState(
   onExternalFilterTabChange?: (tab: string) => void,
 ) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const { forwardToAwardingBody } = useApplication();
   const [internalFilterTab, setInternalFilterTab] = useState<string>("All");
 
@@ -46,6 +50,15 @@ export function useApplicationsViewState(
   const appQueryParams = useMemo(() => {
     if (activeFilterTab === "IV Approved") {
       return { ivApproved: true, status: "in_progress" as const };
+    }
+    if (activeFilterTab === "Pending") {
+      return { status: "in_progress" as const, stage: "application_form" };
+    }
+    if (activeFilterTab === "Ongoing") {
+      return { status: "in_progress" as const };
+    }
+    if (activeFilterTab === "Completed") {
+      return { status: "certified" as const };
     }
     return undefined;
   }, [activeFilterTab]);
@@ -71,6 +84,10 @@ export function useApplicationsViewState(
   const [isDeleteInductionModalOpen, setIsDeleteInductionModalOpen] = useState(false);
   const [inductionToDelete, setInductionToDelete] = useState<InductionRowData | null>(null);
   const [isDeletingInductions, setIsDeletingInductions] = useState(false);
+
+  const [isApprovePendingModalOpen, setIsApprovePendingModalOpen] = useState(false);
+  const [isApprovingPending, setIsApprovingPending] = useState(false);
+  const [pendingIdsToApprove, setPendingIdsToApprove] = useState<string[]>([]);
 
   const panelsList: PanelRowData[] = useMemo(
     () => remotePanels.map(mapPanelItem),
@@ -150,7 +167,10 @@ export function useApplicationsViewState(
   };
 
   const applicationsList = useMemo(
-    () => (remoteApps ?? []).map(mapApplicationItem),
+    () =>
+      (remoteApps ?? [])
+        .filter((app) => app.status !== "draft")
+        .map(mapApplicationItem),
     [remoteApps],
   );
 
@@ -369,6 +389,135 @@ export function useApplicationsViewState(
     }
   };
 
+  // Pending applications for bulk approve
+  const pendingApplications = useMemo(
+    () => applicationsList.filter((a) => a.status === "Pending"),
+    [applicationsList],
+  );
+
+  const selectedPendingIds = useMemo(() => {
+    const pendingSet = new Set(pendingApplications.map((a) => a.id));
+    return selectedIds.filter((id) => pendingSet.has(id));
+  }, [pendingApplications, selectedIds]);
+
+  const canApprovePending =
+    (activeFilterTab === "Pending" && filteredApplications.length > 0) ||
+    selectedPendingIds.length > 0;
+
+  const handleInitiateApprovePending = (specificIds?: string[]) => {
+    let ids: string[] = [];
+    if (specificIds && specificIds.length > 0) {
+      ids = specificIds;
+    } else if (selectedPendingIds.length > 0) {
+      ids = selectedPendingIds;
+    } else if (activeFilterTab === "Pending") {
+      ids = filteredApplications.map((a) => a.id);
+    } else {
+      ids = pendingApplications.map((a) => a.id);
+    }
+
+    if (ids.length === 0) {
+      toast({
+        type: "info",
+        title: "No Pending Applications",
+        description: "There are no pending applications to approve.",
+      });
+      return;
+    }
+
+    setPendingIdsToApprove(ids);
+    setIsApprovePendingModalOpen(true);
+  };
+
+  const handleConfirmApprovePending = async () => {
+    if (pendingIdsToApprove.length === 0) {
+      setIsApprovePendingModalOpen(false);
+      return;
+    }
+
+    setIsApprovingPending(true);
+    try {
+      const results = await Promise.allSettled(
+        pendingIdsToApprove.map((id) =>
+          reviewApplicationApi(id, {
+            decision: "approve",
+            stageKey: "application_form",
+            feedback: "Application accepted by Assessment Centre",
+          }),
+        ),
+      );
+
+      const successful = results.filter((r) => r.status === "fulfilled").length;
+      const failed = results.filter((r) => r.status === "rejected").length;
+
+      if (successful > 0) {
+        queryClient.invalidateQueries({ queryKey: APPLICATION_QUERY_KEYS.all });
+        queryClient.invalidateQueries({ queryKey: ["centre", "applications"] });
+        queryClient.invalidateQueries({ queryKey: ["applications"] });
+        queryClient.invalidateQueries({ queryKey: ["centre"] });
+        queryClient.invalidateQueries({ queryKey: ["centre-applications"] });
+
+        setSelectedIds((prev) =>
+          prev.filter((id) => !pendingIdsToApprove.includes(id)),
+        );
+      }
+
+      setIsApprovePendingModalOpen(false);
+      setPendingIdsToApprove([]);
+
+      if (failed === 0) {
+        toast({
+          type: "success",
+          title: "Applications Approved",
+          description: `Successfully approved ${successful} pending application${
+            successful > 1 ? "s" : ""
+          }.`,
+        });
+      } else if (successful > 0) {
+        toast({
+          type: "info",
+          title: "Partially Approved",
+          description: `Approved ${successful} application${
+            successful > 1 ? "s" : ""
+          }, but ${failed} could not be approved.`,
+        });
+      } else {
+        const firstErr = (
+          results.find((r) => r.status === "rejected") as PromiseRejectedResult | undefined
+        )?.reason;
+        const msg =
+          firstErr instanceof Error
+            ? firstErr.message
+            : typeof firstErr === "string"
+            ? firstErr
+            : "Failed to approve pending applications.";
+        toast({
+          type: "error",
+          title: "Approval Failed",
+          description: msg,
+        });
+      }
+    } catch (err: unknown) {
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "An unexpected error occurred during approval.";
+      toast({
+        type: "error",
+        title: "Approval Failed",
+        description: msg,
+      });
+    } finally {
+      setIsApprovingPending(false);
+    }
+  };
+
+  const handleCancelApprovePending = () => {
+    if (isApprovingPending) return;
+    setIsApprovePendingModalOpen(false);
+    setPendingIdsToApprove([]);
+  };
+
   return {
     isLoading, isLoadingInterviews, isLoadingInductions, isLoadingPanels,
     activeFilterTab, setActiveFilterTab,
@@ -397,6 +546,16 @@ export function useApplicationsViewState(
     handleNotifyAwardingBody,
     handleBulkCertify,
     isBulkCertifying: bulkCertifyMutation.isPending,
+    pendingApplications,
+    selectedPendingCount: selectedPendingIds.length,
+    pendingCount: pendingApplications.length,
+    canApprovePending,
+    isApprovePendingModalOpen,
+    isApprovingPending,
+    pendingIdsToApprove,
+    handleInitiateApprovePending,
+    handleConfirmApprovePending,
+    handleCancelApprovePending,
     modalFilters,
     setModalFilters,
     hasActiveFilters,

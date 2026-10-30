@@ -2,8 +2,9 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { FiCalendar, FiChevronDown, FiPlus } from "react-icons/fi";
-import { useGetApplications } from "@/src/features/shared/applications/hooks";
+import { useGetApplications } from "@/features/assessment-centre/features/Applications/hooks";
 import { useGetCentreApplicationsSummary } from "@/src/features/shared/centre/hooks";
+import { isCentrePendingApplication } from "../utils/appViewHelpers";
 import { ApplicationsHeaderBreadcrumb } from "./ApplicationsHeaderBreadcrumb";
 import { ApplicationsStatsCards } from "./ApplicationsStatsCards";
 
@@ -36,6 +37,7 @@ interface ApplicationsHeaderProps {
   onCreatePanel?: () => void;
   activeFilterTab?: string;
   onSelectFilterTab?: (tab: string) => void;
+  onApproveAllPending?: () => void;
 }
 
 export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = (props) => {
@@ -52,6 +54,7 @@ export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = (props) => 
     onCreatePanel,
     activeFilterTab,
     onSelectFilterTab,
+    onApproveAllPending,
   } = props;
 
   const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
@@ -98,19 +101,34 @@ export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = (props) => 
     },
   ].filter(Boolean) as { label: string; icon: React.ReactNode; onClick: () => void }[];
 
-  const { data: applications = [] } = useGetApplications();
+  const { data: applications = [], isFetched: isApplicationsFetched } = useGetApplications();
   const { data: appSummary } = useGetCentreApplicationsSummary();
 
-  const totalCount = appSummary?.total ?? applications.length;
-  const pendingCount =
-    appSummary?.pending ?? applications.filter((a) => a.status === "draft").length;
-  const ongoingCount =
-    appSummary?.ongoing ?? applications.filter((a) => a.status === "in_progress").length;
-  const completedCount =
-    appSummary?.completed ?? applications.filter((a) => a.status === "certified").length;
-  const archivedCount =
-    appSummary?.archived ??
-    applications.filter((a) => a.status === "rejected" || a.status === "withdrawn").length;
+  const nonDraftApps = applications.filter((a) => a.status !== "draft");
+  const pendingFromList = nonDraftApps.filter((a) => isCentrePendingApplication(a)).length;
+  const ongoingFromList = nonDraftApps.filter(
+    (a) => a.status === "in_progress" && !isCentrePendingApplication(a),
+  ).length;
+  const completedFromList = nonDraftApps.filter((a) => a.status === "certified").length;
+  const archivedFromList = nonDraftApps.filter(
+    (a) => a.status === "rejected" || a.status === "withdrawn",
+  ).length;
+
+  const totalCount = isApplicationsFetched
+    ? nonDraftApps.length
+    : (appSummary?.total ?? nonDraftApps.length);
+  const pendingCount = isApplicationsFetched
+    ? pendingFromList
+    : (appSummary?.pending ?? pendingFromList);
+  const ongoingCount = isApplicationsFetched
+    ? ongoingFromList
+    : (appSummary?.ongoing ?? ongoingFromList);
+  const completedCount = isApplicationsFetched
+    ? completedFromList
+    : (appSummary?.completed ?? completedFromList);
+  const archivedCount = isApplicationsFetched
+    ? archivedFromList
+    : (appSummary?.archived ?? archivedFromList);
 
   const isDetailView = Boolean(
     selectedInterviewTitle ||
@@ -226,6 +244,7 @@ export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = (props) => 
         archivedCount={archivedCount}
         activeFilterTab={activeFilterTab}
         onSelectFilterTab={onSelectFilterTab}
+        onApproveAllPending={onApproveAllPending}
       />
     </div>
   );

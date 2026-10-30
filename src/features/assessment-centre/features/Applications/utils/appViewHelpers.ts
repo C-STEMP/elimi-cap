@@ -93,6 +93,16 @@ export function mapInductionItem(item: any): InductionRowData {
   };
 }
 
+export function isCentrePendingApplication(app: any): boolean {
+  if (!app || app.status !== "in_progress") return false;
+  return (
+    app.currentStageKey === "application_form" ||
+    app.currentStageKey === "application_review" ||
+    app.stage === "application_form" ||
+    app.stage === "application_review"
+  );
+}
+
 export function mapApplicationItem(app: any) {
   const rawApp = app as any;
   const formatDate = (dateVal?: any) => {
@@ -148,9 +158,7 @@ export function mapApplicationItem(app: any) {
     status:
       app.status === "certified"
         ? "Completed"
-        : rawApp.currentStageKey === "application_form" ||
-          rawApp.currentStageKey === "application_review" ||
-          app.status === "draft"
+        : isCentrePendingApplication(rawApp)
         ? "Pending"
         : app.status === "in_progress"
         ? (rawApp.ivApproved ? "IV Approved" : "Ongoing")

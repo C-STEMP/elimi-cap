@@ -41,6 +41,11 @@ interface CandidateEvidenceVaultSectionProps {
   accordion?: boolean;
   defaultOpenSection?: number;
   hideVerificationSection?: boolean;
+  onMakePayment?: () => void;
+  onViewReceipt?: () => void;
+  isPaymentPaid?: boolean;
+  isPaymentUnlocked?: boolean;
+  paymentAmountText?: string;
 }
 
 export const CandidateEvidenceVaultSection: React.FC<
@@ -52,6 +57,11 @@ export const CandidateEvidenceVaultSection: React.FC<
   accordion = true,
   defaultOpenSection = 4,
   hideVerificationSection = true,
+  onMakePayment,
+  onViewReceipt,
+  isPaymentPaid,
+  isPaymentUnlocked,
+  paymentAmountText,
 }) => {
   const { toast } = useToast();
   const router = useRouter();
@@ -334,8 +344,15 @@ export const CandidateEvidenceVaultSection: React.FC<
         application={apiApp}
         cvEvidence={cvEvidence}
         accordion={accordion}
-        defaultOpenSection={defaultOpenSection}
+        defaultOpenSection={
+          !isPaymentPaid && isPaymentUnlocked ? 1 : defaultOpenSection
+        }
         hideVerificationSection={hideVerificationSection}
+        onMakePayment={onMakePayment}
+        onViewReceipt={onViewReceipt}
+        isPaymentPaid={isPaymentPaid}
+        isPaymentUnlocked={isPaymentUnlocked}
+        paymentAmountText={paymentAmountText}
         onPreview={(item) => setPreviewItem(item)}
         onViewApplicationForm={
           applicationId

@@ -19,6 +19,7 @@ interface Props {
   archivedCount: number;
   activeFilterTab?: string;
   onSelectFilterTab?: (tab: string) => void;
+  onApproveAllPending?: () => void;
 }
 
 export const ApplicationsStatsCards: React.FC<Props> = ({
@@ -29,6 +30,7 @@ export const ApplicationsStatsCards: React.FC<Props> = ({
   archivedCount,
   activeFilterTab,
   onSelectFilterTab,
+  onApproveAllPending,
 }) => {
   const cards = [
     {
@@ -108,6 +110,26 @@ export const ApplicationsStatsCards: React.FC<Props> = ({
                   {card.unit}
                 </span>
               </div>
+              {card.filterValue === "Pending" && card.count > 0 && onApproveAllPending && (
+                <span
+                  role="button"
+                  tabIndex={0}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onApproveAllPending();
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.stopPropagation();
+                      onApproveAllPending();
+                    }
+                  }}
+                  className="mt-2.5 inline-flex items-center gap-1.5 text-xs font-bold bg-white/20 hover:bg-white/30 text-white px-2.5 py-1 rounded-lg backdrop-blur-xs transition-all cursor-pointer border border-white/25 shadow-2xs hover:scale-105 active:scale-95 w-fit"
+                >
+                  <FiCheckCircle className="w-3.5 h-3.5 text-emerald-300" />
+                  <span>Approve All</span>
+                </span>
+              )}
             </div>
 
             <div className="w-9 h-9 flex items-center justify-center shrink-0 ml-2">

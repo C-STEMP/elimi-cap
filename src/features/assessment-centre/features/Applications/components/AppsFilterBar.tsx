@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { FiSearch, FiFilter, FiList, FiGrid } from "react-icons/fi";
+import { FiSearch, FiFilter, FiList, FiGrid, FiCheckCircle } from "react-icons/fi";
 import { FILTER_TABS } from "../utils/appViewHelpers";
 
 interface Props {
@@ -25,6 +25,11 @@ interface Props {
   isBulkCertifying?: boolean;
   hasActiveFilters?: boolean;
   onClearFilters?: () => void;
+  canApprovePending?: boolean;
+  onApprovePending?: () => void;
+  isApprovingPending?: boolean;
+  selectedPendingCount?: number;
+  pendingCount?: number;
 }
 
 export const AppsFilterBar: React.FC<Props> = ({
@@ -48,6 +53,11 @@ export const AppsFilterBar: React.FC<Props> = ({
   isBulkCertifying,
   hasActiveFilters = false,
   onClearFilters,
+  canApprovePending = false,
+  onApprovePending,
+  isApprovingPending = false,
+  selectedPendingCount = 0,
+  pendingCount,
 }) => (
   <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-gray-100 shadow-2xs flex flex-col gap-4">
     {/* Card Header: Tab Title + Clear filters indicator */}
@@ -214,6 +224,27 @@ export const AppsFilterBar: React.FC<Props> = ({
             </button>
           ) : (
             <>
+              {canApprovePending && onApprovePending && (
+                <button
+                  type="button"
+                  onClick={onApprovePending}
+                  disabled={isApprovingPending}
+                  className="bg-[#1E7F4C] hover:bg-[#1E7F4C]/90 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-all cursor-pointer shadow-xs disabled:opacity-40 whitespace-nowrap flex items-center gap-1.5"
+                >
+                  <FiCheckCircle className="w-3.5 h-3.5 text-white" />
+                  <span>
+                    {isApprovingPending
+                      ? "Approving..."
+                      : selectedPendingCount > 0
+                      ? `Approve All (${selectedPendingCount})`
+                      : `Approve All${
+                          pendingCount !== undefined && pendingCount > 0
+                            ? ` (${pendingCount})`
+                            : ""
+                        }`}
+                  </span>
+                </button>
+              )}
               {activeFilterTab === "IV Approved" && onBulkCertify && (
                 <button
                   type="button"

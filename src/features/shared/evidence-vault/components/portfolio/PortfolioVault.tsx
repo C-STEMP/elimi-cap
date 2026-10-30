@@ -6,11 +6,14 @@ import {
   useGetApplicationPortfolio,
   useGetApplicationReceipt,
   useGetInterviewForms,
+  useGetPaymentQuote,
 } from "@/src/features/shared/applications/hooks";
 import type {
   ApplicationDetail,
   InterviewForm,
 } from "@/src/features/shared/applications/api/types";
+import { formatCurrency } from "@/src/utils/currency";
+import { TransactionReceiptModal } from "@/features/assessment-centre/features/Payment/components/TransactionReceiptModal";
 import type { EvidenceRecord } from "../../utils/evidenceConstants";
 import { PortfolioSection } from "./PortfolioSection";
 import {
@@ -43,6 +46,11 @@ interface PortfolioVaultProps {
   onPreview: (item: EvidenceRecord) => void;
   onViewApplicationForm?: () => void;
   onUploadCv?: () => void;
+  onMakePayment?: () => void;
+  onViewReceipt?: () => void;
+  isPaymentPaid?: boolean;
+  isPaymentUnlocked?: boolean;
+  paymentAmountText?: string;
   /** Role-specific cards — each view keeps its own fill/upload behaviour. */
   selfAssessmentCard: React.ReactNode;
   thirdPartyReportCard: React.ReactNode;
@@ -84,6 +92,11 @@ export const PortfolioVault: React.FC<PortfolioVaultProps> = ({
   onPreview,
   onViewApplicationForm,
   onUploadCv,
+  onMakePayment,
+  onViewReceipt,
+  isPaymentPaid,
+  isPaymentUnlocked,
+  paymentAmountText,
   selfAssessmentCard,
   thirdPartyReportCard,
   evidenceList,
@@ -95,6 +108,7 @@ export const PortfolioVault: React.FC<PortfolioVaultProps> = ({
 }) => {
   const router = useRouter();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
   const [openSection, setOpenSection] = useState<number | null>(
     defaultOpenSection,
   );
@@ -107,6 +121,9 @@ export const PortfolioVault: React.FC<PortfolioVaultProps> = ({
   const showReceipt = viewer !== "assessor";
   const { data: portfolio } = useGetApplicationPortfolio(applicationId);
   const { data: receipt } = useGetApplicationReceipt(applicationId, { enabled: showReceipt });
+  const { data: paymentQuote } = useGetPaymentQuote(applicationId, {
+    enabled: Boolean(applicationId && showReceipt),
+  });
   const isInterviewStage = Boolean(
     application?.currentStageKey === "interview" ||
       (application as any)?.stages?.some(
@@ -201,8 +218,74 @@ export const PortfolioVault: React.FC<PortfolioVaultProps> = ({
     );
   };
 
-  const isReceiptPaid = resolvedReceipt?.status === "completed";
-  const canViewReceipt = Boolean(resolvedReceipt?.assetId || resolvedReceipt?.url);
+  const isReceiptPaid =
+    isPaymentPaid ??
+    (resolvedReceipt?.status === "completed" ||
+      Boolean(
+        (application as { paymentCompleted?: boolean } | null | undefined)
+          ?.paymentCompleted,
+      ));
+
+  const receiptTransaction = React.useMemo(() => {
+    const amountMinor =
+      receipt?.amount?.amountMinorUnits || paymentQuote?.amountMinorUnits;
+    const currency =
+      receipt?.amount?.currency ||
+      receipt?.currency ||
+      paymentQuote?.currency ||
+      "NGN";
+    const amountPaid = amountMinor
+      ? formatCurrency(amountMinor, currency)
+      : paymentAmountText && paymentAmountText !== "—"
+        ? paymentAmountText
+        : "—";
+
+    const profileDetails = portfolio?.candidateProfile?.personalDetails;
+    const appDetails = application?.personalInformation?.personalDetails;
+    const fullName =
+      receipt?.candidateName ||
+      application?.candidate?.name ||
+      [profileDetails?.firstName, profileDetails?.lastName]
+        .filter(Boolean)
+        .join(" ") ||
+      [appDetails?.firstName, appDetails?.lastName].filter(Boolean).join(" ") ||
+      "Candidate";
+
+    const assessmentType =
+      receipt?.applicationType || application?.type || "RPL";
+    const paidAt = resolvedReceipt?.paidAt;
+
+    return {
+      id:
+        receipt?.paymentId ||
+        (applicationId ? "TXN_" + applicationId.slice(0, 8) : "TXN_PAID"),
+      candidateName: fullName,
+      assessmentType,
+      description:
+        assessmentType === "NSQ"
+          ? "National Skills Qualification"
+          : "Recognition of prior learning",
+      amountPaid,
+      date: paidAt
+        ? new Date(paidAt).toISOString().split("T")[0]
+        : new Date().toISOString().split("T")[0],
+      paymentMethod: receipt?.provider || "Paystack",
+      status: "Paid" as const,
+      transactionId:
+        receipt?.paymentId ||
+        (applicationId
+          ? "TXN_" + applicationId.replace(/-/g, "").slice(0, 10).toUpperCase()
+          : "TXN_PAID"),
+    };
+  }, [
+    receipt,
+    paymentQuote,
+    paymentAmountText,
+    portfolio,
+    application,
+    resolvedReceipt,
+    applicationId,
+  ]);
 
   return (
     <div className={`flex flex-col ${accordion ? "gap-4" : "gap-8"} w-full`}>
@@ -226,39 +309,47 @@ export const PortfolioVault: React.FC<PortfolioVaultProps> = ({
           <PortfolioDocCard
             title="Payment Receipt"
             subtitle={
-              resolvedReceipt?.paidAt
-                ? `Paid on ${new Date(resolvedReceipt.paidAt).toLocaleDateString("en-GB")}`
-                : "Assessment fee receipt"
+              isReceiptPaid
+                ? resolvedReceipt?.paidAt
+                  ? `Paid on ${new Date(resolvedReceipt.paidAt).toLocaleDateString("en-GB")}`
+                  : "Assessment fee receipt"
+                : paymentAmountText && paymentAmountText !== "—"
+                  ? `${paymentAmountText} · Assessment fee`
+                  : "Assessment fee receipt"
             }
             badge={
               isReceiptPaid
                 ? { label: "Paid", tone: "success" }
-                : resolvedReceipt?.status === "pending"
-                  ? { label: "Pending", tone: "warning" }
-                  : { label: "Not Paid", tone: "neutral" }
+                : isPaymentUnlocked
+                  ? { label: "Payment Required", tone: "warning" }
+                  : resolvedReceipt?.status === "pending"
+                    ? { label: "Pending", tone: "warning" }
+                    : { label: "Awaiting Approval", tone: "neutral" }
             }
             actions={
-              <PortfolioActionButton
-                disabled={!canViewReceipt}
-                onClick={() =>
-                  resolvedReceipt &&
-                  onPreview({
-                    id:
-                      ("paymentId" in resolvedReceipt && resolvedReceipt.paymentId) ||
-                      "payment-receipt",
-                    name: "Payment Receipt",
-                    size: "PDF",
-                    status: isReceiptPaid ? "Paid" : "Pending",
-                    statusBg: isReceiptPaid ? "bg-[#D1FAE5]" : "bg-[#FEF3C7]",
-                    statusText: isReceiptPaid ? "text-[#047857]" : "text-[#D97706]",
-                    assetId: resolvedReceipt.assetId || undefined,
-                    url: resolvedReceipt.url || undefined,
-                    evidenceType: "Payment Receipt",
-                  })
-                }
-              >
-                View
-              </PortfolioActionButton>
+              isReceiptPaid ? (
+                <PortfolioActionButton
+                  onClick={() =>
+                    onViewReceipt
+                      ? onViewReceipt()
+                      : setIsReceiptModalOpen(true)
+                  }
+                >
+                  View
+                </PortfolioActionButton>
+              ) : viewer === "candidate" && onMakePayment ? (
+                <PortfolioActionButton
+                  variant="amber"
+                  disabled={!isPaymentUnlocked}
+                  onClick={onMakePayment}
+                >
+                  {isPaymentUnlocked ? "Make Payment" : "Awaiting Centre Approval"}
+                </PortfolioActionButton>
+              ) : (
+                <PortfolioActionButton disabled>
+                  View
+                </PortfolioActionButton>
+              )
             }
           />
         )}
@@ -411,6 +502,12 @@ export const PortfolioVault: React.FC<PortfolioVaultProps> = ({
         onClose={() => setIsProfileOpen(false)}
         application={application}
         personalDetails={portfolio?.candidateProfile?.personalDetails}
+      />
+
+      <TransactionReceiptModal
+        isOpen={isReceiptModalOpen}
+        onClose={() => setIsReceiptModalOpen(false)}
+        transaction={receiptTransaction}
       />
     </div>
   );

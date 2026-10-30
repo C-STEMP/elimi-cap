@@ -138,11 +138,15 @@ import { type InterviewRowData } from "../features/Applications/components/ViewI
 import { type InductionRowData } from "../features/Applications/components/ViewInductionDetailModal";
 import { useAppSelector } from "@/src/store/hooks";
 import { useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/src/components/ui/toast";
 import {
   useGetApplicationById,
   useGetApplicationStages,
+  useGetApplications,
   APPLICATION_QUERY_KEYS,
 } from "@/src/features/shared/applications/hooks";
+import { reviewApplicationApi } from "@/src/features/shared/applications/api";
+import { ConfirmApprovePendingModal } from "../features/Applications/components/ConfirmApprovePendingModal";
 import {
   useGetCentreDashboard,
   useGetCentreProfile,
@@ -252,7 +256,6 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
 
   const isSelectedAppApproved = Boolean(
     (selectedAppDetail?.status as string) === "approved" ||
-      selectedAppDetail?.status === "in_progress" ||
       selectedAppDetail?.status === "certified" ||
       selectedAppStages.some(
         (s) =>
@@ -313,6 +316,93 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
   const [assessorsStatusFilter, setAssessorsStatusFilter] = useState<string>("All");
   const [jobStatusFilter, setJobStatusFilter] = useState<string>("all");
   const [paymentsStatusFilter, setPaymentsStatusFilter] = useState<string>("all");
+  const { toast } = useToast();
+  const { data: allApplications = [] } = useGetApplications();
+  const [isApproveAllPendingModalOpen, setIsApproveAllPendingModalOpen] = useState(false);
+  const [isApprovingAllPending, setIsApprovingAllPending] = useState(false);
+
+  const pendingApps = React.useMemo(() => {
+    return allApplications.filter(
+      (a) =>
+        a.status === "in_progress" &&
+        ((a as { currentStageKey?: string }).currentStageKey === "application_form" ||
+          (a as { currentStageKey?: string }).currentStageKey === "application_review" ||
+          (a as { stage?: string }).stage === "application_form" ||
+          (a as { stage?: string }).stage === "application_review"),
+    );
+  }, [allApplications]);
+
+  const handleTriggerApproveAllPending = () => {
+    setApplicationsFilterTab("Pending");
+    setIsApproveAllPendingModalOpen(true);
+  };
+
+  const handleConfirmApproveAllPending = async () => {
+    if (pendingApps.length === 0) {
+      setIsApproveAllPendingModalOpen(false);
+      return;
+    }
+    setIsApprovingAllPending(true);
+    try {
+      const results = await Promise.allSettled(
+        pendingApps.map((a) =>
+          reviewApplicationApi(a.id, {
+            decision: "approve",
+            stageKey: "application_form",
+            feedback: "Application accepted by Assessment Centre",
+          }),
+        ),
+      );
+      const successful = results.filter((r) => r.status === "fulfilled").length;
+      const failed = results.filter((r) => r.status === "rejected").length;
+
+      if (successful > 0) {
+        queryClient.invalidateQueries({ queryKey: APPLICATION_QUERY_KEYS.all });
+        queryClient.invalidateQueries({ queryKey: ["centre", "applications"] });
+        queryClient.invalidateQueries({ queryKey: ["applications"] });
+        queryClient.invalidateQueries({ queryKey: ["centre"] });
+        queryClient.invalidateQueries({ queryKey: ["centre-applications"] });
+      }
+
+      setIsApproveAllPendingModalOpen(false);
+
+      if (failed === 0) {
+        toast({
+          type: "success",
+          title: "Applications Approved",
+          description: `Successfully approved ${successful} pending application${
+            successful > 1 ? "s" : ""
+          }.`,
+        });
+      } else if (successful > 0) {
+        toast({
+          type: "info",
+          title: "Partially Approved",
+          description: `Approved ${successful} application${
+            successful > 1 ? "s" : ""
+          }, but ${failed} could not be approved.`,
+        });
+      } else {
+        toast({
+          type: "error",
+          title: "Approval Failed",
+          description: "Failed to approve pending applications.",
+        });
+      }
+    } catch (err: unknown) {
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "Failed to approve pending applications.";
+      toast({
+        type: "error",
+        title: "Approval Failed",
+        description: msg,
+      });
+    } finally {
+      setIsApprovingAllPending(false);
+    }
+  };
 
   const handleOpenScheduleInterview = () => {
     const hasPanels =
@@ -400,6 +490,7 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
             onScheduleInduction={() => setIsScheduleInductionModalOpen(true)}
             activeFilterTab={applicationsFilterTab}
             onSelectFilterTab={setApplicationsFilterTab}
+            onApproveAllPending={handleTriggerApproveAllPending}
           />
         );
       case "job-listing":
@@ -667,6 +758,15 @@ export const AssessmentCentreDashboardPage: React.FC = () => {
           onClose={() => setIsBroadcastModalOpen(false)}
         />
       )}
+      <ConfirmApprovePendingModal
+        isOpen={isApproveAllPendingModalOpen}
+        isSubmitting={isApprovingAllPending}
+        count={pendingApps.length}
+        onConfirm={handleConfirmApproveAllPending}
+        onCancel={() => {
+          if (!isApprovingAllPending) setIsApproveAllPendingModalOpen(false);
+        }}
+      />
     </div>
   );
 };

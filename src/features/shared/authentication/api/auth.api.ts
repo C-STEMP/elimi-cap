@@ -25,6 +25,7 @@ export type OtpPurpose = "account_verify" | "password_reset";
 export interface RegisterPayload {
   email: string;
   password: string;
+  intents?: string[];
 }
 
 export interface RegisterResponse {
@@ -41,7 +42,7 @@ export async function registerApi(
     data: {
       email: payload.email,
       password: payload.password,
-      intents: ["cap"],
+      intents: payload.intents ?? ["cap", "lms"],
     },
   });
 }
@@ -105,7 +106,7 @@ export async function googleAuthApi(
     data: {
       idToken: payload.idToken,
       provider: "google",
-      intents: payload.intents ?? ["cap"],
+      intents: payload.intents ?? ["cap", "lms"],
     },
   });
 }

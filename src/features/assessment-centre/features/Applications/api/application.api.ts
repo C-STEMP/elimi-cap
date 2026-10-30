@@ -55,10 +55,15 @@ export async function getCentreApplicationsApi(
         interviewSchedulable?: boolean;
       },
 ): Promise<Application[]> {
-  if (typeof params === "string") {
-    return getApplicationsApi({ status: params });
-  }
-  return getApplicationsApi(params);
+  const normalizedParams =
+    typeof params === "string"
+      ? { status: params === "draft" ? ("in_progress" as const) : params }
+      : params?.status === "draft"
+        ? { ...params, status: "in_progress" as const }
+        : params;
+  const applications = await getApplicationsApi(normalizedParams);
+  // Draft applications belong only to candidates and have no assigned workflow.
+  return applications.filter((app) => app.status !== "draft");
 }
 
 export async function getCentreApplicationByIdApi(

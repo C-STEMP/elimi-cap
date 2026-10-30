@@ -127,6 +127,10 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({ 
           <ApplicationDetailsStagesSection
             isDraft={state.isDraft}
             isPaymentPaid={state.isPaymentPaid}
+            isAppFormApproved={state.isAppFormApproved}
+            isPaymentUnlocked={state.isPaymentUnlocked}
+            paymentAmountText={state.paymentAmountText}
+            onMakePayment={state.handleMakePayment}
             onEditApplication={state.handleEditApplication}
             stages={state.stages}
           >
@@ -135,6 +139,11 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({ 
                 applicationId={state.application.id}
                 application={state.apiApp}
                 isApplicationLoading={state.isLoading}
+                onMakePayment={state.handleMakePayment}
+                onViewReceipt={() => state.setIsReceiptModalOpen(true)}
+                isPaymentPaid={state.isPaymentPaid}
+                isPaymentUnlocked={state.isPaymentUnlocked}
+                paymentAmountText={state.paymentAmountText}
                 accordion
                 defaultOpenSection={4}
               />
