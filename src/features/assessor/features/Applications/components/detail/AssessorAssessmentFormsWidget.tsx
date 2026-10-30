@@ -53,8 +53,8 @@ export const AssessorAssessmentFormsWidget: React.FC<
   remoteForms,
   panelistRecords,
   isLeadPanelist = true,
-  isAwaitingPanelSignatures = false,
-  isInterviewDone = false,
+  isAwaitingPanelSignatures: _isAwaitingPanelSignatures = false,
+  isInterviewDone: _isInterviewDone = false,
 }) => {
   const router = useRouter();
   const { toast } = useToast();
@@ -104,9 +104,6 @@ export const AssessorAssessmentFormsWidget: React.FC<
               matchedRemote?.status === "completed" ||
               (matchedRemote?.data as any)?.submittedAt,
           );
-          const hasData = Boolean(
-            matchedRemote?.data && Object.keys(matchedRemote.data).length > 0,
-          );
 
           const hasMyRecord = Boolean(
             matchedPanelistRecord?.data &&
@@ -119,13 +116,15 @@ export const AssessorAssessmentFormsWidget: React.FC<
                 (matchedPanelistRecord?.data as any)?.assessorSigned),
           );
 
-          // If candidate signed:
-          // A form is only fully completed/signed when candidate has signed AND interview stage is completed.
-          // While interview stage is ongoing or awaiting panel signatures, it must show "Candidate Signed".
-          const isFullySigned = isCandidateSigned && isInterviewDone && !isAwaitingPanelSignatures;
-          const isPendingPanel = isCandidateSigned && (!isInterviewDone || isAwaitingPanelSignatures);
-
           const isNonLeadEditable = !isLeadPanelist && !isReadOnly;
+          const isCompletedForMe = isNonLeadEditable
+            ? isMyRecordSubmitted
+            : (isSubmitted || isCandidateSigned);
+
+          const actionLabel =
+            isMappingForm || isReadOnly || isCompletedForMe
+              ? "View"
+              : "Fill Form";
 
           return (
             <div
@@ -137,35 +136,6 @@ export const AssessorAssessmentFormsWidget: React.FC<
                 <span className="text-xs sm:text-sm font-semibold text-neutral-primary group-hover:text-primary transition-colors truncate">
                   {form.name}
                 </span>
-                {isMappingForm ? (
-                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 shrink-0">
-                    Available
-                  </span>
-                ) : isNonLeadEditable && isMyRecordSubmitted ? (
-                  <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 shrink-0">
-                    Submitted
-                  </span>
-                ) : isNonLeadEditable && hasMyRecord ? (
-                  <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 shrink-0">
-                    Draft
-                  </span>
-                ) : isFullySigned ? (
-                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 shrink-0">
-                    Signed
-                  </span>
-                ) : isPendingPanel ? (
-                  <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 shrink-0">
-                    Candidate Signed
-                  </span>
-                ) : isSubmitted ? (
-                  <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 shrink-0">
-                    Submitted
-                  </span>
-                ) : hasData ? (
-                  <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 shrink-0">
-                    Draft
-                  </span>
-                ) : null}
               </div>
 
               <button
@@ -176,17 +146,7 @@ export const AssessorAssessmentFormsWidget: React.FC<
                 }}
                 className="text-[#FBAB2A] hover:text-[#E89B1F] font-semibold text-xs sm:text-sm transition-colors cursor-pointer shrink-0"
               >
-                {isMappingForm || isReadOnly
-                  ? "View"
-                  : isNonLeadEditable
-                    ? hasMyRecord
-                      ? "Edit"
-                      : "Fill Form"
-                    : isCandidateSigned
-                      ? "View"
-                      : isSubmitted
-                        ? "Edit"
-                        : "Fill Form"}
+                {actionLabel}
               </button>
             </div>
           );
