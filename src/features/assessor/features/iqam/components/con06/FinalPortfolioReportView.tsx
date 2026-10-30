@@ -548,6 +548,7 @@ export const FinalPortfolioReportView: React.FC<FinalPortfolioReportViewProps> =
             />
             <IqamSignatureBlock
               label="Countersigning IQA (Lead)"
+              required={false}
               signed={signatures.countersigningIqa?.status === "appended"}
               dateValue={signatures.countersigningIqa?.signedAt || ""}
               readOnly={isSubmitted}
