@@ -3,12 +3,9 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { AssessorAssessmentFormLayout } from "./AssessorAssessmentFormLayout";
 import { useToast } from "@/src/components/ui/toast";
-import { FiPlus, FiTrash2, FiEdit3, FiCheckCircle } from "react-icons/fi";
+import { FiPlus, FiTrash2 } from "react-icons/fi";
 import type { AssessmentMappingUnit } from "@/src/features/shared/applications/api/types";
 import type { Unit } from "@/src/features/shared/reference/api";
-import { useResolveAssets } from "@/src/features/shared/storage/hooks";
-import { useAssessorSignature } from "./useAssessorSignature";
-import { DigitalSignaturePad } from "./DigitalSignaturePad";
 import {
   buildUnitMappingItems,
   type GeneratedUnitMappingItem,
@@ -129,34 +126,6 @@ export const AssessmentMappingForm: React.FC<AssessmentMappingFormProps> = ({
   const [overallComments, setOverallComments] = useState<string>(
     formData?.overallComments ?? "",
   );
-  const {
-    signatureUrl: profileSignatureUrl,
-    signatureAssetId: profileSignatureAssetId,
-  } = useAssessorSignature();
-
-  const [assessorSigned, setAssessorSigned] = useState<boolean>(
-    Boolean(formData?.assessorSigned || formData?.assessorSignedAt),
-  );
-  const [assessorSignedAt, setAssessorSignedAt] = useState<string>(
-    formData?.assessorSignedAt || "",
-  );
-  const [assessorSignatureAssetId, setAssessorSignatureAssetId] =
-    useState<string>(formData?.assessorSignatureAssetId || "");
-  const [assessorSignatureUrl, setAssessorSignatureUrl] = useState<string>(
-    formData?.assessorSignatureUrl || "",
-  );
-
-  const sigAssetsToResolve = useMemo(() => {
-    return assessorSignatureAssetId && !assessorSignatureUrl
-      ? [assessorSignatureAssetId]
-      : [];
-  }, [assessorSignatureAssetId, assessorSignatureUrl]);
-  const { data: resolvedSigAssets } = useResolveAssets(sigAssetsToResolve);
-
-  const activeAssessorSignatureUrl =
-    assessorSignatureUrl ||
-    resolvedSigAssets?.[0]?.url ||
-    (assessorSigned ? profileSignatureUrl : null);
 
   const itemRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const titleInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
@@ -221,35 +190,8 @@ export const AssessmentMappingForm: React.FC<AssessmentMappingFormProps> = ({
     );
   };
 
-  const handleAppendSignature = () => {
-    if (isReadOnly) return;
-    const now = new Date().toISOString();
-    setAssessorSigned(true);
-    setAssessorSignedAt(now);
-    if (profileSignatureAssetId) {
-      setAssessorSignatureAssetId(profileSignatureAssetId);
-    }
-    if (profileSignatureUrl) {
-      setAssessorSignatureUrl(profileSignatureUrl);
-    }
-    toast({
-      type: "success",
-      title: "Signature Appended",
-      description: "Assessor signature has been recorded.",
-    });
-  };
-
   const handleSubmit = () => {
     if (isReadOnly) return;
-    if (!assessorSigned && !activeAssessorSignatureUrl) {
-      toast({
-        type: "error",
-        title: "Signature Required",
-        description: "Please append your assessor signature before submitting.",
-      });
-      return;
-    }
-    const now = new Date().toISOString();
     onSubmit({
       candidateFullName,
       assessorName,
@@ -258,11 +200,6 @@ export const AssessmentMappingForm: React.FC<AssessmentMappingFormProps> = ({
       workplaceContext,
       units,
       overallComments,
-      assessorSigned: true,
-      assessorSignedAt: assessorSignedAt || now,
-      assessorSignatureAssetId:
-        assessorSignatureAssetId || profileSignatureAssetId || undefined,
-      assessorSignatureUrl: activeAssessorSignatureUrl || undefined,
     });
   };
 
@@ -557,55 +494,6 @@ export const AssessmentMappingForm: React.FC<AssessmentMappingFormProps> = ({
           }
           className="w-full bg-[#F8F9FA] border border-gray-200 rounded-xl p-3 text-xs text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#FBAB2A] resize-none disabled:opacity-80"
         />
-      </div>
-
-      {/* 4. Signature Section */}
-      <div className="flex flex-col gap-4 pt-4 border-t border-gray-100">
-        <h3 className="text-sm sm:text-base font-bold text-neutral-primary">
-          Signature
-        </h3>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <DigitalSignaturePad
-            label="Assessor Signature"
-            required
-            isSigned={assessorSigned}
-            signerName={assessorName}
-            signedAt={assessorSignedAt}
-            signatureUrl={activeAssessorSignatureUrl}
-            isReadOnly={isReadOnly}
-            onAppendSignature={handleAppendSignature}
-            onClearSignature={() => {
-              setAssessorSigned(false);
-              setAssessorSignedAt("");
-            }}
-          />
-
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-neutral-primary">
-              Candidate Signature<span className="text-rose-500">*</span>
-            </label>
-            {formData?.candidateSignedAt ? (
-              <div className="h-11 sm:h-12 bg-[#E6F4EA] border border-[#1E7F4C]/30 text-[#1E7F4C] font-bold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2.5 px-3.5 select-none shadow-2xs">
-                {formData?.candidateSignatureUrl ? (
-                  <img
-                    src={formData.candidateSignatureUrl}
-                    alt="Candidate Signature"
-                    className="h-7 max-w-[120px] object-contain"
-                  />
-                ) : (
-                  <FiCheckCircle className="w-4 h-4 text-[#1E7F4C] shrink-0" />
-                )}
-                <span>Signed</span>
-              </div>
-            ) : (
-              <div className="h-11 sm:h-12 bg-[#FFF8EB] border border-[#FBAB2A]/60 text-[#FBAB2A] font-semibold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2 select-none">
-                <FiEdit3 className="w-4 h-4 text-[#FBAB2A] shrink-0" />
-                <span>Awaiting Signature</span>
-              </div>
-            )}
-          </div>
-        </div>
       </div>
     </AssessorAssessmentFormLayout>
   );
