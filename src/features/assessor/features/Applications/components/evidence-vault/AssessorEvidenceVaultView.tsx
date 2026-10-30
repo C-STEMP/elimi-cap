@@ -125,7 +125,7 @@ export const AssessorEvidenceVaultView: React.FC<
         badge={iqamBadge(appDetail?.iqamForms, key)}
         actions={
           <PortfolioActionButton onClick={() => setOpenIqamTool(toolId)}>
-            {isSubmitted ? "View" : "Fill"}
+            {isSubmitted ? "View" : "Fill Form"}
           </PortfolioActionButton>
         }
       />
