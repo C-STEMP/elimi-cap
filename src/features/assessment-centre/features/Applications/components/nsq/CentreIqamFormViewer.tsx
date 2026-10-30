@@ -36,9 +36,14 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function EmptyState({ isLoading }: { isLoading: boolean }) {
   return (
     <div className="bg-white rounded-2xl p-8 shadow-xs border border-gray-100 flex flex-col items-center text-center gap-2">
-      <p className="text-xs text-gray-400">
+      <p className="text-sm font-semibold text-gray-700">
         {isLoading ? "Loading form…" : "This form has not been submitted yet."}
       </p>
+      {!isLoading && (
+        <p className="text-xs text-gray-400 max-w-md">
+          This document is completed and submitted by the Internal Verifier (IQA) assigned to this application. Once submitted from the assessor / verifier portal, the full audit report will be viewable here.
+        </p>
+      )}
     </div>
   );
 }

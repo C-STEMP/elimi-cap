@@ -8,7 +8,6 @@ import type { AssessmentMappingUnit } from "@/src/features/shared/applications/a
 import type { Unit } from "@/src/features/shared/reference/api";
 import { useResolveAssets } from "@/src/features/shared/storage/hooks";
 import { useAssessorSignature } from "./useAssessorSignature";
-import { AssessorSignatureModal } from "./AssessorSignatureModal";
 import { DigitalSignaturePad } from "./DigitalSignaturePad";
 import {
   buildUnitMappingItems,
@@ -133,10 +132,8 @@ export const AssessmentMappingForm: React.FC<AssessmentMappingFormProps> = ({
   const {
     signatureUrl: profileSignatureUrl,
     signatureAssetId: profileSignatureAssetId,
-    hasSignature: hasProfileSignature,
   } = useAssessorSignature();
 
-  const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
   const [assessorSigned, setAssessorSigned] = useState<boolean>(
     Boolean(formData?.assessorSigned || formData?.assessorSignedAt),
   );
@@ -226,40 +223,20 @@ export const AssessmentMappingForm: React.FC<AssessmentMappingFormProps> = ({
 
   const handleAppendSignature = () => {
     if (isReadOnly) return;
-    if (
-      !hasProfileSignature &&
-      !activeAssessorSignatureUrl &&
-      !assessorSignatureAssetId
-    ) {
-      setIsSignatureModalOpen(true);
-      return;
-    }
     const now = new Date().toISOString();
     setAssessorSigned(true);
     setAssessorSignedAt(now);
-    setAssessorSignatureAssetId(
-      profileSignatureAssetId || assessorSignatureAssetId || "",
-    );
-    setAssessorSignatureUrl(
-      profileSignatureUrl || activeAssessorSignatureUrl || "",
-    );
+    if (profileSignatureAssetId) {
+      setAssessorSignatureAssetId(profileSignatureAssetId);
+    }
+    if (profileSignatureUrl) {
+      setAssessorSignatureUrl(profileSignatureUrl);
+    }
     toast({
       type: "success",
       title: "Signature Appended",
-      description: "Your official assessor signature has been recorded.",
+      description: "Assessor signature has been recorded.",
     });
-  };
-
-  const handleSignatureUploadSuccess = (sig: {
-    assetId: string;
-    url?: string;
-  }) => {
-    const now = new Date().toISOString();
-    setAssessorSigned(true);
-    setAssessorSignedAt(now);
-    setAssessorSignatureAssetId(sig.assetId);
-    setAssessorSignatureUrl(sig.url || "");
-    setIsSignatureModalOpen(false);
   };
 
   const handleSubmit = () => {
@@ -270,9 +247,6 @@ export const AssessmentMappingForm: React.FC<AssessmentMappingFormProps> = ({
         title: "Signature Required",
         description: "Please append your assessor signature before submitting.",
       });
-      if (!hasProfileSignature) {
-        setIsSignatureModalOpen(true);
-      }
       return;
     }
     const now = new Date().toISOString();
@@ -601,7 +575,6 @@ export const AssessmentMappingForm: React.FC<AssessmentMappingFormProps> = ({
             signatureUrl={activeAssessorSignatureUrl}
             isReadOnly={isReadOnly}
             onAppendSignature={handleAppendSignature}
-            onChangeSignature={() => setIsSignatureModalOpen(true)}
             onClearSignature={() => {
               setAssessorSigned(false);
               setAssessorSignedAt("");
@@ -634,13 +607,6 @@ export const AssessmentMappingForm: React.FC<AssessmentMappingFormProps> = ({
           </div>
         </div>
       </div>
-
-      <AssessorSignatureModal
-        isOpen={isSignatureModalOpen}
-        onClose={() => setIsSignatureModalOpen(false)}
-        onSuccess={handleSignatureUploadSuccess}
-        title="Upload Assessor Signature"
-      />
     </AssessorAssessmentFormLayout>
   );
 };

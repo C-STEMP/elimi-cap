@@ -21,8 +21,14 @@ import {
   PortfolioActionButton,
   PortfolioDocCard,
   PortfolioVault,
+  type PortfolioBadgeTone,
 } from "@/src/features/shared/evidence-vault/components/portfolio";
+import type { IqamFormSummaryItem } from "@/src/features/shared/applications/api/types";
+import type { IqamToolId } from "@/src/features/assessor/features/iqam/types/iqam.types";
+import { FinalPortfolioReportView } from "@/src/features/assessor/features/iqam/components/con06/FinalPortfolioReportView";
+import { ObservationChecklistView } from "@/src/features/assessor/features/iqam/components/con05/ObservationChecklistView";
 import React, { useEffect, useState } from "react";
+import { FiX } from "react-icons/fi";
 import {
   AssessorCalendarWidget,
   AssessorUpcomingEventsWidget,
@@ -32,6 +38,23 @@ import { type EvidenceItem } from "./EvidenceItemCard";
 import { EvidenceListSection } from "./EvidenceListSection";
 import { FolderCompleteSuccessModal } from "./FolderCompleteSuccessModal";
 import { AssessorThirdPartyReportCard } from "./AssessorThirdPartyReportCard";
+
+const IQAM_TOOL_TITLES: Partial<Record<IqamToolId, string>> = {
+  "CON/05/IQAM": "IV Observation & Questioning Checklist",
+  "CON/06/IQAM": "Final Portfolio / Award Report Form",
+};
+
+function iqamBadge(
+  forms: IqamFormSummaryItem[] | null | undefined,
+  key: IqamFormSummaryItem["key"],
+): { label: string; tone: PortfolioBadgeTone } {
+  const status = forms?.find((f) => f.key === key)?.status?.toLowerCase() || "";
+  if (status.includes("submit") || status.includes("complet")) {
+    return { label: "Submitted", tone: "success" };
+  }
+  if (status) return { label: "In Progress", tone: "warning" };
+  return { label: "Not Started", tone: "neutral" };
+}
 
 interface AssessorEvidenceVaultViewProps {
   applicationId?: string;
@@ -85,6 +108,29 @@ export const AssessorEvidenceVaultView: React.FC<
 
   const [evidenceItems, setEvidenceItems] = useState<EvidenceItem[]>([]);
   const [previewItem, setPreviewItem] = useState<EvidenceRecord | null>(null);
+  const [openIqamTool, setOpenIqamTool] = useState<IqamToolId | null>(null);
+
+  const iqamCard = (toolId: IqamToolId, key: IqamFormSummaryItem["key"]) => {
+    const isSubmitted = Boolean(
+      appDetail?.iqamForms?.find((f) => f.key === key)?.submittedAt ||
+        appDetail?.iqamForms
+          ?.find((f) => f.key === key)
+          ?.status?.toLowerCase()
+          .includes("submit")
+    );
+    return (
+      <PortfolioDocCard
+        title={IQAM_TOOL_TITLES[toolId] || toolId}
+        subtitle={`Ref: ${toolId} · Filled by the quality assurer`}
+        badge={iqamBadge(appDetail?.iqamForms, key)}
+        actions={
+          <PortfolioActionButton onClick={() => setOpenIqamTool(toolId)}>
+            {isSubmitted ? "View" : "Fill"}
+          </PortfolioActionButton>
+        }
+      />
+    );
+  };
 
   useEffect(() => {
     const isGeneralEvidence = (e: any) =>
@@ -412,6 +458,8 @@ export const AssessorEvidenceVaultView: React.FC<
                 isLoading={isLoadingEvidence}
               />
             }
+            extraReportCards={iqamCard("CON/05/IQAM", "assessor_outcomes")}
+            verificationReportCard={iqamCard("CON/06/IQAM", "final_portfolio")}
           />
         </div>
 
@@ -451,6 +499,46 @@ export const AssessorEvidenceVaultView: React.FC<
         isOpen={isFolderCompleteSuccessOpen}
         onClose={handleFolderCompleteFinished}
       />
+
+      {openIqamTool && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-xs select-text">
+          <div className="bg-white rounded-3xl w-full max-w-6xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden border border-gray-100">
+            <div className="p-4 sm:p-5 border-b border-gray-100 flex items-center justify-between bg-[#F8F9FA] shrink-0">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">
+                  Internal Quality Assurance
+                </span>
+                <h3 className="text-base sm:text-lg font-bold text-gray-900">
+                  {IQAM_TOOL_TITLES[openIqamTool] || openIqamTool}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setOpenIqamTool(null)}
+                aria-label="Close"
+                className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-200 transition-all cursor-pointer"
+              >
+                <FiX className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+              {openIqamTool === "CON/06/IQAM" ? (
+                <FinalPortfolioReportView
+                  applicationId={applicationId || ""}
+                  candidateName={candidateName}
+                  onBack={() => setOpenIqamTool(null)}
+                />
+              ) : openIqamTool === "CON/05/IQAM" ? (
+                <ObservationChecklistView
+                  applicationId={applicationId || ""}
+                  candidateName={candidateName}
+                  onBack={() => setOpenIqamTool(null)}
+                />
+              ) : null}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
