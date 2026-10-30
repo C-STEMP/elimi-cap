@@ -32,7 +32,6 @@ import Image from "next/image";
 import React, { useMemo, useState } from "react";
 import { FiArrowLeft, FiCheckCircle, FiClock, FiEdit3 } from "react-icons/fi";
 import { FormHeaderActions } from "../form/FormHeaderActions";
-import { AssessorSignatureModal } from "./AssessorSignatureModal";
 import { useAssessorSignature } from "./useAssessorSignature";
 import { cleanQuestionTitle } from "./utils";
 
@@ -408,13 +407,7 @@ export const AssessorAssessmentFormDocumentView: React.FC<
   const {
     signatureUrl: profileSignatureUrl,
     signatureAssetId: profileSignatureAssetId,
-    hasSignature: hasProfileSignature,
   } = useAssessorSignature();
-
-  const [isAssessorSigModalOpen, setIsAssessorSigModalOpen] = useState(false);
-  const [pendingRoleToSign, setPendingRoleToSign] = useState<
-    "lead" | "assessor" | null
-  >(null);
 
   const assetsToResolve = useMemo(() => {
     const ids: string[] = [];
@@ -467,10 +460,7 @@ export const AssessorAssessmentFormDocumentView: React.FC<
     )?.url ||
     null;
 
-  const handleSignAsRole = async (
-    role: "lead" | "assessor",
-    sigOverride?: { assetId: string; url?: string },
-  ) => {
+  const handleSignAsRole = async (role: "lead" | "assessor") => {
     if (!applicationId) {
       toast({
         type: "error",
@@ -499,19 +489,15 @@ export const AssessorAssessmentFormDocumentView: React.FC<
         assessorSigned: true,
         assessorSignedAt: now,
         assessorSignatureAssetId:
-          sigOverride?.assetId ||
           profileSignatureAssetId ||
           (formData as any)?.assessorSignatureAssetId,
         assessorSignatureUrl:
-          sigOverride?.url ||
           profileSignatureUrl ||
           (formData as any)?.assessorSignatureUrl,
         leadPanelistSignatureAssetId:
-          sigOverride?.assetId ||
           profileSignatureAssetId ||
           (formData as any)?.leadPanelistSignatureAssetId,
         leadPanelistSignatureUrl:
-          sigOverride?.url ||
           profileSignatureUrl ||
           (formData as any)?.leadPanelistSignatureUrl,
       };
@@ -578,23 +564,7 @@ export const AssessorAssessmentFormDocumentView: React.FC<
       });
       return;
     }
-    if (!hasProfileSignature && !displayAssessorSigUrl) {
-      setPendingRoleToSign(role);
-      setIsAssessorSigModalOpen(true);
-      return;
-    }
     handleSignAsRole(role);
-  };
-
-  const handleAssessorSigModalSuccess = (sig: {
-    assetId: string;
-    url?: string;
-  }) => {
-    if (pendingRoleToSign) {
-      handleSignAsRole(pendingRoleToSign, sig);
-    }
-    setPendingRoleToSign(null);
-    setIsAssessorSigModalOpen(false);
   };
 
   const [isCandidateSignModalOpen, setIsCandidateSignModalOpen] =
@@ -973,17 +943,6 @@ export const AssessorAssessmentFormDocumentView: React.FC<
           candidateName={candidateFullName}
         />
       )}
-
-      <AssessorSignatureModal
-        isOpen={isAssessorSigModalOpen}
-        onClose={() => setIsAssessorSigModalOpen(false)}
-        onSuccess={handleAssessorSigModalSuccess}
-        title={
-          pendingRoleToSign === "lead"
-            ? "Upload Lead Panelist Signature"
-            : "Upload Assessor Signature"
-        }
-      />
     </div>
   );
 };

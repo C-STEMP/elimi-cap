@@ -7,7 +7,6 @@ import { useResolveAssets } from "@/src/features/shared/storage/hooks";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { FiPlus, FiTrash2 } from "react-icons/fi";
 import { AssessorAssessmentFormLayout } from "./AssessorAssessmentFormLayout";
-import { AssessorSignatureModal } from "./AssessorSignatureModal";
 import { DigitalSignaturePad } from "./DigitalSignaturePad";
 import { useAssessorSignature } from "./useAssessorSignature";
 import {
@@ -148,12 +147,7 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
   const {
     signatureUrl: profileSignatureUrl,
     signatureAssetId: profileSignatureAssetId,
-    hasSignature: hasProfileSignature,
   } = useAssessorSignature();
-
-  const [signatureModalTarget, setSignatureModalTarget] = useState<
-    "lead" | "panel" | "iv" | null
-  >(null);
 
   const [leadPanelistSigned, setLeadPanelistSigned] = useState<boolean>(
     Boolean(
@@ -349,104 +343,56 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
 
   const handleAppendSignature = () => {
     if (!canSignLead) return;
-    if (
-      !hasProfileSignature &&
-      !activeLeadSignatureUrl &&
-      !leadPanelistSignatureAssetId
-    ) {
-      setSignatureModalTarget("lead");
-      return;
-    }
     const now = new Date().toISOString();
     setLeadPanelistSigned(true);
     setLeadPanelistSignedAt(now);
-    setLeadPanelistSignatureAssetId(
-      profileSignatureAssetId || leadPanelistSignatureAssetId || "",
-    );
-    setLeadPanelistSignatureUrl(
-      profileSignatureUrl || activeLeadSignatureUrl || "",
-    );
+    if (profileSignatureAssetId) {
+      setLeadPanelistSignatureAssetId(profileSignatureAssetId);
+    }
+    if (profileSignatureUrl) {
+      setLeadPanelistSignatureUrl(profileSignatureUrl);
+    }
     toast({
       type: "success",
       title: "Signature Appended",
-      description: "Lead panelist official signature has been recorded.",
+      description: "Lead panelist signature recorded successfully.",
     });
   };
 
   const handleAppendPanelMemberSignature = () => {
     if (!canSignPanel) return;
-    if (
-      !hasProfileSignature &&
-      !activePanelSignatureUrl &&
-      !panelMemberSignatureAssetId
-    ) {
-      setSignatureModalTarget("panel");
-      return;
-    }
     const now = new Date().toISOString();
     setPanelMemberSigned(true);
     setPanelMemberSignedAt(now);
-    setPanelMemberSignatureAssetId(
-      profileSignatureAssetId || panelMemberSignatureAssetId || "",
-    );
-    setPanelMemberSignatureUrl(
-      profileSignatureUrl || activePanelSignatureUrl || "",
-    );
+    if (profileSignatureAssetId) {
+      setPanelMemberSignatureAssetId(profileSignatureAssetId);
+    }
+    if (profileSignatureUrl) {
+      setPanelMemberSignatureUrl(profileSignatureUrl);
+    }
     toast({
       type: "success",
       title: "Signature Appended",
-      description: "Panel member official signature has been recorded.",
+      description: "Panel member signature recorded successfully.",
     });
   };
 
   const handleAppendIvSignature = () => {
     if (!canSignIv) return;
-    if (
-      !hasProfileSignature &&
-      !activeIvSignatureUrl &&
-      !internalVerifierSignatureAssetId
-    ) {
-      setSignatureModalTarget("iv");
-      return;
-    }
     const now = new Date().toISOString();
     setInternalVerifierSigned(true);
     setInternalVerifierSignedAt(now);
-    setInternalVerifierSignatureAssetId(
-      profileSignatureAssetId || internalVerifierSignatureAssetId || "",
-    );
-    setInternalVerifierSignatureUrl(
-      profileSignatureUrl || activeIvSignatureUrl || "",
-    );
+    if (profileSignatureAssetId) {
+      setInternalVerifierSignatureAssetId(profileSignatureAssetId);
+    }
+    if (profileSignatureUrl) {
+      setInternalVerifierSignatureUrl(profileSignatureUrl);
+    }
     toast({
       type: "success",
       title: "Signature Appended",
-      description: "Internal verifier official signature has been recorded.",
+      description: "Internal verifier signature recorded successfully.",
     });
-  };
-
-  const handleSignatureUploadSuccess = (sig: {
-    assetId: string;
-    url?: string;
-  }) => {
-    const now = new Date().toISOString();
-    if (signatureModalTarget === "lead") {
-      setLeadPanelistSigned(true);
-      setLeadPanelistSignedAt(now);
-      setLeadPanelistSignatureAssetId(sig.assetId);
-      setLeadPanelistSignatureUrl(sig.url || "");
-    } else if (signatureModalTarget === "panel") {
-      setPanelMemberSigned(true);
-      setPanelMemberSignedAt(now);
-      setPanelMemberSignatureAssetId(sig.assetId);
-      setPanelMemberSignatureUrl(sig.url || "");
-    } else if (signatureModalTarget === "iv") {
-      setInternalVerifierSigned(true);
-      setInternalVerifierSignedAt(now);
-      setInternalVerifierSignatureAssetId(sig.assetId);
-      setInternalVerifierSignatureUrl(sig.url || "");
-    }
-    setSignatureModalTarget(null);
   };
 
   const handleSubmit = () => {
@@ -459,9 +405,6 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
         description:
           "Please append your Lead Panelist signature before submitting.",
       });
-      if (!hasProfileSignature) {
-        setSignatureModalTarget("lead");
-      }
       return;
     }
 
@@ -472,9 +415,6 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
         description:
           "Please append your Panel Member signature before submitting.",
       });
-      if (!hasProfileSignature) {
-        setSignatureModalTarget("panel");
-      }
       return;
     }
 
@@ -485,9 +425,6 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
         description:
           "Please append your Internal Verifier signature before submitting.",
       });
-      if (!hasProfileSignature) {
-        setSignatureModalTarget("iv");
-      }
       return;
     }
 
@@ -781,9 +718,6 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
             signatureUrl={activeLeadSignatureUrl}
             isReadOnly={!canSignLead}
             onAppendSignature={handleAppendSignature}
-            onChangeSignature={
-              canSignLead ? () => setSignatureModalTarget("lead") : undefined
-            }
             onClearSignature={
               canSignLead
                 ? () => {
@@ -803,9 +737,6 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
             signatureUrl={activePanelSignatureUrl}
             isReadOnly={!canSignPanel}
             onAppendSignature={handleAppendPanelMemberSignature}
-            onChangeSignature={
-              canSignPanel ? () => setSignatureModalTarget("panel") : undefined
-            }
             onClearSignature={
               canSignPanel
                 ? () => {
@@ -825,9 +756,6 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
             signatureUrl={activeIvSignatureUrl}
             isReadOnly={!canSignIv}
             onAppendSignature={handleAppendIvSignature}
-            onChangeSignature={
-              canSignIv ? () => setSignatureModalTarget("iv") : undefined
-            }
             onClearSignature={
               canSignIv
                 ? () => {
@@ -839,19 +767,6 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
           />
         </div>
       </div>
-
-      <AssessorSignatureModal
-        isOpen={Boolean(signatureModalTarget)}
-        onClose={() => setSignatureModalTarget(null)}
-        onSuccess={handleSignatureUploadSuccess}
-        title={
-          signatureModalTarget === "lead"
-            ? "Upload Lead Panelist Signature"
-            : signatureModalTarget === "panel"
-              ? "Upload Panel Member Signature"
-              : "Upload Internal Verifier Signature"
-        }
-      />
     </AssessorAssessmentFormLayout>
   );
 };

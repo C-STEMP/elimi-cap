@@ -12,7 +12,6 @@ interface DigitalSignaturePadProps {
   signatureUrl?: string | null;
   isReadOnly?: boolean;
   onAppendSignature: () => void;
-  onChangeSignature?: () => void;
   onClearSignature?: () => void;
   className?: string;
 }
@@ -22,11 +21,10 @@ export const DigitalSignaturePad: React.FC<DigitalSignaturePadProps> = ({
   required = true,
   isSigned,
   signerName: _signerName,
-  signedAt,
+  signedAt: _signedAt,
   signatureUrl,
   isReadOnly = false,
   onAppendSignature,
-  onChangeSignature,
   onClearSignature,
   className = "",
 }) => {
@@ -42,13 +40,7 @@ export const DigitalSignaturePad: React.FC<DigitalSignaturePadProps> = ({
 
       {isSigned ? (
         <div
-          onClick={!isReadOnly && onChangeSignature ? onChangeSignature : undefined}
-          className={`h-11 sm:h-12 bg-[#E6F4EA] border border-[#1E7F4C]/30 text-[#1E7F4C] font-bold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2.5 px-3.5 select-none shadow-2xs transition-all ${
-            !isReadOnly && onChangeSignature
-              ? "cursor-pointer hover:bg-[#DCF0E2]"
-              : ""
-          }`}
-          title={!isReadOnly && onChangeSignature ? "Click to change signature" : undefined}
+          className="h-11 sm:h-12 bg-[#E6F4EA] border border-[#1E7F4C]/30 text-[#1E7F4C] font-bold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2.5 px-3.5 select-none shadow-2xs transition-all"
         >
           {signatureUrl ? (
             <img
@@ -60,10 +52,17 @@ export const DigitalSignaturePad: React.FC<DigitalSignaturePadProps> = ({
             <FiCheckCircle className="w-4 h-4 text-[#1E7F4C] shrink-0" />
           )}
           <span>Signed</span>
-          {!isReadOnly && onChangeSignature && (
-            <span className="text-[11px] font-normal text-emerald-700/80 underline ml-1 hover:text-emerald-800">
-              (Change)
-            </span>
+          {!isReadOnly && onClearSignature && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onClearSignature();
+              }}
+              className="text-[11px] font-normal text-emerald-700/80 underline ml-1 hover:text-rose-600 transition-colors cursor-pointer"
+            >
+              (Clear)
+            </button>
           )}
         </div>
       ) : isReadOnly ? (

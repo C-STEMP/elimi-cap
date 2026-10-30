@@ -103,6 +103,54 @@ export const NosStandardCard: React.FC<NosStandardCardProps> = ({
           </span>
         </div>
       </div>
+
+      <div className="flex flex-col gap-2.5">
+        {isLoading ? (
+          Array.from({ length: 3 }).map((_, i) => (
+            <div
+              key={i}
+              className="p-4 rounded-xl bg-[#F8F9FA] flex items-center justify-between gap-4 animate-pulse"
+            >
+              <div className="h-3.5 bg-gray-200 rounded w-2/3" />
+              <div className="h-5 bg-gray-200 rounded-full w-20 shrink-0" />
+            </div>
+          ))
+        ) : units.length === 0 ? (
+          <p className="text-xs text-gray-400 font-medium py-2">
+            No units found for {levelLabel} in this trade standard yet.
+          </p>
+        ) : (
+          units.map((unit) => (
+            <div
+              key={unit.id}
+              className="p-4 rounded-xl bg-[#F8F9FA] flex items-center justify-between gap-4"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                {unit.referenceNumber ? (
+                  <span className="font-bold text-xs sm:text-sm text-gray-900 uppercase shrink-0">
+                    {unit.referenceNumber}:
+                  </span>
+                ) : null}
+                <span
+                  className="text-xs sm:text-sm text-gray-600 font-normal truncate"
+                  title={unit.title}
+                >
+                  {unit.title}
+                </span>
+              </div>
+              <span
+                className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold shrink-0 ${
+                  unit.isMandatory
+                    ? "bg-[#FCE7F3] text-[#BE185D]"
+                    : "bg-gray-200/80 text-gray-600"
+                }`}
+              >
+                {unit.isMandatory ? "Mandatory" : "Optional"}
+              </span>
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 };
