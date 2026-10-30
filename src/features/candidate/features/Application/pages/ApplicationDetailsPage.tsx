@@ -140,6 +140,7 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({ 
                 application={state.apiApp}
                 isApplicationLoading={state.isLoading}
                 onMakePayment={state.handleMakePayment}
+                onViewReceipt={() => state.setIsReceiptModalOpen(true)}
                 isPaymentPaid={state.isPaymentPaid}
                 isPaymentUnlocked={state.isPaymentUnlocked}
                 paymentAmountText={state.paymentAmountText}

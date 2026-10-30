@@ -42,6 +42,7 @@ interface CandidateEvidenceVaultSectionProps {
   defaultOpenSection?: number;
   hideVerificationSection?: boolean;
   onMakePayment?: () => void;
+  onViewReceipt?: () => void;
   isPaymentPaid?: boolean;
   isPaymentUnlocked?: boolean;
   paymentAmountText?: string;
@@ -57,6 +58,7 @@ export const CandidateEvidenceVaultSection: React.FC<
   defaultOpenSection = 4,
   hideVerificationSection = true,
   onMakePayment,
+  onViewReceipt,
   isPaymentPaid,
   isPaymentUnlocked,
   paymentAmountText,
@@ -347,6 +349,7 @@ export const CandidateEvidenceVaultSection: React.FC<
         }
         hideVerificationSection={hideVerificationSection}
         onMakePayment={onMakePayment}
+        onViewReceipt={onViewReceipt}
         isPaymentPaid={isPaymentPaid}
         isPaymentUnlocked={isPaymentUnlocked}
         paymentAmountText={paymentAmountText}
