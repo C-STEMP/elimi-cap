@@ -126,12 +126,16 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({ 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           <ApplicationDetailsStagesSection
             isDraft={state.isDraft}
+            isWithdrawn={state.isWithdrawn}
+            canWithdraw={state.canWithdraw}
             isPaymentPaid={state.isPaymentPaid}
             isAppFormApproved={state.isAppFormApproved}
             isPaymentUnlocked={state.isPaymentUnlocked}
             paymentAmountText={state.paymentAmountText}
             onMakePayment={state.handleMakePayment}
             onEditApplication={state.handleEditApplication}
+            onChangeCentre={state.handleChangeCentre}
+            onWithdrawApplication={() => state.setIsWithdrawModalOpen(true)}
             stages={state.stages}
           >
             <div id="evidence-vault-section" className="scroll-mt-24">
@@ -190,6 +194,11 @@ export const ApplicationDetailsPage: React.FC<ApplicationDetailsPageProps> = ({ 
         candidateName={state.apiApp?.candidate?.name || "Candidate"}
         isAppealModalOpen={state.isAppealModalOpen}
         onCloseAppealModal={() => state.setIsAppealModalOpen(false)}
+        isWithdrawModalOpen={state.isWithdrawModalOpen}
+        onCloseWithdrawModal={() => state.setIsWithdrawModalOpen(false)}
+        onConfirmWithdraw={state.handleConfirmWithdraw}
+        isWithdrawing={state.isWithdrawing}
+        isDraft={state.isDraft}
         isReceiptModalOpen={state.isReceiptModalOpen}
         onCloseReceiptModal={() => state.setIsReceiptModalOpen(false)}
         transactionReceipt={state.transactionReceipt}

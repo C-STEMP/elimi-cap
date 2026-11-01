@@ -19,6 +19,10 @@ import {
   useCandidateProfile,
   useCandidateProfileSignature,
 } from "@/src/features/shared/onboarding/hooks";
+import {
+  useGetApplications,
+  useGetApplicationById,
+} from "@/src/features/candidate/features/Application/hooks";
 import { useResolveAssets } from "@/src/features/shared/storage/hooks";
 import { UploadSignatureModal } from "@/src/features/candidate/features/Application/components/UploadSignatureModal";
 import { markVerified } from "@/store/slices/authSlice";
@@ -81,23 +85,52 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
   const personalInfo = useAppSelector((s) => s.onboarding.personalInfo);
   const rplExp = useAppSelector((s) => s.onboarding.rplExperienceTrade);
   const rplId = useAppSelector((s) => s.onboarding.rplIdentity);
+  const currentAppId = useAppSelector((s) => s.application.currentApplicationId);
+
+  const { data: existingApps = [] } = useGetApplications();
+  const activeApp = React.useMemo(() => {
+    return (
+      existingApps.find(
+        (a) =>
+          a.id === currentAppId &&
+          a.status !== "certified" &&
+          a.status !== "rejected" &&
+          a.status !== "withdrawn",
+      ) ||
+      existingApps.find(
+        (a) =>
+          (a.type || "RPL").toUpperCase() === "RPL" &&
+          a.status !== "certified" &&
+          a.status !== "rejected" &&
+          a.status !== "withdrawn",
+      )
+    );
+  }, [existingApps, currentAppId]);
+
+  const { data: appDetail } = useGetApplicationById(activeApp?.id || "");
 
   const obData = (getOnboarding.data?.data || (candidateProfile as any)?.onboarding?.data) as any;
-  const effectiveFirstName = personalInfo.firstName || obData?.personalDetails?.firstName;
-  const effectiveLastName = personalInfo.lastName || obData?.personalDetails?.lastName;
+  const appPd = appDetail?.personalInformation?.personalDetails;
+  const effectiveFirstName =
+    personalInfo.firstName || obData?.personalDetails?.firstName || appPd?.firstName;
+  const effectiveLastName =
+    personalInfo.lastName || obData?.personalDetails?.lastName || appPd?.lastName;
   const personalInfoCompleted = Boolean(
     effectiveFirstName && effectiveLastName,
   );
 
   const obOcc = obData?.currentOccupation || obData?.rplExperienceTrade;
+  const appOcc = appDetail?.currentOccupation;
   const effectiveOccupation =
     rplExp.occupation ||
     obOcc?.occupation ||
+    appOcc?.occupation ||
     (!rplExp.qualificationTitle?.match(/^[0-9A-Z]{20,}$/) && rplExp.qualificationTitle);
   const expCompleted = Boolean(
     effectiveOccupation ||
       rplExp.employments?.some((e) => e.companyName || e.jobTitle) ||
-      obOcc?.employmentHistory?.length > 0,
+      obOcc?.employmentHistory?.length > 0 ||
+      (appOcc?.employmentHistory?.length ?? 0) > 0,
   );
   const identityVerified = Boolean(
     rplId.isVerified ||
@@ -158,11 +191,30 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
   const [showSubmitModal, setShowSubmitModal] = useState(false);
 
   const [declarations, setDeclarations] = useState({
-    trueAndAccurate: true,
-    noGuarantee: false,
-    sufficientEvidence: false,
-    agreeTerms: false,
+    trueAndAccurate: rplExp.declarations?.trueAndAccurate ?? true,
+    noGuarantee: rplExp.declarations?.noGuarantee ?? false,
+    sufficientEvidence: rplExp.declarations?.sufficientEvidence ?? false,
+    agreeTerms: rplExp.declarations?.agreeTerms ?? false,
   });
+  const hasHydratedDeclarationsRef = React.useRef(false);
+
+  React.useEffect(() => {
+    if (hasHydratedDeclarationsRef.current) return;
+    const decl = (appDetail as any)?.assessmentDeclaration;
+    if (decl) {
+      hasHydratedDeclarationsRef.current = true;
+      const next = {
+        trueAndAccurate: Boolean(decl.infoProvidedIsAccurate ?? true),
+        noGuarantee: Boolean(decl.understandsDoesNotGuaranteeCertification),
+        sufficientEvidence: Boolean(
+          decl.understandsThatNeedsToProvideSufficientEvidenceToDemonstrateCompetence,
+        ),
+        agreeTerms: Boolean(decl.agreesToTermsAndPrivacyPolicy),
+      };
+      setDeclarations(next);
+      dispatch(setRPLExperienceTrade({ declarations: next }));
+    }
+  }, [appDetail, dispatch]);
 
   React.useEffect(() => {
     dispatch(setSidebarVariant("rpl-form"));
@@ -176,7 +228,9 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
     declarations.agreeTerms;
 
   const toggleDeclaration = (key: keyof typeof declarations) => {
-    setDeclarations((prev) => ({ ...prev, [key]: !prev[key] }));
+    const next = { ...declarations, [key]: !declarations[key] };
+    setDeclarations(next);
+    dispatch(setRPLExperienceTrade({ declarations: next }));
   };
 
   const [showConfirmDraftModal, setShowConfirmDraftModal] = useState(false);
@@ -194,7 +248,7 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
     setShowConfirmDraftModal(false);
     setShowSavingDraftModal(true);
     try {
-      await saveDraft();
+      await saveDraft({ declarations });
       setShowSavingDraftModal(false);
       setShowDraftModal(true);
     } catch (err: any) {

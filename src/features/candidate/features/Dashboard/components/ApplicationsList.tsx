@@ -12,6 +12,7 @@ export interface ApplicationItem {
   subtitle: string;
   status: "Not Started" | "In Progress" | "Completed";
   statusLabel?: string;
+  rawStatus?: string;
   type?: string;
 }
 
@@ -20,12 +21,25 @@ interface ApplicationsListProps {
   isLoading?: boolean;
 }
 
+type DashboardAppTab = "Active" | "Withdrawn";
+
 export const ApplicationsList: React.FC<ApplicationsListProps> = ({
   applications = [],
   isLoading = false,
 }) => {
   const router = useRouter();
+  const [activeTab, setActiveTab] = React.useState<DashboardAppTab>("Active");
+
+  const filteredApplications = React.useMemo(() => {
+    return applications.filter((app) => {
+      const isWithdrawn =
+        app.rawStatus === "withdrawn" || app.statusLabel === "Withdrawn";
+      return activeTab === "Withdrawn" ? isWithdrawn : !isWithdrawn;
+    });
+  }, [applications, activeTab]);
+
   const hasApplications = applications.length > 0;
+  const hasFilteredApplications = filteredApplications.length > 0;
 
   const handleCreateApplication = () => {
     router.push("/onboarding/assessment-type");
@@ -33,19 +47,39 @@ export const ApplicationsList: React.FC<ApplicationsListProps> = ({
 
   return (
     <div className="bg-white rounded-[22px] p-5 lg:p-6 shadow-lg border border-gray-100 flex flex-col justify-start">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
         <h3 className="text-black font-medium text-lg tracking-tight">
           My Applications
         </h3>
-        {hasApplications && (
-          <Link
-            href="/dashboard/applications"
-            className="text-primary text-xs font-semibold flex items-center gap-0.5 hover:underline cursor-pointer transition-colors"
-          >
-            View All
-            <FiChevronRight className="w-4 h-4 stroke-[2.5]" />
-          </Link>
-        )}
+        <div className="flex items-center justify-between sm:justify-end gap-3">
+          {hasApplications && (
+            <div className="flex items-center gap-1 text-xs font-medium bg-input-bg p-1 rounded-full shrink-0">
+              {(["Active", "Withdrawn"] as DashboardAppTab[]).map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-3 py-1 rounded-full transition-all duration-200 cursor-pointer ${
+                    activeTab === tab
+                      ? "bg-white text-[#191913] font-medium shadow-xs"
+                      : "text-[#191913] hover:bg-white/50"
+                  }`}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
+          )}
+          {hasApplications && (
+            <Link
+              href="/dashboard/applications"
+              className="text-primary text-xs font-semibold flex items-center gap-0.5 hover:underline cursor-pointer transition-colors"
+            >
+              View All
+              <FiChevronRight className="w-4 h-4 stroke-[2.5]" />
+            </Link>
+          )}
+        </div>
       </div>
 
       {isLoading ? (
@@ -66,29 +100,34 @@ export const ApplicationsList: React.FC<ApplicationsListProps> = ({
             </div>
           ))}
         </div>
-      ) : !hasApplications ? (
+      ) : !hasFilteredApplications ? (
         <div className="flex flex-col items-center justify-center py-10 text-center">
           <div className="w-30 h-30 rounded-full bg-input-bg flex items-center justify-center mb-4">
             <FiFolder className="w-10 h-8.5 text-primary/12" />
           </div>
           <h4 className="text-[#191918] font-semibold text-xl mb-1.5">
-            No applications yet
+            {activeTab === "Withdrawn"
+              ? "No withdrawn applications"
+              : "No active applications"}
           </h4>
           <p className="text-gray-400 text-xs leading-relaxed max-w-xs mb-6">
-            Click &quot;Start Assessment&quot; in the top header to get
-            started with your Recognition of Prior Learning journey.
+            {activeTab === "Withdrawn"
+              ? "Applications you have withdrawn will appear here."
+              : 'Click "Start Assessment" in the top header to get started with your Recognition of Prior Learning journey.'}
           </p>
-          <Link
-            href="/onboarding/assessment-type"
-            className="bg-secondary hover:bg-[#e89b1f] active:scale-95 text-white font-semibold text-sm px-6 py-2.5 rounded-xl shadow-lg transition-all cursor-pointer inline-flex items-center gap-1.5 no-underline select-none"
-          >
-            <span>Start Assessment</span>
-            <FiPlus className="w-4 h-4 stroke-[2.5]" />
-          </Link>
+          {activeTab !== "Withdrawn" && (
+            <Link
+              href="/onboarding/assessment-type"
+              className="bg-secondary hover:bg-[#e89b1f] active:scale-95 text-white font-semibold text-sm px-6 py-2.5 rounded-xl shadow-lg transition-all cursor-pointer inline-flex items-center gap-1.5 no-underline select-none"
+            >
+              <span>Start Assessment</span>
+              <FiPlus className="w-4 h-4 stroke-[2.5]" />
+            </Link>
+          )}
         </div>
       ) : (
         <div className="flex flex-col gap-3.5 w-full">
-          {applications.map((app) => (
+          {filteredApplications.map((app) => (
             <Link
               key={app.id}
               href={`/applications/${app.id}`}
@@ -101,11 +140,13 @@ export const ApplicationsList: React.FC<ApplicationsListProps> = ({
                   </span>
                   <span
                     className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${
-                      app.status === "Completed"
-                        ? "bg-emerald-100 text-emerald-800"
-                        : app.status === "Not Started"
-                          ? "bg-gray-100 text-gray-600"
-                          : "bg-amber-100 text-amber-800"
+                      app.statusLabel === "Withdrawn" || app.status === "Not Started"
+                        ? "bg-gray-100 text-gray-600"
+                        : app.statusLabel === "Rejected"
+                          ? "bg-red-50 text-red-700"
+                          : app.status === "Completed"
+                            ? "bg-emerald-100 text-emerald-800"
+                            : "bg-amber-100 text-amber-800"
                     }`}
                   >
                     {app.statusLabel || app.status}

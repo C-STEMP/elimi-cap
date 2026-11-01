@@ -7,6 +7,7 @@ import {
   getApplicationsApi,
   getApplicationByIdApi,
   submitApplicationApi,
+  withdrawApplicationApi,
   getApplicationHistoryApi,
   getApplicationStagesApi,
   reviewApplicationApi,
@@ -15,6 +16,8 @@ import {
   type CreateApplicationPayload,
   type ReviewDecisionPayload,
   type ApplicationStatus,
+  type Application,
+  type ApplicationDetail,
 } from "../api";
 import { APPLICATION_QUERY_KEYS } from "./queryKeys";
 import { useInitiateApplicationPayment } from "./payment.hooks";
@@ -120,6 +123,105 @@ export function useSubmitApplication() {
           type: "error",
           title: "Network Error",
           description: "Unable to submit application. Please try again.",
+        });
+      }
+    },
+  });
+}
+
+export function useWithdrawApplication(options?: { suppressToast?: boolean }) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const applyWithdrawnStatusToCache = (
+    appId: string,
+    updatedApp?: Application | ApplicationDetail,
+  ) => {
+    if (!appId) return;
+    queryClient.setQueryData<ApplicationDetail | undefined>(
+      APPLICATION_QUERY_KEYS.detail(appId),
+      (old) =>
+        old
+          ? ({ ...old, ...(updatedApp || {}), status: "withdrawn" } as ApplicationDetail)
+          : updatedApp
+            ? ({ ...updatedApp, status: "withdrawn" } as ApplicationDetail)
+            : old,
+    );
+    queryClient.setQueriesData<unknown>(
+      { queryKey: APPLICATION_QUERY_KEYS.all },
+      (old: unknown) => {
+        if (Array.isArray(old)) {
+          return old.map((item: Application) =>
+            item?.id === appId
+              ? { ...item, ...(updatedApp || {}), status: "withdrawn" }
+              : item,
+          );
+        }
+        return old;
+      },
+    );
+  };
+
+  return useMutation({
+    mutationFn: (id: string) => withdrawApplicationApi(id),
+
+    onMutate: async (id: string) => {
+      if (!options?.suppressToast && id) {
+        applyWithdrawnStatusToCache(id);
+      }
+    },
+
+    onSuccess: (data, id) => {
+      const appId = data?.id || id;
+      if (appId) {
+        applyWithdrawnStatusToCache(appId, data);
+        queryClient.invalidateQueries({
+          queryKey: APPLICATION_QUERY_KEYS.detail(appId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: APPLICATION_QUERY_KEYS.stages(appId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: APPLICATION_QUERY_KEYS.history(appId),
+        });
+      }
+      queryClient.invalidateQueries({ queryKey: APPLICATION_QUERY_KEYS.all });
+      queryClient.invalidateQueries({ queryKey: ["applications"] });
+      queryClient.invalidateQueries({ queryKey: ["candidate"] });
+
+      if (!options?.suppressToast) {
+        toast({
+          type: "success",
+          title: "Application Withdrawn",
+          description:
+            "Your application has been withdrawn. You can now create a new application.",
+        });
+      }
+    },
+
+    onError: (error: Error) => {
+      if (options?.suppressToast) return;
+      if (error instanceof ApiError) {
+        const code = (error as ApiError & { code?: string }).code || "";
+        const friendlyDescription =
+          code === "application.sponsored_not_withdrawable"
+            ? "Organisation-sponsored applications cannot be withdrawn."
+            : code === "application.already_withdrawn"
+              ? "This application has already been withdrawn."
+              : code === "application.not_withdrawable"
+                ? "This application has moved past the initial review stage and can no longer be withdrawn."
+                : error.message;
+
+        toast({
+          type: "error",
+          title: "Withdrawal Failed",
+          description: friendlyDescription,
+        });
+      } else {
+        toast({
+          type: "error",
+          title: "Network Error",
+          description: "Unable to withdraw application. Please try again.",
         });
       }
     },
@@ -256,12 +358,14 @@ export function useGetApplicationPortfolio(
 export function useApplication() {
   const createApplication = useCreateApplication();
   const submitApplication = useSubmitApplication();
+  const withdrawApplication = useWithdrawApplication();
   const reviewApplication = useReviewApplication();
   const initiatePayment = useInitiateApplicationPayment();
 
   return {
     createApplication,
     submitApplication,
+    withdrawApplication,
     reviewApplication,
     initiatePayment,
   };

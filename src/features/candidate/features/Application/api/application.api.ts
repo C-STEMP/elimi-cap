@@ -3,12 +3,14 @@ import {
   getApplicationsApi,
   getApplicationByIdApi,
   submitApplicationApi,
+  withdrawApplicationApi,
   getApplicationStagesApi,
   initiateApplicationPaymentApi,
   getApplicationReceiptApi,
   type CreateApplicationPayload,
   type ApplicationStatus,
   type Application,
+  type ApplicationDetail,
   type ApplicationStage,
   type PaymentInitiationResponse,
   type PaymentReceipt,
@@ -18,6 +20,7 @@ export type {
   CreateApplicationPayload,
   ApplicationStatus,
   Application,
+  ApplicationDetail,
   ApplicationStage,
   PaymentInitiationResponse,
   PaymentReceipt,
@@ -45,6 +48,12 @@ export async function submitCandidateApplicationApi(
   id: string,
 ): Promise<Application> {
   return submitApplicationApi(id);
+}
+
+export async function withdrawCandidateApplicationApi(
+  id: string,
+): Promise<ApplicationDetail> {
+  return withdrawApplicationApi(id);
 }
 
 export async function getCandidateApplicationStagesApi(

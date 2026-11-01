@@ -16,11 +16,19 @@ import {
 } from "@/store/slices/onboardingSlice";
 import { startApplicationSchema } from "@/src/lib/validation";
 
-import { useGetApplications, useApplication } from "@/src/features/candidate/features/Application/hooks";
+import {
+  useGetApplications,
+  useGetApplicationById,
+  useApplication,
+  useWithdrawApplication,
+  usePatchApplicationDraft,
+} from "@/src/features/candidate/features/Application/hooks";
+import { getApplicationsApi } from "@/src/features/shared/applications/api";
 import {
   useGetSectors,
   useGetCentres,
   useGetTradesBySector,
+  useGetAllTrades,
   useGetTradeDetail,
   useCandidateLocation,
 } from "@/src/features/shared/reference/hooks";
@@ -75,6 +83,8 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { createApplication } = useApplication();
+  const withdrawApplication = useWithdrawApplication({ suppressToast: true });
+  const patchApplicationDraft = usePatchApplicationDraft();
 
   const assessmentType = useAppSelector(
     (state) =>
@@ -99,8 +109,11 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
 
   const candidateLoc = useCandidateLocation();
 
+  const selectedCentreId = Form.useWatch("assessmentCenter", form);
   const selectedSectorId = Form.useWatch("sector", form);
   const selectedTradeId = Form.useWatch("trade", form);
+  const { data: allTrades = [], isLoading: isLoadingAllTrades } =
+    useGetAllTrades({ enabled: Boolean(selectedCentreId) });
   const { data: remoteTrades = [], isLoading: isLoadingTrades } =
     useGetTradesBySector(selectedSectorId);
   const { data: tradeDetail, isLoading: isLoadingTradeDetail } =
@@ -117,29 +130,13 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
   const { data: allLocationCentres = [], isLoading: isLoadingAllCentres } =
     useGetCentres(queryLocation);
 
-  const { data: tradeFilteredCentres = [], isLoading: isLoadingTradeCentres } =
-    useGetCentres(
-      {
-        ...queryLocation,
-        tradeId: selectedTradeId || undefined,
-      },
-      { enabled: Boolean(selectedTradeId) },
-    );
-
   const remoteCentres = React.useMemo(() => {
-    const tradeList = Array.isArray(tradeFilteredCentres)
-      ? tradeFilteredCentres
-      : (tradeFilteredCentres as any)?.data || [];
-    if (selectedTradeId && tradeList.length > 0) {
-      return tradeList;
-    }
     return Array.isArray(allLocationCentres)
       ? allLocationCentres
       : (allLocationCentres as any)?.data || [];
-  }, [selectedTradeId, tradeFilteredCentres, allLocationCentres]);
+  }, [allLocationCentres]);
 
-  const isLoadingCentres =
-    isLoadingAllCentres || (Boolean(selectedTradeId) && isLoadingTradeCentres);
+  const isLoadingCentres = isLoadingAllCentres;
 
   const matchingCentres = React.useMemo(() => {
     let list = Array.isArray(remoteCentres)
@@ -199,11 +196,17 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
     setFilterState(newState);
     setFilterLga("");
     form.setFieldValue("assessmentCenter", "");
+    form.setFieldValue("sector", "");
+    form.setFieldValue("trade", "");
+    form.setFieldValue("level", "");
   };
 
   const handleLgaFilterChange = (newLga: string) => {
     setFilterLga(newLga);
     form.setFieldValue("assessmentCenter", "");
+    form.setFieldValue("sector", "");
+    form.setFieldValue("trade", "");
+    form.setFieldValue("level", "");
   };
 
   const handleClearLocation = () => {
@@ -211,12 +214,63 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
     setFilterLga("");
   };
 
-  const sectorOptions: SelectOption[] = remoteSectors.map((s) => ({
+  const selectedCentreObj = React.useMemo(
+    () => remoteCentres.find((c: any) => c.id === selectedCentreId),
+    [remoteCentres, selectedCentreId],
+  );
+
+  const centreOfferedTrades = React.useMemo(() => {
+    return Array.isArray(selectedCentreObj?.trades)
+      ? selectedCentreObj.trades
+      : [];
+  }, [selectedCentreObj]);
+
+  const centreTradeIds = React.useMemo(() => {
+    return new Set<string>(
+      centreOfferedTrades.map((t: any) => t.id).filter(Boolean),
+    );
+  }, [centreOfferedTrades]);
+
+  const availableSectors = React.useMemo(() => {
+    if (!selectedCentreId || centreTradeIds.size === 0) {
+      return remoteSectors;
+    }
+    const offeredSectorIds = new Set<string>();
+    for (const ct of centreOfferedTrades) {
+      if ((ct as any).sectorId) {
+        offeredSectorIds.add((ct as any).sectorId);
+      }
+    }
+    for (const t of allTrades) {
+      if (centreTradeIds.has(t.id) && t.sectorId) {
+        offeredSectorIds.add(t.sectorId);
+      }
+    }
+    if (offeredSectorIds.size === 0) {
+      return remoteSectors;
+    }
+    const filtered = remoteSectors.filter((s) => offeredSectorIds.has(s.id));
+    return filtered.length > 0 ? filtered : remoteSectors;
+  }, [selectedCentreId, centreTradeIds, centreOfferedTrades, allTrades, remoteSectors]);
+
+  const availableTrades = React.useMemo(() => {
+    if (!selectedCentreId || centreTradeIds.size === 0) {
+      return remoteTrades;
+    }
+    const filtered = remoteTrades.filter((t) => centreTradeIds.has(t.id));
+    return filtered.length > 0 ? filtered : remoteTrades;
+  }, [selectedCentreId, centreTradeIds, remoteTrades]);
+
+  const isLoadingAvailableSectors =
+    isLoadingSectors ||
+    (Boolean(selectedCentreId) && centreTradeIds.size > 0 && isLoadingAllTrades);
+
+  const sectorOptions: SelectOption[] = availableSectors.map((s) => ({
     label: s.name,
     value: s.id,
   }));
 
-  const tradeOptions: SelectOption[] = remoteTrades.map((t) => ({
+  const tradeOptions: SelectOption[] = availableTrades.map((t) => ({
     label: t.name,
     value: t.id,
   }));
@@ -244,49 +298,115 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
     (s) => s.onboarding.startApplication,
   );
 
-  useEffect(() => {
-    if (
-      savedStartApplication.trade ||
-      savedStartApplication.sector ||
-      savedStartApplication.assessmentCenter
-    ) {
-      const isRawId = (val?: string) => {
-        if (!val) return false;
-        return (
-          /^[0-9A-Z]{20,}$/i.test(val) ||
-          /^[0-9a-f]{8}-[0-9a-f]{4}/i.test(val)
-        );
-      };
+  const activeDraftApp = React.useMemo(() => {
+    const appType = assessmentType === "nsq" ? "NSQ" : "RPL";
+    return existingApps.find(
+      (a) =>
+        (a.type || "RPL").toUpperCase() === appType &&
+        a.status === "draft",
+    );
+  }, [existingApps, assessmentType]);
 
+  const { data: activeDraftDetail } = useGetApplicationById(
+    activeDraftApp?.id || "",
+  );
+
+  const hasHydratedRef = React.useRef(false);
+  const hasHydratedLevelRef = React.useRef(false);
+
+  useEffect(() => {
+    const draftCentreId =
+      activeDraftDetail?.centreId ||
+      activeDraftApp?.centreId ||
+      (activeDraftApp as any)?.centre?.id ||
+      "";
+    const draftSectorId =
+      activeDraftDetail?.sectorId ||
+      activeDraftApp?.sectorId ||
+      (activeDraftApp as any)?.sector?.id ||
+      "";
+    const draftTradeId =
+      activeDraftDetail?.tradeId ||
+      activeDraftApp?.tradeId ||
+      (activeDraftApp as any)?.trade?.id ||
+      "";
+    const draftLevelNum =
+      activeDraftDetail?.qualificationLevel?.level ??
+      (activeDraftApp as any)?.qualificationLevel?.level;
+    const draftLevel =
+      draftLevelNum !== undefined ? String(draftLevelNum) : "";
+    const draftQlId =
+      activeDraftDetail?.qualificationLevelId ||
+      activeDraftDetail?.qualificationLevel?.id ||
+      "";
+
+    const resolvedCentre =
+      savedStartApplication.assessmentCenter || draftCentreId;
+    const resolvedSector = savedStartApplication.sector || draftSectorId;
+    const resolvedTrade = savedStartApplication.trade || draftTradeId;
+    const resolvedLevel = savedStartApplication.level || draftLevel;
+
+    if (
+      !hasHydratedRef.current &&
+      (resolvedCentre || resolvedSector || resolvedTrade)
+    ) {
+      hasHydratedRef.current = true;
+      const currentFields = form.getFieldsValue();
       const valuesToSet: Record<string, string> = {};
-      if (
-        savedStartApplication.assessmentCenter &&
-        !isRawId(savedStartApplication.assessmentCenter)
-      ) {
-        valuesToSet.assessmentCenter = savedStartApplication.assessmentCenter;
+      if (resolvedCentre && !currentFields.assessmentCenter) {
+        valuesToSet.assessmentCenter = resolvedCentre;
       }
-      if (
-        savedStartApplication.sector &&
-        !isRawId(savedStartApplication.sector)
-      ) {
-        valuesToSet.sector = savedStartApplication.sector;
+      if (resolvedSector && !currentFields.sector) {
+        valuesToSet.sector = resolvedSector;
       }
-      if (
-        savedStartApplication.trade &&
-        !isRawId(savedStartApplication.trade)
-      ) {
-        valuesToSet.trade = savedStartApplication.trade;
+      if (resolvedTrade && !currentFields.trade) {
+        valuesToSet.trade = resolvedTrade;
       }
-      if (savedStartApplication.level) {
-        valuesToSet.level = savedStartApplication.level;
+      if (resolvedLevel && !currentFields.level) {
+        valuesToSet.level = resolvedLevel;
+        hasHydratedLevelRef.current = true;
       }
       if (Object.keys(valuesToSet).length > 0) {
         form.setFieldsValue(valuesToSet);
       }
+      dispatch(
+        setStartApplication({
+          ...(resolvedCentre ? { assessmentCenter: resolvedCentre } : {}),
+          ...(resolvedSector ? { sector: resolvedSector } : {}),
+          ...(resolvedTrade ? { trade: resolvedTrade } : {}),
+          ...(resolvedLevel ? { level: resolvedLevel } : {}),
+          ...(draftLevelNum !== undefined ? { levelNumber: draftLevelNum } : {}),
+          ...(draftQlId ? { qualificationLevelId: draftQlId } : {}),
+        }),
+      );
+    } else if (!hasHydratedLevelRef.current && resolvedLevel) {
+      hasHydratedLevelRef.current = true;
+      const currentFields = form.getFieldsValue();
+      if (!currentFields.level) {
+        form.setFieldValue("level", resolvedLevel);
+      }
+      dispatch(
+        setStartApplication({
+          level: resolvedLevel,
+          ...(draftLevelNum !== undefined ? { levelNumber: draftLevelNum } : {}),
+          ...(draftQlId ? { qualificationLevelId: draftQlId } : {}),
+        }),
+      );
     }
-  }, [form, savedStartApplication]);
+  }, [
+    form,
+    savedStartApplication,
+    activeDraftApp,
+    activeDraftDetail,
+    dispatch,
+  ]);
 
   const handleValuesChange = (changedValues: Record<string, string>) => {
+    if ("assessmentCenter" in changedValues) {
+      form.setFieldValue("sector", "");
+      form.setFieldValue("trade", "");
+      form.setFieldValue("level", "");
+    }
     if ("sector" in changedValues) {
       form.setFieldValue("trade", "");
       form.setFieldValue("level", "");
@@ -402,11 +522,55 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
     );
 
     const existingApp = existingApps.find(
-      (a) => (a.type || "RPL").toUpperCase() === appType.toUpperCase(),
+      (a) =>
+        (a.type || "RPL").toUpperCase() === appType.toUpperCase() &&
+        a.status !== "certified" &&
+        a.status !== "rejected" &&
+        a.status !== "withdrawn",
     );
+
+    const createPayload = {
+      type: appType as "RPL" | "NSQ",
+      centreId: values.assessmentCenter,
+      sectorId: values.sector,
+      tradeId: values.trade,
+      ...(appType === "RPL" && matchedQLevel?.id
+        ? { qualificationLevelId: matchedQLevel.id }
+        : {}),
+      unitIds: [] as string[],
+    };
+
+    const handleCreateSuccess = (res: any, wasCentreOrTradeChanged = false) => {
+      setIsSubmitting(false);
+      const createdApp = res?.data || res;
+      if (createdApp?.id) {
+        dispatch(setCurrentApplication(createdApp.id));
+      }
+      if (wasCentreOrTradeChanged) {
+        toast({
+          type: "success",
+          title: "Application Updated",
+          description:
+            "Your previous draft was withdrawn and a new draft has been created with your updated selection.",
+        });
+      }
+
+      if (onContinue) {
+        onContinue();
+      } else if (appType === "RPL") {
+        router.push("/rpl/personal-info");
+      } else {
+        router.push(
+          createdApp?.id
+            ? `/dashboard/applications/${createdApp.id}`
+            : "/dashboard/applications",
+        );
+      }
+    };
 
     if (existingApp) {
       if (existingApp.status !== "draft") {
+        setIsSubmitting(false);
         toast({
           type: "info",
           title: `${appType} Application Already Submitted`,
@@ -416,6 +580,71 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
         return;
       }
 
+      const existingCentreId =
+        existingApp.centreId || (existingApp as any).centre?.id || "";
+      const existingSectorId =
+        existingApp.sectorId || (existingApp as any).sector?.id || "";
+      const existingTradeId =
+        existingApp.tradeId || (existingApp as any).trade?.id || "";
+      const existingQLevelId =
+        (existingApp as any).qualificationLevelId ||
+        (existingApp as any).qualificationLevel?.id ||
+        "";
+
+      const isChangingCentreOrTrade =
+        (Boolean(existingCentreId) &&
+          existingCentreId !== values.assessmentCenter) ||
+        (Boolean(existingSectorId) && existingSectorId !== values.sector) ||
+        (Boolean(existingTradeId) && existingTradeId !== values.trade);
+
+      if (isChangingCentreOrTrade) {
+        // Per OpenAPI contract, PATCH /applications/{id}/centre is deprecated.
+        // Candidates withdraw the draft (POST /applications/{id}/withdraw)
+        // and create a new application (POST /applications) to change centre or trade.
+        withdrawApplication
+          .mutateAsync(existingApp.id)
+          .then(() => {
+            createApplication.mutate(createPayload, {
+              onSuccess: (res: any) => handleCreateSuccess(res, true),
+              onError: (err: any) => {
+                setIsSubmitting(false);
+                toast({
+                  type: "error",
+                  title: "Application Error",
+                  description:
+                    err?.message ||
+                    "Failed to create new application after withdrawing draft. Please try again.",
+                });
+              },
+            });
+          })
+          .catch((err: any) => {
+            setIsSubmitting(false);
+            toast({
+              type: "error",
+              title: "Could Not Update Centre",
+              description:
+                err?.message ||
+                "Unable to withdraw existing draft application. Please try again.",
+            });
+          });
+        return;
+      }
+
+      if (
+        appType === "RPL" &&
+        matchedQLevel?.id &&
+        existingQLevelId !== matchedQLevel.id
+      ) {
+        patchApplicationDraft
+          .mutateAsync({
+            id: existingApp.id,
+            payload: { qualificationLevelId: matchedQLevel.id },
+          })
+          .catch(() => {});
+      }
+
+      setIsSubmitting(false);
       toast({
         type: "info",
         title: "Draft Application Found",
@@ -431,75 +660,90 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
       return;
     }
 
-    createApplication.mutate(
-      {
-        type: appType,
-        centreId: values.assessmentCenter,
-        sectorId: values.sector,
-        tradeId: values.trade,
-        ...(appType === "RPL" && matchedQLevel?.id
-          ? { qualificationLevelId: matchedQLevel.id }
-          : {}),
-        unitIds: [],
-      },
-      {
-        onSuccess: (res: any) => {
-          setIsSubmitting(false);
-          const createdApp = res?.data || res;
-          if (createdApp?.id) {
-            dispatch(setCurrentApplication(createdApp.id));
+    createApplication.mutate(createPayload, {
+      onSuccess: (res: any) => handleCreateSuccess(res, false),
+      onError: async (err: any) => {
+        const errorMsg = err?.message?.toLowerCase() || "";
+        const isConflict =
+          errorMsg.includes("already") ||
+          errorMsg.includes("in-progress") ||
+          errorMsg.includes("exists") ||
+          err?.statusCode === 409;
+
+        if (isConflict) {
+          try {
+            const list = await getApplicationsApi();
+            const conflictApp = list.find(
+              (a) =>
+                (a.type || "RPL").toUpperCase() === appType.toUpperCase() &&
+                a.status !== "certified" &&
+                a.status !== "rejected" &&
+                a.status !== "withdrawn",
+            );
+            if (conflictApp?.status === "draft") {
+              const cCentreId =
+                conflictApp.centreId || (conflictApp as any).centre?.id || "";
+              const cSectorId =
+                conflictApp.sectorId || (conflictApp as any).sector?.id || "";
+              const cTradeId =
+                conflictApp.tradeId || (conflictApp as any).trade?.id || "";
+              const needsWithdrawAndRecreate =
+                (Boolean(cCentreId) && cCentreId !== values.assessmentCenter) ||
+                (Boolean(cSectorId) && cSectorId !== values.sector) ||
+                (Boolean(cTradeId) && cTradeId !== values.trade);
+
+              if (needsWithdrawAndRecreate) {
+                await withdrawApplication.mutateAsync(conflictApp.id);
+                createApplication.mutate(createPayload, {
+                  onSuccess: (res: any) => handleCreateSuccess(res, true),
+                  onError: (reCreateErr: any) => {
+                    setIsSubmitting(false);
+                    toast({
+                      type: "error",
+                      title: "Application Error",
+                      description:
+                        reCreateErr?.message ||
+                        "Failed to initialize application. Please try again.",
+                    });
+                  },
+                });
+                return;
+              }
+              dispatch(setCurrentApplication(conflictApp.id));
+            }
+          } catch {
+            // Fall through to standard conflict reminder
           }
 
+          setIsSubmitting(false);
+          toast({
+            type: "info",
+            title: "Ongoing Application Reminder",
+            description:
+              "You already have an application in progress. Your progress has been linked to your existing draft.",
+          });
           if (onContinue) {
             onContinue();
           } else if (appType === "RPL") {
             router.push("/rpl/personal-info");
           } else {
-            router.push(
-              createdApp?.id
-                ? `/dashboard/applications/${createdApp.id}`
-                : "/dashboard/applications",
-            );
+            router.push("/dashboard/applications");
           }
-        },
-        onError: (err: any) => {
+        } else {
           setIsSubmitting(false);
-          const errorMsg = err?.message?.toLowerCase() || "";
-          const isConflict =
-            errorMsg.includes("already") ||
-            errorMsg.includes("in-progress") ||
-            errorMsg.includes("exists") ||
-            err?.statusCode === 409;
-
-          if (isConflict) {
-            toast({
-              type: "info",
-              title: "Ongoing Application Reminder",
-              description:
-                "You already have an application in progress. Your progress has been linked to your existing draft.",
-            });
-            if (onContinue) {
-              onContinue();
-            } else if (appType === "RPL") {
-              router.push("/rpl/personal-info");
-            } else {
-              router.push("/dashboard/applications");
-            }
-          } else {
-            toast({
-              type: "error",
-              title: "Application Error",
-              description:
-                err.message ||
-                "Failed to initialize application. Please try again.",
-            });
-            if (appType === "RPL") {
-              router.push("/rpl/personal-info");
-            }
+          toast({
+            type: "error",
+            title: "Application Error",
+            description:
+              err.message ||
+              "Failed to initialize application. Please try again.",
+          });
+          if (appType === "RPL") {
+            router.push("/rpl/personal-info");
           }
-        },
+        }
       },
-    );
+    });
   };
 
   const handleBack = () => {
@@ -642,10 +886,14 @@ export const StartApplication: React.FC<StartApplicationProps> = ({
                 Sector<span className="text-primary-solid ml-0.5">*</span>
               </span>
             }
-            loading={isLoadingSectors}
-            disabled={isLoadingSectors}
+            loading={isLoadingAvailableSectors}
+            disabled={!selectedCentreId || isLoadingAvailableSectors}
             placeholder={
-              isLoadingSectors ? "Loading sectors..." : "Select"
+              !selectedCentreId
+                ? "Select an Assessment Centre first"
+                : isLoadingAvailableSectors
+                  ? "Loading sectors..."
+                  : "Select"
             }
             options={sectorOptions}
           />

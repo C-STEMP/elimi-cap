@@ -11,6 +11,14 @@ import { useCountryStateCity } from "@/src/lib/hooks/useCountryStateCity";
 import { useOnboarding } from "@/src/features/candidate/features/Onboarding/hooks";
 import { useCandidateProfile } from "@/src/features/shared/onboarding/hooks";
 import { useGetMeProfile } from "@/src/features/shared/account/hooks";
+import {
+  useGetApplications,
+  useGetApplicationById,
+} from "@/src/features/candidate/features/Application/hooks";
+import {
+  formatIsoToDisplayDate,
+  normalizeGenderForForm,
+} from "@/src/features/candidate/features/Application/utils/applicationDetailsHelpers";
 import { useRplApplicationSubmission } from "./useRplApplicationSubmission";
 import { parseImpairmentString } from "@/features/candidate/utils";
 
@@ -25,6 +33,29 @@ export function useRplPersonalInfoState(onSuccess?: () => void) {
 
   const authUser = useAppSelector((s) => s.auth.user);
   const savedPersonalInfo = useAppSelector((s) => s.onboarding.personalInfo);
+  const currentAppId = useAppSelector((s) => s.application.currentApplicationId);
+  const { data: existingApps = [] } = useGetApplications();
+
+  const activeApp = React.useMemo(() => {
+    return (
+      existingApps.find(
+        (a) =>
+          a.id === currentAppId &&
+          a.status !== "certified" &&
+          a.status !== "rejected" &&
+          a.status !== "withdrawn",
+      ) ||
+      existingApps.find(
+        (a) =>
+          (a.type || "RPL").toUpperCase() === "RPL" &&
+          a.status !== "certified" &&
+          a.status !== "rejected" &&
+          a.status !== "withdrawn",
+      )
+    );
+  }, [existingApps, currentAppId]);
+
+  const { data: appDetail } = useGetApplicationById(activeApp?.id || "");
   const initialEmail = savedPersonalInfo.email || authUser?.email || "";
 
   const initialPassportUrl =
@@ -42,8 +73,8 @@ export function useRplPersonalInfoState(onSuccess?: () => void) {
     firstName: savedPersonalInfo.firstName ?? "",
     lastName: savedPersonalInfo.lastName ?? "",
     middleName: savedPersonalInfo.middleName ?? "",
-    dob: savedPersonalInfo.dob ?? "",
-    gender: savedPersonalInfo.gender ?? "",
+    dob: formatIsoToDisplayDate(savedPersonalInfo.dob, false),
+    gender: normalizeGenderForForm(savedPersonalInfo.gender),
     nationality: savedPersonalInfo.nationality ?? "",
     email: initialEmail,
     phoneNumber: savedPersonalInfo.phoneNumber ?? "",
@@ -51,9 +82,9 @@ export function useRplPersonalInfoState(onSuccess?: () => void) {
     state: savedPersonalInfo.state ?? "",
     lga: savedPersonalInfo.lga ?? "",
     streetAddress: savedPersonalInfo.streetAddress ?? "",
-    completedBefore: "no",
-    learnerId: "",
-    impairment: savedPersonalInfo.impairment ?? "None / No impairment",
+    completedBefore: savedPersonalInfo.completedBefore || "no",
+    learnerId: savedPersonalInfo.learnerId ?? "",
+    impairment: savedPersonalInfo.impairment || "None / No impairment",
   });
 
   const initialImpairmentState = parseImpairmentString(savedPersonalInfo.impairment);
@@ -111,12 +142,16 @@ export function useRplPersonalInfoState(onSuccess?: () => void) {
   ]);
 
   useEffect(() => {
-    if (getOnboarding.data?.data) {
-      const apiData = getOnboarding.data.data as any;
-      const pd = apiData?.personalDetails;
-      const ci = apiData?.contactInformation;
-      const ra = apiData?.residentialAddress;
+    const apiData = getOnboarding.data?.data as any;
+    const appPi = appDetail?.personalInformation;
+
+    if (apiData || appPi) {
+      const pd = apiData?.personalDetails || appPi?.personalDetails;
+      const ci = apiData?.contactInformation || appPi?.contactInformation;
+      const ra = apiData?.residentialAddress || appPi?.residentialAddress;
       const acc = apiData?.accessibility;
+      const prevAss = apiData?.previousAssessmentStatus;
+
       const passportAssetId: string =
         apiData?.passportAssetId ||
         apiData?.personalDetails?.passportPhotoAssetId ||
@@ -133,29 +168,128 @@ export function useRplPersonalInfoState(onSuccess?: () => void) {
         savedPersonalInfo.passportUrl ||
         authUser?.passportUrl ||
         "";
-      const hydratedEmail = ci?.emailAddress || savedPersonalInfo.email || authUser?.email || "";
-      const rawImpairment = acc?.impairment || savedPersonalInfo.impairment || "None / No impairment";
+      const hydratedEmail =
+        ci?.emailAddress || savedPersonalInfo.email || authUser?.email || "";
+      const rawImpairment =
+        (acc?.hasImpairment === false
+          ? "None / No impairment"
+          : acc?.impairment) ||
+        savedPersonalInfo.impairment ||
+        "None / No impairment";
       const parsed = parseImpairmentString(rawImpairment);
 
+      const resolvedCompletedBefore =
+        typeof prevAss?.hasCompletedPreviousAssessment === "boolean"
+          ? prevAss.hasCompletedPreviousAssessment
+            ? "yes"
+            : "no"
+          : savedPersonalInfo.completedBefore || "no";
+      const resolvedLearnerId =
+        (prevAss?.uniqueLearnerId && prevAss.uniqueLearnerId !== "Yes"
+          ? prevAss.uniqueLearnerId
+          : "") ||
+        savedPersonalInfo.learnerId ||
+        "";
+
       const hydrated = {
-        firstName: pd?.firstName || savedPersonalInfo.firstName || "",
-        lastName: pd?.lastName || savedPersonalInfo.lastName || "",
-        middleName: pd?.middleName || savedPersonalInfo.middleName || "",
-        dob: pd?.dob || savedPersonalInfo.dob || "",
-        gender: pd?.gender || savedPersonalInfo.gender || "",
-        nationality: pd?.nationality || savedPersonalInfo.nationality || "",
+        firstName:
+          pd?.firstName ||
+          appPi?.personalDetails?.firstName ||
+          savedPersonalInfo.firstName ||
+          "",
+        lastName:
+          pd?.lastName ||
+          appPi?.personalDetails?.lastName ||
+          savedPersonalInfo.lastName ||
+          "",
+        middleName:
+          pd?.middleName ||
+          appPi?.personalDetails?.middleName ||
+          savedPersonalInfo.middleName ||
+          "",
+        dob:
+          formatIsoToDisplayDate(
+            pd?.dob || appPi?.personalDetails?.dob || savedPersonalInfo.dob,
+            false,
+          ) || "",
+        gender:
+          normalizeGenderForForm(
+            pd?.gender ||
+              appPi?.personalDetails?.gender ||
+              savedPersonalInfo.gender,
+          ) || "",
+        nationality:
+          pd?.nationality ||
+          appPi?.personalDetails?.nationality ||
+          savedPersonalInfo.nationality ||
+          "",
         email: hydratedEmail,
-        phoneNumber: ci?.phoneNumber?.number || savedPersonalInfo.phoneNumber || "",
-        country: ra?.country || savedPersonalInfo.country || "Nigeria",
-        state: ra?.state || savedPersonalInfo.state || "",
-        lga: ra?.lga || savedPersonalInfo.lga || "",
-        streetAddress: ra?.address || savedPersonalInfo.streetAddress || "",
-        impairment: parsed.list.map((imp) => (imp === "Other" && parsed.otherText ? `Other: ${parsed.otherText}` : imp)).join(", "),
+        phoneNumber:
+          ci?.phoneNumber?.number ||
+          appPi?.contactInformation?.phoneNumber?.number ||
+          savedPersonalInfo.phoneNumber ||
+          "",
+        country:
+          ra?.country ||
+          appPi?.residentialAddress?.country ||
+          savedPersonalInfo.country ||
+          "Nigeria",
+        state:
+          ra?.state ||
+          appPi?.residentialAddress?.state ||
+          savedPersonalInfo.state ||
+          "",
+        lga:
+          ra?.lga ||
+          appPi?.residentialAddress?.lga ||
+          savedPersonalInfo.lga ||
+          "",
+        streetAddress:
+          ra?.address ||
+          appPi?.residentialAddress?.address ||
+          savedPersonalInfo.streetAddress ||
+          "",
+        completedBefore: resolvedCompletedBefore,
+        learnerId: resolvedLearnerId,
+        impairment: parsed.list
+          .map((imp) =>
+            imp === "Other" && parsed.otherText
+              ? `Other: ${parsed.otherText}`
+              : imp,
+          )
+          .join(", "),
       };
 
-      setForm((prev) => ({ ...prev, ...hydrated }));
-      setSelectedImpairments(parsed.list);
-      setOtherImpairment(parsed.otherText);
+      setForm((prev) => ({
+        ...prev,
+        firstName: prev.firstName || hydrated.firstName,
+        lastName: prev.lastName || hydrated.lastName,
+        middleName: prev.middleName || hydrated.middleName,
+        dob: prev.dob || hydrated.dob,
+        gender: prev.gender || hydrated.gender,
+        nationality: prev.nationality || hydrated.nationality,
+        email: prev.email || hydrated.email,
+        phoneNumber: prev.phoneNumber || hydrated.phoneNumber,
+        country: prev.country || hydrated.country,
+        state: prev.state || hydrated.state,
+        lga: prev.lga || hydrated.lga,
+        streetAddress: prev.streetAddress || hydrated.streetAddress,
+        completedBefore:
+          prev.completedBefore !== "no"
+            ? prev.completedBefore
+            : hydrated.completedBefore,
+        learnerId: prev.learnerId || hydrated.learnerId,
+        impairment:
+          prev.impairment && prev.impairment !== "None / No impairment"
+            ? prev.impairment
+            : hydrated.impairment,
+      }));
+      setSelectedImpairments((prev) =>
+        prev.length === 1 && prev[0] === "None / No impairment"
+          ? parsed.list
+          : prev,
+      );
+      setOtherImpairment((prev) => prev || parsed.otherText);
       dispatch(setPersonalInfo(hydrated));
 
       if (passportAssetId || passportUrl) {
@@ -167,13 +301,33 @@ export function useRplPersonalInfoState(onSuccess?: () => void) {
     } else if (authUser?.email && !form.email) {
       setForm((prev) => ({ ...prev, email: authUser.email || "" }));
     }
-  }, [getOnboarding.data, meProfile, candidateProfile, authUser?.email, authUser?.passportUrl]);
+  }, [
+    getOnboarding.data,
+    appDetail,
+    meProfile,
+    candidateProfile,
+    authUser?.email,
+    authUser?.passportUrl,
+    dispatch,
+  ]);
 
   const { countries, states, cities, isLoadingStates, isLoadingLgas } = useCountryStateCity(form.country, form.state);
 
   const update = (field: keyof typeof form, value: string) => {
-    let nextState = form.state;
-    let nextLga = form.lga;
+    const nextState =
+      field === "country" && form.country !== value
+        ? ""
+        : field === "state"
+          ? value
+          : form.state;
+    const nextLga =
+      (field === "country" && form.country !== value) ||
+      (field === "state" && form.state !== value)
+        ? ""
+        : field === "lga"
+          ? value
+          : form.lga;
+
     setForm((prev) => {
       const next = { ...prev, [field]: value };
       if (field === "country" && prev.country !== value) {
@@ -183,8 +337,6 @@ export function useRplPersonalInfoState(onSuccess?: () => void) {
       if (field === "state" && prev.state !== value) {
         next.lga = "";
       }
-      nextState = next.state;
-      nextLga = next.lga;
       return next;
     });
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: "" }));
@@ -242,9 +394,22 @@ export function useRplPersonalInfoState(onSuccess?: () => void) {
 
   const handleConfirmSaveDraft = async () => {
     setShowConfirmDraftModal(false);
-    const resolved = selectedImpairments.map((imp) => (imp === "Other" ? `Other: ${otherImpairment}` : imp)).join(", ");
-    dispatch(setPersonalInfo({ ...form, email: form.email || authUser?.email || "", impairment: resolved, passportFileName: passportFile?.name ?? savedPersonalInfo.passportFileName }));
-    await saveDraft();
+    const resolved = selectedImpairments
+      .map((imp) => (imp === "Other" ? `Other: ${otherImpairment}` : imp))
+      .join(", ");
+    const updatedPersonalInfo = {
+      ...form,
+      email: form.email || authUser?.email || "",
+      impairment: resolved,
+      completedBefore: form.completedBefore,
+      learnerId: form.learnerId,
+      passportFileName:
+        passportFile?.name ?? savedPersonalInfo.passportFileName,
+      passportAssetId: savedPersonalInfo.passportAssetId,
+      passportUrl: passportDefaultImage || savedPersonalInfo.passportUrl,
+    };
+    dispatch(setPersonalInfo(updatedPersonalInfo));
+    await saveDraft({ personalInfo: updatedPersonalInfo });
     setShowDraftModal(true);
   };
 
@@ -267,9 +432,22 @@ export function useRplPersonalInfoState(onSuccess?: () => void) {
       return;
     }
     setIsSubmitting(true);
-    const resolved = selectedImpairments.map((imp) => (imp === "Other" ? `Other: ${otherImpairment}` : imp)).join(", ");
-    dispatch(setPersonalInfo({ ...form, email: form.email || authUser?.email || "", impairment: resolved, passportFileName: passportFile?.name ?? savedPersonalInfo.passportFileName }));
-    saveDraft().finally(() => {
+    const resolved = selectedImpairments
+      .map((imp) => (imp === "Other" ? `Other: ${otherImpairment}` : imp))
+      .join(", ");
+    const updatedPersonalInfo = {
+      ...form,
+      email: form.email || authUser?.email || "",
+      impairment: resolved,
+      completedBefore: form.completedBefore,
+      learnerId: form.learnerId,
+      passportFileName:
+        passportFile?.name ?? savedPersonalInfo.passportFileName,
+      passportAssetId: savedPersonalInfo.passportAssetId,
+      passportUrl: passportDefaultImage || savedPersonalInfo.passportUrl,
+    };
+    dispatch(setPersonalInfo(updatedPersonalInfo));
+    saveDraft({ personalInfo: updatedPersonalInfo }).finally(() => {
       setIsSubmitting(false);
       if (onSuccess) onSuccess();
       else router.push("/rpl/experience-trade");

@@ -22,6 +22,8 @@ import { useToast } from "@/src/components/ui/toast";
 import { closeUrlSubView, openUrlSubView } from "@/src/lib/navigation/url-sub-view";
 import { TransactionReceiptModal } from "@/features/assessment-centre/features/Payment/components/TransactionReceiptModal";
 import { PaymentModal, type PaymentModalType } from "../PaymentModals";
+import { WithdrawApplicationModal } from "../WithdrawApplicationModal";
+import { canCandidateWithdrawApplication } from "../../utils/applicationDetailsHelpers";
 import { getNsqScopedUnits } from "@/src/features/shared/applications/utils/nsqUnits";
 import {
   useGetInductionForm,
@@ -31,6 +33,7 @@ import {
   usePaystackCheckout,
   useGetPaymentQuote,
   useGetApplicationReceipt,
+  useWithdrawApplication,
 } from "@/src/features/shared/applications/hooks";
 import {
   APPLICATION_QUERY_KEYS,
@@ -109,6 +112,9 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
   const [isInductionViewModalOpen, setIsInductionViewModalOpen] = useState(false);
   const [isInductionFillModalOpen, setIsInductionFillModalOpen] = useUrlModal(NSQ_INDUCTION_FORM_MODAL);
+  const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
+  const [isWithdrawnLocally, setIsWithdrawnLocally] = useState(false);
+  const withdrawApplication = useWithdrawApplication();
 
   const appId = application?.id || "nsq";
 
@@ -131,12 +137,16 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
   }>({});
 
   const isPaid = isPaymentConfirmed || paymentStage?.status === "successful";
+  const isWithdrawn = isWithdrawnLocally || application?.status === "withdrawn";
+  const isDraft = !isWithdrawn && application?.status === "draft" && !application?.submittedAt;
   const isAppFormApproved = Boolean(
-    applicationFormStage?.status === "successful" ||
-      (application?.currentStageKey &&
-        !["application_form", "draft"].includes(application.currentStageKey)),
+    !isWithdrawn &&
+      (applicationFormStage?.status === "successful" ||
+        (application?.currentStageKey &&
+          !["application_form", "draft"].includes(application.currentStageKey))),
   );
-  const isPaymentUnlocked = isAppFormApproved || isPaid;
+  const isPaymentUnlocked = !isWithdrawn && (isAppFormApproved || isPaid);
+  const canWithdraw = !isWithdrawn && canCandidateWithdrawApplication(application, stagesData);
 
   const { data: paymentQuote } = useGetPaymentQuote(application?.id || "", {
     enabled: Boolean(application?.id && !isPaid),
@@ -177,25 +187,33 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
         NSQ_PROGRESS_STEPS.findIndex((s) => s.key === "internal_verification"),
   );
 
-  const applicationStatusBadge =
-    applicationFormStage?.status === "successful" || isAppFormApproved ? (
-      <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-[#ecfdf5] text-[#10b981]">
-        Approved
-      </span>
-    ) : applicationFormStage?.status === "rejected" ? (
-      <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-red-50 text-red-600">
-        Rejected
-      </span>
-    ) : applicationFormStage?.status === "under_review" ||
-      applicationFormStage?.status === "in_progress" ? (
-      <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-[#FFF7ED] text-[#C2410C]">
-        Under Review
-      </span>
-    ) : (
-      <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-[#FFF7ED] text-[#C2410C]">
-        Application Submitted
-      </span>
-    );
+  const applicationStatusBadge = isWithdrawn ? (
+    <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-gray-100 text-gray-700">
+      Withdrawn
+    </span>
+  ) : isDraft ? (
+    <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-gray-100 text-gray-700">
+      Draft
+    </span>
+  ) : applicationFormStage?.status === "successful" || isAppFormApproved ? (
+    <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-[#ecfdf5] text-[#10b981]">
+      Approved
+    </span>
+  ) : applicationFormStage?.status === "rejected" ||
+    application?.status === "rejected" ? (
+    <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-red-50 text-red-600">
+      Rejected
+    </span>
+  ) : applicationFormStage?.status === "under_review" ||
+    applicationFormStage?.status === "in_progress" ? (
+    <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-[#FFF7ED] text-[#C2410C]">
+      Under Review
+    </span>
+  ) : (
+    <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-[#FFF7ED] text-[#C2410C]">
+      Application Submitted
+    </span>
+  );
 
   const paymentStatusBadge = isPaid ? (
     <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-[#ecfdf5] text-[#10b981]">
@@ -712,13 +730,33 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
 
             {/* 2. Application Status Card */}
             <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-2">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
                 <div className="flex items-center gap-2.5">
                   <h4 className="text-base sm:text-lg font-extrabold text-neutral-primary tracking-tight">
                     Application Status
                   </h4>
                   {applicationStatusBadge}
                 </div>
+                {canWithdraw && (
+                  <div className="flex items-center gap-2">
+                    {isDraft && (
+                      <button
+                        type="button"
+                        onClick={() => router.push("/nsq/centre-info")}
+                        className="px-3.5 py-1.5 bg-white border border-amber-300 text-amber-900 font-bold text-xs rounded-lg hover:bg-amber-50 transition-all cursor-pointer whitespace-nowrap"
+                      >
+                        Change Centre
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setIsWithdrawModalOpen(true)}
+                      className="px-3.5 py-1.5 bg-white border border-rose-200 text-[#a31d38] font-bold text-xs rounded-lg hover:bg-rose-50 transition-all cursor-pointer whitespace-nowrap"
+                    >
+                      Withdraw Application
+                    </button>
+                  </div>
+                )}
               </div>
               <p className="text-xs sm:text-sm text-neutral-secondary font-medium">
                 {resolvedCentreName} | {resolvedSectorName} | {resolvedTradeName}
@@ -1343,6 +1381,23 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
             setIsInductionFillModalOpen(true);
           }
         }}
+      />
+
+      <WithdrawApplicationModal
+        isOpen={isWithdrawModalOpen}
+        isLoading={withdrawApplication.isPending}
+        isDraft={isDraft}
+        onConfirm={async () => {
+          if (!application?.id) return;
+          try {
+            await withdrawApplication.mutateAsync(application.id);
+            setIsWithdrawnLocally(true);
+            setIsWithdrawModalOpen(false);
+          } catch {
+            setIsWithdrawModalOpen(false);
+          }
+        }}
+        onClose={() => setIsWithdrawModalOpen(false)}
       />
     </div>
   );

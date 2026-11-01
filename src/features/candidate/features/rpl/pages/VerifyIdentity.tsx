@@ -21,7 +21,10 @@ import { useOnboarding } from "@/src/features/candidate/features/Onboarding/hook
 
 import { StatusModal } from "@/components/status-modal";
 
-import { useVerifyIdentity } from "@/src/features/shared/onboarding/hooks";
+import {
+  useVerifyIdentity,
+  useCandidateProfile,
+} from "@/src/features/shared/onboarding/hooks";
 import { useRplApplicationSubmission } from "../hooks/useRplApplicationSubmission";
 
 export interface RPLVerifyIdentityProps {
@@ -38,12 +41,18 @@ export const RPLVerifyIdentity: React.FC<RPLVerifyIdentityProps> = ({
   const dispatch = useAppDispatch();
   const { getOnboarding } = useOnboarding();
   const verifyIdentityMutation = useVerifyIdentity();
+  const { data: candidateProfile } = useCandidateProfile(true);
+  const authUser = useAppSelector((s) => s.auth.user);
   const savedRPLIdentity = useAppSelector((s) => s.onboarding.rplIdentity);
 
   const [nin, setNin] = useState(savedRPLIdentity.nin || "");
   const [ninError, setNinError] = useState<string | undefined>(undefined);
   const [isVerified, setIsVerified] = useState(
-    savedRPLIdentity.isVerified || false,
+    Boolean(
+      savedRPLIdentity.isVerified ||
+        authUser?.isVerified ||
+        candidateProfile?.identityVerified,
+    ),
   );
   const [modalState, setModalState] = useState<
     "none" | "verifying" | "success" | "error"
@@ -52,13 +61,25 @@ export const RPLVerifyIdentity: React.FC<RPLVerifyIdentityProps> = ({
   const { toast } = useToast();
   const router = useRouter();
 
-  // Hydrate from getOnboarding API or saved identity
+  // Hydrate from getOnboarding API, candidateProfile, or saved identity
   React.useEffect(() => {
     if (savedRPLIdentity.nin) setNin(savedRPLIdentity.nin);
-    if (typeof savedRPLIdentity.isVerified === "boolean") {
-      setIsVerified(savedRPLIdentity.isVerified);
+    const verified = Boolean(
+      savedRPLIdentity.isVerified ||
+        authUser?.isVerified ||
+        candidateProfile?.identityVerified,
+    );
+    setIsVerified(verified);
+    if (verified && !savedRPLIdentity.isVerified) {
+      dispatch(setRPLIdentity({ isVerified: true }));
     }
-  }, [savedRPLIdentity]);
+  }, [
+    savedRPLIdentity.nin,
+    savedRPLIdentity.isVerified,
+    authUser?.isVerified,
+    candidateProfile?.identityVerified,
+    dispatch,
+  ]);
 
   React.useEffect(() => {
     dispatch(setSidebarVariant("rpl-form"));

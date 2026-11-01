@@ -320,11 +320,13 @@ export const PortfolioVault: React.FC<PortfolioVaultProps> = ({
             badge={
               isReceiptPaid
                 ? { label: "Paid", tone: "success" }
-                : isPaymentUnlocked
-                  ? { label: "Payment Required", tone: "warning" }
-                  : resolvedReceipt?.status === "pending"
-                    ? { label: "Pending", tone: "warning" }
-                    : { label: "Awaiting Approval", tone: "neutral" }
+                : application?.status === "withdrawn"
+                  ? { label: "Withdrawn", tone: "neutral" }
+                  : isPaymentUnlocked
+                    ? { label: "Payment Required", tone: "warning" }
+                    : resolvedReceipt?.status === "pending"
+                      ? { label: "Pending", tone: "warning" }
+                      : { label: "Awaiting Approval", tone: "neutral" }
             }
             actions={
               isReceiptPaid ? (

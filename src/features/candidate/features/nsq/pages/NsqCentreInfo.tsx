@@ -15,6 +15,7 @@ import {
   useGetCentres,
   useGetSectors,
   useGetTradesBySector,
+  useGetAllTrades,
   useCandidateLocation,
 } from "@/src/features/shared/reference/hooks";
 import { useCountryStateCity } from "@/src/lib/hooks/useCountryStateCity";
@@ -22,6 +23,7 @@ import {
   createApplicationApi,
   getApplicationsApi,
   submitApplicationApi,
+  withdrawApplicationApi,
 } from "@/src/features/shared/applications/api";
 import { APPLICATION_QUERY_KEYS } from "@/src/features/shared/applications/hooks";
 import { NsqConfirmationModal } from "../components/NsqConfirmationModal";
@@ -72,31 +74,18 @@ export const NsqCentreInfo: React.FC = () => {
 
   const { data: allLocationCentres = [], isLoading: isLoadingAllCentres } =
     useGetCentres(queryLocation);
-  const { data: tradeFilteredCentres = [], isLoading: isLoadingTradeCentres } =
-    useGetCentres(
-      {
-        ...queryLocation,
-        tradeId: tradeId || undefined,
-      },
-      { enabled: Boolean(tradeId) },
-    );
 
   const remoteCentres = useMemo(() => {
-    const tradeList = Array.isArray(tradeFilteredCentres)
-      ? tradeFilteredCentres
-      : (tradeFilteredCentres as any)?.data || [];
-    if (tradeId && tradeList.length > 0) {
-      return tradeList;
-    }
     return Array.isArray(allLocationCentres)
       ? allLocationCentres
       : (allLocationCentres as any)?.data || [];
-  }, [tradeId, tradeFilteredCentres, allLocationCentres]);
+  }, [allLocationCentres]);
 
-  const isLoadingCentres =
-    isLoadingAllCentres || (Boolean(tradeId) && isLoadingTradeCentres);
+  const isLoadingCentres = isLoadingAllCentres;
   const { data: remoteSectors = [], isLoading: isLoadingSectors } =
     useGetSectors();
+  const { data: allTrades = [], isLoading: isLoadingAllTrades } =
+    useGetAllTrades({ enabled: Boolean(centreId) });
   const { data: remoteTrades = [], isLoading: isLoadingTrades } =
     useGetTradesBySector(sectorId);
 
@@ -154,12 +143,63 @@ export const NsqCentreInfo: React.FC = () => {
     return uniqueOptions;
   }, [matchingCentres]);
 
-  const sectorOptions: SelectOption[] = remoteSectors.map((s) => ({
+  const selectedCentreObj = useMemo(
+    () => remoteCentres.find((c: any) => c.id === centreId),
+    [remoteCentres, centreId],
+  );
+
+  const centreOfferedTrades = useMemo(() => {
+    return Array.isArray(selectedCentreObj?.trades)
+      ? selectedCentreObj.trades
+      : [];
+  }, [selectedCentreObj]);
+
+  const centreTradeIds = useMemo(() => {
+    return new Set<string>(
+      centreOfferedTrades.map((t: any) => t.id).filter(Boolean),
+    );
+  }, [centreOfferedTrades]);
+
+  const availableSectors = useMemo(() => {
+    if (!centreId || centreTradeIds.size === 0) {
+      return remoteSectors;
+    }
+    const offeredSectorIds = new Set<string>();
+    for (const ct of centreOfferedTrades) {
+      if ((ct as any).sectorId) {
+        offeredSectorIds.add((ct as any).sectorId);
+      }
+    }
+    for (const t of allTrades) {
+      if (centreTradeIds.has(t.id) && t.sectorId) {
+        offeredSectorIds.add(t.sectorId);
+      }
+    }
+    if (offeredSectorIds.size === 0) {
+      return remoteSectors;
+    }
+    const filtered = remoteSectors.filter((s) => offeredSectorIds.has(s.id));
+    return filtered.length > 0 ? filtered : remoteSectors;
+  }, [centreId, centreTradeIds, centreOfferedTrades, allTrades, remoteSectors]);
+
+  const availableTrades = useMemo(() => {
+    if (!centreId || centreTradeIds.size === 0) {
+      return remoteTrades;
+    }
+    const filtered = remoteTrades.filter((t) => centreTradeIds.has(t.id));
+    return filtered.length > 0 ? filtered : remoteTrades;
+  }, [centreId, centreTradeIds, remoteTrades]);
+
+  const isLoadingAvailableSectors =
+    isLoadingSectors ||
+    (Boolean(centreId) && centreTradeIds.size > 0 && isLoadingAllTrades);
+
+  const sectorOptions: SelectOption[] = availableSectors.map((s) => ({
     label: s.name,
     value: s.id,
   }));
 
-  const tradeOptions: SelectOption[] = remoteTrades.map((t) => ({
+  const tradeOptions: SelectOption[] = availableTrades.map((t) => ({
     label: t.name,
     value: t.id,
   }));
@@ -168,7 +208,8 @@ export const NsqCentreInfo: React.FC = () => {
     if (saved.centreId && !centreId) setCentreId(saved.centreId);
     if (saved.sectorId && !sectorId) setSectorId(saved.sectorId);
     if (saved.tradeId && !tradeId) setTradeId(saved.tradeId);
-  }, [saved, centreId, sectorId, tradeId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSectorChange = (newSectorId: string) => {
     setSectorId(newSectorId);
@@ -179,19 +220,27 @@ export const NsqCentreInfo: React.FC = () => {
 
   const handleCentreChange = (newCentreId: string) => {
     setCentreId(newCentreId);
+    setSectorId("");
+    setTradeId("");
     if (errors.centreId) setErrors((prev) => ({ ...prev, centreId: undefined }));
+    if (errors.sectorId) setErrors((prev) => ({ ...prev, sectorId: undefined }));
+    if (errors.tradeId) setErrors((prev) => ({ ...prev, tradeId: undefined }));
   };
 
   const handleStateFilterChange = (newState: string) => {
     setFilterState(newState);
     setFilterLga("");
     setCentreId("");
+    setSectorId("");
+    setTradeId("");
     if (errors.centreId) setErrors((prev) => ({ ...prev, centreId: undefined }));
   };
 
   const handleLgaFilterChange = (newLga: string) => {
     setFilterLga(newLga);
     setCentreId("");
+    setSectorId("");
+    setTradeId("");
     if (errors.centreId) setErrors((prev) => ({ ...prev, centreId: undefined }));
   };
 
@@ -283,9 +332,39 @@ export const NsqCentreInfo: React.FC = () => {
                 (a.status as string) === "submitted"),
           );
           if (match?.id) {
-            appId = match.id;
-            dispatch(setCurrentApplication(match.id));
-            needsSubmit = match.status === "draft";
+            const matchCentreId =
+              match.centreId || (match as any).centre?.id || "";
+            const matchSectorId =
+              match.sectorId || (match as any).sector?.id || "";
+            const matchTradeId =
+              match.tradeId || (match as any).trade?.id || "";
+            const isChangingDraftCentreOrTrade =
+              match.status === "draft" &&
+              ((Boolean(matchCentreId) && matchCentreId !== centreId) ||
+                (Boolean(matchSectorId) && matchSectorId !== sectorId) ||
+                (Boolean(matchTradeId) && matchTradeId !== tradeId));
+
+            if (isChangingDraftCentreOrTrade) {
+              await withdrawApplicationApi(match.id);
+              const recreated = await createApplicationApi({
+                type: "NSQ",
+                centreId,
+                sectorId,
+                tradeId,
+                unitIds: [],
+              });
+              if (recreated?.id) {
+                appId = recreated.id;
+                dispatch(setCurrentApplication(recreated.id));
+                needsSubmit = true;
+              } else {
+                throw createErr;
+              }
+            } else {
+              appId = match.id;
+              dispatch(setCurrentApplication(match.id));
+              needsSubmit = match.status === "draft";
+            }
           } else throw createErr;
         } else {
           throw createErr;
@@ -485,10 +564,17 @@ export const NsqCentreInfo: React.FC = () => {
                   Sector<span className="text-primary-solid ml-0.5">*</span>
                 </span>
               }
-              placeholder="Select"
+              placeholder={
+                !centreId
+                  ? "Select an Assessment Centre first"
+                  : isLoadingAvailableSectors
+                    ? "Loading sectors..."
+                    : "Select"
+              }
               options={sectorOptions}
               value={sectorId}
-              loading={isLoadingSectors}
+              disabled={!centreId || isLoadingAvailableSectors}
+              loading={isLoadingAvailableSectors}
               onChange={(e) => handleSectorChange(e.target.value)}
               error={errors.sectorId}
             />

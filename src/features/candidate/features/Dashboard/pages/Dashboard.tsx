@@ -100,7 +100,10 @@ export const Dashboard: React.FC = () => {
 
   const activeCount =
     allApplications.filter(
-      (app) => app.status !== "certified" && app.status !== "rejected",
+      (app) =>
+        app.status !== "certified" &&
+        app.status !== "rejected" &&
+        app.status !== "withdrawn",
     ).length ?? 0;
   const completedCount =
     allApplications.filter((app) => app.status === "certified").length ?? 0;
@@ -130,7 +133,11 @@ export const Dashboard: React.FC = () => {
         ? "Draft"
         : app.status === "certified"
           ? "Completed"
-          : "Awaiting Review";
+          : app.status === "withdrawn"
+            ? "Withdrawn"
+            : app.status === "rejected"
+              ? "Rejected"
+              : "Awaiting Review";
 
     return {
       id: app.id,
@@ -138,6 +145,7 @@ export const Dashboard: React.FC = () => {
       subtitle,
       status,
       statusLabel,
+      rawStatus: app.status,
       type: app.type,
     };
   });

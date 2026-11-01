@@ -8,6 +8,7 @@ import {
   getApplicationByIdApi,
   patchApplicationDraftApi,
   submitApplicationApi,
+  withdrawApplicationApi,
 } from "@/src/features/shared/applications/api";
 import { APPLICATION_QUERY_KEYS } from "@/src/features/shared/applications/hooks";
 import {
@@ -24,9 +25,26 @@ import {
   setPersonalInfo,
   setRPLExperienceTrade,
   setStartApplication,
+  type PersonalInfoState,
+  type RPLExperienceTradeState,
 } from "@/store/slices/onboardingSlice";
-import { getOnboardingPersonaApi } from "@/src/features/shared/onboarding/api";
+import {
+  getOnboardingPersonaApi,
+  saveOnboardingApi,
+} from "@/src/features/shared/onboarding/api";
+import { ONBOARDING_QUERY_KEYS } from "@/src/features/shared/onboarding/hooks";
 import { formatToIsoDate } from "@/src/lib/validation";
+import {
+  formatIsoToDisplayDate,
+  mapEvidenceFlagsToLabels,
+  normalizeGenderForForm,
+} from "@/src/features/candidate/features/Application/utils/applicationDetailsHelpers";
+
+export interface SaveDraftOverrides {
+  personalInfo?: Partial<PersonalInfoState>;
+  rplExp?: Partial<RPLExperienceTradeState>;
+  declarations?: Record<string, boolean>;
+}
 
 export function useRplApplicationSubmission() {
   const dispatch = useAppDispatch();
@@ -45,6 +63,7 @@ export function useRplApplicationSubmission() {
    * Resolves or creates a draft RPL application ID on the backend
    */
   const ensureDraftApplicationId = async (): Promise<string> => {
+    let wasWithdrawnForCentreChange = false;
     // 1. Check existing applications from backend
     try {
       const existing = await getApplicationsApi();
@@ -56,18 +75,54 @@ export function useRplApplicationSubmission() {
           a.status !== "withdrawn",
       );
       if (existingApp?.id) {
-        dispatch(setCurrentApplication(existingApp.id));
-        return existingApp.id;
+        if (existingApp.status === "draft") {
+          const existingCentreId =
+            existingApp.centreId || (existingApp as any).centre?.id || "";
+          const existingSectorId =
+            existingApp.sectorId || (existingApp as any).sector?.id || "";
+          const existingTradeId =
+            existingApp.tradeId || (existingApp as any).trade?.id || "";
+          const isChangingCentreOrTrade =
+            (Boolean(startApp.assessmentCenter) &&
+              Boolean(existingCentreId) &&
+              existingCentreId !== startApp.assessmentCenter) ||
+            (Boolean(startApp.sector) &&
+              Boolean(existingSectorId) &&
+              existingSectorId !== startApp.sector) ||
+            (Boolean(startApp.trade) &&
+              Boolean(existingTradeId) &&
+              existingTradeId !== startApp.trade);
+
+          if (isChangingCentreOrTrade) {
+            await withdrawApplicationApi(existingApp.id);
+            wasWithdrawnForCentreChange = true;
+          } else {
+            dispatch(setCurrentApplication(existingApp.id));
+            return existingApp.id;
+          }
+        } else {
+          dispatch(setCurrentApplication(existingApp.id));
+          return existingApp.id;
+        }
       }
     } catch {
       // Ignore network errors and continue to verification
     }
 
     // 2. If currentAppId exists in Redux and is not a fake local ID, verify it on the backend
-    if (currentAppId && !currentAppId.startsWith("app-1")) {
+    if (
+      !wasWithdrawnForCentreChange &&
+      currentAppId &&
+      !currentAppId.startsWith("app-1")
+    ) {
       try {
         const app = await getApplicationByIdApi(currentAppId);
-        if (app?.id) {
+        if (
+          app?.id &&
+          app.status !== "withdrawn" &&
+          app.status !== "rejected" &&
+          app.status !== "certified"
+        ) {
           return app.id;
         }
       } catch {
@@ -163,7 +218,11 @@ export function useRplApplicationSubmission() {
       ) {
         const existing = await getApplicationsApi().catch(() => []);
         const found = existing.find(
-          (a) => (a.type || "").toUpperCase() === "RPL",
+          (a) =>
+            (a.type || "").toUpperCase() === "RPL" &&
+            a.status !== "certified" &&
+            a.status !== "rejected" &&
+            a.status !== "withdrawn",
         );
         if (found?.id) {
           dispatch(setCurrentApplication(found.id));
@@ -178,8 +237,13 @@ export function useRplApplicationSubmission() {
     );
   };
 
-  const getHydratedPersonalInfo = async () => {
-    let current = { ...personalInfo };
+  const getHydratedPersonalInfo = async (
+    overrideInfo?: Partial<PersonalInfoState>,
+  ) => {
+    let current: PersonalInfoState = {
+      ...personalInfo,
+      ...(overrideInfo || {}),
+    };
     if (
       !current.phoneNumber ||
       !current.state ||
@@ -194,12 +258,14 @@ export function useRplApplicationSubmission() {
           const ci = obData.contactInformation;
           const ra = obData.residentialAddress;
           const acc = obData.accessibility;
-          const hydrated = {
+          const prevAss = obData.previousAssessmentStatus;
+          const hydrated: Partial<PersonalInfoState> = {
             firstName: current.firstName || pd?.firstName || "",
             lastName: current.lastName || pd?.lastName || "",
             middleName: current.middleName || pd?.middleName || "",
-            dob: current.dob || pd?.dob || "",
-            gender: current.gender || pd?.gender || "",
+            dob: current.dob || formatIsoToDisplayDate(pd?.dob, false) || "",
+            gender:
+              current.gender || normalizeGenderForForm(pd?.gender) || "",
             nationality: current.nationality || pd?.nationality || "",
             email:
               current.email ||
@@ -217,10 +283,25 @@ export function useRplApplicationSubmission() {
             streetAddress:
               current.streetAddress || ra?.address || "",
             impairment:
-              current.impairment || acc?.impairment || "",
+              current.impairment ||
+              (acc?.hasImpairment === false
+                ? "None / No impairment"
+                : acc?.impairment || ""),
+            completedBefore:
+              current.completedBefore ||
+              (typeof prevAss?.hasCompletedPreviousAssessment === "boolean"
+                ? prevAss.hasCompletedPreviousAssessment
+                  ? "yes"
+                  : "no"
+                : undefined),
+            learnerId:
+              current.learnerId ||
+              (prevAss?.uniqueLearnerId && prevAss.uniqueLearnerId !== "Yes"
+                ? prevAss.uniqueLearnerId
+                : ""),
           };
           dispatch(setPersonalInfo(hydrated));
-          current = { ...current, ...hydrated };
+          current = { ...current, ...hydrated, ...(overrideInfo || {}) };
         }
       } catch {
         // Fall back to in-memory current
@@ -229,8 +310,14 @@ export function useRplApplicationSubmission() {
     return current;
   };
 
-  const getHydratedExperienceAndTrade = async (appId?: string) => {
-    let current = { ...rplExp };
+  const getHydratedExperienceAndTrade = async (
+    appId?: string,
+    overrideExp?: Partial<RPLExperienceTradeState>,
+  ) => {
+    let current: RPLExperienceTradeState = {
+      ...rplExp,
+      ...(overrideExp || {}),
+    };
     const hasOccupation = Boolean(
       current.occupation && current.occupation.trim().length > 0,
     );
@@ -238,14 +325,15 @@ export function useRplApplicationSubmission() {
       current.reasonRPL && current.reasonRPL.trim().length > 0,
     );
 
-    if (!hasOccupation || !hasReason) {
+    if (!hasOccupation || !hasReason || !current.assessmentType) {
       try {
         const obRes = await getOnboardingPersonaApi("candidate");
         const obData = obRes?.data as any;
         if (obData) {
           const obOcc = obData.currentOccupation;
           const obRpl = obData.rplExperienceTrade;
-          const patch: Partial<typeof rplExp> = {};
+          const prevAss = obData.previousAssessmentStatus;
+          const patch: Partial<RPLExperienceTradeState> = {};
 
           if (!hasOccupation) {
             const occ =
@@ -273,7 +361,11 @@ export function useRplApplicationSubmission() {
           }
 
           if (
-            (!current.employments || current.employments.length === 0) &&
+            (!current.employments ||
+              current.employments.length === 0 ||
+              (current.employments.length === 1 &&
+                !current.employments[0].companyName &&
+                !current.employments[0].jobTitle)) &&
             Array.isArray(obOcc?.employmentHistory) &&
             obOcc.employmentHistory.length > 0
           ) {
@@ -283,27 +375,43 @@ export function useRplApplicationSubmission() {
                 companyName: h.company || "",
                 jobTitle: h.jobTitle || "",
                 employmentType: h.employmentType || "Full-time",
-                startDate: h.startDate || "",
-                endDate: h.endDate || "",
+                startDate: formatIsoToDisplayDate(h.startDate, true),
+                endDate: formatIsoToDisplayDate(h.endDate, true),
                 responsibilities: h.keyResponsibilities || "",
               }),
             );
           }
 
+          if (
+            typeof prevAss?.hasCompletedPreviousAssessment === "boolean" &&
+            !overrideExp?.completedBefore
+          ) {
+            patch.completedBefore = prevAss.hasCompletedPreviousAssessment
+              ? "Yes"
+              : "No";
+            if (
+              prevAss.uniqueLearnerId &&
+              prevAss.uniqueLearnerId !== "Yes" &&
+              !current.previousAssessmentDetails
+            ) {
+              patch.previousAssessmentDetails = prevAss.uniqueLearnerId;
+            }
+          }
+
           if (Object.keys(patch).length > 0) {
             dispatch(setRPLExperienceTrade(patch));
-            current = { ...current, ...patch };
+            current = { ...current, ...patch, ...(overrideExp || {}) };
           }
         }
       } catch {
         // Fall back to application check
       }
 
-      if (appId && (!current.occupation || !current.reasonRPL)) {
+      if (appId) {
         try {
           const app = await getApplicationByIdApi(appId);
           if (app) {
-            const patch: Partial<typeof rplExp> = {};
+            const patch: Partial<RPLExperienceTradeState> = {};
             if (
               !current.occupation &&
               (app.currentOccupation?.occupation || app.trade?.name)
@@ -322,9 +430,62 @@ export function useRplApplicationSubmission() {
                 app.currentOccupation.yearsOfExperience,
               );
             }
+            if (
+              (!current.employments ||
+                current.employments.length === 0 ||
+                (current.employments.length === 1 &&
+                  !current.employments[0].companyName &&
+                  !current.employments[0].jobTitle)) &&
+              Array.isArray(app.currentOccupation?.employmentHistory) &&
+              app.currentOccupation.employmentHistory.length > 0
+            ) {
+              patch.employments = app.currentOccupation.employmentHistory.map(
+                (h: any, idx: number) => ({
+                  id: String(idx + 1),
+                  companyName: h.company || "",
+                  jobTitle: h.jobTitle || "",
+                  employmentType: h.employmentType || "Full-time",
+                  startDate: formatIsoToDisplayDate(h.startDate, true),
+                  endDate: formatIsoToDisplayDate(h.endDate, true),
+                  responsibilities: h.keyResponsibilities || "",
+                }),
+              );
+            }
+            if (
+              (!current.individualUnit || current.individualUnit.length === 0) &&
+              Array.isArray(app.unitIds) &&
+              app.unitIds.length > 0 &&
+              !overrideExp?.individualUnit
+            ) {
+              patch.individualUnit = app.unitIds;
+            }
+            if (!current.assessmentType && !overrideExp?.assessmentType) {
+              if (Array.isArray(app.unitIds) && app.unitIds.length > 0) {
+                patch.assessmentType = "Modular Assessment";
+              } else if (
+                app.currentOccupation ||
+                app.reasonForSeekingRPL ||
+                app.evidenceCandidateCanProvide
+              ) {
+                patch.assessmentType = "Full Qualification Assessment";
+              }
+            }
+            if (
+              (!current.selectedEvidence ||
+                current.selectedEvidence.length === 0) &&
+              app.evidenceCandidateCanProvide &&
+              !overrideExp?.selectedEvidence
+            ) {
+              const mappedEv = mapEvidenceFlagsToLabels(
+                app.evidenceCandidateCanProvide as any,
+              );
+              if (mappedEv.length > 0) {
+                patch.selectedEvidence = mappedEv;
+              }
+            }
             if (Object.keys(patch).length > 0) {
               dispatch(setRPLExperienceTrade(patch));
-              current = { ...current, ...patch };
+              current = { ...current, ...patch, ...(overrideExp || {}) };
             }
           }
         } catch {
@@ -341,8 +502,8 @@ export function useRplApplicationSubmission() {
   const buildPatchPayload = (
     customDeclarations?: Record<string, boolean>,
     includePersonalDetails = true,
-    overridePersonalInfo?: typeof personalInfo,
-    overrideRplExp?: typeof rplExp,
+    overridePersonalInfo?: PersonalInfoState,
+    overrideRplExp?: RPLExperienceTradeState,
   ) => {
     const info = overridePersonalInfo || personalInfo;
     const exp = overrideRplExp || rplExp;
@@ -391,20 +552,23 @@ export function useRplApplicationSubmission() {
       };
     }
 
+    const isoDob = info.dob ? formatToIsoDate(info.dob) : "";
+    const hasValidIsoDob = Boolean(isoDob && /^\d{4}-\d{2}-\d{2}$/.test(isoDob));
+
     if (
       includePersonalDetails &&
       !isIdentityLocked &&
       info.firstName &&
       info.lastName &&
-      info.dob
+      hasValidIsoDob
     ) {
       personalInformation.personalDetails = {
         firstName: info.firstName.trim(),
         lastName: info.lastName.trim(),
         middleName: info.middleName?.trim() || undefined,
-        dob: formatToIsoDate(info.dob),
-        gender: info.gender || "male",
-        nationality: info.nationality || "Nigerian",
+        dob: isoDob,
+        gender: info.gender || "Male",
+        nationality: info.nationality || "Nigeria",
       };
     }
 
@@ -419,6 +583,7 @@ export function useRplApplicationSubmission() {
     // Sanitize unitIds: if Full Assessment, send []; if Modular Assessment, only send valid ID strings
     const isFullAssessment =
       exp.assessmentType === "Full Qualification Assessment";
+    const isModularAssessment = exp.assessmentType === "Modular Assessment";
     let validUnitIds: string[] = [];
 
     if (!isFullAssessment && Array.isArray(exp.individualUnit)) {
@@ -442,30 +607,42 @@ export function useRplApplicationSubmission() {
       experienceAndTrade.qualificationLevelId = startApp.qualificationLevelId;
     }
 
-    if (validUnitIds.length > 0) {
+    if (isFullAssessment) {
+      experienceAndTrade.unitIds = [];
+    } else if (isModularAssessment || validUnitIds.length > 0) {
       experienceAndTrade.unitIds = validUnitIds;
     }
 
     if (resolvedOccupation.length > 0) {
       const validEmploymentHistory = (exp.employments || [])
-        .filter(
-          (emp) =>
-            emp.companyName?.trim() &&
-            (emp.jobTitle?.trim() || resolvedOccupation),
-        )
         .map((emp) => {
+          const startIso = emp.startDate ? formatToIsoDate(emp.startDate) : "";
+          const endIso = (emp as any).endDate
+            ? formatToIsoDate((emp as any).endDate)
+            : "";
+          return {
+            emp,
+            startIso,
+            endIso,
+          };
+        })
+        .filter(
+          ({ emp, startIso }) =>
+            emp.companyName?.trim() &&
+            (emp.jobTitle?.trim() || resolvedOccupation) &&
+            /^\d{4}-\d{2}-\d{2}$/.test(startIso),
+        )
+        .map(({ emp, startIso, endIso }) => {
           const item: Record<string, unknown> = {
             company: emp.companyName.trim(),
             jobTitle: emp.jobTitle?.trim() || resolvedOccupation,
             employmentType: emp.employmentType || "Full-time",
+            startDate: startIso,
             keyResponsibilities: emp.responsibilities?.trim() || "N/A",
           };
-          const startIso = formatToIsoDate(emp.startDate);
-          if (startIso) item.startDate = startIso;
-          const endIso = (emp as any).endDate
-            ? formatToIsoDate((emp as any).endDate)
-            : undefined;
-          if (endIso) item.endDate = endIso;
+          if (endIso && /^\d{4}-\d{2}-\d{2}$/.test(endIso)) {
+            item.endDate = endIso;
+          }
           return item;
         });
 
@@ -481,7 +658,13 @@ export function useRplApplicationSubmission() {
       experienceAndTrade.reasonForSeekingRPL = resolvedReason;
     }
 
-    if (exp.selectedEvidence && exp.selectedEvidence.length > 0) {
+    if (
+      Array.isArray(exp.selectedEvidence) &&
+      (exp.selectedEvidence.length > 0 ||
+        Boolean(exp.assessmentType) ||
+        Boolean(resolvedReason) ||
+        Boolean(exp.occupation?.trim()))
+    ) {
       experienceAndTrade.evidenceCandidateCanProvide = {
         resume: Boolean(
           exp.selectedEvidence.includes("Resume / CV") ||
@@ -528,18 +711,20 @@ export function useRplApplicationSubmission() {
       };
     }
 
+    const effectiveDeclarations = customDeclarations || exp.declarations;
+
     const payload: Record<string, unknown> = {
       assessmentDeclaration: {
         infoProvidedIsAccurate: Boolean(
-          customDeclarations?.trueAndAccurate ?? true,
+          effectiveDeclarations?.trueAndAccurate ?? true,
         ),
         understandsDoesNotGuaranteeCertification: Boolean(
-          customDeclarations?.noGuarantee ?? true,
+          effectiveDeclarations?.noGuarantee ?? true,
         ),
         understandsThatNeedsToProvideSufficientEvidenceToDemonstrateCompetence:
-          Boolean(customDeclarations?.sufficientEvidence ?? true),
+          Boolean(effectiveDeclarations?.sufficientEvidence ?? true),
         agreesToTermsAndPrivacyPolicy: Boolean(
-          customDeclarations?.agreeTerms ?? true,
+          effectiveDeclarations?.agreeTerms ?? true,
         ),
       },
     };
@@ -556,20 +741,113 @@ export function useRplApplicationSubmission() {
   };
 
   /**
+   * Persists candidate onboarding fields (including accessibility & previousAssessmentStatus)
+   * to `PATCH /onboarding/candidate/save`
+   */
+  const persistCandidateOnboardingDraft = async (
+    info: PersonalInfoState,
+    exp: RPLExperienceTradeState,
+    builtPatchPayload: Record<string, any>,
+  ) => {
+    const onboardingData: Record<string, unknown> = {};
+    const pInfo = builtPatchPayload.personalInformation as
+      | Record<string, unknown>
+      | undefined;
+    const expInfo = builtPatchPayload.experienceAndTrade as
+      | Record<string, unknown>
+      | undefined;
+
+    if (pInfo?.personalDetails) {
+      onboardingData.personalDetails = pInfo.personalDetails;
+    }
+    if (pInfo?.contactInformation) {
+      onboardingData.contactInformation = pInfo.contactInformation;
+    }
+    if (pInfo?.residentialAddress) {
+      onboardingData.residentialAddress = pInfo.residentialAddress;
+    }
+    if (expInfo?.currentOccupation) {
+      onboardingData.currentOccupation = expInfo.currentOccupation;
+    }
+
+    const rawImp = (info.impairment || "").trim();
+    if (rawImp) {
+      const isNone =
+        rawImp === "None / No impairment" ||
+        rawImp === "None" ||
+        rawImp === "No";
+      onboardingData.accessibility = isNone
+        ? { hasImpairment: false }
+        : { hasImpairment: true, impairment: rawImp };
+    }
+
+    const completedRaw = (
+      info.completedBefore ||
+      exp.completedBefore ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+    if (completedRaw === "yes" || completedRaw === "no") {
+      const hasCompleted = completedRaw === "yes";
+      const uln = (
+        info.learnerId ||
+        exp.previousAssessmentDetails ||
+        ""
+      ).trim();
+      onboardingData.previousAssessmentStatus = hasCompleted
+        ? {
+            hasCompletedPreviousAssessment: true,
+            uniqueLearnerId: uln || "Yes",
+          }
+        : { hasCompletedPreviousAssessment: false };
+    }
+
+    if (Object.keys(onboardingData).length === 0) return;
+
+    try {
+      await saveOnboardingApi({
+        persona: "candidate",
+        data: onboardingData,
+      });
+    } catch (err: any) {
+      const msg = err?.message || "";
+      if (
+        (msg.includes("identity_fields_locked") ||
+          err?.details?.some?.(
+            (d: any) => d.issue === "identity_fields_locked",
+          )) &&
+        onboardingData.personalDetails
+      ) {
+        const retryData = { ...onboardingData };
+        delete retryData.personalDetails;
+        if (Object.keys(retryData).length > 0) {
+          await saveOnboardingApi({
+            persona: "candidate",
+            data: retryData,
+          }).catch(() => {});
+        }
+      }
+    }
+  };
+
+  /**
    * Save draft application to backend & sync Redux
    */
-  const saveDraft = async () => {
+  const saveDraft = async (overrides?: SaveDraftOverrides) => {
     const appId = await ensureDraftApplicationId();
     const [hydratedInfo, hydratedExp] = await Promise.all([
-      getHydratedPersonalInfo(),
-      getHydratedExperienceAndTrade(appId),
+      getHydratedPersonalInfo(overrides?.personalInfo),
+      getHydratedExperienceAndTrade(appId, overrides?.rplExp),
     ]);
     const payload = buildPatchPayload(
-      undefined,
+      overrides?.declarations,
       true,
       hydratedInfo,
       hydratedExp,
     );
+
+    await persistCandidateOnboardingDraft(hydratedInfo, hydratedExp, payload);
 
     try {
       await patchApplicationDraftApi(appId, payload);
@@ -580,7 +858,7 @@ export function useRplApplicationSubmission() {
         err?.details?.some?.((d: any) => d.issue === "identity_fields_locked")
       ) {
         const retryPayload = buildPatchPayload(
-          undefined,
+          overrides?.declarations,
           false,
           hydratedInfo,
           hydratedExp,
@@ -601,8 +879,14 @@ export function useRplApplicationSubmission() {
       }
     }
 
-    // Invalidate queries so dashboard reflects newly created/saved draft
+    // Invalidate queries so returning to any step or dashboard reflects fresh backend state
     queryClient.invalidateQueries({ queryKey: APPLICATION_QUERY_KEYS.all });
+    queryClient.invalidateQueries({
+      queryKey: APPLICATION_QUERY_KEYS.detail(appId),
+    });
+    queryClient.invalidateQueries({
+      queryKey: ONBOARDING_QUERY_KEYS.persona("candidate"),
+    });
 
     return appId;
   };
@@ -610,18 +894,23 @@ export function useRplApplicationSubmission() {
   /**
    * Submit application to backend & sync Redux
    */
-  const submitApplication = async (declarations?: Record<string, boolean>) => {
+  const submitApplication = async (
+    declarations?: Record<string, boolean>,
+    overrides?: SaveDraftOverrides,
+  ) => {
     const appId = await ensureDraftApplicationId();
     const [hydratedInfo, hydratedExp] = await Promise.all([
-      getHydratedPersonalInfo(),
-      getHydratedExperienceAndTrade(appId),
+      getHydratedPersonalInfo(overrides?.personalInfo),
+      getHydratedExperienceAndTrade(appId, overrides?.rplExp),
     ]);
     const payload = buildPatchPayload(
-      declarations,
+      declarations || overrides?.declarations,
       true,
       hydratedInfo,
       hydratedExp,
     );
+
+    await persistCandidateOnboardingDraft(hydratedInfo, hydratedExp, payload);
 
     try {
       await patchApplicationDraftApi(appId, payload);
@@ -632,7 +921,7 @@ export function useRplApplicationSubmission() {
         err?.details?.some?.((d: any) => d.issue === "identity_fields_locked")
       ) {
         const retryPayload = buildPatchPayload(
-          declarations,
+          declarations || overrides?.declarations,
           false,
           hydratedInfo,
           hydratedExp,
@@ -678,6 +967,12 @@ export function useRplApplicationSubmission() {
     );
 
     queryClient.invalidateQueries({ queryKey: APPLICATION_QUERY_KEYS.all });
+    queryClient.invalidateQueries({
+      queryKey: APPLICATION_QUERY_KEYS.detail(appId),
+    });
+    queryClient.invalidateQueries({
+      queryKey: ONBOARDING_QUERY_KEYS.persona("candidate"),
+    });
 
     return appId;
   };
