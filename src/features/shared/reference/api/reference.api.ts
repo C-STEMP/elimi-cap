@@ -1,4 +1,4 @@
-import { capFetch } from "@/src/lib/api/cap";
+import { capFetch, capFetchAll } from "@/src/lib/api/cap";
 import { orchestratorFetch } from "@/src/lib/api/orchestrator";
 
 export interface Bank {
@@ -158,10 +158,7 @@ export async function getTradesBySectorApi(sectorId: string): Promise<Trade[]> {
  */
 export async function getAllTradesApi(): Promise<Trade[]> {
   try {
-    const res = await capFetch<Trade[] | { data: Trade[] }>("/trades", {
-      method: "GET",
-    });
-    const list = Array.isArray(res) ? res : (res as any)?.data;
+    const list = await capFetchAll<Trade>("/trades");
     if (Array.isArray(list) && list.length > 0) {
       return list;
     }

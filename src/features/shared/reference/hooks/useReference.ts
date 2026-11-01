@@ -60,10 +60,11 @@ export function useGetTradesBySector(sectorId: string) {
   });
 }
 
-export function useGetAllTrades() {
+export function useGetAllTrades(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: REFERENCE_QUERY_KEYS.allTrades,
     queryFn: () => getAllTradesApi(),
+    enabled: options?.enabled ?? true,
     staleTime: 1000 * 60 * 30,
   });
 }

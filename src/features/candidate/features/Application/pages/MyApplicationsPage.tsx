@@ -18,7 +18,7 @@ import { useGetApplications } from "@/src/features/candidate/features/Applicatio
 import { useCandidateProfile, useCandidateEvents } from "@/src/features/shared/onboarding/hooks";
 import { markVerified } from "@/store/slices/authSlice";
 
-type FilterTab = "All" | "Ongoing" | "Completed" | "Draft";
+type FilterTab = "Active" | "Ongoing" | "Completed" | "Draft" | "Withdrawn" | "All";
 
 const getStatusDisplay = (status: string) => {
   const statusMap: Record<
@@ -89,7 +89,7 @@ export const MyApplicationsPage: React.FC = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const dispatch = useAppDispatch();
-  const [activeTab, setActiveTab] = useState<FilterTab>("All");
+  const [activeTab, setActiveTab] = useState<FilterTab>("Active");
 
   const authUser = useAppSelector((state) => state.auth.user);
   const savedRPLIdentity = useAppSelector((s) => s.onboarding.rplIdentity);
@@ -198,11 +198,18 @@ export const MyApplicationsPage: React.FC = () => {
   }, [applications]);
 
   const filteredApplications = allApplications.filter((app: Application) => {
+    if (activeTab === "Active") return app.status !== "withdrawn";
+    if (activeTab === "Withdrawn") return app.status === "withdrawn";
     if (activeTab === "All") return true;
     if (activeTab === "Draft") return app.status === "draft";
     if (activeTab === "Completed") return app.status === "certified";
     if (activeTab === "Ongoing") {
-      return app.status !== "draft" && app.status !== "certified";
+      return (
+        app.status !== "draft" &&
+        app.status !== "certified" &&
+        app.status !== "withdrawn" &&
+        app.status !== "rejected"
+      );
     }
     return true;
   });
@@ -237,11 +244,17 @@ export const MyApplicationsPage: React.FC = () => {
     const sectorTitle = rawSector && !isRawId(rawSector) ? rawSector : "";
 
     const statusText =
-      app.status === "draft"
-        ? "Draft"
-        : app.currentStageKey
-          ? app.currentStageKey.replace(/_/g, " ")
-          : app.status;
+      app.status === "withdrawn"
+        ? "Withdrawn"
+        : app.status === "rejected"
+          ? "Rejected"
+          : app.status === "certified"
+            ? "Certified"
+            : app.status === "draft"
+              ? "Draft"
+              : app.currentStageKey
+                ? app.currentStageKey.replace(/_/g, " ")
+                : app.status;
 
     if (sectorTitle) {
       return `${sectorTitle} • Status: ${statusText}`;
@@ -272,22 +285,29 @@ export const MyApplicationsPage: React.FC = () => {
                 </h2>
 
                 <div className="flex items-center gap-1 sm:gap-2 text-xs font-medium bg-input-bg p-1 rounded-full overflow-x-auto shrink-0">
-                  {(["All", "Ongoing", "Completed", "Draft"] as FilterTab[]).map(
-                    (tab) => (
-                      <button
-                        key={tab}
-                        type="button"
-                        onClick={() => setActiveTab(tab)}
-                        className={`px-3.5 py-1.5 rounded-full transition-all duration-200 cursor-pointer ${
-                          activeTab === tab
-                            ? "bg-white text-[#191913] font-medium shadow-xs"
-                            : "text-[#191913] hover:bg-white/50"
-                        }`}
-                      >
-                        {tab}
-                      </button>
-                    ),
-                  )}
+                  {(
+                    [
+                      "Active",
+                      "Ongoing",
+                      "Completed",
+                      "Draft",
+                      "Withdrawn",
+                      "All",
+                    ] as FilterTab[]
+                  ).map((tab) => (
+                    <button
+                      key={tab}
+                      type="button"
+                      onClick={() => setActiveTab(tab)}
+                      className={`px-3.5 py-1.5 rounded-full transition-all duration-200 cursor-pointer whitespace-nowrap ${
+                        activeTab === tab
+                          ? "bg-white text-[#191913] font-medium shadow-xs"
+                          : "text-[#191913] hover:bg-white/50"
+                      }`}
+                    >
+                      {tab}
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -316,20 +336,27 @@ export const MyApplicationsPage: React.FC = () => {
                   </div>
 
                   <h3 className="text-[#191918] font-semibold text-xl mb-1.5">
-                    No applications yet
+                    {activeTab === "Withdrawn"
+                      ? "No withdrawn applications"
+                      : activeTab === "Active"
+                        ? "No active applications"
+                        : "No applications yet"}
                   </h3>
                   <p className="text-gray-400 text-xs leading-relaxed max-w-xs mb-6">
-                    Click &quot;Start Assessment&quot; in the top header to get
-                    started with your Recognition of Prior Learning journey.
+                    {activeTab === "Withdrawn"
+                      ? "Applications you have withdrawn will appear here."
+                      : 'Click "Create Application +" in the top header to get started with your Recognition of Prior Learning journey.'}
                   </p>
 
-                  <Link
-                    href="/onboarding/assessment-type"
-                    className="bg-secondary hover:bg-[#e89b1f] active:scale-95 text-white font-semibold text-sm px-6 py-2.5 rounded-xl shadow-lg transition-all cursor-pointer inline-flex items-center gap-1.5 no-underline select-none"
-                  >
-                    <span>Create Application</span>
-                    <FiPlus className="w-4 h-4 stroke-[2.5]" />
-                  </Link>
+                  {activeTab !== "Withdrawn" && (
+                    <Link
+                      href="/onboarding/assessment-type"
+                      className="bg-secondary hover:bg-[#e89b1f] active:scale-95 text-white font-semibold text-sm px-6 py-2.5 rounded-xl shadow-lg transition-all cursor-pointer inline-flex items-center gap-1.5 no-underline select-none"
+                    >
+                      <span>Create Application</span>
+                      <FiPlus className="w-4 h-4 stroke-[2.5]" />
+                    </Link>
+                  )}
                 </div>
               ) : (
                 <div className="flex flex-col gap-3.5 flex-1 justify-start pt-4 pb-2">

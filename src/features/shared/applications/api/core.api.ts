@@ -88,6 +88,22 @@ export async function submitApplicationApi(id: string): Promise<Application> {
   });
 }
 
+/**
+ * Withdraw a self-pay draft or an application still pending centre review
+ * (Application Form). Sets status to WITHDRAWN.
+ *
+ * Note: `PATCH /applications/{id}/centre` is deprecated in favour of
+ * calling `POST /applications/{id}/withdraw` followed by `POST /applications`
+ * to change centre or trade.
+ */
+export async function withdrawApplicationApi(
+  id: string,
+): Promise<ApplicationDetail> {
+  return capFetch<ApplicationDetail>(`/applications/${id}/withdraw`, {
+    method: "POST",
+  });
+}
+
 export async function getApplicationHistoryApi(
   id: string,
 ): Promise<ApplicationVersion[]> {

@@ -14,6 +14,8 @@ export interface PersonalInfoState {
   lga: string;
   streetAddress: string;
   impairment: string;
+  completedBefore?: string;
+  learnerId?: string;
   passportFileName: string;
   passportAssetId: string;
   passportUrl: string;
@@ -93,6 +95,12 @@ export interface RPLExperienceTradeState {
   reasonRPL: string;
   selectedEvidence: string[];
   otherEvidenceText: string;
+  declarations?: {
+    trueAndAccurate: boolean;
+    noGuarantee: boolean;
+    sufficientEvidence: boolean;
+    agreeTerms: boolean;
+  };
 }
 
 export interface RPLIdentityState {

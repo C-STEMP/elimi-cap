@@ -8,6 +8,7 @@ import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import {
   useGetApplicationById, useGetApplicationStages,
   useGetPaymentQuote, useGetApplicationReceipt,
+  useWithdrawApplication,
 } from "./useApplication";
 import { useGetInterviewSchedule, useGetInterviewPanel, useGetInterviewForms, usePaystackCheckout } from "@/src/features/shared/applications/hooks";
 import { useGetApplicationEvents } from "@/src/features/shared/notifications/hooks/useNotifications";
@@ -19,6 +20,7 @@ import { getFolderArrangementStatus, getFormStatus, getStagesConfig } from "../u
 import {
   statusToFormState, resolveTradeName, buildFacilitatorData,
   buildInterviewAssessors, buildTransactionReceipt, populateOnboardingFromAppDetail,
+  canCandidateWithdrawApplication,
 } from "../utils/applicationDetailsHelpers";
 import type { PaymentModalType } from "../components/PaymentModals";
 import { formatCurrency } from "@/src/utils/currency";
@@ -47,6 +49,9 @@ export function useApplicationDetailsState(id?: string) {
   >(null);
   const [isInterviewFormModalOpen, setIsInterviewFormModalOpen] = useState(false);
   const [isAppealModalOpen, setIsAppealModalOpen] = useUrlModal(CANDIDATE_APPEAL_MODAL);
+  const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
+  const [isWithdrawnLocally, setIsWithdrawnLocally] = useState(false);
+  const withdrawApplication = useWithdrawApplication();
 
   const authUser = useAppSelector((state) => state.auth.user);
   const { data: apiApp, isLoading } = useGetApplicationById(id || "", {
@@ -63,7 +68,9 @@ export function useApplicationDetailsState(id?: string) {
     (paymentStage?.status as string) === "completed" ||
     (paymentStage?.status as string) === "approved" ||
     Boolean((apiApp as any)?.paymentCompleted);
-  const isDraft = apiApp?.status === "draft" && !(apiApp as any)?.submittedAt;
+  const isWithdrawn = isWithdrawnLocally || apiApp?.status === "withdrawn";
+  const isDraft = !isWithdrawn && apiApp?.status === "draft" && !(apiApp as any)?.submittedAt;
+  const canWithdraw = !isWithdrawn && canCandidateWithdrawApplication(apiApp, stagesData);
   const isInterviewStageActive = Boolean(
     apiApp?.currentStageKey === "interview" || (apiApp as any)?.interviewScheduled ||
     stagesData?.some((s) => (s.stageKey === "interview" || s.stageKey === "observation" || s.stageKey === "direct_observation") && s.status !== "not_started") ||
@@ -85,28 +92,39 @@ export function useApplicationDetailsState(id?: string) {
   const resolvedTrade = resolveTradeName((apiApp as any)?.trade, apiApp?.type ?? "RPL");
   const appFormStage = stagesData?.find((s) => s.stageKey === "application_form" || s.stageKey === "application_review" || s.stageKey === "application");
   const isAppFormApproved = Boolean(
-    appFormStage?.status === "successful" ||
-      (appFormStage?.status as string) === "approved" ||
-      (appFormStage?.status as string) === "completed" ||
-      apiApp?.currentStageKey === "payment" ||
-      (apiApp?.status as string) === "approved" ||
-      apiApp?.status === "certified" ||
-      (apiApp?.currentStageKey &&
-        !["application_form", "application_review", "draft", "submitted"].includes(apiApp.currentStageKey)),
+    !isWithdrawn &&
+      (appFormStage?.status === "successful" ||
+        (appFormStage?.status as string) === "approved" ||
+        (appFormStage?.status as string) === "completed" ||
+        apiApp?.currentStageKey === "payment" ||
+        (apiApp?.status as string) === "approved" ||
+        apiApp?.status === "certified" ||
+        (apiApp?.currentStageKey &&
+          !["application_form", "application_review", "draft", "submitted"].includes(apiApp.currentStageKey))),
   );
   const isAppFormUnderReview = Boolean(
-    !isDraft && !isAppFormApproved &&
+    !isWithdrawn && !isDraft && !isAppFormApproved &&
     (appFormStage?.status === "under_review" || appFormStage?.status === "in_progress" ||
       apiApp?.currentStageKey === "application_form" || apiApp?.currentStageKey === "application_review" || (apiApp as any)?.submittedAt),
   );
-  const isPaymentUnlocked = Boolean(!isDraft && (isPaymentPaid || isAppFormApproved));
+  const isPaymentUnlocked = Boolean(!isWithdrawn && !isDraft && (isPaymentPaid || isAppFormApproved));
 
-  const application = apiApp ? {
-    id: apiApp.id, title: `${resolvedTrade} (${apiApp.type ?? "RPL"})`,
-    status: apiApp.status === "draft" && (apiApp as any)?.submittedAt ? "submitted" : (apiApp.status as string),
-    createdAt: apiApp.createdAt, submittedAt: (apiApp as any)?.submittedAt,
-    selfAssessmentCompleted: Boolean((apiApp as any)?.selfAssessmentCompleted),
-    paymentCompleted: isPaymentPaid, evidenceUploaded: Boolean((apiApp as any)?.evidenceUploaded),
+  const effectiveApiApp = useMemo(
+    () =>
+      apiApp
+        ? isWithdrawn
+          ? { ...apiApp, status: "withdrawn" as const }
+          : apiApp
+        : undefined,
+    [apiApp, isWithdrawn],
+  );
+
+  const application = effectiveApiApp ? {
+    id: effectiveApiApp.id, title: `${resolvedTrade} (${effectiveApiApp.type ?? "RPL"})`,
+    status: isWithdrawn ? "withdrawn" : effectiveApiApp.status === "draft" && (effectiveApiApp as any)?.submittedAt ? "submitted" : (effectiveApiApp.status as string),
+    createdAt: effectiveApiApp.createdAt, submittedAt: (effectiveApiApp as any)?.submittedAt,
+    selfAssessmentCompleted: Boolean((effectiveApiApp as any)?.selfAssessmentCompleted),
+    paymentCompleted: isPaymentPaid, evidenceUploaded: Boolean((effectiveApiApp as any)?.evidenceUploaded),
   } : null;
 
   const facilitatorData = useMemo(() => buildFacilitatorData((apiApp as any)?.assignedFacilitator || (apiApp as any)?.facilitator, resolvedTrade), [apiApp, resolvedTrade]);
@@ -263,13 +281,26 @@ export function useApplicationDetailsState(id?: string) {
   );
 
   return {
-    apiApp, application, isLoading, isDraft, isPaymentPaid, isAppFormApproved, isPaymentUnlocked, paymentAmountText, stages, activeInterviewSchedule: interviewSchedule,
+    apiApp: effectiveApiApp, application, isLoading, isDraft, isWithdrawn, canWithdraw, isWithdrawing: withdrawApplication.isPending,
+    isPaymentPaid, isAppFormApproved, isPaymentUnlocked, paymentAmountText, stages, activeInterviewSchedule: interviewSchedule,
     applicationEvents,
     isInterviewScheduled, isAtInterviewStage, facilitatorData, activePaymentModal, paymentErrorInfo,
     isCallRequestModalOpen, isFormModalOpen, isSignatureModalOpen, isReceiptModalOpen, transactionReceipt,
     interviewForms, selectedInterviewFormType, isInterviewFormModalOpen, isAppealModalOpen,
+    isWithdrawModalOpen, setIsWithdrawModalOpen,
     handleMakePayment,
-    handleEditApplication: () => { if (application) { populateOnboardingFromAppDetail(dispatch, application.id, apiApp); router.push("/rpl/personal-info"); } },
+    handleEditApplication: () => { if (application) { populateOnboardingFromAppDetail(dispatch, application.id, effectiveApiApp); router.push("/rpl/personal-info"); } },
+    handleChangeCentre: () => { if (application) { populateOnboardingFromAppDetail(dispatch, application.id, effectiveApiApp); router.push("/onboarding/start-application"); } },
+    handleConfirmWithdraw: async () => {
+      if (!application) return;
+      try {
+        await withdrawApplication.mutateAsync(application.id);
+        setIsWithdrawnLocally(true);
+        setIsWithdrawModalOpen(false);
+      } catch {
+        setIsWithdrawModalOpen(false);
+      }
+    },
     handleStartFolderArrangement: () => {
       setActivePaymentModal(null);
       if (typeof document !== "undefined") {

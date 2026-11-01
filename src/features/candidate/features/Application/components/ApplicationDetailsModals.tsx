@@ -9,6 +9,7 @@ import { TransactionReceiptModal } from "@/features/assessment-centre/features/P
 
 import { CandidateInterviewFormModal } from "./CandidateInterviewFormModal";
 import { CandidateAppealModal } from "./CandidateAppealModal";
+import { WithdrawApplicationModal } from "./WithdrawApplicationModal";
 import type { InterviewForm } from "@/src/features/shared/applications/api/types";
 
 interface ApplicationDetailsModalsProps {
@@ -34,6 +35,11 @@ interface ApplicationDetailsModalsProps {
   candidateName?: string;
   isAppealModalOpen?: boolean;
   onCloseAppealModal?: () => void;
+  isWithdrawModalOpen?: boolean;
+  onCloseWithdrawModal?: () => void;
+  onConfirmWithdraw?: () => void;
+  isWithdrawing?: boolean;
+  isDraft?: boolean;
   transactionReceipt: {
     id: string;
     candidateName: string;
@@ -70,6 +76,11 @@ export const ApplicationDetailsModals: React.FC<ApplicationDetailsModalsProps> =
   candidateName,
   isAppealModalOpen = false,
   onCloseAppealModal,
+  isWithdrawModalOpen = false,
+  onCloseWithdrawModal,
+  onConfirmWithdraw,
+  isWithdrawing = false,
+  isDraft = false,
   transactionReceipt,
 }) => {
   const activeFormRecord = interviewForms?.find(
@@ -132,6 +143,14 @@ export const ApplicationDetailsModals: React.FC<ApplicationDetailsModalsProps> =
         isOpen={isAppealModalOpen}
         onClose={onCloseAppealModal || (() => {})}
         applicationId={applicationId}
+      />
+
+      <WithdrawApplicationModal
+        isOpen={isWithdrawModalOpen}
+        isLoading={isWithdrawing}
+        isDraft={isDraft}
+        onConfirm={onConfirmWithdraw || (() => {})}
+        onClose={onCloseWithdrawModal || (() => {})}
       />
 
       <TransactionReceiptModal

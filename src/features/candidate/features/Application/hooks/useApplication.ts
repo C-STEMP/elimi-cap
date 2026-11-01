@@ -4,6 +4,7 @@ import {
   useGetApplications as useSharedGetApplications,
   useGetApplicationById as useSharedGetApplicationById,
   useSubmitApplication as useSharedSubmitApplication,
+  useWithdrawApplication as useSharedWithdrawApplication,
   useGetApplicationStages as useSharedGetApplicationStages,
   useInitiateApplicationPayment as useSharedInitiateApplicationPayment,
   useGetApplicationReceipt as useSharedGetApplicationReceipt,
@@ -34,6 +35,10 @@ export function useSubmitApplication() {
   return useSharedSubmitApplication();
 }
 
+export function useWithdrawApplication(options?: { suppressToast?: boolean }) {
+  return useSharedWithdrawApplication(options);
+}
+
 export function useGetApplicationStages(
   id: string,
   options?: { refetchInterval?: number | false },
@@ -59,11 +64,13 @@ export function useGetApplicationReceipt(id: string, options?: { enabled?: boole
 export function useApplication() {
   const createApplication = useCreateApplication();
   const submitApplication = useSubmitApplication();
+  const withdrawApplication = useWithdrawApplication();
   const initiatePayment = useInitiateApplicationPayment();
 
   return {
     createApplication,
     submitApplication,
+    withdrawApplication,
     initiatePayment,
   };
 }

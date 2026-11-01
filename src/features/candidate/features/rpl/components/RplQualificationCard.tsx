@@ -31,10 +31,11 @@ export const RplQualificationCard: React.FC<RplQualificationCardProps> = ({
           <Input
             label={<span>Qualification Title<span className="text-primary-solid ml-0.5">*</span></span>}
             type="text"
-            placeholder="Enter qualification title"
+            placeholder="Qualification title"
             value={form.qualificationTitle}
             error={errors.qualificationTitle}
-            onChange={(e) => update("qualificationTitle", e.target.value)}
+            disabled
+            readOnly
           />
         </div>
 
