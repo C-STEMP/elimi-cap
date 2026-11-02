@@ -83,8 +83,6 @@ export const AssessorAssessmentFormsWidget: React.FC<
 
       <div className="flex flex-col gap-2.5 w-full">
         {forms.map((form) => {
-          const isMappingForm =
-            form.id === "assessment_mapping" || form.id === "assessment_grid";
           const typeKey = FORM_TYPE_MAP[form.id] || form.id;
           const matchedRemote = remoteForms?.find(
             (rf) => rf.formType === typeKey || rf.formType === form.id,
@@ -122,7 +120,7 @@ export const AssessorAssessmentFormsWidget: React.FC<
             : (isSubmitted || isCandidateSigned);
 
           const actionLabel =
-            isMappingForm || isReadOnly || isCompletedForMe
+            isReadOnly || isCompletedForMe
               ? "View"
               : "Fill Form";
 

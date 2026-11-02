@@ -42,6 +42,8 @@ export const CandidateInterviewFormModal: React.FC<
   formType,
   formTitle,
   formRecord,
+  candidateName,
+  defaultMode,
 }) => {
   const { toast } = useToast();
   const signoffMutation = useSignoffInterviewForm(applicationId);
@@ -53,6 +55,10 @@ export const CandidateInterviewFormModal: React.FC<
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadedAssetId, setUploadedAssetId] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isTypedMode, setIsTypedMode] = useState<boolean>(
+    defaultMode === "typed",
+  );
+  const [typedName, setTypedName] = useState<string>(candidateName || "");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const signatureAssetsToResolve = React.useMemo(() => {
@@ -73,8 +79,11 @@ export const CandidateInterviewFormModal: React.FC<
 
   const isAlreadySigned = Boolean(formRecord?.candidateSignedAt);
   const hasSavedSignature = Boolean(profileSignature?.assetId);
-  const isUsingSavedSignature = hasSavedSignature && !selectedFile;
-  const canSubmit = isUsingSavedSignature || Boolean(uploadedAssetId);
+  const isUsingSavedSignature =
+    !isTypedMode && hasSavedSignature && !selectedFile;
+  const canSubmit = isTypedMode
+    ? Boolean(typedName.trim())
+    : isUsingSavedSignature || Boolean(uploadedAssetId);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -123,7 +132,15 @@ export const CandidateInterviewFormModal: React.FC<
       return;
     }
     try {
-      if (isUsingSavedSignature) {
+      if (isTypedMode) {
+        await signoffMutation.mutateAsync({
+          formType,
+          payload: {
+            signatureMode: "typed",
+            typedName: typedName.trim(),
+          },
+        });
+      } else if (isUsingSavedSignature) {
         await signoffMutation.mutateAsync({
           formType,
           payload: {
@@ -150,6 +167,7 @@ export const CandidateInterviewFormModal: React.FC<
     if (isUploading) return;
     setSelectedFile(null);
     setUploadedAssetId(null);
+    setIsTypedMode(defaultMode === "typed");
     onClose();
   };
 
@@ -194,6 +212,31 @@ export const CandidateInterviewFormModal: React.FC<
           ) : (
             <>
               <div className="flex flex-col gap-3 mb-6">
+                <div className="flex items-center justify-center gap-2 bg-gray-100 p-1 rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => setIsTypedMode(false)}
+                    className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      !isTypedMode
+                        ? "bg-white text-[#A31D38] shadow-2xs"
+                        : "text-gray-500 hover:text-gray-700"
+                    }`}
+                  >
+                    Signature File
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsTypedMode(true)}
+                    className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      isTypedMode
+                        ? "bg-white text-[#A31D38] shadow-2xs"
+                        : "text-gray-500 hover:text-gray-700"
+                    }`}
+                  >
+                    Type Name
+                  </button>
+                </div>
+
                 <input
                   type="file"
                   ref={fileInputRef}
@@ -202,7 +245,20 @@ export const CandidateInterviewFormModal: React.FC<
                   className="hidden"
                 />
 
-                {isSignatureLoading ? (
+                {isTypedMode ? (
+                  <div className="bg-gray-50 rounded-2xl p-4 border border-gray-200/80 flex flex-col gap-2">
+                    <label className="text-xs font-bold text-neutral-primary">
+                      Type Full Name as Signature Consent
+                    </label>
+                    <input
+                      type="text"
+                      value={typedName}
+                      onChange={(e) => setTypedName(e.target.value)}
+                      placeholder={candidateName || "Enter your full name"}
+                      className="w-full h-11 bg-white border border-gray-200 rounded-xl px-3.5 text-sm font-semibold text-neutral-primary focus:outline-none focus:ring-1 focus:ring-[#A31D38]"
+                    />
+                  </div>
+                ) : isSignatureLoading ? (
                   <div className="bg-gray-50 rounded-2xl p-8 flex items-center justify-center border border-gray-200/80">
                     <span className="w-5 h-5 border-2 border-[#A31D38] border-t-transparent rounded-full animate-spin" />
                   </div>

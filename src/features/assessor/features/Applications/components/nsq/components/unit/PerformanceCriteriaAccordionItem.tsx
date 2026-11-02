@@ -12,6 +12,7 @@ export interface UnitPerformanceCriteria {
   code: string;
   description: string;
   hasNewUpload?: boolean;
+  hasReupload?: boolean;
   evidences: UnitEvidenceRecord[];
 }
 
@@ -46,6 +47,11 @@ export const PerformanceCriteriaAccordionItem: React.FC<
           <span className="text-xs font-semibold text-neutral-primary truncate">
             {criterion.description}
           </span>
+          {criterion.hasReupload && (
+            <span className="px-2 py-0.5 bg-[#EFF6FF] text-[#1D4ED8] font-bold text-[10px] rounded-md border border-blue-200 shrink-0">
+              Re-uploaded
+            </span>
+          )}
         </div>
         {isExpanded ? (
           <FiChevronUp className="w-4 h-4 text-gray-400 shrink-0" />

@@ -195,6 +195,12 @@ export function useSignoffInterviewForm(id: string) {
       queryClient.invalidateQueries({
         queryKey: APPLICATION_QUERY_KEYS.portfolio(id),
       });
+      queryClient.invalidateQueries({
+        queryKey: APPLICATION_QUERY_KEYS.detail(id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: APPLICATION_QUERY_KEYS.stages(id),
+      });
       toast({
         type: "success",
         title: "Form Signed",

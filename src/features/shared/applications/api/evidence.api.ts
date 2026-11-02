@@ -16,12 +16,66 @@ export async function getEvidenceVaultApi(
   if (params?.cursor) query.append("cursor", params.cursor);
   if (params?.limit) query.append("limit", params.limit.toString());
   const queryString = query.toString() ? `?${query.toString()}` : "";
-  return capFetch<EvidenceVaultItem[]>(
+  const items = await capFetch<EvidenceVaultItem[]>(
     `/applications/${id}/evidence${queryString}`,
     {
       method: "GET",
     },
   );
+
+  if (!Array.isArray(items) || items.length === 0) {
+    return items;
+  }
+
+  // Hydrate rejected / attention-required general evidence items with their full detail
+  // (GET /applications/{id}/evidence/{evidenceId}) because the list endpoint omits reviewComment.
+  const hydratedItems = await Promise.all(
+    items.map(async (item): Promise<EvidenceVaultItem> => {
+      const isGeneral = item.kind === "general" || !item.kind;
+      const statusStr = String(item.reviewStatus || item.status || "").toLowerCase();
+      const isRejectedOrAttention =
+        statusStr.includes("reject") ||
+        statusStr.includes("attenti") ||
+        statusStr.includes("declin") ||
+        statusStr.includes("fail");
+      const rawItem = item as unknown as Record<string, unknown>;
+      const hasComment = Boolean(
+        item.reviewComment ||
+          item.feedback ||
+          rawItem.comment ||
+          rawItem.rejectionReason,
+      );
+
+      if (isGeneral && item.id && isRejectedOrAttention && !hasComment) {
+        try {
+          const detail = await getGeneralEvidenceByIdApi(id, item.id);
+          if (detail) {
+            const rawDetail = detail as unknown as Record<string, unknown>;
+            const resolvedComment =
+              detail.reviewComment ||
+              (rawDetail.comment as string | undefined) ||
+              (rawDetail.feedback as string | undefined) ||
+              item.reviewComment ||
+              undefined;
+            return {
+              ...item,
+              assetId: item.assetId || detail.assetId || undefined,
+              reviewStatus: detail.reviewStatus || item.reviewStatus,
+              reviewComment: resolvedComment,
+              feedback: resolvedComment || item.feedback,
+              unitIds: detail.unitIds || item.unitIds,
+            };
+          }
+        } catch {
+          // Ignore individual detail fetch error and return summary item
+        }
+      }
+
+      return item;
+    }),
+  );
+
+  return hydratedItems;
 }
 
 export async function getApplicationEvidenceTypesApi(

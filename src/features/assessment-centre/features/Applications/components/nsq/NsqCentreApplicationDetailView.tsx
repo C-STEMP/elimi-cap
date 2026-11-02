@@ -90,12 +90,13 @@ interface CentreUnitEvidenceItem {
   title: string;
   status: "approved" | "rejected" | "in_review";
   feedback?: string | null;
+  isHistory?: boolean;
 }
 
 interface CentreUnitCriterion {
   code: string;
   description: string;
-  evidence: CentreUnitEvidenceItem | null;
+  evidences: CentreUnitEvidenceItem[];
 }
 
 interface CentreUnitLearningOutcome {
@@ -104,11 +105,6 @@ interface CentreUnitLearningOutcome {
   criteria: CentreUnitCriterion[];
 }
 
-// Groups the real per-criterion evidence thread (GET /applications/{id}/units/{unitId}/criteria)
-// into LO -> PC cards for the read-only centre view. Only `latest` is shown
-// per criterion — per the backend contract it's the single live row, and
-// `history` is already-superseded submissions (same rule applied on the
-// candidate/assessor evidence views).
 function groupCriteriaForCentreView(
   criteria: NsqCriterion[],
 ): CentreUnitLearningOutcome[] {
@@ -124,27 +120,43 @@ function groupCriteriaForCentreView(
       groups[loKey] = { title: loTitle, criteria: [] };
     }
 
-    const evidence: CentreUnitEvidenceItem | null = crit.latest
-      ? {
-          id: crit.latest.id,
-          title:
-            crit.latest.evidenceType === "WP"
-              ? "Work Product(WP)"
-              : `${crit.latest.evidenceType} Evidence`,
-          status:
-            crit.latest.reviewStatus === "approved"
-              ? "approved"
-              : crit.latest.reviewStatus === "rejected"
-                ? "rejected"
-                : "in_review",
-          feedback: crit.latest.reviewComment || crit.latest.iqaReviewComment,
-        }
-      : null;
+    const rawItems = [
+      ...(crit.latest ? [{ item: crit.latest, isHistory: false }] : []),
+      ...(Array.isArray(crit.history)
+        ? crit.history
+            .filter(
+              (h) =>
+                h.id !== crit.latest?.id && h.reviewStatus === "rejected",
+            )
+            .map((h) => ({ item: h, isHistory: true }))
+        : []),
+    ];
+
+    const evidences: CentreUnitEvidenceItem[] = rawItems.map(({ item, isHistory }) => ({
+      id: item.id,
+      title:
+        item.evidenceType === "WP"
+          ? "Work Product(WP)"
+          : `${item.evidenceType} Evidence`,
+      status:
+        item.reviewStatus === "approved"
+          ? "approved"
+          : item.reviewStatus === "rejected"
+            ? "rejected"
+            : "in_review",
+      feedback:
+        item.reviewComment ||
+        item.iqaReviewComment ||
+        (item as any).comment ||
+        (item as any).feedback ||
+        undefined,
+      isHistory,
+    }));
 
     groups[loKey].criteria.push({
       code: crit.code.startsWith("PC") ? crit.code : `PC ${crit.code}`,
       description: crit.text || `Demonstrate performance standard for ${crit.code}`,
-      evidence,
+      evidences,
     });
   });
 
@@ -793,48 +805,64 @@ export const NsqCentreApplicationDetailView: React.FC<
                             </div>
 
                             {isExpanded && (
-                              pc.evidence ? (
+                              pc.evidences.length > 0 ? (
                                 <div className="flex flex-col gap-3 pt-1">
-                                  {pc.evidence.status === "approved" ? (
-                                    <div className="rounded-xl p-3.5 flex items-center justify-between border border-[#A7F3D0] bg-[#ECFDF5] gap-3">
-                                      <div className="flex items-center gap-2 text-xs font-semibold text-[#065F46] min-w-0">
-                                        <FiFileText className="w-4 h-4 text-[#059669] shrink-0" />
-                                        <span className="truncate">{pc.evidence.title}</span>
-                                      </div>
-                                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#10753A] text-white flex items-center gap-1.5 shrink-0">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-white" />
-                                        <span>Approved</span>
-                                      </span>
-                                    </div>
-                                  ) : pc.evidence.status === "rejected" ? (
-                                    <div className="rounded-xl p-3.5 flex flex-col gap-2.5 border border-[#FECDD3] bg-[#FFF1F2]">
-                                      <div className="flex items-center justify-between gap-3">
-                                        <div className="flex items-center gap-2 text-xs font-semibold text-[#9F1239] min-w-0">
-                                          <FiFileText className="w-4 h-4 text-[#E11D48] shrink-0" />
-                                          <span className="truncate">{pc.evidence.title}</span>
+                                  {pc.evidences.map((ev) =>
+                                    ev.status === "approved" ? (
+                                      <div
+                                        key={ev.id}
+                                        className="rounded-xl p-3.5 flex items-center justify-between border border-[#A7F3D0] bg-[#ECFDF5] gap-3"
+                                      >
+                                        <div className="flex items-center gap-2 text-xs font-semibold text-[#065F46] min-w-0">
+                                          <FiFileText className="w-4 h-4 text-[#059669] shrink-0" />
+                                          <span className="truncate">{ev.title}</span>
                                         </div>
-                                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#DC2626] text-white flex items-center gap-1.5 shrink-0">
+                                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#10753A] text-white flex items-center gap-1.5 shrink-0">
                                           <span className="w-1.5 h-1.5 rounded-full bg-white" />
-                                          <span>Rejected</span>
+                                          <span>Approved</span>
                                         </span>
                                       </div>
-                                      {pc.evidence.feedback && (
-                                        <div className="bg-white rounded-lg p-3 text-xs text-[#E11D48] font-normal leading-relaxed">
-                                          {pc.evidence.feedback}
+                                    ) : ev.status === "rejected" ? (
+                                      <div
+                                        key={ev.id}
+                                        className="rounded-xl p-3.5 flex flex-col gap-2.5 border border-[#FECDD3] bg-[#FFF1F2]"
+                                      >
+                                        <div className="flex items-center justify-between gap-3">
+                                          <div className="flex items-center gap-2 text-xs font-semibold text-[#9F1239] min-w-0 flex-wrap">
+                                            <FiFileText className="w-4 h-4 text-[#E11D48] shrink-0" />
+                                            <span className="truncate">{ev.title}</span>
+                                            {ev.isHistory && (
+                                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-200 text-gray-700">
+                                                History
+                                              </span>
+                                            )}
+                                          </div>
+                                          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#DC2626] text-white flex items-center gap-1.5 shrink-0">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                                            <span>Rejected</span>
+                                          </span>
                                         </div>
-                                      )}
-                                    </div>
-                                  ) : (
-                                    <div className="rounded-xl p-3.5 flex items-center justify-between border border-[#FDE68A] bg-[#FFFBEB] gap-3">
-                                      <div className="flex items-center gap-2 text-xs font-semibold text-[#92400E] min-w-0">
-                                        <FiFileText className="w-4 h-4 text-[#D97706] shrink-0" />
-                                        <span className="truncate">{pc.evidence.title}</span>
+                                        {ev.feedback && (
+                                          <div className="bg-white rounded-lg p-3 text-xs text-[#E11D48] font-normal leading-relaxed">
+                                            {ev.feedback}
+                                          </div>
+                                        )}
                                       </div>
-                                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#D97706] text-white flex items-center gap-1.5 shrink-0">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-white" />
-                                        <span>In Review</span>
-                                      </span>
-                                    </div>
+                                    ) : (
+                                      <div
+                                        key={ev.id}
+                                        className="rounded-xl p-3.5 flex items-center justify-between border border-[#FDE68A] bg-[#FFFBEB] gap-3"
+                                      >
+                                        <div className="flex items-center gap-2 text-xs font-semibold text-[#92400E] min-w-0">
+                                          <FiFileText className="w-4 h-4 text-[#D97706] shrink-0" />
+                                          <span className="truncate">{ev.title}</span>
+                                        </div>
+                                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#D97706] text-white flex items-center gap-1.5 shrink-0">
+                                          <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                                          <span>In Review</span>
+                                        </span>
+                                      </div>
+                                    ),
                                   )}
                                 </div>
                               ) : (

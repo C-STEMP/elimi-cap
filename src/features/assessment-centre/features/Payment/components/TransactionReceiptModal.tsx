@@ -14,95 +14,339 @@ interface TransactionReceiptModalProps {
   onClose: () => void;
 }
 
+function drawRoundedRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number,
+) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function buildSinglePageJpegPdf(
+  jpegBytes: Uint8Array,
+  pixelWidth: number,
+  pixelHeight: number,
+  pageWidthPt: number,
+  pageHeightPt: number,
+): Uint8Array {
+  const encoder = new TextEncoder();
+  const chunks: Uint8Array[] = [];
+  const offsets: number[] = [];
+  let currentOffset = 0;
+
+  const pushStr = (str: string) => {
+    const bytes = encoder.encode(str);
+    chunks.push(bytes);
+    currentOffset += bytes.length;
+  };
+
+  const pushBytes = (bytes: Uint8Array) => {
+    chunks.push(bytes);
+    currentOffset += bytes.length;
+  };
+
+  pushStr("%PDF-1.4\n%\xFF\xFF\xFF\xFF\n");
+
+  // 1 0 obj: Catalog
+  offsets[1] = currentOffset;
+  pushStr("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n");
+
+  // 2 0 obj: Pages
+  offsets[2] = currentOffset;
+  pushStr("2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n");
+
+  // 3 0 obj: Page
+  offsets[3] = currentOffset;
+  pushStr(
+    `3 0 obj\n<< /Type /Page /Parent 2 0 R /Resources << /XObject << /Im0 4 0 R >> >> /MediaBox [0 0 ${pageWidthPt} ${pageHeightPt}] /Contents 5 0 R >>\nendobj\n`,
+  );
+
+  // 4 0 obj: Image XObject
+  offsets[4] = currentOffset;
+  pushStr(
+    `4 0 obj\n<< /Type /XObject /Subtype /Image /Width ${pixelWidth} /Height ${pixelHeight} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpegBytes.length} >>\nstream\n`,
+  );
+  pushBytes(jpegBytes);
+  pushStr("\nendstream\nendobj\n");
+
+  // 5 0 obj: Page content stream
+  const contentStream = `q\n${pageWidthPt} 0 0 ${pageHeightPt} 0 0 cm\n/Im0 Do\nQ\n`;
+  const contentBytes = encoder.encode(contentStream);
+  offsets[5] = currentOffset;
+  pushStr(`5 0 obj\n<< /Length ${contentBytes.length} >>\nstream\n`);
+  pushBytes(contentBytes);
+  pushStr("\nendstream\nendobj\n");
+
+  // xref
+  const xrefOffset = currentOffset;
+  pushStr("xref\n0 6\n0000000000 65535 f \n");
+  for (let i = 1; i <= 5; i++) {
+    const padded = String(offsets[i]).padStart(10, "0");
+    pushStr(`${padded} 00000 n \n`);
+  }
+
+  pushStr(
+    `trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`,
+  );
+
+  const totalLength = chunks.reduce((acc, c) => acc + c.length, 0);
+  const result = new Uint8Array(totalLength);
+  let pos = 0;
+  for (const chunk of chunks) {
+    result.set(chunk, pos);
+    pos += chunk.length;
+  }
+  return result;
+}
+
 export const TransactionReceiptModal: React.FC<
   TransactionReceiptModalProps
 > = ({ isOpen, transaction, onClose }) => {
   if (!isOpen || !transaction) return null;
 
-  const handleDownloadOrPrint = () => {
-    const el = document.getElementById("transaction-receipt-content");
-    if (!el) {
-      window.print();
-      return;
-    }
+  const handleDownloadOrPrint = async () => {
+    const scale = 2;
+    const width = 480;
+    const height = 580;
 
-    // Create a hidden iframe for dedicated clean printing/downloading
-    const iframe = document.createElement("iframe");
-    iframe.style.position = "fixed";
-    iframe.style.right = "0";
-    iframe.style.bottom = "0";
-    iframe.style.width = "0";
-    iframe.style.height = "0";
-    iframe.style.border = "0";
-    document.body.appendChild(iframe);
+    const canvas = document.createElement("canvas");
+    canvas.width = width * scale;
+    canvas.height = height * scale;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
-    const doc = iframe.contentWindow?.document;
-    if (!doc) {
-      window.print();
-      return;
-    }
+    ctx.scale(scale, scale);
 
-    const styles = Array.from(
-      document.querySelectorAll("style, link[rel='stylesheet']")
-    )
-      .map((s) => s.outerHTML)
-      .join("\n");
+    // Outer background
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fillRect(0, 0, width, height);
 
-    doc.open();
-    doc.write(`<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <title>Transaction Receipt - ${transaction.transactionId}</title>
-  ${styles}
-  <style>
-    @page { margin: 12mm; size: auto; }
-    body {
-      background: #ffffff !important;
-      margin: 0;
-      padding: 24px;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      display: flex;
-      justify-content: center;
-      color: #1f2937;
-    }
-    .receipt-print-wrapper {
-      width: 100%;
-      max-width: 440px;
-      background: #ffffff;
-      border: 1px solid #e5e7eb;
-      border-radius: 20px;
-      padding: 24px;
-    }
-    @media print {
-      body { padding: 0 !important; }
-      .receipt-print-wrapper { border: none !important; padding: 0 !important; }
-      button, .no-print { display: none !important; }
-    }
-  </style>
-</head>
-<body>
-  <div class="receipt-print-wrapper">
-    ${el.innerHTML}
-  </div>
-</body>
-</html>`);
-    doc.close();
+    const padX = 32;
+    const boxW = width - padX * 2;
+    let curY = 32;
 
-    setTimeout(() => {
-      try {
-        iframe.contentWindow?.focus();
-        iframe.contentWindow?.print();
-      } catch {
-        window.print();
-      } finally {
-        setTimeout(() => {
-          if (document.body.contains(iframe)) {
-            document.body.removeChild(iframe);
-          }
-        }, 2000);
+    // 1. Header Banner
+    const headerH = 116;
+    drawRoundedRect(ctx, padX, curY, boxW, headerH, 16);
+    ctx.fillStyle = "#FEF2F3";
+    ctx.fill();
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = "#FCE3E6";
+    ctx.stroke();
+
+    // Try drawing the logo image
+    try {
+      const logoSrc =
+        typeof ASSETS_URL.logoIcon2 === "string"
+          ? ASSETS_URL.logoIcon2
+          : (ASSETS_URL.logoIcon2 as any)?.src || "";
+      if (logoSrc) {
+        const img = new window.Image();
+        img.crossOrigin = "anonymous";
+        await new Promise<void>((resolve) => {
+          img.onload = () => resolve();
+          img.onerror = () => resolve();
+          img.src = logoSrc;
+        });
+        if (img.complete && img.naturalWidth > 0) {
+          const logoW = 104;
+          const logoH = (img.naturalHeight / img.naturalWidth) * logoW;
+          ctx.drawImage(
+            img,
+            width / 2 - logoW / 2,
+            curY + 20,
+            logoW,
+            Math.min(logoH, 34),
+          );
+        }
       }
-    }, 400);
+    } catch {
+      // Fallback if logo fails to load
+    }
+
+    ctx.fillStyle = "#8A1538";
+    ctx.font =
+      '800 22px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.textAlign = "center";
+    ctx.fillText("Transaction Receipt", width / 2, curY + 88);
+
+    curY += headerH + 18;
+
+    // 2. Details Grid Box
+    const gridH = 118;
+    drawRoundedRect(ctx, padX, curY, boxW, gridH, 16);
+    ctx.fillStyle = "#F8F9FA";
+    ctx.fill();
+    ctx.strokeStyle = "#F1F3F5";
+    ctx.stroke();
+
+    ctx.textAlign = "left";
+    const col1X = padX + 16;
+    const col2X = padX + boxW / 2 + 8;
+    const maxColW = boxW / 2 - 24;
+
+    const truncateText = (text: string, maxW: number) => {
+      if (ctx.measureText(text).width <= maxW) return text;
+      let t = text;
+      while (t.length > 0 && ctx.measureText(t + "...").width > maxW) {
+        t = t.slice(0, -1);
+      }
+      return t + "...";
+    };
+
+    // Row 1: Date & Transaction ID
+    ctx.fillStyle = "#4B5563";
+    ctx.font = '500 11px system-ui, -apple-system, sans-serif';
+    ctx.fillText("Date", col1X, curY + 28);
+    ctx.fillText("Transaction ID", col2X, curY + 28);
+
+    ctx.fillStyle = "#111827";
+    ctx.font = '700 13px system-ui, -apple-system, sans-serif';
+    ctx.fillText(String(transaction.date || "—"), col1X, curY + 47);
+    ctx.fillText(
+      truncateText(String(transaction.transactionId || "—"), maxColW),
+      col2X,
+      curY + 47,
+    );
+
+    // Row 2: Payment Method & Status
+    ctx.fillStyle = "#4B5563";
+    ctx.font = '500 11px system-ui, -apple-system, sans-serif';
+    ctx.fillText("Payment Method", col1X, curY + 78);
+    ctx.fillText("Status", col2X, curY + 78);
+
+    ctx.fillStyle = "#111827";
+    ctx.font = '600 13px system-ui, -apple-system, sans-serif';
+    ctx.fillText(String(transaction.paymentMethod || "—"), col1X, curY + 97);
+    ctx.font = '700 13px system-ui, -apple-system, sans-serif';
+    ctx.fillText(
+      transaction.status === "Paid" ? "Completed" : "Pending",
+      col2X,
+      curY + 97,
+    );
+
+    curY += gridH + 18;
+
+    // 3. Assessment Item Box
+    const itemH = 74;
+    drawRoundedRect(ctx, padX, curY, boxW, itemH, 16);
+    ctx.fillStyle = "#F8F9FA";
+    ctx.fill();
+    ctx.strokeStyle = "#F1F3F5";
+    ctx.stroke();
+
+    ctx.textAlign = "left";
+    ctx.fillStyle = "#111827";
+    ctx.font = '700 13px system-ui, -apple-system, sans-serif';
+    ctx.fillText(
+      `${transaction.assessmentType || "RPL"} Assessment`,
+      col1X,
+      curY + 31,
+    );
+
+    ctx.fillStyle = "#4B5563";
+    ctx.font = '500 11px system-ui, -apple-system, sans-serif';
+    ctx.fillText(
+      truncateText(String(transaction.description || ""), boxW - 130),
+      col1X,
+      curY + 50,
+    );
+
+    ctx.textAlign = "right";
+    ctx.fillStyle = "#1F2937";
+    ctx.font = '800 15px system-ui, -apple-system, sans-serif';
+    ctx.fillText(
+      String(transaction.amountPaid || ""),
+      padX + boxW - 16,
+      curY + 42,
+    );
+
+    curY += itemH + 26;
+
+    // 4. Summary Rows (Name, Vat, TOTAL)
+    const leftEdge = padX + 4;
+    const rightEdge = padX + boxW - 4;
+
+    ctx.textAlign = "left";
+    ctx.fillStyle = "#333333";
+    ctx.font = '400 14px system-ui, -apple-system, sans-serif';
+    ctx.fillText("Name", leftEdge, curY);
+    ctx.textAlign = "right";
+    ctx.font = '500 14px system-ui, -apple-system, sans-serif';
+    ctx.fillText(String(transaction.candidateName || "—"), rightEdge, curY);
+
+    curY += 30;
+    ctx.textAlign = "left";
+    ctx.font = '400 14px system-ui, -apple-system, sans-serif';
+    ctx.fillText("Vat", leftEdge, curY);
+    ctx.textAlign = "right";
+    ctx.font = '500 14px system-ui, -apple-system, sans-serif';
+    ctx.fillText("-", rightEdge, curY);
+
+    curY += 20;
+    ctx.beginPath();
+    ctx.moveTo(leftEdge, curY);
+    ctx.lineTo(rightEdge, curY);
+    ctx.strokeStyle = "#E5E7EB";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    curY += 32;
+    ctx.textAlign = "left";
+    ctx.fillStyle = "#333333";
+    ctx.font = '700 20px system-ui, -apple-system, sans-serif';
+    ctx.fillText("TOTAL", leftEdge, curY);
+    ctx.textAlign = "right";
+    ctx.font = '700 20px system-ui, -apple-system, sans-serif';
+    ctx.fillText(String(transaction.amountPaid || ""), rightEdge, curY);
+
+    // Export canvas to JPEG and wrap in a single-page PDF downloaded to device
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.95);
+    const base64 = dataUrl.split(",")[1] || "";
+    const binaryStr = window.atob(base64);
+    const jpegBytes = new Uint8Array(binaryStr.length);
+    for (let i = 0; i < binaryStr.length; i++) {
+      jpegBytes[i] = binaryStr.charCodeAt(i);
+    }
+
+    const pdfBytes = buildSinglePageJpegPdf(
+      jpegBytes,
+      canvas.width,
+      canvas.height,
+      width,
+      height,
+    );
+
+    const safeTxId = String(transaction.transactionId || "receipt")
+      .replace(/[^a-zA-Z0-9_-]/g, "_")
+      .slice(0, 40);
+    const fileName = `Transaction_Receipt_${safeTxId}.pdf`;
+
+    const blob = new Blob([pdfBytes as unknown as BlobPart], {
+      type: "application/pdf",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = fileName;
+    link.setAttribute("download", fileName);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
   };
 
   return (

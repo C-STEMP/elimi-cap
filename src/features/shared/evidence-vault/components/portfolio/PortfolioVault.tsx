@@ -6,6 +6,7 @@ import {
   useGetApplicationPortfolio,
   useGetApplicationReceipt,
   useGetInterviewForms,
+  useGetInterviewSchedule,
   useGetPaymentQuote,
 } from "@/src/features/shared/applications/hooks";
 import type {
@@ -130,6 +131,12 @@ export const PortfolioVault: React.FC<PortfolioVaultProps> = ({
         (s: any) => s.key === "interview" && s.status !== "not_started",
       ),
   );
+  const { data: interviewSchedule } = useGetInterviewSchedule(applicationId, {
+    enabled: Boolean(applicationId),
+  });
+  const isInterviewScheduled = Boolean(
+    interviewSchedule?.scheduledAt && interviewSchedule.status !== "cancelled",
+  );
   const { data: interviewForms = [] } = useGetInterviewForms(applicationId, {
     enabled: Boolean(applicationId && isInterviewStage),
   });
@@ -155,6 +162,10 @@ export const PortfolioVault: React.FC<PortfolioVaultProps> = ({
   const resolvedReceipt = receipt || portfolio?.inductionDocuments?.paymentReceipt || null;
 
   const formCard = (formType: InterviewFormType, title: string, subtitle: string) => {
+    if (viewer === "candidate" && !isInterviewScheduled) {
+      return null;
+    }
+
     if (formType === "assessment_grid") {
       const isMappingAvailable =
         portfolio?.standards?.assessmentMappingAvailable !== false;

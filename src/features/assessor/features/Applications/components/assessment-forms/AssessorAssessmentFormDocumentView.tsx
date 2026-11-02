@@ -306,11 +306,15 @@ export const AssessorAssessmentFormDocumentView: React.FC<
 
   const isInterviewForm = formId === "interview_record" || formId === "records";
   const effectiveIsInterviewStage = Boolean(
-    isInterviewStage && applicationData?.currentStageKey === "interview",
+    isInterviewStage &&
+      (!applicationData?.currentStageKey ||
+        applicationData.currentStageKey === "interview" ||
+        applicationData.currentStageKey === "direct_observation" ||
+        applicationData.currentStageKey === "observation" ||
+        (applicationData as any)?.stage === "interview"),
   );
   const shouldFetchInterviewPanel = Boolean(
     applicationId &&
-    !isAssessmentMapping &&
     (effectiveIsInterviewStage || isInterviewForm),
   );
   const { data: interviewPanel } = useGetInterviewPanel(applicationId || "", {
@@ -397,7 +401,6 @@ export const AssessorAssessmentFormDocumentView: React.FC<
   const isMatchPanelMember = Boolean(panelMember && isMemberMatch(panelMember));
 
   const canSignLead =
-    !isAssessmentMapping &&
     isAssessorUser &&
     isInterviewStage &&
     !isCandidateSigned &&
@@ -826,113 +829,111 @@ export const AssessorAssessmentFormDocumentView: React.FC<
           resolvedMappingUnits,
         )}
 
-        {!isAssessmentMapping && (
-          <div className="flex flex-col gap-3 pt-4 border-t border-gray-100">
-            <h3 className="text-[11px] font-bold text-neutral-primary uppercase tracking-widest border-b border-gray-100 pb-2">
-              Signatures & Verification
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="bg-[#F8F9FA] rounded-2xl p-4 border border-gray-100 flex flex-col gap-2.5">
-                <span className="text-[11px] font-semibold text-neutral-secondary">
-                  {isInterviewRecord ? "Lead Panelist:" : "Assessor:"}
-                </span>
-                {isAssessorSigned ? (
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-2 text-emerald-700 font-bold text-xs bg-emerald-50 border border-emerald-200 px-3 py-2 rounded-xl">
-                      <FiCheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <span>
-                        Signed
-                        {formData?.leadPanelistSignedAt ||
-                        formData?.assessorSignedAt ||
-                        formData?.submittedAt ||
-                        formRecord?.candidateSignedAt
-                          ? ` · ${new Date(formData?.leadPanelistSignedAt || formData?.assessorSignedAt || formData?.submittedAt || formRecord?.candidateSignedAt || "").toLocaleDateString("en-GB")}`
-                          : ""}
-                      </span>
+        <div className="flex flex-col gap-3 pt-4 border-t border-gray-100">
+          <h3 className="text-[11px] font-bold text-neutral-primary uppercase tracking-widest border-b border-gray-100 pb-2">
+            Signatures & Verification
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="bg-[#F8F9FA] rounded-2xl p-4 border border-gray-100 flex flex-col gap-2.5">
+              <span className="text-[11px] font-semibold text-neutral-secondary">
+                {isInterviewRecord ? "Lead Panelist:" : "Assessor:"}
+              </span>
+              {isAssessorSigned ? (
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2 text-emerald-700 font-bold text-xs bg-emerald-50 border border-emerald-200 px-3 py-2 rounded-xl">
+                    <FiCheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span>
+                      Signed
+                      {formData?.leadPanelistSignedAt ||
+                      formData?.assessorSignedAt ||
+                      formData?.submittedAt ||
+                      formRecord?.candidateSignedAt
+                        ? ` · ${new Date(formData?.leadPanelistSignedAt || formData?.assessorSignedAt || formData?.submittedAt || formRecord?.candidateSignedAt || "").toLocaleDateString("en-GB")}`
+                        : ""}
+                    </span>
+                  </div>
+                  {displayAssessorSigUrl && (
+                    <div className="bg-white rounded-xl p-2.5 flex items-center justify-center border border-dashed border-gray-200 h-20 max-h-22 overflow-hidden shadow-2xs">
+                      <img
+                        src={displayAssessorSigUrl}
+                        alt="Assessor Signature"
+                        className="max-h-full max-w-full object-contain"
+                      />
                     </div>
-                    {displayAssessorSigUrl && (
-                      <div className="bg-white rounded-xl p-2.5 flex items-center justify-center border border-dashed border-gray-200 h-20 max-h-22 overflow-hidden shadow-2xs">
-                        <img
-                          src={displayAssessorSigUrl}
-                          alt="Assessor Signature"
-                          className="max-h-full max-w-full object-contain"
-                        />
-                      </div>
-                    )}
-                  </div>
-                ) : canSignLead ? (
-                  <button
-                    type="button"
-                    disabled={Boolean(isSigningRole)}
-                    onClick={() =>
-                      handleSignClick(isInterviewRecord ? "lead" : "assessor")
-                    }
-                    className="h-9 bg-[#FFF8EB] border border-[#FBAB2A] hover:bg-[#FDEED5] text-[#FBAB2A] font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
-                  >
-                    <FiEdit3 className="w-3.5 h-3.5" />
-                    {isSigningRole
-                      ? "Signing..."
-                      : isInterviewRecord
-                        ? "Sign as Lead Panelist"
-                        : "Sign as Assessor"}
-                  </button>
-                ) : (
-                  <div className="flex items-center gap-2 text-amber-700 font-semibold text-xs bg-amber-50 border border-amber-200 px-3 py-2 rounded-xl">
-                    <FiClock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                    <span>Awaiting Assessor</span>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              ) : canSignLead ? (
+                <button
+                  type="button"
+                  disabled={Boolean(isSigningRole)}
+                  onClick={() =>
+                    handleSignClick(isInterviewRecord ? "lead" : "assessor")
+                  }
+                  className="h-9 bg-[#FFF8EB] border border-[#FBAB2A] hover:bg-[#FDEED5] text-[#FBAB2A] font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  <FiEdit3 className="w-3.5 h-3.5" />
+                  {isSigningRole
+                    ? "Signing..."
+                    : isInterviewRecord
+                      ? "Sign as Lead Panelist"
+                      : "Sign as Assessor"}
+                </button>
+              ) : (
+                <div className="flex items-center gap-2 text-amber-700 font-semibold text-xs bg-amber-50 border border-amber-200 px-3 py-2 rounded-xl">
+                  <FiClock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                  <span>Awaiting Assessor</span>
+                </div>
+              )}
+            </div>
 
-              <div className="bg-[#F8F9FA] rounded-2xl p-4 border border-gray-100 flex flex-col gap-2.5">
-                <span className="text-[11px] font-semibold text-neutral-secondary">
-                  Candidate:
-                </span>
-                {isCandidateSigned ? (
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-2 text-emerald-700 font-bold text-xs bg-emerald-50 border border-emerald-200 px-3 py-2 rounded-xl">
-                      <FiCheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <span>
-                        Signed ·{" "}
-                        {new Date(
-                          formData?.candidateSignedAt ||
-                            formRecord?.candidateSignedAt ||
-                            Date.now(),
-                        ).toLocaleDateString("en-GB")}
-                      </span>
+            <div className="bg-[#F8F9FA] rounded-2xl p-4 border border-gray-100 flex flex-col gap-2.5">
+              <span className="text-[11px] font-semibold text-neutral-secondary">
+                Candidate:
+              </span>
+              {isCandidateSigned ? (
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2 text-emerald-700 font-bold text-xs bg-emerald-50 border border-emerald-200 px-3 py-2 rounded-xl">
+                    <FiCheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span>
+                      Signed ·{" "}
+                      {new Date(
+                        formData?.candidateSignedAt ||
+                          formRecord?.candidateSignedAt ||
+                          Date.now(),
+                      ).toLocaleDateString("en-GB")}
+                    </span>
+                  </div>
+                  {displayCandidateSigUrl && (
+                    <div className="bg-white rounded-xl p-2.5 flex items-center justify-center border border-dashed border-gray-200 h-20 max-h-22 overflow-hidden shadow-2xs">
+                      <img
+                        src={displayCandidateSigUrl}
+                        alt="Candidate Signature"
+                        className="max-h-full max-w-full object-contain"
+                      />
                     </div>
-                    {displayCandidateSigUrl && (
-                      <div className="bg-white rounded-xl p-2.5 flex items-center justify-center border border-dashed border-gray-200 h-20 max-h-22 overflow-hidden shadow-2xs">
-                        <img
-                          src={displayCandidateSigUrl}
-                          alt="Candidate Signature"
-                          className="max-h-full max-w-full object-contain"
-                        />
-                      </div>
-                    )}
-                  </div>
-                ) : isCandidate && isInterviewStage ? (
-                  <button
-                    type="button"
-                    onClick={() => setIsCandidateSignModalOpen(true)}
-                    className="h-9 bg-[#FFF8EB] border border-[#FBAB2A] hover:bg-[#FDEED5] text-[#FBAB2A] font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-                  >
-                    <FiEdit3 className="w-3.5 h-3.5" />
-                    Append Signature
-                  </button>
-                ) : (
-                  <div className="flex items-center gap-2 text-amber-700 font-semibold text-xs bg-amber-50 border border-amber-200 px-3 py-2 rounded-xl">
-                    <FiClock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                    <span>Awaiting Candidate</span>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              ) : isCandidate && isInterviewStage ? (
+                <button
+                  type="button"
+                  onClick={() => setIsCandidateSignModalOpen(true)}
+                  className="h-9 bg-[#FFF8EB] border border-[#FBAB2A] hover:bg-[#FDEED5] text-[#FBAB2A] font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <FiEdit3 className="w-3.5 h-3.5" />
+                  Append Signature
+                </button>
+              ) : (
+                <div className="flex items-center gap-2 text-amber-700 font-semibold text-xs bg-amber-50 border border-amber-200 px-3 py-2 rounded-xl">
+                  <FiClock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                  <span>Awaiting Candidate</span>
+                </div>
+              )}
             </div>
           </div>
-        )}
+        </div>
       </div>
 
-      {applicationId && !isAssessmentMapping && (
+      {applicationId && (
         <CandidateInterviewFormModal
           isOpen={isCandidateSignModalOpen}
           onClose={() => setIsCandidateSignModalOpen(false)}

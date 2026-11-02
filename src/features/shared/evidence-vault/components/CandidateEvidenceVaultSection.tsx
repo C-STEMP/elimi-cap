@@ -7,6 +7,7 @@ import {
   useGetSelfAssessment,
   useGetEvidenceVault,
   useCreateGeneralEvidence,
+  usePatchGeneralEvidence,
   useDeleteGeneralEvidence,
   useUploadApplicationCv,
   useGetApplicationEvidenceTypes,
@@ -72,6 +73,7 @@ export const CandidateEvidenceVaultSection: React.FC<
   const createGeneralEvidenceMutation = useCreateGeneralEvidence(applicationId, {
     showToast: false,
   });
+  const patchGeneralEvidenceMutation = usePatchGeneralEvidence(applicationId);
   const uploadApplicationCvMutation = useUploadApplicationCv(applicationId, {
     showToast: false,
   });
@@ -130,6 +132,9 @@ export const CandidateEvidenceVaultSection: React.FC<
   const [isUploadModalOpen, setIsUploadModalOpen] =
     useUrlModal(UPLOAD_EVIDENCE_MODAL);
   const [uploadInitialDocName, setUploadInitialDocName] = useState<string>("");
+  const [itemToReplace, setItemToReplace] = useState<EvidenceRecord | null>(
+    null,
+  );
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<EvidenceRecord | null>(null);
   const [previewItem, setPreviewItem] = useState<EvidenceRecord | null>(null);
@@ -161,21 +166,29 @@ export const CandidateEvidenceVaultSection: React.FC<
   const evidences: EvidenceRecord[] = combinedEvidenceList.map((item) => {
     const docName = item.documentName;
 
-    const combinedIssues: string[] = (
-      Array.isArray(item.issues)
+    const rawIssues: string[] = (
+      Array.isArray(item.issues) && item.issues.length > 0
         ? item.issues
-        : item.feedback
-          ? [item.feedback]
+        : Array.isArray(item.feedback) && item.feedback.length > 0
+          ? item.feedback
           : item.reviewComment
             ? [item.reviewComment]
-            : []
+            : item.feedback
+              ? [item.feedback]
+              : item.comment
+                ? [item.comment]
+                : item.rejectionReason
+                  ? [item.rejectionReason]
+                  : item.reason
+                    ? [item.reason]
+                    : []
     ).filter(Boolean);
 
     const defaultPendingStatus = "Pending";
     const rawStatus: string =
       (item.reviewStatus as string) ||
       (item.status as string) ||
-      (combinedIssues.length > 0 ? "Attention Required" : defaultPendingStatus);
+      (rawIssues.length > 0 ? "Attention Required" : defaultPendingStatus);
     const statusLabel = rawStatus
       .replace(/_/g, " ")
       .replace(/\b\w/g, (c: string) => c.toUpperCase());
@@ -191,9 +204,10 @@ export const CandidateEvidenceVaultSection: React.FC<
       s.includes("reject") ||
       s.includes("attenti") ||
       s.includes("fail") ||
-      s.includes("declin") ||
-      (combinedIssues.length > 0 && !isApproved);
+      s.includes("declin");
     const isInProgress = s.includes("review") || s.includes("progress");
+
+    const combinedIssues: string[] = isAttention ? rawIssues : [];
 
     const statusBg = isApproved
       ? "bg-[#1E7F4C]/10"
@@ -268,6 +282,40 @@ export const CandidateEvidenceVaultSection: React.FC<
 
     try {
       setIsUploading(true);
+
+      if (itemToReplace && itemToReplace.id) {
+        const firstItem = items[0];
+        const finalDocName =
+          firstItem.docName.trim() ||
+          itemToReplace.name ||
+          firstItem.file.name.replace(/\.[^/.]+$/, "");
+        const asset = await uploadFileMutation.mutateAsync({
+          file: firstItem.file,
+          purpose: "evidence",
+        });
+        const assetId = asset?.assetId || (asset as any)?.id;
+        if (!assetId)
+          throw new Error("The file upload did not return an asset id.");
+
+        await patchGeneralEvidenceMutation.mutateAsync({
+          evidenceId: itemToReplace.id,
+          payload: {
+            documentName: finalDocName,
+            assetId,
+            unitIds:
+              unitIds && unitIds.length > 0
+                ? unitIds
+                : itemToReplace.unitIds && itemToReplace.unitIds.length > 0
+                  ? itemToReplace.unitIds
+                  : undefined,
+          },
+        });
+
+        setItemToReplace(null);
+        setUploadInitialDocName("");
+        setIsUploadModalOpen(false);
+        return;
+      }
 
       for (const item of items) {
         const finalDocName =
@@ -363,6 +411,7 @@ export const CandidateEvidenceVaultSection: React.FC<
             : undefined
         }
         onUploadCv={() => {
+          setItemToReplace(null);
           setUploadInitialDocName("CV");
           setIsUploadModalOpen(true);
         }}
@@ -383,7 +432,13 @@ export const CandidateEvidenceVaultSection: React.FC<
               setItemToDelete(item);
               setIsDeleteModalOpen(true);
             }}
+            onReplace={(item) => {
+              setItemToReplace(item);
+              setUploadInitialDocName(item.name);
+              setIsUploadModalOpen(true);
+            }}
             onOpenUploadModal={() => {
+              setItemToReplace(null);
               setUploadInitialDocName("");
               setIsUploadModalOpen(true);
             }}
@@ -396,6 +451,7 @@ export const CandidateEvidenceVaultSection: React.FC<
         onClose={() => {
           setIsUploadModalOpen(false);
           setUploadInitialDocName("");
+          setItemToReplace(null);
         }}
         onUploadSubmit={handleUploadSubmit}
         isUploading={isUploading}
@@ -404,6 +460,9 @@ export const CandidateEvidenceVaultSection: React.FC<
         isLoadingEvidenceTypes={isLoadingEvidenceTypes}
         hideEvidenceType={uploadInitialDocName.trim().toUpperCase() === "CV"}
         initialDocName={uploadInitialDocName}
+        initialEvidenceType={itemToReplace?.evidenceType}
+        initialUnitIds={itemToReplace?.unitIds}
+        isReplace={Boolean(itemToReplace)}
         availableUnits={scopedUnits}
       />
 

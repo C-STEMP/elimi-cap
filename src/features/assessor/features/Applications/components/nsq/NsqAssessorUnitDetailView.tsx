@@ -92,7 +92,25 @@ export const NsqAssessorUnitDetailView: React.FC<
           groups[loKey] = { title: loTitle, criteria: [] };
         }
 
-        const evidences = (crit.latest ? [crit.latest] : []).map((ev) => ({
+        const hasRejectedHistory = Boolean(
+          Array.isArray(crit.history) &&
+            crit.history.some(
+              (h) => h.id !== crit.latest?.id && h.reviewStatus === "rejected",
+            ),
+        );
+        const rawItems = [
+          ...(crit.latest ? [{ ev: crit.latest, isHistory: false }] : []),
+          ...(Array.isArray(crit.history)
+            ? crit.history
+                .filter(
+                  (h) =>
+                    h.id !== crit.latest?.id && h.reviewStatus === "rejected",
+                )
+                .map((h) => ({ ev: h, isHistory: true }))
+            : []),
+        ];
+
+        const evidences = rawItems.map(({ ev, isHistory }) => ({
           id: ev.id,
           name:
             ev.evidenceType === "WP"
@@ -100,7 +118,17 @@ export const NsqAssessorUnitDetailView: React.FC<
               : `${ev.evidenceType} Evidence`,
           type: ev.evidenceType,
           status: ev.reviewStatus === "pending" ? "in_review" : ev.reviewStatus,
-          feedback: ev.reviewComment || undefined,
+          isHistory,
+          isReuploaded:
+            !isHistory &&
+            ev.reviewStatus === "pending" &&
+            hasRejectedHistory,
+          feedback:
+            ev.reviewComment ||
+            ev.iqaReviewComment ||
+            (ev as any).comment ||
+            (ev as any).feedback ||
+            undefined,
           url: ev.evidence?.url || null,
           refPage: ev.evidenceRefPage || null,
         }));
@@ -111,6 +139,7 @@ export const NsqAssessorUnitDetailView: React.FC<
           description:
             crit.text || "",
           hasNewUpload: crit.status === "pending",
+          hasReupload: crit.status === "pending" && hasRejectedHistory,
           evidences,
         });
       });
@@ -119,6 +148,7 @@ export const NsqAssessorUnitDetailView: React.FC<
         id: `lo-${loIdx + 1}`,
         title: groups[key].title,
         hasNewUpload: groups[key].criteria.some((c) => c.hasNewUpload),
+        hasReupload: groups[key].criteria.some((c) => c.hasReupload),
         criteria: groups[key].criteria,
       }));
 

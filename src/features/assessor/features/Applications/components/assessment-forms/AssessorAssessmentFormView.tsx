@@ -77,17 +77,21 @@ export const AssessorAssessmentFormView: React.FC<
 
   const { data: applicationData } = useGetApplicationById(applicationId);
 
-  const isAssessmentMapping =
-    formId === "assessment_mapping" || formId === "assessment_grid";
   const isInterviewForm =
     formId === "interview_record" || formId === "records";
   const isInterviewStage =
-    !viewOnly && applicationData?.currentStageKey === "interview";
+    !viewOnly &&
+    Boolean(
+      !applicationData?.currentStageKey ||
+        applicationData.currentStageKey === "interview" ||
+        applicationData.currentStageKey === "direct_observation" ||
+        applicationData.currentStageKey === "observation" ||
+        (applicationData as any)?.stage === "interview",
+    );
 
   const shouldFetchInterviewData = Boolean(
     applicationId &&
       applicationData &&
-      !isAssessmentMapping &&
       (isInterviewStage || isInterviewForm),
   );
 
@@ -104,9 +108,13 @@ export const AssessorAssessmentFormView: React.FC<
   const effectiveIsCandidate = isCandidate || isCandidateUser;
 
   const leadMember = interviewPanel?.members?.find((m: any) => m.isLead);
-  const seatedPanelMember = interviewPanel?.members?.find(
-    (m: any) => !m.isLead && !m.isObserver,
-  );
+  const seatedPanelMember =
+    interviewPanel?.members?.find(
+      (m: any) => !m.isLead && !m.isObserver && isMemberMatch(m),
+    ) ||
+    interviewPanel?.members?.find(
+      (m: any) => !m.isLead && !m.isObserver,
+    );
   const matchedPanelMember = interviewPanel?.members?.find((m: any) =>
     isMemberMatch(m),
   );
@@ -129,7 +137,9 @@ export const AssessorAssessmentFormView: React.FC<
         );
 
   const isMatchPanelMember = Boolean(
-    seatedPanelMember && isMemberMatch(seatedPanelMember),
+    interviewPanel?.members?.some(
+      (m: any) => !m.isLead && !m.isObserver && isMemberMatch(m),
+    ),
   );
   const isMatchIV = Boolean(
     isObserverUser || (ivMember && isMemberMatch(ivMember)),
@@ -137,7 +147,7 @@ export const AssessorAssessmentFormView: React.FC<
 
   const currentUserRole: "lead" | "panel" | "iv" = React.useMemo(() => {
     if (isMatchIV) return "iv";
-    if (isMatchPanelMember && !effectiveIsLead) return "panel";
+    if (!effectiveIsLead || isMatchPanelMember) return "panel";
     return "lead";
   }, [isMatchIV, isMatchPanelMember, effectiveIsLead]);
 
@@ -241,7 +251,7 @@ export const AssessorAssessmentFormView: React.FC<
   }, [interviewSchedule, applicationData?.centre?.name]);
 
   const { data: formsBundle } = useGetInterviewFormsBundle(applicationId, {
-    enabled: shouldFetchInterviewData,
+    enabled: Boolean(applicationId),
   });
   const remoteForms = formsBundle?.forms;
   const panelistRecords = formsBundle?.panelistRecords;

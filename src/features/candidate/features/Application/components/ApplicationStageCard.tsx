@@ -261,7 +261,7 @@ export const ApplicationStageCard: React.FC<ApplicationStageCardProps> = ({
             {stage.paymentDetailsText || "Assessment Fee"}
           </span>
           <span className="text-[#a31d38] font-extrabold text-sm sm:text-xl shrink-0">
-            {stage.paymentAmountText || "₦45,000"}
+            {stage.paymentAmountText || "—"}
           </span>
         </div>
       )}

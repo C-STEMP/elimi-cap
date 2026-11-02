@@ -10,6 +10,7 @@ import {
   FiFolder,
   FiImage,
   FiPlus,
+  FiRefreshCw,
   FiTrash2,
   FiVideo,
 } from "react-icons/fi";
@@ -23,6 +24,7 @@ interface EvidenceSectionProps {
   evidences: EvidenceRecord[];
   onPreview: (item: EvidenceRecord) => void;
   onDelete: (item: EvidenceRecord) => void;
+  onReplace?: (item: EvidenceRecord) => void;
   onOpenUploadModal: () => void;
 }
 
@@ -52,6 +54,7 @@ export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
   evidences,
   onPreview,
   onDelete,
+  onReplace,
   onOpenUploadModal,
 }) => {
   const typeFilter = useEvidenceTypeFilter(evidences);
@@ -164,6 +167,18 @@ export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
                   </div>
 
                   <div className="flex items-center justify-end sm:justify-start gap-2 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-200/50 sm:border-transparent shrink-0">
+                    {isAttention && onReplace && (
+                      <button
+                        type="button"
+                        onClick={() => onReplace(item)}
+                        className="h-8 px-3 rounded-lg bg-[#8A1538] hover:bg-[#70112d] text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 shadow-2xs"
+                        aria-label={`Replace ${item.name}`}
+                      >
+                        <FiRefreshCw className="w-3.5 h-3.5 stroke-2" />
+                        <span>Replace</span>
+                      </button>
+                    )}
+
                     <button
                       type="button"
                       onClick={() => onPreview(item)}
@@ -186,6 +201,9 @@ export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
 
                 {item.issues && item.issues.length > 0 && (
                   <div className="mt-1 bg-[#FCE8EB] border border-[#F87171]/30 rounded-xl p-3 sm:p-4 flex flex-col gap-1 text-xs sm:text-sm text-[#A31D38]">
+                    <span className="font-bold text-[11px] uppercase tracking-wide text-[#8A1538]">
+                      Reason for Rejection:
+                    </span>
                     <ul className="flex flex-col gap-1 list-disc pl-5">
                       {item.issues.map((issue: string, idx: number) => (
                         <li key={idx} className="leading-relaxed">

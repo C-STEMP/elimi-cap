@@ -38,6 +38,7 @@ interface AssessorApplicationStagesListProps {
   isUserLeadPanelist?: boolean;
   isUserPanelMember?: boolean;
   isUserIV?: boolean;
+  areAllCanonicalFormsCompleted?: boolean;
   pendingSignatures?: Array<{ assessorId: string; name?: string; isLead?: boolean }>;
   isCurrentUserInPending?: boolean;
 }
@@ -58,6 +59,7 @@ export const AssessorApplicationStagesList: React.FC<
   isUserLeadPanelist = false,
   isUserPanelMember = false,
   isUserIV = false,
+  areAllCanonicalFormsCompleted = false,
   pendingSignatures,
   isCurrentUserInPending = false,
 }) => {
@@ -205,12 +207,28 @@ export const AssessorApplicationStagesList: React.FC<
 
   const rawInterviewStatus = interviewStageRow?.status;
   const hasRecordedOutcome = interviewOutcome !== "ongoing";
-  const isInterviewNotStarted = !hasRecordedOutcome && rawInterviewStatus === "not_started";
-  const isInterviewOnlyScheduled = !hasRecordedOutcome && rawInterviewStatus === "scheduled";
-  const isInterviewNotYetActionable = Boolean(
-    interviewStageRow &&
-    (rawInterviewStatus === "not_started" || rawInterviewStatus === "scheduled") &&
-    !hasRecordedOutcome,
+  const hasAssignedPanel = panelMembers.length > 0;
+  const hasScheduledInterview = Boolean(
+    interviewSchedule?.scheduledAt && interviewSchedule.status !== "cancelled",
+  );
+  const isInterviewNotStarted =
+    !hasRecordedOutcome &&
+    (!isFolderDone ||
+      !hasAssignedPanel ||
+      !hasScheduledInterview ||
+      rawInterviewStatus === "not_started");
+  const isInterviewOnlyScheduled =
+    !hasRecordedOutcome &&
+    isFolderDone &&
+    hasAssignedPanel &&
+    hasScheduledInterview &&
+    (!areAllCanonicalFormsCompleted || rawInterviewStatus === "scheduled");
+  const canEvaluateInterview = Boolean(
+    isFolderDone &&
+      hasAssignedPanel &&
+      hasScheduledInterview &&
+      areAllCanonicalFormsCompleted &&
+      !isInterviewDone,
   );
 
   const currentInterviewStatus = isInterviewDone
@@ -336,33 +354,39 @@ export const AssessorApplicationStagesList: React.FC<
       assessors: panelMembers,
       inconclusiveDetails: interviewFeedback || undefined,
       actionButton:
-        !isInterviewDone && !isInterviewNotYetActionable && isUserPanelMember && !isUserLeadPanelist && onMarkCandidateCompetent
-          ? (hasPendingSignaturesInfo && !isCurrentUserInPending
-              ? {
-                  label: "Evaluation Recorded",
-                  variant: "view",
-                  onClick: () => {},
-                }
-              : {
-                  label: "Sign Off Interview",
-                  variant: "amber",
-                  onClick: onMarkCandidateCompetent,
-                })
+        canEvaluateInterview &&
+        isUserPanelMember &&
+        !isUserLeadPanelist &&
+        onMarkCandidateCompetent
+          ? hasPendingSignaturesInfo && !isCurrentUserInPending
+            ? {
+                label: "Evaluation Recorded",
+                variant: "view",
+                onClick: () => {},
+              }
+            : {
+                label: "Sign Off Interview",
+                variant: "amber",
+                onClick: onMarkCandidateCompetent,
+              }
           : undefined,
-      menuActions: (isInterviewDone || !isUserLeadPanelist) ? [] : [
-        {
-          label: "Competent",
-          onClick: onMarkCandidateCompetent || (() => {}),
-        },
-        {
-          label: "Incompetent",
-          onClick: onMarkCandidateIncompetent || (() => {}),
-        },
-        {
-          label: "Inconclusive",
-          onClick: onMarkCandidateInconclusive || (() => {}),
-        },
-      ],
+      menuActions:
+        !canEvaluateInterview || !isUserLeadPanelist
+          ? []
+          : [
+              {
+                label: "Competent",
+                onClick: onMarkCandidateCompetent || (() => {}),
+              },
+              {
+                label: "Incompetent",
+                onClick: onMarkCandidateIncompetent || (() => {}),
+              },
+              {
+                label: "Inconclusive",
+                onClick: onMarkCandidateInconclusive || (() => {}),
+              },
+            ],
     },
     {
       id: "internal_verifier",

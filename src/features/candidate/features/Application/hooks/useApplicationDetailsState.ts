@@ -84,10 +84,17 @@ export function useApplicationDetailsState(id?: string) {
   const { data: interviewForms } = useGetInterviewForms(id || "", { enabled: Boolean(id && !isDraft && isInterviewStageActive) });
   const { data: applicationEvents = [] } = useGetApplicationEvents(id || "");
 
-  const isInterviewScheduled = Boolean(interviewSchedule?.scheduledAt);
-  const formattedInterviewDate = interviewSchedule?.scheduledAt
-    ? new Date(interviewSchedule.scheduledAt).toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "numeric" })
-    : undefined;
+  const isInterviewScheduled = Boolean(
+    interviewSchedule?.scheduledAt && interviewSchedule.status !== "cancelled",
+  );
+  const formattedInterviewDate =
+    isInterviewScheduled && interviewSchedule?.scheduledAt
+      ? new Date(interviewSchedule.scheduledAt).toLocaleDateString("en-US", {
+          month: "numeric",
+          day: "numeric",
+          year: "numeric",
+        })
+      : undefined;
 
   const resolvedTrade = resolveTradeName((apiApp as any)?.trade, apiApp?.type ?? "RPL");
   const appFormStage = stagesData?.find((s) => s.stageKey === "application_form" || s.stageKey === "application_review" || s.stageKey === "application");
@@ -128,7 +135,13 @@ export function useApplicationDetailsState(id?: string) {
   } : null;
 
   const facilitatorData = useMemo(() => buildFacilitatorData((apiApp as any)?.assignedFacilitator || (apiApp as any)?.facilitator, resolvedTrade), [apiApp, resolvedTrade]);
-  const interviewAssessors = useMemo(() => (isInterviewStageActive || isInterviewScheduled ? buildInterviewAssessors(interviewPanel, resolvedTrade) : undefined), [isInterviewStageActive, isInterviewScheduled, interviewPanel, resolvedTrade]);
+  const interviewAssessors = useMemo(
+    () =>
+      isInterviewScheduled
+        ? buildInterviewAssessors(interviewPanel, resolvedTrade)
+        : undefined,
+    [isInterviewScheduled, interviewPanel, resolvedTrade],
+  );
 
   useEffect(() => {
     const paymentParam = searchParams.get("payment");
@@ -221,16 +234,21 @@ export function useApplicationDetailsState(id?: string) {
   ];
 
   const formsToSign = useMemo(() => {
+    if (!isInterviewScheduled) return undefined;
     return FORMS_CONFIG.map((f) => {
       const matched = interviewForms?.find((rf) => rf.formType === f.id);
+      const isSigned = Boolean(matched?.candidateSignedAt);
+      const canSign = Boolean(matched?.status === "completed" && !isSigned);
       return {
         id: f.id,
         title: f.title,
         description: f.description,
-        signed: Boolean(matched?.candidateSignedAt),
+        signed: isSigned,
+        status: matched?.status || "not_started",
+        canSign,
       };
     });
-  }, [interviewForms]);
+  }, [FORMS_CONFIG, interviewForms, isInterviewScheduled]);
 
   const stages = application ? getStagesConfig({
     formState, isVaultActive, folderStatus, formStatus, isInterviewCollapsed,

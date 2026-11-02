@@ -128,42 +128,38 @@ export const AssessorApplicationDetailView: React.FC<
 
   const isMemberMatch = usePanelMemberMatch();
 
-  const leadMember = interviewPanel?.members?.find((m: any) => m.isLead);
-  const panelMember = interviewPanel?.members?.find(
-    (m: any) => !m.isLead && !m.isObserver,
+  const hasAssignedPanel = Boolean(
+    interviewPanel?.members && interviewPanel.members.length > 0,
   );
+  const hasScheduledInterview = Boolean(
+    interviewSchedule?.scheduledAt && interviewSchedule.status !== "cancelled",
+  );
+
+  const leadMember = interviewPanel?.members?.find((m: any) => m.isLead);
   const ivMember = interviewPanel?.members?.find((m: any) => m.isObserver);
   const matchedPanelMember = interviewPanel?.members?.find((m: any) =>
     isMemberMatch(m),
   );
 
   const isUserIV = Boolean(
-    user?.role?.toLowerCase() === "iv" ||
-    user?.role?.toLowerCase() === "verifier" ||
-    (ivMember && isMemberMatch(ivMember)),
+    (ivMember && isMemberMatch(ivMember)) ||
+      (appDetail?.internalVerifier &&
+        isMemberMatch({
+          assessorId: appDetail.internalVerifier.assessorId,
+          name: appDetail.internalVerifier.name,
+        })),
   );
   const isUserLeadPanelist = Boolean(
-    leadMember
-      ? isMemberMatch(leadMember)
-      : application.role?.toLowerCase()?.includes("lead"),
-  );
-
-  const isMatchingAnyPanelMember = Boolean(
-    interviewPanel?.members?.some((m: any) => !m.isLead && isMemberMatch(m)),
+    leadMember && isMemberMatch(leadMember),
   );
 
   const isUserPanelMember = Boolean(
-    isMatchingAnyPanelMember ||
-    (!isUserLeadPanelist &&
-      (user?.role?.toLowerCase()?.includes("assessor") ||
-        application.role?.toLowerCase()?.includes("panel"))),
+    matchedPanelMember &&
+      !matchedPanelMember.isLead &&
+      !matchedPanelMember.isObserver,
   );
 
-  const isSeatedOnPanel = Boolean(
-    matchedPanelMember ||
-    isUserLeadPanelist ||
-    (!interviewPanel?.members?.length && (isUserPanelMember || isUserIV)),
-  );
+  const isSeatedOnPanel = Boolean(matchedPanelMember);
 
   const myPanelistRecords = React.useMemo(() => {
     if (!panelistRecords?.length) return [];
@@ -250,23 +246,38 @@ export const AssessorApplicationDetailView: React.FC<
     recommendation: string;
   } | null>(null);
 
-  // Only display the assessment forms widget when in the interview stages
+  const areAllCanonicalFormsCompleted = React.useMemo(() => {
+    if (!remoteForms || remoteForms.length === 0) return false;
+    const requiredFormTypes = [
+      "skill_demonstration",
+      "practical_observation",
+      "records",
+      "assessment_grid",
+    ];
+    return requiredFormTypes.every((formType) => {
+      const f = remoteForms.find((rf) => rf.formType === formType);
+      return Boolean(
+        f &&
+          (f.status === "completed" ||
+            f.assessorSignedAt ||
+            f.candidateSignedAt ||
+            (f.data as any)?.submittedAt ||
+            (f.data as any)?.leadPanelistSigned ||
+            (f.data as any)?.assessorSigned),
+      );
+    });
+  }, [remoteForms]);
+
+  // Only display the assessment forms widget when the interview panel is assigned,
+  // the centre has scheduled the interview, and the assessor is seated on the panel
+  // (or after the interview stage has already completed).
   const isAtInterviewStage = Boolean(
-    (interviewStageRow &&
-      (interviewStageRow.status as string) !== "not_started") ||
-    Boolean(interviewSchedule?.scheduledAt) ||
-    currentStageKey === "interview" ||
-    currentStageKey === "direct_observation" ||
-    currentStageKey === "observation" ||
-    (appDetail as any)?.stage === "interview" ||
-    application?.currentStageKey === "interview" ||
-    interviewOutcome !== "ongoing" ||
-    (isFolderArrangementDone &&
-      stagesData?.some(
-        (s) =>
-          POST_FOLDER_STAGE_KEYS.includes(s.stageKey) &&
-          (s.status as string) !== "not_started",
-      )),
+    isFolderArrangementDone &&
+      hasAssignedPanel &&
+      hasScheduledInterview &&
+      (isSeatedOnPanel ||
+        interviewStageRow?.status === "successful" ||
+        interviewOutcome === "competent"),
   );
 
   const queryClient = useQueryClient();
@@ -671,6 +682,7 @@ export const AssessorApplicationDetailView: React.FC<
               isUserLeadPanelist={isUserLeadPanelist}
               isUserPanelMember={isUserPanelMember}
               isUserIV={isUserIV}
+              areAllCanonicalFormsCompleted={areAllCanonicalFormsCompleted}
               pendingSignatures={pendingSignatures || undefined}
               isCurrentUserInPending={isCurrentUserInPending}
               onViewApplicationForm={() => setSubView("application_form")}

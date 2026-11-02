@@ -30,16 +30,19 @@ export default function AssessmentFormDedicatedRoutePage() {
   const user = useAppSelector((state) => state.auth.user);
   const { data: application, isLoading } = useGetApplicationById(id);
 
-  const isAssessmentMapping =
-    formType === "assessment_mapping" || formType === "assessment_grid";
   const isInterviewForm =
     formType === "interview_record" || formType === "records";
-  const isInterviewStage = application?.currentStageKey === "interview";
+  const isInterviewStage = Boolean(
+    !application?.currentStageKey ||
+      application.currentStageKey === "interview" ||
+      application.currentStageKey === "direct_observation" ||
+      application.currentStageKey === "observation" ||
+      (application as any)?.stage === "interview",
+  );
 
   const shouldFetchInterviewPanel = Boolean(
     id &&
       application &&
-      !isAssessmentMapping &&
       (isInterviewStage || isInterviewForm),
   );
 
