@@ -1228,25 +1228,151 @@ export function usePatchCentreInterviewBooking() {
 
 export function useBulkCertifyApplications() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
+
+  const updateApplicationStatusInCache = (targetIds: string[], status: "certified" | "in_progress") => {
+    // 1. Update all ["centre", "applications"] queries
+    queryClient.setQueriesData<any>(
+      { queryKey: ["centre", "applications"] },
+      (oldData) => {
+        if (!oldData) return oldData;
+        if (Array.isArray(oldData)) {
+          return oldData.map((item) => {
+            const id = item?.id || item?.application?.id;
+            if (targetIds.includes(id)) {
+              return {
+                ...item,
+                status,
+                currentStageKey: status === "certified" ? "certification" : item.currentStageKey,
+                application: item.application
+                  ? {
+                      ...item.application,
+                      status,
+                      currentStageKey: status === "certified" ? "certification" : item.application.currentStageKey,
+                    }
+                  : item.application,
+              };
+            }
+            return item;
+          });
+        }
+        if (oldData && typeof oldData === "object" && Array.isArray((oldData as any).data)) {
+          return {
+            ...oldData,
+            data: (oldData as any).data.map((item: any) => {
+              const id = item?.id || item?.application?.id;
+              if (targetIds.includes(id)) {
+                return {
+                  ...item,
+                  status,
+                  currentStageKey: status === "certified" ? "certification" : item.currentStageKey,
+                  application: item.application
+                    ? {
+                        ...item.application,
+                        status,
+                        currentStageKey: status === "certified" ? "certification" : item.application.currentStageKey,
+                      }
+                    : item.application,
+                };
+              }
+              return item;
+            }),
+          };
+        }
+        const singleId = oldData?.id || oldData?.application?.id;
+        if (singleId && targetIds.includes(singleId)) {
+          return {
+            ...oldData,
+            status,
+            currentStageKey: status === "certified" ? "certification" : oldData.currentStageKey,
+            application: oldData.application
+              ? {
+                  ...oldData.application,
+                  status,
+                  currentStageKey: status === "certified" ? "certification" : oldData.application.currentStageKey,
+                }
+              : oldData.application,
+          };
+        }
+        return oldData;
+      },
+    );
+
+    // 2. Update all ["applications"] queries
+    queryClient.setQueriesData<any>(
+      { queryKey: ["applications"] },
+      (oldData) => {
+        if (!oldData) return oldData;
+        if (Array.isArray(oldData)) {
+          return oldData.map((item) => {
+            const id = item?.id || item?.application?.id;
+            if (targetIds.includes(id)) {
+              return {
+                ...item,
+                status,
+                currentStageKey: status === "certified" ? "certification" : item.currentStageKey,
+                application: item.application
+                  ? {
+                      ...item.application,
+                      status,
+                      currentStageKey: status === "certified" ? "certification" : item.application.currentStageKey,
+                    }
+                  : item.application,
+              };
+            }
+            return item;
+          });
+        }
+        const singleId = oldData?.id || oldData?.application?.id;
+        if (singleId && targetIds.includes(singleId)) {
+          return {
+            ...oldData,
+            status,
+            currentStageKey: status === "certified" ? "certification" : oldData.currentStageKey,
+            application: oldData.application
+              ? {
+                  ...oldData.application,
+                  status,
+                  currentStageKey: status === "certified" ? "certification" : oldData.application.currentStageKey,
+                }
+              : oldData.application,
+          };
+        }
+        return oldData;
+      },
+    );
+
+    // 3. Update summary card stats if present
+    queryClient.setQueriesData<any>(
+      { queryKey: CENTRE_QUERY_KEYS.applicationsSummary },
+      (oldSummary) => {
+        if (!oldSummary || typeof oldSummary !== "object") return oldSummary;
+        return {
+          ...oldSummary,
+          completed: (oldSummary.completed ?? 0) + targetIds.length,
+          ongoing: Math.max(0, (oldSummary.ongoing ?? targetIds.length) - targetIds.length),
+        };
+      },
+    );
+  };
 
   return useMutation({
     mutationFn: (ids: string[]) => bulkCertifyApplicationsApi(ids),
-    onSuccess: (res) => {
+    onMutate: async (ids: string[]) => {
+      await queryClient.cancelQueries({ queryKey: ["centre", "applications"] });
+      await queryClient.cancelQueries({ queryKey: ["applications"] });
+      updateApplicationStatusInCache(ids, "certified");
+    },
+    onSuccess: (res, ids) => {
+      const effectiveIds = res?.updated && res.updated.length > 0 ? res.updated : ids;
+      updateApplicationStatusInCache(effectiveIds, "certified");
+      queryClient.invalidateQueries({ queryKey: ["centre", "applications"] });
       queryClient.invalidateQueries({ queryKey: ["applications"] });
       queryClient.invalidateQueries({ queryKey: CENTRE_QUERY_KEYS.applicationsSummary });
-      toast({
-        type: "success",
-        title: "Applications Certified",
-        description: `Successfully marked ${res?.updated?.length ?? 0} application(s) as certified.`,
-      });
     },
-    onError: (err: ApiError) => {
-      toast({
-        type: "error",
-        title: "Bulk Certification Failed",
-        description: err.message || "Could not bulk-certify selected applications.",
-      });
+    onError: () => {
+      queryClient.invalidateQueries({ queryKey: ["centre", "applications"] });
+      queryClient.invalidateQueries({ queryKey: ["applications"] });
+      queryClient.invalidateQueries({ queryKey: CENTRE_QUERY_KEYS.applicationsSummary });
     },
   });
 }

@@ -196,14 +196,19 @@ export const AssessorApplicationStagesList: React.FC<
     (isCompleted && (!stagesData || stagesData.length === 0 || stagesData.every((s) => s.status === "successful" || (s.status as string) === "completed")))
   );
 
-  const isUserIv = isUserIV || application.role === "Internal Verifier";
+  const isUserIv =
+    isUserIV ||
+    application.role === "Internal Verifier" ||
+    (application as any)?.role === "internal_verifier";
   const isUserEv = application.role === "External Verifier";
-  const isIvActive = ivStageRow
-    ? ivStageRow.status !== "not_started"
-    : isInterviewDone;
-  const isEvActive = evStageRow
-    ? evStageRow.status !== "not_started"
-    : isIvDone;
+  const isIvActive = Boolean(
+    (ivStageRow && ivStageRow.status !== "not_started") ||
+    isInterviewDone
+  );
+  const isEvActive = Boolean(
+    (evStageRow && evStageRow.status !== "not_started") ||
+    isIvDone
+  );
 
   const rawInterviewStatus = interviewStageRow?.status;
   const hasRecordedOutcome = interviewOutcome !== "ongoing";
@@ -360,7 +365,7 @@ export const AssessorApplicationStagesList: React.FC<
       inconclusiveDetails: interviewFeedback || undefined,
       actionButton:
         canEvaluateInterview &&
-        isUserPanelMember &&
+        (isUserPanelMember || isUserIv) &&
         !isUserLeadPanelist &&
         onMarkCandidateCompetent
           ? hasPendingSignaturesInfo && !isCurrentUserInPending
@@ -407,11 +412,17 @@ export const AssessorApplicationStagesList: React.FC<
       actionButton:
         !isIvDone && isIvActive && isUserIv && onMarkCompetent
           ? {
-              label: "Mark as Competent",
+              label: "Review Dossier & Verify",
               variant: "amber",
               onClick: onMarkCompetent,
             }
-          : undefined,
+          : isIvDone && onMarkCompetent
+            ? {
+                label: "View Dossier",
+                variant: "view",
+                onClick: onMarkCompetent,
+              }
+            : undefined,
     },
     {
       id: "external_verifier",

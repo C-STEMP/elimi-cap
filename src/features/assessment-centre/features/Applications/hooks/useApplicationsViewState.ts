@@ -75,6 +75,7 @@ export function useApplicationsViewState(
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [optimisticCertifiedIds, setOptimisticCertifiedIds] = useState<Set<string>>(new Set());
   const [selectedInterviewIds, setSelectedInterviewIds] = useState<string[]>([]);
   const [selectedInductionIds, setSelectedInductionIds] = useState<string[]>([]);
   const [selectedPanelIds, setSelectedPanelIds] = useState<string[]>([]);
@@ -170,8 +171,17 @@ export function useApplicationsViewState(
     () =>
       (remoteApps ?? [])
         .filter((app) => app.status !== "draft")
-        .map(mapApplicationItem),
-    [remoteApps],
+        .map((app) => {
+          if (optimisticCertifiedIds.has(app.id)) {
+            return mapApplicationItem({
+              ...app,
+              status: "certified",
+              currentStageKey: "certification",
+            });
+          }
+          return mapApplicationItem(app);
+        }),
+    [remoteApps, optimisticCertifiedIds],
   );
 
   const filteredApplications = useMemo(
@@ -368,23 +378,55 @@ export function useApplicationsViewState(
       toast({
         type: "info",
         title: "No Applications Selected",
-        description: "Please select IV approved applications to mark as certified.",
+        description: "Please select application(s) to mark as completed.",
       });
       return;
     }
+    const idsToCertify = [...selectedIds];
+    setSelectedIds([]);
+    setOptimisticCertifiedIds((prev) => new Set([...prev, ...idsToCertify]));
+
     try {
-      const res = await bulkCertifyMutation.mutateAsync(selectedIds);
-      setSelectedIds([]);
-      toast({
-        type: "success",
-        title: "Certification Complete",
-        description: `Successfully certified ${res.updated?.length || selectedIds.length} application(s).`,
-      });
+      const res = await bulkCertifyMutation.mutateAsync(idsToCertify);
+      if (res?.failed && res.failed.length > 0 && (!res.updated || res.updated.length === 0)) {
+        setOptimisticCertifiedIds((prev) => {
+          const next = new Set(prev);
+          res.failed.forEach((f) => next.delete(f.id));
+          return next;
+        });
+        toast({
+          type: "error",
+          title: "Completion Failed",
+          description: res.failed[0]?.message || "Selected application(s) could not be marked as completed.",
+        });
+      } else if (res?.failed && res.failed.length > 0) {
+        setOptimisticCertifiedIds((prev) => {
+          const next = new Set(prev);
+          res.failed.forEach((f) => next.delete(f.id));
+          return next;
+        });
+        toast({
+          type: "info",
+          title: "Partially Completed",
+          description: `Marked ${res.updated?.length || 0} application(s) as completed. ${res.failed.length} could not be updated.`,
+        });
+      } else {
+        toast({
+          type: "success",
+          title: "Marked as Completed",
+          description: `Successfully marked ${res?.updated?.length || idsToCertify.length} application(s) as completed.`,
+        });
+      }
     } catch (err: any) {
+      setOptimisticCertifiedIds((prev) => {
+        const next = new Set(prev);
+        idsToCertify.forEach((id) => next.delete(id));
+        return next;
+      });
       toast({
         type: "error",
-        title: "Certification Failed",
-        description: err?.message || "Failed to certify selected applications.",
+        title: "Operation Failed",
+        description: err?.message || "Failed to mark selected application(s) as completed.",
       });
     }
   };

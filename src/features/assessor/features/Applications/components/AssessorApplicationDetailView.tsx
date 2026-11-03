@@ -1,5 +1,7 @@
 "use client";
 
+import { useToast } from "@/src/components/ui/toast";
+import { RplIvDossierModal } from "@/src/features/shared/applications/components/RplIvDossierModal";
 import { SelfAssessmentFormView } from "@/src/features/assessment-centre/features/Applications/components/SelfAssessmentFormView";
 import {
   useAssessorProfileSignature,
@@ -76,6 +78,7 @@ export const AssessorApplicationDetailView: React.FC<
   onResetTriggerMarkComplete,
 }) => {
   const router = useRouter();
+  const { toast } = useToast();
   const { data: appDetail } = useGetApplicationById(application.id, {
     refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
   });
@@ -157,13 +160,23 @@ export const AssessorApplicationDetailView: React.FC<
     isMemberMatch(m),
   );
 
+  const assignedIv =
+    appDetail?.internalVerifier ||
+    (application as any)?.internalVerifier;
+
   const isUserIV = Boolean(
     (ivMember && isMemberMatch(ivMember)) ||
-      (appDetail?.internalVerifier &&
+      (matchedPanelMember && matchedPanelMember.isObserver) ||
+      (assignedIv &&
         isMemberMatch({
-          assessorId: appDetail.internalVerifier.assessorId,
-          name: appDetail.internalVerifier.name,
-        })),
+          assessorId:
+            assignedIv.assessorId ||
+            assignedIv.id ||
+            assignedIv.userId,
+          name: assignedIv.name,
+        })) ||
+      application.role === "Internal Verifier" ||
+      (application as any)?.role === "internal_verifier",
   );
   const isUserLeadPanelist = Boolean(
     leadMember && isMemberMatch(leadMember),
@@ -175,7 +188,7 @@ export const AssessorApplicationDetailView: React.FC<
       !matchedPanelMember.isObserver,
   );
 
-  const isSeatedOnPanel = Boolean(matchedPanelMember);
+  const isSeatedOnPanel = Boolean(matchedPanelMember || isUserIV);
 
   const myPanelistRecords = React.useMemo(() => {
     if (!panelistRecords?.length) return [];
@@ -352,10 +365,16 @@ export const AssessorApplicationDetailView: React.FC<
       await queryClient.invalidateQueries({
         queryKey: ["applications"],
       });
-    } catch (err) {
+      setIsCompetentSuccessOpen(true);
+    } catch (err: any) {
       console.warn("reviewIvApi error:", err);
+      toast({
+        type: "error",
+        title: "Review Failed",
+        description:
+          err?.message || "Could not submit the review. Please try again.",
+      });
     }
-    setIsCompetentSuccessOpen(true);
   };
 
   const handleConfirmEvCompetent = async () => {
@@ -399,7 +418,9 @@ export const AssessorApplicationDetailView: React.FC<
       } = {
         feedback: isLead
           ? "Candidate demonstrated all required competencies."
-          : `Interview evaluated and approved by panel member (${uName}).`,
+          : isUserIV
+            ? `Interview evaluated and verified by Internal Verifier (${uName}).`
+            : `Interview evaluated and approved by panel member (${uName}).`,
         signatureAssetId: resolvedSignatureAssetId,
       };
 
@@ -672,8 +693,10 @@ export const AssessorApplicationDetailView: React.FC<
           const isCurrentUserInPending = Boolean(
             pendingSignatures &&
             pendingSignatures.length > 0 &&
-            pendingSignatures.some((ps) =>
-              isMemberMatch({ assessorId: ps.assessorId, name: ps.name }),
+            pendingSignatures.some(
+              (ps) =>
+                isMemberMatch({ assessorId: ps.assessorId, name: ps.name }) ||
+                (isUserIV && Boolean((ps as any)?.isObserver)),
             ),
           );
 
@@ -781,11 +804,14 @@ export const AssessorApplicationDetailView: React.FC<
         )}
       </div>
 
-      {/* Internal Verifier Modals */}
-      <ConfirmMarkCompetentModal
+      {/* Internal Verifier RPL Dossier Screen & Review Modal */}
+      <RplIvDossierModal
         isOpen={isConfirmCompetentOpen}
         onClose={() => setIsConfirmCompetentOpen(false)}
-        onConfirm={handleConfirmCompetent}
+        applicationId={application.id}
+        isAssignedIv={isUserIV}
+        candidateName={application.candidateName}
+        tradeName={application.trade || (appDetail as any)?.trade?.name}
       />
 
       <MarkCompetentSuccessModal

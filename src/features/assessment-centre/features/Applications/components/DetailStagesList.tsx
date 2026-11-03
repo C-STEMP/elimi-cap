@@ -8,11 +8,13 @@ import {
   FiClipboard,
   FiCopy,
   FiExternalLink,
+  FiEye,
   FiFlag,
   FiLink,
 } from "react-icons/fi";
 import { getStatusBadge } from "../utils/detailHelpers";
 import { NotifyAwardingBodyModal } from "./NotifyAwardingBodyModal";
+import { RplIvDossierModal } from "@/src/features/shared/applications/components/RplIvDossierModal";
 
 interface DetailStagesListProps {
   applicationId?: string;
@@ -100,6 +102,7 @@ export const DetailStagesList: React.FC<DetailStagesListProps> = ({
   } | null>(null);
   const [isNotifyAwardingBodyModalOpen, setIsNotifyAwardingBodyModalOpen] =
     useState<boolean>(false);
+  const [isIvDossierOpen, setIsIvDossierOpen] = useState<boolean>(false);
 
   const createShareTokenMutation = useCreateShareToken(applicationId || "");
 
@@ -487,19 +490,32 @@ export const DetailStagesList: React.FC<DetailStagesListProps> = ({
                 Assign IV
               </Button>
             )}
-          {activeIv &&
-            ivStatus !== "Not Started" &&
-            ivStatus !== "Completed" && (
+          {activeIv && (
+            <>
               <Button
                 type="button"
-                variant="amber"
+                variant="secondary"
                 size="sm"
-                onClick={() => onOpenReviewVerifier("internal")}
-                className="cursor-pointer text-xs"
+                onClick={() => setIsIvDossierOpen(true)}
+                className="bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 font-bold text-xs px-3.5 py-1.5 rounded-xl cursor-pointer shadow-2xs inline-flex items-center gap-1.5"
               >
-                Mark Competent
+                <FiEye className="w-3.5 h-3.5 text-gray-500" />
+                <span>View Dossier</span>
               </Button>
-            )}
+
+              {ivStatus !== "Completed" && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => onOpenAssignVerifier("internal")}
+                  className="bg-white! text-[#fbab2a]! border border-gray-200! hover:bg-gray-50! font-bold text-xs px-3.5 py-1.5 rounded-xl cursor-pointer shrink-0 shadow-none!"
+                >
+                  Change IV
+                </Button>
+              )}
+            </>
+          )}
         </div>
       </div>
 
@@ -649,6 +665,17 @@ export const DetailStagesList: React.FC<DetailStagesListProps> = ({
           {certDate}
         </span>
       </div>
+
+      {applicationId && (
+        <RplIvDossierModal
+          isOpen={isIvDossierOpen}
+          onClose={() => setIsIvDossierOpen(false)}
+          applicationId={applicationId}
+          isAssignedIv={false}
+          candidateName={candidateName}
+          tradeName={resolvedTradeName}
+        />
+      )}
 
       <NotifyAwardingBodyModal
         isOpen={isNotifyAwardingBodyModalOpen}

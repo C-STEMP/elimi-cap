@@ -245,16 +245,21 @@ export const AppsFilterBar: React.FC<Props> = ({
                   </span>
                 </button>
               )}
-              {activeFilterTab === "IV Approved" && onBulkCertify && (
+              {selectedCount > 0 && onBulkCertify && (
                 <button
                   type="button"
                   onClick={onBulkCertify}
-                  disabled={isBulkCertifying || selectedCount === 0}
-                  className="bg-[#1E7F4C] hover:bg-[#1E7F4C]/90 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-all cursor-pointer shadow-xs disabled:opacity-40 whitespace-nowrap"
+                  disabled={isBulkCertifying}
+                  className="bg-[#1E7F4C] hover:bg-[#1E7F4C]/90 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-all cursor-pointer shadow-xs disabled:opacity-40 whitespace-nowrap flex items-center gap-1.5"
                 >
-                  {isBulkCertifying
-                    ? "Certifying..."
-                    : `Bulk Certify ${selectedCount ? `(${selectedCount})` : ""}`}
+                  <FiCheckCircle className="w-3.5 h-3.5 text-white" />
+                  <span>
+                    {isBulkCertifying
+                      ? "Completing..."
+                      : selectedCount > 1
+                      ? `Mark as Completed (${selectedCount})`
+                      : "Mark as Completed"}
+                  </span>
                 </button>
               )}
               <button
