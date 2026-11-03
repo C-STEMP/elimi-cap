@@ -93,15 +93,15 @@ export const AssessorUpcomingEventsWidget: React.FC<
 
     // Filter eventsData for upcoming events (must be in the future)
     if (eventsData && eventsData.length > 0) {
-      const now = Date.now();
+      const graceBuffer = 24 * 60 * 60 * 1000;
+      const now = Date.now() - graceBuffer;
       const upcomingEvents = eventsData
         .filter((e) => {
-          if (
-            applicationId &&
-            e.applicationId &&
-            e.applicationId !== applicationId
-          ) {
-            return false;
+          if (applicationId) {
+            // When viewing a specific application, only show events for this application
+            if (e.applicationId !== applicationId) {
+              return false;
+            }
           }
           const rawDate =
             e.eventAt || (e as any).scheduledAt || (e as any).createdAt;

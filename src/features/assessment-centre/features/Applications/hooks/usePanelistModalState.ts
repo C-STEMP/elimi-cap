@@ -91,8 +91,8 @@ export function usePanelistModalState({
         }
       } catch {}
     } else {
-      const def = new Date(); def.setDate(def.getDate() + 14);
-      setDate(def.toISOString().split("T")[0]); setTime("12:00");
+      setDate("");
+      setTime("");
     }
     if (initialSchedule?.mode) setInterviewMode(initialSchedule.mode.toLowerCase().includes("virtual") || initialSchedule.mode.toLowerCase().includes("online") ? "Virtual" : "Physical");
     if (initialSchedule?.link) setMeetingLink(initialSchedule.link);
@@ -145,7 +145,6 @@ export function usePanelistModalState({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!leadPanelistId) { toast({ type: "error", title: "Lead Panelist Required", description: "Please select a Lead Panelist." }); return; }
-    if (!date) { toast({ type: "error", title: "Date Required", description: "Please specify the interview date." }); return; }
 
     const leadAssessor = assessorOptions.find((a) => a.value === leadPanelistId);
     const panelMemberAssessor = assessorOptions.find((a) => a.value === panelMemberId);
@@ -156,11 +155,17 @@ export function usePanelistModalState({
       return;
     }
 
-    const [h, m] = (time || "12:00").split(":");
-    const d = new Date(date);
-    d.setHours(parseInt(h || "12", 10), parseInt(m || "0", 10), 0, 0);
-    if (Number.isNaN(d.getTime())) { toast({ type: "error", title: "Invalid Date", description: "Please specify a valid interview date and time." }); return; }
-    const scheduledAtIso = d.toISOString();
+    let scheduledAtIso: string | undefined = undefined;
+    if (date) {
+      const [h, m] = (time || "12:00").split(":");
+      const d = new Date(date);
+      d.setHours(parseInt(h || "12", 10), parseInt(m || "0", 10), 0, 0);
+      if (Number.isNaN(d.getTime())) {
+        toast({ type: "error", title: "Invalid Date", description: "Please specify a valid interview date and time." });
+        return;
+      }
+      scheduledAtIso = d.toISOString();
+    }
 
     const mode = interviewMode === "Virtual" ? "online" : "physical";
     const location = mode === "physical" ? streetAddress || undefined : undefined;
@@ -201,13 +206,28 @@ export function usePanelistModalState({
         leadAssessorId: leadAssessor.value,
         ...(ivAssessor ? { observerIvAssessorId: ivAssessor.value } : {}),
       });
-      await scheduleInterviewApi(applicationId, { scheduledAt: scheduledAtIso, mode, location, useCentreAddress: sameAsCompanyAddress, link });
+      if (scheduledAtIso) {
+        await scheduleInterviewApi(applicationId, {
+          scheduledAt: scheduledAtIso,
+          mode,
+          location,
+          useCentreAddress: sameAsCompanyAddress,
+          link,
+        });
+      }
       if (ivAssessor) await assignIvApi(applicationId, ivAssessor.value);
       ["applications", "centre"].forEach((k) => queryClient.invalidateQueries({ queryKey: [k] }));
       setScheduledResult(panelistData);
       setIsSuccessOpen(true);
     } catch (err) {
-      toast({ type: "error", title: "Scheduling Failed", description: err instanceof Error ? err.message : "Could not schedule the interview. Please try again." });
+      toast({
+        type: "error",
+        title: scheduledAtIso ? "Scheduling Failed" : "Assignment Failed",
+        description:
+          err instanceof Error
+            ? err.message
+            : "Could not complete assignment. Please try again.",
+      });
     } finally {
       setIsSubmitting(false);
     }

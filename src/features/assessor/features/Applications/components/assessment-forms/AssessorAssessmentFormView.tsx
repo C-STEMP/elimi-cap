@@ -29,6 +29,7 @@ import {
 } from "@/src/features/shared/applications/utils/rplTradeLevel";
 import { toUnitLabel } from "./utils";
 import { useAppSelector } from "@/src/store/hooks";
+import { useResolveAssets } from "@/src/features/shared/storage/hooks";
 
 interface AssessorAssessmentFormViewProps {
   applicationId: string;
@@ -74,6 +75,8 @@ export const AssessorAssessmentFormView: React.FC<
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [pendingFormData, setPendingFormData] = useState<Record<string, any> | null>(null);
+  const [isLockedByCandidate, setIsLockedByCandidate] = useState(false);
+  const [panelistTab, setPanelistTab] = useState<"my_record" | "lead_form">("my_record");
 
   const { data: applicationData } = useGetApplicationById(applicationId);
 
@@ -250,46 +253,215 @@ export const AssessorAssessmentFormView: React.FC<
     return "Assessment Centre";
   }, [interviewSchedule, applicationData?.centre?.name]);
 
-  const { data: formsBundle } = useGetInterviewFormsBundle(applicationId, {
+  const { data: formsBundle, refetch: refetchFormsBundle } = useGetInterviewFormsBundle(applicationId, {
     enabled: Boolean(applicationId),
   });
   const remoteForms = formsBundle?.forms;
   const panelistRecords = formsBundle?.panelistRecords;
   const updateFormMutation = useUpdateInterviewForm(applicationId);
 
+  React.useEffect(() => {
+    if (applicationId) {
+      refetchFormsBundle();
+    }
+  }, [applicationId, refetchFormsBundle]);
+
   const matchedCanonicalForm = remoteForms?.find((f) => f.formType === formType);
+  const currentAssessorId = (user as any)?.assessorId || (user as any)?.profileId || user?.id;
+
+  const candidateSigAssetId =
+    matchedCanonicalForm?.candidateSignatureAssetId ||
+    (matchedCanonicalForm?.data as any)?.candidateSignatureAssetId ||
+    (applicationData as any)?.candidate?.signature?.assetId ||
+    (applicationData as any)?.candidate?.signatureAssetId ||
+    (applicationData as any)?.candidateSignature?.assetId ||
+    (applicationData as any)?.candidateSignatureAssetId ||
+    (applicationData as any)?.signature?.assetId ||
+    (applicationData as any)?.signatureAssetId ||
+    (applicationData as any)?.frozenProfile?.signature?.assetId ||
+    null;
+
+  const candidateSignatureMode =
+    matchedCanonicalForm?.signatureMode ||
+    (matchedCanonicalForm?.data as any)?.signatureMode ||
+    null;
+
+  const candidateTypedName =
+    matchedCanonicalForm?.typedSignatureName ||
+    (matchedCanonicalForm?.data as any)?.typedSignatureName ||
+    null;
+
+  const rawCandidateDirectUrl =
+    (matchedCanonicalForm as any)?.candidateSignatureUrl ||
+    (matchedCanonicalForm?.data as any)?.candidateSignatureUrl ||
+    (applicationData as any)?.candidate?.signature?.url ||
+    (applicationData as any)?.candidate?.signatureUrl ||
+    (applicationData as any)?.candidateSignature?.url ||
+    (applicationData as any)?.signature?.url ||
+    (applicationData as any)?.frozenProfile?.signature?.url ||
+    null;
+
+  const candidateDirectSigUrl =
+    candidateSignatureMode !== "typed" &&
+    typeof rawCandidateDirectUrl === "string" &&
+    (rawCandidateDirectUrl.startsWith("http://") ||
+      rawCandidateDirectUrl.startsWith("https://") ||
+      rawCandidateDirectUrl.startsWith("data:image/") ||
+      rawCandidateDirectUrl.startsWith("/"))
+      ? rawCandidateDirectUrl
+      : null;
+
+  const candidateSignedAt =
+    matchedCanonicalForm?.candidateSignedAt ||
+    (matchedCanonicalForm?.data as any)?.candidateSignedAt ||
+    null;
+
+  const isCandidateSigned = Boolean(
+    candidateSignedAt ||
+    matchedCanonicalForm?.candidateSignedAt ||
+    (matchedCanonicalForm?.data as any)?.candidateSignedAt ||
+    (matchedCanonicalForm as any)?.isCandidateSigned ||
+    (matchedCanonicalForm?.status === "completed" &&
+      Boolean(matchedCanonicalForm?.candidateSignedAt || candidateSigAssetId))
+  );
+
+  const candidateAssetIdsToResolve = React.useMemo(() => {
+    return candidateSigAssetId && !candidateDirectSigUrl && candidateSigAssetId !== "default"
+      ? [candidateSigAssetId]
+      : [];
+  }, [candidateSigAssetId, candidateDirectSigUrl]);
+
+  const { data: resolvedCandidateAssets } = useResolveAssets(candidateAssetIdsToResolve);
+
+  const resolvedCandidateSignatureUrl =
+    candidateDirectSigUrl ||
+    (Array.isArray(resolvedCandidateAssets)
+      ? resolvedCandidateAssets.find((a) => a.assetId === candidateSigAssetId)?.url
+      : (resolvedCandidateAssets as any)?.[0]?.url) ||
+    null;
+
   const myPanelistRecord = React.useMemo(() => {
     if (!panelistRecords?.length) return undefined;
     return panelistRecords.find(
       (r) =>
         r.formType === formType &&
-        (isMemberMatch({ assessorId: r.assessorId }) ||
+        (r.assessorId === currentAssessorId ||
           (matchedPanelMember?.assessorId &&
             r.assessorId === matchedPanelMember.assessorId) ||
+          isMemberMatch({ assessorId: r.assessorId }) ||
           (!matchedPanelMember && isObserverUser && r.isObserver)),
     );
   }, [
     panelistRecords,
     formType,
-    isMemberMatch,
+    currentAssessorId,
     matchedPanelMember,
+    isMemberMatch,
     isObserverUser,
   ]);
 
-  const isCandidateSigned = Boolean(matchedCanonicalForm?.candidateSignedAt);
-  const isNonLeadSeatedMember =
-    !effectiveIsCandidate && !viewOnly && !isReadOnly && !effectiveIsLead;
+  const hasLeadFormAvailable = Boolean(
+    matchedCanonicalForm &&
+      matchedCanonicalForm.data &&
+      Object.keys(matchedCanonicalForm.data).length > 0,
+  );
 
-  // Lead is blocked after candidate signoff; non-lead panelists & IV observer
-  // upsert their own optional InterviewFormRecord (not candidate-signed).
+  const isLeadLocked = Boolean(
+    effectiveIsLead && (isCandidateSigned || isLockedByCandidate),
+  );
+
+  // Lead is blocked after candidate signoff or on 409; non-lead panelists & IV observer
+  // upsert their own personal record (not blocked by candidate signature).
   const effectiveReadOnly =
     viewOnly ||
     isReadOnly ||
-    (effectiveIsLead && isCandidateSigned);
+    (effectiveIsLead && isLeadLocked) ||
+    (!effectiveIsLead && panelistTab === "lead_form");
 
-  const activeFormData = isNonLeadSeatedMember
-    ? myPanelistRecord?.data
-    : matchedCanonicalForm?.data;
+  const activeFormData = React.useMemo(() => {
+    if (effectiveIsLead) {
+      return matchedCanonicalForm?.data || {};
+    }
+    if (panelistTab === "lead_form") {
+      return matchedCanonicalForm?.data || {};
+    }
+    return myPanelistRecord?.data || {};
+  }, [
+    effectiveIsLead,
+    panelistTab,
+    matchedCanonicalForm?.data,
+    myPanelistRecord?.data,
+  ]);
+
+  const badgeLabel = React.useMemo(() => {
+    if (effectiveIsLead) {
+      return "Official form";
+    }
+    if (panelistTab === "lead_form") {
+      return "Lead’s form (Read-only reference)";
+    }
+    return "My record (not shared with the candidate)";
+  }, [effectiveIsLead, panelistTab]);
+
+  const submitLabel = React.useMemo(() => {
+    if (effectiveIsLead) {
+      return updateFormMutation.isPending
+        ? "Submitting..."
+        : "Submit Official Form";
+    }
+    return updateFormMutation.isPending ? "Saving..." : "Save My Record";
+  }, [effectiveIsLead, updateFormMutation.isPending]);
+
+  const headerTabs = React.useMemo(() => {
+    if (effectiveIsLead || !hasLeadFormAvailable) return null;
+
+    return (
+      <div className="w-full bg-[#f4f5f7] p-1.5 rounded-2xl flex items-center gap-1.5 border border-gray-200/80 shadow-2xs mb-2">
+        <button
+          type="button"
+          onClick={() => setPanelistTab("my_record")}
+          className={`flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            panelistTab === "my_record"
+              ? "bg-white text-gray-900 shadow-sm border border-gray-200/60"
+              : "text-gray-600 hover:text-gray-900 hover:bg-white/50"
+          }`}
+        >
+          <span>My record</span>
+          <span className="hidden sm:inline text-[11px] font-normal text-gray-500">
+            (not shared with candidate)
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setPanelistTab("lead_form")}
+          className={`flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            panelistTab === "lead_form"
+              ? "bg-white text-gray-900 shadow-sm border border-gray-200/60"
+              : "text-gray-600 hover:text-gray-900 hover:bg-white/50"
+          }`}
+        >
+          <span>Lead’s form</span>
+          <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full uppercase tracking-wider">
+            Read-only
+          </span>
+        </button>
+      </div>
+    );
+  }, [effectiveIsLead, hasLeadFormAvailable, panelistTab]);
+
+  const bannerNotice = React.useMemo(() => {
+    if (effectiveIsLead && isLeadLocked) {
+      return (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center gap-3 text-amber-900 text-xs sm:text-sm font-semibold mb-2">
+          <span>
+            🔒 The candidate has signed this official form. It is locked and
+            read-only.
+          </span>
+        </div>
+      );
+    }
+    return null;
+  }, [effectiveIsLead, isLeadLocked]);
 
   const handleRequestSubmit = (data: Record<string, any>) => {
     if (effectiveReadOnly) return;
@@ -299,78 +471,137 @@ export const AssessorAssessmentFormView: React.FC<
 
   const handleConfirmSubmit = async () => {
     setIsConfirmModalOpen(false);
+    if (effectiveReadOnly) return;
     try {
       const now = new Date().toISOString();
       const uName = user?.fullName || (user as any)?.name || "";
-      const baseData = effectiveIsLead
-        ? matchedCanonicalForm?.data || {}
-        : myPanelistRecord?.data || {};
+      const baseData = activeFormData || {};
 
       const isAssessorSigned = Boolean(
-        pendingFormData?.assessorSigned ?? (baseData as any)?.assessorSigned
+        pendingFormData?.assessorSigned ?? (baseData as any)?.assessorSigned,
       );
       const isLeadSigned = Boolean(
         pendingFormData?.leadPanelistSigned ??
           pendingFormData?.assessorSigned ??
           (baseData as any)?.leadPanelistSigned ??
-          (baseData as any)?.assessorSigned
+          (baseData as any)?.assessorSigned,
       );
+
+      const resolvedSigAssetId =
+        pendingFormData?.assessorSignature?.assetId ||
+        pendingFormData?.assessorSignatureAssetId ||
+        pendingFormData?.leadPanelistSignatureAssetId ||
+        pendingFormData?.panelMemberSignatureAssetId ||
+        pendingFormData?.internalVerifierSignatureAssetId ||
+        (baseData as any)?.assessorSignature?.assetId ||
+        (baseData as any)?.assessorSignatureAssetId ||
+        "";
+
+      const resolvedSigUrl =
+        pendingFormData?.assessorSignature?.url ||
+        pendingFormData?.assessorSignatureUrl ||
+        pendingFormData?.leadPanelistSignatureUrl ||
+        pendingFormData?.panelMemberSignatureUrl ||
+        pendingFormData?.internalVerifierSignatureUrl ||
+        (baseData as any)?.assessorSignature?.url ||
+        (baseData as any)?.assessorSignatureUrl ||
+        undefined;
+
+      const resolvedSignerName =
+        pendingFormData?.assessorSignature?.name ||
+        pendingFormData?.assessorName ||
+        uName ||
+        (baseData as any)?.assessorSignature?.name ||
+        (baseData as any)?.assessorName ||
+        "Assessor";
+
+      const resolvedSignedAt =
+        pendingFormData?.assessorSignature?.signedAt ||
+        pendingFormData?.assessorSignedAt ||
+        pendingFormData?.leadPanelistSignedAt ||
+        pendingFormData?.panelMemberSignedAt ||
+        pendingFormData?.internalVerifierSignedAt ||
+        now;
+
+      const sigObj = {
+        assetId: resolvedSigAssetId,
+        name: resolvedSignerName,
+        signedAt: resolvedSignedAt,
+        ...(resolvedSigUrl ? { url: resolvedSigUrl } : {}),
+      };
+
+      const payloadData: Record<string, any> = {
+        ...baseData,
+        ...(pendingFormData || {}),
+        assessorName: resolvedSignerName,
+        assessorSigned: true,
+        assessorSignedAt: resolvedSignedAt,
+        assessorSignature: sigObj,
+      };
+
+      if (resolvedSigAssetId) {
+        payloadData.assessorSignatureAssetId = resolvedSigAssetId;
+      }
+      if (resolvedSigUrl) {
+        payloadData.assessorSignatureUrl = resolvedSigUrl;
+      }
+
+      if (effectiveIsLead) {
+        payloadData.submittedAt = now;
+        payloadData.status = "submitted";
+        payloadData.leadSignature = sigObj;
+        payloadData.leadPanelistSigned = isLeadSigned;
+        if (isLeadSigned) {
+          payloadData.leadPanelistSignedAt = resolvedSignedAt;
+          payloadData.leadPanelistName = resolvedSignerName;
+          if (resolvedSigAssetId) {
+            payloadData.leadPanelistSignatureAssetId = resolvedSigAssetId;
+          }
+          if (resolvedSigUrl) {
+            payloadData.leadPanelistSignatureUrl = resolvedSigUrl;
+          }
+        }
+      } else {
+        // Non-lead panelist or IV observer personal record
+        payloadData.submittedAt = now;
+        payloadData.status = "submitted";
+        if (isObserverUser) {
+          payloadData.internalVerifierSignature = sigObj;
+          payloadData.internalVerifierSigned = true;
+          payloadData.internalVerifierSignedAt = resolvedSignedAt;
+          payloadData.internalVerifierName = resolvedSignerName;
+        } else {
+          payloadData.panelMemberSignature = sigObj;
+          payloadData.panelMemberSigned = true;
+          payloadData.panelMemberSignedAt = resolvedSignedAt;
+          payloadData.panelMemberName = resolvedSignerName;
+        }
+      }
 
       await updateFormMutation.mutateAsync({
         formType,
-        data: {
-          ...baseData,
-          ...(pendingFormData || {}),
-          submittedAt: now,
-          status: "submitted",
-          assessorSigned: isAssessorSigned,
-          assessorSignedAt: isAssessorSigned
-            ? pendingFormData?.assessorSignedAt ||
-              (baseData as any)?.assessorSignedAt ||
-              now
-            : undefined,
-          assessorName:
-            pendingFormData?.assessorName ||
-            uName ||
-            (baseData as any)?.assessorName,
-          assessorSignatureAssetId: isAssessorSigned
-            ? pendingFormData?.assessorSignatureAssetId ||
-              (baseData as any)?.assessorSignatureAssetId
-            : undefined,
-          assessorSignatureUrl: isAssessorSigned
-            ? pendingFormData?.assessorSignatureUrl ||
-              (baseData as any)?.assessorSignatureUrl
-            : undefined,
-          ...(effectiveIsLead
-            ? {
-                leadPanelistSigned: isLeadSigned,
-                leadPanelistSignedAt: isLeadSigned
-                  ? pendingFormData?.leadPanelistSignedAt ||
-                    pendingFormData?.assessorSignedAt ||
-                    (baseData as any)?.leadPanelistSignedAt ||
-                    now
-                  : undefined,
-                leadPanelistName:
-                  pendingFormData?.leadPanelistName ||
-                  pendingFormData?.assessorName ||
-                  uName ||
-                  (baseData as any)?.leadPanelistName,
-                leadPanelistSignatureAssetId: isLeadSigned
-                  ? pendingFormData?.leadPanelistSignatureAssetId ||
-                    pendingFormData?.assessorSignatureAssetId ||
-                    (baseData as any)?.leadPanelistSignatureAssetId
-                  : undefined,
-                leadPanelistSignatureUrl: isLeadSigned
-                  ? pendingFormData?.leadPanelistSignatureUrl ||
-                    pendingFormData?.assessorSignatureUrl ||
-                    (baseData as any)?.leadPanelistSignatureUrl
-                  : undefined,
-              }
-            : {}),
-        },
+        data: payloadData,
       });
+
       setIsSuccessModalOpen(true);
     } catch (err: any) {
+      if (
+        err?.statusCode === 409 ||
+        err?.status === 409 ||
+        err?.error?.code === 409 ||
+        err?.code === "conflict"
+      ) {
+        if (effectiveIsLead) {
+          setIsLockedByCandidate(true);
+          toast({
+            type: "error",
+            title: "Form Locked",
+            description:
+              "The candidate has already signed this form. The official form is now locked and read-only.",
+          });
+          return;
+        }
+      }
       toast({
         type: "error",
         title: "Submission Error",
@@ -384,7 +615,7 @@ export const AssessorAssessmentFormView: React.FC<
     onBack();
   };
 
-  if (effectiveReadOnly || effectiveIsCandidate) {
+  if (effectiveIsCandidate || (viewOnly && isReadOnly)) {
     return (
       <AssessorAssessmentFormDocumentView
         applicationId={applicationId}
@@ -394,6 +625,8 @@ export const AssessorAssessmentFormView: React.FC<
         onBack={onBack}
         isCandidate={effectiveIsCandidate}
         formRecord={matchedCanonicalForm}
+        panelistRecords={panelistRecords}
+        interviewPanel={interviewPanel}
         applicationTrade={resolvedTrade}
         unitLabels={unitLabels}
         isInterviewStage={isInterviewStage}
@@ -406,10 +639,18 @@ export const AssessorAssessmentFormView: React.FC<
       case "skills_demo":
         return (
           <SkillsDemonstrationForm
+            key={`skills_demo-${panelistTab}`}
             candidateName={candidateName}
             onBack={onBack}
             onSubmit={handleRequestSubmit}
             formData={activeFormData}
+            canonicalForm={matchedCanonicalForm}
+            candidateSignedAt={candidateSignedAt}
+            candidateSignatureAssetId={candidateSigAssetId}
+            candidateSignatureUrl={resolvedCandidateSignatureUrl}
+            candidateSignatureMode={candidateSignatureMode}
+            candidateTypedName={candidateTypedName}
+            isCandidateSigned={isCandidateSigned}
             isReadOnly={effectiveReadOnly}
             applicationTrade={resolvedTrade}
             unitLabels={unitLabels}
@@ -419,15 +660,27 @@ export const AssessorAssessmentFormView: React.FC<
             defaultAssessorName={defaultAssessorName}
             defaultDate={defaultDate}
             defaultSite={defaultSite}
+            badgeLabel={badgeLabel}
+            headerTabs={headerTabs}
+            bannerNotice={bannerNotice}
+            submitLabel={submitLabel}
           />
         );
       case "assessment_mapping":
         return (
           <AssessmentMappingForm
+            key={`assessment_mapping-${panelistTab}`}
             candidateName={candidateName}
             onBack={onBack}
             onSubmit={handleRequestSubmit}
             formData={activeFormData}
+            canonicalForm={matchedCanonicalForm}
+            candidateSignedAt={candidateSignedAt}
+            candidateSignatureAssetId={candidateSigAssetId}
+            candidateSignatureUrl={resolvedCandidateSignatureUrl}
+            candidateSignatureMode={candidateSignatureMode}
+            candidateTypedName={candidateTypedName}
+            isCandidateSigned={isCandidateSigned}
             isReadOnly={effectiveReadOnly}
             applicationTrade={resolvedTrade}
             unitLabels={unitLabels}
@@ -437,15 +690,27 @@ export const AssessorAssessmentFormView: React.FC<
             defaultAssessorName={defaultAssessorName}
             defaultDate={defaultDate}
             defaultSite={defaultSite}
+            badgeLabel={badgeLabel}
+            headerTabs={headerTabs}
+            bannerNotice={bannerNotice}
+            submitLabel={submitLabel}
           />
         );
       case "observation_checklist":
         return (
           <PracticalObservationForm
+            key={`observation_checklist-${panelistTab}`}
             candidateName={candidateName}
             onBack={onBack}
             onSubmit={handleRequestSubmit}
             formData={activeFormData}
+            canonicalForm={matchedCanonicalForm}
+            candidateSignedAt={candidateSignedAt}
+            candidateSignatureAssetId={candidateSigAssetId}
+            candidateSignatureUrl={resolvedCandidateSignatureUrl}
+            candidateSignatureMode={candidateSignatureMode}
+            candidateTypedName={candidateTypedName}
+            isCandidateSigned={isCandidateSigned}
             isReadOnly={effectiveReadOnly}
             applicationTrade={resolvedTrade}
             unitLabels={unitLabels}
@@ -455,12 +720,17 @@ export const AssessorAssessmentFormView: React.FC<
             defaultAssessorName={defaultAssessorName}
             defaultDate={defaultDate}
             defaultSite={defaultSite}
+            badgeLabel={badgeLabel}
+            headerTabs={headerTabs}
+            bannerNotice={bannerNotice}
+            submitLabel={submitLabel}
           />
         );
       case "interview_record":
       default:
         return (
           <InterviewRecordForm
+            key={`interview_record-${panelistTab}`}
             candidateName={candidateName}
             onBack={onBack}
             onSubmit={handleRequestSubmit}
@@ -477,6 +747,12 @@ export const AssessorAssessmentFormView: React.FC<
             panelMemberName={panelMemberName}
             internalVerifierName={ivName}
             currentUserRole={currentUserRole}
+            badgeLabel={badgeLabel}
+            headerTabs={headerTabs}
+            bannerNotice={bannerNotice}
+            submitLabel={submitLabel}
+            panelistRecords={panelistRecords}
+            canonicalForm={matchedCanonicalForm}
           />
         );
     }
@@ -490,11 +766,28 @@ export const AssessorAssessmentFormView: React.FC<
         isOpen={isConfirmModalOpen}
         onClose={() => setIsConfirmModalOpen(false)}
         onConfirm={handleConfirmSubmit}
+        title={effectiveIsLead ? "Submit Official Form?" : "Save My Record?"}
+        description={
+          effectiveIsLead
+            ? "Confirm you want to submit this official form to the candidate."
+            : "Confirm you want to save your record. This record is private and not shared with the candidate."
+        }
+        confirmLabel={effectiveIsLead ? "Yes, Submit" : "Yes, Save"}
       />
 
       <FormSubmittedSuccessModal
         isOpen={isSuccessModalOpen}
         onClose={handleSuccessContinue}
+        title={
+          effectiveIsLead
+            ? "Form Submitted Successfully"
+            : "Record Saved Successfully"
+        }
+        description={
+          effectiveIsLead
+            ? "You have successfully submitted the official assessment form."
+            : "You have successfully saved your private panelist record."
+        }
       />
     </div>
   );

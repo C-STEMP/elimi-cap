@@ -135,7 +135,9 @@ export const PortfolioVault: React.FC<PortfolioVaultProps> = ({
     enabled: Boolean(applicationId),
   });
   const isInterviewScheduled = Boolean(
-    interviewSchedule?.scheduledAt && interviewSchedule.status !== "cancelled",
+    interviewSchedule?.scheduledAt &&
+      interviewSchedule.status !== "cancelled" &&
+      isInterviewStage,
   );
   const { data: interviewForms = [] } = useGetInterviewForms(applicationId, {
     enabled: Boolean(applicationId && isInterviewStage),
@@ -162,7 +164,7 @@ export const PortfolioVault: React.FC<PortfolioVaultProps> = ({
   const resolvedReceipt = receipt || portfolio?.inductionDocuments?.paymentReceipt || null;
 
   const formCard = (formType: InterviewFormType, title: string, subtitle: string) => {
-    if (viewer === "candidate" && !isInterviewScheduled) {
+    if (!isInterviewScheduled) {
       return null;
     }
 

@@ -10,6 +10,7 @@ interface AssessorCalendarWidgetProps {
   defaultDate?: Date;
   onSelectDate?: (date: Date) => void;
   className?: string;
+  applicationId?: string;
 }
 
 export const AssessorCalendarWidget: React.FC<AssessorCalendarWidgetProps> = ({
@@ -17,6 +18,7 @@ export const AssessorCalendarWidget: React.FC<AssessorCalendarWidgetProps> = ({
   defaultDate,
   onSelectDate,
   className = "",
+  applicationId,
 }) => {
   const [today] = useState(() => new Date());
   const { data: eventsData } = useGetAssessorEvents();
@@ -24,6 +26,32 @@ export const AssessorCalendarWidget: React.FC<AssessorCalendarWidgetProps> = ({
   // Find the single most recent interview date
   const mostRecentInterviewDate = useMemo(() => {
     if (panelInterviewDate) return panelInterviewDate;
+
+    // If on an application detail page, strictly only check events for this application
+    if (applicationId) {
+      if (!eventsData || !Array.isArray(eventsData) || eventsData.length === 0) {
+        return defaultDate || undefined;
+      }
+      const appEvents = eventsData.filter((evt) => {
+        const e = evt as unknown as Record<string, unknown>;
+        return e.applicationId === applicationId && (e.eventAt || e.scheduledAt || e.createdAt || e.date);
+      });
+      const dates = appEvents
+        .map((evt) => {
+          const e = evt as unknown as Record<string, unknown>;
+          const raw = e.eventAt || e.scheduledAt || e.createdAt || e.date;
+          return typeof raw === "string" || raw instanceof Date ? new Date(raw) : null;
+        })
+        .filter((d): d is Date => d !== null && !isNaN(d.getTime()));
+
+      if (dates.length === 0) return defaultDate || undefined;
+      const baseTime = today.getTime();
+      const upcoming = dates
+        .filter((d) => d.getTime() >= baseTime - 24 * 60 * 60 * 1000)
+        .sort((a, b) => a.getTime() - b.getTime())[0];
+      return upcoming || dates.sort((a, b) => b.getTime() - a.getTime())[0];
+    }
+
     if (!eventsData || !Array.isArray(eventsData) || eventsData.length === 0) {
       return defaultDate || undefined;
     }
@@ -56,7 +84,7 @@ export const AssessorCalendarWidget: React.FC<AssessorCalendarWidgetProps> = ({
 
     // Otherwise the latest scheduled interview in the past
     return dates.sort((a, b) => b.getTime() - a.getTime())[0];
-  }, [panelInterviewDate, eventsData, defaultDate, today]);
+  }, [panelInterviewDate, eventsData, defaultDate, today, applicationId]);
 
   return (
     <CalendarWidget

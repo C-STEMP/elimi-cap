@@ -208,8 +208,13 @@ export const AssessorApplicationStagesList: React.FC<
   const rawInterviewStatus = interviewStageRow?.status;
   const hasRecordedOutcome = interviewOutcome !== "ongoing";
   const hasAssignedPanel = panelMembers.length > 0;
+  const isInterviewStageExplicitlyStarted = Boolean(
+    rawInterviewStatus && rawInterviewStatus !== "not_started",
+  );
   const hasScheduledInterview = Boolean(
-    interviewSchedule?.scheduledAt && interviewSchedule.status !== "cancelled",
+    interviewSchedule?.scheduledAt &&
+      interviewSchedule.status !== "cancelled" &&
+      isInterviewStageExplicitlyStarted,
   );
   const isInterviewNotStarted =
     !hasRecordedOutcome &&

@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { useAssessorProfileSignature } from "@/src/features/shared/assessor/hooks";
 import { useResolveAssets } from "@/src/features/shared/storage/hooks";
+import { useAppSelector } from "@/src/store/hooks";
 
 export interface AssessorSignatureState {
   signatureAssetId: string | null;
@@ -13,22 +14,34 @@ export interface AssessorSignatureState {
 
 /**
  * Hook providing the assessor's default profile digital signature (if configured).
- * Sourced directly from GET /assessor/profile/signature with asset resolution.
+ * Guarded so candidates never call assessor profile endpoints.
  */
-export function useAssessorSignature(): AssessorSignatureState {
+export function useAssessorSignature(options?: { enabled?: boolean }): AssessorSignatureState {
+  const user = useAppSelector((state) => state.auth.user);
+  const isCandidate = Boolean(user?.role?.toLowerCase() === "candidate");
+  const isAssessor = Boolean(
+    user?.role?.toLowerCase()?.includes("assessor") ||
+    user?.role?.toLowerCase()?.includes("centre") ||
+    user?.role?.toLowerCase()?.includes("center") ||
+    user?.role?.toLowerCase()?.includes("facilitator") ||
+    user?.role?.toLowerCase()?.includes("admin")
+  );
+  const isEnabled = (options?.enabled ?? isAssessor) && !isCandidate;
+
   const { data: signatureData, isLoading: isSignatureLoading } =
-    useAssessorProfileSignature();
+    useAssessorProfileSignature(isEnabled);
 
   const assetIdsToResolve = useMemo(() => {
-    return signatureData?.assetId && !signatureData.url
+    return isEnabled && signatureData?.assetId && !signatureData.url
       ? [signatureData.assetId]
       : [];
-  }, [signatureData?.assetId, signatureData?.url]);
+  }, [isEnabled, signatureData?.assetId, signatureData?.url]);
 
   const { data: resolvedAssets, isLoading: isResolving } =
     useResolveAssets(assetIdsToResolve);
 
   const signatureUrl = useMemo(() => {
+    if (!isEnabled) return null;
     if (signatureData?.url) return signatureData.url;
     if (signatureData?.assetId && resolvedAssets?.length) {
       const match = resolvedAssets.find(
@@ -37,14 +50,14 @@ export function useAssessorSignature(): AssessorSignatureState {
       if (match?.url) return match.url;
     }
     return null;
-  }, [signatureData?.url, signatureData?.assetId, resolvedAssets]);
+  }, [isEnabled, signatureData?.url, signatureData?.assetId, resolvedAssets]);
 
   const hasSignature = Boolean(signatureUrl || signatureData?.assetId);
 
   return {
-    signatureAssetId: signatureData?.assetId || null,
+    signatureAssetId: isEnabled ? signatureData?.assetId || null : null,
     signatureUrl,
-    hasSignature,
-    isLoading: isSignatureLoading || isResolving,
+    hasSignature: isEnabled && hasSignature,
+    isLoading: isEnabled && (isSignatureLoading || isResolving),
   };
 }

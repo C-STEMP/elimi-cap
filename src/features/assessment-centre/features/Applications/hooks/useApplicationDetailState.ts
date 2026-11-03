@@ -15,6 +15,7 @@ import {
   useGetCentrePanels,
   useGetCentreInterviews,
   useGetCentreInductions,
+  useGetCentreInterviewBookings,
 } from "@/src/features/shared/centre/hooks";
 import { ScheduledPanelistInfo } from "../components/AssignPanelistModal";
 import { computeStageCalculations } from "../utils/detailHelpers";
@@ -68,6 +69,17 @@ export function useApplicationDetailState(id: string, candidateNameProp = "Candi
   const { data: centrePanels = [] } = useGetCentrePanels();
   const { data: centreInterviews = [] } = useGetCentreInterviews();
   const { data: centreInductions = [] } = useGetCentreInductions();
+  const { data: centreBookings = [] } = useGetCentreInterviewBookings();
+
+  const matchingCentreBooking = useMemo(() => {
+    return centreBookings.find(
+      (b) =>
+        (b.application?.id === id || (b as any).applicationId === id) &&
+        b.status !== "cancelled",
+    );
+  }, [centreBookings, id]);
+
+  const hasCentreBooking = Boolean(matchingCentreBooking);
 
   // Modals
   const [isAssignFacilitatorOpen, setIsAssignFacilitatorOpen] = useUrlModal(ASSIGN_FACILITATOR_MODAL);
@@ -101,7 +113,18 @@ export function useApplicationDetailState(id: string, candidateNameProp = "Candi
   const resolvedTradeName = rawTrade && !/^[0-9a-f-]{20,}$/i.test(rawTrade) ? rawTrade : "";
 
   const rawApiSchedule = (interviewSchedule as any)?.data || interviewSchedule;
-  const activeInterviewSchedule = rawApiSchedule?.scheduledAt ? rawApiSchedule : null;
+  const activeInterviewSchedule = useMemo(() => {
+    if (matchingCentreBooking?.scheduledAt) {
+      return {
+        scheduledAt: matchingCentreBooking.scheduledAt,
+        mode: matchingCentreBooking.mode || "physical",
+        location: matchingCentreBooking.location || undefined,
+        link: matchingCentreBooking.link || undefined,
+        status: matchingCentreBooking.status,
+      };
+    }
+    return rawApiSchedule?.scheduledAt ? rawApiSchedule : null;
+  }, [matchingCentreBooking, rawApiSchedule]);
 
   const interviewAssessorsList = useMemo(() => {
     if (interviewPanelFromApi?.members && interviewPanelFromApi.members.length > 0) {
@@ -162,19 +185,43 @@ export function useApplicationDetailState(id: string, candidateNameProp = "Candi
       : "Pending";
 
   const stageCalculations = useMemo(
-    () => computeStageCalculations(stages, appDetail, interviewSchedule, activeInterviewSchedule, submittedDate),
-    [stages, appDetail, interviewSchedule, activeInterviewSchedule, submittedDate]
+    () =>
+      computeStageCalculations(
+        stages,
+        appDetail,
+        interviewSchedule,
+        activeInterviewSchedule,
+        submittedDate,
+        hasCentreBooking,
+      ),
+    [
+      stages,
+      appDetail,
+      interviewSchedule,
+      activeInterviewSchedule,
+      submittedDate,
+      hasCentreBooking,
+    ],
   );
 
-  const interviewDateFormatted = activeInterviewSchedule?.scheduledAt
-    ? new Date(activeInterviewSchedule.scheduledAt).toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "numeric" })
-    : "";
-  const interviewTimeFormatted = activeInterviewSchedule?.scheduledAt
-    ? new Date(activeInterviewSchedule.scheduledAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })
-    : "";
-  const interviewEventDateFormatted = activeInterviewSchedule?.scheduledAt
-    ? new Date(activeInterviewSchedule.scheduledAt).toLocaleDateString("en-GB")
-    : "";
+  const interviewDateFormatted =
+    stageCalculations.isInterviewScheduled && activeInterviewSchedule?.scheduledAt
+      ? new Date(activeInterviewSchedule.scheduledAt).toLocaleDateString(
+          "en-US",
+          { month: "numeric", day: "numeric", year: "numeric" },
+        )
+      : "";
+  const interviewTimeFormatted =
+    stageCalculations.isInterviewScheduled && activeInterviewSchedule?.scheduledAt
+      ? new Date(activeInterviewSchedule.scheduledAt).toLocaleTimeString(
+          "en-US",
+          { hour: "numeric", minute: "2-digit", hour12: true },
+        )
+      : "";
+  const interviewEventDateFormatted =
+    stageCalculations.isInterviewScheduled && activeInterviewSchedule?.scheduledAt
+      ? new Date(activeInterviewSchedule.scheduledAt).toLocaleDateString("en-GB")
+      : "";
 
   const activeFacilitator = extractFacilitatorFromApplication(appDetail, assignedFacilitator);
 

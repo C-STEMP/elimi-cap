@@ -131,8 +131,24 @@ export const AssessorApplicationDetailView: React.FC<
   const hasAssignedPanel = Boolean(
     interviewPanel?.members && interviewPanel.members.length > 0,
   );
+
+  const interviewStageRow = stagesData?.find(
+    (s) =>
+      s.stageKey === "interview" ||
+      s.stageKey === "direct_observation" ||
+      s.stageKey === "observation",
+  );
+
+  const isInterviewStageExplicitlyStarted = Boolean(
+    interviewStageRow &&
+      (interviewStageRow.status as string) !== "not_started" &&
+      (interviewStageRow.status as string) !== "pending",
+  );
+
   const hasScheduledInterview = Boolean(
-    interviewSchedule?.scheduledAt && interviewSchedule.status !== "cancelled",
+    interviewSchedule?.scheduledAt &&
+      interviewSchedule.status !== "cancelled" &&
+      isInterviewStageExplicitlyStarted,
   );
 
   const leadMember = interviewPanel?.members?.find((m: any) => m.isLead);
@@ -172,12 +188,6 @@ export const AssessorApplicationDetailView: React.FC<
     );
   }, [panelistRecords, isMemberMatch, matchedPanelMember, isUserIV]);
 
-  const interviewStageRow = stagesData?.find(
-    (s) =>
-      s.stageKey === "interview" ||
-      s.stageKey === "direct_observation" ||
-      s.stageKey === "observation",
-  );
 
   const FOLDER_STAGE_KEYS = [
     "folder_arrangement",
@@ -572,7 +582,14 @@ export const AssessorApplicationDetailView: React.FC<
     status: application.status,
   };
 
-  const upcomingEvent = interviewSchedule?.scheduledAt
+  const isInterviewUpcoming = Boolean(
+    interviewSchedule?.scheduledAt &&
+      interviewSchedule.status !== "cancelled" &&
+      new Date(interviewSchedule.scheduledAt).getTime() >=
+        Date.now() - 24 * 60 * 60 * 1000,
+  );
+
+  const upcomingEvent = isInterviewUpcoming && interviewSchedule?.scheduledAt
     ? {
         title: "Panel Interview",
         time: new Date(interviewSchedule.scheduledAt).toLocaleTimeString(
@@ -708,9 +725,17 @@ export const AssessorApplicationDetailView: React.FC<
       {/* Right Column: Calendar, Events, Facilitator, and Assessment Forms Widgets */}
       <div className="lg:col-span-4 flex flex-col gap-6">
         <AssessorCalendarWidget
-          panelInterviewDate={interviewSchedule?.scheduledAt || undefined}
+          applicationId={application.id}
+          panelInterviewDate={
+            isInterviewUpcoming && interviewSchedule?.scheduledAt
+              ? interviewSchedule.scheduledAt
+              : undefined
+          }
         />
-        <AssessorUpcomingEventsWidget event={upcomingEvent} />
+        <AssessorUpcomingEventsWidget
+          event={upcomingEvent}
+          applicationId={application.id}
+        />
         {!isAtInterviewStage && (
           <StaffFacilitatorCard
             facilitator={activeFacilitator}
@@ -729,6 +754,8 @@ export const AssessorApplicationDetailView: React.FC<
             isReadOnly={isAssessmentFormReadOnly}
             remoteForms={remoteForms}
             panelistRecords={myPanelistRecords}
+            allPanelistRecords={panelistRecords}
+            interviewPanel={interviewPanel}
             isLeadPanelist={isUserLeadPanelist}
             isInterviewDone={Boolean(
               (interviewStageRow?.status === "successful" ||

@@ -21,6 +21,7 @@ export interface FormToSignItem {
   signed?: boolean;
   status?: string;
   canSign?: boolean;
+  statusBadge?: string;
 }
 
 interface UpcomingCardProps {
@@ -148,6 +149,11 @@ export const UpcomingCard: React.FC<UpcomingCardProps> = ({
                   <span className="text-xs font-bold text-gray-900 truncate group-hover:text-[#8A1538] transition-colors">
                     {form.title}
                   </span>
+                  {form.statusBadge && !form.signed && (
+                    <span className="text-[9px] font-semibold text-amber-700 bg-amber-50 border border-amber-200/80 px-1.5 py-0.5 rounded-md inline-block w-fit mt-0.5">
+                      {form.statusBadge}
+                    </span>
+                  )}
                   {form.description && (
                     <span className="text-[10px] text-gray-400 truncate mt-0.5">
                       {form.description}

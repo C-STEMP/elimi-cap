@@ -2,7 +2,11 @@
 
 import React from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { useGetApplicationById, useGetInterviewPanel } from "@/src/features/shared/applications/hooks";
+import {
+  useGetApplicationById,
+  useGetInterviewPanel,
+  useGetInterviewSchedule,
+} from "@/src/features/shared/applications/hooks";
 import { useAppSelector } from "@/src/store/hooks";
 import { AssessorAssessmentFormView } from "@/src/features/assessor/features/Applications/components/assessment-forms";
 import { Loader } from "@/src/components/ui/loader";
@@ -49,7 +53,16 @@ export default function AssessmentFormDedicatedRoutePage() {
   const { data: interviewPanel } = useGetInterviewPanel(id, {
     enabled: shouldFetchInterviewPanel,
   });
+  const { data: interviewSchedule } = useGetInterviewSchedule(id, {
+    enabled: Boolean(id),
+  });
   const isMemberMatch = usePanelMemberMatch();
+
+  const isInterviewScheduled = Boolean(
+    interviewSchedule?.scheduledAt &&
+      interviewSchedule.status !== "cancelled" &&
+      isInterviewStage,
+  );
 
   if (isLoading) {
     return (
@@ -74,6 +87,36 @@ export default function AssessmentFormDedicatedRoutePage() {
           className="px-4 py-2 bg-[#8A1538] text-white text-xs font-bold rounded-xl cursor-pointer"
         >
           Back to Applications
+        </button>
+      </div>
+    );
+  }
+
+  if (
+    !isInterviewScheduled &&
+    (application.status as string) !== "certified" &&
+    (application.status as string) !== "completed"
+  ) {
+    return (
+      <div className="w-full min-h-screen flex flex-col items-center justify-center gap-4 text-center p-6 bg-[#f8f9fb]">
+        <h3 className="text-lg font-bold text-gray-800">
+          Interview Not Scheduled
+        </h3>
+        <p className="text-sm text-gray-500 max-w-sm">
+          Assessment forms remain hidden until an interview is scheduled by the assessment centre.
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            if (typeof window !== "undefined" && window.history.length > 1) {
+              router.back();
+            } else {
+              router.push(`/applications/${id}`);
+            }
+          }}
+          className="px-4 py-2 bg-[#fbab2a] hover:bg-[#e89b1f] text-white text-xs font-bold rounded-xl cursor-pointer"
+        >
+          Go Back
         </button>
       </div>
     );

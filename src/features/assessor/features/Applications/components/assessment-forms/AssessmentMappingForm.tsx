@@ -4,11 +4,15 @@ import React, { useState, useRef, useEffect, useMemo } from "react";
 import { AssessorAssessmentFormLayout } from "./AssessorAssessmentFormLayout";
 import { useToast } from "@/src/components/ui/toast";
 import { FiPlus, FiTrash2, FiEdit3, FiCheckCircle } from "react-icons/fi";
-import type { AssessmentMappingUnit } from "@/src/features/shared/applications/api/types";
+import type { AssessmentMappingUnit, InterviewForm } from "@/src/features/shared/applications/api/types";
 import type { Unit } from "@/src/features/shared/reference/api";
 import { useResolveAssets } from "@/src/features/shared/storage/hooks";
 import { useAssessorSignature } from "./useAssessorSignature";
 import { DigitalSignaturePad } from "./DigitalSignaturePad";
+import {
+  AssessorSignatureModal,
+  type AssessorSignatureData,
+} from "./AssessorSignatureModal";
 import {
   buildUnitMappingItems,
   type GeneratedUnitMappingItem,
@@ -21,6 +25,13 @@ interface AssessmentMappingFormProps {
   onBack: () => void;
   onSubmit: (data: Record<string, any>) => void;
   formData?: Record<string, any>;
+  canonicalForm?: InterviewForm | null;
+  candidateSignedAt?: string | null;
+  candidateSignatureAssetId?: string | null;
+  candidateSignatureUrl?: string | null;
+  candidateSignatureMode?: "upload" | "default" | "typed" | null;
+  candidateTypedName?: string | null;
+  isCandidateSigned?: boolean;
   isReadOnly?: boolean;
   applicationTrade?: string;
   unitLabels?: string[];
@@ -30,6 +41,10 @@ interface AssessmentMappingFormProps {
   defaultAssessorName?: string;
   defaultDate?: string;
   defaultSite?: string;
+  badgeLabel?: string;
+  headerTabs?: React.ReactNode;
+  bannerNotice?: React.ReactNode;
+  submitLabel?: string;
 }
 
 export const AssessmentMappingForm: React.FC<AssessmentMappingFormProps> = ({
@@ -37,6 +52,13 @@ export const AssessmentMappingForm: React.FC<AssessmentMappingFormProps> = ({
   onBack,
   onSubmit,
   formData,
+  canonicalForm,
+  candidateSignedAt: propCandidateSignedAt,
+  candidateSignatureAssetId: propCandidateSignatureAssetId,
+  candidateSignatureUrl: propCandidateSignatureUrl,
+  candidateSignatureMode: propCandidateSignatureMode,
+  candidateTypedName: propCandidateTypedName,
+  isCandidateSigned: propIsCandidateSigned,
   isReadOnly = false,
   applicationTrade,
   unitLabels = [],
@@ -46,6 +68,10 @@ export const AssessmentMappingForm: React.FC<AssessmentMappingFormProps> = ({
   defaultAssessorName = "",
   defaultDate = "",
   defaultSite = "",
+  badgeLabel,
+  headerTabs,
+  bannerNotice,
+  submitLabel = "Submit Form",
 }) => {
   const { toast } = useToast();
 
@@ -134,29 +160,105 @@ export const AssessmentMappingForm: React.FC<AssessmentMappingFormProps> = ({
     signatureAssetId: profileSignatureAssetId,
   } = useAssessorSignature();
 
+  const initialSig = formData?.assessorSignature;
+  const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
+
   const [assessorSigned, setAssessorSigned] = useState<boolean>(
-    Boolean(formData?.assessorSigned || formData?.assessorSignedAt),
+    Boolean(
+      initialSig?.assetId ||
+        formData?.assessorSigned ||
+        formData?.assessorSignedAt,
+    ),
   );
   const [assessorSignedAt, setAssessorSignedAt] = useState<string>(
-    formData?.assessorSignedAt || "",
+    initialSig?.signedAt || formData?.assessorSignedAt || "",
   );
   const [assessorSignatureAssetId, setAssessorSignatureAssetId] =
-    useState<string>(formData?.assessorSignatureAssetId || "");
+    useState<string>(
+      initialSig?.assetId || formData?.assessorSignatureAssetId || "",
+    );
   const [assessorSignatureUrl, setAssessorSignatureUrl] = useState<string>(
-    formData?.assessorSignatureUrl || "",
+    initialSig?.url || formData?.assessorSignatureUrl || "",
   );
 
+  const effectiveCandidateSigAssetId =
+    propCandidateSignatureAssetId ||
+    canonicalForm?.candidateSignatureAssetId ||
+    (canonicalForm?.data as any)?.candidateSignatureAssetId ||
+    (formData as any)?.candidateSignatureAssetId ||
+    null;
+
+  const directCandidateSigUrl =
+    propCandidateSignatureUrl ||
+    (canonicalForm as any)?.candidateSignatureUrl ||
+    (canonicalForm?.data as any)?.candidateSignatureUrl ||
+    (formData as any)?.candidateSignatureUrl ||
+    null;
+
   const sigAssetsToResolve = useMemo(() => {
-    return assessorSignatureAssetId && !assessorSignatureUrl
-      ? [assessorSignatureAssetId]
-      : [];
-  }, [assessorSignatureAssetId, assessorSignatureUrl]);
+    const list: string[] = [];
+    if (assessorSignatureAssetId && !assessorSignatureUrl) {
+      list.push(assessorSignatureAssetId);
+    }
+    if (
+      effectiveCandidateSigAssetId &&
+      !directCandidateSigUrl &&
+      effectiveCandidateSigAssetId !== "default" &&
+      !list.includes(effectiveCandidateSigAssetId)
+    ) {
+      list.push(effectiveCandidateSigAssetId);
+    }
+    return list;
+  }, [
+    assessorSignatureAssetId,
+    assessorSignatureUrl,
+    effectiveCandidateSigAssetId,
+    directCandidateSigUrl,
+  ]);
   const { data: resolvedSigAssets } = useResolveAssets(sigAssetsToResolve);
 
   const activeAssessorSignatureUrl =
     assessorSignatureUrl ||
-    resolvedSigAssets?.[0]?.url ||
+    resolvedSigAssets?.find((a) => a.assetId === assessorSignatureAssetId)?.url ||
     (assessorSigned ? profileSignatureUrl : null);
+
+  const activeCandidateSignatureUrl =
+    directCandidateSigUrl ||
+    (effectiveCandidateSigAssetId && Array.isArray(resolvedSigAssets)
+      ? resolvedSigAssets.find((a) => a.assetId === effectiveCandidateSigAssetId)?.url
+      : null) ||
+    null;
+
+  const resolvedCandidateSignedAt =
+    propCandidateSignedAt ||
+    canonicalForm?.candidateSignedAt ||
+    (canonicalForm?.data as any)?.candidateSignedAt ||
+    (formData as any)?.candidateSignedAt ||
+    null;
+
+  const isCandidateSignedResolved = Boolean(
+    propIsCandidateSigned ||
+    resolvedCandidateSignedAt ||
+    canonicalForm?.candidateSignedAt ||
+    (canonicalForm?.data as any)?.candidateSignedAt ||
+    (formData as any)?.candidateSignedAt ||
+    (canonicalForm?.status === "completed" &&
+      Boolean(canonicalForm?.candidateSignedAt || effectiveCandidateSigAssetId))
+  );
+
+  const resolvedCandidateDisplayName =
+    propCandidateTypedName ||
+    canonicalForm?.typedSignatureName ||
+    (canonicalForm?.data as any)?.typedSignatureName ||
+    candidateName ||
+    "Candidate";
+
+  const formattedSignedDate =
+    resolvedCandidateSignedAt &&
+    typeof resolvedCandidateSignedAt === "string" &&
+    !isNaN(Date.parse(resolvedCandidateSignedAt))
+      ? new Date(resolvedCandidateSignedAt).toLocaleDateString("en-GB")
+      : null;
 
   const itemRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const titleInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
@@ -223,20 +325,34 @@ export const AssessmentMappingForm: React.FC<AssessmentMappingFormProps> = ({
 
   const handleAppendSignature = () => {
     if (isReadOnly) return;
-    const now = new Date().toISOString();
+    if (profileSignatureAssetId || profileSignatureUrl) {
+      const now = new Date().toISOString();
+      setAssessorSigned(true);
+      setAssessorSignedAt(now);
+      if (profileSignatureAssetId) {
+        setAssessorSignatureAssetId(profileSignatureAssetId);
+      }
+      if (profileSignatureUrl) {
+        setAssessorSignatureUrl(profileSignatureUrl);
+      }
+      toast({
+        type: "success",
+        title: "Signature Appended",
+        description:
+          "Assessor saved signature recorded. Click 'Change' to draw or upload another.",
+      });
+    } else {
+      setIsSignatureModalOpen(true);
+    }
+  };
+
+  const handleSignatureConfirmed = (sig: AssessorSignatureData) => {
     setAssessorSigned(true);
-    setAssessorSignedAt(now);
-    if (profileSignatureAssetId) {
-      setAssessorSignatureAssetId(profileSignatureAssetId);
+    setAssessorSignedAt(sig.signedAt);
+    setAssessorSignatureAssetId(sig.assetId);
+    if (sig.url) {
+      setAssessorSignatureUrl(sig.url);
     }
-    if (profileSignatureUrl) {
-      setAssessorSignatureUrl(profileSignatureUrl);
-    }
-    toast({
-      type: "success",
-      title: "Signature Appended",
-      description: "Assessor signature has been recorded.",
-    });
   };
 
   const handleSubmit = () => {
@@ -250,6 +366,11 @@ export const AssessmentMappingForm: React.FC<AssessmentMappingFormProps> = ({
       return;
     }
     const now = new Date().toISOString();
+    const finalAssetId =
+      assessorSignatureAssetId || profileSignatureAssetId || "";
+    const finalSignedAt = assessorSignedAt || now;
+    const finalUrl = activeAssessorSignatureUrl || undefined;
+
     onSubmit({
       candidateFullName,
       assessorName,
@@ -259,10 +380,15 @@ export const AssessmentMappingForm: React.FC<AssessmentMappingFormProps> = ({
       units,
       overallComments,
       assessorSigned: true,
-      assessorSignedAt: assessorSignedAt || now,
-      assessorSignatureAssetId:
-        assessorSignatureAssetId || profileSignatureAssetId || undefined,
-      assessorSignatureUrl: activeAssessorSignatureUrl || undefined,
+      assessorSignedAt: finalSignedAt,
+      assessorSignatureAssetId: finalAssetId || undefined,
+      assessorSignatureUrl: finalUrl,
+      assessorSignature: {
+        assetId: finalAssetId,
+        name: assessorName,
+        signedAt: finalSignedAt,
+        ...(finalUrl ? { url: finalUrl } : {}),
+      },
     });
   };
 
@@ -272,8 +398,11 @@ export const AssessmentMappingForm: React.FC<AssessmentMappingFormProps> = ({
       subtitle="Matrix linking candidate evidence artifacts to National Occupational Standards and Performance Criteria."
       onBack={onBack}
       onSubmit={handleSubmit}
-      submitLabel="Submit Form"
+      submitLabel={submitLabel}
       isReadOnly={isReadOnly}
+      badgeLabel={badgeLabel}
+      headerTabs={headerTabs}
+      bannerNotice={bannerNotice}
     >
       {/* 1. Personal Details (Auto-filled & Locked) */}
       <div className="flex flex-col gap-4 sm:gap-5">
@@ -569,42 +698,40 @@ export const AssessmentMappingForm: React.FC<AssessmentMappingFormProps> = ({
           <DigitalSignaturePad
             label="Assessor Signature"
             required
-            isSigned={assessorSigned}
+            isSigned={assessorSigned || Boolean(activeAssessorSignatureUrl)}
             signerName={assessorName}
             signedAt={assessorSignedAt}
             signatureUrl={activeAssessorSignatureUrl}
             isReadOnly={isReadOnly}
             onAppendSignature={handleAppendSignature}
+            onChangeSignature={() => setIsSignatureModalOpen(true)}
             onClearSignature={() => {
               setAssessorSigned(false);
               setAssessorSignedAt("");
+              setAssessorSignatureAssetId("");
+              setAssessorSignatureUrl("");
             }}
           />
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-neutral-primary">
-              Candidate Signature<span className="text-rose-500">*</span>
-            </label>
-            {formData?.candidateSignedAt ? (
-              <div className="h-11 sm:h-12 bg-[#E6F4EA] border border-[#1E7F4C]/30 text-[#1E7F4C] font-bold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2.5 px-3.5 select-none shadow-2xs">
-                {formData?.candidateSignatureUrl ? (
-                  <img
-                    src={formData.candidateSignatureUrl}
-                    alt="Candidate Signature"
-                    className="h-7 max-w-[120px] object-contain"
-                  />
-                ) : (
-                  <FiCheckCircle className="w-4 h-4 text-[#1E7F4C] shrink-0" />
-                )}
-                <span>Signed</span>
-              </div>
-            ) : (
-              <div className="h-11 sm:h-12 bg-[#FFF8EB] border border-[#FBAB2A]/60 text-[#FBAB2A] font-semibold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2 select-none">
-                <FiEdit3 className="w-4 h-4 text-[#FBAB2A] shrink-0" />
-                <span>Awaiting Signature</span>
-              </div>
-            )}
-          </div>
+          <AssessorSignatureModal
+            isOpen={isSignatureModalOpen}
+            onClose={() => setIsSignatureModalOpen(false)}
+            onConfirm={handleSignatureConfirmed}
+            signerName={assessorName}
+            title="Append Assessor Signature"
+            subtitle="RPL Assessment Grid / Mapping Form"
+          />
+
+          <DigitalSignaturePad
+            label="Candidate Signature"
+            required
+            isSigned={isCandidateSignedResolved}
+            signerName={resolvedCandidateDisplayName}
+            signedAt={resolvedCandidateSignedAt || undefined}
+            signatureUrl={activeCandidateSignatureUrl}
+            isReadOnly={true}
+            onAppendSignature={() => {}}
+          />
         </div>
       </div>
     </AssessorAssessmentFormLayout>

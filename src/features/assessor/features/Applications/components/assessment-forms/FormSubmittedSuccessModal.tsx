@@ -8,11 +8,20 @@ import { Button } from "@/src/components/ui/button";
 interface FormSubmittedSuccessModalProps {
   isOpen: boolean;
   onClose: () => void;
+  title?: string;
+  description?: string;
+  buttonLabel?: string;
 }
 
 export const FormSubmittedSuccessModal: React.FC<
   FormSubmittedSuccessModalProps
-> = ({ isOpen, onClose }) => {
+> = ({
+  isOpen,
+  onClose,
+  title = "Form Submitted Successfully",
+  description = "You have successfully submitted this form",
+  buttonLabel = "Continue",
+}) => {
   if (!isOpen) return null;
 
   return (
@@ -29,10 +38,10 @@ export const FormSubmittedSuccessModal: React.FC<
         </div>
 
         <h3 className="text-xl sm:text-2xl font-extrabold text-neutral-primary tracking-tight mb-1">
-          Form Submitted Successfully
+          {title}
         </h3>
         <p className="text-xs sm:text-sm text-neutral-secondary font-normal mb-6">
-          You have successfully submitted this form
+          {description}
         </p>
 
         <Button
@@ -42,7 +51,7 @@ export const FormSubmittedSuccessModal: React.FC<
           fullWidth
           className="h-12 bg-[#FBAB2A] hover:bg-[#E89B1F] text-white font-bold text-sm sm:text-base rounded-xl shadow-md cursor-pointer transition-all"
         >
-          Continue
+          {buttonLabel}
         </Button>
       </div>
     </div>
