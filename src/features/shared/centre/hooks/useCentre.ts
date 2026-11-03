@@ -1233,7 +1233,7 @@ export function useBulkCertifyApplications() {
     // 1. Update all ["centre", "applications"] queries
     queryClient.setQueriesData<any>(
       { queryKey: ["centre", "applications"] },
-      (oldData) => {
+      (oldData: any) => {
         if (!oldData) return oldData;
         if (Array.isArray(oldData)) {
           return oldData.map((item) => {
@@ -1300,7 +1300,7 @@ export function useBulkCertifyApplications() {
     // 2. Update all ["applications"] queries
     queryClient.setQueriesData<any>(
       { queryKey: ["applications"] },
-      (oldData) => {
+      (oldData: any) => {
         if (!oldData) return oldData;
         if (Array.isArray(oldData)) {
           return oldData.map((item) => {
@@ -1344,7 +1344,7 @@ export function useBulkCertifyApplications() {
     // 3. Update summary card stats if present
     queryClient.setQueriesData<any>(
       { queryKey: CENTRE_QUERY_KEYS.applicationsSummary },
-      (oldSummary) => {
+      (oldSummary: any) => {
         if (!oldSummary || typeof oldSummary !== "object") return oldSummary;
         return {
           ...oldSummary,

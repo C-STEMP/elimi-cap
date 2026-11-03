@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
-import { FiCalendar, FiChevronDown, FiPlus } from "react-icons/fi";
 import { useGetApplications } from "@/features/assessment-centre/features/Applications/hooks";
 import { useGetCentreApplicationsSummary } from "@/src/features/shared/centre/hooks";
+import React, { useEffect, useRef, useState } from "react";
+import { FiCalendar, FiChevronDown, FiPlus } from "react-icons/fi";
 import { isCentrePendingApplication } from "../utils/appViewHelpers";
 import { ApplicationsHeaderBreadcrumb } from "./ApplicationsHeaderBreadcrumb";
 import { ApplicationsStatsCards } from "./ApplicationsStatsCards";
@@ -40,7 +40,9 @@ interface ApplicationsHeaderProps {
   onApproveAllPending?: () => void;
 }
 
-export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = (props) => {
+export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = (
+  props,
+) => {
   const {
     selectedCandidateName,
     selectedInterviewTitle,
@@ -99,17 +101,26 @@ export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = (props) => 
       icon: <FiPlus className="w-4 h-4 text-[#F59E0B]" />,
       onClick: onCreatePanel,
     },
-  ].filter(Boolean) as { label: string; icon: React.ReactNode; onClick: () => void }[];
+  ].filter(Boolean) as {
+    label: string;
+    icon: React.ReactNode;
+    onClick: () => void;
+  }[];
 
-  const { data: applications = [], isFetched: isApplicationsFetched } = useGetApplications();
+  const { data: applications = [], isFetched: isApplicationsFetched } =
+    useGetApplications();
   const { data: appSummary } = useGetCentreApplicationsSummary();
 
   const nonDraftApps = applications.filter((a) => a.status !== "draft");
-  const pendingFromList = nonDraftApps.filter((a) => isCentrePendingApplication(a)).length;
+  const pendingFromList = nonDraftApps.filter((a) =>
+    isCentrePendingApplication(a),
+  ).length;
   const ongoingFromList = nonDraftApps.filter(
     (a) => a.status === "in_progress" && !isCentrePendingApplication(a),
   ).length;
-  const completedFromList = nonDraftApps.filter((a) => a.status === "certified").length;
+  const completedFromList = nonDraftApps.filter(
+    (a) => a.status === "certified",
+  ).length;
   const archivedFromList = nonDraftApps.filter(
     (a) => a.status === "rejected" || a.status === "withdrawn",
   ).length;
@@ -132,10 +143,10 @@ export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = (props) => 
 
   const isDetailView = Boolean(
     selectedInterviewTitle ||
-      selectedInductionTitle ||
-      (selectedCandidateName &&
-        (showSelfAssessmentForm || showEvidenceVault || showCandidateForm)) ||
-      selectedCandidateName,
+    selectedInductionTitle ||
+    (selectedCandidateName &&
+      (showSelfAssessmentForm || showEvidenceVault || showCandidateForm)) ||
+    selectedCandidateName,
   );
 
   if (isDetailView) {
@@ -244,7 +255,6 @@ export const ApplicationsHeader: React.FC<ApplicationsHeaderProps> = (props) => 
         archivedCount={archivedCount}
         activeFilterTab={activeFilterTab}
         onSelectFilterTab={onSelectFilterTab}
-        onApproveAllPending={onApproveAllPending}
       />
     </div>
   );

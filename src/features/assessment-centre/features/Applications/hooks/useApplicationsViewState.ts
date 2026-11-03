@@ -23,6 +23,7 @@ import {
   mapInductionItem,
   mapApplicationItem,
   mapPanelItem,
+  canApplicationBeCompleted,
   type PanelRowData,
 } from "../utils/appViewHelpers";
 import type { InterviewRowData } from "../components/ViewInterviewDetailModal";
@@ -382,45 +383,65 @@ export function useApplicationsViewState(
       });
       return;
     }
-    const idsToCertify = [...selectedIds];
+
+    // Check which of the selected applications can really be marked as completed
+    const eligibleIds = selectedIds.filter((id) => {
+      const rowItem = applicationsList.find((a) => a.id === id);
+      const rawItem = (remoteApps ?? []).find((a: any) => a.id === id);
+      return canApplicationBeCompleted(rawItem || rowItem);
+    });
+
+    const ineligibleCount = selectedIds.length - eligibleIds.length;
+
+    // If none of the selected applications can be completed
+    if (eligibleIds.length === 0) {
+      toast({
+        type: "info",
+        title: "Cannot Mark as Completed",
+        description:
+          selectedIds.length === 1
+            ? "The selected application cannot be marked as completed. Applications must complete the internal verification (IV) stage before they can be certified."
+            : "None of the selected applications can be marked as completed. Applications must complete the internal verification (IV) stage before they can be certified.",
+      });
+      return;
+    }
+
+    // Just mark the ones that can be completed and leave the rest the way they are
     setSelectedIds([]);
-    setOptimisticCertifiedIds((prev) => new Set([...prev, ...idsToCertify]));
+    setOptimisticCertifiedIds((prev) => new Set([...prev, ...eligibleIds]));
 
     try {
-      const res = await bulkCertifyMutation.mutateAsync(idsToCertify);
-      if (res?.failed && res.failed.length > 0 && (!res.updated || res.updated.length === 0)) {
+      const res = await bulkCertifyMutation.mutateAsync(eligibleIds);
+
+      // If backend reported any failed IDs, revert those
+      if (res?.failed && res.failed.length > 0) {
+        const failedIdSet = new Set(res.failed.map((f) => f.id));
         setOptimisticCertifiedIds((prev) => {
           const next = new Set(prev);
-          res.failed.forEach((f) => next.delete(f.id));
+          failedIdSet.forEach((id) => next.delete(id));
           return next;
         });
-        toast({
-          type: "error",
-          title: "Completion Failed",
-          description: res.failed[0]?.message || "Selected application(s) could not be marked as completed.",
-        });
-      } else if (res?.failed && res.failed.length > 0) {
-        setOptimisticCertifiedIds((prev) => {
-          const next = new Set(prev);
-          res.failed.forEach((f) => next.delete(f.id));
-          return next;
-        });
+      }
+
+      const actuallyUpdatedCount = res?.updated?.length || eligibleIds.length;
+
+      if (ineligibleCount > 0) {
         toast({
           type: "info",
-          title: "Partially Completed",
-          description: `Marked ${res.updated?.length || 0} application(s) as completed. ${res.failed.length} could not be updated.`,
+          title: "Completed Eligible Applications",
+          description: `Successfully marked ${actuallyUpdatedCount} application(s) as completed. ${ineligibleCount} application(s) were not eligible (require IV approval) and were left unchanged.`,
         });
       } else {
         toast({
           type: "success",
           title: "Marked as Completed",
-          description: `Successfully marked ${res?.updated?.length || idsToCertify.length} application(s) as completed.`,
+          description: `Successfully marked ${actuallyUpdatedCount} application(s) as completed.`,
         });
       }
     } catch (err: any) {
       setOptimisticCertifiedIds((prev) => {
         const next = new Set(prev);
-        idsToCertify.forEach((id) => next.delete(id));
+        eligibleIds.forEach((id) => next.delete(id));
         return next;
       });
       toast({

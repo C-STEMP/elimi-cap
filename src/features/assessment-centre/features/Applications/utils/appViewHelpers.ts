@@ -103,6 +103,48 @@ export function isCentrePendingApplication(app: any): boolean {
   );
 }
 
+export function canApplicationBeCompleted(app: any): boolean {
+  if (!app) return false;
+  const raw = app.application || app;
+
+  const status = (raw.status || app.status || "").toLowerCase();
+  // If already certified or completed, cannot mark completed again
+  if (status === "certified" || status === "completed") return false;
+  // If archived, rejected, or withdrawn, cannot mark completed
+  if (status === "rejected" || status === "withdrawn" || status === "archived") {
+    return false;
+  }
+  // If pending initial centre review, cannot mark completed
+  if (isCentrePendingApplication(app) || isCentrePendingApplication(raw) || status === "pending") {
+    return false;
+  }
+
+  // An application can be completed if it is IV approved or at certification stage
+  const isIvApproved = Boolean(
+    app.ivApproved ||
+      raw.ivApproved ||
+      status === "iv approved" ||
+      app.currentStageKey === "certification" ||
+      raw.currentStageKey === "certification" ||
+      app.stage === "certification" ||
+      raw.stage === "certification" ||
+      (Array.isArray(app.stages) &&
+        app.stages.some(
+          (s: any) =>
+            (s.stageKey === "internal_verification" || s.stageKey === "iv") &&
+            s.status === "successful",
+        )) ||
+      (Array.isArray(raw.stages) &&
+        raw.stages.some(
+          (s: any) =>
+            (s.stageKey === "internal_verification" || s.stageKey === "iv") &&
+            s.status === "successful",
+        )),
+  );
+
+  return isIvApproved;
+}
+
 export function mapApplicationItem(app: any) {
   const rawApp = app as any;
   const formatDate = (dateVal?: any) => {
