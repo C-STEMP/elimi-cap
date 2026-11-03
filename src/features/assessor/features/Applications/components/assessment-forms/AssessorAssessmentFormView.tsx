@@ -629,6 +629,7 @@ export const AssessorAssessmentFormView: React.FC<
         interviewPanel={interviewPanel}
         applicationTrade={resolvedTrade}
         unitLabels={unitLabels}
+        levelLabel={levelLabel}
         isInterviewStage={isInterviewStage}
       />
     );
