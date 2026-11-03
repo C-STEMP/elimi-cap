@@ -10,7 +10,13 @@ import {
   useGetPaymentQuote, useGetApplicationReceipt,
   useWithdrawApplication,
 } from "./useApplication";
-import { useGetInterviewSchedule, useGetInterviewPanel, useGetInterviewForms, usePaystackCheckout } from "@/src/features/shared/applications/hooks";
+import {
+  useGetInterviewSchedule,
+  useGetInterviewPanel,
+  useGetInterviewForms,
+  useGetInterviewFormsBundle,
+  usePaystackCheckout,
+} from "@/src/features/shared/applications/hooks";
 import { useGetApplicationEvents } from "@/src/features/shared/notifications/hooks/useNotifications";
 import {
   APPLICATION_QUERY_KEYS,
@@ -82,12 +88,22 @@ export function useApplicationDetailsState(id?: string) {
   const { data: interviewSchedule } = useGetInterviewSchedule(id || "", { enabled: Boolean(id && !isDraft) });
   const { data: interviewPanel } = useGetInterviewPanel(id || "", { enabled: Boolean(id && !isDraft && isInterviewStageActive) });
   const { data: interviewForms } = useGetInterviewForms(id || "", { enabled: Boolean(id && !isDraft && isInterviewStageActive) });
+  const { data: interviewFormsBundle } = useGetInterviewFormsBundle(id || "", { enabled: Boolean(id && !isDraft && isInterviewStageActive) });
   const { data: applicationEvents = [] } = useGetApplicationEvents(id || "");
 
-  const isInterviewScheduled = Boolean(interviewSchedule?.scheduledAt);
-  const formattedInterviewDate = interviewSchedule?.scheduledAt
-    ? new Date(interviewSchedule.scheduledAt).toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "numeric" })
-    : undefined;
+  const isInterviewScheduled = Boolean(
+    interviewSchedule?.scheduledAt &&
+      interviewSchedule.status !== "cancelled" &&
+      isInterviewStageActive,
+  );
+  const formattedInterviewDate =
+    isInterviewScheduled && interviewSchedule?.scheduledAt
+      ? new Date(interviewSchedule.scheduledAt).toLocaleDateString("en-US", {
+          month: "numeric",
+          day: "numeric",
+          year: "numeric",
+        })
+      : undefined;
 
   const resolvedTrade = resolveTradeName((apiApp as any)?.trade, apiApp?.type ?? "RPL");
   const appFormStage = stagesData?.find((s) => s.stageKey === "application_form" || s.stageKey === "application_review" || s.stageKey === "application");
@@ -128,7 +144,13 @@ export function useApplicationDetailsState(id?: string) {
   } : null;
 
   const facilitatorData = useMemo(() => buildFacilitatorData((apiApp as any)?.assignedFacilitator || (apiApp as any)?.facilitator, resolvedTrade), [apiApp, resolvedTrade]);
-  const interviewAssessors = useMemo(() => (isInterviewStageActive || isInterviewScheduled ? buildInterviewAssessors(interviewPanel, resolvedTrade) : undefined), [isInterviewStageActive, isInterviewScheduled, interviewPanel, resolvedTrade]);
+  const interviewAssessors = useMemo(
+    () =>
+      isInterviewScheduled
+        ? buildInterviewAssessors(interviewPanel, resolvedTrade)
+        : undefined,
+    [isInterviewScheduled, interviewPanel, resolvedTrade],
+  );
 
   useEffect(() => {
     const paymentParam = searchParams.get("payment");
@@ -162,7 +184,7 @@ export function useApplicationDetailsState(id?: string) {
   const isVaultActive = formState.startsWith("vault_") || formState.startsWith("figma_") || (application?.paymentCompleted ?? false);
   const folderStatus = getFolderArrangementStatus(isVaultActive, formState);
   const formStatus = getFormStatus(formState);
-  const isAtInterviewStage = Boolean(isInterviewScheduled || isInterviewStageActive);
+  const isAtInterviewStage = Boolean(isInterviewScheduled);
 
   const handleMakePayment = () => {
     if (!application) return;
@@ -221,16 +243,67 @@ export function useApplicationDetailsState(id?: string) {
   ];
 
   const formsToSign = useMemo(() => {
+    if (!isInterviewScheduled) return undefined;
+    const nonLeadMembers = (interviewPanel?.members || []).filter(
+      (m: any) => !m.isLead && !m.isObserver,
+    );
+    const panelistRecords = interviewFormsBundle?.panelistRecords || [];
+
     return FORMS_CONFIG.map((f) => {
       const matched = interviewForms?.find((rf) => rf.formType === f.id);
+      const isSigned = Boolean(matched?.candidateSignedAt);
+      const isLeadSigned = Boolean(
+        matched?.assessorSignedAt ||
+          matched?.status === "completed" ||
+          (matched?.data as any)?.leadSignature ||
+          (matched?.data as any)?.assessorSignature ||
+          (matched?.data as any)?.leadPanelistSigned ||
+          (matched?.data as any)?.assessorSigned ||
+          (matched?.data as any)?.submittedAt,
+      );
+
+      const signedPanelistsCount = nonLeadMembers.filter((m) =>
+        panelistRecords.some(
+          (pr) =>
+            pr.formType === f.id &&
+            pr.assessorId === m.assessorId &&
+            ((pr.data as any)?.assessorSignature ||
+              (pr.data as any)?.assessorSigned ||
+              (pr.data as any)?.panelMemberSigned),
+        ),
+      ).length;
+
+      const canSign = Boolean(isLeadSigned && !isSigned);
+
+      let statusBadge: string | undefined = undefined;
+      if (isSigned) {
+        statusBadge = "Signed";
+      } else if (canSign) {
+        statusBadge =
+          signedPanelistsCount > 0 && signedPanelistsCount === nonLeadMembers.length
+            ? "Panel Endorsed · Ready to Sign"
+            : "Lead Signed · Ready to Sign";
+      } else if (isLeadSigned) {
+        statusBadge = "Lead Signed";
+      }
+
       return {
         id: f.id,
         title: f.title,
         description: f.description,
-        signed: Boolean(matched?.candidateSignedAt),
+        signed: isSigned,
+        status: matched?.status || "not_started",
+        canSign,
+        statusBadge,
       };
     });
-  }, [interviewForms]);
+  }, [
+    FORMS_CONFIG,
+    interviewForms,
+    interviewFormsBundle?.panelistRecords,
+    interviewPanel?.members,
+    isInterviewScheduled,
+  ]);
 
   const stages = application ? getStagesConfig({
     formState, isVaultActive, folderStatus, formStatus, isInterviewCollapsed,

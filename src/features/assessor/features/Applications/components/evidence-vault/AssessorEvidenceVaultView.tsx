@@ -148,27 +148,39 @@ export const AssessorEvidenceVaultView: React.FC<
           e.originalName ||
           ""
         ).trim();
-        const feedback: string[] = (
-          Array.isArray(e.feedback)
+        const rawFeedback: string[] = (
+          Array.isArray(e.feedback) && e.feedback.length > 0
             ? e.feedback
-            : e.feedback
-              ? [e.feedback]
-              : e.reviewComment
-                ? [e.reviewComment]
-                : Array.isArray(e.issues)
-                  ? e.issues
-                  : []
+            : e.reviewComment
+              ? [e.reviewComment]
+              : e.feedback
+                ? [e.feedback]
+                : e.comment
+                  ? [e.comment]
+                  : e.rejectionReason
+                    ? [e.rejectionReason]
+                    : e.reason
+                      ? [e.reason]
+                      : Array.isArray(e.issues)
+                        ? e.issues
+                        : []
         ).filter(Boolean);
         const status = String(e.reviewStatus || e.status || "");
         const isItemApproved =
           isStageAlreadyComplete || /approv|accepted|successful/i.test(status);
         const isItemRejected =
+          !isItemApproved && /reject|attenti|declin|fail/i.test(status);
+        const isReuploaded =
           !isItemApproved &&
-          (/reject|attenti|declin|fail/i.test(status) || feedback.length > 0);
+          !isItemRejected &&
+          Boolean(e.reviewedAt || e.reviewedBy || rawFeedback.length > 0);
+        const feedback = isItemRejected || isReuploaded ? rawFeedback : [];
         const rawStatus = isItemApproved
           ? "Approved"
           : isItemRejected
-            ? "Attention Required"
+            ? /reject/i.test(status)
+              ? "Rejected"
+              : "Attention Required"
             : "Pending";
         return {
           id: e.id,
@@ -177,6 +189,7 @@ export const AssessorEvidenceVaultView: React.FC<
           status: rawStatus
             .replace(/_/g, " ")
             .replace(/\b\w/g, (c: string) => c.toUpperCase()),
+          isReuploaded,
           url: e.url || e.dataUrl,
           dataUrl: e.dataUrl || e.url,
           assetId: e.assetId,
@@ -184,6 +197,7 @@ export const AssessorEvidenceVaultView: React.FC<
           evidenceType: e.evidenceType || e.type,
           feedback,
           unitId: e.unitId,
+          unitIds: e.unitIds,
         };
       })
       .filter((e: any) => e.id || e.assetId || e.name);
@@ -245,6 +259,7 @@ export const AssessorEvidenceVaultView: React.FC<
     mimeType: item.mimeType,
     evidenceType: item.evidenceType,
     unitId: item.unitId,
+    unitIds: item.unitIds,
   });
 
   const handleApproveEvidence = async (item: EvidenceRecord) => {
@@ -312,14 +327,14 @@ export const AssessorEvidenceVaultView: React.FC<
       setEvidenceItems((prev) =>
         prev.map((it) =>
           it.id === item.id
-            ? { ...it, status: "Attention Required", feedback: [comment] }
+            ? { ...it, status: "Rejected", feedback: [comment] }
             : it,
         ),
       );
       if (previewItem && previewItem.id === item.id) {
         setPreviewItem({
           ...previewItem,
-          status: "Attention Required",
+          status: "Rejected",
           statusBg: "bg-[#FEE2E2]",
           statusText: "text-[#B91C1C]",
           issues: [comment],

@@ -19,6 +19,9 @@ export interface FormToSignItem {
   title: string;
   description?: string;
   signed?: boolean;
+  status?: string;
+  canSign?: boolean;
+  statusBadge?: string;
 }
 
 interface UpcomingCardProps {
@@ -146,6 +149,11 @@ export const UpcomingCard: React.FC<UpcomingCardProps> = ({
                   <span className="text-xs font-bold text-gray-900 truncate group-hover:text-[#8A1538] transition-colors">
                     {form.title}
                   </span>
+                  {form.statusBadge && !form.signed && (
+                    <span className="text-[9px] font-semibold text-amber-700 bg-amber-50 border border-amber-200/80 px-1.5 py-0.5 rounded-md inline-block w-fit mt-0.5">
+                      {form.statusBadge}
+                    </span>
+                  )}
                   {form.description && (
                     <span className="text-[10px] text-gray-400 truncate mt-0.5">
                       {form.description}
@@ -157,7 +165,7 @@ export const UpcomingCard: React.FC<UpcomingCardProps> = ({
                   <span className="shrink-0 bg-[#E6F4EA] text-[#1E7F4C] border border-[#1E7F4C]/20 text-[10px] font-bold px-2 py-0.5 rounded-lg flex items-center gap-1 select-none">
                     <FiCheck className="w-3 h-3" /> Signed
                   </span>
-                ) : (
+                ) : form.canSign ? (
                   <button
                     type="button"
                     onClick={(e) => {
@@ -167,6 +175,17 @@ export const UpcomingCard: React.FC<UpcomingCardProps> = ({
                     className="shrink-0 bg-[#FFF8EB] border border-[#FBAB2A] hover:bg-[#FDEED5] text-[#FBAB2A] text-[11px] font-bold px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
                   >
                     <FiEdit3 className="w-3 h-3" /> View &amp; Sign
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onOpenForm?.(form.id);
+                    }}
+                    className="shrink-0 bg-gray-50 border border-gray-200 hover:bg-gray-100 text-gray-700 text-[11px] font-medium px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
+                  >
+                    View
                   </button>
                 )}
               </div>

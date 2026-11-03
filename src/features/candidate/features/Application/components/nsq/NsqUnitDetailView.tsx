@@ -36,6 +36,7 @@ export interface EvidenceItem {
   url?: string;
   fileName?: string;
   fileSize?: string;
+  isHistory?: boolean;
 }
 
 export interface PerformanceCriteria {
@@ -136,12 +137,20 @@ function parseCriteriaToLearningOutcomes(
       };
     }
 
-    // Per the backend contract, `latest` is the single live row for this
-    // criterion — everything else in `history` has been superseded by a
-    // newer submission. Only the live row should render as "the" evidence;
-    // showing the full history here would make every re-upload look like
-    // it added a duplicate instead of replacing the prior submission.
-    const evidences: EvidenceItem[] = (crit.latest ? [crit.latest] : []).map((item) => ({
+    // Show `latest` first, and keep any rejected rows from `history` visible as history.
+    const rawItems = [
+      ...(crit.latest ? [{ item: crit.latest, isHistory: false }] : []),
+      ...(Array.isArray(crit.history)
+        ? crit.history
+            .filter(
+              (h) =>
+                h.id !== crit.latest?.id && h.reviewStatus === "rejected",
+            )
+            .map((h) => ({ item: h, isHistory: true }))
+        : []),
+    ];
+
+    const evidences: EvidenceItem[] = rawItems.map(({ item, isHistory }) => ({
       id: item.id,
       title:
         item.evidenceType === "WP"
@@ -154,9 +163,15 @@ function parseCriteriaToLearningOutcomes(
           : item.reviewStatus === "rejected"
             ? "rejected"
             : "in_review",
-      feedback: item.reviewComment || item.iqaReviewComment || undefined,
+      feedback:
+        item.reviewComment ||
+        item.iqaReviewComment ||
+        (item as any).comment ||
+        (item as any).feedback ||
+        undefined,
       url: item.evidenceAssetId ? `/api/assets/${item.evidenceAssetId}` : undefined,
       fileName: `Evidence_${item.performanceCriteriaCode}.${item.evidenceType.toLowerCase()}`,
+      isHistory,
     }));
 
     groups[loKey].criteria.push({
@@ -262,30 +277,6 @@ export const NsqUnitDetailView: React.FC<NsqUnitDetailViewProps> = ({
       // useSubmitUnitEvidence already surfaced an error toast.
       return;
     }
-
-    const newEvidence: EvidenceItem = {
-      id: `ev-${Date.now()}`,
-      title: data.evidenceType === "WP" ? "Work Product(WP)" : `${data.evidenceType} Evidence`,
-      evidenceType: data.evidenceType,
-      status: "in_review",
-      url: data.url,
-      fileName: data.fileName,
-      fileSize: data.fileSize,
-    };
-
-    // Replace, not append — this submission is now the single live row for
-    // the criterion (matches the backend's latest/history model above), so
-    // a re-upload must visually replace the evidence it's superseding.
-    setLearningOutcomes((prev) =>
-      prev.map((lo) => ({
-        ...lo,
-        criteria: lo.criteria.map((pc) =>
-          pc.id === activePcForUpload.id
-            ? { ...pc, evidences: [newEvidence] }
-            : pc,
-        ),
-      })),
-    );
 
     setShowUploadToast(true);
     setTimeout(() => setShowUploadToast(false), 4000);
@@ -539,7 +530,7 @@ export const NsqUnitDetailView: React.FC<NsqUnitDetailViewProps> = ({
                                             onClick={() =>
                                               setPreviewEvidenceItem({ item: ev, pc })
                                             }
-                                            className="flex items-center gap-2 cursor-pointer group/item select-none"
+                                            className="flex items-center gap-2 cursor-pointer group/item select-none flex-wrap"
                                           >
                                             <FiFileText className="w-4 h-4 text-[#a31d38]" />
                                             <span className="text-xs font-bold text-[#a31d38] underline group-hover/item:text-[#8a1538] transition-colors">
@@ -549,19 +540,26 @@ export const NsqUnitDetailView: React.FC<NsqUnitDetailViewProps> = ({
                                               <span className="w-1.5 h-1.5 rounded-full bg-white" />
                                               Rejected
                                             </span>
+                                            {ev.isHistory && (
+                                              <span className="bg-gray-200 text-gray-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                                History
+                                              </span>
+                                            )}
                                           </div>
 
                                           <div className="flex items-center gap-3">
-                                            <button
-                                              type="button"
-                                              onClick={() => {
-                                                setActivePcForUpload(pc);
-                                                setReplacingEvidenceType(ev.evidenceType);
-                                              }}
-                                              className="text-xs font-semibold text-neutral-800 hover:text-black cursor-pointer"
-                                            >
-                                              Re-upload
-                                            </button>
+                                            {!ev.isHistory && (
+                                              <button
+                                                type="button"
+                                                onClick={() => {
+                                                  setActivePcForUpload(pc);
+                                                  setReplacingEvidenceType(ev.evidenceType);
+                                                }}
+                                                className="text-xs font-semibold text-neutral-800 hover:text-black cursor-pointer"
+                                              >
+                                                Upload new
+                                              </button>
+                                            )}
                                           </div>
                                         </div>
 

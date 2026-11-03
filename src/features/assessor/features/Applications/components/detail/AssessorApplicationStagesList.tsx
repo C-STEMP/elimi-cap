@@ -38,6 +38,7 @@ interface AssessorApplicationStagesListProps {
   isUserLeadPanelist?: boolean;
   isUserPanelMember?: boolean;
   isUserIV?: boolean;
+  areAllCanonicalFormsCompleted?: boolean;
   pendingSignatures?: Array<{ assessorId: string; name?: string; isLead?: boolean }>;
   isCurrentUserInPending?: boolean;
 }
@@ -58,6 +59,7 @@ export const AssessorApplicationStagesList: React.FC<
   isUserLeadPanelist = false,
   isUserPanelMember = false,
   isUserIV = false,
+  areAllCanonicalFormsCompleted = false,
   pendingSignatures,
   isCurrentUserInPending = false,
 }) => {
@@ -194,23 +196,49 @@ export const AssessorApplicationStagesList: React.FC<
     (isCompleted && (!stagesData || stagesData.length === 0 || stagesData.every((s) => s.status === "successful" || (s.status as string) === "completed")))
   );
 
-  const isUserIv = isUserIV || application.role === "Internal Verifier";
+  const isUserIv =
+    isUserIV ||
+    application.role === "Internal Verifier" ||
+    (application as any)?.role === "internal_verifier";
   const isUserEv = application.role === "External Verifier";
-  const isIvActive = ivStageRow
-    ? ivStageRow.status !== "not_started"
-    : isInterviewDone;
-  const isEvActive = evStageRow
-    ? evStageRow.status !== "not_started"
-    : isIvDone;
+  const isIvActive = Boolean(
+    (ivStageRow && ivStageRow.status !== "not_started") ||
+    isInterviewDone
+  );
+  const isEvActive = Boolean(
+    (evStageRow && evStageRow.status !== "not_started") ||
+    isIvDone
+  );
 
   const rawInterviewStatus = interviewStageRow?.status;
   const hasRecordedOutcome = interviewOutcome !== "ongoing";
-  const isInterviewNotStarted = !hasRecordedOutcome && rawInterviewStatus === "not_started";
-  const isInterviewOnlyScheduled = !hasRecordedOutcome && rawInterviewStatus === "scheduled";
-  const isInterviewNotYetActionable = Boolean(
-    interviewStageRow &&
-    (rawInterviewStatus === "not_started" || rawInterviewStatus === "scheduled") &&
-    !hasRecordedOutcome,
+  const hasAssignedPanel = panelMembers.length > 0;
+  const isInterviewStageExplicitlyStarted = Boolean(
+    rawInterviewStatus && rawInterviewStatus !== "not_started",
+  );
+  const hasScheduledInterview = Boolean(
+    interviewSchedule?.scheduledAt &&
+      interviewSchedule.status !== "cancelled" &&
+      isInterviewStageExplicitlyStarted,
+  );
+  const isInterviewNotStarted =
+    !hasRecordedOutcome &&
+    (!isFolderDone ||
+      !hasAssignedPanel ||
+      !hasScheduledInterview ||
+      rawInterviewStatus === "not_started");
+  const isInterviewOnlyScheduled =
+    !hasRecordedOutcome &&
+    isFolderDone &&
+    hasAssignedPanel &&
+    hasScheduledInterview &&
+    (!areAllCanonicalFormsCompleted || rawInterviewStatus === "scheduled");
+  const canEvaluateInterview = Boolean(
+    isFolderDone &&
+      hasAssignedPanel &&
+      hasScheduledInterview &&
+      areAllCanonicalFormsCompleted &&
+      !isInterviewDone,
   );
 
   const currentInterviewStatus = isInterviewDone
@@ -336,33 +364,39 @@ export const AssessorApplicationStagesList: React.FC<
       assessors: panelMembers,
       inconclusiveDetails: interviewFeedback || undefined,
       actionButton:
-        !isInterviewDone && !isInterviewNotYetActionable && isUserPanelMember && !isUserLeadPanelist && onMarkCandidateCompetent
-          ? (hasPendingSignaturesInfo && !isCurrentUserInPending
-              ? {
-                  label: "Evaluation Recorded",
-                  variant: "view",
-                  onClick: () => {},
-                }
-              : {
-                  label: "Sign Off Interview",
-                  variant: "amber",
-                  onClick: onMarkCandidateCompetent,
-                })
+        canEvaluateInterview &&
+        (isUserPanelMember || isUserIv) &&
+        !isUserLeadPanelist &&
+        onMarkCandidateCompetent
+          ? hasPendingSignaturesInfo && !isCurrentUserInPending
+            ? {
+                label: "Evaluation Recorded",
+                variant: "view",
+                onClick: () => {},
+              }
+            : {
+                label: "Sign Off Interview",
+                variant: "amber",
+                onClick: onMarkCandidateCompetent,
+              }
           : undefined,
-      menuActions: (isInterviewDone || !isUserLeadPanelist) ? [] : [
-        {
-          label: "Competent",
-          onClick: onMarkCandidateCompetent || (() => {}),
-        },
-        {
-          label: "Incompetent",
-          onClick: onMarkCandidateIncompetent || (() => {}),
-        },
-        {
-          label: "Inconclusive",
-          onClick: onMarkCandidateInconclusive || (() => {}),
-        },
-      ],
+      menuActions:
+        !canEvaluateInterview || !isUserLeadPanelist
+          ? []
+          : [
+              {
+                label: "Competent",
+                onClick: onMarkCandidateCompetent || (() => {}),
+              },
+              {
+                label: "Incompetent",
+                onClick: onMarkCandidateIncompetent || (() => {}),
+              },
+              {
+                label: "Inconclusive",
+                onClick: onMarkCandidateInconclusive || (() => {}),
+              },
+            ],
     },
     {
       id: "internal_verifier",
@@ -378,11 +412,17 @@ export const AssessorApplicationStagesList: React.FC<
       actionButton:
         !isIvDone && isIvActive && isUserIv && onMarkCompetent
           ? {
-              label: "Mark as Competent",
+              label: "Review Dossier & Verify",
               variant: "amber",
               onClick: onMarkCompetent,
             }
-          : undefined,
+          : isIvDone && onMarkCompetent
+            ? {
+                label: "View Dossier",
+                variant: "view",
+                onClick: onMarkCompetent,
+              }
+            : undefined,
     },
     {
       id: "external_verifier",

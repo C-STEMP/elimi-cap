@@ -16,6 +16,7 @@ export interface EvidenceItem {
   name: string;
   size: string;
   status: string;
+  isReuploaded?: boolean;
   feedback?: string[];
   fileUrl?: string;
   mimeType?: string;
@@ -24,6 +25,7 @@ export interface EvidenceItem {
   url?: string;
   dataUrl?: string;
   unitId?: string;
+  unitIds?: string[];
 }
 
 function getFileTypeIcon(mimeType?: string, name?: string) {
@@ -141,6 +143,11 @@ export const EvidenceItemCard: React.FC<EvidenceItemCardProps> = ({
               >
                 {badge.label}
               </span>
+              {item.isReuploaded && (
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#EFF6FF] text-[#1D4ED8]">
+                  Re-uploaded
+                </span>
+              )}
             </div>
             <span className="text-xs text-neutral-secondary font-normal">
               {item.size}
@@ -149,6 +156,15 @@ export const EvidenceItemCard: React.FC<EvidenceItemCardProps> = ({
                 ? getEvidenceTypeName(item.evidenceType)
                 : ""}
             </span>
+            {Array.isArray(item.unitIds) && item.unitIds.length > 0 && (
+              <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                <span className="text-[10px] font-semibold text-neutral-secondary bg-gray-100 px-2 py-0.5 rounded-md">
+                  {item.unitIds.length === 1
+                    ? "Tagged to 1 unit"
+                    : `Tagged to ${item.unitIds.length} units`}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -173,8 +189,11 @@ export const EvidenceItemCard: React.FC<EvidenceItemCardProps> = ({
       {item.feedback && item.feedback.length > 0 && (
         <div
           onClick={(e) => e.stopPropagation()}
-          className="bg-[#FCE8EB] border border-[#F87171]/25 rounded-2xl p-4 flex flex-col gap-1 text-xs text-[#A31D38] font-medium leading-relaxed mt-1"
+          className="bg-[#FCE8EB] border border-[#F87171]/25 rounded-2xl p-3.5 sm:p-4 flex flex-col gap-1 text-xs text-[#A31D38] font-medium leading-relaxed mt-1"
         >
+          <span className="font-bold text-[11px] uppercase tracking-wide text-[#8A1538]">
+            Reason for Rejection:
+          </span>
           {item.feedback.map((fb, idx) => (
             <div key={idx} className="flex items-start gap-2">
               <span className="text-sm leading-none mt-0.5">•</span>

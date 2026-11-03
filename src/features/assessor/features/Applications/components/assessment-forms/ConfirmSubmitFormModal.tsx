@@ -9,12 +9,18 @@ interface ConfirmSubmitFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
+  title?: string;
+  description?: string;
+  confirmLabel?: string;
 }
 
 export const ConfirmSubmitFormModal: React.FC<ConfirmSubmitFormModalProps> = ({
   isOpen,
   onClose,
   onConfirm,
+  title = "Are You sure?",
+  description = "Confirm you want to Submit",
+  confirmLabel = "Yes, Submit",
 }) => {
   if (!isOpen) return null;
 
@@ -32,10 +38,10 @@ export const ConfirmSubmitFormModal: React.FC<ConfirmSubmitFormModalProps> = ({
         </div>
 
         <h3 className="text-xl sm:text-2xl font-extrabold text-neutral-primary tracking-tight mb-1">
-          Are You sure?
+          {title}
         </h3>
         <p className="text-xs sm:text-sm text-neutral-secondary font-normal mb-6">
-          Confirm you want to Submit
+          {description}
         </p>
 
         <div className="flex flex-col gap-3 w-full">
@@ -46,7 +52,7 @@ export const ConfirmSubmitFormModal: React.FC<ConfirmSubmitFormModalProps> = ({
             fullWidth
             className="h-12 bg-[#FBAB2A] hover:bg-[#E89B1F] text-white font-bold text-sm sm:text-base rounded-xl shadow-md cursor-pointer transition-all"
           >
-            Yes, Submit
+            {confirmLabel}
           </Button>
 
           <button

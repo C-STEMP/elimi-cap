@@ -6,6 +6,7 @@ import { useToast } from "@/src/components/ui/toast";
 import type {
   InterviewForm,
   InterviewFormRecord,
+  InterviewPanel,
 } from "@/src/features/shared/applications/api/types";
 
 export interface AssessmentFormItem {
@@ -38,6 +39,8 @@ interface AssessorAssessmentFormsWidgetProps {
   isReadOnly?: boolean;
   remoteForms?: InterviewForm[];
   panelistRecords?: InterviewFormRecord[];
+  allPanelistRecords?: InterviewFormRecord[];
+  interviewPanel?: InterviewPanel | null;
   isLeadPanelist?: boolean;
   isAwaitingPanelSignatures?: boolean;
   isInterviewDone?: boolean;
@@ -63,7 +66,9 @@ export const AssessorAssessmentFormsWidget: React.FC<
     if (onViewForm) {
       onViewForm(form);
     } else if (applicationId) {
-      router.push(`/applications/${applicationId}/assessment-forms/${form.id}?from=assessor`);
+      router.push(
+        `/applications/${applicationId}/assessment-forms/${form.id}?from=assessor`,
+      );
     } else {
       toast({
         type: "info",
@@ -83,8 +88,6 @@ export const AssessorAssessmentFormsWidget: React.FC<
 
       <div className="flex flex-col gap-2.5 w-full">
         {forms.map((form) => {
-          const isMappingForm =
-            form.id === "assessment_mapping" || form.id === "assessment_grid";
           const typeKey = FORM_TYPE_MAP[form.id] || form.id;
           const matchedRemote = remoteForms?.find(
             (rf) => rf.formType === typeKey || rf.formType === form.id,
@@ -93,38 +96,38 @@ export const AssessorAssessmentFormsWidget: React.FC<
             (pr) => pr.formType === typeKey || pr.formType === form.id,
           );
 
-          const isCandidateSigned = Boolean(matchedRemote?.candidateSignedAt);
-          const isAssessorSigned = Boolean(
-            matchedRemote?.assessorSignedAt ||
-              (matchedRemote?.data as any)?.leadPanelistSigned ||
-              (matchedRemote?.data as any)?.assessorSigned,
+          const isCandidateSigned = Boolean(
+            matchedRemote?.candidateSignedAt ||
+              (matchedRemote?.data as any)?.candidateSignedAt ||
+              (matchedRemote?.status === "completed" &&
+                Boolean(
+                  matchedRemote?.candidateSignedAt ||
+                    matchedRemote?.candidateSignatureAssetId,
+                )),
           );
-          const isSubmitted = Boolean(
-            isAssessorSigned ||
+          const isLeadSigned = Boolean(
+            matchedRemote?.assessorSignedAt ||
+              (matchedRemote?.data as any)?.leadSignature ||
+              (matchedRemote?.data as any)?.assessorSignature ||
+              (matchedRemote?.data as any)?.leadPanelistSigned ||
+              (matchedRemote?.data as any)?.assessorSigned ||
               matchedRemote?.status === "completed" ||
               (matchedRemote?.data as any)?.submittedAt,
           );
 
-          const hasMyRecord = Boolean(
-            matchedPanelistRecord?.data &&
-              Object.keys(matchedPanelistRecord.data).length > 0,
-          );
-          const isMyRecordSubmitted = Boolean(
-            hasMyRecord &&
-              ((matchedPanelistRecord?.data as any)?.status === "submitted" ||
-                (matchedPanelistRecord?.data as any)?.submittedAt ||
-                (matchedPanelistRecord?.data as any)?.assessorSigned),
+          const isMyRecordSigned = Boolean(
+            (matchedPanelistRecord?.data as any)?.assessorSignature ||
+              (matchedPanelistRecord?.data as any)?.status === "submitted" ||
+              (matchedPanelistRecord?.data as any)?.submittedAt ||
+              (matchedPanelistRecord?.data as any)?.assessorSigned,
           );
 
-          const isNonLeadEditable = !isLeadPanelist && !isReadOnly;
-          const isCompletedForMe = isNonLeadEditable
-            ? isMyRecordSubmitted
-            : (isSubmitted || isCandidateSigned);
+          const isCompletedForMe = isLeadPanelist
+            ? isLeadSigned || isCandidateSigned
+            : isMyRecordSigned;
 
           const actionLabel =
-            isMappingForm || isReadOnly || isCompletedForMe
-              ? "View"
-              : "Fill Form";
+            isReadOnly || isCompletedForMe ? "View" : "Fill Form";
 
           return (
             <div

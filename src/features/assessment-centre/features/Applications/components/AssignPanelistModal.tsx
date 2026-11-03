@@ -53,8 +53,8 @@ export const AssignPanelistModal: React.FC<AssignPanelistModalProps> = (props) =
                 <Select label="Panel Member" placeholder={s.isLoadingAssessors ? "Loading..." : "Select"} value={s.panelMemberId} onChange={(e) => s.setPanelMemberId(e.target.value)} options={s.assessorOptions.filter((a) => a.value !== s.leadPanelistId).map((a) => ({ label: a.label, value: a.value }))} />
                 <Select label="Internal Verifier" placeholder={s.isLoadingAssessors ? "Loading..." : "Select"} value={s.internalVerifierId} onChange={(e) => s.setInternalVerifierId(e.target.value)} options={s.assessorOptions.map((a) => ({ label: a.label, value: a.value }))} />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-1.5"><label className="text-xs font-semibold text-gray-700">Date</label><input type="date" value={s.date} onChange={(e) => s.setDate(e.target.value)} required className="w-full h-11 px-3.5 rounded-xl border border-gray-200 bg-[#F9FAFB] text-sm outline-none focus:border-[#fbab2a] transition-all cursor-pointer" /></div>
-                  <div className="flex flex-col gap-1.5"><label className="text-xs font-semibold text-gray-700">Time</label><input type="time" value={s.time} onChange={(e) => s.setTime(e.target.value)} required className="w-full h-11 px-3.5 rounded-xl border border-gray-200 bg-[#F9FAFB] text-sm outline-none focus:border-[#fbab2a] transition-all cursor-pointer" /></div>
+                  <div className="flex flex-col gap-1.5"><label className="text-xs font-semibold text-gray-700">Date (Optional)</label><input type="date" value={s.date} onChange={(e) => s.setDate(e.target.value)} className="w-full h-11 px-3.5 rounded-xl border border-gray-200 bg-[#F9FAFB] text-sm outline-none focus:border-[#fbab2a] transition-all cursor-pointer" /></div>
+                  <div className="flex flex-col gap-1.5"><label className="text-xs font-semibold text-gray-700">Time (Optional)</label><input type="time" value={s.time} onChange={(e) => s.setTime(e.target.value)} className="w-full h-11 px-3.5 rounded-xl border border-gray-200 bg-[#F9FAFB] text-sm outline-none focus:border-[#fbab2a] transition-all cursor-pointer" /></div>
                 </div>
                 <Select label="Interview Mode" value={s.interviewMode} onChange={(e) => s.setInterviewMode(e.target.value === "Virtual" ? "Virtual" : "Physical")} options={["Physical", "Virtual"]} />
                 {s.interviewMode === "Physical" && (
@@ -75,9 +75,17 @@ export const AssignPanelistModal: React.FC<AssignPanelistModalProps> = (props) =
                   </div>
                 )}
                 {s.interviewMode === "Virtual" && (
-                  <div className="flex flex-col gap-1.5 pt-1"><label className="text-xs font-semibold text-gray-700">Meeting Link</label><input type="text" value={s.meetingLink} onChange={(e) => s.setMeetingLink(e.target.value)} placeholder="www.meet.google.com" required className="w-full h-11 px-3.5 rounded-xl border border-gray-200 bg-[#F9FAFB] text-sm outline-none focus:border-[#fbab2a] transition-all" /></div>
+                  <div className="flex flex-col gap-1.5 pt-1"><label className="text-xs font-semibold text-gray-700">Meeting Link</label><input type="text" value={s.meetingLink} onChange={(e) => s.setMeetingLink(e.target.value)} placeholder="www.meet.google.com" className="w-full h-11 px-3.5 rounded-xl border border-gray-200 bg-[#F9FAFB] text-sm outline-none focus:border-[#fbab2a] transition-all" /></div>
                 )}
-                <Button type="submit" variant="secondary" size="md" disabled={s.isSubmitting} className="w-full bg-[#fbab2a] hover:bg-[#e89b1f] text-white font-bold h-12.5 rounded-xl mt-4 cursor-pointer">{s.isSubmitting ? "Scheduling Interview..." : "Schedule Interview"}</Button>
+                <Button type="submit" variant="secondary" size="md" disabled={s.isSubmitting} className="w-full bg-[#fbab2a] hover:bg-[#e89b1f] text-white font-bold h-12.5 rounded-xl mt-4 cursor-pointer">
+                  {s.isSubmitting
+                    ? s.date
+                      ? "Scheduling Interview..."
+                      : "Assigning Panel..."
+                    : s.date
+                      ? "Assign Panel & Schedule"
+                      : "Assign Panel"}
+                </Button>
               </form>
             </motion.div>
           </div>
@@ -89,8 +97,14 @@ export const AssignPanelistModal: React.FC<AssignPanelistModalProps> = (props) =
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
             <motion.div initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.94 }} transition={{ duration: 0.22 }} className="bg-white rounded-[28px] p-8 sm:p-10 max-w-md w-full flex flex-col items-center text-center shadow-2xl border border-gray-100">
               <div className="relative mb-6"><div className="w-22 h-22 rounded-full bg-radial from-[#7CE05A] via-[#52B836] to-[#3B9B22] flex items-center justify-center shadow-lg shadow-green-600/30"><FiCheck className="w-11 h-11 text-white stroke-[3.5]" /></div></div>
-              <h3 className="text-xl sm:text-2xl font-black text-black tracking-tight mb-2">Interview Scheduled Successfully</h3>
-              <p className="text-gray-400 text-xs sm:text-sm leading-relaxed mb-8 max-w-xs">You have successfully scheduled an interview for this candidate</p>
+              <h3 className="text-xl sm:text-2xl font-black text-black tracking-tight mb-2">
+                {s.date ? "Interview Scheduled Successfully" : "Panel Assigned Successfully"}
+              </h3>
+              <p className="text-gray-400 text-xs sm:text-sm leading-relaxed mb-8 max-w-xs">
+                {s.date
+                  ? "You have successfully scheduled an interview for this candidate"
+                  : "You have successfully assigned the panel for this candidate"}
+              </p>
               <Button type="button" variant="secondary" size="md" onClick={s.handleContinue} className="w-full bg-[#fbab2a] hover:bg-[#e89b1f] text-white font-bold h-12.5 rounded-xl cursor-pointer">Continue</Button>
             </motion.div>
           </div>

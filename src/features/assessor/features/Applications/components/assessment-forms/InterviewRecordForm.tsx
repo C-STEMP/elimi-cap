@@ -1,7 +1,11 @@
 "use client";
 
 import { useToast } from "@/src/components/ui/toast";
-import type { AssessmentMappingUnit } from "@/src/features/shared/applications/api/types";
+import type {
+  AssessmentMappingUnit,
+  InterviewForm,
+  InterviewFormRecord,
+} from "@/src/features/shared/applications/api/types";
 import type { Unit } from "@/src/features/shared/reference/api";
 import { useResolveAssets } from "@/src/features/shared/storage/hooks";
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -9,6 +13,10 @@ import { FiPlus, FiTrash2 } from "react-icons/fi";
 import { AssessorAssessmentFormLayout } from "./AssessorAssessmentFormLayout";
 import { DigitalSignaturePad } from "./DigitalSignaturePad";
 import { useAssessorSignature } from "./useAssessorSignature";
+import {
+  AssessorSignatureModal,
+  type AssessorSignatureData,
+} from "./AssessorSignatureModal";
 import {
   buildUnitInterviewQuestions,
   cleanQuestionTitle,
@@ -34,6 +42,12 @@ interface InterviewRecordFormProps {
   panelMemberName?: string;
   internalVerifierName?: string;
   currentUserRole?: "lead" | "panel" | "iv";
+  badgeLabel?: string;
+  headerTabs?: React.ReactNode;
+  bannerNotice?: React.ReactNode;
+  submitLabel?: string;
+  panelistRecords?: InterviewFormRecord[];
+  canonicalForm?: InterviewForm | null;
 }
 
 export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
@@ -52,6 +66,12 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
   panelMemberName,
   internalVerifierName,
   currentUserRole = "lead",
+  badgeLabel,
+  headerTabs,
+  bannerNotice,
+  submitLabel = "Submit Form",
+  panelistRecords,
+  canonicalForm,
 }) => {
   const { toast } = useToast();
 
@@ -149,62 +169,159 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
     signatureAssetId: profileSignatureAssetId,
   } = useAssessorSignature();
 
+  const [signatureModalConfig, setSignatureModalConfig] = useState<{
+    isOpen: boolean;
+    role: "lead" | "panel" | "iv";
+    title: string;
+    signerName: string;
+  }>({
+    isOpen: false,
+    role: "lead",
+    title: "Append Signature",
+    signerName: "",
+  });
+
+  // Check remote panel member signature from panelistRecords if not in current formData
+  const remotePanelistRecord = useMemo(() => {
+    return panelistRecords?.find(
+      (pr) =>
+        !pr.isObserver &&
+        (pr.formType === "records" ||
+          (pr.formType as string) === "interview_record") &&
+        ((pr.data as any)?.assessorSignature ||
+          (pr.data as any)?.assessorSigned ||
+          (pr.data as any)?.panelMemberSigned),
+    );
+  }, [panelistRecords]);
+
+  // Check remote IV signature from panelistRecords if not in current formData
+  const remoteIvRecord = useMemo(() => {
+    return panelistRecords?.find(
+      (pr) =>
+        Boolean(pr.isObserver) &&
+        (pr.formType === "records" ||
+          (pr.formType as string) === "interview_record") &&
+        ((pr.data as any)?.assessorSignature ||
+          (pr.data as any)?.assessorSigned ||
+          (pr.data as any)?.internalVerifierSigned),
+    );
+  }, [panelistRecords]);
+
+  const leadSigData =
+    formData?.leadSignature ||
+    canonicalForm?.data?.leadSignature ||
+    formData?.assessorSignature ||
+    canonicalForm?.data?.assessorSignature;
+
+  const panelSigData =
+    formData?.panelMemberSignature ||
+    remotePanelistRecord?.data?.assessorSignature ||
+    remotePanelistRecord?.data?.panelMemberSignature;
+
+  const ivSigData =
+    formData?.internalVerifierSignature ||
+    remoteIvRecord?.data?.assessorSignature ||
+    remoteIvRecord?.data?.internalVerifierSignature;
+
   const [leadPanelistSigned, setLeadPanelistSigned] = useState<boolean>(
     Boolean(
-      formData?.leadPanelistSigned ||
-      formData?.assessorSigned ||
-      formData?.assessorSignedAt,
+      leadSigData?.assetId ||
+        formData?.leadPanelistSigned ||
+        formData?.assessorSigned ||
+        canonicalForm?.data?.leadPanelistSigned ||
+        canonicalForm?.assessorSignedAt,
     ),
   );
   const [leadPanelistSignedAt, setLeadPanelistSignedAt] = useState<string>(
-    formData?.leadPanelistSignedAt || formData?.assessorSignedAt || "",
+    leadSigData?.signedAt ||
+      formData?.leadPanelistSignedAt ||
+      formData?.assessorSignedAt ||
+      canonicalForm?.data?.leadPanelistSignedAt ||
+      canonicalForm?.assessorSignedAt ||
+      "",
   );
   const [leadPanelistSignatureAssetId, setLeadPanelistSignatureAssetId] =
     useState<string>(
-      formData?.leadPanelistSignatureAssetId ||
+      leadSigData?.assetId ||
+        formData?.leadPanelistSignatureAssetId ||
         formData?.assessorSignatureAssetId ||
+        canonicalForm?.data?.leadPanelistSignatureAssetId ||
         "",
     );
   const [leadPanelistSignatureUrl, setLeadPanelistSignatureUrl] =
     useState<string>(
-      formData?.leadPanelistSignatureUrl ||
+      leadSigData?.url ||
+        formData?.leadPanelistSignatureUrl ||
         formData?.assessorSignatureUrl ||
+        canonicalForm?.data?.leadPanelistSignatureUrl ||
         "",
     );
 
   const [panelMemberSigned, setPanelMemberSigned] = useState<boolean>(
-    Boolean(formData?.panelMemberSigned || formData?.panelMemberSignedAt),
+    Boolean(
+      panelSigData?.assetId ||
+        formData?.panelMemberSigned ||
+        formData?.panelMemberSignedAt ||
+        remotePanelistRecord?.data?.assessorSigned ||
+        remotePanelistRecord?.data?.panelMemberSigned,
+    ),
   );
   const [panelMemberSignedAt, setPanelMemberSignedAt] = useState<string>(
-    formData?.panelMemberSignedAt || "",
+    panelSigData?.signedAt ||
+      formData?.panelMemberSignedAt ||
+      remotePanelistRecord?.data?.assessorSignedAt ||
+      "",
   );
   const [panelMemberSignatureAssetId, setPanelMemberSignatureAssetId] =
-    useState<string>(formData?.panelMemberSignatureAssetId || "");
+    useState<string>(
+      panelSigData?.assetId ||
+        formData?.panelMemberSignatureAssetId ||
+        remotePanelistRecord?.data?.assessorSignatureAssetId ||
+        "",
+    );
   const [panelMemberSignatureUrl, setPanelMemberSignatureUrl] =
-    useState<string>(formData?.panelMemberSignatureUrl || "");
+    useState<string>(
+      panelSigData?.url ||
+        formData?.panelMemberSignatureUrl ||
+        remotePanelistRecord?.data?.assessorSignatureUrl ||
+        "",
+    );
 
   const [internalVerifierSigned, setInternalVerifierSigned] = useState<boolean>(
     Boolean(
-      formData?.internalVerifierSigned ||
-      formData?.ivSigned ||
-      formData?.internalVerifierSignedAt,
+      ivSigData?.assetId ||
+        formData?.internalVerifierSigned ||
+        formData?.ivSigned ||
+        formData?.internalVerifierSignedAt ||
+        remoteIvRecord?.data?.assessorSigned ||
+        remoteIvRecord?.data?.internalVerifierSigned,
     ),
   );
   const [internalVerifierSignedAt, setInternalVerifierSignedAt] =
     useState<string>(
-      formData?.internalVerifierSignedAt || formData?.ivSignedAt || "",
+      ivSigData?.signedAt ||
+        formData?.internalVerifierSignedAt ||
+        formData?.ivSignedAt ||
+        remoteIvRecord?.data?.assessorSignedAt ||
+        "",
     );
   const [
     internalVerifierSignatureAssetId,
     setInternalVerifierSignatureAssetId,
   ] = useState<string>(
-    formData?.internalVerifierSignatureAssetId ||
+    ivSigData?.assetId ||
+      formData?.internalVerifierSignatureAssetId ||
       formData?.ivSignatureAssetId ||
+      remoteIvRecord?.data?.assessorSignatureAssetId ||
       "",
   );
   const [internalVerifierSignatureUrl, setInternalVerifierSignatureUrl] =
     useState<string>(
-      formData?.internalVerifierSignatureUrl || formData?.ivSignatureUrl || "",
+      ivSigData?.url ||
+        formData?.internalVerifierSignatureUrl ||
+        formData?.ivSignatureUrl ||
+        remoteIvRecord?.data?.assessorSignatureUrl ||
+        "",
     );
 
   const sigAssetsToResolve = useMemo(() => {
@@ -349,50 +466,105 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
     if (profileSignatureAssetId) {
       setLeadPanelistSignatureAssetId(profileSignatureAssetId);
     }
-    if (profileSignatureUrl) {
-      setLeadPanelistSignatureUrl(profileSignatureUrl);
+    if (profileSignatureAssetId || profileSignatureUrl) {
+      const now = new Date().toISOString();
+      setLeadPanelistSigned(true);
+      setLeadPanelistSignedAt(now);
+      if (profileSignatureAssetId) {
+        setLeadPanelistSignatureAssetId(profileSignatureAssetId);
+      }
+      if (profileSignatureUrl) {
+        setLeadPanelistSignatureUrl(profileSignatureUrl);
+      }
+      toast({
+        type: "success",
+        title: "Signature Appended",
+        description:
+          "Lead panelist saved signature recorded. Click 'Change' to draw or upload another.",
+      });
+    } else {
+      setSignatureModalConfig({
+        isOpen: true,
+        role: "lead",
+        title: "Append Lead Panelist Signature",
+        signerName: resolvedLeadName,
+      });
     }
-    toast({
-      type: "success",
-      title: "Signature Appended",
-      description: "Lead panelist signature recorded successfully.",
-    });
   };
 
   const handleAppendPanelMemberSignature = () => {
     if (!canSignPanel) return;
-    const now = new Date().toISOString();
-    setPanelMemberSigned(true);
-    setPanelMemberSignedAt(now);
-    if (profileSignatureAssetId) {
-      setPanelMemberSignatureAssetId(profileSignatureAssetId);
+    if (profileSignatureAssetId || profileSignatureUrl) {
+      const now = new Date().toISOString();
+      setPanelMemberSigned(true);
+      setPanelMemberSignedAt(now);
+      if (profileSignatureAssetId) {
+        setPanelMemberSignatureAssetId(profileSignatureAssetId);
+      }
+      if (profileSignatureUrl) {
+        setPanelMemberSignatureUrl(profileSignatureUrl);
+      }
+      toast({
+        type: "success",
+        title: "Signature Appended",
+        description:
+          "Panel member saved signature recorded. Click 'Change' to draw or upload another.",
+      });
+    } else {
+      setSignatureModalConfig({
+        isOpen: true,
+        role: "panel",
+        title: "Append Panel Member Signature",
+        signerName: resolvedPanelName,
+      });
     }
-    if (profileSignatureUrl) {
-      setPanelMemberSignatureUrl(profileSignatureUrl);
-    }
-    toast({
-      type: "success",
-      title: "Signature Appended",
-      description: "Panel member signature recorded successfully.",
-    });
   };
 
   const handleAppendIvSignature = () => {
     if (!canSignIv) return;
-    const now = new Date().toISOString();
-    setInternalVerifierSigned(true);
-    setInternalVerifierSignedAt(now);
-    if (profileSignatureAssetId) {
-      setInternalVerifierSignatureAssetId(profileSignatureAssetId);
+    if (profileSignatureAssetId || profileSignatureUrl) {
+      const now = new Date().toISOString();
+      setInternalVerifierSigned(true);
+      setInternalVerifierSignedAt(now);
+      if (profileSignatureAssetId) {
+        setInternalVerifierSignatureAssetId(profileSignatureAssetId);
+      }
+      if (profileSignatureUrl) {
+        setInternalVerifierSignatureUrl(profileSignatureUrl);
+      }
+      toast({
+        type: "success",
+        title: "Signature Appended",
+        description:
+          "Internal verifier saved signature recorded. Click 'Change' to draw or upload another.",
+      });
+    } else {
+      setSignatureModalConfig({
+        isOpen: true,
+        role: "iv",
+        title: "Append Internal Verifier Signature",
+        signerName: resolvedIvName,
+      });
     }
-    if (profileSignatureUrl) {
-      setInternalVerifierSignatureUrl(profileSignatureUrl);
+  };
+
+  const handleSignatureConfirmed = (sig: AssessorSignatureData) => {
+    if (signatureModalConfig.role === "lead") {
+      setLeadPanelistSigned(true);
+      setLeadPanelistSignedAt(sig.signedAt);
+      setLeadPanelistSignatureAssetId(sig.assetId);
+      if (sig.url) setLeadPanelistSignatureUrl(sig.url);
+    } else if (signatureModalConfig.role === "panel") {
+      setPanelMemberSigned(true);
+      setPanelMemberSignedAt(sig.signedAt);
+      setPanelMemberSignatureAssetId(sig.assetId);
+      if (sig.url) setPanelMemberSignatureUrl(sig.url);
+    } else if (signatureModalConfig.role === "iv") {
+      setInternalVerifierSigned(true);
+      setInternalVerifierSignedAt(sig.signedAt);
+      setInternalVerifierSignatureAssetId(sig.assetId);
+      if (sig.url) setInternalVerifierSignatureUrl(sig.url);
     }
-    toast({
-      type: "success",
-      title: "Signature Appended",
-      description: "Internal verifier signature recorded successfully.",
-    });
   };
 
   const handleSubmit = () => {
@@ -429,6 +601,70 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
     }
 
     const now = new Date().toISOString();
+
+    let activeSigObj: AssessorSignatureData;
+    if (currentUserRole === "lead") {
+      activeSigObj = {
+        assetId:
+          leadPanelistSignatureAssetId || profileSignatureAssetId || "",
+        name: resolvedLeadName,
+        signedAt: leadPanelistSignedAt || now,
+        url: activeLeadSignatureUrl || undefined,
+      };
+    } else if (currentUserRole === "panel") {
+      activeSigObj = {
+        assetId:
+          panelMemberSignatureAssetId || profileSignatureAssetId || "",
+        name: resolvedPanelName,
+        signedAt: panelMemberSignedAt || now,
+        url: activePanelSignatureUrl || undefined,
+      };
+    } else {
+      activeSigObj = {
+        assetId:
+          internalVerifierSignatureAssetId || profileSignatureAssetId || "",
+        name: resolvedIvName,
+        signedAt: internalVerifierSignedAt || now,
+        url: activeIvSignatureUrl || undefined,
+      };
+    }
+
+    const leadSigObj =
+      currentUserRole === "lead"
+        ? activeSigObj
+        : leadSigData || {
+            assetId: leadPanelistSignatureAssetId,
+            name: resolvedLeadName,
+            signedAt: leadPanelistSignedAt || now,
+            url: activeLeadSignatureUrl || undefined,
+          };
+
+    const panelSigObj =
+      currentUserRole === "panel"
+        ? activeSigObj
+        : panelSigData ||
+          (panelMemberSigned
+            ? {
+                assetId: panelMemberSignatureAssetId,
+                name: resolvedPanelName,
+                signedAt: panelMemberSignedAt || now,
+                url: activePanelSignatureUrl || undefined,
+              }
+            : undefined);
+
+    const ivSigObj =
+      currentUserRole === "iv"
+        ? activeSigObj
+        : ivSigData ||
+          (internalVerifierSigned
+            ? {
+                assetId: internalVerifierSignatureAssetId,
+                name: resolvedIvName,
+                signedAt: internalVerifierSignedAt || now,
+                url: activeIvSignatureUrl || undefined,
+              }
+            : undefined);
+
     onSubmit({
       candidateFullName,
       levelAppliedFor,
@@ -437,7 +673,11 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
       questions,
       strengths,
       areasForDevelopment,
-      leadPanelistSigned: leadPanelistSigned || currentUserRole === "lead",
+      assessorSignature: activeSigObj,
+      leadSignature: leadSigObj,
+      panelMemberSignature: panelSigObj,
+      internalVerifierSignature: ivSigObj,
+      leadPanelistSigned: Boolean(leadPanelistSigned || currentUserRole === "lead"),
       leadPanelistSignedAt: leadPanelistSigned
         ? leadPanelistSignedAt || now
         : currentUserRole === "lead"
@@ -452,7 +692,7 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
         (currentUserRole === "lead" ? profileSignatureUrl : undefined) ||
         undefined,
       leadPanelistName: resolvedLeadName,
-      panelMemberSigned: panelMemberSigned || currentUserRole === "panel",
+      panelMemberSigned: Boolean(panelMemberSigned || currentUserRole === "panel"),
       panelMemberSignedAt: panelMemberSigned
         ? panelMemberSignedAt || now
         : currentUserRole === "panel"
@@ -467,8 +707,9 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
         (currentUserRole === "panel" ? profileSignatureUrl : undefined) ||
         undefined,
       panelMemberName: resolvedPanelName,
-      internalVerifierSigned:
+      internalVerifierSigned: Boolean(
         internalVerifierSigned || currentUserRole === "iv",
+      ),
       internalVerifierSignedAt: internalVerifierSigned
         ? internalVerifierSignedAt || now
         : currentUserRole === "iv"
@@ -485,8 +726,9 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
       internalVerifierName: resolvedIvName,
       assessorSigned: true,
       assessorSignedAt: now,
-      assessorSignatureAssetId: profileSignatureAssetId || undefined,
-      assessorSignatureUrl: profileSignatureUrl || undefined,
+      assessorSignatureAssetId: activeSigObj.assetId || profileSignatureAssetId || undefined,
+      assessorSignatureUrl: activeSigObj.url || profileSignatureUrl || undefined,
+      assessorName: activeSigObj.name,
     });
   };
 
@@ -496,8 +738,11 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
       subtitle="Structured oral questioning instrument assessing theoretical knowledge, safety protocols, and problem-solving."
       onBack={onBack}
       onSubmit={handleSubmit}
-      submitLabel="Submit Form"
+      submitLabel={submitLabel}
       isReadOnly={isReadOnly}
+      badgeLabel={badgeLabel}
+      headerTabs={headerTabs}
+      bannerNotice={bannerNotice}
     >
       {/* 1. Personal Details (Auto-filled & Locked) */}
       <div className="flex flex-col gap-4 sm:gap-5">
@@ -713,16 +958,30 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
           <DigitalSignaturePad
             label="Lead Panelist"
             required={currentUserRole === "lead"}
-            isSigned={leadPanelistSigned}
+            isSigned={leadPanelistSigned || Boolean(activeLeadSignatureUrl)}
+            signerName={resolvedLeadName}
             signedAt={leadPanelistSignedAt}
             signatureUrl={activeLeadSignatureUrl}
             isReadOnly={!canSignLead}
             onAppendSignature={handleAppendSignature}
+            onChangeSignature={
+              canSignLead
+                ? () =>
+                    setSignatureModalConfig({
+                      isOpen: true,
+                      role: "lead",
+                      title: "Change Lead Panelist Signature",
+                      signerName: resolvedLeadName,
+                    })
+                : undefined
+            }
             onClearSignature={
               canSignLead
                 ? () => {
                     setLeadPanelistSigned(false);
                     setLeadPanelistSignedAt("");
+                    setLeadPanelistSignatureAssetId("");
+                    setLeadPanelistSignatureUrl("");
                   }
                 : undefined
             }
@@ -732,16 +991,30 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
           <DigitalSignaturePad
             label="Panel Member"
             required={currentUserRole === "panel"}
-            isSigned={panelMemberSigned}
+            isSigned={panelMemberSigned || Boolean(activePanelSignatureUrl)}
+            signerName={resolvedPanelName}
             signedAt={panelMemberSignedAt}
             signatureUrl={activePanelSignatureUrl}
             isReadOnly={!canSignPanel}
             onAppendSignature={handleAppendPanelMemberSignature}
+            onChangeSignature={
+              canSignPanel
+                ? () =>
+                    setSignatureModalConfig({
+                      isOpen: true,
+                      role: "panel",
+                      title: "Change Panel Member Signature",
+                      signerName: resolvedPanelName,
+                    })
+                : undefined
+            }
             onClearSignature={
               canSignPanel
                 ? () => {
                     setPanelMemberSigned(false);
                     setPanelMemberSignedAt("");
+                    setPanelMemberSignatureAssetId("");
+                    setPanelMemberSignatureUrl("");
                   }
                 : undefined
             }
@@ -751,19 +1024,44 @@ export const InterviewRecordForm: React.FC<InterviewRecordFormProps> = ({
           <DigitalSignaturePad
             label="Internal Verifier"
             required={currentUserRole === "iv"}
-            isSigned={internalVerifierSigned}
+            isSigned={internalVerifierSigned || Boolean(activeIvSignatureUrl)}
+            signerName={resolvedIvName}
             signedAt={internalVerifierSignedAt}
             signatureUrl={activeIvSignatureUrl}
             isReadOnly={!canSignIv}
             onAppendSignature={handleAppendIvSignature}
+            onChangeSignature={
+              canSignIv
+                ? () =>
+                    setSignatureModalConfig({
+                      isOpen: true,
+                      role: "iv",
+                      title: "Change Internal Verifier Signature",
+                      signerName: resolvedIvName,
+                    })
+                : undefined
+            }
             onClearSignature={
               canSignIv
                 ? () => {
                     setInternalVerifierSigned(false);
                     setInternalVerifierSignedAt("");
+                    setInternalVerifierSignatureAssetId("");
+                    setInternalVerifierSignatureUrl("");
                   }
                 : undefined
             }
+          />
+
+          <AssessorSignatureModal
+            isOpen={signatureModalConfig.isOpen}
+            onClose={() =>
+              setSignatureModalConfig((prev) => ({ ...prev, isOpen: false }))
+            }
+            onConfirm={handleSignatureConfirmed}
+            signerName={signatureModalConfig.signerName}
+            title={signatureModalConfig.title}
+            subtitle="Interview Question Bank & Record Sheet"
           />
         </div>
       </div>

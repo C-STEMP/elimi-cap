@@ -299,18 +299,27 @@ const CentreEvidenceList: React.FC<CentreEvidenceListProps> = ({
             item.filename ||
             item.originalName ||
             `Evidence Document #${idx + 1}`;
-          const fileFeedback = item.feedback || item.reviewComment;
+          const rawFeedback =
+            item.reviewComment ||
+            (Array.isArray(item.feedback) ? item.feedback.join("; ") : item.feedback) ||
+            item.comment ||
+            item.rejectionReason ||
+            item.reason ||
+            (Array.isArray(item.issues) ? item.issues.join("; ") : "");
+          const fileFeedback = rawFeedback;
           const displaySize =
             item.size || item.fileSize || "Uploaded document";
           const displayStatus = isApproved
             ? "Approved"
-            : isAttention
-              ? "Attention Required"
-              : isSubmitted
-                ? "Submitted"
-                : rawItemStatus
-                  ? rawItemStatus.replace(/_/g, " ")
-                  : "Pending";
+            : statusStr === "rejected"
+              ? "Rejected"
+              : isAttention
+                ? "Attention Required"
+                : isSubmitted
+                  ? "Submitted"
+                  : rawItemStatus
+                    ? rawItemStatus.replace(/_/g, " ")
+                    : "Pending";
           const badgeBg = isApproved
             ? "bg-[#1E7F4C]/10"
             : isSubmitted
@@ -338,11 +347,13 @@ const CentreEvidenceList: React.FC<CentreEvidenceListProps> = ({
                   : displayStatus,
               statusBg: badgeBg,
               statusText: badgeText,
+              issues: fileFeedback ? [fileFeedback] : [],
               assetId: item.assetId,
               url: item.url,
               dataUrl: item.dataUrl,
               mimeType: item.mimeType,
               evidenceType: item.evidenceType || "General Evidence",
+              unitIds: item.unitIds,
             });
           };
 
@@ -374,6 +385,15 @@ const CentreEvidenceList: React.FC<CentreEvidenceListProps> = ({
                         ? ` · ${getEvidenceTypeName(item.evidenceType)}`
                         : ""}
                     </span>
+                    {Array.isArray(item.unitIds) && item.unitIds.length > 0 && (
+                      <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                        <span className="text-[10px] font-semibold text-neutral-secondary bg-gray-100 px-2 py-0.5 rounded-md">
+                          {item.unitIds.length === 1
+                            ? "Tagged to 1 unit"
+                            : `Tagged to ${item.unitIds.length} units`}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -392,9 +412,12 @@ const CentreEvidenceList: React.FC<CentreEvidenceListProps> = ({
               </div>
 
               {fileFeedback && (
-                <div className="bg-[#FCE8EB] border border-[#F87171]/30 rounded-2xl p-4 flex flex-col gap-1 text-xs text-[#A31D38] font-medium leading-relaxed mt-1">
+                <div className="bg-[#FCE8EB] border border-[#F87171]/30 rounded-2xl p-3.5 sm:p-4 flex flex-col gap-1 text-xs text-[#A31D38] font-medium leading-relaxed mt-1">
+                  <span className="font-bold text-[11px] uppercase tracking-wide text-[#8A1538]">
+                    Reason for Rejection:
+                  </span>
                   <div className="flex items-start gap-2">
-                    <span className="text-sm">•</span>
+                    <span className="text-sm leading-none mt-0.5">•</span>
                     <span>{fileFeedback}</span>
                   </div>
                 </div>

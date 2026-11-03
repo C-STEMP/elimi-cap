@@ -39,6 +39,7 @@ export const PreviewEvidenceModal: React.FC<PreviewEvidenceModalProps> = ({
   isRejecting = false,
 }) => {
   const [resolvedUrl, setResolvedUrl] = useState<string>("");
+  const [resolvedComment, setResolvedComment] = useState<string>("");
   const [isResolving, setIsResolving] = useState<boolean>(false);
   const [blobUrl, setBlobUrl] = useState<string>("");
   const [isRejectMode, setIsRejectMode] = useState(false);
@@ -65,24 +66,29 @@ export const PreviewEvidenceModal: React.FC<PreviewEvidenceModalProps> = ({
       if (!item) return;
 
       setIsResolving(true);
+      setResolvedComment("");
 
       const initialUrl = item.url || item.dataUrl;
       let targetUrl = initialUrl || "";
       let targetAssetId = item.assetId || "";
+      const hasExistingComment = Boolean(item.issues && item.issues.length > 0);
 
-      // 1. If we don't have url or assetId on list item, fetch individual evidence item detail from CAP backend
-      if (!targetUrl && !targetAssetId && applicationId && item.id) {
+      // 1. If we don't have url or assetId (or comment) on list item, fetch individual evidence item detail from CAP backend
+      if ((!targetUrl && !targetAssetId || !hasExistingComment) && applicationId && item.id) {
         try {
           const detail = await getGeneralEvidenceByIdApi(
             applicationId,
             item.id,
           );
           if (!isMounted) return;
-          if (detail?.assetId) {
+          if (detail?.assetId && !targetAssetId) {
             targetAssetId = detail.assetId;
           }
-          if ((detail as any)?.url) {
+          if ((detail as any)?.url && !targetUrl) {
             targetUrl = (detail as any).url;
+          }
+          if (detail?.reviewComment) {
+            setResolvedComment(detail.reviewComment);
           }
         } catch (detailErr) {
           console.warn("Could not fetch evidence item detail:", detailErr);
@@ -233,6 +239,23 @@ export const PreviewEvidenceModal: React.FC<PreviewEvidenceModalProps> = ({
 
           {/* Scrollable Modal Content */}
           <div className="flex-1 overflow-y-auto min-h-0 flex flex-col gap-3 pr-1 -mr-1">
+            {((item.issues && item.issues.length > 0) || resolvedComment) && (
+              <div className="bg-[#FCE8EB] border border-[#F87171]/30 rounded-2xl p-3.5 flex flex-col gap-1 text-xs text-[#A31D38] font-medium leading-relaxed shrink-0">
+                <span className="font-bold text-[11px] uppercase tracking-wide text-[#8A1538]">
+                  Reason for Rejection:
+                </span>
+                {(item.issues && item.issues.length > 0
+                  ? item.issues
+                  : [resolvedComment]
+                ).map((issue, idx) => (
+                  <div key={idx} className="flex items-start gap-2">
+                    <span className="text-sm leading-none mt-0.5">•</span>
+                    <span>{issue}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div
               className={`w-full bg-gray-50 rounded-2xl border border-gray-100 p-3 sm:p-4 flex flex-col items-center justify-center transition-all ${
                 isRejectMode ? "min-h-[160px]" : "min-h-[260px]"

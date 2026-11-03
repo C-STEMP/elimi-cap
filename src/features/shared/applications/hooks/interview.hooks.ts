@@ -103,7 +103,8 @@ export function useGetInterviewFormsBundle(
     queryFn: () => getInterviewFormsBundleApi(id),
     enabled: Boolean(id) && (options?.enabled ?? true),
     retry: false,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 15 * 1000,
+    refetchOnMount: "always",
   });
 }
 
@@ -114,7 +115,8 @@ export function useGetInterviewForms(id: string, options?: { enabled?: boolean }
     select: (bundle) => bundle.forms,
     enabled: Boolean(id) && (options?.enabled ?? true),
     retry: false,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 15 * 1000,
+    refetchOnMount: "always",
   });
 }
 
@@ -194,6 +196,12 @@ export function useSignoffInterviewForm(id: string) {
       });
       queryClient.invalidateQueries({
         queryKey: APPLICATION_QUERY_KEYS.portfolio(id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: APPLICATION_QUERY_KEYS.detail(id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: APPLICATION_QUERY_KEYS.stages(id),
       });
       toast({
         type: "success",

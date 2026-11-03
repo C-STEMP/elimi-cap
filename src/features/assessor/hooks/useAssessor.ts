@@ -107,8 +107,8 @@ export function useRequestRetainedAssessor() {
   return useSharedRequestRetainedAssessor();
 }
 
-export function useGetAssessorProfile() {
-  return useSharedGetAssessorProfile();
+export function useGetAssessorProfile(options?: { enabled?: boolean }) {
+  return useSharedGetAssessorProfile(options);
 }
 
 export function usePatchAssessorProfile() {

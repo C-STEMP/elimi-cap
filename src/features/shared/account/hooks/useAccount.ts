@@ -19,6 +19,7 @@ export function useGetMe(options?: { enabled?: boolean }) {
     queryKey: ACCOUNT_QUERY_KEYS.me,
     queryFn: () => getMeApi(),
     enabled: options?.enabled,
+    retry: false,
   });
 }
 
@@ -27,6 +28,7 @@ export function useGetMeProfile(options?: { enabled?: boolean }) {
     queryKey: ACCOUNT_QUERY_KEYS.profile,
     queryFn: () => getMeProfileApi(),
     enabled: options?.enabled,
+    retry: false,
   });
 }
 

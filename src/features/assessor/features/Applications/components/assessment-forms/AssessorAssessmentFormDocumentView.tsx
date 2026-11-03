@@ -10,11 +10,14 @@ import type {
   AssessmentMappingPerformanceCriterion,
   AssessmentMappingUnit,
   InterviewForm,
+  InterviewFormRecord,
+  InterviewPanel,
 } from "@/src/features/shared/applications/api/types";
 import {
   useGetApplicationAssessmentMapping,
   useGetApplicationById,
   useGetInterviewPanel,
+  useGetInterviewFormsBundle,
   useUpdateInterviewForm,
 } from "@/src/features/shared/applications/hooks";
 import {
@@ -33,7 +36,12 @@ import React, { useMemo, useState } from "react";
 import { FiArrowLeft, FiCheckCircle, FiClock, FiEdit3 } from "react-icons/fi";
 import { FormHeaderActions } from "../form/FormHeaderActions";
 import { useAssessorSignature } from "./useAssessorSignature";
+import {
+  AssessorSignatureModal,
+  type AssessorSignatureData,
+} from "./AssessorSignatureModal";
 import { cleanQuestionTitle } from "./utils";
+import { DigitalSignaturePad } from "./DigitalSignaturePad";
 
 interface AssessorAssessmentFormDocumentViewProps {
   applicationId?: string;
@@ -43,8 +51,11 @@ interface AssessorAssessmentFormDocumentViewProps {
   onBack: () => void;
   isCandidate?: boolean;
   formRecord?: InterviewForm | null;
+  panelistRecords?: InterviewFormRecord[];
+  interviewPanel?: InterviewPanel | null;
   applicationTrade?: string;
   unitLabels?: string[];
+  levelLabel?: string;
   isInterviewStage?: boolean;
 }
 
@@ -243,8 +254,11 @@ export const AssessorAssessmentFormDocumentView: React.FC<
   onBack,
   isCandidate = false,
   formRecord,
+  panelistRecords: propPanelistRecords,
+  interviewPanel: propInterviewPanel,
   applicationTrade,
   unitLabels = [],
+  levelLabel,
   isInterviewStage = true,
 }) => {
   const { toast } = useToast();
@@ -252,10 +266,19 @@ export const AssessorAssessmentFormDocumentView: React.FC<
   const [formData, setFormData] = useState<Record<string, any> | undefined>(
     initialFormData,
   );
+  const [panelistRecordsState, setPanelistRecordsState] = useState<
+    InterviewFormRecord[] | undefined
+  >(propPanelistRecords);
 
   React.useEffect(() => {
     setFormData(initialFormData);
   }, [initialFormData]);
+
+  React.useEffect(() => {
+    if (propPanelistRecords) {
+      setPanelistRecordsState(propPanelistRecords);
+    }
+  }, [propPanelistRecords]);
 
   const isAssessmentMapping =
     formId === "assessment_mapping" ||
@@ -306,18 +329,47 @@ export const AssessorAssessmentFormDocumentView: React.FC<
 
   const isInterviewForm = formId === "interview_record" || formId === "records";
   const effectiveIsInterviewStage = Boolean(
-    isInterviewStage && applicationData?.currentStageKey === "interview",
+    isInterviewStage &&
+      (!applicationData?.currentStageKey ||
+        applicationData.currentStageKey === "interview" ||
+        applicationData.currentStageKey === "direct_observation" ||
+        applicationData.currentStageKey === "observation" ||
+        (applicationData as any)?.stage === "interview"),
   );
   const shouldFetchInterviewPanel = Boolean(
     applicationId &&
-    !isAssessmentMapping &&
-    (effectiveIsInterviewStage || isInterviewForm),
+      (effectiveIsInterviewStage || isInterviewForm),
   );
-  const { data: interviewPanel } = useGetInterviewPanel(applicationId || "", {
-    enabled: shouldFetchInterviewPanel,
-  });
+  const { data: fetchedInterviewPanel } = useGetInterviewPanel(
+    applicationId || "",
+    {
+      enabled: shouldFetchInterviewPanel && !propInterviewPanel,
+    },
+  );
+  const interviewPanel = propInterviewPanel || fetchedInterviewPanel;
+
+  const { data: formsBundle } = useGetInterviewFormsBundle(
+    applicationId || "",
+    {
+      enabled: Boolean(applicationId) && !propPanelistRecords,
+    },
+  );
+  const effectivePanelistRecords =
+    panelistRecordsState || formsBundle?.panelistRecords || [];
+
   const updateFormMutation = useUpdateInterviewForm(applicationId || "");
   const [isSigningRole, setIsSigningRole] = useState<string | null>(null);
+  const [signatureModalConfig, setSignatureModalConfig] = useState<{
+    isOpen: boolean;
+    role: "lead" | "panel" | "iv";
+    title: string;
+    signerName: string;
+  }>({
+    isOpen: false,
+    role: "lead",
+    title: "Append Signature",
+    signerName: "",
+  });
 
   const currentAssessorId =
     (user as any)?.assessorId || (user as any)?.profileId || user?.id;
@@ -397,7 +449,6 @@ export const AssessorAssessmentFormDocumentView: React.FC<
   const isMatchPanelMember = Boolean(panelMember && isMemberMatch(panelMember));
 
   const canSignLead =
-    !isAssessmentMapping &&
     isAssessorUser &&
     isInterviewStage &&
     !isCandidateSigned &&
@@ -407,11 +458,21 @@ export const AssessorAssessmentFormDocumentView: React.FC<
   const {
     signatureUrl: profileSignatureUrl,
     signatureAssetId: profileSignatureAssetId,
-  } = useAssessorSignature();
+  } = useAssessorSignature({ enabled: !isCandidate && isAssessorUser });
+
+  const targetBackendType = FORM_BACKEND_MAP[formId] || "records";
+
+  const nonLeadMembers = useMemo(() => {
+    return (interviewPanel?.members || []).filter(
+      (m: any) => !m.isLead && !m.isObserver,
+    );
+  }, [interviewPanel?.members]);
 
   const assetsToResolve = useMemo(() => {
     const ids: string[] = [];
     const assessorAssetId =
+      (formData as any)?.assessorSignature?.assetId ||
+      (formData as any)?.leadSignature?.assetId ||
       (formData as any)?.assessorSignatureAssetId ||
       (formData as any)?.leadPanelistSignatureAssetId;
     const candidateAssetId =
@@ -420,6 +481,8 @@ export const AssessorAssessmentFormDocumentView: React.FC<
 
     if (
       assessorAssetId &&
+      !(formData as any)?.assessorSignature?.url &&
+      !(formData as any)?.leadSignature?.url &&
       !(formData as any)?.assessorSignatureUrl &&
       !(formData as any)?.leadPanelistSignatureUrl
     ) {
@@ -428,8 +491,29 @@ export const AssessorAssessmentFormDocumentView: React.FC<
     if (candidateAssetId && !(formData as any)?.candidateSignatureUrl) {
       ids.push(candidateAssetId);
     }
+
+    effectivePanelistRecords.forEach((pr) => {
+      if (
+        pr.formType === targetBackendType ||
+        (pr.formType as string) === formId
+      ) {
+        const prSig =
+          (pr.data as any)?.assessorSignature ||
+          (pr.data as any)?.panelMemberSignature ||
+          (pr.data as any)?.internalVerifierSignature;
+        const prAssetId =
+          prSig?.assetId ||
+          (pr.data as any)?.assessorSignatureAssetId ||
+          (pr.data as any)?.panelMemberSignatureAssetId ||
+          (pr.data as any)?.internalVerifierSignatureAssetId;
+        if (prAssetId && !prSig?.url && !ids.includes(prAssetId)) {
+          ids.push(prAssetId);
+        }
+      }
+    });
+
     return ids;
-  }, [formData, formRecord]);
+  }, [formData, formRecord, effectivePanelistRecords, targetBackendType, formId]);
 
   const { data: resolvedSignatureAssets } = useResolveAssets(assetsToResolve);
 
@@ -441,15 +525,32 @@ export const AssessorAssessmentFormDocumentView: React.FC<
       ? (resolvedSignatureAssets as any).assets
       : [];
 
-  const displayAssessorSigUrl =
-    (formData as any)?.assessorSignatureUrl ||
-    (formData as any)?.leadPanelistSignatureUrl ||
-    sigAssetsList.find(
-      (a) =>
-        a.assetId === (formData as any)?.assessorSignatureAssetId ||
-        a.assetId === (formData as any)?.leadPanelistSignatureAssetId,
-    )?.url ||
-    (isAssessorSigned ? profileSignatureUrl : null);
+  const resolveSigUrl = (
+    sigObj?: any,
+    fallbackAssetId?: string,
+    fallbackUrl?: string,
+  ) => {
+    if (sigObj?.url) return sigObj.url;
+    if (fallbackUrl) return fallbackUrl;
+    const targetAssetId = sigObj?.assetId || fallbackAssetId;
+    if (!targetAssetId) return null;
+    return sigAssetsList.find((a) => a.assetId === targetAssetId)?.url || null;
+  };
+
+  const leadSig =
+    formData?.leadSignature ||
+    formData?.assessorSignature;
+
+  const resolvedLeadSigUrl =
+    resolveSigUrl(
+      leadSig,
+      (formData as any)?.assessorSignatureAssetId ||
+        (formData as any)?.leadPanelistSignatureAssetId,
+      (formData as any)?.assessorSignatureUrl ||
+        (formData as any)?.leadPanelistSignatureUrl,
+    ) || (isAssessorSigned ? profileSignatureUrl : null);
+
+  const displayAssessorSigUrl = resolvedLeadSigUrl;
 
   const displayCandidateSigUrl =
     (formData as any)?.candidateSignatureUrl ||
@@ -460,51 +561,68 @@ export const AssessorAssessmentFormDocumentView: React.FC<
     )?.url ||
     null;
 
-  const handleSignAsRole = async (role: "lead" | "assessor") => {
-    if (!applicationId) {
-      toast({
-        type: "error",
-        title: "Missing Application",
-        description: "Application ID is required to sign.",
-      });
-      return;
-    }
-    if (isCandidateSigned) {
-      toast({
-        type: "info",
-        title: "Form Completed",
-        description:
-          "This form has already been signed by the candidate and cannot be modified.",
-      });
-      return;
-    }
+  const isLeadFormSigned = Boolean(
+    isAssessorSigned ||
+      leadSig?.assetId ||
+      formData?.leadPanelistSigned ||
+      formData?.assessorSigned ||
+      formData?.leadPanelistSignedAt ||
+      formData?.assessorSignedAt ||
+      formRecord?.assessorSignedAt ||
+      formData?.submittedAt,
+  );
+
+  const leadSignerName =
+    leadSig?.name ||
+    formData?.leadPanelistName ||
+    formData?.assessorName ||
+    leadMember?.name ||
+    "Lead Assessor";
+
+  const leadSignedAt =
+    leadSig?.signedAt ||
+    formData?.leadPanelistSignedAt ||
+    formData?.assessorSignedAt ||
+    formData?.submittedAt ||
+    formRecord?.assessorSignedAt;
+
+  const handleSignWithSignatureData = async (
+    role: "lead" | "panel" | "iv",
+    sig: AssessorSignatureData,
+  ) => {
+    if (!applicationId) return;
     setIsSigningRole(role);
     try {
       const now = new Date().toISOString();
-      const uName = user?.fullName || (user as any)?.name || "";
       const updatedData: Record<string, any> = {
         ...(formData || {}),
-        leadPanelistSigned: true,
-        leadPanelistSignedAt: now,
+        assessorSignature: sig,
         assessorSigned: true,
-        assessorSignedAt: now,
-        assessorSignatureAssetId:
-          profileSignatureAssetId ||
-          (formData as any)?.assessorSignatureAssetId,
-        assessorSignatureUrl:
-          profileSignatureUrl ||
-          (formData as any)?.assessorSignatureUrl,
-        leadPanelistSignatureAssetId:
-          profileSignatureAssetId ||
-          (formData as any)?.leadPanelistSignatureAssetId,
-        leadPanelistSignatureUrl:
-          profileSignatureUrl ||
-          (formData as any)?.leadPanelistSignatureUrl,
+        assessorSignedAt: sig.signedAt || now,
+        assessorName: sig.name,
+        assessorSignatureAssetId: sig.assetId,
+        assessorSignatureUrl: sig.url,
       };
 
-      if (uName) {
-        updatedData.leadPanelistName = uName;
-        updatedData.assessorName = uName;
+      if (role === "lead") {
+        updatedData.leadSignature = sig;
+        updatedData.leadPanelistSigned = true;
+        updatedData.leadPanelistSignedAt = sig.signedAt || now;
+        updatedData.leadPanelistName = sig.name;
+        updatedData.leadPanelistSignatureAssetId = sig.assetId;
+        updatedData.leadPanelistSignatureUrl = sig.url;
+        updatedData.status = "submitted";
+        updatedData.submittedAt = now;
+      } else if (role === "iv") {
+        updatedData.internalVerifierSignature = sig;
+        updatedData.internalVerifierSigned = true;
+        updatedData.internalVerifierSignedAt = sig.signedAt || now;
+        updatedData.internalVerifierName = sig.name;
+      } else {
+        updatedData.panelMemberSignature = sig;
+        updatedData.panelMemberSigned = true;
+        updatedData.panelMemberSignedAt = sig.signedAt || now;
+        updatedData.panelMemberName = sig.name;
       }
 
       await updateFormMutation.mutateAsync({
@@ -512,49 +630,58 @@ export const AssessorAssessmentFormDocumentView: React.FC<
         data: updatedData,
       });
 
-      setFormData(updatedData);
+      if (role === "lead") {
+        setFormData(updatedData);
+      } else {
+        setPanelistRecordsState((prev = []) => {
+          const filtered = prev.filter(
+            (r) =>
+              !(
+                r.assessorId === currentAssessorId &&
+                r.formType === (FORM_BACKEND_MAP[formId] || "records")
+              ),
+          );
+          return [
+            ...filtered,
+            {
+              id: `pr-${Date.now()}`,
+              applicationId,
+              assessorId: currentAssessorId || "",
+              formType: FORM_BACKEND_MAP[formId] || "records",
+              data: updatedData,
+              createdAt: now,
+              updatedAt: now,
+              isObserver: role === "iv",
+            } as any,
+          ];
+        });
+      }
 
       toast({
         type: "success",
         title: "Form Signed",
-        description: `Successfully signed form as ${isInterviewRecord ? "Lead Panelist" : "Assessor"}.`,
+        description: `Successfully signed form as ${
+          role === "lead"
+            ? isInterviewRecord
+              ? "Lead Panelist"
+              : "Lead Assessor"
+            : role === "iv"
+              ? "Internal Verifier"
+              : "Panel Member"
+        }.`,
       });
     } catch (err: any) {
-      const isAlreadySigned =
-        err?.statusCode === 409 ||
-        err?.status === 409 ||
-        err?.message?.toLowerCase()?.includes("already been signed");
-
-      if (isAlreadySigned) {
-        const now = new Date().toISOString();
-        const uName = user?.fullName || (user as any)?.name || "";
-        setFormData((prev) => ({
-          ...(prev || {}),
-          assessorSigned: true,
-          assessorSignedAt: (prev as any)?.assessorSignedAt || now,
-          assessorName: (prev as any)?.assessorName || uName,
-          leadPanelistSigned: true,
-          leadPanelistSignedAt: (prev as any)?.leadPanelistSignedAt || now,
-          leadPanelistName: (prev as any)?.leadPanelistName || uName,
-        }));
-        toast({
-          type: "info",
-          title: "Form Already Signed",
-          description: "This form has already been signed.",
-        });
-      } else {
-        toast({
-          type: "error",
-          title: "Signature Failed",
-          description: err?.message || "Failed to append signature.",
-        });
-      }
+      toast({
+        type: "error",
+        title: "Signature Failed",
+        description: err?.message || "Failed to append signature.",
+      });
     } finally {
       setIsSigningRole(null);
     }
   };
 
-  const handleSignClick = (role: "lead" | "assessor") => {
+  const handleSignClick = (role: "lead" | "panel" | "iv") => {
     if (isCandidateSigned) {
       toast({
         type: "info",
@@ -564,7 +691,30 @@ export const AssessorAssessmentFormDocumentView: React.FC<
       });
       return;
     }
-    handleSignAsRole(role);
+    const uName = user?.fullName || (user as any)?.name || "Assessor";
+    if (profileSignatureAssetId || profileSignatureUrl) {
+      handleSignWithSignatureData(role, {
+        assetId: profileSignatureAssetId || "",
+        name: uName,
+        signedAt: new Date().toISOString(),
+        url: profileSignatureUrl || undefined,
+      });
+    } else {
+      setSignatureModalConfig({
+        isOpen: true,
+        role,
+        title: `Sign as ${
+          role === "lead"
+            ? isInterviewRecord
+              ? "Lead Panelist"
+              : "Lead Assessor"
+            : role === "iv"
+              ? "Internal Verifier"
+              : "Panel Member"
+        }`,
+        signerName: uName,
+      });
+    }
   };
 
   const [isCandidateSignModalOpen, setIsCandidateSignModalOpen] =
@@ -585,11 +735,28 @@ export const AssessorAssessmentFormDocumentView: React.FC<
     pdFullName || formData?.candidateFullName || candidateName || "Candidate";
   const assessorName =
     formData?.assessorName || formData?.interviewerNames || "Assessor";
+  const effectiveLevelLabel = levelLabel || formData?.levelAppliedFor || "";
   const unitTitleCode =
     formData?.unitTitleCode ||
     formData?.levelAppliedFor ||
     unitLabels[0] ||
     "—";
+
+  const unitsList = React.useMemo(() => {
+    if (typeof unitTitleCode === "string" && unitTitleCode.includes("|")) {
+      return unitTitleCode
+        .split(/\s*\|\s*/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+    }
+    if (Array.isArray(unitLabels) && unitLabels.length > 0) {
+      return unitLabels;
+    }
+    if (unitTitleCode && unitTitleCode !== "—") {
+      return [unitTitleCode];
+    }
+    return [];
+  }, [unitTitleCode, unitLabels]);
   const dateStr =
     formData?.demonstrationDate ||
     formData?.observationDate ||
@@ -773,46 +940,101 @@ export const AssessorAssessmentFormDocumentView: React.FC<
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 bg-[#F8F9FA] rounded-2xl p-4 border border-gray-100 text-xs">
-              <div>
-                <span className="font-semibold text-neutral-secondary block mb-0.5">
-                  Candidate Name:
-                </span>
-                <span className="font-bold text-neutral-primary text-sm">
-                  {candidateFullName}
-                </span>
+            <div className="bg-[#F8F9FA] rounded-2xl p-4 sm:p-5 border border-gray-100 flex flex-col gap-4 text-xs">
+              {/* Primary Assessment Particulars */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3.5 sm:gap-4">
+                <div>
+                  <span className="font-semibold text-neutral-secondary block mb-0.5">
+                    Candidate Name:
+                  </span>
+                  <span className="font-bold text-neutral-primary text-sm block">
+                    {candidateFullName}
+                  </span>
+                </div>
+                <div>
+                  <span className="font-semibold text-neutral-secondary block mb-0.5">
+                    Assessor / Interviewer:
+                  </span>
+                  <span className="font-bold text-neutral-primary text-sm block">
+                    {assessorName}
+                  </span>
+                </div>
+                <div>
+                  <span className="font-semibold text-neutral-secondary block mb-0.5">
+                    Assessment Date:
+                  </span>
+                  <span className="font-bold text-neutral-primary text-sm block">
+                    {dateStr}
+                  </span>
+                </div>
+                <div>
+                  <span className="font-semibold text-neutral-secondary block mb-0.5">
+                    Location / Facility / Workplace:
+                  </span>
+                  <span className="font-bold text-neutral-primary text-sm block">
+                    {locationStr}
+                  </span>
+                </div>
               </div>
-              <div>
-                <span className="font-semibold text-neutral-secondary block mb-0.5">
-                  Assessor / Interviewer:
-                </span>
-                <span className="font-bold text-neutral-primary text-sm">
-                  {assessorName}
-                </span>
-              </div>
-              <div>
-                <span className="font-semibold text-neutral-secondary block mb-0.5">
-                  Unit / Level:
-                </span>
-                <span className="font-bold text-neutral-primary text-sm">
-                  {unitTitleCode}
-                </span>
-              </div>
-              <div>
-                <span className="font-semibold text-neutral-secondary block mb-0.5">
-                  Assessment Date:
-                </span>
-                <span className="font-medium text-neutral-primary">
-                  {dateStr}
-                </span>
-              </div>
-              <div className="sm:col-span-2">
-                <span className="font-semibold text-neutral-secondary block mb-0.5">
-                  Location / Facility / Workplace:
-                </span>
-                <span className="font-medium text-neutral-primary">
-                  {locationStr}
-                </span>
+
+              {/* Units of Competency / Level */}
+              <div className="pt-3.5 border-t border-gray-200/70 flex flex-col gap-2.5">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <span className="font-semibold text-neutral-secondary">
+                    Unit / Level{unitsList.length > 1 ? ` (${unitsList.length} Units)` : ""}:
+                  </span>
+                  {(applicationTrade || effectiveLevelLabel) && (
+                    <span className="text-[11px] font-bold text-neutral-primary bg-white border border-gray-200 px-2.5 py-0.5 rounded-full shadow-2xs">
+                      {[applicationTrade, effectiveLevelLabel].filter(Boolean).join(" · ")}
+                    </span>
+                  )}
+                </div>
+
+                {unitsList.length > 1 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-2.5">
+                    {unitsList.map((unit, idx) => {
+                      const colonIdx = unit.indexOf(":");
+                      const code = colonIdx > -1 ? unit.substring(0, colonIdx).trim() : null;
+                      const title = colonIdx > -1 ? unit.substring(colonIdx + 1).trim() : unit;
+                      return (
+                        <div
+                          key={idx}
+                          className="bg-white border border-gray-200/80 rounded-xl px-3 py-2.5 flex items-start gap-2.5 shadow-2xs hover:border-gray-300 transition-colors break-inside-avoid"
+                        >
+                          {code && (
+                            <span className="shrink-0 text-[10px] font-mono font-bold px-1.5 py-0.5 bg-[#FFF8EB] text-[#B45309] border border-[#FDE68A] rounded-md">
+                              {code}
+                            </span>
+                          )}
+                          <span className="text-xs font-semibold text-neutral-primary leading-snug">
+                            {title}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="bg-white border border-gray-200/80 rounded-xl px-3.5 py-2.5 flex items-start gap-2.5 shadow-2xs">
+                    {(() => {
+                      const single = unitsList[0] || unitTitleCode;
+                      const colonIdx = single.indexOf(":");
+                      const code = colonIdx > -1 ? single.substring(0, colonIdx).trim() : null;
+                      const title = colonIdx > -1 ? single.substring(colonIdx + 1).trim() : single;
+                      return (
+                        <>
+                          {code && (
+                            <span className="shrink-0 text-[10px] font-mono font-bold px-1.5 py-0.5 bg-[#FFF8EB] text-[#B45309] border border-[#FDE68A] rounded-md">
+                              {code}
+                            </span>
+                          )}
+                          <span className="text-xs sm:text-sm font-bold text-neutral-primary">
+                            {title}
+                          </span>
+                        </>
+                      );
+                    })()}
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -826,113 +1048,194 @@ export const AssessorAssessmentFormDocumentView: React.FC<
           resolvedMappingUnits,
         )}
 
-        {!isAssessmentMapping && (
-          <div className="flex flex-col gap-3 pt-4 border-t border-gray-100">
-            <h3 className="text-[11px] font-bold text-neutral-primary uppercase tracking-widest border-b border-gray-100 pb-2">
-              Signatures & Verification
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="bg-[#F8F9FA] rounded-2xl p-4 border border-gray-100 flex flex-col gap-2.5">
-                <span className="text-[11px] font-semibold text-neutral-secondary">
-                  {isInterviewRecord ? "Lead Panelist:" : "Assessor:"}
-                </span>
-                {isAssessorSigned ? (
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-2 text-emerald-700 font-bold text-xs bg-emerald-50 border border-emerald-200 px-3 py-2 rounded-xl">
-                      <FiCheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <span>
-                        Signed
-                        {formData?.leadPanelistSignedAt ||
-                        formData?.assessorSignedAt ||
-                        formData?.submittedAt ||
-                        formRecord?.candidateSignedAt
-                          ? ` · ${new Date(formData?.leadPanelistSignedAt || formData?.assessorSignedAt || formData?.submittedAt || formRecord?.candidateSignedAt || "").toLocaleDateString("en-GB")}`
-                          : ""}
-                      </span>
-                    </div>
-                    {displayAssessorSigUrl && (
-                      <div className="bg-white rounded-xl p-2.5 flex items-center justify-center border border-dashed border-gray-200 h-20 max-h-22 overflow-hidden shadow-2xs">
-                        <img
-                          src={displayAssessorSigUrl}
-                          alt="Assessor Signature"
-                          className="max-h-full max-w-full object-contain"
-                        />
-                      </div>
-                    )}
-                  </div>
-                ) : canSignLead ? (
-                  <button
-                    type="button"
-                    disabled={Boolean(isSigningRole)}
-                    onClick={() =>
-                      handleSignClick(isInterviewRecord ? "lead" : "assessor")
-                    }
-                    className="h-9 bg-[#FFF8EB] border border-[#FBAB2A] hover:bg-[#FDEED5] text-[#FBAB2A] font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
-                  >
-                    <FiEdit3 className="w-3.5 h-3.5" />
-                    {isSigningRole
-                      ? "Signing..."
-                      : isInterviewRecord
-                        ? "Sign as Lead Panelist"
-                        : "Sign as Assessor"}
-                  </button>
-                ) : (
-                  <div className="flex items-center gap-2 text-amber-700 font-semibold text-xs bg-amber-50 border border-amber-200 px-3 py-2 rounded-xl">
-                    <FiClock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                    <span>Awaiting Assessor</span>
-                  </div>
-                )}
-              </div>
+        <div className="flex flex-col gap-3 pt-4 border-t border-gray-100">
+          <h3 className="text-[11px] font-bold text-neutral-primary uppercase tracking-widest border-b border-gray-100 pb-2">
+            Signatures &amp; Verification
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+            {/* 1. Lead Assessor */}
+            <div className="bg-[#F8F9FA] rounded-2xl p-4 sm:p-4.5 border border-gray-100 flex flex-col justify-between shadow-2xs">
+              <DigitalSignaturePad
+                label={isInterviewRecord ? "Lead Panelist" : "Assessor / Lead Assessor"}
+                required={false}
+                isSigned={isLeadFormSigned}
+                signerName={leadSignerName || "Lead Assessor"}
+                signedAt={leadSignedAt || undefined}
+                signatureUrl={resolvedLeadSigUrl}
+                isReadOnly={!canSignLead}
+                isLoading={isSigningRole === "lead"}
+                buttonText={isInterviewRecord ? "Sign as Lead Panelist" : "Sign as Assessor"}
+                waitingText={isInterviewRecord ? "Awaiting Lead Panelist" : "Awaiting Lead Assessor"}
+                onAppendSignature={() => handleSignClick("lead")}
+              />
+            </div>
 
-              <div className="bg-[#F8F9FA] rounded-2xl p-4 border border-gray-100 flex flex-col gap-2.5">
-                <span className="text-[11px] font-semibold text-neutral-secondary">
-                  Candidate:
-                </span>
-                {isCandidateSigned ? (
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-2 text-emerald-700 font-bold text-xs bg-emerald-50 border border-emerald-200 px-3 py-2 rounded-xl">
-                      <FiCheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <span>
-                        Signed ·{" "}
-                        {new Date(
-                          formData?.candidateSignedAt ||
-                            formRecord?.candidateSignedAt ||
-                            Date.now(),
-                        ).toLocaleDateString("en-GB")}
-                      </span>
-                    </div>
-                    {displayCandidateSigUrl && (
-                      <div className="bg-white rounded-xl p-2.5 flex items-center justify-center border border-dashed border-gray-200 h-20 max-h-22 overflow-hidden shadow-2xs">
-                        <img
-                          src={displayCandidateSigUrl}
-                          alt="Candidate Signature"
-                          className="max-h-full max-w-full object-contain"
-                        />
-                      </div>
-                    )}
+            {/* 2. Panel Members (Co-Assessors) */}
+            {nonLeadMembers.map((m: any, idx: number) => {
+              const mRecord = effectivePanelistRecords.find(
+                (pr) =>
+                  (pr.assessorId === m.assessorId || isMemberMatch(m)) &&
+                  (pr.formType === targetBackendType ||
+                    (pr.formType as string) === formId),
+              );
+              const mSig =
+                (mRecord?.data as any)?.assessorSignature ||
+                (mRecord?.data as any)?.panelMemberSignature;
+              const isMemberSigned = Boolean(
+                mSig?.assetId ||
+                  (mRecord?.data as any)?.assessorSigned ||
+                  (mRecord?.data as any)?.panelMemberSigned,
+              );
+              const mSigUrl = resolveSigUrl(
+                mSig,
+                (mRecord?.data as any)?.assessorSignatureAssetId ||
+                  (mRecord?.data as any)?.panelMemberSignatureAssetId,
+                (mRecord?.data as any)?.assessorSignatureUrl ||
+                  (mRecord?.data as any)?.panelMemberSignatureUrl,
+              );
+              const isCurrentLoggedInMember = isMemberMatch(m);
+              const canSignThisMember =
+                isAssessorUser &&
+                isInterviewStage &&
+                !isCandidateSigned &&
+                !isMemberSigned &&
+                isCurrentLoggedInMember;
+
+              const memberName =
+                mSig?.name ||
+                (mRecord?.data as any)?.assessorName ||
+                m.name ||
+                `Panelist ${idx + 1}`;
+              const memberSignedAt =
+                mSig?.signedAt ||
+                (mRecord?.data as any)?.assessorSignedAt ||
+                (mRecord?.data as any)?.panelMemberSignedAt ||
+                mRecord?.createdAt;
+
+              return (
+                <div
+                  key={m.assessorId || idx}
+                  className="bg-[#F8F9FA] rounded-2xl p-4 sm:p-4.5 border border-gray-100 flex flex-col justify-between shadow-2xs"
+                >
+                  <DigitalSignaturePad
+                    label={`Panel Member (${memberName})`}
+                    required={false}
+                    isSigned={isMemberSigned}
+                    signerName={memberName}
+                    signedAt={memberSignedAt || undefined}
+                    signatureUrl={mSigUrl}
+                    isReadOnly={!canSignThisMember}
+                    isLoading={isSigningRole === "panel"}
+                    buttonText="Sign as Panel Member"
+                    waitingText="Awaiting Panel Member"
+                    onAppendSignature={() => handleSignClick("panel")}
+                  />
+                </div>
+              );
+            })}
+
+            {/* 3. Internal Verifier (Observer) */}
+            {ivMember &&
+              (() => {
+                const ivRecord = effectivePanelistRecords.find(
+                  (pr) =>
+                    (pr.assessorId === ivMember.assessorId ||
+                      isMemberMatch(ivMember) ||
+                      pr.isObserver) &&
+                    (pr.formType === targetBackendType ||
+                      (pr.formType as string) === formId),
+                );
+                const ivSig =
+                  (ivRecord?.data as any)?.assessorSignature ||
+                  (ivRecord?.data as any)?.internalVerifierSignature ||
+                  formData?.internalVerifierSignature;
+                const isIvSigned = Boolean(
+                  ivSig?.assetId ||
+                    (ivRecord?.data as any)?.assessorSigned ||
+                    (ivRecord?.data as any)?.internalVerifierSigned ||
+                    formData?.internalVerifierSigned,
+                );
+                const ivSigUrl = resolveSigUrl(
+                  ivSig,
+                  (ivRecord?.data as any)?.assessorSignatureAssetId ||
+                    (ivRecord?.data as any)?.internalVerifierSignatureAssetId,
+                  (ivRecord?.data as any)?.assessorSignatureUrl ||
+                    (ivRecord?.data as any)?.internalVerifierSignatureUrl,
+                );
+                const canSignIvRole =
+                  isAssessorUser &&
+                  isInterviewStage &&
+                  !isCandidateSigned &&
+                  !isIvSigned &&
+                  isMatchIV;
+
+                const ivName =
+                  ivSig?.name ||
+                  (ivRecord?.data as any)?.assessorName ||
+                  ivMember.name ||
+                  "Internal Verifier";
+                const ivSignedAt =
+                  ivSig?.signedAt ||
+                  (ivRecord?.data as any)?.assessorSignedAt ||
+                  (ivRecord?.data as any)?.internalVerifierSignedAt ||
+                  ivRecord?.createdAt;
+
+                return (
+                  <div className="bg-[#F8F9FA] rounded-2xl p-4 sm:p-4.5 border border-gray-100 flex flex-col justify-between shadow-2xs">
+                    <DigitalSignaturePad
+                      label="Internal Verifier"
+                      required={false}
+                      isSigned={isIvSigned}
+                      signerName={ivName}
+                      signedAt={ivSignedAt || undefined}
+                      signatureUrl={ivSigUrl}
+                      isReadOnly={!canSignIvRole}
+                      isLoading={isSigningRole === "iv"}
+                      buttonText="Sign as Internal Verifier"
+                      waitingText="Awaiting Internal Verifier"
+                      onAppendSignature={() => handleSignClick("iv")}
+                    />
                   </div>
-                ) : isCandidate && isInterviewStage ? (
-                  <button
-                    type="button"
-                    onClick={() => setIsCandidateSignModalOpen(true)}
-                    className="h-9 bg-[#FFF8EB] border border-[#FBAB2A] hover:bg-[#FDEED5] text-[#FBAB2A] font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-                  >
-                    <FiEdit3 className="w-3.5 h-3.5" />
-                    Append Signature
-                  </button>
-                ) : (
-                  <div className="flex items-center gap-2 text-amber-700 font-semibold text-xs bg-amber-50 border border-amber-200 px-3 py-2 rounded-xl">
-                    <FiClock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                    <span>Awaiting Candidate</span>
-                  </div>
-                )}
-              </div>
+                );
+              })()}
+
+            {/* 4. Candidate */}
+            <div className="bg-[#F8F9FA] rounded-2xl p-4 sm:p-4.5 border border-gray-100 flex flex-col justify-between shadow-2xs">
+              <DigitalSignaturePad
+                label="Candidate"
+                required={false}
+                isSigned={isCandidateSigned}
+                signerName={candidateFullName}
+                signedAt={
+                  formData?.candidateSignedAt ||
+                  formRecord?.candidateSignedAt ||
+                  undefined
+                }
+                signatureUrl={displayCandidateSigUrl}
+                isReadOnly={!(isCandidate && isInterviewStage && !isCandidateSigned)}
+                buttonText="Append Signature"
+                waitingText="Awaiting Candidate"
+                onAppendSignature={() => setIsCandidateSignModalOpen(true)}
+              />
             </div>
           </div>
-        )}
+        </div>
+
+        <AssessorSignatureModal
+          isOpen={signatureModalConfig.isOpen}
+          onClose={() =>
+            setSignatureModalConfig((prev) => ({ ...prev, isOpen: false }))
+          }
+          onConfirm={(sig) =>
+            handleSignWithSignatureData(signatureModalConfig.role, sig)
+          }
+          signerName={signatureModalConfig.signerName}
+          title={signatureModalConfig.title}
+          subtitle={`Sign ${meta.title}`}
+        />
       </div>
 
-      {applicationId && !isAssessmentMapping && (
+      {applicationId && (
         <CandidateInterviewFormModal
           isOpen={isCandidateSignModalOpen}
           onClose={() => setIsCandidateSignModalOpen(false)}

@@ -10,6 +10,8 @@ export interface UnitEvidenceRecord {
   name: string;
   type: string;
   status: EvidenceItemStatus;
+  isHistory?: boolean;
+  isReuploaded?: boolean;
   feedback?: string;
   /** Signed/resolved URL of the uploaded file; null when it couldn't be resolved. */
   url?: string | null;
@@ -72,9 +74,14 @@ export const UnitEvidenceItemCard: React.FC<UnitEvidenceItemCardProps> = ({
     return (
       <div className="border border-rose-400 bg-white rounded-xl p-3.5 flex flex-col gap-2 shadow-2xs">
         <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-xs font-bold text-rose-800">
+          <div className="flex items-center gap-2 text-xs font-bold text-rose-800 flex-wrap">
             <FiFileText className="w-4 h-4 text-rose-600 shrink-0" />
             <EvidenceName evidence={evidence} />
+            {evidence.isHistory && (
+              <span className="px-2 py-0.5 bg-gray-200 text-gray-700 font-bold text-[10px] rounded-md shrink-0">
+                History
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-3 shrink-0">
             <ViewEvidenceLink evidence={evidence} />
@@ -95,12 +102,17 @@ export const UnitEvidenceItemCard: React.FC<UnitEvidenceItemCardProps> = ({
   // In Review (Default)
   return (
     <div className="border border-amber-300 bg-white rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-2xs">
-      <div className="flex items-center gap-2 text-xs font-bold text-amber-900 min-w-0">
+      <div className="flex items-center gap-2 text-xs font-bold text-amber-900 min-w-0 flex-wrap">
         <FiFileText className="w-4 h-4 text-amber-600 shrink-0" />
         <EvidenceName evidence={evidence} />
         <span className="px-2 py-0.5 bg-amber-500 text-white font-bold text-[10px] rounded-md shrink-0">
           In Review
         </span>
+        {evidence.isReuploaded && (
+          <span className="px-2 py-0.5 bg-[#EFF6FF] text-[#1D4ED8] font-bold text-[10px] rounded-md border border-blue-200 shrink-0">
+            Re-uploaded
+          </span>
+        )}
       </div>
 
       <div className="flex items-center gap-4 text-xs font-bold shrink-0">

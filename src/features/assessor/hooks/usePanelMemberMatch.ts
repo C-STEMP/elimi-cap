@@ -1,45 +1,34 @@
 import { useCallback } from "react";
 import { useAppSelector } from "@/src/store/hooks";
-import { useGetMeProfile } from "@/src/features/shared/account/hooks";
-import { useGetAssessorProfile } from "./useAssessor";
 
 /**
  * Returns a matcher telling whether an interview panel member is the signed-in
- * assessor, using every identifier we know for them (user id, assessor
- * profile id, email, names). Shared so the application page and the
- * assessment-form page agree on who the lead panelist is.
+ * assessor, using identifiers from authentication state (user id, assessor
+ * id, email, names). Synchronous with zero profile endpoint network calls.
  */
 export function usePanelMemberMatch() {
   const user = useAppSelector((state) => state.auth.user);
-  const { data: meProfile } = useGetMeProfile();
-  const { data: assessorProfile } = useGetAssessorProfile();
 
   const currentUserId = (user?.id || user?.userId || (user as any)?._id || "")
     .toString()
     .toLowerCase()
     .trim();
   const currentAssessorId = (
-    assessorProfile?.id ||
-    (assessorProfile as any)?.assessorId ||
+    (user as any)?.assessorId ||
+    (user as any)?.profileId ||
+    user?.id ||
     ""
   )
     .toString()
     .toLowerCase()
     .trim();
-  const currentUserEmail = (
-    user?.email ||
-    meProfile?.contactInformation?.emailAddress ||
-    assessorProfile?.email ||
-    ""
-  )
-    .toLowerCase()
-    .trim();
+  const currentUserEmail = (user?.email || "").toLowerCase().trim();
   const userNames = [
     user?.fullName,
     (user as any)?.name,
+    (user as any)?.firstName,
+    (user as any)?.lastName,
     `${(user as any)?.firstName || ""} ${(user as any)?.lastName || ""}`.trim(),
-    assessorProfile?.name,
-    `${meProfile?.personalDetails?.firstName || ""} ${meProfile?.personalDetails?.lastName || ""}`.trim(),
   ]
     .filter(Boolean)
     .map((n) => (n as string).toLowerCase().trim());

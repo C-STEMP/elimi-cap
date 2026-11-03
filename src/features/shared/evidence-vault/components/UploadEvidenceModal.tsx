@@ -98,6 +98,9 @@ interface UploadEvidenceModalProps {
    */
   hideEvidenceType?: boolean;
   initialDocName?: string;
+  initialEvidenceType?: string;
+  initialUnitIds?: string[];
+  isReplace?: boolean;
   availableUnits?: Unit[];
 }
 
@@ -112,6 +115,9 @@ export const UploadEvidenceModal: React.FC<UploadEvidenceModalProps> = ({
   isLoadingEvidenceTypes = false,
   hideEvidenceType = false,
   initialDocName,
+  initialEvidenceType,
+  initialUnitIds,
+  isReplace = false,
   availableUnits = [],
 }) => {
   const hasAllowedList = Array.isArray(allowedEvidenceTypes);
@@ -183,13 +189,26 @@ export const UploadEvidenceModal: React.FC<UploadEvidenceModalProps> = ({
   }, [isOpen, initialDocName, setDocName]);
 
   React.useEffect(() => {
+    if (isOpen && initialEvidenceType) {
+      setEvidenceType(initialEvidenceType);
+    }
+  }, [isOpen, initialEvidenceType, setEvidenceType]);
+
+  React.useEffect(() => {
+    if (isOpen && initialUnitIds) {
+      setSelectedUnitIds(initialUnitIds);
+    }
+  }, [isOpen, initialUnitIds]);
+
+  React.useEffect(() => {
     if (
+      !initialEvidenceType &&
       evidenceTypeOptions.length > 0 &&
       !evidenceTypeOptions.some((opt) => opt.value === evidenceType)
     ) {
       setEvidenceType(evidenceTypeOptions[0].value);
     }
-  }, [evidenceTypeOptions, evidenceType, setEvidenceType]);
+  }, [evidenceTypeOptions, evidenceType, setEvidenceType, initialEvidenceType]);
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -228,6 +247,13 @@ export const UploadEvidenceModal: React.FC<UploadEvidenceModalProps> = ({
     });
 
     setSelectedFiles((prev) => {
+      if (isReplace) {
+        const replacement = newItems.slice(0, 1);
+        if (replacement.length === 1 && !docName) {
+          setDocName(replacement[0].file.name.replace(/\.[^/.]+$/, ""));
+        }
+        return replacement;
+      }
       const existing = new Set(
         prev.map((p) => `${p.file.name}_${p.file.size}_${p.file.lastModified}`),
       );
@@ -292,6 +318,7 @@ export const UploadEvidenceModal: React.FC<UploadEvidenceModalProps> = ({
     }
 
     if (
+      !isReplace &&
       !hideEvidenceType &&
       (!evidenceType ||
         !evidenceTypeOptions.some((opt) => opt.value === evidenceType))
@@ -349,11 +376,12 @@ export const UploadEvidenceModal: React.FC<UploadEvidenceModalProps> = ({
           </button>
 
           <h3 className="text-xl sm:text-2xl font-extrabold text-black tracking-tight text-center mt-2 sm:mt-0 lg:mt-6 mb-1 pr-8 sm:pr-0">
-            Upload Evidence
+            {isReplace ? "Replace Evidence" : "Upload Evidence"}
           </h3>
           <p className="text-gray-400 text-xs sm:text-sm text-center leading-relaxed mb-6 max-w-sm mx-auto">
-            Name your file properly, so you can be sure you uploaded the right
-            evidence
+            {isReplace
+              ? "Upload a replacement document to update this rejected evidence item."
+              : "Name your file properly, so you can be sure you uploaded the right evidence"}
           </p>
 
           <div className="space-y-4 text-left">
@@ -366,7 +394,7 @@ export const UploadEvidenceModal: React.FC<UploadEvidenceModalProps> = ({
               />
             )}
 
-            {!hideEvidenceType && (
+            {!hideEvidenceType && !isReplace && (
               <Select
                 label="Evidence Type"
                 placeholder={isLoadingEvidenceTypes ? "Loading evidence types..." : "Select"}
@@ -447,7 +475,7 @@ export const UploadEvidenceModal: React.FC<UploadEvidenceModalProps> = ({
               ref={fileInputRef}
               onChange={handleRealFileChange}
               accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.mp4,.webp,image/*,application/pdf"
-              multiple
+              multiple={!isReplace}
               className="hidden"
             />
 
@@ -544,16 +572,21 @@ export const UploadEvidenceModal: React.FC<UploadEvidenceModalProps> = ({
               onClick={handleSubmit}
               disabled={
                 isUploading ||
-                (!hideEvidenceType && isLoadingEvidenceTypes) ||
-                noEvidenceTypesAvailable
+                (!isReplace &&
+                  !hideEvidenceType &&
+                  (isLoadingEvidenceTypes || noEvidenceTypesAvailable))
               }
               className="w-full bg-[#fbab2a] hover:bg-[#e89b1f] text-white font-bold text-sm sm:text-base h-12.5 rounded-xl mt-6 cursor-pointer"
             >
               {isUploading
-                ? "Uploading..."
-                : selectedFiles.length > 1
-                  ? `Upload ${selectedFiles.length} Evidences`
-                  : "Upload"}
+                ? isReplace
+                  ? "Replacing..."
+                  : "Uploading..."
+                : isReplace
+                  ? "Replace Evidence"
+                  : selectedFiles.length > 1
+                    ? `Upload ${selectedFiles.length} Evidences`
+                    : "Upload"}
             </Button>
           </div>
         </motion.div>

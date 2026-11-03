@@ -231,10 +231,12 @@ export function useRequestRetainedAssessor() {
 }
 
 // ─── 12. Assessor Profile Hook ───────────────────────────────────────────────
-export function useGetAssessorProfile() {
+export function useGetAssessorProfile(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ASSESSOR_QUERY_KEYS.profile,
     queryFn: () => getAssessorProfileApi(),
+    enabled: options?.enabled,
+    retry: false,
   });
 }
 
@@ -313,6 +315,7 @@ export function useAssessorProfileSignature(enabled = true) {
       return serverSig ?? { assetId: null, url: null };
     },
     enabled,
+    retry: false,
     staleTime: 1000 * 60 * 5,
   });
 }

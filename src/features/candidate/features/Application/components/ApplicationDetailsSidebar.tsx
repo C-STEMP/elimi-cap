@@ -68,7 +68,7 @@ export const ApplicationDetailsSidebar: React.FC<ApplicationDetailsSidebarProps>
       />
       <UpcomingCard
         interview={upcomingInterview}
-        forms={isAtInterviewStage ? formsToSign : undefined}
+        forms={isInterviewScheduled ? formsToSign : undefined}
         onOpenForm={onOpenForm}
       />
       {!isAtInterviewStage && (

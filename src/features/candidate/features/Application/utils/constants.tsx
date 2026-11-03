@@ -272,8 +272,9 @@ export const getStagesConfig = ({
     statusText: paymentStatusTextColor,
     subtext: paymentSubtext,
     showPaymentDetails: isPaymentActive && !isPaymentPaid,
-    paymentDetailsText: `RPL Assessment Fee — ${tradeName || "Trade"} (Level 3)`,
-    paymentAmountText: paymentAmountText || "₦45,000",
+    paymentDetailsText: `RPL Assessment Fee — ${tradeName || "Trade"}`,
+    paymentAmountText:
+      paymentAmountText && paymentAmountText !== "—" ? paymentAmountText : "",
     actionText: !isPaymentActive
       ? undefined
       : isPaymentPaid
@@ -405,13 +406,15 @@ export const getStagesConfig = ({
           ? "text-[#B3261E]"
           : "text-[#6B7280]",
     subtext:
-      isInterviewActive || isInterviewDone
-        ? interviewDateText
+      isInterviewDone
+        ? interviewStageRow?.enteredAt
+          ? `Completed on: ${new Date(interviewStageRow.enteredAt).toLocaleDateString("en-GB")}`
+          : "Completed"
+        : interviewDateText
           ? `Scheduled for: ${interviewDateText}`
-          : interviewStageRow?.enteredAt
-            ? `Scheduled for: ${new Date(interviewStageRow.enteredAt).toLocaleDateString()}`
-            : "Scheduled for: 8/15/2026"
-        : "---",
+          : isInterviewActive
+            ? "Awaiting interview scheduling by centre"
+            : "---",
     isCollapsible: isInterviewActive,
     isCollapsed: isInterviewCollapsed,
     onToggleCollapse: onToggleInterviewCollapse,
@@ -520,9 +523,13 @@ export const getStagesConfig = ({
         ? "text-[#F9A825]"
         : "text-[#6B7280]",
     subtext:
-      isEvActive || isEvDone
-        ? `Started on: ${evStageRow?.enteredAt ? new Date(evStageRow.enteredAt).toLocaleDateString() : formattedSubmittedDate}`
-        : "---",
+      isEvDone
+        ? evStageRow?.enteredAt
+          ? `Completed on: ${new Date(evStageRow.enteredAt).toLocaleDateString("en-GB")}`
+          : "Completed"
+        : isEvActive
+          ? "Under review by External Verifier"
+          : "---",
     actionText: isEvActive && !isEvDone && undefined,
     actionVariant: "amber",
     actionSize: "sm",
@@ -561,16 +568,22 @@ export const getStagesConfig = ({
         ? "text-[#F9A825]"
         : "text-[#6B7280]",
     subtext:
-      isCertActive || isCertDone
-        ? `Completed on: ${certStageRow?.enteredAt ? new Date(certStageRow.enteredAt).toLocaleDateString() : formattedSubmittedDate}`
-        : "---",
-    isCollapsible: isCertActive,
-    isCollapsed: !isCertActive,
+      isCertDone
+        ? certStageRow?.enteredAt
+          ? `Completed on: ${new Date(certStageRow.enteredAt).toLocaleDateString("en-GB")}`
+          : "Completed"
+        : isCertActive
+          ? "Awaiting certification by Awarding Body"
+          : "---",
+    isCollapsible: isCertActive || isCertDone,
+    isCollapsed: !isCertActive && !isCertDone,
     onToggleCollapse: onToggleInterviewCollapse,
-    competentBanner: isCertActive
+    competentBanner: isCertDone
       ? {
           title: "You've been marked Competent",
-          subtitle: `Completed on: ${formattedSubmittedDate}`,
+          subtitle: certStageRow?.enteredAt
+            ? `Completed on: ${new Date(certStageRow.enteredAt).toLocaleDateString("en-GB")}`
+            : "Certification Completed",
           description:
             "The Awarding Body has confirmed your competency. Your official certificate is ready.",
         }

@@ -13,6 +13,9 @@ interface AssessorAssessmentFormLayoutProps {
   onSubmit: () => void;
   submitLabel?: string;
   isReadOnly?: boolean;
+  badgeLabel?: string;
+  headerTabs?: React.ReactNode;
+  bannerNotice?: React.ReactNode;
   children: React.ReactNode;
 }
 
@@ -25,6 +28,9 @@ export const AssessorAssessmentFormLayout: React.FC<
   onSubmit,
   submitLabel = "Submit",
   isReadOnly = false,
+  badgeLabel,
+  headerTabs,
+  bannerNotice,
   children,
 }) => {
   return (
@@ -52,11 +58,17 @@ export const AssessorAssessmentFormLayout: React.FC<
         </div>
 
         {/* Form Title & Context */}
+        {/* Form Title & Context */}
         <div className="relative z-10 flex flex-col gap-1 mt-0.5">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-[#FBAB2A]/20 text-[#FBAB2A] text-[10px] font-extrabold uppercase tracking-wider border border-[#FBAB2A]/30">
               Assessment Form
             </span>
+            {badgeLabel && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-white/20 text-white text-[10px] font-bold tracking-wide border border-white/25">
+                {badgeLabel}
+              </span>
+            )}
           </div>
           <h1 className="text-base sm:text-lg font-black tracking-tight text-white leading-snug">
             {title}
@@ -80,6 +92,16 @@ export const AssessorAssessmentFormLayout: React.FC<
           </div>
 
           <div className="flex flex-col gap-3 mt-4">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-[#FBAB2A]/20 text-[#FBAB2A] text-xs font-extrabold uppercase tracking-wider border border-[#FBAB2A]/30">
+                Assessment Form
+              </span>
+              {badgeLabel && (
+                <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-white/15 text-white text-xs font-bold tracking-wide border border-white/25">
+                  {badgeLabel}
+                </span>
+              )}
+            </div>
             <h1 className="text-2xl xl:text-3xl font-extrabold tracking-tight text-white leading-tight">
               {title}
             </h1>
@@ -102,15 +124,15 @@ export const AssessorAssessmentFormLayout: React.FC<
         {/* Subtle mobile sheet handle indicator */}
         <div className="w-10 h-1 rounded-full bg-gray-200/90 mx-auto mb-3 lg:hidden shrink-0" />
 
-        <div className="w-full max-w-3xl mx-auto flex flex-col gap-6 sm:gap-10 pb-12">
-          {isReadOnly && (
+        <div className="w-full max-w-3xl mx-auto flex flex-col gap-6 sm:gap-8 pb-12">
+          {headerTabs && <div>{headerTabs}</div>}
+
+          {bannerNotice}
+
+          {isReadOnly && !bannerNotice && !headerTabs && (
             <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3.5 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 sm:gap-3 text-amber-900 text-xs sm:text-sm font-medium">
               <span>
-                👁️ <strong>Read-Only View:</strong> Assessment forms are to be
-                filled by the Lead Panelist.
-              </span>
-              <span className="bg-amber-200/80 text-amber-900 px-2.5 py-1 rounded-full text-xs font-bold shrink-0">
-                Internal Verifier View
+                👁️ <strong>Read-Only View:</strong> Form is currently in read-only mode.
               </span>
             </div>
           )}

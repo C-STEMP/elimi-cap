@@ -36,7 +36,8 @@ export const computeStageCalculations = (
   appDetail: any,
   interviewSchedule: any,
   activeInterviewSchedule: any,
-  submittedDate: string
+  submittedDate: string,
+  hasCentreBooking?: boolean,
 ) => {
   const isCompleted = appDetail?.status === "certified";
 
@@ -78,9 +79,13 @@ export const computeStageCalculations = (
   const interviewStage = stages.find(
     (s) => s.stageKey === "interview" || s.stageKey === "direct_observation" || s.stageKey === "observation"
   );
-  const isInterviewScheduled = Boolean(
-    activeInterviewSchedule?.scheduledAt || interviewStage?.status === "scheduled"
-  );
+  const isInterviewScheduled = isCompleted
+    ? true
+    : hasCentreBooking !== undefined
+      ? hasCentreBooking
+      : Boolean(
+          activeInterviewSchedule?.scheduledAt && interviewStage?.status !== "not_started"
+        );
   const interviewStatus =
     interviewSchedule?.status === "completed" ||
     activeInterviewSchedule?.status === "completed" ||
@@ -95,15 +100,17 @@ export const computeStageCalculations = (
         : interviewStage?.status === "in_progress"
           ? "In Progress"
           : "Not Started";
-  const interviewDate = activeInterviewSchedule?.scheduledAt
-    ? new Date(activeInterviewSchedule.scheduledAt).toLocaleDateString("en-US")
-    : interviewSchedule?.scheduledAt
-      ? new Date(interviewSchedule.scheduledAt).toLocaleDateString("en-US")
-      : interviewStage?.enteredAt && interviewStatus !== "Not Started"
-        ? new Date(interviewStage.enteredAt).toLocaleDateString("en-US")
-        : interviewStatus === "Completed"
-          ? submittedDate
-          : "—";
+  const interviewDate = isInterviewScheduled
+    ? activeInterviewSchedule?.scheduledAt
+      ? new Date(activeInterviewSchedule.scheduledAt).toLocaleDateString("en-US")
+      : interviewSchedule?.scheduledAt
+        ? new Date(interviewSchedule.scheduledAt).toLocaleDateString("en-US")
+        : interviewStage?.enteredAt && interviewStatus !== "Not Started"
+          ? new Date(interviewStage.enteredAt).toLocaleDateString("en-US")
+          : "—"
+    : interviewStatus === "Completed"
+      ? submittedDate
+      : "—";
 
   const evidenceStage = stages.find(
     (s) => s.stageKey === "evidence_vault" || s.stageKey === "folder_arrangement" || s.stageKey === "evidence"
