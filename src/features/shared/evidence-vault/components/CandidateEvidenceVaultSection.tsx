@@ -107,6 +107,7 @@ export const CandidateEvidenceVaultSection: React.FC<
   const { data: rawTradeUnits = [] } = useGetUnitsByTrade(
     resolvedTradeId,
     levelNumber,
+    { enabled: Boolean(resolvedTradeId && isRplApplication) },
   );
   const scopedUnits = React.useMemo(
     () =>

@@ -5,11 +5,10 @@ import { useToast } from "@/src/components/ui/toast";
 import { ReviewVerifierModal } from "@/src/features/assessment-centre/features/Applications/components/ReviewVerifierModal";
 import { submitUnitSignoffApi } from "@/src/features/shared/applications/api";
 import { getNsqScopedUnits } from "@/src/features/shared/applications/utils/nsqUnits";
-import type { DirectObservationSession } from "@/src/features/shared/applications/api/types";
+import type { ApplicationStage, DirectObservationSession, InductionForm } from "@/src/features/shared/applications/api/types";
 import {
   useGetApplicationById,
-  useGetDirectObservations,
-  useGetInductionForm,
+  useGetApplicationStages,
   useGetUnitsCriteria,
   useReviewApplication,
   useReviewDirectObservation,
@@ -19,7 +18,6 @@ import {
   APPLICATION_QUERY_KEYS,
 } from "@/src/features/shared/applications/hooks/queryKeys";
 import {
-  useGetEvidenceTypesByTrade,
   useGetTradeDetail,
 } from "@/src/features/shared/reference/hooks";
 import { useUrlModal } from "@/src/lib/hooks/usePersistentModal";
@@ -38,6 +36,8 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   FiArrowRight,
+  FiAlertCircle,
+  FiAward,
   FiCheck,
   FiCheckCircle,
   FiEdit3,
@@ -138,6 +138,14 @@ const STAGE_ORDER = [
   "certification",
 ];
 
+const NSQ_PROGRESS_STEPS = [
+  { key: "induction", label: "Induction Form" },
+  { key: "regular_assessment", label: "QAA" },
+  { key: "internal_verification", label: "IQA" },
+  { key: "external_verification", label: "Awarding Body" },
+  { key: "certification", label: "Certification" },
+] as const;
+
 export const NsqAssessorApplicationDetailView: React.FC<
   NsqAssessorApplicationDetailViewProps
 > = ({
@@ -192,7 +200,7 @@ export const NsqAssessorApplicationDetailView: React.FC<
       refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
     },
   );
-  const { data: inductionForm } = useGetInductionForm(application.id);
+  const inductionForm: InductionForm | undefined = (apiApp as any)?.inductionForm || undefined;
 
   const user = useAppSelector((state) => state.auth.user);
   const { data: meProfile } = useGetMeProfile();
@@ -201,17 +209,68 @@ export const NsqAssessorApplicationDetailView: React.FC<
 
   const roleCtx = useMemo(() => {
     return getAssessorRoleContext({
-      application: apiApp,
+      application: apiApp
+        ? {
+            ...apiApp,
+            role: (application as any)?.role,
+            roles: (application as any)?.roles,
+          }
+        : (application as any),
       user,
       meProfile,
       assessorProfile,
     });
-  }, [apiApp, user, meProfile, assessorProfile]);
+  }, [apiApp, application, user, meProfile, assessorProfile]);
+
+  const assignedIv =
+    apiApp?.internalVerifier ||
+    (apiApp as any)?.verification?.internalVerifier ||
+    (application as any)?.internalVerifier ||
+    (application as any)?.verification?.internalVerifier;
+
+  const resolvedIvName =
+    assignedIv?.name ||
+    (assignedIv?.firstName
+      ? `${assignedIv.firstName} ${assignedIv.lastName || ""}`.trim()
+      : undefined) ||
+    roleCtx.internalVerifierName ||
+    (typeof assignedIv === "string" ? assignedIv : null) ||
+    "Assigned Internal Verifier";
+
+  const assignedEv =
+    (apiApp as any)?.externalVerifier ||
+    (apiApp as any)?.verification?.externalVerifier ||
+    (application as any)?.externalVerifier ||
+    (application as any)?.verification?.externalVerifier;
+
+  const resolvedEvName =
+    assignedEv?.name ||
+    (assignedEv?.firstName
+      ? `${assignedEv.firstName} ${assignedEv.lastName || ""}`.trim()
+      : undefined) ||
+    roleCtx.externalVerifierName ||
+    (typeof assignedEv === "string" ? assignedEv : null) ||
+    "Assigned External Verifier";
+
+  const isAssignedIv = Boolean(
+    roleCtx.isCurrentIqa ||
+      (application as any)?.role?.toLowerCase() === "internal verifier" ||
+      (application as any)?.role?.toLowerCase() === "internal_verifier" ||
+      (apiApp as any)?.role?.toLowerCase() === "internal verifier" ||
+      (apiApp as any)?.role?.toLowerCase() === "internal_verifier",
+  );
+
+  const isAssignedEv = Boolean(
+    roleCtx.isCurrentEv ||
+      (application as any)?.role?.toLowerCase() === "external verifier" ||
+      (application as any)?.role?.toLowerCase() === "external_verifier" ||
+      (apiApp as any)?.role?.toLowerCase() === "external verifier" ||
+      (apiApp as any)?.role?.toLowerCase() === "external_verifier",
+  );
 
   const tradeId = apiApp?.tradeId || "";
   const { data: tradeDetail } = useGetTradeDetail(tradeId);
-  const { data: remoteEvidenceTypes = [] } =
-    useGetEvidenceTypesByTrade(tradeId);
+  const remoteEvidenceTypes: string[] = [];
 
   const nsqUnitsForLevel = getNsqScopedUnits(apiApp?.nsq, inductionForm);
   const realUnits: QualificationUnitItem[] | null = nsqUnitsForLevel?.length
@@ -252,14 +311,10 @@ export const NsqAssessorApplicationDetailView: React.FC<
     }
   }, [realUnits, searchParams]);
 
-  const { data: directObsList } = useGetDirectObservations(application.id, {
-    enabled: Boolean(application.id),
-  });
   const sessions =
-    (directObsList as any)?.sessions ||
-    (directObsList as any)?.items ||
+    (apiApp as any)?.directObservationSessions ||
     (apiApp as any)?.nsq?.directObservationSessions ||
-    [];
+    ((apiApp as any)?.directObservation ? [(apiApp as any).directObservation] : []);
   const sortedSessions = sessions.slice().sort((a: any, b: any) => {
     const timeA = new Date(a.createdAt || a.scheduledAt || 0).getTime();
     const timeB = new Date(b.createdAt || b.scheduledAt || 0).getTime();
@@ -334,22 +389,65 @@ export const NsqAssessorApplicationDetailView: React.FC<
     prevUnitParam.current = unitParam;
   }, [searchParams]);
 
+  // Stages for NSQ: prefer live stages from GET /applications/{id}/stages, fallback to application.stages
+  const { data: remoteStages = [] } = useGetApplicationStages(application.id, {
+    enabled: Boolean(application.id),
+    refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
+  });
+  const stagesData: ApplicationStage[] = useMemo(() => {
+    if (remoteStages && remoteStages.length > 0) return remoteStages;
+    return (apiApp as any)?.stages || (application as any)?.stages || [];
+  }, [remoteStages, (apiApp as any)?.stages, (application as any)?.stages]);
+
+  const progressSteps = useMemo(
+    () =>
+      NSQ_PROGRESS_STEPS.map((step) => ({
+        ...step,
+        status:
+          stagesData?.find((s) => s.stageKey === step.key)?.status ??
+          "not_started",
+      })),
+    [stagesData],
+  );
+  const completedStepsCount = progressSteps.filter(
+    (s) => s.status === "successful",
+  ).length;
+  const progressPercent =
+    progressSteps.length > 1
+      ? (completedStepsCount / (progressSteps.length - 1)) * 100
+      : 0;
+
   const effectiveStageKey =
     apiApp?.currentStageKey ||
     (application as any)?.currentStageKey ||
-    (application as any)?.stageKey;
+    (application as any)?.stageKey ||
+    stagesData?.find((s) => s.status === "in_progress" || s.status === "under_review")?.stageKey ||
+    "regular_assessment";
 
-  const isInternalVerificationStage = Boolean(
+  const isInternalVerificationStage = effectiveStageKey === "internal_verification";
+  const isExternalVerificationStage = effectiveStageKey === "external_verification";
+  const isCertificationStage = effectiveStageKey === "certification";
+  const isAtOrPastInternalVerification = Boolean(
     effectiveStageKey &&
     STAGE_ORDER.indexOf(effectiveStageKey) >=
       STAGE_ORDER.indexOf("internal_verification"),
   );
+  const isPastInternalVerification = Boolean(
+    effectiveStageKey &&
+    STAGE_ORDER.indexOf(effectiveStageKey) >
+      STAGE_ORDER.indexOf("internal_verification"),
+  );
+  const isAtOrPastExternalVerification = Boolean(
+    effectiveStageKey &&
+    STAGE_ORDER.indexOf(effectiveStageKey) >=
+      STAGE_ORDER.indexOf("external_verification"),
+  );
 
-  // A dual-role (QAA + IQA) assessor works in the IQA view once the
-  // application reaches internal verification, and the QAA view before.
-  const isIqaView = roleCtx.isDualRole && isInternalVerificationStage;
+  // Only the assigned IV works in the prominent IQA view once the
+  // application reaches internal verification. Regular assessors stay on the units overview.
+  const isIqaView = isAssignedIv && isInternalVerificationStage;
 
-  const hasMovedToIqam = isInternalVerificationStage;
+  const hasMovedToIqam = isAtOrPastInternalVerification;
   const isRegularAssessmentStage = effectiveStageKey === "regular_assessment";
 
   // Qualification Units Readiness Validation
@@ -644,16 +742,56 @@ export const NsqAssessorApplicationDetailView: React.FC<
     apiApp?.iqamForms?.length &&
     apiApp.iqamForms.every((f) => f.status === "submitted"),
   );
-  // IV approval moves the application past internal_verification (the backend
-  // sends no separate "approved" flag). The local flag hides the button as soon
-  // as the approval succeeds, before the refetched stage arrives.
+  // IV approval moves the application past internal_verification (or sets ivOutcome).
   const [hasApprovedIv, setHasApprovedIv] = useState(false);
+  const [hasRejectedIv, setHasRejectedIv] = useState(false);
+  const [isReviewIvRejectModalOpen, setIsReviewIvRejectModalOpen] = useState(false);
   const isIvApproved =
     hasApprovedIv ||
     Boolean(
-      effectiveStageKey &&
+      (apiApp as any)?.verification?.ivOutcome === "approve" ||
+      (apiApp as any)?.verification?.ivOutcome === "successful" ||
+      (application as any)?.verification?.ivOutcome === "approve" ||
+      (application as any)?.verification?.ivOutcome === "successful" ||
+      (apiApp as any)?.ivReview?.decision === "approve" ||
+      (application as any)?.ivApproved ||
+      isPastInternalVerification,
+    );
+  const isIvRejected =
+    hasRejectedIv ||
+    Boolean(
+      (apiApp as any)?.verification?.ivOutcome === "reject" ||
+      (apiApp as any)?.verification?.ivOutcome === "rejected" ||
+      (application as any)?.verification?.ivOutcome === "reject" ||
+      (application as any)?.verification?.ivOutcome === "rejected" ||
+      (apiApp as any)?.ivReview?.decision === "reject",
+    );
+
+  // EV Review states
+  const [isReviewEvApproveModalOpen, setIsReviewEvApproveModalOpen] = useState(false);
+  const [isReviewEvRejectModalOpen, setIsReviewEvRejectModalOpen] = useState(false);
+  const [hasReviewedEv, setHasReviewedEv] = useState(false);
+  const [hasRejectedEv, setHasRejectedEv] = useState(false);
+  const isEvApproved =
+    hasReviewedEv ||
+    Boolean(
+      (apiApp as any)?.verification?.evOutcome === "approve" ||
+      (apiApp as any)?.verification?.evOutcome === "successful" ||
+      (application as any)?.verification?.evOutcome === "approve" ||
+      (application as any)?.verification?.evOutcome === "successful" ||
+      (apiApp as any)?.evReview?.decision === "approve" ||
+      (effectiveStageKey &&
         STAGE_ORDER.indexOf(effectiveStageKey) >
-          STAGE_ORDER.indexOf("internal_verification"),
+          STAGE_ORDER.indexOf("external_verification")),
+    );
+  const isEvRejected =
+    hasRejectedEv ||
+    Boolean(
+      (apiApp as any)?.verification?.evOutcome === "reject" ||
+      (apiApp as any)?.verification?.evOutcome === "rejected" ||
+      (application as any)?.verification?.evOutcome === "reject" ||
+      (application as any)?.verification?.evOutcome === "rejected" ||
+      (apiApp as any)?.evReview?.decision === "reject",
     );
 
   useEffect(() => {
@@ -863,6 +1001,189 @@ export const NsqAssessorApplicationDetailView: React.FC<
       <div className="w-full max-w-7xl xl:max-w-360 mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           <div className="lg:col-span-8 flex flex-col gap-6 w-full">
+            {/* 1. Assessment Progress Stepper Card */}
+            <div className="bg-white rounded-3xl p-4 sm:p-7 shadow-xs border border-gray-100 flex flex-col gap-6">
+              <h3 className="text-base sm:text-lg font-bold text-gray-900 tracking-tight">
+                Assessment Progress
+              </h3>
+
+              {/* Steps Progress — driven by GET /applications/{id}/stages */}
+              <div className="relative flex items-start justify-between w-full px-1 sm:px-10">
+                {/* Connector line background */}
+                <div className="absolute left-8 right-8 top-3.5 h-[1.5px] bg-gray-200 z-0" />
+                <div
+                  className="absolute left-8 top-3.5 h-[1.5px] z-0 bg-[#10b981] transition-all duration-300"
+                  style={{ width: `${progressPercent}%` }}
+                />
+
+                {progressSteps.map((step) => {
+                  const isComplete = step.status === "successful";
+                  const isRejectedStep = step.status === "rejected";
+                  const isActive =
+                    !isComplete && !isRejectedStep && step.status !== "not_started";
+
+                  return (
+                    <div
+                      key={step.key}
+                      className="flex flex-col items-center gap-2.5 z-10 flex-1 min-w-0 px-0.5"
+                    >
+                      <div
+                        className={`w-7 h-7 rounded-full flex items-center justify-center transition-all shrink-0 ${
+                          isComplete
+                            ? "bg-[#10b981] shadow-xs"
+                            : isRejectedStep
+                              ? "bg-red-500 shadow-xs"
+                              : isActive
+                                ? "bg-[#fbab2a] shadow-xs"
+                                : "border border-gray-400 bg-white"
+                        }`}
+                      >
+                        {(isComplete || isRejectedStep || isActive) && (
+                          <div className="w-2.5 h-2.5 rounded-full bg-white" />
+                        )}
+                      </div>
+                      <span
+                        className={`w-full text-[8px] xs:text-[9px] sm:text-xs text-center font-medium leading-tight wrap-break-word ${
+                          isComplete
+                            ? "text-[#10b981] font-semibold"
+                            : isRejectedStep
+                              ? "text-red-500 font-semibold"
+                              : isActive
+                                ? "text-[#fbab2a] font-semibold"
+                                : "text-gray-400"
+                        }`}
+                      >
+                        {step.label}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* External Verification (EV) Review Card — only rendered for the assigned EV or upon rejection */}
+            {isAssignedEv && (isExternalVerificationStage || isEvRejected) && !isEvApproved && (
+              <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-xs border border-gray-100 flex flex-col gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-[#8A1538]/10 text-[#8A1538] flex items-center justify-center font-extrabold text-sm shrink-0">
+                      EQA
+                    </div>
+                    <div>
+                      <h3 className="text-base sm:text-lg font-extrabold text-neutral-primary tracking-tight">
+                        External Verification (EV) Review
+                      </h3>
+                      <p className="text-xs text-neutral-secondary">
+                        Awarding Body quality audit confirming candidate competence against national occupational standards.
+                      </p>
+                    </div>
+                  </div>
+                  <span
+                    className={`self-start sm:self-auto text-[11px] font-bold px-3 py-1 rounded-xl shrink-0 ${
+                      isEvRejected
+                        ? "text-rose-800 bg-rose-50 border border-rose-200/80"
+                        : "text-[#8A1538] bg-[#8A1538]/10 border border-[#8A1538]/20"
+                    }`}
+                  >
+                    {isEvRejected ? "Remediation Required" : "Awarding Body Stage"}
+                  </span>
+                </div>
+
+                {/* Audit Context Checklist Strip */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+                  <div className="bg-[#f8f9fb] rounded-2xl p-3 border border-gray-100 flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                      <FiCheckCircle className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-neutral-primary truncate">
+                        {unitsList.filter(isUnitFullyApproved).length} of {unitsList.length} Units
+                      </p>
+                      <p className="text-[11px] text-neutral-secondary truncate">Assessor Approved</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-[#f8f9fb] rounded-2xl p-3 border border-gray-100 flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                      <FiCheckCircle className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-neutral-primary truncate">
+                        IV Review Cleared
+                      </p>
+                      <p className="text-[11px] text-neutral-secondary truncate">{resolvedIvName}</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-[#f8f9fb] rounded-2xl p-3 border border-gray-100 flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-[#8A1538]/10 text-[#8A1538] flex items-center justify-center shrink-0">
+                      <FiAward className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-neutral-primary truncate">
+                        {resolvedEvName}
+                      </p>
+                      <p className="text-[11px] text-neutral-secondary truncate">External Verifier (EQA)</p>
+                    </div>
+                  </div>
+                </div>
+
+                {isEvRejected ? (
+                  <div className="p-4 bg-rose-50/80 rounded-2xl border border-rose-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-rose-800">
+                    <div className="flex items-start sm:items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0">
+                        <FiAlertCircle className="w-4 h-4 text-rose-600" />
+                      </div>
+                      <div>
+                        <p className="font-bold text-rose-900 text-sm">External Verification Rejected</p>
+                        <p className="text-rose-700 mt-0.5">
+                          Remediation has been requested. The assessment centre and verifiers have been notified to address feedback.
+                        </p>
+                      </div>
+                    </div>
+                    <span className="self-start sm:self-center text-xs font-bold text-rose-800 bg-rose-100/80 px-3 py-1 rounded-lg shrink-0">
+                      Remediation Required
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3 pt-1">
+                    <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/70 text-xs text-slate-700 flex items-start gap-2.5">
+                      <FiAlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-slate-500" />
+                      <span>
+                        As the assigned External Verifier, review the candidate's portfolio, unit criteria, and IV records above. Your decision confirms national occupational competence.
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2 border-t border-gray-100">
+                      <span className="text-xs text-neutral-secondary">
+                        Your review decision advances the candidate to the Certification stage.
+                      </span>
+
+                      <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-2.5">
+                        <button
+                          type="button"
+                          onClick={() => setIsReviewEvRejectModalOpen(true)}
+                          className="h-10 px-4 rounded-xl border border-rose-200 bg-white hover:bg-rose-50 active:bg-rose-100 text-rose-700 font-semibold text-xs sm:text-sm transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                        >
+                          <FiX className="w-4 h-4 shrink-0" />
+                          <span>Reject Application</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setIsReviewEvApproveModalOpen(true)}
+                          className="h-10 px-5 rounded-xl bg-[#1E7F4C] hover:bg-[#16643B] active:bg-[#125230] text-white font-semibold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs hover:shadow"
+                        >
+                          <FiCheck className="w-4 h-4 shrink-0 stroke-[2.5]" />
+                          <span>Approve Candidate (Mark Competent)</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {isIqaView ? (
               <>
                 {/* 1. IQAM Forms Card Prominent in IQA view */}
@@ -895,9 +1216,9 @@ export const NsqAssessorApplicationDetailView: React.FC<
                     </div>
 
                     <span className="self-start sm:self-auto text-[11px] font-bold text-neutral-secondary bg-gray-50 border border-gray-200/80 px-2.5 py-1 rounded-xl">
-                      {roleCtx.isDualRole
-                        ? "Acting as Internal Verifier"
-                        : "Assigned Verifier"}
+                      {isAssignedIv
+                        ? "Assigned Internal Verifier"
+                        : "Internal Verification"}
                     </span>
                   </div>
 
@@ -952,12 +1273,12 @@ export const NsqAssessorApplicationDetailView: React.FC<
                               className={`w-full sm:w-auto justify-center px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
                                 isSub
                                   ? "border border-gray-200 text-gray-700 hover:bg-gray-100 bg-white"
-                                  : roleCtx.canPerformIqa
+                                  : isAssignedIv
                                     ? "bg-[#900B27] hover:bg-[#72081f] text-white shadow-xs"
                                     : "text-[#fbab2a] hover:underline"
                               }`}
                             >
-                              {!isSub && roleCtx.canPerformIqa ? (
+                              {!isSub && isAssignedIv ? (
                                 <>
                                   <FiEdit3 className="w-3.5 h-3.5" />
                                   <span>Fill Form</span>
@@ -1021,12 +1342,12 @@ export const NsqAssessorApplicationDetailView: React.FC<
                               className={`w-full sm:w-auto justify-center px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
                                 isSub
                                   ? "border border-gray-200 text-gray-700 hover:bg-gray-100 bg-white"
-                                  : roleCtx.canPerformIqa
+                                  : isAssignedIv
                                     ? "bg-[#900B27] hover:bg-[#72081f] text-white shadow-xs"
                                     : "text-[#fbab2a] hover:underline"
                               }`}
                             >
-                              {!isSub && roleCtx.canPerformIqa ? (
+                              {!isSub && isAssignedIv ? (
                                 <>
                                   <FiEdit3 className="w-3.5 h-3.5" />
                                   <span>Fill Checklist</span>
@@ -1090,12 +1411,12 @@ export const NsqAssessorApplicationDetailView: React.FC<
                               className={`w-full sm:w-auto justify-center px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
                                 isSub
                                   ? "border border-gray-200 text-gray-700 hover:bg-gray-100 bg-white"
-                                  : roleCtx.canPerformIqa
+                                  : isAssignedIv
                                     ? "bg-[#900B27] hover:bg-[#72081f] text-white shadow-xs"
                                     : "text-[#fbab2a] hover:underline"
                               }`}
                             >
-                              {!isSub && roleCtx.canPerformIqa ? (
+                              {!isSub && isAssignedIv ? (
                                 <>
                                   <FiEdit3 className="w-3.5 h-3.5" />
                                   <span>Fill Report</span>
@@ -1124,15 +1445,65 @@ export const NsqAssessorApplicationDetailView: React.FC<
                     </div>
                   </div>
 
-                  {isIqamFormsComplete && !isIvApproved && (
-                    <button
-                      type="button"
-                      onClick={() => setIsReviewIvModalOpen(true)}
-                      className="w-full h-11 bg-[#fbab2a] hover:bg-[#e89b1f] text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition-all cursor-pointer flex items-center justify-center gap-2"
-                    >
-                      <span>Mark IQA Competent</span>
-                      <FiCheck className="w-4 h-4" />
-                    </button>
+                  {isIvRejected ? (
+                    <div className="p-3.5 bg-rose-50 rounded-xl border border-rose-200/80 flex items-center justify-between gap-3 text-xs text-rose-800">
+                      <div className="flex items-center gap-2 font-bold">
+                        <FiAlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                        <span>Internal Verification Rejected</span>
+                      </div>
+                      <span className="text-[11px] font-semibold text-rose-700 bg-rose-100/70 px-2.5 py-0.5 rounded-lg">
+                        Remediation Required
+                      </span>
+                    </div>
+                  ) : !isIvApproved ? (
+                    isAssignedIv ? (
+                      <div className="pt-2 flex flex-col gap-2.5">
+                        <div className="p-3 bg-amber-50 rounded-xl border border-amber-200/70 text-xs text-amber-900 flex items-start gap-2">
+                          <FiAlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
+                          <span>
+                            Submitting IQAM forms stamps your paperwork records. You must make a review decision on the IV stage for Centre staff to proceed.
+                          </span>
+                        </div>
+                        <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => setIsReviewIvRejectModalOpen(true)}
+                            className="h-10 px-4 rounded-xl border border-rose-200 bg-white hover:bg-rose-50 active:bg-rose-100 text-rose-700 font-semibold text-xs sm:text-sm transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                          >
+                            <FiX className="w-4 h-4 shrink-0" />
+                            <span>Reject IV Stage</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setIsReviewIvModalOpen(true)}
+                            className="h-10 px-5 rounded-xl bg-[#fbab2a] hover:bg-[#e89b1f] active:bg-[#d68b16] text-white font-semibold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs hover:shadow"
+                          >
+                            <FiCheck className="w-4 h-4 shrink-0 stroke-[2.5]" />
+                            <span>Approve IV Stage</span>
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-3.5 bg-amber-50/80 rounded-xl border border-amber-200/70 flex items-center justify-between gap-3 text-xs text-amber-900">
+                        <div className="flex items-center gap-2 font-semibold">
+                          <FiAlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                          <span>Internal Verification in Progress</span>
+                        </div>
+                        <span className="text-[11px] text-amber-800 font-medium">
+                          Awaiting review decision by assigned IV ({resolvedIvName})
+                        </span>
+                      </div>
+                    )
+                  ) : (
+                    <div className="p-3.5 bg-emerald-50 rounded-xl border border-emerald-200/80 flex items-center justify-between gap-3 text-xs text-emerald-800">
+                      <div className="flex items-center gap-2 font-bold">
+                        <FiCheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span>Internal Verification Approved</span>
+                      </div>
+                      <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-100/70 px-2.5 py-0.5 rounded-lg">
+                        Ready to Forward
+                      </span>
+                    </div>
                   )}
                 </div>
 
@@ -1260,11 +1631,9 @@ export const NsqAssessorApplicationDetailView: React.FC<
                         })()}
                       </div>
 
-                      {roleCtx.canPerformIqa && (
+                      {isAssignedIv && (
                         <span className="self-start sm:self-auto text-[11px] font-bold text-neutral-secondary bg-gray-50 border border-gray-200/80 px-2.5 py-1 rounded-xl">
-                          {roleCtx.isDualRole
-                            ? "Acting as Internal Verifier"
-                            : "Assigned Verifier"}
+                          Assigned Verifier
                         </span>
                       )}
                     </div>
@@ -1320,12 +1689,12 @@ export const NsqAssessorApplicationDetailView: React.FC<
                                 className={`w-full sm:w-auto justify-center px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
                                   isSub
                                     ? "border border-gray-200 text-gray-700 hover:bg-gray-100 bg-white"
-                                    : roleCtx.canPerformIqa
+                                    : isAssignedIv
                                       ? "bg-[#900B27] hover:bg-[#72081f] text-white shadow-xs"
                                       : "text-[#fbab2a] hover:underline"
                                 }`}
                               >
-                                {!isSub && roleCtx.canPerformIqa ? (
+                                {!isSub && isAssignedIv ? (
                                   <>
                                     <FiEdit3 className="w-3.5 h-3.5" />
                                     <span>Fill Form</span>
@@ -1389,12 +1758,12 @@ export const NsqAssessorApplicationDetailView: React.FC<
                                 className={`w-full sm:w-auto justify-center px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
                                   isSub
                                     ? "border border-gray-200 text-gray-700 hover:bg-gray-100 bg-white"
-                                    : roleCtx.canPerformIqa
+                                    : isAssignedIv
                                       ? "bg-[#900B27] hover:bg-[#72081f] text-white shadow-xs"
                                       : "text-[#fbab2a] hover:underline"
                                 }`}
                               >
-                                {!isSub && roleCtx.canPerformIqa ? (
+                                {!isSub && isAssignedIv ? (
                                   <>
                                     <FiEdit3 className="w-3.5 h-3.5" />
                                     <span>Fill Checklist</span>
@@ -1458,12 +1827,12 @@ export const NsqAssessorApplicationDetailView: React.FC<
                                 className={`w-full sm:w-auto justify-center px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
                                   isSub
                                     ? "border border-gray-200 text-gray-700 hover:bg-gray-100 bg-white"
-                                    : roleCtx.canPerformIqa
+                                    : isAssignedIv
                                       ? "bg-[#900B27] hover:bg-[#72081f] text-white shadow-xs"
                                       : "text-[#fbab2a] hover:underline"
                                 }`}
                               >
-                                {!isSub && roleCtx.canPerformIqa ? (
+                                {!isSub && isAssignedIv ? (
                                   <>
                                     <FiEdit3 className="w-3.5 h-3.5" />
                                     <span>Fill Report</span>
@@ -1492,15 +1861,65 @@ export const NsqAssessorApplicationDetailView: React.FC<
                       </div>
                     </div>
 
-                    {isIqamFormsComplete && !isIvApproved && (
-                      <button
-                        type="button"
-                        onClick={() => setIsReviewIvModalOpen(true)}
-                        className="w-full h-11 bg-[#fbab2a] hover:bg-[#e89b1f] text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition-all cursor-pointer flex items-center justify-center gap-2"
-                      >
-                        <span>Mark IQA Competent</span>
-                        <FiCheck className="w-4 h-4" />
-                      </button>
+                    {isIvRejected ? (
+                      <div className="p-3.5 bg-rose-50 rounded-xl border border-rose-200/80 flex items-center justify-between gap-3 text-xs text-rose-800">
+                        <div className="flex items-center gap-2 font-bold">
+                          <FiAlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                          <span>Internal Verification Rejected</span>
+                        </div>
+                        <span className="text-[11px] font-semibold text-rose-700 bg-rose-100/70 px-2.5 py-0.5 rounded-lg">
+                          Remediation Required
+                        </span>
+                      </div>
+                    ) : !isIvApproved ? (
+                      isAssignedIv ? (
+                        <div className="pt-2 flex flex-col gap-2.5">
+                          <div className="p-3 bg-amber-50 rounded-xl border border-amber-200/70 text-xs text-amber-900 flex items-start gap-2">
+                            <FiAlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
+                            <span>
+                              Submitting IQAM forms stamps your paperwork records. You must make a review decision on the IV stage for Centre staff to proceed.
+                            </span>
+                          </div>
+                          <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 pt-1">
+                            <button
+                              type="button"
+                              onClick={() => setIsReviewIvRejectModalOpen(true)}
+                              className="h-10 px-4 rounded-xl border border-rose-200 bg-white hover:bg-rose-50 active:bg-rose-100 text-rose-700 font-semibold text-xs sm:text-sm transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                            >
+                              <FiX className="w-4 h-4 shrink-0" />
+                              <span>Reject IV Stage</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setIsReviewIvModalOpen(true)}
+                              className="h-10 px-5 rounded-xl bg-[#fbab2a] hover:bg-[#e89b1f] active:bg-[#d68b16] text-white font-semibold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs hover:shadow"
+                            >
+                              <FiCheck className="w-4 h-4 shrink-0 stroke-[2.5]" />
+                              <span>Approve IV Stage</span>
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="p-3.5 bg-amber-50/80 rounded-xl border border-amber-200/70 flex items-center justify-between gap-3 text-xs text-amber-900">
+                          <div className="flex items-center gap-2 font-semibold">
+                            <FiAlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                            <span>Internal Verification in Progress</span>
+                          </div>
+                          <span className="text-[11px] text-amber-800 font-medium">
+                            Awaiting review decision by assigned IV ({resolvedIvName})
+                          </span>
+                        </div>
+                      )
+                    ) : (
+                      <div className="p-3.5 bg-emerald-50 rounded-xl border border-emerald-200/80 flex items-center justify-between gap-3 text-xs text-emerald-800">
+                        <div className="flex items-center gap-2 font-bold">
+                          <FiCheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <span>Internal Verification Approved</span>
+                        </div>
+                        <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-100/70 px-2.5 py-0.5 rounded-lg">
+                          Ready to Forward
+                        </span>
+                      </div>
                     )}
                   </div>
                 )}
@@ -1583,8 +2002,64 @@ export const NsqAssessorApplicationDetailView: React.FC<
         onClose={() => setIsReviewIvModalOpen(false)}
         applicationId={application.id}
         verifierType="internal"
+        verifierName={resolvedIvName}
+        decision="approve"
         onSuccess={() => {
           setHasApprovedIv(true);
+          queryClient.invalidateQueries({
+            queryKey: APPLICATION_QUERY_KEYS.detail(application.id),
+          });
+          queryClient.invalidateQueries({
+            queryKey: APPLICATION_QUERY_KEYS.stages(application.id),
+          });
+        }}
+      />
+
+      <ReviewVerifierModal
+        isOpen={isReviewIvRejectModalOpen}
+        onClose={() => setIsReviewIvRejectModalOpen(false)}
+        applicationId={application.id}
+        verifierType="internal"
+        verifierName={resolvedIvName}
+        decision="reject"
+        onSuccess={() => {
+          setHasRejectedIv(true);
+          queryClient.invalidateQueries({
+            queryKey: APPLICATION_QUERY_KEYS.detail(application.id),
+          });
+          queryClient.invalidateQueries({
+            queryKey: APPLICATION_QUERY_KEYS.stages(application.id),
+          });
+        }}
+      />
+
+      <ReviewVerifierModal
+        isOpen={isReviewEvApproveModalOpen}
+        onClose={() => setIsReviewEvApproveModalOpen(false)}
+        applicationId={application.id}
+        verifierType="external"
+        verifierName={resolvedEvName}
+        decision="approve"
+        onSuccess={() => {
+          setHasReviewedEv(true);
+          queryClient.invalidateQueries({
+            queryKey: APPLICATION_QUERY_KEYS.detail(application.id),
+          });
+          queryClient.invalidateQueries({
+            queryKey: APPLICATION_QUERY_KEYS.stages(application.id),
+          });
+        }}
+      />
+
+      <ReviewVerifierModal
+        isOpen={isReviewEvRejectModalOpen}
+        onClose={() => setIsReviewEvRejectModalOpen(false)}
+        applicationId={application.id}
+        verifierType="external"
+        verifierName={resolvedEvName}
+        decision="reject"
+        onSuccess={() => {
+          setHasReviewedEv(true);
           queryClient.invalidateQueries({
             queryKey: APPLICATION_QUERY_KEYS.detail(application.id),
           });

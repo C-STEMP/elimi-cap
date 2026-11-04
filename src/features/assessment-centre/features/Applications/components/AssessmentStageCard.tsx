@@ -32,17 +32,17 @@ export const AssessmentStageCard: React.FC = () => {
       : DEFAULT_STAGES;
 
   return (
-    <div className="bg-white rounded-3xl p-6 shadow-2xs flex flex-col gap-4 h-full select-none">
+    <div className="bg-white rounded-3xl p-4 sm:p-6 shadow-2xs flex flex-col gap-4 h-full select-none">
       {/* Header */}
       <div className="flex items-center justify-between gap-2 mb-6">
-        <h3 className="text-lg font-medium text-black tracking-tight">
+        <h3 className="text-base sm:text-lg font-medium text-black tracking-tight truncate">
           Candidate By Assessment Stage
         </h3>
 
         <Select
           size="sm"
           showPlaceholderOption={false}
-          containerClassName="w-24!"
+          containerClassName="w-24! shrink-0"
           value={assessmentType}
           onChange={(e) => setAssessmentType(e.target.value as "RPL" | "NSQ")}
           options={["RPL", "NSQ"]}
@@ -54,9 +54,9 @@ export const AssessmentStageCard: React.FC = () => {
         {stageItems.map((item) => (
           <div
             key={item.label}
-            className="flex items-center justify-between gap-4"
+            className="flex items-center justify-between gap-3 sm:gap-4"
           >
-            <span className="w-44 text-xs sm:text-sm font-semibold text-neutral-primary shrink-0 truncate">
+            <span className="w-28 sm:w-44 text-xs sm:text-sm font-semibold text-neutral-primary shrink-0 truncate">
               {item.label}
             </span>
 

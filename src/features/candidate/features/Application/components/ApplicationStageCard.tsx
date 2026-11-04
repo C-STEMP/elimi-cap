@@ -36,11 +36,11 @@ export const ApplicationStageCard: React.FC<ApplicationStageCardProps> = ({
         {/* Top Row: Title + Badge on left, Chevron on right */}
         <div
           onClick={isCollapsible ? handleToggle : undefined}
-          className={`flex items-center justify-between gap-2 w-full ${
+          className={`flex items-start justify-between gap-2 w-full ${
             isCollapsible ? "cursor-pointer select-none" : ""
           }`}
         >
-          <div className="flex items-center gap-2 flex-wrap min-w-0">
+          <div className="flex items-center gap-2 flex-wrap min-w-0 flex-1">
             <h3 className="text-black font-bold text-base tracking-tight wrap-break-word">
               {stage.title}
             </h3>
@@ -58,7 +58,7 @@ export const ApplicationStageCard: React.FC<ApplicationStageCardProps> = ({
                 e.stopPropagation();
                 handleToggle();
               }}
-              className="p-1 text-gray-500 hover:text-gray-800 transition-colors cursor-pointer rounded-lg hover:bg-gray-200/50 shrink-0"
+              className="p-1 text-gray-500 hover:text-gray-800 transition-colors cursor-pointer rounded-lg hover:bg-gray-200/50 shrink-0 mt-0.5"
               aria-label="Toggle section"
             >
               {isCollapsed ? (
@@ -71,7 +71,7 @@ export const ApplicationStageCard: React.FC<ApplicationStageCardProps> = ({
         </div>
 
         {/* Bottom Row: Subtext on left, Action Button on right */}
-        <div className="flex items-center justify-between gap-2.5 w-full pt-0.5">
+        <div className="flex flex-col xs:flex-row items-start xs:items-center justify-between gap-2.5 w-full pt-0.5">
           <p className="text-gray-400 text-xs font-normal wrap-break-word flex-1 min-w-0">
             {stage.subtext}
           </p>
@@ -84,7 +84,7 @@ export const ApplicationStageCard: React.FC<ApplicationStageCardProps> = ({
               leftIcon={stage.actionLeftIcon}
               rightIcon={stage.actionRightIcon}
               loading={stage.actionLoading}
-              className={`shrink-0 font-bold text-xs px-4 py-2 rounded-xl transition-all cursor-pointer shadow-none! focus:outline-none focus:ring-0 focus:ring-transparent focus-visible:outline-none focus-visible:ring-0 active:outline-none outline-none whitespace-nowrap ${
+              className={`shrink-0 font-bold text-xs px-4 py-2 rounded-xl transition-all cursor-pointer shadow-none! focus:outline-none focus:ring-0 focus:ring-transparent focus-visible:outline-none focus-visible:ring-0 active:outline-none outline-none whitespace-nowrap self-end xs:self-auto ${
                 stage.actionText === "View"
                   ? "bg-white! text-secondary! border border-gray-200! hover:bg-gray-50! shadow-none!"
                   : stage.actionText === "Make Payment"
@@ -222,18 +222,18 @@ export const ApplicationStageCard: React.FC<ApplicationStageCardProps> = ({
             </p>
           </div>
 
-          <div className="flex items-center gap-3 mt-1">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-1">
             <button
               type="button"
               onClick={stage.inconclusiveBanner.onAppeal}
-              className="bg-primary hover:bg-primary-hover text-white font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl transition-all cursor-pointer shadow-xs"
+              className="bg-primary hover:bg-primary-hover text-white font-bold text-xs sm:text-sm px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl transition-all cursor-pointer shadow-xs"
             >
               Appeal
             </button>
             <button
               type="button"
               onClick={stage.inconclusiveBanner.onTakeCourse}
-              className="bg-[#FBAB2A] hover:bg-[#E89B1F] text-white font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl transition-all cursor-pointer shadow-xs"
+              className="bg-[#FBAB2A] hover:bg-[#E89B1F] text-white font-bold text-xs sm:text-sm px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl transition-all cursor-pointer shadow-xs"
             >
               Take Course
             </button>

@@ -2,6 +2,7 @@
 
 import React from "react";
 import { IqamSignatureBlock } from "../../common/IqamSignatureBlock";
+import { useAssessorProfileSignature } from "@/src/features/shared/assessor/hooks";
 import type { IqamIvReportData, IqamSignatureStub } from "../../../api/types";
 
 type Section04CData = NonNullable<IqamIvReportData["con04c"]>;
@@ -13,20 +14,22 @@ interface Section04CUnitOutcomesProps {
   onChange: (data: Section04CData) => void;
 }
 
-const appendedSignature = (): IqamSignatureStub => ({
-  status: "appended",
-  signedAt: new Date().toISOString(),
-  signatureMode: "typed",
-});
-
 export const Section04CUnitOutcomes: React.FC<Section04CUnitOutcomesProps> = ({
   units,
   data,
   readOnly = false,
   onChange,
 }) => {
+  const { data: profileSig } = useAssessorProfileSignature();
   const verifiedUnitIds = data?.verifiedUnitIds || [];
   const signatures = data?.signatures || {};
+
+  const appendedSignature = (): IqamSignatureStub => ({
+    status: "appended",
+    signedAt: new Date().toISOString(),
+    signatureMode: profileSig?.assetId ? "upload" : "typed",
+    signatureAssetId: profileSig?.assetId || null,
+  });
 
   const update = (patch: Partial<Section04CData>) => {
     onChange({ ...data, ...patch });
@@ -107,7 +110,10 @@ export const Section04CUnitOutcomes: React.FC<Section04CUnitOutcomesProps> = ({
 
       {/* Second Line IV Feedback */}
       <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-4">
-        <h4 className="text-xs sm:text-sm font-extrabold text-neutral-primary">Second Line Internal Verifier Feedback on IQA Process Used and Any Necessary Action Required:</h4>
+        <div className="flex flex-col gap-1">
+          <h4 className="text-xs sm:text-sm font-extrabold text-neutral-primary">Second Line Internal Verifier Feedback on IQA Process Used and Any Necessary Action Required:</h4>
+          <span className="text-[11px] text-gray-500 font-medium">To be completed and signed by the Second Line Internal Verifier (distinct from the primary IV).</span>
+        </div>
         <textarea
           rows={3}
           placeholder="Type here"
@@ -118,9 +124,12 @@ export const Section04CUnitOutcomes: React.FC<Section04CUnitOutcomesProps> = ({
         />
         <IqamSignatureBlock
           label="Second Line IQA Signature"
+          required={false}
+          helperText="Distinct sign-off reserved for Second Line Internal Verifier"
           signed={signatures.secondLineIqa?.status === "appended"}
           dateValue={signatures.secondLineIqa?.signedAt || ""}
           readOnly={readOnly}
+          signedText="Signed by Second Line IQA"
           onSign={() => update({ signatures: { ...signatures, secondLineIqa: appendedSignature() } })}
         />
       </div>
@@ -129,17 +138,23 @@ export const Section04CUnitOutcomes: React.FC<Section04CUnitOutcomesProps> = ({
       <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-5">
         <h4 className="text-xs sm:text-sm font-extrabold text-neutral-primary">Signature & Date</h4>
         <IqamSignatureBlock
-          label="IV Signature"
+          label="Internal Verifier (IV) Signature"
+          required={true}
+          helperText="Primary signature of the assigned Internal Verifier"
           signed={signatures.iv?.status === "appended"}
           dateValue={signatures.iv?.signedAt || ""}
           readOnly={readOnly}
+          signedText="Signed by Assigned IV"
           onSign={() => update({ signatures: { ...signatures, iv: appendedSignature() } })}
         />
         <IqamSignatureBlock
-          label="Countersigning IQA (Lead)"
+          label="Countersigning IQA (Lead Verifier)"
+          required={false}
+          helperText="Distinct countersignature reserved for Lead IQA"
           signed={signatures.countersigningIqa?.status === "appended"}
           dateValue={signatures.countersigningIqa?.signedAt || ""}
           readOnly={readOnly}
+          signedText="Signed by Lead IQA"
           onSign={() => update({ signatures: { ...signatures, countersigningIqa: appendedSignature() } })}
         />
       </div>

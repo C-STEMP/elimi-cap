@@ -65,14 +65,12 @@ export const SamplingPlanView: React.FC<SamplingPlanViewProps> = ({
   if (!hasContext) {
     return (
       <div className="w-full flex flex-col gap-6 select-text pb-12 animate-fadeIn">
-        <div className="w-full max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 flex flex-col items-center text-center gap-2">
-            <p className="text-sm font-bold text-neutral-primary">Select a candidate first</p>
-            <p className="text-xs text-gray-400 max-w-xs">
-              Open the IQA Allocation Form (CON/01) and pick a candidate — the sampling matrix for
-              their trade and qualification level will load here.
-            </p>
-          </div>
+        <div className="bg-white rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-sm border border-gray-100 flex flex-col items-center text-center gap-2">
+          <p className="text-sm font-bold text-neutral-primary">Select a candidate first</p>
+          <p className="text-xs text-gray-400 max-w-xs">
+            Open the IQA Allocation Form (CON/01) and pick a candidate — the sampling matrix for
+            their trade and qualification level will load here.
+          </p>
         </div>
       </div>
     );
@@ -87,29 +85,28 @@ export const SamplingPlanView: React.FC<SamplingPlanViewProps> = ({
 
   return (
     <div className="w-full flex flex-col gap-6 select-text pb-12 animate-fadeIn">
-      <div className="w-full max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-6">
-        {/* Top Summary Cards */}
-        <div className="bg-white rounded-3xl p-4 sm:p-5 shadow-xs border border-gray-100">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
-              <span className="text-[10px] font-bold tracking-wider text-gray-500 uppercase">NAME OF CENTRE</span>
-              <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">{matrix?.centre.name || "—"}</h4>
-            </div>
-            <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
-              <span className="text-[10px] font-bold tracking-wider text-gray-500 uppercase">TRADE</span>
-              <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">{matrix?.trade.name || "—"}</h4>
-            </div>
-            <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
-              <span className="text-[10px] font-bold tracking-wider text-gray-500 uppercase">QUALIFICATION LEVEL</span>
-              <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">
-                {matrix ? `Level ${matrix.qualificationLevel.level}` : "—"}
-              </h4>
-            </div>
+      {/* Top Summary Cards */}
+      <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-xs border border-gray-100">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+          <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
+            <span className="text-[10px] font-bold tracking-wider text-gray-500 uppercase">NAME OF CENTRE</span>
+            <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">{matrix?.centre.name || "—"}</h4>
+          </div>
+          <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
+            <span className="text-[10px] font-bold tracking-wider text-gray-500 uppercase">TRADE</span>
+            <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">{matrix?.trade.name || "—"}</h4>
+          </div>
+          <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
+            <span className="text-[10px] font-bold tracking-wider text-gray-500 uppercase">QUALIFICATION LEVEL</span>
+            <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 truncate">
+              {matrix ? `Level ${matrix.qualificationLevel.level}` : "—"}
+            </h4>
           </div>
         </div>
+      </div>
 
-        {/* Sampling Matrix Table */}
-        <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-4">
+      {/* Sampling Matrix Table */}
+      <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-4">
           <h3 className="text-sm sm:text-base font-extrabold text-neutral-primary">Assessment Tools</h3>
 
           {isLoading ? (
@@ -233,7 +230,6 @@ export const SamplingPlanView: React.FC<SamplingPlanViewProps> = ({
             </div>
           )}
         </div>
-      </div>
     </div>
   );
 };

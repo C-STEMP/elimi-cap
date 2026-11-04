@@ -296,18 +296,42 @@ export function useForwardToAwardingBody() {
     mutationFn: (id: string) => forwardToAwardingBodyApi(id),
 
     onSuccess: (data) => {
+      if (data?.id) {
+        queryClient.invalidateQueries({
+          queryKey: CENTRE_APPLICATION_QUERY_KEYS.detail(data.id),
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["applications", data.id],
+        });
+      }
       queryClient.invalidateQueries({
-        queryKey: CENTRE_APPLICATION_QUERY_KEYS.detail(data.id),
+        queryKey: CENTRE_APPLICATION_QUERY_KEYS.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["applications"],
       });
       toast({
         type: "success",
         title: "Forwarded to Awarding Body",
-        description: "Application forwarded successfully.",
+        description: "Application forwarded successfully to the awarding body.",
       });
     },
 
     onError: (error: Error) => {
-      if (error instanceof ApiError) {
+      const is409 =
+        (error as any)?.status === 409 ||
+        error.message?.includes("409") ||
+        error.message?.toLowerCase().includes("iv review") ||
+        error.message?.toLowerCase().includes("not passed iv");
+
+      if (is409) {
+        toast({
+          type: "error",
+          title: "Cannot Forward Yet (409 Conflict)",
+          description:
+            "Application has not passed IV review yet. The assigned Internal Verifier must approve the stage before it can be forwarded to the Awarding Body.",
+        });
+      } else if (error instanceof ApiError) {
         toast({
           type: "error",
           title: "Forwarding Failed",

@@ -173,19 +173,19 @@ export const CandidateFormCard: React.FC<CandidateFormCardProps> = ({
 
   return (
     <div id="printable-application-card" className={className}>
-      <div className="bg-white rounded-3xl p-6 sm:p-10 border border-gray-100 shadow-sm flex flex-col gap-8">
+      <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-10 border border-gray-100 shadow-sm flex flex-col gap-6 sm:gap-8">
         <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4 border-b border-gray-100 pb-6 w-full">
           <div className="hidden sm:block w-28 sm:w-32 shrink-0" aria-hidden="true" />
           <div className="flex flex-col items-center text-center gap-2 flex-1 max-w-lg mx-auto">
             <div className="flex justify-center mb-0.5">
               <Image src={ASSETS_URL.logoIcon2} alt="ELIMI Logo" width={100} height={40} className="w-auto h-8 object-contain" style={{ width: "auto", height: "32px" }} />
             </div>
-            <h2 className="text-base sm:text-lg font-extrabold text-black tracking-tight leading-tight uppercase">
+            <h2 className="text-sm sm:text-base md:text-lg font-extrabold text-black tracking-tight leading-tight uppercase">
               NBTE/RPL/ 01 NSQ/RPL/QCF ASSESSMENT CENTRE CANDIDATE APPLICATION FORM
             </h2>
           </div>
-          <div className="w-28 sm:w-32 shrink-0 flex justify-center sm:justify-end">
-            <Avatar src={passport} name={name} shape="rounded" className="w-28 sm:w-32 h-28 sm:h-32 border-2 border-dashed border-[#a31d38]/20 bg-[#fdf2f5] p-1 shadow-2xs shrink-0" style={{ width: "112px", height: "112px", maxWidth: "112px", maxHeight: "112px" }} alt="Candidate Passport" />
+          <div className="w-24 sm:w-32 shrink-0 flex justify-center sm:justify-end">
+            <Avatar src={passport} name={name} shape="rounded" className="w-24 sm:w-32 h-24 sm:h-32 border-2 border-dashed border-[#a31d38]/20 bg-[#fdf2f5] p-1 shadow-2xs shrink-0" style={{ width: "96px", height: "96px", maxWidth: "128px", maxHeight: "128px" }} alt="Candidate Passport" />
           </div>
         </div>
 
@@ -200,9 +200,9 @@ export const CandidateFormCard: React.FC<CandidateFormCardProps> = ({
               ["Phone Number:", cInfo?.phoneNumber?.number ? `${cInfo.phoneNumber.countryCode || "+234"} ${cInfo.phoneNumber.number}` : typeof cInfo?.phoneNumber === "string" ? cInfo.phoneNumber : "------"],
               ["Email Address:", cInfo?.emailAddress || "------"],
             ].map(([label, val]) => (
-              <div key={label} className="flex items-center gap-2 border-b border-gray-200/70 pb-1.5">
-                <span className="font-semibold text-black shrink-0 w-32">{label}</span>
-                <span className="text-gray-800 font-medium">{val}</span>
+              <div key={label} className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 border-b border-gray-200/70 pb-1.5">
+                <span className="font-semibold text-black shrink-0 sm:w-32">{label}</span>
+                <span className="text-gray-800 font-medium break-words break-all sm:break-normal">{val}</span>
               </div>
             ))}
           </div>
@@ -212,13 +212,13 @@ export const CandidateFormCard: React.FC<CandidateFormCardProps> = ({
         <div className="flex flex-col gap-3">
           <h3 className="text-sm font-extrabold text-black uppercase tracking-wide">Qualification / Unit(s) Being Applied For</h3>
           <div className="grid grid-cols-1 gap-2.5 text-xs sm:text-sm">
-            <div className="flex items-center gap-2 border-b border-gray-200/70 pb-1.5">
-              <span className="font-semibold text-black shrink-0 w-36">Qualification Title:</span>
-              <span className="text-gray-800 font-medium">{detail?.trade?.name || detail?.trade || detail?.sector?.name || `${detail?.type || "RPL"} Trade Qualification`}</span>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 border-b border-gray-200/70 pb-1.5">
+              <span className="font-semibold text-black shrink-0 sm:w-36">Qualification Title:</span>
+              <span className="text-gray-800 font-medium break-words">{detail?.trade?.name || detail?.trade || detail?.sector?.name || `${detail?.type || "RPL"} Trade Qualification`}</span>
             </div>
-            <div className="flex items-center gap-2 border-b border-gray-200/70 pb-1.5">
-              <span className="font-semibold text-black shrink-0 w-36">Individual Units:</span>
-              <span className="text-gray-700 font-medium">{unitsApplied}</span>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 border-b border-gray-200/70 pb-1.5">
+              <span className="font-semibold text-black shrink-0 sm:w-36">Individual Units:</span>
+              <span className="text-gray-700 font-medium break-words">{unitsApplied}</span>
             </div>
           </div>
         </div>
@@ -227,9 +227,9 @@ export const CandidateFormCard: React.FC<CandidateFormCardProps> = ({
         <div className="flex flex-col gap-3">
           <h3 className="text-sm font-extrabold text-black uppercase tracking-wide">Learner Identification</h3>
           <div className="grid grid-cols-1 gap-2.5 text-xs sm:text-sm">
-            <div className="flex items-center gap-2 border-b border-gray-200/70 pb-1.5">
-              <span className="font-semibold text-black shrink-0 w-36">Unique Learner No. (ULN):</span>
-              <span className={uln ? "text-gray-800 font-medium" : "text-gray-400 font-medium"}>{uln || "Not Provided"}</span>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 border-b border-gray-200/70 pb-1.5">
+              <span className="font-semibold text-black shrink-0 sm:w-36">Unique Learner No. (ULN):</span>
+              <span className={uln ? "text-gray-800 font-medium break-words" : "text-gray-400 font-medium"}>{uln || "Not Provided"}</span>
             </div>
           </div>
         </div>
@@ -238,17 +238,17 @@ export const CandidateFormCard: React.FC<CandidateFormCardProps> = ({
         <div className="flex flex-col gap-3">
           <h3 className="text-sm font-extrabold text-black uppercase tracking-wide">Assessment Centre Details</h3>
           <div className="grid grid-cols-1 gap-2.5 text-xs sm:text-sm">
-            <div className="flex items-center gap-2 border-b border-gray-200/70 pb-1.5">
-              <span className="font-semibold text-black shrink-0 w-36">Centre Name:</span>
-              <span className="text-gray-800 font-medium">{detail?.centre?.name || "Elimi Assessment Centre"}</span>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 border-b border-gray-200/70 pb-1.5">
+              <span className="font-semibold text-black shrink-0 sm:w-36">Centre Name:</span>
+              <span className="text-gray-800 font-medium break-words">{detail?.centre?.name || "Elimi Assessment Centre"}</span>
             </div>
-            <div className="flex items-center gap-2 border-b border-gray-200/70 pb-1.5">
-              <span className="font-semibold text-black shrink-0 w-36">Reg Code:</span>
-              <span className="text-gray-600 font-medium">{detail?.centre?.registrationNo || detail?.centre?.slug || "AC-NBTE-0042"}</span>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 border-b border-gray-200/70 pb-1.5">
+              <span className="font-semibold text-black shrink-0 sm:w-36">Reg Code:</span>
+              <span className="text-gray-600 font-medium break-words">{detail?.centre?.registrationNo || detail?.centre?.slug || "AC-NBTE-0042"}</span>
             </div>
-            <div className="flex items-center gap-2 border-b border-gray-200/70 pb-1.5">
-              <span className="font-semibold text-black shrink-0 w-36">Centre Address:</span>
-              <span className="text-gray-600 font-medium">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 border-b border-gray-200/70 pb-1.5">
+              <span className="font-semibold text-black shrink-0 sm:w-36">Centre Address:</span>
+              <span className="text-gray-600 font-medium break-words">
                 {typeof detail?.centre?.address === "object"
                   ? [detail.centre.address.address, detail.centre.address.state].filter(Boolean).join(", ")
                   : (detail?.centre as any)?.address || "Approved TVET Assessment Facility"}
@@ -274,10 +274,12 @@ export const CandidateFormCard: React.FC<CandidateFormCardProps> = ({
                 <span className={`font-medium ${checked ? "text-gray-900 font-semibold" : "text-gray-400"}`}>{title}</span>
               </label>
             ))}
-            <div className="flex items-center gap-2.5">
-              <input type="checkbox" checked={Boolean(evCandidate?.other)} readOnly className="w-4 h-4 accent-[#a31d38] rounded cursor-default" />
-              <span className={`font-medium shrink-0 ${Boolean(evCandidate?.other) ? "text-gray-900 font-semibold" : "text-gray-400"}`}>Other (please specify):</span>
-              <div className="flex-1 border-b border-dashed border-gray-300 py-1 text-xs text-gray-700">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2.5">
+              <div className="flex items-center gap-2.5 shrink-0">
+                <input type="checkbox" checked={Boolean(evCandidate?.other)} readOnly className="w-4 h-4 accent-[#a31d38] rounded cursor-default" />
+                <span className={`font-medium ${Boolean(evCandidate?.other) ? "text-gray-900 font-semibold" : "text-gray-400"}`}>Other (please specify):</span>
+              </div>
+              <div className="flex-1 border-b border-dashed border-gray-300 py-1 text-xs text-gray-700 break-words">
                 {(evCandidate as any)?.otherText || (evCandidate as any)?.otherDescription || "------"}
               </div>
             </div>
@@ -288,13 +290,13 @@ export const CandidateFormCard: React.FC<CandidateFormCardProps> = ({
         <div className="flex flex-col gap-3">
           <h3 className="text-sm font-extrabold text-black uppercase tracking-wide">Current and Previous Work Experience</h3>
           <div className="grid grid-cols-1 gap-2.5 text-xs sm:text-sm">
-            <div className="flex items-center gap-2 border-b border-gray-200/70 pb-1.5">
-              <span className="font-semibold text-black shrink-0 w-36">Current Occupation:</span>
-              <span className="text-gray-700">{detail?.currentOccupation?.occupation || "------"}</span>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 border-b border-gray-200/70 pb-1.5">
+              <span className="font-semibold text-black shrink-0 sm:w-36">Current Occupation:</span>
+              <span className="text-gray-700 break-words">{detail?.currentOccupation?.occupation || "------"}</span>
             </div>
-            <div className="flex items-center gap-2 border-b border-gray-200/70 pb-1.5">
-              <span className="font-semibold text-black shrink-0 w-36">Employer (if applicable):</span>
-              <span className="text-gray-700">{detail?.currentOccupation?.employmentHistory?.[0]?.company || "------"}</span>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 border-b border-gray-200/70 pb-1.5">
+              <span className="font-semibold text-black shrink-0 sm:w-36">Employer (if applicable):</span>
+              <span className="text-gray-700 break-words">{detail?.currentOccupation?.employmentHistory?.[0]?.company || "------"}</span>
             </div>
             <div className="flex flex-col gap-1 border-b border-gray-200/70 pb-2">
               <span className="font-semibold text-black">Previous Relevant Experience:</span>
@@ -310,7 +312,7 @@ export const CandidateFormCard: React.FC<CandidateFormCardProps> = ({
             {detail?.reasonForSeekingRPL || "I declare that the information provided in this application is true and correct, and that the evidence submitted is a true representation of my skills, knowledge, and experience."}
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-            <div className="flex items-end gap-2 border-b border-dashed border-gray-300 pb-1 text-xs sm:text-sm min-h-8">
+            <div className="flex flex-col sm:flex-row sm:items-end gap-1.5 sm:gap-2 border-b border-dashed border-gray-300 pb-1 text-xs sm:text-sm min-h-8">
               <span className="font-semibold text-black shrink-0">Signature:</span>
               <div className="flex items-center gap-2 flex-wrap">
                 {resolvedSignatureUrl ? (
@@ -338,7 +340,7 @@ export const CandidateFormCard: React.FC<CandidateFormCardProps> = ({
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-2 border-b border-dashed border-gray-300 pb-1 text-xs sm:text-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 border-b border-dashed border-gray-300 pb-1 text-xs sm:text-sm">
               <span className="font-semibold text-black shrink-0">Date:</span>
               <span className="text-gray-700">{detail?.submittedAt ? new Date(detail.submittedAt).toLocaleDateString("en-GB") : detail?.createdAt ? new Date(detail.createdAt).toLocaleDateString("en-GB") : "------"}</span>
             </div>

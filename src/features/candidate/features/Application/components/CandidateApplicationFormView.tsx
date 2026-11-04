@@ -129,7 +129,7 @@ export const CandidateApplicationFormView: React.FC<
 
       <div className="max-w-4xl xl:max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex flex-col gap-6">
         {/* Action Buttons (Download & Print) */}
-        <div className="flex items-center justify-between gap-3 no-print">
+        <div className="flex flex-wrap items-center justify-between gap-3 no-print">
           <button
             type="button"
             onClick={() => router.push(`/dashboard/applications/${applicationId}`)}

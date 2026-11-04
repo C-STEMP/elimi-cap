@@ -23,6 +23,7 @@ interface ApplicationsHeaderProps {
   isNsqIqaComplete?: boolean;
   isNsqIqaFormsComplete?: boolean;
   isNsqIvApproved?: boolean;
+  isNsqForwardedToAwardingBody?: boolean;
   onBackToList: () => void;
   onBackFromInterview?: () => void;
   onBackFromInduction?: () => void;

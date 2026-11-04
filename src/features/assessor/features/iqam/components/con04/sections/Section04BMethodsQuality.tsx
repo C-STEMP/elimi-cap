@@ -3,6 +3,7 @@
 import React from "react";
 import { FiTrash2, FiPlus } from "react-icons/fi";
 import { IqamSignatureBlock } from "../../common/IqamSignatureBlock";
+import { useAssessorProfileSignature } from "@/src/features/shared/assessor/hooks";
 import type { IqamIvReportData, IqamIvReportAction } from "../../../api/types";
 
 type Section04BData = NonNullable<IqamIvReportData["con04b"]>;
@@ -41,6 +42,7 @@ export const Section04BMethodsQuality: React.FC<Section04BMethodsQualityProps> =
   readOnly = false,
   onChange,
 }) => {
+  const { data: profileSig } = useAssessorProfileSignature();
   const methodsSampled = data?.methodsSampled || [];
   const vacsr = data?.vacsr || {};
   const processChecked = data?.processChecked || {};
@@ -310,7 +312,12 @@ export const Section04BMethodsQuality: React.FC<Section04BMethodsQualityProps> =
           readOnly={readOnly}
           onSign={() =>
             update({
-              ivSignature: { status: "appended", signedAt: new Date().toISOString(), signatureMode: "typed" },
+              ivSignature: {
+                status: "appended",
+                signedAt: new Date().toISOString(),
+                signatureMode: profileSig?.assetId ? "upload" : "typed",
+                signatureAssetId: profileSig?.assetId || null,
+              },
             })
           }
         />

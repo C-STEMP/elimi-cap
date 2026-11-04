@@ -7,6 +7,7 @@ import { Section04CUnitOutcomes } from "./sections/Section04CUnitOutcomes";
 import { useGetIqamIvReport, usePatchIqamIvReport, useSubmitIqamIvReport } from "../../hooks/useIqam";
 import type { IqamIvReportData } from "../../api/types";
 import { Button } from "@/src/components/ui/button";
+import { useToast } from "@/src/components/ui/toast";
 import { FiArrowLeft, FiArrowRight, FiCheck } from "react-icons/fi";
 
 interface ComprehensiveReportViewProps {
@@ -31,6 +32,7 @@ export const ComprehensiveReportView: React.FC<ComprehensiveReportViewProps> = (
   candidateName,
   onUpdateHeader,
 }) => {
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<TabType>("04A");
 
   const { data: report, isLoading } = useGetIqamIvReport(applicationId);
@@ -55,6 +57,21 @@ export const ComprehensiveReportView: React.FC<ComprehensiveReportViewProps> = (
       else if (activeTab === "04B") setActiveTab("04C");
       return;
     }
+
+    // Spec enforcement: IV signature on CON/04B is required before submitting
+    if (activeTab === "04C") {
+      if (formData.con04b?.ivSignature?.status !== "appended") {
+        toast({
+          type: "error",
+          title: "IV Signature Required",
+          description:
+            "Please append your signature in Section CON/04B before submitting this report.",
+        });
+        setActiveTab("04B");
+        return;
+      }
+    }
+
     try {
       await patchReport.mutateAsync(formData);
     } catch {
@@ -78,24 +95,22 @@ export const ComprehensiveReportView: React.FC<ComprehensiveReportViewProps> = (
   if (isLoading) {
     return (
       <div className="w-full flex flex-col gap-6 select-text pb-12 animate-pulse">
-        <div className="w-full max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-6">
-          {/* Tabs skeleton */}
-          <div className="flex items-center gap-2 p-1.5 bg-slate-100/80 rounded-2xl w-fit">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-8 bg-gray-200 rounded-xl w-28" />
-            ))}
-          </div>
+        {/* Tabs skeleton */}
+        <div className="flex items-center gap-2 p-1.5 bg-slate-100/80 rounded-2xl w-fit">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="h-8 bg-gray-200 rounded-xl w-28" />
+          ))}
+        </div>
 
-          {/* Content skeleton */}
-          <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-5">
-            <div className="h-4 bg-gray-200 rounded w-48" />
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="p-4 bg-gray-50/70 rounded-2xl border border-gray-100 flex flex-col gap-2.5">
-                <div className="h-3 bg-gray-200 rounded w-3/4" />
-                <div className="h-10 bg-gray-100 rounded-xl w-full" />
-              </div>
-            ))}
-          </div>
+        {/* Content skeleton */}
+        <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-5">
+          <div className="h-4 bg-gray-200 rounded w-48" />
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="p-4 bg-gray-50/70 rounded-2xl border border-gray-100 flex flex-col gap-2.5">
+              <div className="h-3 bg-gray-200 rounded w-3/4" />
+              <div className="h-10 bg-gray-100 rounded-xl w-full" />
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -103,16 +118,14 @@ export const ComprehensiveReportView: React.FC<ComprehensiveReportViewProps> = (
 
   return (
     <div className="w-full flex flex-col gap-6 select-text pb-12 animate-fadeIn">
+      {isSubmitted && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-xs font-bold text-emerald-800">
+          This report was submitted on {new Date(report!.submittedAt!).toLocaleDateString("en-GB")}. It is now read-only.
+        </div>
+      )}
 
-      <div className="w-full max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-6">
-        {isSubmitted && (
-          <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-xs font-bold text-emerald-800">
-            This report was submitted on {new Date(report!.submittedAt!).toLocaleDateString("en-GB")}. It is now read-only.
-          </div>
-        )}
-
-        {/* Navigation Tabs Pill Container */}
-        <div className="flex items-center gap-1.5 sm:gap-2 p-1 sm:p-1.5 bg-slate-100/80 rounded-2xl w-full sm:w-fit overflow-x-auto scrollbar-none">
+      {/* Navigation Tabs Pill Container */}
+      <div className="flex items-center gap-1.5 sm:gap-2 p-1 sm:p-1.5 bg-slate-100/80 rounded-2xl w-full sm:w-fit overflow-x-auto scrollbar-none">
           <button
             type="button"
             onClick={() => setActiveTab("04A")}
@@ -234,7 +247,6 @@ export const ComprehensiveReportView: React.FC<ComprehensiveReportViewProps> = (
             )}
           </div>
         </div>
-      </div>
     </div>
   );
 };

@@ -275,42 +275,40 @@ export const FinalPortfolioReportView: React.FC<FinalPortfolioReportViewProps> =
   if (isLoading) {
     return (
       <div className="w-full flex flex-col gap-6 select-text pb-12 animate-pulse">
-        <div className="w-full max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div
-                key={i}
-                className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5"
-              >
-                <div className="h-2.5 bg-gray-200 rounded w-24" />
-                <div className="h-4 bg-gray-200 rounded w-32 mt-2" />
-              </div>
-            ))}
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div
+              key={i}
+              className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5"
+            >
+              <div className="h-2.5 bg-gray-200 rounded w-24" />
+              <div className="h-4 bg-gray-200 rounded w-32 mt-2" />
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={i}
+              className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5"
+            >
+              <div className="h-2.5 bg-gray-200 rounded w-20" />
+              <div className="h-4 bg-gray-200 rounded w-28 mt-2" />
+            </div>
+          ))}
+        </div>
+        <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xs border border-gray-100 flex flex-col gap-5">
+          <div className="h-4 bg-gray-200 rounded w-56" />
+          <div className="flex flex-col gap-4">
             {Array.from({ length: 4 }).map((_, i) => (
               <div
                 key={i}
-                className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5"
+                className="p-4 bg-[#f8f9fa] rounded-2xl border border-gray-100/80 flex flex-col gap-3"
               >
-                <div className="h-2.5 bg-gray-200 rounded w-20" />
-                <div className="h-4 bg-gray-200 rounded w-28 mt-2" />
+                <div className="h-3 bg-gray-200 rounded w-3/4" />
+                <div className="h-10 bg-gray-100 rounded-xl w-full" />
               </div>
             ))}
-          </div>
-          <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-xs border border-gray-100 flex flex-col gap-5">
-            <div className="h-4 bg-gray-200 rounded w-56" />
-            <div className="flex flex-col gap-4">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="p-4 bg-[#f8f9fa] rounded-2xl border border-gray-100/80 flex flex-col gap-3"
-                >
-                  <div className="h-3 bg-gray-200 rounded w-3/4" />
-                  <div className="h-10 bg-gray-100 rounded-xl w-full" />
-                </div>
-              ))}
-            </div>
           </div>
         </div>
       </div>
@@ -319,14 +317,13 @@ export const FinalPortfolioReportView: React.FC<FinalPortfolioReportViewProps> =
 
   return (
     <div className="w-full flex flex-col gap-6 select-text pb-12 animate-fadeIn">
-      <div className="w-full max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-6">
-        {isSubmitted && (
-          <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-xs font-bold text-emerald-800">
-            This report was submitted on{" "}
-            {new Date(portfolio!.submittedAt!).toLocaleDateString("en-GB")}. It is
-            now read-only.
-          </div>
-        )}
+      {isSubmitted && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-xs font-bold text-emerald-800">
+          This report was submitted on{" "}
+          {new Date(portfolio!.submittedAt!).toLocaleDateString("en-GB")}. It is
+          now read-only.
+        </div>
+      )}
 
         {/* Metadata Grid Row 1 (3 Cards) */}
         <div className="bg-white rounded-3xl p-4 sm:p-5 shadow-xs border border-gray-100">
@@ -535,10 +532,13 @@ export const FinalPortfolioReportView: React.FC<FinalPortfolioReportViewProps> =
           </h3>
           <div className="flex flex-col gap-4">
             <IqamSignatureBlock
-              label="IV Signature"
+              label="Internal Verifier (IV) Signature"
+              required={true}
+              helperText="Primary signature of the assigned Internal Verifier"
               signed={signatures.iv?.status === "appended"}
               dateValue={signatures.iv?.signedAt || ""}
               readOnly={isSubmitted}
+              signedText="Signed by Assigned IV"
               onSign={() =>
                 setFormData((prev) => ({
                   ...prev,
@@ -547,11 +547,13 @@ export const FinalPortfolioReportView: React.FC<FinalPortfolioReportViewProps> =
               }
             />
             <IqamSignatureBlock
-              label="Countersigning IQA (Lead)"
+              label="Countersigning IQA (Lead Verifier)"
               required={false}
+              helperText="Distinct countersignature reserved for Lead IQA"
               signed={signatures.countersigningIqa?.status === "appended"}
               dateValue={signatures.countersigningIqa?.signedAt || ""}
               readOnly={isSubmitted}
+              signedText="Signed by Lead IQA"
               onSign={() =>
                 setFormData((prev) => ({
                   ...prev,
@@ -597,6 +599,5 @@ export const FinalPortfolioReportView: React.FC<FinalPortfolioReportViewProps> =
           </div>
         </div>
       </div>
-    </div>
   );
 };

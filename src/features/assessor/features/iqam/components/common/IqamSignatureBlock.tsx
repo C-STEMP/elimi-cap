@@ -11,6 +11,7 @@ interface IqamSignatureBlockProps {
   dateValue?: string;
   onSign?: () => void;
   readOnly?: boolean;
+  helperText?: string;
 }
 
 // signedAt is stored as an ISO timestamp; show it as e.g. "24 Sep 2026".
@@ -33,6 +34,7 @@ export const IqamSignatureBlock: React.FC<IqamSignatureBlockProps> = ({
   dateValue = "",
   onSign,
   readOnly = false,
+  helperText,
 }) => {
   const formattedDate = formatSignedDate(dateValue);
 
@@ -40,10 +42,17 @@ export const IqamSignatureBlock: React.FC<IqamSignatureBlockProps> = ({
     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 w-full">
       {/* Signature Box */}
       <div className="flex-1 flex flex-col gap-1.5">
-        <label className="text-[11px] sm:text-xs font-bold text-neutral-primary">
-          {label}
-          {required && <span className="text-rose-500 ml-0.5">*</span>}
-        </label>
+        <div className="flex flex-col gap-0.5">
+          <label className="text-[11px] sm:text-xs font-bold text-neutral-primary">
+            {label}
+            {required && <span className="text-rose-500 ml-0.5">*</span>}
+          </label>
+          {helperText && (
+            <span className="text-[10px] text-gray-500 font-medium leading-tight">
+              {helperText}
+            </span>
+          )}
+        </div>
         <div
           onClick={!readOnly && !signed ? onSign : undefined}
           className={`h-11 px-4 rounded-xl border flex items-center justify-center gap-2 text-xs font-bold transition-all ${

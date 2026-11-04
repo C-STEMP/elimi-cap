@@ -30,7 +30,7 @@ export const SelfAssessmentFormCard: React.FC<Props> = ({
 }) => {
   return (
     <div id="printable-application-card" className="w-full max-w-5xl flex flex-col gap-6 printable-application-card">
-      <div className="bg-white rounded-3xl p-6 sm:p-10 border border-gray-100 shadow-sm flex flex-col gap-8">
+      <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-10 border border-gray-100 shadow-sm flex flex-col gap-8">
         <div className="flex flex-col items-center text-center gap-3 border-b border-gray-100 pb-6 relative">
           <div className="flex justify-center mb-1">
             <Image src={ASSETS_URL.logoIcon2} alt="ELIMI Logo" width={100} height={40} className="w-auto h-8 object-contain" style={{ width: "auto", height: "auto" }} />
@@ -39,7 +39,7 @@ export const SelfAssessmentFormCard: React.FC<Props> = ({
             Ref: NBTE/RPL/ 02 NSQ/RPL/QCF ASSESSMENT CENTRE SELF-ASSESSMENT OF COMPETENCY FORM
           </h2>
           <div className="sm:absolute sm:top-0 sm:right-0 mt-4 sm:mt-0">
-            <Avatar src={resolvedPassportUrl} name={formCandidateName} shape="rounded" className="w-28 sm:w-32 h-28 sm:h-32 border-2 border-dashed border-[#a31d38]/20 bg-[#fdf2f5] p-1 shadow-2xs" alt="Candidate Passport" />
+            <Avatar src={resolvedPassportUrl} name={formCandidateName} shape="rounded" className="w-24 sm:w-32 h-24 sm:h-32 border-2 border-dashed border-[#a31d38]/20 bg-[#fdf2f5] p-1 shadow-2xs" alt="Candidate Passport" />
           </div>
         </div>
 
@@ -54,9 +54,9 @@ export const SelfAssessmentFormCard: React.FC<Props> = ({
               ["Phone Number:", contactInfo?.phoneNumber?.number ? `${contactInfo.phoneNumber.countryCode || "+234"} ${contactInfo.phoneNumber.number}` : "------"],
               ["Email Address:", contactInfo?.emailAddress || "------"],
             ].map(([label, val]) => (
-              <div key={label} className="flex items-center gap-2 border-b border-gray-200/70 pb-1.5">
-                <span className="font-semibold text-black shrink-0 w-32">{label}</span>
-                <span className="text-gray-800 font-medium">{val}</span>
+              <div key={label} className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 border-b border-gray-200/70 pb-1.5">
+                <span className="font-semibold text-black shrink-0 sm:w-32">{label}</span>
+                <span className="text-gray-800 font-medium break-words break-all sm:break-normal">{val}</span>
               </div>
             ))}
           </div>

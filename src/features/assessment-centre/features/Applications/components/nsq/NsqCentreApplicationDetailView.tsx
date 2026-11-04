@@ -4,12 +4,15 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import {
   FiCheck,
+  FiCheckCircle,
   FiChevronRight,
   FiChevronDown,
   FiChevronUp,
   FiFileText,
   FiX,
   FiUserPlus,
+  FiSend,
+  FiAlertCircle,
 } from "react-icons/fi";
 import { CalendarWidget } from "@/features/candidate/features/Dashboard/components/CalendarWidget";
 import { TransactionReceiptModal } from "@/features/assessment-centre/features/Payment/components/TransactionReceiptModal";
@@ -20,14 +23,9 @@ import { AssignNsqAssessorModal, type NsqRoleType } from "./AssignNsqAssessorMod
 import { useGetCentreAssessors } from "@/src/features/shared/centre/hooks";
 import {
   useGetTradeDetail,
-  useGetUnitsByTrade,
-  useGetEvidenceTypesByTrade,
-  useGetCentres,
   useGetSectors,
 } from "@/src/features/shared/reference/hooks";
 import {
-  useGetInductionForm,
-  useGetDirectObservations,
   useGetApplicationStages,
   useGetPaymentQuote,
   useGetApplicationReceipt,
@@ -35,11 +33,12 @@ import {
   APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
 } from "@/src/features/shared/applications/hooks";
 import { formatCurrency } from "@/src/utils/currency";
+import { useForwardToAwardingBody } from "@/src/features/assessment-centre/features/Applications/hooks/useApplication";
 import { NsqAssessorObservationFormsView } from "@/src/features/assessor/features/Applications/components/nsq/NsqAssessorObservationFormsView";
 import { CentreIqamFormViewer } from "./CentreIqamFormViewer";
 import { getNsqScopedUnits } from "@/src/features/shared/applications/utils/nsqUnits";
 import type { IqamToolId } from "@/src/features/assessor/features/iqam/types/iqam.types";
-import type { ApplicationDetail, NsqCriterion } from "@/src/features/shared/applications/api/types";
+import type { ApplicationDetail, ApplicationStage, InductionForm, NsqCriterion } from "@/src/features/shared/applications/api/types";
 import { useModalDraft, useUrlModal } from "@/src/lib/hooks/usePersistentModal";
 import { NSQ_ASSIGN_ASSESSOR_MODAL, NSQ_DECISION_MODAL } from "@/src/lib/modal-keys";
 
@@ -174,16 +173,12 @@ export const NsqCentreApplicationDetailView: React.FC<
   const params = useParams();
   const effectiveAppId = application?.id || (params?.id as string) || "";
 
-  // NSQ Backend Queries
-  const { data: inductionForm } = useGetInductionForm(effectiveAppId);
-  const { data: directObservationsData } = useGetDirectObservations(
-    effectiveAppId,
-  );
+  // NSQ induction form and observation data from application
+  const inductionForm: InductionForm | undefined = (application as any)?.inductionForm || undefined;
   const rawSessions =
-    (directObservationsData as any)?.sessions ||
-    (directObservationsData as any)?.items ||
+    (application as any)?.directObservationSessions ||
     (application as any)?.nsq?.directObservationSessions ||
-    [];
+    ((application as any)?.directObservation ? [(application as any).directObservation] : []);
   const sortedSessions = rawSessions.slice().sort((a: any, b: any) => {
     const timeA = new Date(a.createdAt || a.scheduledAt || 0).getTime();
     const timeB = new Date(b.createdAt || b.scheduledAt || 0).getTime();
@@ -486,10 +481,15 @@ export const NsqCentreApplicationDetailView: React.FC<
   const [selectedIqamTool, setSelectedIqamTool] = useState<IqamToolId | null>(null);
   const [isObservationFormOpen, setIsObservationFormOpen] = useState<boolean>(false);
 
-  // Real workflow stages — GET /applications/{id}/stages.
-  const { data: stagesData } = useGetApplicationStages(effectiveAppId, {
+  // Stages for NSQ: prefer live stages from GET /applications/{id}/stages, fallback to application.stages
+  const { data: remoteStages = [] } = useGetApplicationStages(effectiveAppId, {
+    enabled: Boolean(effectiveAppId),
     refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
   });
+  const stagesData: ApplicationStage[] = useMemo(() => {
+    if (remoteStages && remoteStages.length > 0) return remoteStages;
+    return (application as any)?.stages || [];
+  }, [remoteStages, (application as any)?.stages]);
   const applicationFormStage = stagesData?.find((s) => s.stageKey === "application_form");
   const paymentStage = stagesData?.find((s) => s.stageKey === "payment");
 
@@ -517,9 +517,8 @@ export const NsqCentreApplicationDetailView: React.FC<
 
   // Dynamic reference data
   const { data: tradeDetail } = useGetTradeDetail(tradeId);
-  const { data: remoteUnits = [], isLoading: isLoadingUnits } = useGetUnitsByTrade(tradeId);
-  const { data: remoteEvidenceTypes = [] } = useGetEvidenceTypesByTrade(tradeId);
-  const { data: remoteCentres = [] } = useGetCentres();
+  const isLoadingUnits = false;
+  const remoteEvidenceTypes: any[] = [];
   const { data: remoteSectors = [] } = useGetSectors();
 
   // Resolved Names
@@ -540,8 +539,8 @@ export const NsqCentreApplicationDetailView: React.FC<
     "Construction & Building";
 
   const resolvedCentreName =
-    remoteCentres.find((c) => c.id === application?.centreId)?.name ||
     application?.centre?.name ||
+    (application as any)?.centreName ||
     "—";
 
   const candidateName =
@@ -590,7 +589,6 @@ export const NsqCentreApplicationDetailView: React.FC<
 
   const qualificationCode =
     nsqUnitsForLevel?.[0]?.referenceNumber ||
-    remoteUnits[0]?.referenceNumber ||
     (tradeDetail?.activeNosDocument as any)?.qualificationLevels?.[0]?.slug ||
     (tradeDetail?.activeNosDocument as any)?.title ||
     "—";
@@ -695,6 +693,26 @@ export const NsqCentreApplicationDetailView: React.FC<
     effectiveStageKey &&
       STAGE_ORDER.indexOf(effectiveStageKey) >= STAGE_ORDER.indexOf("internal_verification"),
   );
+
+  const isNsqIvApproved = Boolean(
+    (application as any)?.verification?.ivOutcome === "approve" ||
+    (application as any)?.verification?.ivOutcome === "successful" ||
+    stagesData?.find((s) => s.stageKey === "internal_verification")?.status === "successful" ||
+    (application as any)?.currentStageKey === "external_verification" ||
+    (application as any)?.currentStageKey === "certification" ||
+    (application as any)?.ivApproved === true ||
+    (application as any)?.ivReview?.decision === "approve"
+  );
+
+  const isNsqForwardedToAwardingBody = Boolean(
+    (application as any)?.currentStageKey === "external_verification" ||
+    (application as any)?.currentStageKey === "certification" ||
+    (application as any)?.verification?.externalVerifier ||
+    (application as any)?.forwardedToAwardingBody ||
+    (application as any)?.forwardedAt
+  );
+
+  const forwardToAwardingBodyMutation = useForwardToAwardingBody();
 
   const progressSteps = useMemo(
     () =>
@@ -883,7 +901,7 @@ export const NsqCentreApplicationDetailView: React.FC<
         ) : (
           <div className="lg:col-span-8 flex flex-col gap-5">
           {/* 1. Assessment Progress Stepper Card */}
-          <div className="bg-white rounded-2xl p-6 sm:p-7 shadow-xs border border-gray-100 flex flex-col gap-6">
+          <div className="bg-white rounded-2xl p-4 sm:p-7 shadow-xs border border-gray-100 flex flex-col gap-6">
             <h3 className="text-base sm:text-lg font-bold text-gray-900 tracking-tight">
               Assessment Progress
             </h3>
@@ -891,7 +909,7 @@ export const NsqCentreApplicationDetailView: React.FC<
             {/* Steps Progress — driven by GET /applications/{id}/stages.
                 Application Form and Payment have their own cards below, so
                 the timeline covers the remaining five workflow stages. */}
-            <div className="relative flex items-start justify-between w-full px-4 sm:px-10">
+            <div className="relative flex items-start justify-between w-full px-1 sm:px-10">
               {/* Connector line background */}
               <div className="absolute left-8 right-8 top-3.5 h-[1.5px] bg-gray-200 z-0" />
               <div
@@ -926,7 +944,7 @@ export const NsqCentreApplicationDetailView: React.FC<
                       )}
                     </div>
                     <span
-                      className={`w-full text-[10px] sm:text-xs text-center font-medium leading-tight wrap-break-word ${
+                      className={`w-full text-[8px] xs:text-[9px] sm:text-xs text-center font-medium leading-tight wrap-break-word ${
                         isComplete
                           ? "text-[#10b981] font-semibold"
                           : isRejectedStep
@@ -945,9 +963,9 @@ export const NsqCentreApplicationDetailView: React.FC<
           </div>
 
           {/* 2. Application Status Card */}
-          <div className="bg-white rounded-2xl p-6 shadow-xs border border-gray-100 flex flex-col gap-2">
+          <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-xs border border-gray-100 flex flex-col gap-2">
             <div className="flex items-center justify-between flex-wrap gap-3">
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-2.5 flex-wrap">
                 <h4 className="text-base font-bold text-gray-900">
                   Application Status
                 </h4>
@@ -972,7 +990,7 @@ export const NsqCentreApplicationDetailView: React.FC<
 
               {/* Reject / Approve actions in Pending state */}
               {isPending && (
-                <div className="flex items-center gap-6">
+                <div className="flex items-center gap-4 sm:gap-6">
                   <button
                     type="button"
                     onClick={() =>
@@ -995,15 +1013,15 @@ export const NsqCentreApplicationDetailView: React.FC<
               )}
             </div>
 
-            <p className="text-xs sm:text-sm text-gray-500 font-normal">
+            <p className="text-xs sm:text-sm text-gray-500 font-normal break-words">
               {resolvedCentreName} | {resolvedSectorName} | {resolvedTradeName}
             </p>
           </div>
 
           {/* 3. Payment Card */}
-          <div className="bg-white rounded-2xl p-6 shadow-xs border border-gray-100 flex items-center justify-between gap-4">
+          <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-xs border border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
             <div className="flex flex-col gap-1">
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-2.5 flex-wrap">
                 <span className="text-base sm:text-lg font-bold text-gray-900">
                   {paymentAmountText}
                 </span>
@@ -1026,7 +1044,7 @@ export const NsqCentreApplicationDetailView: React.FC<
               <button
                 type="button"
                 onClick={() => setIsReceiptModalOpen(true)}
-                className="text-sm font-semibold text-[#fbab2a] hover:text-[#e89b1f] hover:underline cursor-pointer select-none shrink-0"
+                className="text-sm font-semibold text-[#fbab2a] hover:text-[#e89b1f] hover:underline cursor-pointer select-none shrink-0 self-start sm:self-center"
               >
                 Receipt
               </button>
@@ -1034,7 +1052,7 @@ export const NsqCentreApplicationDetailView: React.FC<
           </div>
 
           {/* 4. Candidate Induction Form Card */}
-          <div className="bg-white rounded-2xl p-6 shadow-xs border border-gray-100 flex items-center justify-between gap-4">
+          <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-xs border border-gray-100 flex items-center justify-between gap-4">
             <span className="text-sm sm:text-base font-bold text-gray-900">
               Candidate Induction Form
             </span>
@@ -1333,6 +1351,67 @@ export const NsqCentreApplicationDetailView: React.FC<
                       </div>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {/* 10. Awarding Body Forwarding Card */}
+              {isInternalVerificationStage && (
+                <div className="bg-white rounded-2xl p-6 shadow-xs border border-gray-100 flex flex-col gap-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-700 flex items-center justify-center shrink-0">
+                        <FiSend className="w-5 h-5 text-[#fbab2a]" />
+                      </div>
+                      <div className="flex flex-col">
+                        <h3 className="text-base font-bold text-gray-900">
+                          Forward to Awarding Body
+                        </h3>
+                        <p className="text-xs text-gray-500 font-normal">
+                          {isNsqForwardedToAwardingBody
+                            ? "This application has been successfully forwarded to the Awarding Body for External Verification."
+                            : isNsqIvApproved
+                              ? "The Internal Verifier has approved the review. You can now forward this application to the Awarding Body."
+                              : "Awaiting IV approval. The assigned Internal Verifier must approve the stage before it can be forwarded."}
+                        </p>
+                      </div>
+                    </div>
+
+                    {isNsqForwardedToAwardingBody ? (
+                      <span className="px-3 py-1 rounded-full text-xs font-semibold bg-[#D1FAE5] text-[#059669] shrink-0">
+                        Forwarded
+                      </span>
+                    ) : isNsqIvApproved ? (
+                      <span className="px-3 py-1 rounded-full text-xs font-semibold bg-[#D1FAE5] text-[#059669] shrink-0">
+                        IV Approved
+                      </span>
+                    ) : (
+                      <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200/80 shrink-0">
+                        Awaiting IV Review
+                      </span>
+                    )}
+                  </div>
+
+                  {!isNsqForwardedToAwardingBody && (
+                    <div className="pt-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (application?.id) {
+                            forwardToAwardingBodyMutation.mutate(application.id);
+                          }
+                        }}
+                        disabled={forwardToAwardingBodyMutation.isPending}
+                        className="w-full sm:w-auto px-5 py-2.5 bg-[#fbab2a] hover:bg-[#e89b1f] disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition-all cursor-pointer flex items-center justify-center gap-2"
+                      >
+                        <FiSend className="w-4 h-4" />
+                        <span>
+                          {forwardToAwardingBodyMutation.isPending
+                            ? "Forwarding..."
+                            : "Forward to Awarding Body"}
+                        </span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </>

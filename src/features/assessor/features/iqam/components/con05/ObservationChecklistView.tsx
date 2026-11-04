@@ -114,55 +114,51 @@ export const ObservationChecklistView: React.FC<ObservationChecklistViewProps> =
   if (isLoading) {
     return (
       <div className="w-full flex flex-col gap-6 select-text pb-12 animate-pulse">
-        <div className="w-full max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-6">
-          {/* Banner skeleton */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {Array.from({ length: 2 }).map((_, i) => (
-              <div key={i} className="bg-slate-50 border border-slate-100 rounded-2xl p-4 sm:p-5">
-                <div className="h-2.5 bg-gray-200 rounded w-24" />
-                <div className="h-4 bg-gray-200 rounded w-36 mt-2" />
-              </div>
-            ))}
-          </div>
-
-          {/* Section skeleton */}
-          {Array.from({ length: 2 }).map((_, sectionIdx) => (
-            <div
-              key={sectionIdx}
-              className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-5"
-            >
-              <div className="h-4 bg-gray-200 rounded w-40" />
-              <div className="flex flex-col gap-4">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="p-4 bg-gray-50/70 rounded-2xl border border-gray-100 flex flex-col gap-2.5">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="h-3 bg-gray-200 rounded w-3/4" />
-                      <div className="h-6 bg-gray-200 rounded-lg w-20 shrink-0" />
-                    </div>
-                    <div className="h-10 bg-gray-100 rounded-xl w-full" />
-                  </div>
-                ))}
-              </div>
+        {/* Banner skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {Array.from({ length: 2 }).map((_, i) => (
+            <div key={i} className="bg-slate-50 border border-slate-100 rounded-2xl p-4 sm:p-5">
+              <div className="h-2.5 bg-gray-200 rounded w-24" />
+              <div className="h-4 bg-gray-200 rounded w-36 mt-2" />
             </div>
           ))}
         </div>
+
+        {/* Section skeleton */}
+        {Array.from({ length: 2 }).map((_, sectionIdx) => (
+          <div
+            key={sectionIdx}
+            className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-5"
+          >
+            <div className="h-4 bg-gray-200 rounded w-40" />
+            <div className="flex flex-col gap-4">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="p-4 bg-gray-50/70 rounded-2xl border border-gray-100 flex flex-col gap-2.5">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="h-3 bg-gray-200 rounded w-3/4" />
+                    <div className="h-6 bg-gray-200 rounded-lg w-20 shrink-0" />
+                  </div>
+                  <div className="h-10 bg-gray-100 rounded-xl w-full" />
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     );
   }
 
   return (
     <div className="w-full flex flex-col gap-6 select-text pb-12 animate-fadeIn">
+      {isSubmitted && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-xs font-bold text-emerald-800">
+          This checklist was submitted on {new Date(outcomes!.submittedAt!).toLocaleDateString("en-GB")}. It is now read-only.
+        </div>
+      )}
 
-      <div className="w-full max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-6">
-        {isSubmitted && (
-          <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-xs font-bold text-emerald-800">
-            This checklist was submitted on {new Date(outcomes!.submittedAt!).toLocaleDateString("en-GB")}. It is now read-only.
-          </div>
-        )}
-
-        {/* Banner */}
-        <div className="bg-white rounded-3xl p-4 sm:p-5 shadow-xs border border-gray-100">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Banner */}
+      <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-xs border border-gray-100">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
               <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">REF: CON/05/IQAM</span>
               <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1">
@@ -220,10 +216,13 @@ export const ObservationChecklistView: React.FC<ObservationChecklistViewProps> =
         <div className="bg-white rounded-3xl p-4 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-4 sm:gap-5">
           <h3 className="text-sm sm:text-base font-extrabold text-neutral-primary">Signature & Date</h3>
           <IqamSignatureBlock
-            label="IV Signature"
+            label="Internal Verifier (IV) Signature"
+            required={true}
+            helperText="Primary signature of the assigned Internal Verifier"
             signed={formData.ivSignature?.status === "appended"}
             dateValue={formData.ivSignature?.signedAt || ""}
             readOnly={isSubmitted}
+            signedText="Signed by Assigned IV"
             onSign={() =>
               setFormData((prev) => ({
                 ...prev,
@@ -232,10 +231,13 @@ export const ObservationChecklistView: React.FC<ObservationChecklistViewProps> =
             }
           />
           <IqamSignatureBlock
-            label="Second line IV signature"
+            label="Second Line IV Signature"
+            required={false}
+            helperText="Distinct sign-off reserved for Second Line Internal Verifier"
             signed={formData.secondLineIvSignature?.status === "appended"}
             dateValue={formData.secondLineIvSignature?.signedAt || ""}
             readOnly={isSubmitted}
+            signedText="Signed by Second Line IV"
             onSign={() =>
               setFormData((prev) => ({
                 ...prev,
@@ -276,7 +278,6 @@ export const ObservationChecklistView: React.FC<ObservationChecklistViewProps> =
             )}
           </div>
         </div>
-      </div>
     </div>
   );
 };

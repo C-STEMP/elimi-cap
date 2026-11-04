@@ -174,7 +174,7 @@ export const IqamToolsDashboard: React.FC<IqamToolsDashboardProps> = ({
         <h3 className="text-sm sm:text-base font-extrabold text-neutral-primary">
           Assessment Tools
         </h3>
-        <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 flex flex-col items-center text-center gap-2">
+        <div className="bg-white rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-sm border border-gray-100 flex flex-col items-center text-center gap-2">
           {isLoadingCentres ? (
             <p className="text-xs text-gray-400">Loading your IQAM centres…</p>
           ) : (
@@ -264,19 +264,22 @@ export const IqamToolsDashboard: React.FC<IqamToolsDashboardProps> = ({
 
   return (
     <div className="w-full flex flex-col gap-5 select-text pb-12 animate-fadeIn">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <h3 className="text-sm sm:text-base font-extrabold text-neutral-primary">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full">
+        <h3 className="text-sm sm:text-base font-extrabold text-neutral-primary shrink-0">
           Assessment Tools
         </h3>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto min-w-0">
           {selectedCandidateName && (
-            <span className="px-3 py-1 bg-slate-100 text-neutral-primary text-[11px] font-bold rounded-xl">
+            <span
+              className="px-3 py-1.5 bg-slate-100 text-neutral-primary text-xs font-bold rounded-xl whitespace-nowrap truncate max-w-[180px] sm:max-w-xs shrink-0"
+              title={`Candidate: ${selectedCandidateName}`}
+            >
               Candidate: {selectedCandidateName}
             </span>
           )}
           {iqamCentres.length > 1 ? (
-            <div className="relative">
+            <div className="relative flex-1 sm:flex-initial min-w-0 max-w-full">
               <select
                 value={selectedCentreId}
                 onChange={(e) => {
@@ -284,7 +287,7 @@ export const IqamToolsDashboard: React.FC<IqamToolsDashboardProps> = ({
                   setSelectedApplicationId(null);
                   setSelectedCandidateName("");
                 }}
-                className="h-9 pl-3 pr-8 bg-white border border-gray-200 rounded-xl text-xs font-bold text-neutral-primary appearance-none cursor-pointer"
+                className="w-full sm:w-auto max-w-full h-9 pl-3 pr-8 bg-white border border-gray-200 rounded-xl text-xs font-bold text-neutral-primary appearance-none cursor-pointer truncate"
               >
                 {iqamCentres.map((c) => (
                   <option key={c.centreId} value={c.centreId}>
@@ -294,8 +297,12 @@ export const IqamToolsDashboard: React.FC<IqamToolsDashboardProps> = ({
               </select>
               <FiChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
             </div>
+          ) : iqamCentres.length === 1 ? (
+            <span className="px-3 py-1.5 bg-gray-100 text-gray-700 text-xs font-bold rounded-xl truncate max-w-[200px] sm:max-w-xs shrink-0">
+              {iqamCentres[0].centreName}
+            </span>
           ) : (
-            <span className="px-3 py-1 bg-emerald-100/70 text-emerald-800 text-[11px] font-extrabold rounded-xl">
+            <span className="px-3 py-1.5 bg-emerald-100/70 text-emerald-800 text-[11px] font-extrabold rounded-xl shrink-0">
               Active
             </span>
           )}
@@ -303,15 +310,15 @@ export const IqamToolsDashboard: React.FC<IqamToolsDashboardProps> = ({
       </div>
 
       {/* 6 Tool Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
         {IQAM_TOOLS.map((tool) => {
           const needsCandidate = TOOLS_NEEDING_CANDIDATE.includes(tool.id);
           return (
             <div
               key={tool.id}
-              className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col justify-between gap-5 hover:shadow-md transition-shadow"
+              className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm border border-gray-100 flex flex-col justify-between gap-4 sm:gap-5 hover:shadow-md transition-shadow"
             >
-              <div className="flex flex-col gap-2.5">
+              <div className="flex flex-col gap-2 sm:gap-2.5">
                 <span className="w-fit px-2.5 py-1 bg-rose-50 text-[#a31d38] font-bold text-[10px] rounded-lg">
                   {tool.refCode}
                 </span>
@@ -326,7 +333,7 @@ export const IqamToolsDashboard: React.FC<IqamToolsDashboardProps> = ({
               <button
                 type="button"
                 onClick={() => handleOpenTool(tool.id)}
-                className="w-full h-11 bg-[#fbab2a] hover:bg-[#e89b1f] text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition-all cursor-pointer flex items-center justify-center"
+                className="w-full h-10 sm:h-11 bg-[#fbab2a] hover:bg-[#e89b1f] text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition-all cursor-pointer flex items-center justify-center shrink-0"
               >
                 {needsCandidate && !selectedApplicationId ? "Select Candidate" : "Open"}
               </button>

@@ -13,12 +13,18 @@ export interface AssessorRoleContext {
   canPerformIqa: boolean;
   /** True if the user is authorized to perform QAA functions (review unit evidence, sign off units) */
   canPerformQaa: boolean;
+  /** True if the current logged-in user matches the assigned EV */
+  isCurrentEv?: boolean;
+  /** True if the user is authorized to perform EV functions (external verification review) */
+  canPerformEv?: boolean;
   /** Display label describing user's role on this application */
   roleLabel: string;
   /** Name of the assigned QAA assessor */
   unitAssessorName?: string;
   /** Name of the assigned IQA verifier */
   internalVerifierName?: string;
+  /** Name of the assigned EV verifier */
+  externalVerifierName?: string;
 }
 
 export function isSameAssessor(
@@ -32,7 +38,7 @@ export function isSameAssessor(
 
   const aName = (a.name || "").trim().toLowerCase();
   const bName = (b.name || "").trim().toLowerCase();
-  if (aName && bName && aName === bName) return true;
+  if (aName && bName && aName.length > 2 && aName === bName) return true;
 
   return false;
 }
@@ -49,8 +55,31 @@ export function getAssessorRoleContext({
   assessorProfile?: any;
 }): AssessorRoleContext {
   const unitAssessor =
-    application?.unitAssessor || (application as any)?.facilitator;
-  const internalVerifier = application?.internalVerifier;
+    application?.unitAssessor ||
+    (application as any)?.facilitator ||
+    (application as any)?.assessor ||
+    (application as any)?.verification?.unitAssessor;
+
+  const internalVerifier =
+    application?.internalVerifier ||
+    (application as any)?.verification?.internalVerifier ||
+    (application as any)?.frozenProfile?.internalVerifier ||
+    ((application as any)?.internalVerifierId
+      ? {
+          id: (application as any).internalVerifierId,
+          assessorId: (application as any).internalVerifierId,
+        }
+      : null);
+
+  const externalVerifier =
+    (application as any)?.externalVerifier ||
+    (application as any)?.verification?.externalVerifier ||
+    ((application as any)?.externalVerifierId
+      ? {
+          id: (application as any).externalVerifierId,
+          assessorId: (application as any).externalVerifierId,
+        }
+      : null);
 
   const samePerson = isSameAssessor(unitAssessor, internalVerifier);
 
@@ -59,8 +88,12 @@ export function getAssessorRoleContext({
     user?.id,
     user?.userId,
     (user as any)?._id,
+    (user as any)?.sub,
     assessorProfile?.id,
     assessorProfile?.assessorId,
+    (assessorProfile as any)?._id,
+    (meProfile as any)?.id,
+    (meProfile as any)?.userId,
   ]
     .filter(Boolean)
     .map(String)
@@ -68,7 +101,9 @@ export function getAssessorRoleContext({
 
   const currentEmails = [
     user?.email,
+    (user as any)?.emailAddress,
     meProfile?.contactInformation?.emailAddress,
+    (meProfile as any)?.email,
     assessorProfile?.email,
   ]
     .filter(Boolean)
@@ -88,108 +123,115 @@ export function getAssessorRoleContext({
     .map(String)
     .map((s) => s.toLowerCase().trim());
 
-  const matchesAssessor = (target?: {
-    assessorId?: string;
-    id?: string;
-    name?: string;
-    email?: string;
-  } | null): boolean => {
+  const matchesAssessor = (
+    target?: {
+      assessorId?: string;
+      id?: string;
+      name?: string;
+      email?: string;
+      firstName?: string;
+      lastName?: string;
+    } | string | null,
+  ): boolean => {
     if (!target) return false;
+    if (typeof target === "string") {
+      const trimmed = target.toLowerCase().trim();
+      return Boolean(trimmed && currentIds.includes(trimmed));
+    }
     const targetId = (target.assessorId || target.id || "")
       .toString()
       .toLowerCase()
       .trim();
     const targetEmail = (target.email || "").toString().toLowerCase().trim();
-    const targetName = (target.name || "").toString().toLowerCase().trim();
+    const targetFullName = (
+      target.name ||
+      `${target.firstName || ""} ${target.lastName || ""}`
+    )
+      .toString()
+      .toLowerCase()
+      .trim();
 
     if (targetId && currentIds.includes(targetId)) return true;
     if (targetEmail && currentEmails.includes(targetEmail)) return true;
-    if (
-      targetName &&
-      currentNames.some(
-        (n) =>
-          n === targetName ||
-          n.includes(targetName) ||
-          targetName.includes(n),
-      )
-    ) {
-      return true;
+    if (targetFullName && targetFullName.length > 2) {
+      if (currentNames.some((n) => n === targetFullName)) {
+        return true;
+      }
     }
     return false;
   };
 
   const directMatchQaa = matchesAssessor(unitAssessor);
   const directMatchIqa = matchesAssessor(internalVerifier);
+  const directMatchEv = matchesAssessor(externalVerifier);
 
-  // Check user system roles
-  const userRoleStr = (user?.role || "").toLowerCase();
-  const userRolesList = Array.isArray((user as any)?.roles)
-    ? (user as any).roles.map((r: string) => r.toLowerCase())
+  const appRole = ((application as any)?.role || "").toLowerCase();
+  const appRoles: string[] = Array.isArray((application as any)?.roles)
+    ? (application as any).roles.map((r: string) => r.toLowerCase())
     : [];
 
-  const systemHasIqaRole =
-    userRoleStr.includes("iv") ||
-    userRoleStr.includes("verifier") ||
-    userRoleStr.includes("iqa") ||
-    userRolesList.includes("iv") ||
-    userRolesList.includes("iqa") ||
-    userRolesList.includes("internal_verifier");
+  const isAssignedAsIvOnRecord =
+    appRole === "internal verifier" ||
+    appRole === "internal_verifier" ||
+    appRole === "iv" ||
+    appRoles.includes("internal_verifier") ||
+    appRoles.includes("iv");
 
-  const systemHasQaaRole =
-    userRoleStr.includes("assessor") ||
-    userRoleStr.includes("qaa") ||
-    userRolesList.includes("unit_assessor") ||
-    userRolesList.includes("qaa");
+  const isAssignedAsQaaOnRecord =
+    appRole === "assessor" ||
+    appRole === "unit_assessor" ||
+    appRole === "facilitator" ||
+    appRole === "qaa" ||
+    appRoles.includes("unit_assessor") ||
+    appRoles.includes("qaa") ||
+    appRoles.includes("assessor");
 
-  // If QAA and IQA are the same person and the user matches either, they match both!
-  const isCurrentQaa = samePerson
-    ? directMatchQaa || directMatchIqa
-    : directMatchQaa;
-  const isCurrentIqa = samePerson
-    ? directMatchQaa || directMatchIqa
-    : directMatchIqa;
+  const isAssignedAsEvOnRecord =
+    appRole === "external verifier" ||
+    appRole === "external_verifier" ||
+    appRole === "ev" ||
+    appRole === "eqa" ||
+    appRoles.includes("external_verifier") ||
+    appRoles.includes("ev") ||
+    appRoles.includes("eqa");
 
-  const isDualRole =
-    (samePerson && (directMatchQaa || directMatchIqa)) ||
-    (directMatchQaa && directMatchIqa) ||
-    (isCurrentQaa && systemHasIqaRole) ||
-    (isCurrentIqa && systemHasQaaRole);
+  // In NSQ, QAA and IV are strictly separate roles and steps.
+  // A QAA assessor cannot approve the IV stage or sign as IV.
+  const isCurrentQaa = directMatchQaa || (isAssignedAsQaaOnRecord && !directMatchIqa);
+  const isCurrentIqa = directMatchIqa || (isAssignedAsIvOnRecord && !directMatchQaa);
+  const isCurrentEv = Boolean(directMatchEv || isAssignedAsEvOnRecord);
 
-  // Authorization to perform actions:
-  // Irrespective of whether they are the same person or different people,
-  // anyone assigned as IQA (or in dual role) CAN perform IQA functions!
-  const canPerformIqa = Boolean(
-    isCurrentIqa ||
-      isDualRole ||
-      (samePerson && isCurrentQaa) ||
-      (!internalVerifier && systemHasIqaRole),
-  );
+  const isDualRole = Boolean(directMatchQaa && directMatchIqa);
 
-  const canPerformQaa = Boolean(
-    isCurrentQaa ||
-      isDualRole ||
-      (samePerson && isCurrentIqa) ||
-      (!unitAssessor && systemHasQaaRole),
-  );
+  const canPerformIqa = isCurrentIqa;
+  const canPerformQaa = isCurrentQaa;
+  const canPerformEv = isCurrentEv;
 
   let roleLabel = "Assessor";
   if (isDualRole) {
     roleLabel = "QAA & Internal Verifier";
-  } else if (isCurrentIqa || (!isCurrentQaa && canPerformIqa)) {
+  } else if (isCurrentEv) {
+    roleLabel = "External Verifier";
+  } else if (isCurrentIqa) {
     roleLabel = "Internal Verifier";
   } else if (isCurrentQaa) {
     roleLabel = "QAA Assessor";
+  } else if ((application as any)?.role) {
+    roleLabel = (application as any).role;
   }
 
   return {
     samePerson,
     isCurrentQaa,
     isCurrentIqa,
+    isCurrentEv,
     isDualRole,
     canPerformIqa,
     canPerformQaa,
+    canPerformEv,
     roleLabel,
     unitAssessorName: unitAssessor?.name,
     internalVerifierName: internalVerifier?.name,
+    externalVerifierName: (externalVerifier as any)?.name || (externalVerifier as any)?.assessorName,
   };
 }
