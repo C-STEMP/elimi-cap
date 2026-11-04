@@ -69,11 +69,11 @@ export const AssessorApplicationStageCard: React.FC<
   return (
     <div
       onClick={handleCardClick}
-      className={`bg-white rounded-2xl p-5 sm:p-6 border border-gray-100 shadow-xs flex flex-col gap-3 transition-all relative ${
+      className={`bg-white rounded-2xl p-4 sm:p-6 border border-gray-100 shadow-xs flex flex-col gap-3 transition-all relative ${
         isViewStage ? "cursor-pointer group" : ""
       }`}
     >
-      <div className="flex items-start sm:items-center justify-between gap-3 w-full">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 w-full">
         <div className="flex flex-col gap-1 sm:gap-1.5 min-w-0 flex-1">
           <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
             <h4 className={`text-base sm:text-lg font-bold text-neutral-primary ${isViewStage ? "group-hover:text-primary transition-colors" : ""}`}>

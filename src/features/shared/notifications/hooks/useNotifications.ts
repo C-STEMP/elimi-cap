@@ -82,11 +82,11 @@ export function useGetCandidateEvents(params?: {
 
 export function useGetApplicationEvents(
   applicationId: string,
-  params?: { limit?: number; cursor?: string },
+  params?: { limit?: number; cursor?: string; enabled?: boolean },
 ) {
   return useQuery({
     queryKey: NOTIFICATION_QUERY_KEYS.applicationEvents(applicationId),
     queryFn: () => getApplicationEventsApi(applicationId, params),
-    enabled: Boolean(applicationId),
+    enabled: Boolean(applicationId) && (params?.enabled ?? true),
   });
 }

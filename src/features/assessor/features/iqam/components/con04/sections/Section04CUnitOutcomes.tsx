@@ -1,8 +1,7 @@
 "use client";
 
 import React from "react";
-import { IqamSignatureBlock } from "../../common/IqamSignatureBlock";
-import type { IqamIvReportData, IqamSignatureStub } from "../../../api/types";
+import type { IqamIvReportData } from "../../../api/types";
 
 type Section04CData = NonNullable<IqamIvReportData["con04c"]>;
 
@@ -13,12 +12,6 @@ interface Section04CUnitOutcomesProps {
   onChange: (data: Section04CData) => void;
 }
 
-const appendedSignature = (): IqamSignatureStub => ({
-  status: "appended",
-  signedAt: new Date().toISOString(),
-  signatureMode: "typed",
-});
-
 export const Section04CUnitOutcomes: React.FC<Section04CUnitOutcomesProps> = ({
   units,
   data,
@@ -26,7 +19,6 @@ export const Section04CUnitOutcomes: React.FC<Section04CUnitOutcomesProps> = ({
   onChange,
 }) => {
   const verifiedUnitIds = data?.verifiedUnitIds || [];
-  const signatures = data?.signatures || {};
 
   const update = (patch: Partial<Section04CData>) => {
     onChange({ ...data, ...patch });
@@ -107,7 +99,10 @@ export const Section04CUnitOutcomes: React.FC<Section04CUnitOutcomesProps> = ({
 
       {/* Second Line IV Feedback */}
       <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-4">
-        <h4 className="text-xs sm:text-sm font-extrabold text-neutral-primary">Second Line Internal Verifier Feedback on IQA Process Used and Any Necessary Action Required:</h4>
+        <div className="flex flex-col gap-1">
+          <h4 className="text-xs sm:text-sm font-extrabold text-neutral-primary">Second Line Internal Verifier Feedback on IQA Process Used and Any Necessary Action Required:</h4>
+          <span className="text-[11px] text-gray-500 font-medium">To be completed by the Second Line Internal Verifier if applicable.</span>
+        </div>
         <textarea
           rows={3}
           placeholder="Type here"
@@ -115,32 +110,6 @@ export const Section04CUnitOutcomes: React.FC<Section04CUnitOutcomesProps> = ({
           onChange={(e) => update({ secondLineFeedback: e.target.value })}
           disabled={readOnly}
           className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-xs text-neutral-primary outline-none resize-none disabled:opacity-70"
-        />
-        <IqamSignatureBlock
-          label="Second Line IQA Signature"
-          signed={signatures.secondLineIqa?.status === "appended"}
-          dateValue={signatures.secondLineIqa?.signedAt || ""}
-          readOnly={readOnly}
-          onSign={() => update({ signatures: { ...signatures, secondLineIqa: appendedSignature() } })}
-        />
-      </div>
-
-      {/* 4-Party Signatures */}
-      <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-5">
-        <h4 className="text-xs sm:text-sm font-extrabold text-neutral-primary">Signature & Date</h4>
-        <IqamSignatureBlock
-          label="IV Signature"
-          signed={signatures.iv?.status === "appended"}
-          dateValue={signatures.iv?.signedAt || ""}
-          readOnly={readOnly}
-          onSign={() => update({ signatures: { ...signatures, iv: appendedSignature() } })}
-        />
-        <IqamSignatureBlock
-          label="Countersigning IQA (Lead)"
-          signed={signatures.countersigningIqa?.status === "appended"}
-          dateValue={signatures.countersigningIqa?.signedAt || ""}
-          readOnly={readOnly}
-          onSign={() => update({ signatures: { ...signatures, countersigningIqa: appendedSignature() } })}
         />
       </div>
     </div>

@@ -41,7 +41,7 @@ export function useWithdrawApplication(options?: { suppressToast?: boolean }) {
 
 export function useGetApplicationStages(
   id: string,
-  options?: { refetchInterval?: number | false },
+  options?: { refetchInterval?: number | false; enabled?: boolean },
 ) {
   return useSharedGetApplicationStages(id, options);
 }

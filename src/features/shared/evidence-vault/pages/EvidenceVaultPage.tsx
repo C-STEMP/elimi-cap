@@ -29,10 +29,11 @@ export const EvidenceVaultPage: React.FC<EvidenceVaultPageProps> = ({
   const { data: apiApp, isLoading: isApplicationLoading } =
     useGetApplicationById(applicationId);
   const isInterviewStage = Boolean(
-    apiApp?.currentStageKey === "interview" ||
-      (apiApp as any)?.stages?.some(
-        (s: any) => s.key === "interview" && s.status !== "not_started",
-      ),
+    apiApp?.type !== "NSQ" &&
+      (apiApp?.currentStageKey === "interview" ||
+        (apiApp as any)?.stages?.some(
+          (s: any) => s.key === "interview" && s.status !== "not_started",
+        )),
   );
   const { data: interviewSchedule } = useGetInterviewSchedule(applicationId, {
     enabled: Boolean(applicationId && isInterviewStage),

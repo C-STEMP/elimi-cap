@@ -368,25 +368,25 @@ export const MyApplicationsPage: React.FC = () => {
                         onClick={() =>
                           router.push(`/applications/${app.id}`)
                         }
-                        className="bg-input-bg rounded-xl p-4 flex items-center justify-between border-l-[5px] border-secondary hover:bg-[#f0f2f7] transition-all cursor-pointer group shadow-2xs"
+                        className="bg-input-bg rounded-xl p-3.5 sm:p-4 flex items-center justify-between border-l-[5px] border-secondary hover:bg-[#f0f2f7] transition-all cursor-pointer group shadow-2xs gap-3"
                       >
-                        <div className="flex flex-col gap-1">
-                          <div className="flex items-center gap-3">
-                            <span className="text-[#191918] font-bold text-base lg:text-xl">
+                        <div className="flex flex-col gap-1 min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-1.5 sm:gap-3">
+                            <span className="text-[#191918] font-bold text-sm sm:text-base lg:text-xl truncate">
                               {getApplicationTitle(app)}
                             </span>
                             <span
-                              className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${statusDisplay.bg} ${statusDisplay.text} ${statusDisplay.border}`}
+                              className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${statusDisplay.bg} ${statusDisplay.text} ${statusDisplay.border}`}
                             >
                               {statusDisplay.label}
                             </span>
                           </div>
-                          <span className="text-xs text-gray-400 font-normal">
+                          <span className="text-xs text-gray-400 font-normal truncate">
                             {getApplicationSubtitle(app)}
                           </span>
                         </div>
 
-                        <FiChevronRight className="w-5 h-5 text-gray-400 group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                        <FiChevronRight className="w-5 h-5 text-gray-400 group-hover:text-primary group-hover:translate-x-1 transition-all shrink-0" />
                       </div>
                     );
                   })}

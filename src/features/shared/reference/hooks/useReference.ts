@@ -77,19 +77,26 @@ export function useGetTradeDetail(tradeId: string) {
   });
 }
 
-export function useGetUnitsByTrade(tradeId: string, level?: number) {
+export function useGetUnitsByTrade(
+  tradeId: string,
+  level?: number,
+  options?: { enabled?: boolean },
+) {
   return useQuery({
     queryKey: REFERENCE_QUERY_KEYS.units(tradeId, level),
     queryFn: () => getUnitsByTradeApi(tradeId, level),
-    enabled: Boolean(tradeId),
+    enabled: Boolean(tradeId) && (options?.enabled ?? true),
   });
 }
 
-export function useGetEvidenceTypesByTrade(tradeId: string) {
+export function useGetEvidenceTypesByTrade(
+  tradeId: string,
+  options?: { enabled?: boolean },
+) {
   return useQuery({
     queryKey: REFERENCE_QUERY_KEYS.evidenceTypes(tradeId),
     queryFn: () => getEvidenceTypesByTradeApi(tradeId),
-    enabled: Boolean(tradeId),
+    enabled: Boolean(tradeId) && (options?.enabled ?? true),
   });
 }
 

@@ -63,8 +63,10 @@ export function useApplicationDetailsState(id?: string) {
   const { data: apiApp, isLoading } = useGetApplicationById(id || "", {
     refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
   });
+  const isNsq = apiApp?.type === "NSQ" || id === "nsq";
   const { data: stagesData } = useGetApplicationStages(id || "", {
     refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
+    enabled: Boolean(id && !isNsq),
   });
 
   const paymentStage = stagesData?.find((s) => s.stageKey === "payment" || s.stageKey === "payment_quote");
@@ -78,18 +80,20 @@ export function useApplicationDetailsState(id?: string) {
   const isDraft = !isWithdrawn && apiApp?.status === "draft" && !(apiApp as any)?.submittedAt;
   const canWithdraw = !isWithdrawn && canCandidateWithdrawApplication(apiApp, stagesData);
   const isInterviewStageActive = Boolean(
-    apiApp?.currentStageKey === "interview" || (apiApp as any)?.interviewScheduled ||
-    stagesData?.some((s) => (s.stageKey === "interview" || s.stageKey === "observation" || s.stageKey === "direct_observation") && s.status !== "not_started") ||
-    (apiApp?.status && ["interview_scheduled", "interview_completed", "certification"].includes(apiApp.status)),
+    !isNsq && (
+      apiApp?.currentStageKey === "interview" || (apiApp as any)?.interviewScheduled ||
+      stagesData?.some((s) => (s.stageKey === "interview" || s.stageKey === "observation" || s.stageKey === "direct_observation") && s.status !== "not_started") ||
+      (apiApp?.status && ["interview_scheduled", "interview_completed", "certification"].includes(apiApp.status))
+    ),
   );
 
-  const { data: paymentQuote } = useGetPaymentQuote(id || "", { enabled: Boolean(id && !isDraft && !isPaymentPaid) });
-  const { data: receiptData } = useGetApplicationReceipt(id || "", { enabled: Boolean(id && isPaymentPaid) });
-  const { data: interviewSchedule } = useGetInterviewSchedule(id || "", { enabled: Boolean(id && !isDraft) });
-  const { data: interviewPanel } = useGetInterviewPanel(id || "", { enabled: Boolean(id && !isDraft && isInterviewStageActive) });
-  const { data: interviewForms } = useGetInterviewForms(id || "", { enabled: Boolean(id && !isDraft && isInterviewStageActive) });
-  const { data: interviewFormsBundle } = useGetInterviewFormsBundle(id || "", { enabled: Boolean(id && !isDraft && isInterviewStageActive) });
-  const { data: applicationEvents = [] } = useGetApplicationEvents(id || "");
+  const { data: paymentQuote } = useGetPaymentQuote(id || "", { enabled: Boolean(id && !isDraft && !isPaymentPaid && !isNsq) });
+  const { data: receiptData } = useGetApplicationReceipt(id || "", { enabled: Boolean(id && isPaymentPaid && !isNsq) });
+  const { data: interviewSchedule } = useGetInterviewSchedule(id || "", { enabled: Boolean(id && !isDraft && !isNsq) });
+  const { data: interviewPanel } = useGetInterviewPanel(id || "", { enabled: Boolean(id && !isDraft && isInterviewStageActive && !isNsq) });
+  const { data: interviewForms } = useGetInterviewForms(id || "", { enabled: Boolean(id && !isDraft && isInterviewStageActive && !isNsq) });
+  const { data: interviewFormsBundle } = useGetInterviewFormsBundle(id || "", { enabled: Boolean(id && !isDraft && isInterviewStageActive && !isNsq) });
+  const { data: applicationEvents = [] } = useGetApplicationEvents(id || "", { enabled: Boolean(id && !isNsq) });
 
   const isInterviewScheduled = Boolean(
     interviewSchedule?.scheduledAt &&

@@ -76,6 +76,12 @@ export function NetworkStatusBanner() {
       const start = performance.now();
       try {
         const res = await fetch("/api/version", { cache: "no-store" });
+        if (res.status === 404) {
+          // Version route not exposed in this environment — stop probing
+          cancelled = true;
+          clearInterval(intervalId);
+          return;
+        }
         const elapsed = performance.now() - start;
         if (!cancelled && res.ok) {
           setIsSlowByLatency(elapsed > SLOW_LATENCY_MS);

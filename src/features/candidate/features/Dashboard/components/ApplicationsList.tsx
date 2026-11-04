@@ -131,15 +131,15 @@ export const ApplicationsList: React.FC<ApplicationsListProps> = ({
             <Link
               key={app.id}
               href={`/applications/${app.id}`}
-              className="bg-[#f8f9fa] rounded-xl p-4 flex items-center justify-between border-l-[5px] border-[#fbab2a] hover:bg-[#f0f2f7] transition-all cursor-pointer group shadow-2xs"
+              className="bg-[#f8f9fa] rounded-xl p-3.5 sm:p-4 flex items-center justify-between border-l-[5px] border-[#fbab2a] hover:bg-[#f0f2f7] transition-all cursor-pointer group shadow-2xs gap-3"
             >
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-3">
-                  <span className="text-[#191918] font-bold text-base lg:text-xl">
+              <div className="flex flex-col gap-1 min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-3">
+                  <span className="text-[#191918] font-bold text-sm sm:text-base lg:text-xl truncate">
                     {app.title}
                   </span>
                   <span
-                    className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${
+                    className={`text-[10px] sm:text-xs font-semibold px-2 sm:px-2.5 py-0.5 rounded-full shrink-0 ${
                       app.statusLabel === "Withdrawn" || app.status === "Not Started"
                         ? "bg-gray-100 text-gray-600"
                         : app.statusLabel === "Rejected"
@@ -152,11 +152,11 @@ export const ApplicationsList: React.FC<ApplicationsListProps> = ({
                     {app.statusLabel || app.status}
                   </span>
                 </div>
-                <span className="text-gray-400 text-xs lg:text-sm font-normal">
+                <span className="text-gray-400 text-xs lg:text-sm font-normal truncate">
                   {app.subtitle}
                 </span>
               </div>
-              <FiChevronRight className="w-5 h-5 text-[#141B34] group-hover:translate-x-1 transition-transform" />
+              <FiChevronRight className="w-5 h-5 text-[#141B34] group-hover:translate-x-1 transition-transform shrink-0" />
             </Link>
           ))}
         </div>

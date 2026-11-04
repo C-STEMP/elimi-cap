@@ -35,33 +35,31 @@ export const IqaAllocationView: React.FC<IqaAllocationViewProps> = ({
 
   return (
     <div className="w-full flex flex-col gap-6 select-text pb-12 animate-fadeIn">
+      {/* Top Summary Cards */}
+      <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-xs border border-gray-100">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+          <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
+            <span className="text-[10px] font-bold tracking-wider text-gray-500 uppercase">
+              NAME OF CENTRE
+            </span>
+            <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1 break-words">
+              {centre?.centreName || "—"}
+            </h4>
+          </div>
 
-      <div className="w-full max-w-7xl xl:max-w-360 mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-6">
-        {/* Top Summary Cards */}
-        <div className="bg-white rounded-3xl p-4 sm:p-5 shadow-xs border border-gray-100">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
-              <span className="text-[10px] font-bold tracking-wider text-gray-500 uppercase">
-                NAME OF CENTRE
-              </span>
-              <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1">
-                {centre?.centreName || "—"}
-              </h4>
-            </div>
-
-            <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
-              <span className="text-[10px] font-bold tracking-wider text-gray-500 uppercase">
-                TOTAL NO. OF ASSIGNED CANDIDATE
-              </span>
-              <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1">
-                {centre?.assignedCount ?? allocations.length}
-              </h4>
-            </div>
+          <div className="bg-[#f8f9fa] border border-gray-100/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
+            <span className="text-[10px] font-bold tracking-wider text-gray-500 uppercase">
+              TOTAL NO. OF ASSIGNED CANDIDATE
+            </span>
+            <h4 className="text-xs sm:text-sm font-black text-neutral-primary mt-1">
+              {centre?.assignedCount ?? allocations.length}
+            </h4>
           </div>
         </div>
+      </div>
 
-        {/* Assessment Tools Table */}
-        <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-4">
+      {/* Assessment Tools Table */}
+      <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-4">
           <h3 className="text-sm sm:text-base font-extrabold text-neutral-primary">
             Assessment Tools
           </h3>
@@ -154,7 +152,6 @@ export const IqaAllocationView: React.FC<IqaAllocationViewProps> = ({
             </div>
           )}
         </div>
-      </div>
     </div>
   );
 };

@@ -18,13 +18,14 @@ import {
   useGetApplicationStages,
   useReviewApplication,
 } from "@/src/features/shared/applications/hooks";
+import type { ApplicationStage } from "@/src/features/shared/applications/api/types";
 import {
   useGetCentreInterviews,
   useGetCentrePanels,
 } from "@/src/features/shared/centre/hooks";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { NsqCentreApplicationDetailView } from "./nsq/NsqCentreApplicationDetailView";
 import { useUrlModal } from "@/src/lib/hooks/usePersistentModal";
 import {
@@ -51,9 +52,23 @@ export const CentreApplicationRouteView: React.FC<{
   const { data: application, isLoading } = useGetApplicationById(id, {
     refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
   });
-  const { data: stagesData } = useGetApplicationStages(id, {
+  const isNsq = application?.type === "NSQ" || (application as any)?.assessmentType === "NSQ";
+  const { data: rawStagesData } = useGetApplicationStages(id, {
     refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
+    enabled: Boolean(id),
   });
+  const stagesData: ApplicationStage[] = useMemo(() => {
+    if (rawStagesData && rawStagesData.length > 0) return rawStagesData;
+    return (application as any)?.stages || [];
+  }, [rawStagesData, (application as any)?.stages]);
+
+  const applicationWithStages = useMemo(() => {
+    if (!application) return undefined;
+    return {
+      ...application,
+      stages: stagesData.length > 0 ? stagesData : (application as any)?.stages || [],
+    };
+  }, [application, stagesData]);
   const reviewMutation = useReviewApplication();
 
   const [showCandidateForm, setShowCandidateForm] = useUrlModal(APPLICATION_CANDIDATE_FORM_VIEW);
@@ -87,8 +102,12 @@ export const CentreApplicationRouteView: React.FC<{
     setInternalSelectedUnitNumber(urlUnit);
   }
 
-  const { data: centrePanels = [] } = useGetCentrePanels();
-  const { data: centreInterviews = [] } = useGetCentreInterviews();
+  const { data: centrePanels = [] } = useGetCentrePanels(undefined, {
+    enabled: !isNsq,
+  });
+  const { data: centreInterviews = [] } = useGetCentreInterviews(undefined, {
+    enabled: !isNsq,
+  });
 
   const candidateName = application
     ? application.candidate?.name ||
@@ -129,7 +148,23 @@ export const CentreApplicationRouteView: React.FC<{
       application.iqamForms.every((f) => f.status === "submitted"),
   );
 
-  const isNsqIvApproved = Boolean((application as any)?.ivApproved);
+  const isNsqIvApproved = Boolean(
+    (application as any)?.verification?.ivOutcome === "approve" ||
+    (application as any)?.verification?.ivOutcome === "successful" ||
+    isNsqIqaComplete ||
+    (application as any)?.currentStageKey === "external_verification" ||
+    (application as any)?.currentStageKey === "certification" ||
+    (application as any)?.ivApproved === true ||
+    (application as any)?.ivReview?.decision === "approve"
+  );
+
+  const isNsqForwardedToAwardingBody = Boolean(
+    (application as any)?.currentStageKey === "external_verification" ||
+    (application as any)?.currentStageKey === "certification" ||
+    (application as any)?.verification?.externalVerifier ||
+    (application as any)?.forwardedToAwardingBody ||
+    (application as any)?.forwardedAt
+  );
 
   const tradeName = application
     ? (typeof application.trade === "object"
@@ -205,6 +240,7 @@ export const CentreApplicationRouteView: React.FC<{
           isNsqIqaComplete={isNsqIqaComplete}
           isNsqIqaFormsComplete={isNsqIqaFormsComplete}
           isNsqIvApproved={isNsqIvApproved}
+          isNsqForwardedToAwardingBody={isNsqForwardedToAwardingBody}
           onBackToList={handleBackToList}
           onBackFromInterview={handleBackToList}
           onBackFromUnit={() => setSelectedUnitNumber(null)}
@@ -307,7 +343,7 @@ export const CentreApplicationRouteView: React.FC<{
           />
         ) : isNsqApplication ? (
           <NsqCentreApplicationDetailView
-            application={application}
+            application={applicationWithStages || application}
             onBack={handleBackToList}
             selectedUnitNumber={selectedUnitNumber}
             onSelectUnit={setSelectedUnitNumber}

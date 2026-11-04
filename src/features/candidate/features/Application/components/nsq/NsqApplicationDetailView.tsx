@@ -25,11 +25,10 @@ import { PaymentModal, type PaymentModalType } from "../PaymentModals";
 import { WithdrawApplicationModal } from "../WithdrawApplicationModal";
 import { canCandidateWithdrawApplication } from "../../utils/applicationDetailsHelpers";
 import { getNsqScopedUnits } from "@/src/features/shared/applications/utils/nsqUnits";
+import type { ApplicationStage, InductionForm } from "@/src/features/shared/applications/api/types";
 import {
-  useGetInductionForm,
-  useGetDirectObservations,
-  useScheduleDirectObservation,
   useGetApplicationStages,
+  useScheduleDirectObservation,
   usePaystackCheckout,
   useGetPaymentQuote,
   useGetApplicationReceipt,
@@ -41,9 +40,6 @@ import {
 } from "@/src/features/shared/applications/hooks/queryKeys";
 import {
   useGetTradeDetail,
-  useGetUnitsByTrade,
-  useGetEvidenceTypesByTrade,
-  useGetCentres,
   useGetSectors,
 } from "@/src/features/shared/reference/hooks";
 import { useAppSelector } from "@/src/store/hooks";
@@ -118,10 +114,16 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
 
   const appId = application?.id || "nsq";
 
-  // Real workflow stages from the backend (GET /applications/{id}/stages).
-  const { data: stagesData } = useGetApplicationStages(application?.id || "", {
+  // Stages for NSQ: prefer live stages from GET /applications/{id}/stages, fallback to application.stages
+  const { data: remoteStages = [] } = useGetApplicationStages(appId, {
+    enabled: Boolean(appId && appId !== "nsq"),
     refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
   });
+
+  const stagesData: ApplicationStage[] = useMemo(() => {
+    if (remoteStages && remoteStages.length > 0) return remoteStages;
+    return (application as any)?.stages || [];
+  }, [remoteStages, (application as any)?.stages]);
 
   const applicationFormStage = stagesData?.find((s) => s.stageKey === "application_form");
   const paymentStage = stagesData?.find((s) => s.stageKey === "payment");
@@ -306,16 +308,13 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
     savedOnboarding?.centreId ||
     "";
 
-  // Fetch dynamic Trade Detail, Units, Centres, and Sectors
+  // Dynamic trade and sector reference data
   const { data: tradeDetail } = useGetTradeDetail(tradeId);
-  const { data: remoteUnits = [], isLoading: isLoadingUnits } = useGetUnitsByTrade(tradeId);
-  const { data: remoteEvidenceTypes = [] } = useGetEvidenceTypesByTrade(tradeId);
-  const { data: remoteCentres = [] } = useGetCentres();
+  const isLoadingUnits = false;
   const { data: remoteSectors = [] } = useGetSectors();
 
-  // NSQ Backend Queries & Mutations
-  const { data: inductionForm } = useGetInductionForm(application?.id);
-  const { data: directObservationsData } = useGetDirectObservations(application?.id);
+  // NSQ induction form and observation data from application
+  const inductionForm: InductionForm | undefined = (application as any)?.inductionForm || undefined;
   const { mutateAsync: scheduleObservationMutation } =
     useScheduleDirectObservation(application?.id);
 
@@ -368,13 +367,12 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
               : u.status === "in_progress" || u.criteriaPending > 0
                 ? "In Progress"
                 : "Not Started";
-          const remoteMatch = remoteUnits.find((ru) => ru.id === u.id);
           return {
             id: u.id,
             unitNo: u.referenceNumber,
             title: u.title,
             status,
-            structure: remoteMatch?.structure,
+            structure: (u as any)?.structure,
           };
         })
       : [];
@@ -382,10 +380,9 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
   const resolveUnitLabel = (id: string, index: number) => {
     const match =
       unitsList.find((u) => u.id === id) ||
-      remoteUnits.find((u) => u.id === id) ||
       (application as any)?.nsq?.units?.find((u: any) => u.id === id);
     if (match) {
-      return match.unitNo || match.referenceNumber || match.title || `UNIT ${index + 1}`;
+      return match.unitNo || (match as any).referenceNumber || match.title || `UNIT ${index + 1}`;
     }
     if (id && id.length >= 20) {
       return `UNIT ${index + 1}`;
@@ -394,10 +391,9 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
   };
 
   const rawSessions =
-    (directObservationsData as any)?.sessions ||
-    (directObservationsData as any)?.items ||
+    (application as any)?.directObservationSessions ||
     (application as any)?.nsq?.directObservationSessions ||
-    [];
+    ((application as any)?.directObservation ? [(application as any).directObservation] : []);
   const sortedSessions = rawSessions.slice().sort((a: any, b: any) => {
     const timeA = new Date(a.createdAt || a.scheduledAt || 0).getTime();
     const timeB = new Date(b.createdAt || b.scheduledAt || 0).getTime();
@@ -479,7 +475,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
     (typeof application?.centre === "string" && !isRawId(application?.centre)
       ? application?.centre
       : "") ||
-    remoteCentres.find((c) => c.id === centreId)?.name ||
+    (application as any)?.centreName ||
     savedOnboarding?.centreName ||
     "CStemp Tvet Centre";
 
@@ -516,14 +512,13 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
 
   const qualificationCode =
     nsqUnits[0]?.referenceNumber ||
-    remoteUnits[0]?.referenceNumber ||
     (tradeDetail?.activeNosDocument as any)?.qualificationLevels?.[0]?.slug ||
     (tradeDetail?.activeNosDocument as any)?.title ||
     "—";
 
   const evidenceTypesText =
-    remoteEvidenceTypes && remoteEvidenceTypes.length > 0
-      ? remoteEvidenceTypes.join("/")
+    (application as any)?.evidenceTypes && (application as any).evidenceTypes.length > 0
+      ? (application as any).evidenceTypes.join("/")
       : "—";
 
   // Handle Make Payment action — initiates a real checkout via
@@ -667,7 +662,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
           {/* Left Main Column */}
           <div className="lg:col-span-8 flex flex-col gap-5">
             {/* 1. Assessment Progress Timeline Card */}
-            <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-6">
+            <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-6">
               <h3 className="text-base sm:text-lg font-extrabold text-neutral-primary tracking-tight">
                 Assessment Progress
               </h3>
@@ -675,7 +670,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
               {/* Steps Progress — driven by GET /applications/{id}/stages.
                   Application Form and Payment have their own cards below,
                   so the timeline covers the remaining five workflow stages. */}
-              <div className="relative flex items-start justify-between w-full px-2 sm:px-6">
+              <div className="relative flex items-start justify-between w-full px-1 sm:px-6">
                 {/* Horizontal Background Line */}
                 <div className="absolute left-6 right-6 top-3 h-0.5 bg-gray-200 z-0" />
                 <div
@@ -710,7 +705,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                         <div className="w-6 h-6 rounded-full border border-gray-300 bg-white flex items-center justify-center shrink-0" />
                       )}
                       <span
-                        className={`w-full text-[9px] sm:text-[11px] leading-tight text-center wrap-break-word ${
+                        className={`w-full text-[8px] xs:text-[9px] sm:text-[11px] leading-tight text-center wrap-break-word ${
                           isComplete
                             ? "font-bold text-[#10b981]"
                             : isRejected
@@ -729,16 +724,16 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
             </div>
 
             {/* 2. Application Status Card */}
-            <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-2">
+            <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-2">
               <div className="flex items-center justify-between gap-3 flex-wrap">
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-2.5 flex-wrap">
                   <h4 className="text-base sm:text-lg font-extrabold text-neutral-primary tracking-tight">
                     Application Status
                   </h4>
                   {applicationStatusBadge}
                 </div>
                 {canWithdraw && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     {isDraft && (
                       <button
                         type="button"
@@ -758,15 +753,15 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                   </div>
                 )}
               </div>
-              <p className="text-xs sm:text-sm text-neutral-secondary font-medium">
+              <p className="text-xs sm:text-sm text-neutral-secondary font-medium break-words">
                 {resolvedCentreName} | {resolvedSectorName} | {resolvedTradeName}
               </p>
             </div>
 
             {/* 3. Payment Card */}
-            <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-gray-100 flex items-center justify-between gap-4">
+            <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
               <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-2.5 flex-wrap">
                   <span className="text-lg sm:text-xl font-black text-neutral-primary">
                     {paymentAmountText}
                   </span>
@@ -781,7 +776,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                 <button
                   type="button"
                   onClick={() => setIsReceiptModalOpen(true)}
-                  className="text-sm font-extrabold text-[#fbab2a] hover:text-[#e89b1f] hover:underline cursor-pointer select-none shrink-0"
+                  className="text-sm font-extrabold text-[#fbab2a] hover:text-[#e89b1f] hover:underline cursor-pointer select-none shrink-0 self-start sm:self-center"
                 >
                   Receipt
                 </button>
@@ -790,7 +785,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                   type="button"
                   onClick={handleMakePayment}
                   disabled={paystackCheckout.isPending}
-                  className="text-sm font-extrabold text-[#fbab2a] hover:text-[#e89b1f] hover:underline cursor-pointer select-none shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="text-sm font-extrabold text-[#fbab2a] hover:text-[#e89b1f] hover:underline cursor-pointer select-none shrink-0 self-start sm:self-center disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Make Payment
                 </button>
@@ -798,7 +793,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
             </div>
 
             {/* 4. Candidate Induction Form Card */}
-            <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-gray-100 flex items-center justify-between gap-4">
+            <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 flex items-center justify-between gap-4">
               <span className="text-sm sm:text-base font-extrabold text-neutral-primary tracking-tight">
                 Candidate Induction Form
               </span>
@@ -819,7 +814,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
             {/* 5. Middle Cards Grid: NOS Details & Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Left Card: NOS Details */}
-              <div className="bg-[#fcfaf7] rounded-2xl p-5 border border-amber-100/50 shadow-xs flex flex-col justify-between gap-4">
+              <div className="bg-[#fcfaf7] rounded-2xl p-4 sm:p-5 border border-amber-100/50 shadow-xs flex flex-col justify-between gap-4">
                 <div className="flex flex-col gap-2">
                   <span className="self-start px-2.5 py-0.5 rounded-md bg-[#fce7f3] text-[#be185d] font-bold text-[10px] tracking-wide">
                     Mandatory
@@ -1217,7 +1212,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                 title: u.title,
                 qualificationLevelId: u.qualificationLevelId,
               }))
-            : remoteUnits.map((u, idx) => ({
+            : ((application as any)?.nsq?.units || []).map((u: any, idx: number) => ({
                 id: u.id,
                 unitNo: u.referenceNumber || `UNIT ${idx + 1}`,
                 title: u.title,

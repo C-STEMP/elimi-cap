@@ -259,12 +259,12 @@ export function useGetApplicationHistory(id: string) {
 
 export function useGetApplicationStages(
   id: string,
-  options?: { refetchInterval?: number | false },
+  options?: { refetchInterval?: number | false; enabled?: boolean },
 ) {
   return useQuery({
     queryKey: APPLICATION_QUERY_KEYS.stages(id),
     queryFn: () => getApplicationStagesApi(id),
-    enabled: Boolean(id),
+    enabled: Boolean(id) && (options?.enabled ?? true),
     refetchInterval: options?.refetchInterval,
   });
 }
