@@ -9,6 +9,7 @@ import {
 } from "../../hooks/useIqam";
 import type { ChecklistQuestionItem } from "../../types/iqam.types";
 import type { IqamAssessorOutcomesData, IqamSignatureStub } from "../../api/types";
+import { useAssessorProfileSignature } from "@/src/features/shared/assessor/hooks";
 import { Button } from "@/src/components/ui/button";
 import { FiArrowLeft, FiCheck } from "react-icons/fi";
 
@@ -55,6 +56,7 @@ export const ObservationChecklistView: React.FC<ObservationChecklistViewProps> =
   candidateName,
   onUpdateHeader,
 }) => {
+  const { data: profileSig } = useAssessorProfileSignature();
   const { data: outcomes, isLoading } = useGetIqamAssessorOutcomes(applicationId);
   const patchOutcomes = usePatchIqamAssessorOutcomes(applicationId);
   const submitOutcomes = useSubmitIqamAssessorOutcomes(applicationId);
@@ -226,22 +228,12 @@ export const ObservationChecklistView: React.FC<ObservationChecklistViewProps> =
             onSign={() =>
               setFormData((prev) => ({
                 ...prev,
-                ivSignature: { status: "appended", signedAt: new Date().toISOString(), signatureMode: "typed" },
-              }))
-            }
-          />
-          <IqamSignatureBlock
-            label="Second Line IV Signature"
-            required={false}
-            helperText="Distinct sign-off reserved for Second Line Internal Verifier"
-            signed={formData.secondLineIvSignature?.status === "appended"}
-            dateValue={formData.secondLineIvSignature?.signedAt || ""}
-            readOnly={isSubmitted}
-            signedText="Signed by Second Line IV"
-            onSign={() =>
-              setFormData((prev) => ({
-                ...prev,
-                secondLineIvSignature: { status: "appended", signedAt: new Date().toISOString(), signatureMode: "typed" },
+                ivSignature: {
+                  status: "appended",
+                  signedAt: new Date().toISOString(),
+                  signatureMode: profileSig?.assetId ? "upload" : "typed",
+                  signatureAssetId: profileSig?.assetId || null,
+                },
               }))
             }
           />

@@ -8,6 +8,7 @@ import {
   useSubmitIqamFinalPortfolio,
 } from "../../hooks/useIqam";
 import { useGetApplicationById } from "@/src/features/shared/applications/hooks";
+import { useAssessorProfileSignature } from "@/src/features/shared/assessor/hooks";
 import { useAppSelector } from "@/src/store/hooks";
 import type {
   IqamFinalPortfolioData,
@@ -92,18 +93,13 @@ const DEFAULT_CHECKPOINTS: IqamFinalPortfolioCheckpoint[] = [
   },
 ];
 
-const appendedSignature = (): IqamSignatureStub => ({
-  status: "appended",
-  signedAt: new Date().toISOString(),
-  signatureMode: "typed",
-});
-
 export const FinalPortfolioReportView: React.FC<FinalPortfolioReportViewProps> = ({
   applicationId,
   onBack,
   candidateName,
   onUpdateHeader,
 }) => {
+  const { data: profileSig } = useAssessorProfileSignature();
   const { data: portfolio, isLoading: isPortfolioLoading } =
     useGetIqamFinalPortfolio(applicationId);
   const { data: appDetail, isLoading: isAppLoading } =
@@ -112,6 +108,13 @@ export const FinalPortfolioReportView: React.FC<FinalPortfolioReportViewProps> =
 
   const patchPortfolio = usePatchIqamFinalPortfolio(applicationId);
   const submitPortfolio = useSubmitIqamFinalPortfolio(applicationId);
+
+  const appendedSignature = (): IqamSignatureStub => ({
+    status: "appended",
+    signedAt: new Date().toISOString(),
+    signatureMode: profileSig?.assetId ? "upload" : "typed",
+    signatureAssetId: profileSig?.assetId || null,
+  });
 
   const isSubmitted = Boolean(portfolio?.submittedAt);
 
@@ -543,24 +546,6 @@ export const FinalPortfolioReportView: React.FC<FinalPortfolioReportViewProps> =
                 setFormData((prev) => ({
                   ...prev,
                   signatures: { ...signatures, iv: appendedSignature() },
-                }))
-              }
-            />
-            <IqamSignatureBlock
-              label="Countersigning IQA (Lead Verifier)"
-              required={false}
-              helperText="Distinct countersignature reserved for Lead IQA"
-              signed={signatures.countersigningIqa?.status === "appended"}
-              dateValue={signatures.countersigningIqa?.signedAt || ""}
-              readOnly={isSubmitted}
-              signedText="Signed by Lead IQA"
-              onSign={() =>
-                setFormData((prev) => ({
-                  ...prev,
-                  signatures: {
-                    ...signatures,
-                    countersigningIqa: appendedSignature(),
-                  },
                 }))
               }
             />
