@@ -1,6 +1,8 @@
 "use client";
 
 import React from "react";
+import { IqamSignatureBlock } from "../../common/IqamSignatureBlock";
+import { useAssessorProfileSignature } from "@/src/features/shared/assessor/hooks";
 import type { IqamIvReportData } from "../../../api/types";
 
 type Section04CData = NonNullable<IqamIvReportData["con04c"]>;
@@ -18,10 +20,26 @@ export const Section04CUnitOutcomes: React.FC<Section04CUnitOutcomesProps> = ({
   readOnly = false,
   onChange,
 }) => {
+  const { data: profileSig } = useAssessorProfileSignature();
   const verifiedUnitIds = data?.verifiedUnitIds || [];
+  const signatures = data?.signatures || {};
 
   const update = (patch: Partial<Section04CData>) => {
     onChange({ ...data, ...patch });
+  };
+
+  const handleSign = (key: keyof NonNullable<Section04CData["signatures"]>) => {
+    update({
+      signatures: {
+        ...signatures,
+        [key]: {
+          status: "appended",
+          signedAt: new Date().toISOString(),
+          signatureMode: profileSig?.assetId ? "upload" : "typed",
+          signatureAssetId: profileSig?.assetId || null,
+        },
+      },
+    });
   };
 
   const toggleUnit = (unitId: string) => {
@@ -111,6 +129,72 @@ export const Section04CUnitOutcomes: React.FC<Section04CUnitOutcomesProps> = ({
           disabled={readOnly}
           className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-xs text-neutral-primary outline-none resize-none disabled:opacity-70"
         />
+        <div className="pt-2 border-t border-gray-100">
+          <IqamSignatureBlock
+            label="Second Line Internal Verifier (IQA) Signature"
+            required={false}
+            signed={signatures.secondLineIqa?.status === "appended"}
+            dateValue={signatures.secondLineIqa?.signedAt || ""}
+            readOnly={readOnly}
+            signedText="Signed by Second Line IQA"
+            helperText="Optional sign-off by the second line verifier"
+            onSign={() => handleSign("secondLineIqa")}
+          />
+        </div>
+      </div>
+
+      {/* Signatures & Dates */}
+      <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-5">
+        <div className="flex flex-col gap-0.5">
+          <h4 className="text-xs sm:text-sm font-extrabold text-neutral-primary">Signatures &amp; Date</h4>
+          <p className="text-[11px] text-gray-500 font-medium">Official verifier and assessor sign-off stubs for CON/04C.</p>
+        </div>
+
+        <div className="flex flex-col gap-4">
+          <IqamSignatureBlock
+            label="Internal Verifier (IV) Signature"
+            required={true}
+            signed={signatures.iv?.status === "appended"}
+            dateValue={signatures.iv?.signedAt || ""}
+            readOnly={readOnly}
+            signedText="Signed by Assigned IV"
+            helperText="Primary signature of the assigned Internal Verifier"
+            onSign={() => handleSign("iv")}
+          />
+
+          <IqamSignatureBlock
+            label="Countersigning IQA (Lead Verifier) Signature"
+            required={false}
+            signed={signatures.countersigningIqa?.status === "appended"}
+            dateValue={signatures.countersigningIqa?.signedAt || ""}
+            readOnly={readOnly}
+            signedText="Signed by Countersigning IQA"
+            helperText="Countersignature if the primary IV is not yet fully qualified"
+            onSign={() => handleSign("countersigningIqa")}
+          />
+
+          <IqamSignatureBlock
+            label="Unit Assessor Signature"
+            required={false}
+            signed={signatures.assessor?.status === "appended"}
+            dateValue={signatures.assessor?.signedAt || ""}
+            readOnly={readOnly}
+            signedText="Signed by Unit Assessor"
+            helperText="Assessor confirmation of verification feedback"
+            onSign={() => handleSign("assessor")}
+          />
+
+          <IqamSignatureBlock
+            label="Countersigning Assessor Signature"
+            required={false}
+            signed={signatures.countersigningAssessor?.status === "appended"}
+            dateValue={signatures.countersigningAssessor?.signedAt || ""}
+            readOnly={readOnly}
+            signedText="Signed by Countersigning Assessor"
+            helperText="Countersignature for trainee or probationary assessors"
+            onSign={() => handleSign("countersigningAssessor")}
+          />
+        </div>
       </div>
     </div>
   );
