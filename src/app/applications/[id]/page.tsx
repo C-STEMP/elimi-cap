@@ -1,16 +1,17 @@
 "use client";
 
-import React from "react";
-import { useParams, useSearchParams } from "next/navigation";
+import React, { useEffect } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useAppSelector } from "@/src/store/hooks";
 import { useGetMe } from "@/src/features/shared/account/hooks";
 import { ApplicationDetailsPage } from "@/src/features/candidate/features/Application/pages/ApplicationDetailsPage";
-import { AssessorApplicationRouteView } from "@/src/features/assessor/features/Applications/components/AssessorApplicationRouteView";
 import { CentreApplicationRouteView } from "@/src/features/assessment-centre/features/Applications/components/CentreApplicationRouteView";
+import { Loader } from "@/src/components/ui/loader";
 
 export default function ApplicationDetailPage() {
   const params = useParams();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const id =
     typeof params?.id === "string"
       ? params.id
@@ -37,8 +38,18 @@ export default function ApplicationDetailPage() {
         Boolean(user?.centreRole) ||
         Boolean(meData?.centres && meData.centres.length > 0)));
 
+  useEffect(() => {
+    if (isAssessor && id) {
+      router.replace(`/assessor/dashboard/applications?appId=${id}`);
+    }
+  }, [isAssessor, id, router]);
+
   if (isAssessor) {
-    return <AssessorApplicationRouteView id={id} />;
+    return (
+      <div className="w-full min-h-screen flex items-center justify-center bg-[#f8f9fb]">
+        <Loader tip="Loading application..." />
+      </div>
+    );
   }
 
   if (isCentre) {

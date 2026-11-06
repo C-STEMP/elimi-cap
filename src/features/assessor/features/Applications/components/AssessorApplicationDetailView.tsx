@@ -726,11 +726,7 @@ export const AssessorApplicationDetailView: React.FC<
               pendingSignatures={pendingSignatures || undefined}
               isCurrentUserInPending={isCurrentUserInPending}
               onViewApplicationForm={() => setSubView("application_form")}
-              onOpenEvidenceVault={() => {
-                router.push(
-                  `/applications/${application.id}/evidence-vault?from=assessor`,
-                );
-              }}
+              onOpenEvidenceVault={() => setSubView("evidence_vault")}
               onMarkCompetent={() => setIsConfirmCompetentOpen(true)}
               onMarkEvCompetent={() => setIsConfirmEvCompetentOpen(true)}
               onMarkCandidateCompetent={() =>
@@ -796,9 +792,8 @@ export const AssessorApplicationDetailView: React.FC<
               (pendingSignatures && pendingSignatures.length > 0),
             )}
             onViewForm={(form) => {
-              router.push(
-                `/applications/${application.id}/assessment-forms/${form.id}?from=assessor`,
-              );
+              setSelectedAssessmentFormId(form.id);
+              setSubView("assessment_form");
             }}
           />
         )}

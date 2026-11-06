@@ -1,15 +1,17 @@
 "use client";
 
-import React from "react";
-import { useParams, useSearchParams } from "next/navigation";
+import React, { useEffect } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useAppSelector } from "@/src/store/hooks";
 import { useGetMe } from "@/src/features/shared/account/hooks";
 import { EvidenceVaultPage } from "@/features/shared/evidence-vault/pages/EvidenceVaultPage";
 import { AssessorApplicationRouteView } from "@/src/features/assessor/features/Applications/components/AssessorApplicationRouteView";
 import { CentreApplicationRouteView } from "@/src/features/assessment-centre/features/Applications/components/CentreApplicationRouteView";
+import { Loader } from "@/src/components/ui/loader";
 
 export default function EvidenceVaultRoute() {
   const params = useParams();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const id =
     typeof params?.id === "string"
@@ -37,13 +39,19 @@ export default function EvidenceVaultRoute() {
         Boolean(user?.centreRole) ||
         Boolean(meData?.centres && meData.centres.length > 0)));
 
+  useEffect(() => {
+    if (isAssessor && id) {
+      router.replace(
+        `/assessor/dashboard/applications?appId=${id}&view=evidence_vault`,
+      );
+    }
+  }, [isAssessor, id, router]);
+
   if (isAssessor) {
     return (
-      <AssessorApplicationRouteView
-        id={id}
-        initialSubView="evidence_vault"
-        isStandaloneRoute={true}
-      />
+      <div className="w-full min-h-screen flex items-center justify-center bg-[#f8f9fb]">
+        <Loader tip="Loading evidence vault..." />
+      </div>
     );
   }
 
