@@ -792,8 +792,9 @@ export const AssessorApplicationDetailView: React.FC<
               (pendingSignatures && pendingSignatures.length > 0),
             )}
             onViewForm={(form) => {
-              setSelectedAssessmentFormId(form.id);
-              setSubView("assessment_form");
+              router.push(
+                `/applications/${application.id}/assessment-forms/${form.id}?from=assessor`,
+              );
             }}
           />
         )}

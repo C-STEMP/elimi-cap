@@ -142,8 +142,21 @@ export const computeStageCalculations = (
   const ivStage = stages.find(
     (s) => s.stageKey === "internal_verification" || s.stageKey === "internal_verifier" || s.stageKey === "iv_review" || s.stageKey === "iv"
   );
+  const isIvFinished = Boolean(
+    ivStage?.status === "successful" ||
+    (ivStage?.status as string) === "completed" ||
+    (ivStage?.status as string) === "approved" ||
+    appDetail?.verification?.ivOutcome === "approve" ||
+    appDetail?.verification?.ivOutcome === "successful" ||
+    appDetail?.forwardedToAwardingBody ||
+    Boolean(appDetail?.externalVerifier) ||
+    appDetail?.currentStageKey === "notify_awarding_body" ||
+    appDetail?.currentStageKey === "external_verification" ||
+    appDetail?.currentStageKey === "certification" ||
+    isCompleted
+  );
   const ivStatus =
-    ivStage?.status === "successful" || isCompleted
+    isIvFinished
       ? "Completed"
       : ivStage?.status === "not_started"
         ? "Not Started"
@@ -162,8 +175,15 @@ export const computeStageCalculations = (
   const evStage = stages.find(
     (s) => s.stageKey === "external_verification" || s.stageKey === "external_verifier" || s.stageKey === "eqa" || s.stageKey === "ev"
   );
+  const isEvFinished = Boolean(
+    evStage?.status === "successful" ||
+    (evStage?.status as string) === "completed" ||
+    (evStage?.status as string) === "approved" ||
+    appDetail?.currentStageKey === "certification" ||
+    isCompleted
+  );
   const evStatus =
-    evStage?.status === "successful" || isCompleted
+    isEvFinished
       ? "Completed"
       : evStage?.status === "not_started"
         ? "Not Started"

@@ -28,6 +28,7 @@ import { getNsqScopedUnits } from "@/src/features/shared/applications/utils/nsqU
 import type { ApplicationStage, InductionForm } from "@/src/features/shared/applications/api/types";
 import {
   useGetApplicationStages,
+  useGetInductionForm,
   useScheduleDirectObservation,
   usePaystackCheckout,
   useGetPaymentQuote,
@@ -40,6 +41,7 @@ import {
 } from "@/src/features/shared/applications/hooks/queryKeys";
 import {
   useGetTradeDetail,
+  useGetUnitsByTrade,
   useGetSectors,
 } from "@/src/features/shared/reference/hooks";
 import { useAppSelector } from "@/src/store/hooks";
@@ -310,11 +312,47 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
 
   // Dynamic trade and sector reference data
   const { data: tradeDetail } = useGetTradeDetail(tradeId);
-  const isLoadingUnits = false;
+  const { data: remoteUnits = [], isLoading: isLoadingUnits } =
+    useGetUnitsByTrade(tradeId);
   const { data: remoteSectors = [] } = useGetSectors();
 
   // NSQ induction form and observation data from application
-  const inductionForm: InductionForm | undefined = (application as any)?.inductionForm || undefined;
+  const { data: remoteInductionForm } = useGetInductionForm(appId, {
+    enabled: Boolean(appId && appId !== "nsq"),
+  });
+  const inductionForm: InductionForm | undefined =
+    remoteInductionForm || (application as any)?.inductionForm || undefined;
+  const inductionStage = stagesData?.find(
+    (s) => s.stageKey === "induction" || s.stageKey === "induction_form",
+  );
+  const isInductionCompleted = Boolean(
+    inductionForm?.submittedAt ||
+      inductionStage?.status === "successful" ||
+      (inductionStage?.status as string) === "completed" ||
+      (effectiveStageKey &&
+        [
+          "regular_assessment",
+          "qaa",
+          "internal_verification",
+          "external_verification",
+          "certification",
+        ].includes(effectiveStageKey)) ||
+      stagesData?.some(
+        (s) =>
+          [
+            "regular_assessment",
+            "internal_verification",
+            "external_verification",
+            "certification",
+          ].includes(s.stageKey) &&
+          (s.status === "in_progress" ||
+            s.status === "under_review" ||
+            s.status === "successful" ||
+            (s.status as string) === "completed"),
+      ) ||
+      application?.status === "certified" ||
+      (application?.status as string) === "completed",
+  );
   const { mutateAsync: scheduleObservationMutation } =
     useScheduleDirectObservation(application?.id);
 
@@ -801,13 +839,13 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
               <button
                 type="button"
                 onClick={() =>
-                  inductionForm?.submittedAt
+                  isInductionCompleted
                     ? setIsInductionViewModalOpen(true)
                     : setIsInductionFillModalOpen(true)
                 }
                 className="text-sm font-extrabold text-[#fbab2a] hover:text-[#e89b1f] hover:underline cursor-pointer select-none shrink-0"
               >
-                {inductionForm?.submittedAt ? "View" : "Complete Form"}
+                {isInductionCompleted ? "View Form" : "Complete Form"}
               </button>
             </div>
 
@@ -948,7 +986,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                   ))
                 ) : (
                   <p className="text-xs text-gray-400 font-medium py-2">
-                    {inductionForm?.submittedAt
+                    {isInductionCompleted
                       ? "Units will appear here once your qualification standard is loaded."
                       : "Complete and submit your Candidate Induction Form to view your selected qualification units."}
                   </p>
@@ -1190,7 +1228,18 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
         applicationId={appId}
         tradeName={resolvedTradeName}
         levelName={levelName}
-        qualificationLevels={inductionForm?.options?.qualificationLevels || []}
+        qualificationLevels={
+          inductionForm?.options?.qualificationLevels &&
+          inductionForm.options.qualificationLevels.length > 0
+            ? inductionForm.options.qualificationLevels
+            : (tradeDetail?.activeNosDocument?.qualificationLevels || []).map(
+                (ql) => ({
+                  id: ql.id,
+                  level: ql.level,
+                  slug: ql.slug,
+                }),
+              )
+        }
         defaultQualificationLevelId={
           (application as any)?.nsq?.wishedQualificationLevel?.id ||
           inductionForm?.qualificationLevel?.id
@@ -1212,12 +1261,29 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                 title: u.title,
                 qualificationLevelId: u.qualificationLevelId,
               }))
-            : ((application as any)?.nsq?.units || []).map((u: any, idx: number) => ({
-                id: u.id,
-                unitNo: u.referenceNumber || `UNIT ${idx + 1}`,
-                title: u.title,
-                qualificationLevelId: u.qualificationLevelId,
-              }))
+            : ((application as any)?.nsq?.units || []).length > 0
+              ? ((application as any)?.nsq?.units || []).map((u: any, idx: number) => ({
+                  id: u.id,
+                  unitNo: u.referenceNumber || `UNIT ${idx + 1}`,
+                  title: u.title,
+                  qualificationLevelId: u.qualificationLevelId,
+                }))
+              : remoteUnits.length > 0
+                ? remoteUnits.map((u, idx) => ({
+                    id: u.id,
+                    unitNo: u.referenceNumber || `UNIT ${idx + 1}`,
+                    title: u.title,
+                    qualificationLevelId: u.qualificationLevelId,
+                  }))
+                : (tradeDetail?.activeNosDocument?.qualificationLevels || []).flatMap(
+                    (ql) =>
+                      (ql.units || []).map((u, idx) => ({
+                        id: u.id,
+                        unitNo: u.referenceNumber || `UNIT ${idx + 1}`,
+                        title: u.title,
+                        qualificationLevelId: u.qualificationLevelId || ql.id,
+                      })),
+                  )
         }
         defaultSelectedUnitIds={
           (application as any)?.nsq?.wishedUnitIds ||
@@ -1277,7 +1343,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                   </span>
                   <span className="text-emerald-700 font-bold text-xs mt-0.5 inline-flex items-center gap-1">
                     <FiCheck className="w-3.5 h-3.5" />{" "}
-                    {inductionForm?.submittedAt
+                    {isInductionCompleted
                       ? "Induction Completed"
                       : "Induction Form"}
                   </span>
@@ -1363,7 +1429,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
         // induction form.
         actionLabel={
           activePaymentModal === "success"
-            ? inductionForm?.submittedAt
+            ? isInductionCompleted
               ? "Continue"
               : "Fill Induction Form"
             : undefined
@@ -1372,7 +1438,7 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
         onAction={() => {
           const wasSuccess = activePaymentModal === "success";
           setActivePaymentModal(null);
-          if (wasSuccess && !inductionForm?.submittedAt) {
+          if (wasSuccess && !isInductionCompleted) {
             setIsInductionFillModalOpen(true);
           }
         }}

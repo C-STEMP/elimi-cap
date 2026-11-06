@@ -9,6 +9,7 @@ import type { ApplicationStage, DirectObservationSession, InductionForm } from "
 import {
   useGetApplicationById,
   useGetApplicationStages,
+  useGetInductionForm,
   useGetUnitsCriteria,
   useReviewApplication,
   useReviewDirectObservation,
@@ -200,7 +201,11 @@ export const NsqAssessorApplicationDetailView: React.FC<
       refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
     },
   );
-  const inductionForm: InductionForm | undefined = (apiApp as any)?.inductionForm || undefined;
+  const { data: remoteInductionForm } = useGetInductionForm(application.id, {
+    enabled: Boolean(application.id),
+  });
+  const inductionForm: InductionForm | undefined =
+    remoteInductionForm || (apiApp as any)?.inductionForm || undefined;
 
   const user = useAppSelector((state) => state.auth.user);
   const { data: meProfile } = useGetMeProfile();

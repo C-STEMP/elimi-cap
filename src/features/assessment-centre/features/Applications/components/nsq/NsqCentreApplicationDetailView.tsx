@@ -27,6 +27,7 @@ import {
 } from "@/src/features/shared/reference/hooks";
 import {
   useGetApplicationStages,
+  useGetInductionForm,
   useGetPaymentQuote,
   useGetApplicationReceipt,
   useGetUnitCriteria,
@@ -174,7 +175,11 @@ export const NsqCentreApplicationDetailView: React.FC<
   const effectiveAppId = application?.id || (params?.id as string) || "";
 
   // NSQ induction form and observation data from application
-  const inductionForm: InductionForm | undefined = (application as any)?.inductionForm || undefined;
+  const { data: remoteInductionForm } = useGetInductionForm(effectiveAppId, {
+    enabled: Boolean(effectiveAppId),
+  });
+  const inductionForm: InductionForm | undefined =
+    remoteInductionForm || (application as any)?.inductionForm || undefined;
   const rawSessions =
     (application as any)?.directObservationSessions ||
     (application as any)?.nsq?.directObservationSessions ||

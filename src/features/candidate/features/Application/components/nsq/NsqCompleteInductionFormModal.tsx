@@ -115,11 +115,16 @@ export const NsqCompleteInductionFormModal: React.FC<
 
   // Units are shared across qualification levels in the same trade, so only
   // show the ones that belong to whichever level is currently selected.
-  const unitsForSelectedLevel = selectedLevelId
+  // If selectedLevelId does not match any unit's qualificationLevelId (e.g. when
+  // units are only defined on another level or selectedLevelId was stale), fall
+  // back to all availableUnits so the list is never blank.
+  const levelFilteredUnits = selectedLevelId
     ? availableUnits.filter(
         (u) => !u.qualificationLevelId || u.qualificationLevelId === selectedLevelId,
       )
     : availableUnits;
+  const unitsForSelectedLevel =
+    levelFilteredUnits.length > 0 ? levelFilteredUnits : availableUnits;
 
   const [selectedUnitIds, setSelectedUnitIds] = useModalDraft<string[]>(NSQ_INDUCTION_FORM_MODAL, "selectedUnitIds", 
     defaultSelectedUnitIds && defaultSelectedUnitIds.length > 0
@@ -128,20 +133,39 @@ export const NsqCompleteInductionFormModal: React.FC<
   );
 
   React.useEffect(() => {
-    if (!selectedLevelId && (defaultQualificationLevelId || qualificationLevels[0]?.id)) {
+    const isLevelValid =
+      selectedLevelId &&
+      (qualificationLevels.length === 0 ||
+        qualificationLevels.some((lvl) => lvl.id === selectedLevelId));
+    if (!isLevelValid && (defaultQualificationLevelId || qualificationLevels[0]?.id)) {
       setSelectedLevelId(defaultQualificationLevelId || qualificationLevels[0]?.id || "");
     }
   }, [defaultQualificationLevelId, qualificationLevels, selectedLevelId, setSelectedLevelId]);
 
   React.useEffect(() => {
-    if (selectedUnitIds.length === 0 && assessmentType !== "Modular") {
-      if (defaultSelectedUnitIds && defaultSelectedUnitIds.length > 0) {
-        setSelectedUnitIds(defaultSelectedUnitIds);
+    const validIds = new Set(availableUnits.map((u) => u.id));
+    const hasAnyValidSelected = selectedUnitIds.some((id) => validIds.has(id));
+    if ((!hasAnyValidSelected || selectedUnitIds.length === 0) && assessmentType !== "Modular") {
+      if (
+        defaultSelectedUnitIds &&
+        defaultSelectedUnitIds.length > 0 &&
+        defaultSelectedUnitIds.some((id) => validIds.has(id))
+      ) {
+        setSelectedUnitIds(defaultSelectedUnitIds.filter((id) => validIds.has(id)));
       } else if (unitsForSelectedLevel.length > 0) {
         setSelectedUnitIds(unitsForSelectedLevel.map((u) => u.id));
       }
+    } else if (!hasAnyValidSelected && selectedUnitIds.length > 0 && assessmentType === "Modular") {
+      setSelectedUnitIds([]);
     }
-  }, [defaultSelectedUnitIds, unitsForSelectedLevel, selectedUnitIds.length, assessmentType, setSelectedUnitIds]);
+  }, [
+    availableUnits,
+    defaultSelectedUnitIds,
+    unitsForSelectedLevel,
+    selectedUnitIds,
+    assessmentType,
+    setSelectedUnitIds,
+  ]);
   const [relevantQualification, setRelevantQualification] = useModalDraft(NSQ_INDUCTION_FORM_MODAL, "relevantQualification", "");
   const [impairment, setImpairment] = useModalDraft(NSQ_INDUCTION_FORM_MODAL, "impairment", "None");
   const [learningStrengths, setLearningStrengths] = useModalDraft<string[]>(NSQ_INDUCTION_FORM_MODAL, "learningStrengths", []);
