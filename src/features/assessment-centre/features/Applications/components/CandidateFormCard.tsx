@@ -1,12 +1,10 @@
 "use client";
 
-import React from "react";
-import Image from "next/image";
 import { ASSETS_URL } from "@/assets";
 import { Avatar } from "@/src/components/ui/avatar";
-import { FiCheckCircle, FiClock } from "react-icons/fi";
 import { useGetUnitsByTrade } from "@/src/features/shared/reference/hooks";
-import { useResolveAssets } from "@/src/features/shared/storage/hooks/useStorage";
+import Image from "next/image";
+import React from "react";
 
 export interface CandidateFormCardProps {
   appDetail?: any;
@@ -18,16 +16,9 @@ export interface CandidateFormCardProps {
   contactInfo?: any;
   evidenceCandidate?: any;
   declaration?: any;
-  /** Unique Learner Number (ULN). Falls back to values on the application detail. */
   uniqueLearnerNumber?: string | null;
-  /** Candidate's signature image. Falls back to values on the application detail. */
   signatureUrl?: string | null;
-  /** Explicit signature confirmation. Defaults to true when a signature image or verified identity is present. */
   signatureVerified?: boolean;
-  /**
-   * Look up the trade's units to show picked unit numbers (Unit 1, Unit 2…).
-   * Turn off on unauthenticated pages, where the lookup would end the session.
-   */
   resolveUnitNumbers?: boolean;
   className?: string;
 }
@@ -60,49 +51,6 @@ export const CandidateFormCard: React.FC<CandidateFormCardProps> = ({
     detail?.uniqueLearnerId ||
     "";
 
-  const rawSignatureAssetId: string =
-    detail?.candidate?.signature?.assetId ||
-    detail?.candidate?.signatureAssetId ||
-    detail?.candidateSignature?.assetId ||
-    detail?.candidateSignatureAssetId ||
-    detail?.signature?.assetId ||
-    detail?.signatureAssetId ||
-    detail?.declaration?.signature?.assetId ||
-    detail?.declaration?.signatureAssetId ||
-    frozen?.signature?.assetId ||
-    frozen?.signatureAssetId ||
-    "";
-
-  const initialSignatureUrl: string =
-    signatureUrl ||
-    detail?.candidate?.signature?.url ||
-    detail?.candidate?.signatureUrl ||
-    detail?.candidateSignature?.url ||
-    detail?.signature?.url ||
-    detail?.signatureUrl ||
-    detail?.declaration?.signature?.url ||
-    detail?.declaration?.signatureUrl ||
-    frozen?.signature?.url ||
-    frozen?.signatureUrl ||
-    "";
-
-  const shouldResolveSignatureAsset =
-    resolveUnitNumbers &&
-    !initialSignatureUrl &&
-    Boolean(rawSignatureAssetId) &&
-    rawSignatureAssetId !== "default";
-
-  const { data: resolvedSignatureAssets = [] } = useResolveAssets(
-    shouldResolveSignatureAsset ? [rawSignatureAssetId] : [],
-  );
-
-  const resolvedSignatureUrl =
-    initialSignatureUrl || resolvedSignatureAssets[0]?.url || "";
-
-  const hasSignature = Boolean(
-    resolvedSignatureUrl || (rawSignatureAssetId && rawSignatureAssetId !== "default"),
-  );
-
   const selectedUnitIds: string[] = Array.isArray(detail?.unitIds) ? detail.unitIds : [];
   const tradeId: string =
     detail?.tradeId || (typeof detail?.trade === "object" ? detail?.trade?.id : "") || "";
@@ -110,8 +58,6 @@ export const CandidateFormCard: React.FC<CandidateFormCardProps> = ({
     resolveUnitNumbers && selectedUnitIds.length > 0 ? tradeId : "",
   );
 
-  // No picked units, or every unit of the trade picked → full qualification.
-  // Otherwise number each picked unit by its position in the trade's unit list.
   const isFullQualification =
     selectedUnitIds.length === 0 ||
     (tradeUnits.length > 0 && tradeUnits.every((u) => selectedUnitIds.includes(u.id)));
@@ -123,13 +69,6 @@ export const CandidateFormCard: React.FC<CandidateFormCardProps> = ({
     : selectedUnitNumbers.length > 0
       ? selectedUnitNumbers.join(", ")
       : `${selectedUnitIds.length} Specified Qualification Unit(s)`;
-
-  const isSignatureVerified =
-    hasSignature &&
-    Boolean(
-      signatureVerified ??
-        (detail?.signatureVerified || detail?.candidate?.signatureVerified),
-    );
   const pDetails =
     personalDetails ||
     detail?.personalInformation?.personalDetails ||
@@ -202,7 +141,7 @@ export const CandidateFormCard: React.FC<CandidateFormCardProps> = ({
             ].map(([label, val]) => (
               <div key={label} className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 border-b border-gray-200/70 pb-1.5">
                 <span className="font-semibold text-black shrink-0 sm:w-32">{label}</span>
-                <span className="text-gray-800 font-medium break-words break-all sm:break-normal">{val}</span>
+                <span className="text-gray-800 font-medium wrap-break-word break-all sm:break-normal">{val}</span>
               </div>
             ))}
           </div>
@@ -214,11 +153,11 @@ export const CandidateFormCard: React.FC<CandidateFormCardProps> = ({
           <div className="grid grid-cols-1 gap-2.5 text-xs sm:text-sm">
             <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 border-b border-gray-200/70 pb-1.5">
               <span className="font-semibold text-black shrink-0 sm:w-36">Qualification Title:</span>
-              <span className="text-gray-800 font-medium break-words">{detail?.trade?.name || detail?.trade || detail?.sector?.name || `${detail?.type || "RPL"} Trade Qualification`}</span>
+              <span className="text-gray-800 font-medium wrap-break-word">{detail?.trade?.name || detail?.trade || detail?.sector?.name || `${detail?.type || "RPL"} Trade Qualification`}</span>
             </div>
             <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 border-b border-gray-200/70 pb-1.5">
               <span className="font-semibold text-black shrink-0 sm:w-36">Individual Units:</span>
-              <span className="text-gray-700 font-medium break-words">{unitsApplied}</span>
+              <span className="text-gray-700 font-medium wrap-break-word">{unitsApplied}</span>
             </div>
           </div>
         </div>
@@ -229,7 +168,7 @@ export const CandidateFormCard: React.FC<CandidateFormCardProps> = ({
           <div className="grid grid-cols-1 gap-2.5 text-xs sm:text-sm">
             <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 border-b border-gray-200/70 pb-1.5">
               <span className="font-semibold text-black shrink-0 sm:w-36">Unique Learner No. (ULN):</span>
-              <span className={uln ? "text-gray-800 font-medium break-words" : "text-gray-400 font-medium"}>{uln || "Not Provided"}</span>
+              <span className={uln ? "text-gray-800 font-medium wrap-break-word" : "text-gray-400 font-medium"}>{uln || "Not Provided"}</span>
             </div>
           </div>
         </div>
@@ -240,15 +179,15 @@ export const CandidateFormCard: React.FC<CandidateFormCardProps> = ({
           <div className="grid grid-cols-1 gap-2.5 text-xs sm:text-sm">
             <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 border-b border-gray-200/70 pb-1.5">
               <span className="font-semibold text-black shrink-0 sm:w-36">Centre Name:</span>
-              <span className="text-gray-800 font-medium break-words">{detail?.centre?.name || "Elimi Assessment Centre"}</span>
+              <span className="text-gray-800 font-medium wrap-break-word">{detail?.centre?.name || "Elimi Assessment Centre"}</span>
             </div>
             <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 border-b border-gray-200/70 pb-1.5">
               <span className="font-semibold text-black shrink-0 sm:w-36">Reg Code:</span>
-              <span className="text-gray-600 font-medium break-words">{detail?.centre?.registrationNo || detail?.centre?.slug || "AC-NBTE-0042"}</span>
+              <span className="text-gray-600 font-medium wrap-break-word">{detail?.centre?.registrationNo || detail?.centre?.slug || "AC-NBTE-0042"}</span>
             </div>
             <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 border-b border-gray-200/70 pb-1.5">
               <span className="font-semibold text-black shrink-0 sm:w-36">Centre Address:</span>
-              <span className="text-gray-600 font-medium break-words">
+              <span className="text-gray-600 font-medium wrap-break-word">
                 {typeof detail?.centre?.address === "object"
                   ? [detail.centre.address.address, detail.centre.address.state].filter(Boolean).join(", ")
                   : (detail?.centre as any)?.address || "Approved TVET Assessment Facility"}
@@ -279,7 +218,7 @@ export const CandidateFormCard: React.FC<CandidateFormCardProps> = ({
                 <input type="checkbox" checked={Boolean(evCandidate?.other)} readOnly className="w-4 h-4 accent-[#a31d38] rounded cursor-default" />
                 <span className={`font-medium ${Boolean(evCandidate?.other) ? "text-gray-900 font-semibold" : "text-gray-400"}`}>Other (please specify):</span>
               </div>
-              <div className="flex-1 border-b border-dashed border-gray-300 py-1 text-xs text-gray-700 break-words">
+              <div className="flex-1 border-b border-dashed border-gray-300 py-1 text-xs text-gray-700 wrap-break-word">
                 {(evCandidate as any)?.otherText || (evCandidate as any)?.otherDescription || "------"}
               </div>
             </div>
@@ -292,11 +231,11 @@ export const CandidateFormCard: React.FC<CandidateFormCardProps> = ({
           <div className="grid grid-cols-1 gap-2.5 text-xs sm:text-sm">
             <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 border-b border-gray-200/70 pb-1.5">
               <span className="font-semibold text-black shrink-0 sm:w-36">Current Occupation:</span>
-              <span className="text-gray-700 break-words">{detail?.currentOccupation?.occupation || "------"}</span>
+              <span className="text-gray-700 wrap-break-word">{detail?.currentOccupation?.occupation || "------"}</span>
             </div>
             <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 border-b border-gray-200/70 pb-1.5">
               <span className="font-semibold text-black shrink-0 sm:w-36">Employer (if applicable):</span>
-              <span className="text-gray-700 break-words">{detail?.currentOccupation?.employmentHistory?.[0]?.company || "------"}</span>
+              <span className="text-gray-700 wrap-break-word">{detail?.currentOccupation?.employmentHistory?.[0]?.company || "------"}</span>
             </div>
             <div className="flex flex-col gap-1 border-b border-gray-200/70 pb-2">
               <span className="font-semibold text-black">Previous Relevant Experience:</span>
@@ -311,36 +250,8 @@ export const CandidateFormCard: React.FC<CandidateFormCardProps> = ({
           <p className="text-xs sm:text-sm text-gray-700 leading-relaxed font-normal">
             {detail?.reasonForSeekingRPL || "I declare that the information provided in this application is true and correct, and that the evidence submitted is a true representation of my skills, knowledge, and experience."}
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-            <div className="flex flex-col sm:flex-row sm:items-end gap-1.5 sm:gap-2 border-b border-dashed border-gray-300 pb-1 text-xs sm:text-sm min-h-8">
-              <span className="font-semibold text-black shrink-0">Signature:</span>
-              <div className="flex items-center gap-2 flex-wrap">
-                {resolvedSignatureUrl ? (
-                  <>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={resolvedSignatureUrl}
-                      alt={`${name} signature`}
-                      className="h-10 max-w-40 object-contain"
-                    />
-                    {isSignatureVerified ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
-                        <FiCheckCircle className="w-3 h-3" /> Signature Verified
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
-                        <FiClock className="w-3 h-3" /> Pending Verification
-                      </span>
-                    )}
-                  </>
-                ) : (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 border border-gray-200 px-2.5 py-0.5 text-[11px] font-medium text-gray-500">
-                    Not Uploaded
-                  </span>
-                )}
-              </div>
-            </div>
-            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 border-b border-dashed border-gray-300 pb-1 text-xs sm:text-sm">
+          <div className="pt-2">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 border-b border-dashed border-gray-300 pb-1 text-xs sm:text-sm max-w-xs">
               <span className="font-semibold text-black shrink-0">Date:</span>
               <span className="text-gray-700">{detail?.submittedAt ? new Date(detail.submittedAt).toLocaleDateString("en-GB") : detail?.createdAt ? new Date(detail.createdAt).toLocaleDateString("en-GB") : "------"}</span>
             </div>

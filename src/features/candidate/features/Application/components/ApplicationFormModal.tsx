@@ -7,8 +7,7 @@ import { Button } from "@/src/components/ui/button";
 import { useGetApplicationById } from "@/src/features/candidate/features/Application/hooks";
 import { downloadFormElement, printFormElement } from "@/src/lib/formPrintDownload";
 import { CandidateFormCard } from "@/src/features/assessment-centre/features/Applications/components/CandidateFormCard";
-import { useCandidateProfile, useCandidateProfileSignature } from "@/src/features/shared/onboarding/hooks";
-import { useResolveAssets } from "@/src/features/shared/storage/hooks";
+import { useCandidateProfile } from "@/src/features/shared/onboarding/hooks";
 
 interface ApplicationFormModalProps {
   isOpen: boolean;
@@ -22,23 +21,8 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
   applicationId,
 }) => {
   const { data: apiApp, isLoading } = useGetApplicationById(applicationId);
-  const { data: profileSignature } = useCandidateProfileSignature(isOpen);
   const { data: candidateProfile } = useCandidateProfile(isOpen);
   const profileUln = (candidateProfile as any)?.onboarding?.data?.previousAssessmentStatus?.uniqueLearnerId;
-
-  const signatureAssetsToResolve = React.useMemo(() => {
-    return profileSignature?.assetId && !profileSignature.url
-      ? [profileSignature.assetId]
-      : [];
-  }, [profileSignature?.assetId, profileSignature?.url]);
-
-  const { data: resolvedSignatureAssets } = useResolveAssets(signatureAssetsToResolve);
-
-  const resolvedSignatureUrl =
-    profileSignature?.url ||
-    (profileSignature?.assetId && Array.isArray(resolvedSignatureAssets)
-      ? resolvedSignatureAssets.find((a) => a.assetId === profileSignature.assetId)?.url
-      : undefined);
 
   if (!isOpen) return null;
 
@@ -124,7 +108,6 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({
               <CandidateFormCard
                 appDetail={appData}
                 uniqueLearnerNumber={profileUln}
-                signatureUrl={resolvedSignatureUrl}
                 className="w-full flex flex-col gap-6 printable-application-card"
               />
             )}
