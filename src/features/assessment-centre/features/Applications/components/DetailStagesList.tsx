@@ -191,7 +191,14 @@ export const DetailStagesList: React.FC<DetailStagesListProps> = ({
     });
   };
 
-  const isIvDone = ivStatus === "Completed";
+  const isIvDone =
+    ivStatus === "Completed" ||
+    Boolean(
+      notifiedAwardingBody ||
+        generatedLink ||
+        evStatus === "Completed" ||
+        certStatus === "Competent",
+    );
   const isNotifyCompleted = Boolean(
     notifiedAwardingBody || (isIvDone && generatedLink),
   );

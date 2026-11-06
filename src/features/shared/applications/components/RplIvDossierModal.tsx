@@ -5,24 +5,14 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   FiX,
   FiCheck,
-  FiCheckCircle,
   FiAlertCircle,
-  FiAlertTriangle,
   FiEye,
   FiFileText,
   FiFolder,
-  FiCalendar,
-  FiClock,
-  FiMapPin,
-  FiUsers,
   FiShare2,
   FiSend,
-  FiCopy,
   FiExternalLink,
-  FiShield,
-  FiLayers,
 } from "react-icons/fi";
-import { Button } from "@/src/components/ui/button";
 import { Avatar } from "@/src/components/ui/avatar";
 import { useToast } from "@/src/components/ui/toast";
 import {
@@ -47,7 +37,7 @@ export interface RplIvDossierModalProps {
   isOpen: boolean;
   onClose: () => void;
   applicationId: string;
-  isAssignedIv?: boolean; // True ONLY for the actively assigned IV
+  isAssignedIv?: boolean;
   candidateName?: string;
   tradeName?: string;
   onSuccess?: () => void;
@@ -62,6 +52,25 @@ const FORM_TITLES: Record<string, string> = {
   skill_demonstration: "Skills Demonstration Records Form",
   skills_demo: "Skills Demonstration Records Form",
 };
+
+const CANONICAL_FORMS = [
+  {
+    id: "assessment_grid",
+    name: "RPL Assessment Grid / Mapping Form",
+  },
+  {
+    id: "skill_demonstration",
+    name: "Skills Demonstration Records Form",
+  },
+  {
+    id: "practical_observation",
+    name: "Practical Observation Record",
+  },
+  {
+    id: "records",
+    name: "Interview Question Bank & Record Sheet",
+  },
+];
 
 export const RplIvDossierModal: React.FC<RplIvDossierModalProps> = ({
   isOpen,
@@ -81,16 +90,11 @@ export const RplIvDossierModal: React.FC<RplIvDossierModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [apiError, setApiError] = useState<{ code?: number; message: string } | null>(null);
 
-  // Form viewing modal state
   const [selectedFormForView, setSelectedFormForView] = useState<InterviewForm | null>(null);
-
-  // Evidence preview modal state
   const [previewItem, setPreviewItem] = useState<EvidenceRecord | null>(null);
 
-  // Centre share / forward state
   const [isForwarding, setIsForwarding] = useState(false);
   const [isForwarded, setIsForwarded] = useState(false);
-  const [shareLink, setShareLink] = useState("");
   const [hasCopiedLink, setHasCopiedLink] = useState(false);
 
   const { data: application } = useGetApplicationById(applicationId);
@@ -141,8 +145,6 @@ export const RplIvDossierModal: React.FC<RplIvDossierModalProps> = ({
   const panelistRecords = formsBundle?.panelistRecords || [];
   const panelMembers = interviewPanel?.members || [];
 
-  // Determine lead evaluation notes / verdict
-  const leadMember = panelMembers.find((m: any) => m.isLead);
   const leadRecord = formsList[0]?.data;
   const recordedVerdict =
     leadRecord?.verdict ||
@@ -151,7 +153,7 @@ export const RplIvDossierModal: React.FC<RplIvDossierModalProps> = ({
 
   const handleReview = async (decision: "approve" | "reject") => {
     if (decision === "reject" && !feedback.trim()) {
-      setFeedbackError("Feedback is required when rejecting this application.");
+      setFeedbackError("Please enter feedback explaining why this application is being returned.");
       return;
     }
     setFeedbackError(null);
@@ -162,7 +164,7 @@ export const RplIvDossierModal: React.FC<RplIvDossierModalProps> = ({
       feedback.trim() ||
       (decision === "approve"
         ? "Candidate verified and confirmed competent by Internal Verifier."
-        : "Application rejected by Internal Verifier.");
+        : "Application returned by Internal Verifier.");
 
     try {
       await reviewIvApi(applicationId, {
@@ -185,7 +187,7 @@ export const RplIvDossierModal: React.FC<RplIvDossierModalProps> = ({
         type: "success",
         title:
           decision === "approve"
-            ? "Internal Verification Approved"
+            ? "Verification Approved"
             : "Application Returned",
         description:
           decision === "approve"
@@ -212,14 +214,14 @@ export const RplIvDossierModal: React.FC<RplIvDossierModalProps> = ({
         msg.toLowerCase().includes("forbidden")
       ) {
         customMsg =
-          "Access Denied: Only the actively assigned Internal Verifier for this application may review.";
+          "Only the assigned Internal Verifier for this application may submit a decision.";
       } else if (
         status === 409 ||
         msg.toLowerCase().includes("stage") ||
         msg.toLowerCase().includes("conflict")
       ) {
         customMsg =
-          "Stage Conflict: This application is not currently at the internal verification stage.";
+          "This application is not currently at the internal verification stage.";
       } else if (msg) {
         customMsg = msg;
       }
@@ -269,7 +271,6 @@ export const RplIvDossierModal: React.FC<RplIvDossierModalProps> = ({
       const fullUrl = res?.token
         ? `${origin}/shared/applications/${res.token}`
         : `${origin}/applications/${applicationId}`;
-      setShareLink(fullUrl);
       if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(fullUrl);
         setHasCopiedLink(true);
@@ -277,545 +278,486 @@ export const RplIvDossierModal: React.FC<RplIvDossierModalProps> = ({
       }
       toast({
         type: "success",
-        title: "Dossier Link Ready",
-        description: "Public link copied to clipboard.",
+        title: "Dossier Link Copied",
+        description: "Shareable link copied to clipboard.",
       });
     } catch (err: any) {
       toast({
         type: "error",
         title: "Share Link Failed",
-        description: err?.message || "Could not generate share token.",
+        description: err?.message || "Could not generate share link.",
       });
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-      <div className="bg-white rounded-3xl max-w-5xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-gray-100 overflow-hidden animate-in zoom-in-95 duration-200">
-        {/* Header */}
-        <div className="p-5 sm:p-6 border-b border-gray-100 flex items-start justify-between gap-4 bg-[#F8F9FA]/80">
-          <div className="flex items-start gap-3.5 min-w-0">
-            <div className="w-11 h-11 rounded-2xl bg-[#8A1538]/10 text-[#8A1538] flex items-center justify-center shrink-0 border border-[#8A1538]/20">
-              <FiShield className="w-5 h-5" />
-            </div>
-            <div className="flex flex-col min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[11px] font-bold text-[#8A1538] uppercase tracking-wider">
-                  RPL Internal Verification Dossier
-                </span>
-                <span
-                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                    isIvDone
-                      ? "bg-emerald-100 text-emerald-800"
-                      : "bg-amber-100 text-amber-800"
-                  }`}
-                >
-                  {isIvDone ? "IV Completed" : "Under Review"}
-                </span>
-                {!isAssignedIv && (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">
-                    Centre View (Read-Only)
-                  </span>
-                )}
-              </div>
-              <h2 className="text-lg sm:text-xl font-bold text-gray-900 truncate mt-0.5">
+    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto select-text">
+      <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[88vh] flex flex-col shadow-2xl border border-gray-100 overflow-hidden animate-in zoom-in-95 duration-200">
+        {/* Clean Header */}
+        <div className="px-6 pt-6 pb-4 flex items-start justify-between gap-4">
+          <div className="flex flex-col gap-1 min-w-0">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 truncate">
                 {candidateFullName}
               </h2>
-              <p className="text-xs text-gray-500 truncate">
-                Trade: {resolvedTrade} &bull; Application ID: {applicationId.slice(0, 8)}...
-              </p>
+              <span
+                className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${
+                  isIvDone
+                    ? "bg-[#1E7F4C]/10 text-[#1E7F4C]"
+                    : "bg-[#FBAB2A]/15 text-[#D97706]"
+                }`}
+              >
+                {isIvDone ? "Verified" : "Under Review"}
+              </span>
             </div>
+            <p className="text-xs text-gray-500 truncate">
+              Internal Verification Dossier &bull; {resolvedTrade}
+            </p>
           </div>
 
           <button
             type="button"
             onClick={onClose}
-            className="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+            className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 flex items-center justify-center transition-colors cursor-pointer shrink-0"
           >
             <FiX className="w-4 h-4" />
           </button>
         </div>
 
-        {/* API Error Banner (Handles 403 & 409) */}
+        {/* API Error Banner */}
         {apiError && (
-          <div
-            className={`p-4 border-b flex items-start gap-3 ${
-              apiError.code === 403
-                ? "bg-rose-50 border-rose-200 text-rose-800"
-                : apiError.code === 409
-                  ? "bg-amber-50 border-amber-200 text-amber-800"
-                  : "bg-rose-50 border-rose-200 text-rose-800"
-            }`}
-          >
-            <FiAlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-            <div className="flex flex-col text-xs">
-              <span className="font-bold">
-                {apiError.code === 403
-                  ? "403 Unauthorized: Not the Assigned IV"
-                  : apiError.code === 409
-                    ? "409 Conflict: Wrong Stage"
-                    : "Review Submission Error"}
-              </span>
-              <span>{apiError.message}</span>
-            </div>
+          <div className="mx-6 mb-3 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 flex items-start gap-2.5 text-xs">
+            <FiAlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+            <span>{apiError.message}</span>
           </div>
         )}
 
-        {/* Tab Navigation */}
-        <div className="flex items-center gap-2 px-5 sm:px-6 pt-3 border-b border-gray-100 overflow-x-auto scrollbar-none bg-white">
+        {/* Simple Tab Bar */}
+        <div className="flex items-center gap-6 px-6 border-b border-gray-100 overflow-x-auto scrollbar-none">
           <button
             type="button"
             onClick={() => setActiveTab("forms")}
-            className={`flex items-center gap-2 px-4 py-2.5 border-b-2 text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${
+            className={`py-3 border-b-2 text-xs sm:text-sm font-semibold transition-colors cursor-pointer whitespace-nowrap ${
               activeTab === "forms"
                 ? "border-[#8A1538] text-[#8A1538]"
-                : "border-transparent text-gray-500 hover:text-black"
+                : "border-transparent text-gray-500 hover:text-gray-800"
             }`}
           >
-            <FiFileText className="w-4 h-4" />
-            <span>Assessment Forms ({formsList.length || 4})</span>
+            Assessment Forms ({formsList.length || 4})
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab("evidence")}
-            className={`flex items-center gap-2 px-4 py-2.5 border-b-2 text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${
+            className={`py-3 border-b-2 text-xs sm:text-sm font-semibold transition-colors cursor-pointer whitespace-nowrap ${
               activeTab === "evidence"
                 ? "border-[#8A1538] text-[#8A1538]"
-                : "border-transparent text-gray-500 hover:text-black"
+                : "border-transparent text-gray-500 hover:text-gray-800"
             }`}
           >
-            <FiFolder className="w-4 h-4" />
-            <span>Candidate Evidence ({evidenceItems.length})</span>
+            Evidence ({evidenceItems.length})
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab("evaluations")}
-            className={`flex items-center gap-2 px-4 py-2.5 border-b-2 text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${
+            className={`py-3 border-b-2 text-xs sm:text-sm font-semibold transition-colors cursor-pointer whitespace-nowrap ${
               activeTab === "evaluations"
                 ? "border-[#8A1538] text-[#8A1538]"
-                : "border-transparent text-gray-500 hover:text-black"
+                : "border-transparent text-gray-500 hover:text-gray-800"
             }`}
           >
-            <FiUsers className="w-4 h-4" />
-            <span>Panel Evaluations &amp; Verdict</span>
+            Panel &amp; Verdict
           </button>
         </div>
 
-        {/* Dossier Content Body */}
-        <div className="flex-1 overflow-y-auto p-5 sm:p-6 flex flex-col gap-6">
+        {/* Content Body */}
+        <div className="flex-1 overflow-y-auto p-6">
           {/* TAB 1: ASSESSMENT FORMS */}
           {activeTab === "forms" && (
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-bold text-gray-900">
-                    Official NBTE Assessment Instruments
-                  </h3>
-                  <p className="text-xs text-gray-500">
-                    Review completed instruments, scoring criteria, and panelist signatures.
-                  </p>
+            <div className="flex flex-col gap-2.5">
+              {CANONICAL_FORMS.map((spec) => {
+                const matchedRemote = formsList.find(
+                  (f) =>
+                    (f.formType as string) === spec.id ||
+                    (spec.id === "skill_demonstration" &&
+                      (f.formType as string) === "skills_demo") ||
+                    (spec.id === "assessment_grid" &&
+                      (f.formType as string) === "assessment_mapping"),
+                );
+                const isSigned = Boolean(
+                  matchedRemote?.assessorSignedAt ||
+                    (matchedRemote?.data as any)?.assessorSigned ||
+                    (matchedRemote?.data as any)?.leadPanelistSigned ||
+                    matchedRemote?.status === "completed" ||
+                    isIvDone,
+                );
+
+                return (
+                  <div
+                    key={spec.id}
+                    onClick={() =>
+                      setSelectedFormForView(
+                        matchedRemote || ({ formType: spec.id, data: {} } as any),
+                      )
+                    }
+                    className="bg-[#F8F9FA] hover:bg-gray-100/80 rounded-2xl px-4 py-3.5 border border-gray-100 flex items-center justify-between gap-4 transition-colors cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-9 h-9 rounded-xl bg-white border border-gray-200/80 text-gray-600 flex items-center justify-center shrink-0">
+                        <FiFileText className="w-4 h-4" />
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-xs sm:text-sm font-semibold text-gray-900 truncate">
+                          {spec.name}
+                        </span>
+                        <span
+                          className={`text-[11px] font-medium flex items-center gap-1 ${
+                            isSigned ? "text-[#1E7F4C]" : "text-gray-400"
+                          }`}
+                        >
+                          {isSigned ? (
+                            <>
+                              <FiCheck className="w-3 h-3" /> Completed &amp; Signed
+                            </>
+                          ) : (
+                            "In Progress"
+                          )}
+                        </span>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedFormForView(
+                          matchedRemote || ({ formType: spec.id, data: {} } as any),
+                        );
+                      }}
+                      className="px-3.5 py-1.5 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 text-xs font-semibold rounded-xl shadow-2xs transition-colors shrink-0 cursor-pointer"
+                    >
+                      View
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* TAB 2: CANDIDATE EVIDENCE */}
+          {activeTab === "evidence" && (
+            <div className="flex flex-col gap-2.5">
+              {evidenceItems.length === 0 ? (
+                <div className="bg-[#F8F9FA] rounded-2xl p-8 text-center text-gray-400 text-xs border border-gray-100">
+                  No evidence files uploaded for this application.
                 </div>
+              ) : (
+                evidenceItems.map((item: any, idx: number) => {
+                  const docName =
+                    item.documentName || item.name || `Evidence Document #${idx + 1}`;
+                  const docUrl = item.asset?.url || item.url || item.fileUrl || "";
+                  const docType = item.evidenceType || item.category || "Portfolio File";
+
+                  return (
+                    <div
+                      key={item.id || idx}
+                      className="bg-[#F8F9FA] rounded-2xl px-4 py-3.5 border border-gray-100 flex items-center justify-between gap-4"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-9 h-9 rounded-xl bg-white border border-gray-200/80 text-[#8A1538] flex items-center justify-center shrink-0">
+                          <FiFolder className="w-4 h-4" />
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-xs sm:text-sm font-semibold text-gray-900 truncate">
+                            {docName}
+                          </span>
+                          <span className="text-[11px] text-gray-500 capitalize">
+                            {String(docType).replace(/([A-Z])/g, " $1")}
+                          </span>
+                        </div>
+                      </div>
+
+                      {docUrl && (
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setPreviewItem({
+                                id: String(item.id || idx),
+                                name: docName,
+                                size: "Evidence Asset",
+                                status: "Approved",
+                                statusBg: "bg-emerald-50",
+                                statusText: "text-emerald-700",
+                                url: docUrl,
+                              })
+                            }
+                            className="px-3.5 py-1.5 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 text-xs font-semibold rounded-xl shadow-2xs flex items-center gap-1.5 cursor-pointer"
+                          >
+                            <FiEye className="w-3.5 h-3.5 text-gray-500" />
+                            <span>Preview</span>
+                          </button>
+                          <a
+                            href={docUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="Open in new tab"
+                            className="w-8 h-8 bg-white hover:bg-gray-50 border border-gray-200 text-gray-600 rounded-xl shadow-2xs flex items-center justify-center"
+                          >
+                            <FiExternalLink className="w-3.5 h-3.5" />
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          )}
+
+          {/* TAB 3: PANEL & VERDICT */}
+          {activeTab === "evaluations" && (
+            <div className="flex flex-col gap-4">
+              {/* Verdict Summary Row */}
+              <div className="bg-[#F8F9FA] rounded-2xl p-4 border border-gray-100 flex items-center justify-between gap-4 flex-wrap">
+                <div className="flex flex-col gap-1">
+                  <span className="text-[11px] font-medium text-gray-500">
+                    Panel Interview Verdict
+                  </span>
+                  <span
+                    className={`text-sm font-bold px-3 py-0.5 rounded-full w-fit ${
+                      recordedVerdict === "Competent"
+                        ? "bg-[#1E7F4C]/10 text-[#1E7F4C]"
+                        : recordedVerdict === "Incompetent"
+                          ? "bg-rose-100 text-rose-700"
+                          : "bg-amber-100 text-amber-700"
+                    }`}
+                  >
+                    {recordedVerdict}
+                  </span>
+                </div>
+
+                {interviewSchedule?.scheduledAt && (
+                  <div className="flex flex-col text-xs text-gray-500 sm:text-right">
+                    <span className="font-semibold text-gray-800">
+                      {new Date(interviewSchedule.scheduledAt).toLocaleDateString("en-GB", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}{" "}
+                      &bull;{" "}
+                      {new Date(interviewSchedule.scheduledAt).toLocaleTimeString("en-US", {
+                        hour: "numeric",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                    <span>Venue: {interviewSchedule.location || "Online"}</span>
+                  </div>
+                )}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                {[
-                  {
-                    id: "assessment_grid",
-                    name: "RPL Assessment Grid / Mapping Form",
-                    code: "NBTE/RPL/AG-01",
-                  },
-                  {
-                    id: "skill_demonstration",
-                    name: "Skills Demonstration Records Form",
-                    code: "NBTE/RPL/SDR-01",
-                  },
-                  {
-                    id: "practical_observation",
-                    name: "Practical Observation Record",
-                    code: "NBTE/RPL/POR-02",
-                  },
-                  {
-                    id: "records",
-                    name: "Interview Question Bank & Record Sheet",
-                    code: "NBTE/RPL/IR-01",
-                  },
-                ].map((spec) => {
-                  const matchedRemote = formsList.find(
-                    (f) =>
-                      (f.formType as string) === spec.id ||
-                      (spec.id === "skill_demonstration" && (f.formType as string) === "skills_demo") ||
-                      (spec.id === "assessment_grid" && (f.formType as string) === "assessment_mapping"),
-                  );
-                  const isCandSigned = Boolean(
-                    matchedRemote?.candidateSignedAt ||
-                      (matchedRemote?.data as any)?.candidateSignedAt,
-                  );
+              {/* Panel Members List */}
+              <div className="flex flex-col gap-2">
+                <span className="text-xs font-semibold text-gray-500">
+                  Panelists ({panelMembers.length})
+                </span>
+
+                {panelMembers.map((member: any, i: number) => {
+                  const roleLabel = member.isLead
+                    ? "Lead Panelist"
+                    : member.isObserver
+                      ? "Internal Verifier"
+                      : "Panel Member";
+
                   const isLeadSigned = Boolean(
-                    matchedRemote?.assessorSignedAt ||
-                      (matchedRemote?.data as any)?.assessorSigned ||
-                      (matchedRemote?.data as any)?.leadPanelistSigned,
+                    member.isLead &&
+                      (recordedVerdict === "Competent" ||
+                        recordedVerdict === "Incompetent" ||
+                        isIvDone ||
+                        stagesData?.some(
+                          (s) =>
+                            (s.stageKey === "interview" && s.status === "successful") ||
+                            (s.stageKey === "internal_verification" &&
+                              (s.status === "in_progress" ||
+                                s.status === "successful" ||
+                                (s.status as string) === "completed")),
+                        ) ||
+                        formsList.some(
+                          (f) =>
+                            Boolean(f.assessorSignedAt) ||
+                            Boolean(f.status === "completed") ||
+                            Boolean((f.data as any)?.assessorSignature) ||
+                            Boolean((f.data as any)?.leadSignature) ||
+                            Boolean((f.data as any)?.leadPanelistSigned) ||
+                            Boolean((f.data as any)?.assessorSigned),
+                        )),
+                  );
+
+                  const isObserverSigned = Boolean(
+                    member.isObserver &&
+                      (isIvDone ||
+                        ivStage?.status === "successful" ||
+                        (ivStage?.status as string) === "completed" ||
+                        panelistRecords.some(
+                          (pr) =>
+                            (pr.assessorId === member.assessorId || pr.isObserver) &&
+                            Boolean(
+                              (pr.data as any)?.assessorSignature ||
+                                (pr.data as any)?.assessorSigned ||
+                                (pr.data as any)?.ivSignature ||
+                                (pr.data as any)?.internalVerifierSigned,
+                            ),
+                        )),
+                  );
+
+                  const isPanelMemberSigned = Boolean(
+                    panelistRecords.some(
+                      (pr) =>
+                        (pr.assessorId === member.assessorId ||
+                          ((pr as any).userId &&
+                            (pr as any).userId === member.assessorId) ||
+                          (member.isLead && pr.isLead) ||
+                          (member.isObserver && pr.isObserver)) &&
+                        Boolean(
+                          (pr.data as any)?.assessorSignature ||
+                            (pr.data as any)?.assessorSigned ||
+                            (pr.data as any)?.panelMemberSigned,
+                        ),
+                    ),
+                  );
+
+                  const isSigned = Boolean(
+                    member.signed ||
+                      isLeadSigned ||
+                      isObserverSigned ||
+                      isPanelMemberSigned,
                   );
 
                   return (
                     <div
-                      key={spec.id}
-                      className="bg-[#F8F9FA] rounded-2xl p-4 border border-gray-200/70 flex flex-col justify-between gap-3 hover:border-gray-300 transition-colors"
+                      key={member.assessorId || i}
+                      className="bg-[#F8F9FA] rounded-2xl px-4 py-3 border border-gray-100 flex items-center justify-between gap-3"
                     >
-                      <div className="flex items-start gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center shrink-0 border border-amber-200">
-                          <FiFileText className="w-4 h-4" />
-                        </div>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <Avatar
+                          name={member.name || `Panelist ${i + 1}`}
+                          className="w-8 h-8 shrink-0 text-xs font-bold"
+                        />
                         <div className="flex flex-col min-w-0">
-                          <span className="text-[10px] font-mono font-bold text-gray-400">
-                            {spec.code}
+                          <span className="text-xs sm:text-sm font-semibold text-gray-900 truncate">
+                            {member.name || `Panelist ${i + 1}`}
                           </span>
-                          <h4 className="text-xs sm:text-sm font-bold text-gray-900 truncate">
-                            {spec.name}
-                          </h4>
-                          <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                            {isLeadSigned ? (
-                              <span className="text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1">
-                                <FiCheck className="w-3 h-3" /> Assessor Signed
-                              </span>
-                            ) : (
-                              <span className="text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full">
-                                In Progress
-                              </span>
-                            )}
-                            {isCandSigned && (
-                              <span className="text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1">
-                                <FiCheck className="w-3 h-3" /> Candidate Signed
-                              </span>
-                            )}
-                          </div>
+                          <span className="text-[11px] text-gray-500">{roleLabel}</span>
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-end border-t border-gray-200/60 pt-2.5">
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          size="sm"
-                          onClick={() =>
-                            setSelectedFormForView(
-                              matchedRemote || ({ formType: spec.id, data: {} } as any),
-                            )
-                          }
-                          className="text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 cursor-pointer"
-                        >
-                          <FiEye className="w-3.5 h-3.5" />
-                          <span>View Form (Read-Only)</span>
-                        </Button>
-                      </div>
+                      <span
+                        className={`text-xs font-semibold px-2.5 py-0.5 rounded-full shrink-0 ${
+                          isSigned
+                            ? "bg-[#1E7F4C]/10 text-[#1E7F4C]"
+                            : "bg-amber-100 text-amber-700"
+                        }`}
+                      >
+                        {isSigned ? "Signed" : "Pending"}
+                      </span>
                     </div>
                   );
                 })}
               </div>
             </div>
           )}
-
-          {/* TAB 2: CANDIDATE EVIDENCE */}
-          {activeTab === "evidence" && (
-            <div className="flex flex-col gap-4">
-              <div>
-                <h3 className="text-sm font-bold text-gray-900">
-                  Candidate Portfolios &amp; Evidence Files
-                </h3>
-                <p className="text-xs text-gray-500">
-                  Work samples, certifications, and verification documentation submitted by candidate.
-                </p>
-              </div>
-
-              {evidenceItems.length === 0 ? (
-                <div className="bg-[#F8F9FA] rounded-2xl p-8 text-center text-gray-400 text-xs italic border border-gray-100">
-                  No independent evidence artifacts uploaded in the vault for this application.
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5">
-                  {evidenceItems.map((item: any, idx: number) => {
-                    const docName = item.documentName || item.name || `Evidence Document #${idx + 1}`;
-                    const docUrl = item.asset?.url || item.url || item.fileUrl || "";
-                    const docType = item.evidenceType || item.category || "Portfolio File";
-
-                    return (
-                      <div
-                        key={item.id || idx}
-                        className="bg-[#F8F9FA] border border-gray-200/70 rounded-2xl p-3.5 flex flex-col justify-between gap-3"
-                      >
-                        <div className="flex items-start gap-2.5">
-                          <div className="w-8 h-8 rounded-lg bg-rose-50 text-[#8A1538] flex items-center justify-center shrink-0">
-                            <FiFolder className="w-4 h-4" />
-                          </div>
-                          <div className="flex flex-col min-w-0">
-                            <span className="text-xs font-bold text-gray-900 truncate">
-                              {docName}
-                            </span>
-                            <span className="text-[10px] text-gray-500 capitalize">
-                              {String(docType).replace(/([A-Z])/g, " $1")}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center justify-end gap-2 border-t border-gray-200/60 pt-2">
-                          {docUrl && (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setPreviewItem({
-                                  id: String(item.id || idx),
-                                  name: docName,
-                                  size: "Evidence Asset",
-                                  status: "Approved",
-                                  statusBg: "bg-emerald-50",
-                                  statusText: "text-emerald-700",
-                                  url: docUrl,
-                                })
-                              }
-                              className="px-2.5 py-1 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 text-xs font-semibold rounded-lg flex items-center gap-1 cursor-pointer"
-                            >
-                              <FiEye className="w-3 h-3" />
-                              <span>Preview</span>
-                            </button>
-                          )}
-                          {docUrl && (
-                            <a
-                              href={docUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="px-2.5 py-1 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 text-xs font-semibold rounded-lg flex items-center gap-1"
-                            >
-                              <FiExternalLink className="w-3 h-3" />
-                              <span>Open</span>
-                            </a>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* TAB 3: PANEL EVALUATIONS & VERDICT */}
-          {activeTab === "evaluations" && (
-            <div className="flex flex-col gap-4">
-              {/* Verdict Summary Card */}
-              <div className="bg-[#F8F9FA] rounded-2xl p-4 sm:p-5 border border-gray-200/70 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="flex flex-col gap-1">
-                  <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-                    Panel Interview Verdict
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`text-base font-extrabold px-3 py-1 rounded-full ${
-                        recordedVerdict === "Competent"
-                          ? "bg-emerald-100 text-emerald-800"
-                          : recordedVerdict === "Incompetent"
-                            ? "bg-rose-100 text-rose-800"
-                            : "bg-amber-100 text-amber-800"
-                      }`}
-                    >
-                      {recordedVerdict}
-                    </span>
-                  </div>
-                </div>
-
-                {interviewSchedule?.scheduledAt && (
-                  <div className="flex flex-col text-xs text-gray-600 sm:text-right">
-                    <span className="font-semibold text-gray-700">Interview Scheduled:</span>
-                    <span>
-                      {new Date(interviewSchedule.scheduledAt).toLocaleDateString("en-GB", {
-                        weekday: "short",
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                      })}{" "}
-                      at{" "}
-                      {new Date(interviewSchedule.scheduledAt).toLocaleTimeString("en-US", {
-                        hour: "numeric",
-                        minute: "2-digit",
-                      })}
-                    </span>
-                    <span className="text-[11px] text-gray-400">
-                      Venue: {interviewSchedule.location || "Online"}
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              {/* Panel Members & Signatures List */}
-              <div className="flex flex-col gap-2.5">
-                <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wide">
-                  Panel Assessors &amp; Sign-Off Records
-                </h4>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {panelMembers.map((member: any, i: number) => {
-                    const roleLabel = member.isLead
-                      ? "Lead Panelist"
-                      : member.isObserver
-                        ? "Internal Verifier"
-                        : "Panel Member";
-                    const isSigned = Boolean(
-                      member.signed ||
-                        panelistRecords.some(
-                          (pr) =>
-                            pr.assessorId === member.assessorId &&
-                            ((pr.data as any)?.assessorSignature || (pr.data as any)?.assessorSigned),
-                        ),
-                    );
-
-                    return (
-                      <div
-                        key={member.assessorId || i}
-                        className="bg-white rounded-2xl p-3.5 border border-gray-200/80 shadow-2xs flex items-center justify-between gap-3"
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <Avatar
-                            name={member.name || `Panelist ${i + 1}`}
-                            className="w-8 h-8 shrink-0 text-xs font-bold"
-                          />
-                          <div className="flex flex-col min-w-0">
-                            <span className="text-xs font-bold text-gray-900 truncate">
-                              {member.name || `Panelist ${i + 1}`}
-                            </span>
-                            <span className="text-[10px] text-gray-500">{roleLabel}</span>
-                          </div>
-                        </div>
-
-                        <span
-                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
-                            isSigned
-                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                              : "bg-amber-50 text-amber-700 border border-amber-200"
-                          }`}
-                        >
-                          {isSigned ? "Signed" : "Pending"}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
-        {/* Footer / Decision Controls */}
-        <div className="p-5 sm:p-6 border-t border-gray-100 bg-[#F8F9FA]/90 flex flex-col gap-4">
-          {/* ASSIGNED IV: Decision Review Section */}
-          {isAssignedIv ? (
+        {/* Clean Footer */}
+        <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/60">
+          {isAssignedIv && !isIvDone ? (
             <div className="flex flex-col gap-3">
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-gray-800 flex items-center justify-between">
-                  <span>
-                    Verification Feedback &amp; Audit Notes
-                    <span className="text-rose-500 ml-0.5">* (Required on Reject)</span>
-                  </span>
-                  <span className="text-[11px] font-normal text-gray-400">
-                    Sends stageKey: &quot;internal_verification&quot;
-                  </span>
-                </label>
-                <textarea
-                  value={feedback}
-                  onChange={(e) => {
-                    setFeedback(e.target.value);
-                    if (feedbackError) setFeedbackError(null);
-                  }}
-                  placeholder="Enter comments, audit observations, or specific required corrections..."
-                  rows={2}
-                  className={`w-full text-xs p-3 rounded-xl border bg-white outline-none resize-none transition-colors ${
-                    feedbackError
-                      ? "border-rose-400 focus:ring-1 focus:ring-rose-400"
-                      : "border-gray-200 focus:border-[#fbab2a] focus:ring-1 focus:ring-[#fbab2a]/30"
-                  }`}
-                />
-                {feedbackError && (
-                  <span className="text-rose-600 text-xs font-semibold flex items-center gap-1 mt-0.5">
-                    <FiAlertCircle className="w-3.5 h-3.5" />
-                    {feedbackError}
-                  </span>
-                )}
-              </div>
-
-              <div className="flex items-center justify-between gap-3 flex-wrap">
-                <span className="text-[11px] text-gray-500">
-                  Signed in as assigned IV. Decision will close internal verification.
+              <textarea
+                value={feedback}
+                onChange={(e) => {
+                  setFeedback(e.target.value);
+                  if (feedbackError) setFeedbackError(null);
+                }}
+                placeholder="Add verification notes (required if returning application)..."
+                rows={2}
+                className={`w-full text-xs p-3 rounded-xl border bg-white outline-none resize-none transition-colors ${
+                  feedbackError
+                    ? "border-rose-400 focus:ring-1 focus:ring-rose-400"
+                    : "border-gray-200 focus:border-[#fbab2a]"
+                }`}
+              />
+              {feedbackError && (
+                <span className="text-rose-600 text-xs font-medium">
+                  {feedbackError}
                 </span>
+              )}
 
-                <div className="flex items-center gap-2.5">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={() => handleReview("reject")}
-                    loading={isSubmitting}
-                    disabled={isSubmitting}
-                    className="border-rose-200 text-rose-700 hover:bg-rose-50 text-xs font-bold px-4 py-2.5 rounded-xl cursor-pointer"
-                  >
-                    Reject &amp; Request Revision
-                  </Button>
+              <div className="flex items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => handleReview("reject")}
+                  disabled={isSubmitting}
+                  className="px-4 py-2 bg-white hover:bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold rounded-xl transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  Return Application
+                </button>
 
-                  <Button
-                    type="button"
-                    variant="amber"
-                    onClick={() => handleReview("approve")}
-                    loading={isSubmitting}
-                    disabled={isSubmitting}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-xs cursor-pointer"
-                  >
-                    Approve (Mark Competent)
-                  </Button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => handleReview("approve")}
+                  disabled={isSubmitting}
+                  className="px-5 py-2 bg-[#1E7F4C] hover:bg-[#17663C] text-white text-xs font-semibold rounded-xl shadow-2xs transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  {isSubmitting ? "Submitting..." : "Approve & Verify"}
+                </button>
               </div>
             </div>
           ) : (
-            /* CENTRE VIEW: Decision buttons hidden; show status & once approved, forward + share actions */
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center justify-between gap-3 flex-wrap">
-                <div className="flex items-center gap-2 text-xs text-gray-600">
-                  <FiShield className="w-4 h-4 text-gray-400" />
-                  <span>
-                    {isIvDone
-                      ? "Internal verification is complete and endorsed."
-                      : "Internal verification is under review by the assigned IV. Decision buttons are restricted to the IV account."}
-                  </span>
-                </div>
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <span className="text-xs text-gray-500">
+                {isIvDone
+                  ? "Internal verification is complete."
+                  : "Awaiting Internal Verifier review."}
+              </span>
 
-                {isIvDone && (
-                  <div className="flex items-center gap-2.5 flex-wrap">
-                    <Button
+              <div className="flex items-center gap-2">
+                {isIvDone && !isAssignedIv ? (
+                  <>
+                    <button
                       type="button"
-                      variant="secondary"
-                      size="sm"
                       onClick={handleGenerateShareLink}
-                      loading={createShareTokenMutation.isPending}
-                      className="bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                      disabled={createShareTokenMutation.isPending}
+                      className="px-3.5 py-2 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
                     >
                       <FiShare2 className="w-3.5 h-3.5 text-gray-500" />
-                      <span>{hasCopiedLink ? "Link Copied!" : "Share Dossier"}</span>
-                    </Button>
+                      <span>{hasCopiedLink ? "Copied!" : "Share Link"}</span>
+                    </button>
 
-                    <Button
+                    <button
                       type="button"
-                      variant="amber"
-                      size="sm"
                       disabled={isForwarding || isForwarded}
                       onClick={handleForwardToAwardingBody}
-                      className="bg-[#FBAB2A] hover:bg-[#E89B1F] text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-60"
+                      className="px-4 py-2 bg-[#FBAB2A] hover:bg-[#E89B1F] text-white text-xs font-semibold rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs disabled:opacity-60"
                     >
                       <FiSend className="w-3.5 h-3.5" />
                       <span>
                         {isForwarded
-                          ? "Forwarded to Awarding Body"
+                          ? "Forwarded"
                           : isForwarding
                             ? "Forwarding..."
                             : "Forward to Awarding Body"}
                       </span>
-                    </Button>
-                  </div>
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="px-4 py-2 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
+                  >
+                    Close
+                  </button>
                 )}
               </div>
             </div>
@@ -827,14 +769,14 @@ export const RplIvDossierModal: React.FC<RplIvDossierModalProps> = ({
       {selectedFormForView && (
         <div className="fixed inset-0 z-60 bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
           <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden relative">
-            <div className="p-4 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
-              <span className="text-xs font-bold text-gray-700 uppercase">
-                {FORM_TITLES[selectedFormForView.formType] || selectedFormForView.formType} &bull; Read-Only Dossier View
+            <div className="px-6 py-4 bg-white border-b border-gray-100 flex items-center justify-between">
+              <span className="text-sm font-bold text-gray-900">
+                {FORM_TITLES[selectedFormForView.formType] || selectedFormForView.formType}
               </span>
               <button
                 type="button"
                 onClick={() => setSelectedFormForView(null)}
-                className="w-8 h-8 rounded-full bg-white hover:bg-gray-100 text-gray-600 flex items-center justify-center border border-gray-200 cursor-pointer"
+                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center cursor-pointer"
               >
                 <FiX className="w-4 h-4" />
               </button>

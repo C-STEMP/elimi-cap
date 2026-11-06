@@ -135,7 +135,12 @@ export function useRplExperienceState(onContinue?: () => void) {
 
   const { data: remoteUnits = [], isLoading: isLoadingUnits, isFetching: isFetchingUnits } =
     useGetUnitsByTrade(effectiveTradeId, selectedLevelNumber);
-  const isUnitsLoading = isLoadingUnits || isFetchingUnits;
+  const { data: allRemoteUnits = [], isLoading: isLoadingAllUnits, isFetching: isFetchingAllUnits } =
+    useGetUnitsByTrade(effectiveTradeId, undefined, {
+      enabled: Boolean(effectiveTradeId && selectedLevelNumber !== undefined),
+    });
+  const isUnitsLoading =
+    isLoadingUnits || isFetchingUnits || isLoadingAllUnits || isFetchingAllUnits;
 
   const scopedUnits = React.useMemo(() => {
     const qLevels = tradeDetail?.activeNosDocument?.qualificationLevels || [];
@@ -147,8 +152,24 @@ export function useRplExperienceState(onContinue?: () => void) {
     if (targetLevel?.units && targetLevel.units.length > 0) {
       return targetLevel.units;
     }
-    return remoteUnits || [];
-  }, [tradeDetail, savedStartApp.qualificationLevelId, selectedLevelNumber, remoteUnits]);
+    if (remoteUnits && remoteUnits.length > 0) {
+      return remoteUnits;
+    }
+    if (allRemoteUnits && allRemoteUnits.length > 0) {
+      return allRemoteUnits;
+    }
+    const allNosUnits = qLevels.flatMap((ql) => ql.units || []);
+    if (allNosUnits.length > 0) {
+      return allNosUnits;
+    }
+    return [];
+  }, [
+    tradeDetail,
+    savedStartApp.qualificationLevelId,
+    selectedLevelNumber,
+    remoteUnits,
+    allRemoteUnits,
+  ]);
 
   const unitOptions = scopedUnits?.length
     ? scopedUnits.map((u) => ({
