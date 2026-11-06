@@ -58,16 +58,19 @@ export const ComprehensiveReportView: React.FC<ComprehensiveReportViewProps> = (
       return;
     }
 
-    // Spec enforcement: IV signature on CON/04B is required before submitting
+    // Spec enforcement: IV signature on CON/04B or CON/04C is required before submitting
     if (activeTab === "04C") {
-      if (formData.con04b?.ivSignature?.status !== "appended") {
+      const hasIvSignature =
+        formData.con04b?.ivSignature?.status === "appended" ||
+        formData.con04c?.signatures?.iv?.status === "appended";
+
+      if (!hasIvSignature) {
         toast({
           type: "error",
           title: "IV Signature Required",
           description:
-            "Please append your signature in Section CON/04B before submitting this report.",
+            "Please append your Internal Verifier signature (in Section CON/04B or CON/04C) before submitting this report.",
         });
-        setActiveTab("04B");
         return;
       }
     }
