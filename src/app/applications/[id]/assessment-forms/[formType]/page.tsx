@@ -223,7 +223,7 @@ export default function AssessmentFormDedicatedRoutePage() {
     if (isCandidateUser || fromParam === "candidate") {
       router.push(`/applications/${id}`);
     } else {
-      router.push(`/applications/${id}?from=assessor`);
+      router.push(`/assessor/dashboard/applications?appId=${id}`);
     }
   };
 

@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter, usePathname, useParams } from "next/navigation";
+import { useRouter, usePathname, useParams, useSearchParams } from "next/navigation";
 import { useAppSelector } from "@/src/store/hooks";
 import { useGetAssessorCentres } from "../../Centres/hooks";
 import { useGetAssessorApplications } from "../../Applications/hooks";
 import { useGetAssessorSummary } from "@/src/features/shared/assessor/hooks";
+import { useGetApplicationById } from "@/src/features/shared/applications/hooks";
 import type { Application } from "../../Applications/hooks";
 
 import {
@@ -251,6 +252,15 @@ export const AssessorDashboard: React.FC = () => {
       (a) => a.status === "rejected" || a.status === "withdrawn",
     ).length;
 
+  const searchParams = useSearchParams();
+  const searchAppId =
+    searchParams.get("appId") || searchParams.get("applicationId");
+  const searchView = searchParams.get("view");
+
+  const { data: directApplication } = useGetApplicationById(
+    searchAppId || "",
+  );
+
   const [selectedCentre, setSelectedCentre] =
     useState<AssessorCentreItem | null>(null);
   const [selectedApplication, setSelectedApplication] =
@@ -277,6 +287,68 @@ export const AssessorDashboard: React.FC = () => {
   const moveToIqamRef = React.useRef<(() => void) | null>(null);
 
   const [isApplyModalOpen, setIsApplyModalOpen] = useUrlModal(DASHBOARD_APPLY_TO_CENTRE_MODAL);
+
+  useEffect(() => {
+    if (!searchAppId) return;
+    if (selectedApplication?.id === searchAppId) {
+      if (
+        searchView === "evidence_vault" &&
+        applicationSubView !== "evidence_vault"
+      ) {
+        setApplicationSubView("evidence_vault");
+      }
+      return;
+    }
+
+    const matched = applicationsData.find((a) => a.id === searchAppId);
+    const sourceApp = matched || directApplication;
+
+    if (sourceApp) {
+      const candidateName =
+        sourceApp.candidate?.name ||
+        (sourceApp.candidate?.firstName
+          ? `${sourceApp.candidate.firstName} ${
+              sourceApp.candidate.lastName || ""
+            }`.trim()
+          : sourceApp.candidateId || "Candidate");
+
+      setSelectedApplication({
+        id: sourceApp.id,
+        candidateName,
+        trade:
+          sourceApp.trade?.name ||
+          sourceApp.tradeId ||
+          (sourceApp.type === "NSQ" ? "Standard Assessment" : "RPL"),
+        assessmentType: sourceApp.type,
+        status:
+          sourceApp.status === "certified"
+            ? "Completed"
+            : sourceApp.status === "in_progress"
+            ? "Ongoing"
+            : "Pending",
+        submittedAt: sourceApp.createdAt || sourceApp.submittedAt || "-",
+        candidatePhotoUrl:
+          (sourceApp.candidate as any)?.photo?.url ||
+          (sourceApp.candidate as any)?.photoAssetId ||
+          (sourceApp.candidate as any)?.avatar ||
+          null,
+        role: (sourceApp as any).role || "Assessor",
+      });
+      setActiveTab("Applications");
+      if (searchView === "evidence_vault") {
+        setApplicationSubView("evidence_vault");
+      } else {
+        setApplicationSubView("stages");
+      }
+    }
+  }, [
+    searchAppId,
+    searchView,
+    applicationsData,
+    directApplication,
+    selectedApplication?.id,
+    applicationSubView,
+  ]);
 
   const handleTabChange = (tab: AssessorNavTab) => {
     setActiveTab(tab);
@@ -305,6 +377,7 @@ export const AssessorDashboard: React.FC = () => {
         setNsqSubViewTitle(null);
         setNsqNavState("overview");
         setCanMoveToIqam(false);
+        router.push("/assessor/dashboard/applications");
       }
       return;
     }
@@ -312,6 +385,7 @@ export const AssessorDashboard: React.FC = () => {
     if (selectedApplication?.role === "Internal Verifier") {
       setSelectedApplication(null);
       setIqamHeaderConfig(null);
+      router.push("/assessor/dashboard/applications");
       return;
     }
 
@@ -322,6 +396,7 @@ export const AssessorDashboard: React.FC = () => {
       setCanMarkAsComplete(false);
       setTriggerMarkComplete(false);
       setCanMoveToIqam(false);
+      router.push("/assessor/dashboard/applications");
     }
   };
 
@@ -393,7 +468,33 @@ export const AssessorDashboard: React.FC = () => {
           <AssessorOverviewView
             onViewAllApplications={() => handleTabChange("Applications")}
             onSelectApplication={(app: Application) => {
-              router.push(`/applications/${app.id}?from=assessor`);
+              setActiveTab("Applications");
+              setSelectedApplication({
+                id: app.id,
+                candidateName:
+                  app.candidate?.name ||
+                  (app.candidate?.firstName
+                    ? `${app.candidate.firstName} ${app.candidate.lastName || ""}`.trim()
+                    : app.candidateId),
+                trade:
+                  app.trade?.name ||
+                  app.tradeId ||
+                  (app.type === "NSQ" ? "Standard Assessment" : "RPL"),
+                assessmentType: app.type,
+                status:
+                  app.status === "certified"
+                    ? "Completed"
+                    : app.status === "in_progress"
+                      ? "Ongoing"
+                      : "Pending",
+                submittedAt: app.createdAt || app.submittedAt || "-",
+              });
+              setApplicationSubView("stages");
+              setNsqNavState("overview");
+              setNsqSubViewTitle(null);
+              setCanMarkAsComplete(false);
+              setTriggerMarkComplete(false);
+              router.push(`/assessor/dashboard/applications?appId=${app.id}`);
             }}
             onApplyToCentre={() => setIsApplyModalOpen(true)}
           />
@@ -403,7 +504,14 @@ export const AssessorDashboard: React.FC = () => {
               centre={selectedCentre}
               onBack={() => setSelectedCentre(null)}
               onSelectApplication={(appRecord) => {
-                router.push(`/applications/${appRecord.id}?from=assessor`);
+                setActiveTab("Applications");
+                setSelectedApplication(appRecord);
+                setApplicationSubView("stages");
+                setNsqNavState("overview");
+                setNsqSubViewTitle(null);
+                setCanMarkAsComplete(false);
+                setTriggerMarkComplete(false);
+                router.push(`/assessor/dashboard/applications?appId=${appRecord.id}`);
               }}
             />
           ) : (
@@ -454,7 +562,13 @@ export const AssessorDashboard: React.FC = () => {
             <AssessorApplicationsView
               cardFilter={applicationsFilterTab}
               onSelectApplication={(app) => {
-                router.push(`/applications/${app.id}?from=assessor`);
+                setSelectedApplication(app);
+                setApplicationSubView("stages");
+                setNsqNavState("overview");
+                setNsqSubViewTitle(null);
+                setCanMarkAsComplete(false);
+                setTriggerMarkComplete(false);
+                router.push(`/assessor/dashboard/applications?appId=${app.id}`);
               }}
             />
           )
