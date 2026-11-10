@@ -23,6 +23,12 @@ interface NsqAssessorObservationModalProps {
   isOpen: boolean;
   onClose: () => void;
   details: ObservationRequestDetails;
+  availableUnits?: Array<{
+    id: string;
+    label?: string;
+    title?: string;
+    unitNo?: string;
+  }>;
   onAccept: (updated: { requirements: string[]; isSigned: boolean }) => void;
   onReject: () => void;
   /** URL/draft key; pass a distinct one when several instances can be mounted at once. */
@@ -35,10 +41,31 @@ export const NsqAssessorObservationModal: React.FC<
   isOpen,
   onClose,
   details,
+  availableUnits,
   onAccept,
   onReject,
   modalKey = NSQ_ASSESSOR_OBSERVATION_MODAL,
 }) => {
+  const isConfirmed =
+    details.status === "confirmed" ||
+    (details.status as string) === "accepted" ||
+    (details.status as string) === "scheduled" ||
+    (details.status as string) === "completed";
+  const isRejected =
+    details.status === "rejected" || (details.status as string) === "cancelled";
+  const isPending = !isConfirmed && !isRejected;
+
+  const resolveUnitName = (unitIdOrName: string, index: number) => {
+    const match = availableUnits?.find((u) => u.id === unitIdOrName);
+    if (match) {
+      return match.unitNo || match.label || match.title || `UNIT ${index + 1}`;
+    }
+    if (unitIdOrName && unitIdOrName.length >= 20) {
+      return `UNIT ${index + 1}`;
+    }
+    return unitIdOrName;
+  };
+
   const [requirements, setRequirements] = useModalDraft<string[]>(
     modalKey,
     "requirements",
@@ -48,6 +75,8 @@ export const NsqAssessorObservationModal: React.FC<
   );
   const [newRequirement, setNewRequirement] = useModalDraft(modalKey, "newRequirement", "");
   const [isSigned, setIsSigned] = useModalDraft(modalKey, "isSigned", details.isSigned ?? false);
+
+  const isEffectiveSigned = isConfirmed || Boolean(details.isSigned) || isSigned;
 
   if (!isOpen) return null;
 
@@ -98,7 +127,7 @@ export const NsqAssessorObservationModal: React.FC<
                 key={idx}
                 className="px-3 py-1 bg-rose-50 border border-rose-100 text-[#a31d38] font-bold text-[11px] rounded-lg"
               >
-                {unit}
+                {resolveUnitName(unit, idx)}
               </span>
             ))}
           </div>
@@ -107,9 +136,19 @@ export const NsqAssessorObservationModal: React.FC<
         {/* Observation Details Box */}
         <div className="bg-[#f8f9fb] border border-gray-100 rounded-2xl p-4 sm:p-5 flex flex-col gap-3.5 mb-5 text-xs">
           <div>
-            <span className="px-2.5 py-0.5 bg-amber-50 text-[#fbab2a] font-bold text-[10px] rounded-md border border-amber-100">
-              Pending
-            </span>
+            {isConfirmed ? (
+              <span className="px-2.5 py-0.5 bg-[#1E7F4C]/10 text-[#1E7F4C] font-bold text-[10px] rounded-md border border-[#1E7F4C]/20 uppercase tracking-wide">
+                Confirmed
+              </span>
+            ) : isRejected ? (
+              <span className="px-2.5 py-0.5 bg-rose-50 text-rose-600 font-bold text-[10px] rounded-md border border-rose-200 uppercase tracking-wide">
+                Rejected
+              </span>
+            ) : (
+              <span className="px-2.5 py-0.5 bg-amber-50 text-[#fbab2a] font-bold text-[10px] rounded-md border border-amber-100 uppercase tracking-wide">
+                Pending
+              </span>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -171,47 +210,57 @@ export const NsqAssessorObservationModal: React.FC<
         {/* Observation Requirements */}
         <div className="flex flex-col gap-2 mb-5">
           <label className="text-xs font-semibold text-neutral-primary">
-            Observation Requirement<span className="text-rose-500">*</span>
+            Observation Requirements<span className="text-rose-500">*</span>
           </label>
 
-          {requirements.map((req, idx) => (
-            <div
-              key={idx}
-              className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-xl text-xs text-neutral-primary"
-            >
-              <span className="truncate pr-2">{req}</span>
+          {requirements.length > 0 ? (
+            requirements.map((req, idx) => (
+              <div
+                key={idx}
+                className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-xl text-xs text-neutral-primary"
+              >
+                <span className="truncate pr-2">{req}</span>
+                {isPending && (
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveRequirement(idx)}
+                    className="text-rose-500 hover:text-rose-700 p-1 cursor-pointer transition-colors"
+                  >
+                    <FiTrash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            ))
+          ) : (
+            <p className="text-xs text-gray-500 italic p-2">
+              No specific requirements added.
+            </p>
+          )}
+
+          {isPending && (
+            <div className="flex items-center gap-2 mt-1">
+              <input
+                type="text"
+                value={newRequirement}
+                onChange={(e) => setNewRequirement(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleAddRequirement();
+                  }
+                }}
+                placeholder="Type Here"
+                className="flex-1 px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-neutral-primary placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FBAB2A]/40"
+              />
               <button
                 type="button"
-                onClick={() => handleRemoveRequirement(idx)}
-                className="text-rose-500 hover:text-rose-700 p-1 cursor-pointer transition-colors"
+                onClick={handleAddRequirement}
+                className="w-10 h-10 bg-neutral-900 text-white hover:bg-neutral-800 rounded-xl flex items-center justify-center cursor-pointer transition-all shrink-0"
               >
-                <FiTrash2 className="w-3.5 h-3.5" />
+                <FiPlus className="w-4 h-4" />
               </button>
             </div>
-          ))}
-
-          <div className="flex items-center gap-2 mt-1">
-            <input
-              type="text"
-              value={newRequirement}
-              onChange={(e) => setNewRequirement(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  handleAddRequirement();
-                }
-              }}
-              placeholder="Type Here"
-              className="flex-1 px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-neutral-primary placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FBAB2A]/40"
-            />
-            <button
-              type="button"
-              onClick={handleAddRequirement}
-              className="w-10 h-10 bg-neutral-900 text-white hover:bg-neutral-800 rounded-xl flex items-center justify-center cursor-pointer transition-all shrink-0"
-            >
-              <FiPlus className="w-4 h-4" />
-            </button>
-          </div>
+          )}
         </div>
 
         {/* Signature */}
@@ -220,7 +269,7 @@ export const NsqAssessorObservationModal: React.FC<
             Signature<span className="text-rose-500">*</span>
           </label>
 
-          {isSigned ? (
+          {isEffectiveSigned ? (
             <div className="w-full h-11 border-2 border-[#1E7F4C] bg-[#1E7F4C]/10 rounded-xl flex items-center justify-center gap-2 text-[#1E7F4C] font-bold text-xs select-none">
               <FiCheck className="w-4 h-4" />
               <span>Signed</span>
@@ -238,23 +287,52 @@ export const NsqAssessorObservationModal: React.FC<
         </div>
 
         {/* Bottom Actions */}
-        <div className="grid grid-cols-2 gap-3 pt-2">
-          <button
-            type="button"
-            onClick={onReject}
-            className="h-11 border border-rose-500 text-rose-500 hover:bg-rose-50 font-bold text-xs sm:text-sm rounded-xl transition-colors cursor-pointer"
-          >
-            Reject
-          </button>
-          <button
-            type="button"
-            onClick={() => onAccept({ requirements, isSigned })}
-            disabled={!isSigned}
-            className="h-11 bg-[#FBAB2A] hover:bg-[#E89B1F] disabled:opacity-50 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md cursor-pointer transition-all"
-          >
-            Accept
-          </button>
-        </div>
+        {isConfirmed ? (
+          <div className="flex flex-col gap-2.5 pt-2">
+            <div className="w-full py-2.5 px-4 bg-[#1E7F4C]/10 border border-[#1E7F4C]/20 text-[#1E7F4C] rounded-xl text-center text-xs font-bold flex items-center justify-center gap-2 select-none">
+              <FiCheck className="w-4 h-4" />
+              <span>Observation Request Confirmed</span>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full h-11 border border-gray-200 text-neutral-primary hover:bg-gray-50 font-bold text-xs sm:text-sm rounded-xl cursor-pointer transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        ) : isRejected ? (
+          <div className="flex flex-col gap-2.5 pt-2">
+            <div className="w-full py-2.5 px-4 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-center text-xs font-bold flex items-center justify-center gap-2 select-none">
+              <span>Observation Request Rejected</span>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full h-11 border border-gray-200 text-neutral-primary hover:bg-gray-50 font-bold text-xs sm:text-sm rounded-xl cursor-pointer transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onReject}
+              className="h-11 border border-rose-500 text-rose-500 hover:bg-rose-50 font-bold text-xs sm:text-sm rounded-xl transition-colors cursor-pointer"
+            >
+              Reject
+            </button>
+            <button
+              type="button"
+              onClick={() => onAccept({ requirements, isSigned: isEffectiveSigned })}
+              disabled={!isEffectiveSigned}
+              className="h-11 bg-[#FBAB2A] hover:bg-[#E89B1F] disabled:opacity-50 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md cursor-pointer transition-all"
+            >
+              Accept
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

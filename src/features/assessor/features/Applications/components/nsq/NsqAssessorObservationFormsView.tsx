@@ -203,6 +203,10 @@ export const NsqAssessorObservationFormsView: React.FC<
     });
   }, [criteriaDefs, sessionDetail?.physical, sessionDetail?.oral]);
 
+  const [localPhysicalSubmitted, setLocalPhysicalSubmitted] = useState(false);
+  const [localOralSubmitted, setLocalOralSubmitted] = useState(false);
+  const [localAssessorSigned, setLocalAssessorSigned] = useState(false);
+
   const authUser = useAppSelector((state) => state.auth.user);
   const { data: assessorProfileSig } = useAssessorProfileSignature(!isCandidate && !isViewOnly);
   const { data: candidateProfileSig } = useCandidateProfileSignature(Boolean(isCandidate));
@@ -212,23 +216,31 @@ export const NsqAssessorObservationFormsView: React.FC<
     candidateName || authUser?.fullName || authUser?.email?.split("@")[0] || "Learner";
   const { mutateAsync: signObservation, isPending: isSigningObservation } =
     useSignDirectObservation(applicationId, effectiveSessionId);
-  const bothFormsSubmitted =
-    (sessionDetail?.physicalStatus === "submitted" ||
+
+  const isPhysicalSubmitted = Boolean(
+    localPhysicalSubmitted ||
+      sessionDetail?.physicalStatus === "submitted" ||
       sessionDetail?.physicalStatus === "completed" ||
-      Boolean(sessionDetail?.physical?.submittedAt)) &&
-    (sessionDetail?.oralStatus === "submitted" ||
+      Boolean(sessionDetail?.physical?.submittedAt) ||
+      (sessionDetail?.physical as any)?.status === "submitted" ||
+      (Array.isArray(sessionDetail?.physical?.rows) && sessionDetail.physical.rows.length > 0) ||
+      Boolean((sessionDetail as any)?.physicalSubmitted),
+  );
+  const isOralSubmitted = Boolean(
+    localOralSubmitted ||
+      sessionDetail?.oralStatus === "submitted" ||
       sessionDetail?.oralStatus === "completed" ||
-      Boolean(sessionDetail?.oral?.submittedAt));
+      Boolean(sessionDetail?.oral?.submittedAt) ||
+      (sessionDetail?.oral as any)?.status === "submitted" ||
+      (Array.isArray(sessionDetail?.oral?.rows) && sessionDetail.oral.rows.length > 0) ||
+      Boolean((sessionDetail as any)?.oralSubmitted),
+  );
+  const bothFormsSubmitted = isPhysicalSubmitted && isOralSubmitted;
+
   // Once a form has been submitted it's locked — editing/resubmitting it
   // shouldn't be possible, independent of the isCandidate/readOnly role gate.
   const isCurrentTabSubmitted =
-    activeTab === "arf02a"
-      ? sessionDetail?.physicalStatus === "submitted" ||
-        sessionDetail?.physicalStatus === "completed" ||
-        Boolean(sessionDetail?.physical?.submittedAt)
-      : sessionDetail?.oralStatus === "submitted" ||
-        sessionDetail?.oralStatus === "completed" ||
-        Boolean(sessionDetail?.oral?.submittedAt);
+    activeTab === "arf02a" ? isPhysicalSubmitted : isOralSubmitted;
   const isCurrentTabLocked = isViewOnly || isCurrentTabSubmitted;
 
   const handleSignAsAssessor = async () => {
@@ -242,12 +254,23 @@ export const NsqAssessorObservationFormsView: React.FC<
           : { typedName: assessorDisplayName }),
         signedAt: new Date().toISOString(),
       });
+      setLocalAssessorSigned(true);
       toast({
         type: "success",
         title: "Signed Successfully",
         description: "You have signed off on this observation report.",
       });
     } catch (err: any) {
+      const msg = String(err?.message || "");
+      if (/already.*been.*signed/i.test(msg) || /already.*signed/i.test(msg)) {
+        setLocalAssessorSigned(true);
+        toast({
+          type: "success",
+          title: "Signed Successfully",
+          description: "You have signed off on this observation report.",
+        });
+        return;
+      }
       toast({
         type: "error",
         title: "Signature Failed",
@@ -338,13 +361,14 @@ export const NsqAssessorObservationFormsView: React.FC<
     }
 
     if (isPhysical) {
+      setLocalPhysicalSubmitted(true);
       // Physical (ARF 02A) is submitted — advance to the oral (ARF 04A) form
       // rather than exiting, since the sitting isn't complete yet.
       setActiveTab("arf04a");
       return;
     }
+    setLocalOralSubmitted(true);
     onSubmitSuccess?.();
-    onBack();
   };
 
   return (
@@ -518,12 +542,33 @@ export const NsqAssessorObservationFormsView: React.FC<
           {/* Signatures Section */}
           <ObservationSignaturesSection
             activeTab={activeTab}
-            learnerSigned={Boolean(sessionDetail?.signatures?.learner)}
-            assessorSigned={Boolean(sessionDetail?.signatures?.unitAssessor)}
-            canSignAsAssessor={!isViewOnly && bothFormsSubmitted && !sessionDetail?.signatures?.unitAssessor}
+            learnerSigned={Boolean(
+              sessionDetail?.signatures?.learner ||
+                (sessionDetail?.signatures as any)?.candidate ||
+                (sessionDetail as any)?.learnerSignedAt ||
+                (sessionDetail as any)?.candidateSignedAt,
+            )}
+            assessorSigned={Boolean(
+              localAssessorSigned ||
+                sessionDetail?.signatures?.unitAssessor ||
+                (sessionDetail as any)?.assessorSignedAt ||
+                (sessionDetail as any)?.signedAt,
+            )}
+            canSignAsAssessor={
+              !isViewOnly &&
+              bothFormsSubmitted &&
+              !localAssessorSigned &&
+              !sessionDetail?.signatures?.unitAssessor &&
+              !(sessionDetail as any)?.assessorSignedAt
+            }
             onSignAsAssessor={handleSignAsAssessor}
             isSigningAsAssessor={!isViewOnly && isSigningObservation}
-            canSignAsCandidate={isCandidate && bothFormsSubmitted && !sessionDetail?.signatures?.learner}
+            canSignAsCandidate={
+              isCandidate &&
+              bothFormsSubmitted &&
+              !sessionDetail?.signatures?.learner &&
+              !(sessionDetail as any)?.learnerSignedAt
+            }
             onSignAsCandidate={handleSignAsCandidate}
             isSigningAsCandidate={isCandidate && isSigningObservation}
           />
@@ -541,21 +586,26 @@ export const NsqAssessorObservationFormsView: React.FC<
 
             <div className="flex items-center gap-3">
               {isCurrentTabLocked ? (
-                <button
-                  type="button"
-                  onClick={() =>
-                    setActiveTab(activeTab === "arf02a" ? "arf04a" : "arf02a")
-                  }
-                  className="px-6 py-2.5 bg-[#fbab2a] hover:bg-[#e89b1f] text-white font-bold text-xs sm:text-sm rounded-xl shadow-md cursor-pointer transition-all"
-                >
-                  {isCurrentTabSubmitted && !isViewOnly
-                    ? activeTab === "arf02a"
-                      ? "Submitted — Next: ARF 04A"
-                      : "Submitted — Previous: ARF 02A"
-                    : activeTab === "arf02a"
-                      ? "Next: ARF 04A"
-                      : "Previous: ARF 02A"}
-                </button>
+                <>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setActiveTab(activeTab === "arf02a" ? "arf04a" : "arf02a")
+                    }
+                    className="px-5 py-2.5 border border-gray-300 hover:bg-gray-50 text-neutral-primary font-bold text-xs sm:text-sm rounded-xl cursor-pointer transition-colors"
+                  >
+                    {activeTab === "arf02a"
+                      ? "Next: ARF 04A (Oral)"
+                      : "Previous: ARF 02A (Physical)"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onBack}
+                    className="px-6 py-2.5 bg-[#fbab2a] hover:bg-[#e89b1f] text-white font-bold text-xs sm:text-sm rounded-xl shadow-md cursor-pointer transition-all"
+                  >
+                    Back to Application
+                  </button>
+                </>
               ) : (
                 <>
                   <button

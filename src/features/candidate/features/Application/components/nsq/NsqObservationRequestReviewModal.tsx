@@ -86,6 +86,10 @@ export const NsqObservationRequestReviewModal: React.FC<
     submittedLocally ||
       sessionDetail?.signatures?.learner?.signedAt ||
       sessionDetail?.signatures?.learner ||
+      (sessionDetail?.signatures as any)?.candidate ||
+      (sessionDetail as any)?.learnerSignedAt ||
+      (sessionDetail as any)?.candidateSignedAt ||
+      (sessionDetail as any)?.isSigned ||
       details?.isSigned ||
       sessionDetail?.status === "completed" ||
       details?.status === "completed",
@@ -186,7 +190,16 @@ export const NsqObservationRequestReviewModal: React.FC<
       });
       onClose();
     } catch (err: any) {
-      if (err?.message?.includes("already been signed")) {
+      const errorMsg = String(
+        err?.message ||
+          err?.data?.message ||
+          err?.response?.data?.message ||
+          "",
+      );
+      if (
+        /already.*been.*signed/i.test(errorMsg) ||
+        /already.*signed/i.test(errorMsg)
+      ) {
         setSubmittedLocally(true);
         clearModalDraft(NSQ_OBSERVATION_REVIEW_MODAL);
         setIsConfirmModalOpen(false);
@@ -207,7 +220,7 @@ export const NsqObservationRequestReviewModal: React.FC<
         type: "error",
         title: "Confirmation Failed",
         description:
-          err?.message || "Could not confirm this schedule. Please try again.",
+          errorMsg || "Could not confirm this schedule. Please try again.",
       });
     } finally {
       setIsSubmitting(false);

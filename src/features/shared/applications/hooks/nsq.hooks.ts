@@ -126,12 +126,15 @@ export function useSubmitInductionForm(applicationId: string) {
 export function useGetUnitCriteria(
   applicationId: string,
   unitId: string,
-  options?: { enabled?: boolean },
+  options?: { enabled?: boolean; refetchInterval?: number | false },
 ) {
   return useQuery({
     queryKey: APPLICATION_QUERY_KEYS.unitCriteria(applicationId, unitId),
     queryFn: () => getUnitCriteriaApi(applicationId, unitId),
     enabled: Boolean(applicationId && unitId) && (options?.enabled ?? true),
+    ...(options?.refetchInterval !== undefined
+      ? { refetchInterval: options.refetchInterval }
+      : {}),
   });
 }
 
@@ -566,15 +569,43 @@ export function useSaveDirectObservationForm(
       saveDirectObservationFormApi(applicationId, sessionId, payload),
 
     onSuccess: (updatedSession, variables) => {
-      if (updatedSession) {
-        queryClient.setQueryData(
-          APPLICATION_QUERY_KEYS.directObservationSession(
-            applicationId,
-            sessionId,
-          ),
-          updatedSession,
-        );
-      }
+      queryClient.setQueryData(
+        APPLICATION_QUERY_KEYS.directObservationSession(
+          applicationId,
+          sessionId,
+        ),
+        (prev: any) => ({
+          ...prev,
+          ...(updatedSession || {}),
+          ...(variables.formKind === "physical"
+            ? {
+                physicalStatus: variables.submit
+                  ? "submitted"
+                  : prev?.physicalStatus || "draft",
+                physical: {
+                  ...prev?.physical,
+                  ...(updatedSession?.physical || {}),
+                  submittedAt: variables.submit
+                    ? new Date().toISOString()
+                    : prev?.physical?.submittedAt,
+                  rows: variables.rows,
+                },
+              }
+            : {
+                oralStatus: variables.submit
+                  ? "submitted"
+                  : prev?.oralStatus || "draft",
+                oral: {
+                  ...prev?.oral,
+                  ...(updatedSession?.oral || {}),
+                  submittedAt: variables.submit
+                    ? new Date().toISOString()
+                    : prev?.oral?.submittedAt,
+                  rows: variables.rows,
+                },
+              }),
+        }),
+      );
       queryClient.invalidateQueries({
         queryKey: APPLICATION_QUERY_KEYS.directObservationSession(
           applicationId,
@@ -667,6 +698,21 @@ export function useSignDirectObservation(
     },
 
     onError: (error: Error) => {
+      if (
+        /already.*been.*signed/i.test(error.message) ||
+        /already.*signed/i.test(error.message)
+      ) {
+        queryClient.invalidateQueries({
+          queryKey: APPLICATION_QUERY_KEYS.directObservationSession(
+            applicationId,
+            sessionId,
+          ),
+        });
+        queryClient.invalidateQueries({
+          queryKey: APPLICATION_QUERY_KEYS.directObservations(applicationId),
+        });
+        return;
+      }
       if (error instanceof ApiError) {
         toast({
           type: "error",
