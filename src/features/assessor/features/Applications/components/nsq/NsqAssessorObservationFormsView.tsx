@@ -18,6 +18,7 @@ import {
   useGetDirectObservationSession,
   useSaveDirectObservationForm,
   useSignDirectObservation,
+  APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
 } from "@/src/features/shared/applications/hooks";
 import { useToast } from "@/src/components/ui/toast";
 import { useAssessorProfileSignature } from "@/src/features/shared/assessor/hooks";
@@ -56,18 +57,25 @@ export const NsqAssessorObservationFormsView: React.FC<
 
   const { data: directObsList } = useGetDirectObservations(applicationId, {
     enabled: Boolean(applicationId),
+    refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
   });
   const obsSessions =
-    (directObsList as any)?.sessions ||
-    (directObsList as any)?.items ||
-    [];
+    Array.isArray(directObsList)
+      ? directObsList
+      : (directObsList as any)?.sessions ||
+        (directObsList as any)?.items ||
+        (directObsList as any)?.data ||
+        [];
   const sortedObsSessions = obsSessions.slice().sort((a: any, b: any) => {
     const timeA = new Date(a.createdAt || a.scheduledAt || 0).getTime();
     const timeB = new Date(b.createdAt || b.scheduledAt || 0).getTime();
     return timeB - timeA;
   });
   const effectiveSessionId =
-    sessionId || sortedObsSessions[0]?.id || "session-1";
+    sessionId ||
+    (sortedObsSessions[0] as any)?.id ||
+    (sortedObsSessions[0] as any)?._id ||
+    "session-1";
 
   // Session detail carries the real per-unit NOS criteria catalogue for this
   // sitting (`catalogue`) — that's the actual list of PCs to log, not a
@@ -75,7 +83,10 @@ export const NsqAssessorObservationFormsView: React.FC<
   const { data: sessionDetail } = useGetDirectObservationSession(
     applicationId,
     effectiveSessionId,
-    { enabled: Boolean(applicationId && effectiveSessionId) },
+    {
+      enabled: Boolean(applicationId && effectiveSessionId),
+      refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
+    },
   );
 
   const { mutateAsync: saveObservationForm } = useSaveDirectObservationForm(
@@ -192,8 +203,6 @@ export const NsqAssessorObservationFormsView: React.FC<
     });
   }, [criteriaDefs, sessionDetail?.physical, sessionDetail?.oral]);
 
-  const [isWitnessSigned, setIsWitnessSigned] = useState(false);
-
   const authUser = useAppSelector((state) => state.auth.user);
   const { data: assessorProfileSig } = useAssessorProfileSignature(!isCandidate && !isViewOnly);
   const { data: candidateProfileSig } = useCandidateProfileSignature(Boolean(isCandidate));
@@ -204,14 +213,22 @@ export const NsqAssessorObservationFormsView: React.FC<
   const { mutateAsync: signObservation, isPending: isSigningObservation } =
     useSignDirectObservation(applicationId, effectiveSessionId);
   const bothFormsSubmitted =
-    sessionDetail?.physicalStatus === "submitted" &&
-    sessionDetail?.oralStatus === "submitted";
+    (sessionDetail?.physicalStatus === "submitted" ||
+      sessionDetail?.physicalStatus === "completed" ||
+      Boolean(sessionDetail?.physical?.submittedAt)) &&
+    (sessionDetail?.oralStatus === "submitted" ||
+      sessionDetail?.oralStatus === "completed" ||
+      Boolean(sessionDetail?.oral?.submittedAt));
   // Once a form has been submitted it's locked — editing/resubmitting it
   // shouldn't be possible, independent of the isCandidate/readOnly role gate.
   const isCurrentTabSubmitted =
     activeTab === "arf02a"
-      ? sessionDetail?.physicalStatus === "submitted"
-      : sessionDetail?.oralStatus === "submitted";
+      ? sessionDetail?.physicalStatus === "submitted" ||
+        sessionDetail?.physicalStatus === "completed" ||
+        Boolean(sessionDetail?.physical?.submittedAt)
+      : sessionDetail?.oralStatus === "submitted" ||
+        sessionDetail?.oralStatus === "completed" ||
+        Boolean(sessionDetail?.oral?.submittedAt);
   const isCurrentTabLocked = isViewOnly || isCurrentTabSubmitted;
 
   const handleSignAsAssessor = async () => {
@@ -501,8 +518,6 @@ export const NsqAssessorObservationFormsView: React.FC<
           {/* Signatures Section */}
           <ObservationSignaturesSection
             activeTab={activeTab}
-            isWitnessSigned={isWitnessSigned}
-            onToggleWitnessSigned={() => !isViewOnly && setIsWitnessSigned(!isWitnessSigned)}
             learnerSigned={Boolean(sessionDetail?.signatures?.learner)}
             assessorSigned={Boolean(sessionDetail?.signatures?.unitAssessor)}
             canSignAsAssessor={!isViewOnly && bothFormsSubmitted && !sessionDetail?.signatures?.unitAssessor}

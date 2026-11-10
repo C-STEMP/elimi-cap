@@ -9,8 +9,11 @@ import {
   useInitiateApplicationPayment as useSharedInitiateApplicationPayment,
   useGetApplicationReceipt as useSharedGetApplicationReceipt,
   useGetPaymentQuote as useSharedGetPaymentQuote,
+  APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
 } from "@/src/features/shared/applications/hooks";
 import type { ApplicationStatus } from "../api/application.api";
+
+export { APPLICATION_DETAIL_REFRESH_INTERVAL_MS };
 
 export function useCreateApplication() {
   return useSharedCreateApplication();
@@ -20,13 +23,26 @@ export function usePatchApplicationDraft() {
   return useSharedPatchApplicationDraft();
 }
 
-export function useGetApplications(status?: ApplicationStatus) {
-  return useSharedGetApplications(status);
+export function useGetApplications(
+  status?: ApplicationStatus,
+  options?: {
+    enabled?: boolean;
+    refetchInterval?: number | false;
+    refetchOnWindowFocus?: boolean | "always";
+    staleTime?: number;
+  },
+) {
+  return useSharedGetApplications(status, options);
 }
 
 export function useGetApplicationById(
   id: string,
-  options?: { refetchInterval?: number | false },
+  options?: {
+    refetchInterval?: number | false;
+    enabled?: boolean;
+    refetchOnWindowFocus?: boolean | "always";
+    staleTime?: number;
+  },
 ) {
   return useSharedGetApplicationById(id, options);
 }

@@ -4,7 +4,7 @@ import type { ApplicationStatus } from "../api/types";
 // the current user (or another actor, e.g. a centre/assessor decision)
 // show up without a manual reload. Only fires while the tab is focused
 // (React Query's refetchIntervalInBackground defaults to false).
-export const APPLICATION_DETAIL_REFRESH_INTERVAL_MS = 15_000;
+export const APPLICATION_DETAIL_REFRESH_INTERVAL_MS = 10_000;
 
 export const APPLICATION_QUERY_KEYS = {
   all: ["applications"] as const,

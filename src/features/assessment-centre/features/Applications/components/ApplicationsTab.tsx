@@ -9,7 +9,10 @@ import { EvidenceVaultView } from "./EvidenceVaultView";
 import { CandidateFormView } from "./CandidateFormView";
 import { ApplicationDetail } from "./ApplicationDetail";
 import { NsqCentreApplicationDetailView } from "./nsq/NsqCentreApplicationDetailView";
-import { useGetApplicationById } from "@/src/features/shared/applications/hooks";
+import {
+  useGetApplicationById,
+  APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
+} from "@/src/features/shared/applications/hooks";
 import { ApplicationsView } from "./ApplicationsView";
 import { type InterviewRowData } from "./ViewInterviewDetailModal";
 import { type InductionRowData } from "./ViewInductionDetailModal";
@@ -65,6 +68,10 @@ export const ApplicationsTab: React.FC<ApplicationsTabProps> = ({
 }) => {
   const { data: selectedApp } = useGetApplicationById(
     selectedApplicationId || "",
+    {
+      refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
+      enabled: Boolean(selectedApplicationId),
+    },
   );
   const isSelectedNsq =
     selectedApp?.type === "NSQ" ||

@@ -4,7 +4,10 @@ import { useState, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/src/components/ui/toast";
 import { reviewApplicationApi } from "@/src/features/shared/applications/api";
-import { APPLICATION_QUERY_KEYS } from "@/src/features/shared/applications/hooks";
+import {
+  APPLICATION_QUERY_KEYS,
+  APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
+} from "@/src/features/shared/applications/hooks";
 import {
   useApplication,
   useGetApplications,
@@ -64,7 +67,9 @@ export function useApplicationsViewState(
     return undefined;
   }, [activeFilterTab]);
 
-  const { data: remoteApps, isLoading } = useGetApplications(appQueryParams);
+  const { data: remoteApps, isLoading } = useGetApplications(appQueryParams, {
+    refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
+  });
   const { data: remoteInterviews = [], isLoading: isLoadingInterviews } = useGetCentreInterviews();
   const { data: remoteInductions = [], isLoading: isLoadingInductions } = useGetCentreInductions();
   const { data: remotePanels = [], isLoading: isLoadingPanels } = useGetCentrePanels();

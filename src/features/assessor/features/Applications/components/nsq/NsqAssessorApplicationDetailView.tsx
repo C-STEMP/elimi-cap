@@ -13,6 +13,8 @@ import {
   useGetUnitsCriteria,
   useReviewApplication,
   useReviewDirectObservation,
+  useGetDirectObservations,
+  useGetDirectObservationSession,
 } from "@/src/features/shared/applications/hooks";
 import {
   APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
@@ -168,6 +170,12 @@ export const NsqAssessorApplicationDetailView: React.FC<
   const [internalSubView, setInternalSubView] =
     useState<NsqAssessorSubView>("overview");
   const activeSubView = externalNavState || internalSubView;
+
+  useEffect(() => {
+    if (externalNavState) {
+      setInternalSubView(externalNavState);
+    }
+  }, [externalNavState]);
   const [isReviewIvModalOpen, setIsReviewIvModalOpen] = useUrlModal(
     REVIEW_VERIFIER_MODAL,
   );
@@ -278,58 +286,133 @@ export const NsqAssessorApplicationDetailView: React.FC<
   const remoteEvidenceTypes: string[] = [];
 
   const nsqUnitsForLevel = getNsqScopedUnits(apiApp?.nsq, inductionForm);
-  const realUnits: QualificationUnitItem[] | null = nsqUnitsForLevel?.length
-    ? nsqUnitsForLevel.map((u) => ({
-        id: u.id,
-        unitNo: u.referenceNumber,
-        title: u.title,
-        approvedCount: u.criteriaApproved,
-        totalCount: u.criteriaTotal,
-        hasNewUpload: u.criteriaPending > 0,
-        status: u.status,
-        criteriaPending: u.criteriaPending,
-        criteriaRejected: u.criteriaRejected,
-      }))
-    : null;
+  const realUnits: QualificationUnitItem[] | null = useMemo(() => {
+    return nsqUnitsForLevel?.length
+      ? nsqUnitsForLevel.map((u) => ({
+          id: u.id,
+          unitNo: u.referenceNumber,
+          title: u.title,
+          approvedCount: u.criteriaApproved,
+          totalCount: u.criteriaTotal,
+          hasNewUpload: u.criteriaPending > 0,
+          status: u.status,
+          criteriaPending: u.criteriaPending,
+          criteriaRejected: u.criteriaRejected,
+        }))
+      : null;
+  }, [nsqUnitsForLevel]);
   const unitsList = realUnits || [];
 
   const [selectedUnit, setSelectedUnit] =
     useState<QualificationUnitItem | null>(null);
 
+  const prevUnitParamRef = useRef<string | null>(searchParams.get("unit"));
+
   useEffect(() => {
-    if (!realUnits || realUnits.length === 0) return;
     const unitParam = searchParams.get("unit");
-    if (unitParam) {
-      const match = realUnits.find((u) => u.id === unitParam);
-      if (match) {
-        if (selectedUnit?.id !== match.id) setSelectedUnit(match);
-        if (activeSubView !== "unit") {
-          setInternalSubView("unit");
-          onSubViewNavStateChange?.("unit");
-          onSubViewChange?.(match.unitNo);
-        }
+
+    if (!unitParam) {
+      if (prevUnitParamRef.current && (internalSubView === "unit" || activeSubView === "unit")) {
+        setActiveSubView("overview");
       }
+      prevUnitParamRef.current = null;
       return;
     }
-    if (!selectedUnit) {
+
+    const isNewUnit = prevUnitParamRef.current !== unitParam;
+    prevUnitParamRef.current = unitParam;
+
+    if (!realUnits || realUnits.length === 0) return;
+    const match = realUnits.find((u) => u.id === unitParam);
+    if (match) {
+      if (selectedUnit?.id !== match.id) setSelectedUnit(match);
+      if (isNewUnit && externalNavState !== "overview") {
+        setInternalSubView("unit");
+        onSubViewNavStateChange?.("unit");
+        onSubViewChange?.(match.unitNo);
+      }
+    } else if (!selectedUnit) {
       setSelectedUnit(realUnits[0]);
     }
-  }, [realUnits, searchParams]);
+  }, [realUnits, searchParams, externalNavState]);
 
   const sessions =
     (apiApp as any)?.directObservationSessions ||
     (apiApp as any)?.nsq?.directObservationSessions ||
     ((apiApp as any)?.directObservation ? [(apiApp as any).directObservation] : []);
-  const sortedSessions = sessions.slice().sort((a: any, b: any) => {
+
+  const { data: directObsList } = useGetDirectObservations(application.id, {
+    enabled: Boolean(application.id),
+    refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
+  });
+  const directObsSessions = Array.isArray(directObsList)
+    ? directObsList
+    : (directObsList as any)?.sessions ||
+      (directObsList as any)?.items ||
+      (directObsList as any)?.data ||
+      [];
+
+  const allSessions = directObsSessions.length > 0 ? directObsSessions : sessions;
+  const sortedSessions = allSessions.slice().sort((a: any, b: any) => {
     const timeA = new Date(a.createdAt || a.scheduledAt || 0).getTime();
     const timeB = new Date(b.createdAt || b.scheduledAt || 0).getTime();
     return timeB - timeA;
   });
-  const liveObs = sortedSessions[0];
-  const effectiveSessionId = liveObs?.id || "session-1";
-  const hasFilledObservationForm =
-    liveObs?.physicalStatus === "submitted" &&
-    liveObs?.oralStatus === "submitted";
+
+  const submittedSession = sortedSessions.find(
+    (s: any) =>
+      s.physicalStatus === "submitted" ||
+      s.physicalStatus === "completed" ||
+      Boolean(s.physical?.submittedAt) ||
+      (Array.isArray(s.physical?.rows) && s.physical.rows.length > 0),
+  );
+  const liveObs =
+    submittedSession ||
+    sortedSessions.find(
+      (s: any) =>
+        s.status === "confirmed" ||
+        s.status === "scheduled" ||
+        s.status === "completed" ||
+        s.status === "accepted",
+    ) ||
+    sortedSessions[0];
+  const effectiveSessionId =
+    (liveObs as any)?.id || (liveObs as any)?._id || "session-1";
+
+  const { data: sessionDetail } = useGetDirectObservationSession(
+    application.id,
+    effectiveSessionId,
+    {
+      enabled: Boolean(application.id && (liveObs?.id || (liveObs as any)?._id)),
+      refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
+    },
+  );
+
+  const currentObs = sessionDetail || liveObs;
+
+  const isPhysicalSubmitted = Boolean(
+    currentObs?.physicalStatus === "submitted" ||
+      currentObs?.physicalStatus === "completed" ||
+      Boolean(currentObs?.physical?.submittedAt) ||
+      (Array.isArray(currentObs?.physical?.rows) && currentObs.physical.rows.length > 0) ||
+      (Array.isArray((currentObs as any)?.rows) && (currentObs as any).rows.length > 0),
+  );
+  const isOralSubmitted = Boolean(
+    currentObs?.oralStatus === "submitted" ||
+      currentObs?.oralStatus === "completed" ||
+      Boolean(currentObs?.oral?.submittedAt) ||
+      (Array.isArray(currentObs?.oral?.rows) && currentObs.oral.rows.length > 0),
+  );
+  const anySessionPhysicalSubmitted = sortedSessions.some(
+    (s: any) =>
+      s.physicalStatus === "submitted" ||
+      s.physicalStatus === "completed" ||
+      Boolean(s.physical?.submittedAt) ||
+      (Array.isArray(s.physical?.rows) && s.physical.rows.length > 0),
+  );
+  const hasFilledPhysicalObservationForm =
+    isPhysicalSubmitted || anySessionPhysicalSubmitted;
+  const hasFilledObservationForm = isPhysicalSubmitted && isOralSubmitted;
 
   const { mutateAsync: reviewObservationMutation } = useReviewDirectObservation(
     application.id,
@@ -340,12 +423,12 @@ export const NsqAssessorApplicationDetailView: React.FC<
 
   const [observation, setObservation] =
     useState<ObservationRequestDetails | null>(
-      mapSessionToObservation(liveObs),
+      mapSessionToObservation(currentObs),
     );
 
   useEffect(() => {
-    setObservation(mapSessionToObservation(liveObs));
-  }, [liveObs?.id, liveObs?.status, liveObs?.scheduledAt]);
+    setObservation(mapSessionToObservation(currentObs));
+  }, [currentObs?.id, currentObs?.status, currentObs?.scheduledAt]);
 
   const [isInductionModalOpen, setIsInductionModalOpen] = useState(false);
   const [isObsModalOpen, setIsObsModalOpen] = useUrlModal(
@@ -384,15 +467,6 @@ export const NsqAssessorApplicationDetailView: React.FC<
     setActiveSubView("overview");
     closeUrlSubView(router, pathname, searchParams);
   };
-
-  const prevUnitParam = useRef(searchParams.get("unit"));
-  useEffect(() => {
-    const unitParam = searchParams.get("unit");
-    if (prevUnitParam.current && !unitParam && activeSubView === "unit") {
-      setActiveSubView("overview");
-    }
-    prevUnitParam.current = unitParam;
-  }, [searchParams]);
 
   // Stages for NSQ: prefer live stages from GET /applications/{id}/stages, fallback to application.stages
   const { data: remoteStages = [] } = useGetApplicationStages(application.id, {
@@ -500,20 +574,20 @@ export const NsqAssessorApplicationDetailView: React.FC<
   );
 
   // Physical Observation Validation
-  const hasObservation = Boolean(liveObs);
+  const hasObservation = Boolean(currentObs);
   const isObsPending = Boolean(
-    liveObs && (liveObs.status === "pending" || liveObs.status === "requested"),
+    currentObs && (currentObs.status === "pending" || currentObs.status === "requested"),
   );
   const isObsRejected = Boolean(
-    liveObs && (liveObs.status === "rejected" || liveObs.status === "cancelled"),
+    currentObs && (currentObs.status === "rejected" || currentObs.status === "cancelled"),
   );
   const hasAssessorSignature = Boolean(
-    liveObs?.signatures?.unitAssessor?.signedAt ||
-      liveObs?.signatures?.unitAssessor,
+    currentObs?.signatures?.unitAssessor?.signedAt ||
+      currentObs?.signatures?.unitAssessor,
   );
   const hasLearnerSignature = Boolean(
-    liveObs?.signatures?.learner?.signedAt ||
-      liveObs?.signatures?.learner,
+    currentObs?.signatures?.learner?.signedAt ||
+      currentObs?.signatures?.learner,
   );
   const isObservationFullyCompleted = Boolean(
     hasObservation &&
@@ -909,6 +983,11 @@ export const NsqAssessorApplicationDetailView: React.FC<
         candidatePhotoUrl={application.candidatePhotoUrl}
         applicationId={application.id}
         observation={observation}
+        observationActionLabel={
+          hasFilledPhysicalObservationForm || hasFilledObservationForm
+            ? "View"
+            : "Fill Form"
+        }
         onAcceptObservation={acceptObservation}
         onRejectObservation={rejectObservation}
         onBack={handleBackFromUnit}
@@ -1942,7 +2021,9 @@ export const NsqAssessorApplicationDetailView: React.FC<
               }}
               observation={observation}
               observationActionLabel={
-                hasFilledObservationForm ? "View" : "Fill Form"
+                hasFilledPhysicalObservationForm || hasFilledObservationForm
+                  ? "View"
+                  : "Fill Form"
               }
               onOpenObservationModal={() => setIsObsModalOpen(true)}
               onFillObservationForm={() => setActiveSubView("observation_form")}

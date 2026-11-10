@@ -13,6 +13,7 @@ import {
   FiUserPlus,
   FiSend,
   FiAlertCircle,
+  FiExternalLink,
 } from "react-icons/fi";
 import { CalendarWidget } from "@/features/candidate/features/Dashboard/components/CalendarWidget";
 import { TransactionReceiptModal } from "@/features/assessment-centre/features/Payment/components/TransactionReceiptModal";
@@ -26,11 +27,13 @@ import {
   useGetSectors,
 } from "@/src/features/shared/reference/hooks";
 import {
+  useGetApplicationById,
   useGetApplicationStages,
   useGetInductionForm,
   useGetPaymentQuote,
   useGetApplicationReceipt,
   useGetUnitCriteria,
+  useGetDirectObservations,
   APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
 } from "@/src/features/shared/applications/hooks";
 import { formatCurrency } from "@/src/utils/currency";
@@ -42,6 +45,7 @@ import type { IqamToolId } from "@/src/features/assessor/features/iqam/types/iqa
 import type { ApplicationDetail, ApplicationStage, InductionForm, NsqCriterion } from "@/src/features/shared/applications/api/types";
 import { useModalDraft, useUrlModal } from "@/src/lib/hooks/usePersistentModal";
 import { NSQ_ASSIGN_ASSESSOR_MODAL, NSQ_DECISION_MODAL } from "@/src/lib/modal-keys";
+import { useResolveAssets } from "@/src/features/shared/storage/hooks";
 
 const NSQ_PROGRESS_STEPS = [
   { key: "induction", label: "Induction Form" },
@@ -91,7 +95,28 @@ interface CentreUnitEvidenceItem {
   status: "approved" | "rejected" | "in_review";
   feedback?: string | null;
   isHistory?: boolean;
+  url?: string | null;
+  assetId?: string | null;
 }
+
+const ViewEvidenceLink: React.FC<{ evidence: CentreUnitEvidenceItem }> = ({
+  evidence,
+}) =>
+  evidence.url ? (
+    <a
+      href={evidence.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={(e) => e.stopPropagation()}
+      className="inline-flex items-center gap-1 text-[#a31d38] hover:underline font-bold text-xs shrink-0 cursor-pointer"
+    >
+      View <FiExternalLink className="w-3 h-3" />
+    </a>
+  ) : (
+    <span className="text-[11px] text-gray-400 font-medium shrink-0">
+      File unavailable
+    </span>
+  );
 
 interface CentreUnitCriterion {
   code: string;
@@ -107,6 +132,7 @@ interface CentreUnitLearningOutcome {
 
 function groupCriteriaForCentreView(
   criteria: NsqCriterion[],
+  resolvedAssetMap?: Record<string, string>,
 ): CentreUnitLearningOutcome[] {
   const groups: Record<string, { title: string; criteria: CentreUnitCriterion[] }> = {};
 
@@ -132,26 +158,43 @@ function groupCriteriaForCentreView(
         : []),
     ];
 
-    const evidences: CentreUnitEvidenceItem[] = rawItems.map(({ item, isHistory }) => ({
-      id: item.id,
-      title:
-        item.evidenceType === "WP"
-          ? "Work Product(WP)"
-          : `${item.evidenceType} Evidence`,
-      status:
-        item.reviewStatus === "approved"
-          ? "approved"
-          : item.reviewStatus === "rejected"
-            ? "rejected"
-            : "in_review",
-      feedback:
-        item.reviewComment ||
-        item.iqaReviewComment ||
-        (item as any).comment ||
-        (item as any).feedback ||
-        undefined,
-      isHistory,
-    }));
+    const evidences: CentreUnitEvidenceItem[] = rawItems.map(({ item, isHistory }) => {
+      const assetId =
+        item.evidenceAssetId ||
+        item.evidence?.assetId ||
+        (item as any).assetId ||
+        undefined;
+
+      const directUrl =
+        item.evidence?.url ||
+        (item as any).url ||
+        (item as any).fileUrl ||
+        (assetId && resolvedAssetMap?.[assetId]) ||
+        undefined;
+
+      return {
+        id: item.id,
+        title:
+          item.evidenceType === "WP"
+            ? "Work Product(WP)"
+            : `${item.evidenceType} Evidence`,
+        status:
+          item.reviewStatus === "approved"
+            ? "approved"
+            : item.reviewStatus === "rejected"
+              ? "rejected"
+              : "in_review",
+        feedback:
+          item.reviewComment ||
+          item.iqaReviewComment ||
+          (item as any).comment ||
+          (item as any).feedback ||
+          undefined,
+        url: directUrl || null,
+        assetId: assetId || null,
+        isHistory,
+      };
+    });
 
     groups[loKey].criteria.push({
       code: crit.code.startsWith("PC") ? crit.code : `PC ${crit.code}`,
@@ -169,21 +212,41 @@ function groupCriteriaForCentreView(
 
 export const NsqCentreApplicationDetailView: React.FC<
   NsqCentreApplicationDetailViewProps
-> = ({ application, onBack, selectedUnitNumber, onSelectUnit }) => {
+> = ({ application: propApplication, onBack, selectedUnitNumber, onSelectUnit }) => {
   const router = useRouter();
   const params = useParams();
-  const effectiveAppId = application?.id || (params?.id as string) || "";
+  const effectiveAppId = propApplication?.id || (params?.id as string) || "";
+  const { data: liveApplication } = useGetApplicationById(effectiveAppId, {
+    refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
+    enabled: Boolean(effectiveAppId),
+  });
+  const application = liveApplication || propApplication;
 
   // NSQ induction form and observation data from application
   const { data: remoteInductionForm } = useGetInductionForm(effectiveAppId, {
     enabled: Boolean(effectiveAppId),
+    refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
   });
   const inductionForm: InductionForm | undefined =
     remoteInductionForm || (application as any)?.inductionForm || undefined;
+
+  const { data: directObsList } = useGetDirectObservations(effectiveAppId, {
+    enabled: Boolean(effectiveAppId),
+    refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
+  });
+  const directObsSessions = Array.isArray(directObsList)
+    ? directObsList
+    : (directObsList as any)?.sessions ||
+      (directObsList as any)?.items ||
+      (directObsList as any)?.data ||
+      [];
+
   const rawSessions =
-    (application as any)?.directObservationSessions ||
-    (application as any)?.nsq?.directObservationSessions ||
-    ((application as any)?.directObservation ? [(application as any).directObservation] : []);
+    directObsSessions.length > 0
+      ? directObsSessions
+      : (application as any)?.directObservationSessions ||
+        (application as any)?.nsq?.directObservationSessions ||
+        ((application as any)?.directObservation ? [(application as any).directObservation] : []);
   const sortedSessions = rawSessions.slice().sort((a: any, b: any) => {
     const timeA = new Date(a.createdAt || a.scheduledAt || 0).getTime();
     const timeB = new Date(b.createdAt || b.scheduledAt || 0).getTime();
@@ -624,9 +687,44 @@ export const NsqCentreApplicationDetailView: React.FC<
     activeUnit?.id || "",
     { enabled: Boolean(effectiveAppId && activeUnit?.id) },
   );
-  const unitLearningOutcomes = unitCriteriaData?.criteria
-    ? groupCriteriaForCentreView(unitCriteriaData.criteria)
-    : [];
+
+  const assetIdsToResolve = useMemo(() => {
+    if (!unitCriteriaData?.criteria) return [];
+    const ids: string[] = [];
+    unitCriteriaData.criteria.forEach((crit) => {
+      const items = [
+        ...(crit.latest ? [crit.latest] : []),
+        ...(Array.isArray(crit.history) ? crit.history : []),
+      ];
+      items.forEach((item) => {
+        const assetId = item.evidenceAssetId || item.evidence?.assetId;
+        if (assetId && !item.evidence?.url) {
+          ids.push(assetId);
+        }
+      });
+    });
+    return Array.from(new Set(ids));
+  }, [unitCriteriaData]);
+
+  const { data: resolvedAssets } = useResolveAssets(assetIdsToResolve);
+
+  const resolvedAssetMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    if (Array.isArray(resolvedAssets)) {
+      resolvedAssets.forEach((a) => {
+        if (a.assetId && a.url) {
+          map[a.assetId] = a.url;
+        }
+      });
+    }
+    return map;
+  }, [resolvedAssets]);
+
+  const unitLearningOutcomes = useMemo(() => {
+    return unitCriteriaData?.criteria
+      ? groupCriteriaForCentreView(unitCriteriaData.criteria, resolvedAssetMap)
+      : [];
+  }, [unitCriteriaData, resolvedAssetMap]);
 
   // Compute status — application_form stage is the source of truth;
   // localStatus is only an instant-UI override until the stages query refetches.
@@ -840,10 +938,13 @@ export const NsqCentreApplicationDetailView: React.FC<
                                           <FiFileText className="w-4 h-4 text-[#059669] shrink-0" />
                                           <span className="truncate">{ev.title}</span>
                                         </div>
-                                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#10753A] text-white flex items-center gap-1.5 shrink-0">
-                                          <span className="w-1.5 h-1.5 rounded-full bg-white" />
-                                          <span>Approved</span>
-                                        </span>
+                                        <div className="flex items-center gap-3 shrink-0">
+                                          <ViewEvidenceLink evidence={ev} />
+                                          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#10753A] text-white flex items-center gap-1.5 shrink-0">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                                            <span>Approved</span>
+                                          </span>
+                                        </div>
                                       </div>
                                     ) : ev.status === "rejected" ? (
                                       <div
@@ -860,10 +961,13 @@ export const NsqCentreApplicationDetailView: React.FC<
                                               </span>
                                             )}
                                           </div>
-                                          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#DC2626] text-white flex items-center gap-1.5 shrink-0">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-white" />
-                                            <span>Rejected</span>
-                                          </span>
+                                          <div className="flex items-center gap-3 shrink-0">
+                                            <ViewEvidenceLink evidence={ev} />
+                                            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#DC2626] text-white flex items-center gap-1.5 shrink-0">
+                                              <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                                              <span>Rejected</span>
+                                            </span>
+                                          </div>
                                         </div>
                                         {ev.feedback && (
                                           <div className="bg-white rounded-lg p-3 text-xs text-[#E11D48] font-normal leading-relaxed">
@@ -880,10 +984,13 @@ export const NsqCentreApplicationDetailView: React.FC<
                                           <FiFileText className="w-4 h-4 text-[#D97706] shrink-0" />
                                           <span className="truncate">{ev.title}</span>
                                         </div>
-                                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#D97706] text-white flex items-center gap-1.5 shrink-0">
-                                          <span className="w-1.5 h-1.5 rounded-full bg-white" />
-                                          <span>In Review</span>
-                                        </span>
+                                        <div className="flex items-center gap-3 shrink-0">
+                                          <ViewEvidenceLink evidence={ev} />
+                                          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#D97706] text-white flex items-center gap-1.5 shrink-0">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                                            <span>In Review</span>
+                                          </span>
+                                        </div>
                                       </div>
                                     ),
                                   )}

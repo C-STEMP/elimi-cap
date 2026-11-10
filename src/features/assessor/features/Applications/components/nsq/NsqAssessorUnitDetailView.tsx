@@ -35,6 +35,7 @@ interface NsqAssessorUnitDetailViewProps {
   candidatePhotoUrl?: string | null;
   applicationId: string;
   observation: ObservationRequestDetails | null;
+  observationActionLabel?: string;
   onAcceptObservation: (requirements: string[]) => Promise<void>;
   onRejectObservation: (reason: string) => Promise<void>;
   onBack: () => void;
@@ -52,6 +53,7 @@ export const NsqAssessorUnitDetailView: React.FC<
   candidatePhotoUrl,
   applicationId,
   observation,
+  observationActionLabel,
   onAcceptObservation,
   onRejectObservation,
   onBack,
@@ -340,6 +342,7 @@ export const NsqAssessorUnitDetailView: React.FC<
                 photoUrl: candidatePhotoUrl,
               }}
               observation={observation}
+              observationActionLabel={observationActionLabel}
               onOpenObservationModal={() => setIsObsModalOpen(true)}
               onFillObservationForm={onFillObservationForm}
             />

@@ -14,7 +14,10 @@ import {
   Application,
   ApplicationStatus,
 } from "@/src/features/shared/applications/api/application.api";
-import { useGetApplications } from "@/src/features/candidate/features/Application/hooks";
+import {
+  useGetApplications,
+  APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
+} from "@/src/features/candidate/features/Application/hooks";
 import { useCandidateProfile, useCandidateEvents } from "@/src/features/shared/onboarding/hooks";
 import { markVerified } from "@/store/slices/authSlice";
 
@@ -94,7 +97,9 @@ export const MyApplicationsPage: React.FC = () => {
   const authUser = useAppSelector((state) => state.auth.user);
   const savedRPLIdentity = useAppSelector((s) => s.onboarding.rplIdentity);
   const { data: candidateProfile } = useCandidateProfile(true);
-  const { data: applications = [], isLoading } = useGetApplications();
+  const { data: applications = [], isLoading } = useGetApplications(undefined, {
+    refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
+  });
   const { data: candidateEvents = [] } = useCandidateEvents(true);
 
   const [currentTime] = useState(() => Date.now());
