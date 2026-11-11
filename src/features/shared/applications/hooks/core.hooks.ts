@@ -68,24 +68,39 @@ export function useCreateApplication() {
 
 export function useGetApplications(
   status?: ApplicationStatus,
-  options?: { enabled?: boolean },
+  options?: {
+    enabled?: boolean;
+    refetchInterval?: number | false;
+    refetchOnWindowFocus?: boolean | "always";
+    staleTime?: number;
+  },
 ) {
   return useQuery({
     queryKey: APPLICATION_QUERY_KEYS.list(status),
     queryFn: () => getApplicationsApi({ status }),
     enabled: options?.enabled ?? true,
+    refetchInterval: options?.refetchInterval,
+    refetchOnWindowFocus: options?.refetchOnWindowFocus ?? "always",
+    staleTime: options?.staleTime ?? 0,
   });
 }
 
 export function useGetApplicationById(
   id: string,
-  options?: { refetchInterval?: number | false },
+  options?: {
+    refetchInterval?: number | false;
+    enabled?: boolean;
+    refetchOnWindowFocus?: boolean | "always";
+    staleTime?: number;
+  },
 ) {
   return useQuery({
     queryKey: APPLICATION_QUERY_KEYS.detail(id),
     queryFn: () => getApplicationByIdApi(id),
-    enabled: Boolean(id),
+    enabled: Boolean(id) && (options?.enabled ?? true),
     refetchInterval: options?.refetchInterval,
+    refetchOnWindowFocus: options?.refetchOnWindowFocus ?? "always",
+    staleTime: options?.staleTime ?? 0,
   });
 }
 
@@ -259,13 +274,20 @@ export function useGetApplicationHistory(id: string) {
 
 export function useGetApplicationStages(
   id: string,
-  options?: { refetchInterval?: number | false; enabled?: boolean },
+  options?: {
+    refetchInterval?: number | false;
+    enabled?: boolean;
+    refetchOnWindowFocus?: boolean | "always";
+    staleTime?: number;
+  },
 ) {
   return useQuery({
     queryKey: APPLICATION_QUERY_KEYS.stages(id),
     queryFn: () => getApplicationStagesApi(id),
     enabled: Boolean(id) && (options?.enabled ?? true),
     refetchInterval: options?.refetchInterval,
+    refetchOnWindowFocus: options?.refetchOnWindowFocus ?? "always",
+    staleTime: options?.staleTime ?? 0,
   });
 }
 

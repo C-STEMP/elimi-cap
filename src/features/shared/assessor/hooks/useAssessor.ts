@@ -71,12 +71,20 @@ export function useGetAssessorApplications(
     cursor?: string;
     limit?: number;
   },
-  options?: { enabled?: boolean },
+  options?: {
+    enabled?: boolean;
+    refetchInterval?: number | false;
+    refetchOnWindowFocus?: boolean | "always";
+    staleTime?: number;
+  },
 ) {
   return useQuery({
     queryKey: ASSESSOR_QUERY_KEYS.applications(params),
     queryFn: () => getAssessorApplicationsApi(params),
     enabled: options?.enabled ?? true,
+    refetchInterval: options?.refetchInterval,
+    refetchOnWindowFocus: options?.refetchOnWindowFocus ?? "always",
+    staleTime: options?.staleTime ?? 0,
   });
 }
 

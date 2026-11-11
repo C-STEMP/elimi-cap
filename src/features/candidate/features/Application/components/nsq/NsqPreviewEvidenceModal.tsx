@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Modal } from "antd";
 import {
   FiX,
@@ -9,8 +9,10 @@ import {
   FiCheck,
   FiAlertCircle,
   FiExternalLink,
+  FiLoader,
 } from "react-icons/fi";
 import { Button } from "@/src/components/ui/button";
+import { resolveAssetsApi } from "@/src/features/shared/storage/api/storage.api";
 import type { EvidenceItem, PerformanceCriteria } from "./NsqUnitDetailView";
 
 interface NsqPreviewEvidenceModalProps {
@@ -26,36 +28,117 @@ export const NsqPreviewEvidenceModal: React.FC<NsqPreviewEvidenceModalProps> = (
   evidence,
   performanceCriteria,
 }) => {
+  const [resolvedUrl, setResolvedUrl] = useState<string>("");
+  const [isResolving, setIsResolving] = useState<boolean>(false);
+  const [hasImageError, setHasImageError] = useState(false);
+
+  useEffect(() => {
+    setHasImageError(false);
+
+    if (evidence?.url) {
+      setResolvedUrl(evidence.url);
+      setIsResolving(false);
+      return;
+    }
+
+    if (evidence?.assetId) {
+      let isMounted = true;
+      setIsResolving(true);
+      resolveAssetsApi([evidence.assetId])
+        .then((res: any) => {
+          if (!isMounted) return;
+          const assets: { assetId: string; url: string }[] = Array.isArray(res)
+            ? res
+            : Array.isArray(res?.assets)
+              ? res.assets
+              : [];
+          const match =
+            assets.find((a) => a.assetId === evidence.assetId) || assets[0];
+          if (match?.url) {
+            setResolvedUrl(match.url);
+          }
+        })
+        .catch((err) => {
+          console.warn("Could not resolve asset url in preview modal:", err);
+        })
+        .finally(() => {
+          if (isMounted) setIsResolving(false);
+        });
+
+      return () => {
+        isMounted = false;
+      };
+    } else {
+      setResolvedUrl("");
+      setIsResolving(false);
+    }
+  }, [evidence?.url, evidence?.assetId]);
+
   if (!evidence) return null;
 
-  const fileName = evidence.fileName || evidence.title || "document";
+  const effectiveUrl = resolvedUrl || evidence.url || "";
 
-  const isImageUrl = (url?: string, name?: string) => {
-    const target = `${url || ""} ${name || ""}`.toLowerCase();
-    return (
-      target.startsWith("data:image/") ||
-      /\.(jpeg|jpg|png|webp|svg|gif)/i.test(target) ||
-      target.includes("image/upload") ||
-      target.includes("res.cloudinary.com")
-    );
-  };
+  const displayFileName = (() => {
+    if (evidence.fileName && /\.[a-z0-9]{2,5}$/i.test(evidence.fileName)) {
+      return evidence.fileName;
+    }
+    if (effectiveUrl) {
+      try {
+        const cleanPath = effectiveUrl.split("?")[0];
+        const lastSegment = cleanPath.split("/").pop();
+        if (lastSegment && /\.[a-z0-9]{2,5}$/i.test(lastSegment)) {
+          return decodeURIComponent(lastSegment);
+        }
+      } catch {
+        // Fall back
+      }
+    }
+    return evidence.fileName || evidence.title || "document";
+  })();
 
   const isPdfUrl = (url?: string, name?: string) => {
     const target = `${url || ""} ${name || ""}`.toLowerCase();
-    return target.endsWith(".pdf") || target.includes(".pdf") || target.includes("/pdf");
+    const cleanUrl = (url || "").split("?")[0].toLowerCase();
+    return (
+      cleanUrl.endsWith(".pdf") ||
+      target.includes(".pdf") ||
+      target.includes("/pdf") ||
+      target.startsWith("data:application/pdf")
+    );
+  };
+
+  const isImageUrl = (url?: string, name?: string) => {
+    const target = `${url || ""} ${name || ""}`.toLowerCase();
+    const cleanUrl = (url || "").split("?")[0].toLowerCase();
+    return (
+      target.startsWith("data:image/") ||
+      /\.(jpeg|jpg|png|webp|svg|gif|avif)(\?|$)/i.test(target) ||
+      cleanUrl.endsWith(".jpg") ||
+      cleanUrl.endsWith(".jpeg") ||
+      cleanUrl.endsWith(".png") ||
+      cleanUrl.endsWith(".webp") ||
+      cleanUrl.endsWith(".svg") ||
+      cleanUrl.endsWith(".gif") ||
+      target.includes("image/upload") ||
+      (target.includes("res.cloudinary.com") && !target.includes(".pdf"))
+    );
   };
 
   const isVideoUrl = (url?: string, name?: string) => {
     const target = `${url || ""} ${name || ""}`.toLowerCase();
+    const cleanUrl = (url || "").split("?")[0].toLowerCase();
     return (
-      /\.(mp4|webm|mov|m4v)/i.test(target) ||
+      /\.(mp4|webm|mov|m4v)(\?|$)/i.test(target) ||
+      cleanUrl.endsWith(".mp4") ||
+      cleanUrl.endsWith(".webm") ||
+      cleanUrl.endsWith(".mov") ||
       target.includes("video/upload")
     );
   };
 
-  const hasImage = isImageUrl(evidence.url, fileName);
-  const hasPdf = isPdfUrl(evidence.url, fileName);
-  const hasVideo = isVideoUrl(evidence.url, fileName);
+  const hasPdf = isPdfUrl(effectiveUrl, displayFileName);
+  const hasImage = isImageUrl(effectiveUrl, displayFileName);
+  const hasVideo = isVideoUrl(effectiveUrl, displayFileName);
 
   return (
     <Modal
@@ -82,7 +165,7 @@ export const NsqPreviewEvidenceModal: React.FC<NsqPreviewEvidenceModalProps> = (
             <div className="flex flex-col min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h4 className="font-extrabold text-base sm:text-lg text-neutral-primary truncate max-w-[340px] sm:max-w-md">
-                  {fileName}
+                  {displayFileName}
                 </h4>
 
                 {/* Status Badge */}
@@ -142,26 +225,34 @@ export const NsqPreviewEvidenceModal: React.FC<NsqPreviewEvidenceModalProps> = (
 
           {/* Document Preview Viewport */}
           <div className="w-full bg-[#f8f9fa] border border-gray-200/80 rounded-2xl overflow-hidden min-h-[300px] flex items-center justify-center p-3 sm:p-4">
-            {hasPdf && evidence.url ? (
+            {isResolving ? (
+              <div className="flex flex-col items-center justify-center gap-3 py-16">
+                <FiLoader className="w-8 h-8 text-[#a31d38] animate-spin" />
+                <span className="text-xs text-gray-500 font-medium">
+                  Loading evidence preview...
+                </span>
+              </div>
+            ) : hasPdf && effectiveUrl ? (
               <div className="w-full h-[460px] rounded-xl overflow-hidden bg-white border border-gray-200 shadow-inner flex flex-col">
                 <iframe
-                  src={`${evidence.url}#toolbar=1`}
-                  title={fileName}
+                  src={`${effectiveUrl}#toolbar=1`}
+                  title={displayFileName}
                   className="w-full h-full rounded-xl"
                 />
               </div>
-            ) : hasImage && evidence.url ? (
+            ) : hasImage && effectiveUrl && !hasImageError ? (
               <div className="relative w-full max-h-[460px] flex items-center justify-center rounded-xl overflow-hidden bg-white p-2 border border-gray-100 shadow-inner">
                 <img
-                  src={evidence.url}
-                  alt={fileName}
+                  src={effectiveUrl}
+                  alt={displayFileName}
+                  onError={() => setHasImageError(true)}
                   className="max-h-[430px] w-auto max-w-full object-contain rounded-lg shadow-sm"
                 />
               </div>
-            ) : hasVideo && evidence.url ? (
+            ) : hasVideo && effectiveUrl ? (
               <div className="w-full max-h-[440px] rounded-xl overflow-hidden bg-black flex items-center justify-center">
                 <video
-                  src={evidence.url}
+                  src={effectiveUrl}
                   controls
                   className="max-h-[420px] w-full object-contain rounded-xl"
                 />
@@ -173,10 +264,12 @@ export const NsqPreviewEvidenceModal: React.FC<NsqPreviewEvidenceModalProps> = (
                 </div>
                 <div className="flex flex-col gap-1">
                   <span className="font-extrabold text-sm text-neutral-primary">
-                    {fileName}
+                    {displayFileName}
                   </span>
                   <p className="text-xs text-gray-500 font-medium">
-                    Uploaded evidence document recorded for criteria verification.
+                    {effectiveUrl
+                      ? "Uploaded evidence document recorded for criteria verification."
+                      : "Evidence recorded. File preview is currently unavailable."}
                   </p>
                 </div>
               </div>
@@ -211,12 +304,12 @@ export const NsqPreviewEvidenceModal: React.FC<NsqPreviewEvidenceModalProps> = (
 
         {/* Footer */}
         <div className="p-4 sm:p-5 border-t border-gray-100 bg-gray-50/50 flex items-center justify-between gap-3">
-          {evidence.url ? (
+          {effectiveUrl ? (
             <a
-              href={evidence.url}
+              href={effectiveUrl}
               target="_blank"
               rel="noopener noreferrer"
-              download={fileName}
+              download={displayFileName}
               className="inline-flex items-center gap-2 text-xs font-bold text-[#a31d38] hover:text-[#8a1538] hover:underline"
             >
               <FiExternalLink className="w-3.5 h-3.5" />

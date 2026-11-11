@@ -449,7 +449,7 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
                   </button>
                   <div className="flex items-center gap-2 text-xs sm:text-sm text-white/90 font-normal flex-wrap">
                     <span
-                      onClick={onBackFromApplication}
+                      onClick={() => onSelectTab("Applications")}
                       className="hover:underline cursor-pointer"
                     >
                       Applications
@@ -501,7 +501,7 @@ export const AssessorHeaderBanner: React.FC<AssessorHeaderBannerProps> = ({
                   </button>
                   <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-white/90 font-normal flex-wrap wrap-break-word">
                     <span
-                      onClick={onBackFromApplication}
+                      onClick={() => onSelectTab("Applications")}
                       className="hover:underline cursor-pointer"
                     >
                       Applications

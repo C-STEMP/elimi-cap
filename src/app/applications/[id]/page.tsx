@@ -6,6 +6,7 @@ import { useAppSelector } from "@/src/store/hooks";
 import { useGetMe } from "@/src/features/shared/account/hooks";
 import { ApplicationDetailsPage } from "@/src/features/candidate/features/Application/pages/ApplicationDetailsPage";
 import { CentreApplicationRouteView } from "@/src/features/assessment-centre/features/Applications/components/CentreApplicationRouteView";
+import { AssessorApplicationRouteView } from "@/src/features/assessor/features/Applications/components/AssessorApplicationRouteView";
 import { Loader } from "@/src/components/ui/loader";
 
 export default function ApplicationDetailPage() {
@@ -38,18 +39,8 @@ export default function ApplicationDetailPage() {
         Boolean(user?.centreRole) ||
         Boolean(meData?.centres && meData.centres.length > 0)));
 
-  useEffect(() => {
-    if (isAssessor && id) {
-      router.replace(`/assessor/dashboard/applications?appId=${id}`);
-    }
-  }, [isAssessor, id, router]);
-
   if (isAssessor) {
-    return (
-      <div className="w-full min-h-screen flex items-center justify-center bg-[#f8f9fb]">
-        <Loader tip="Loading application..." />
-      </div>
-    );
+    return <AssessorApplicationRouteView id={id} />;
   }
 
   if (isCentre) {

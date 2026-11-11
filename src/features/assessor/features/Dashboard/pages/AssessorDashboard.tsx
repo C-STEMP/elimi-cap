@@ -6,7 +6,10 @@ import { useAppSelector } from "@/src/store/hooks";
 import { useGetAssessorCentres } from "../../Centres/hooks";
 import { useGetAssessorApplications } from "../../Applications/hooks";
 import { useGetAssessorSummary } from "@/src/features/shared/assessor/hooks";
-import { useGetApplicationById } from "@/src/features/shared/applications/hooks";
+import {
+  useGetApplicationById,
+  APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
+} from "@/src/features/shared/applications/hooks";
 import type { Application } from "../../Applications/hooks";
 
 import {
@@ -107,6 +110,7 @@ import { useToast } from "@/src/components/ui/toast";
 import { getRejectionReason } from "@/src/utils/rejection";
 import { useUrlModal } from "@/src/lib/hooks/usePersistentModal";
 import { DASHBOARD_APPLY_TO_CENTRE_MODAL } from "@/src/lib/modal-keys";
+import { closeUrlSubView } from "@/src/lib/navigation/url-sub-view";
 
 export const AssessorDashboard: React.FC = () => {
   const { toast } = useToast();
@@ -114,6 +118,7 @@ export const AssessorDashboard: React.FC = () => {
   const userName = user?.fullName || user?.email?.split("@")[0] || "Assessor";
 
   const router = useRouter();
+  const pathname = usePathname();
   const params = useParams();
 
   const TAB_TO_SLUG: Record<AssessorNavTab, string> = {
@@ -162,6 +167,7 @@ export const AssessorDashboard: React.FC = () => {
     undefined,
     {
       enabled: isAppsActive || isOverviewActive,
+      refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
     },
   );
   const { data: remoteCentres = [] } = useGetCentres(undefined, {
@@ -259,6 +265,10 @@ export const AssessorDashboard: React.FC = () => {
 
   const { data: directApplication } = useGetApplicationById(
     searchAppId || "",
+    {
+      refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
+      enabled: Boolean(searchAppId),
+    },
   );
 
   const [selectedCentre, setSelectedCentre] =
@@ -290,65 +300,10 @@ export const AssessorDashboard: React.FC = () => {
 
   useEffect(() => {
     if (!searchAppId) return;
-    if (selectedApplication?.id === searchAppId) {
-      if (
-        searchView === "evidence_vault" &&
-        applicationSubView !== "evidence_vault"
-      ) {
-        setApplicationSubView("evidence_vault");
-      }
-      return;
-    }
-
-    const matched = applicationsData.find((a) => a.id === searchAppId);
-    const sourceApp = matched || directApplication;
-
-    if (sourceApp) {
-      const candidateName =
-        sourceApp.candidate?.name ||
-        (sourceApp.candidate?.firstName
-          ? `${sourceApp.candidate.firstName} ${
-              sourceApp.candidate.lastName || ""
-            }`.trim()
-          : sourceApp.candidateId || "Candidate");
-
-      setSelectedApplication({
-        id: sourceApp.id,
-        candidateName,
-        trade:
-          sourceApp.trade?.name ||
-          sourceApp.tradeId ||
-          (sourceApp.type === "NSQ" ? "Standard Assessment" : "RPL"),
-        assessmentType: sourceApp.type,
-        status:
-          sourceApp.status === "certified"
-            ? "Completed"
-            : sourceApp.status === "in_progress"
-            ? "Ongoing"
-            : "Pending",
-        submittedAt: sourceApp.createdAt || sourceApp.submittedAt || "-",
-        candidatePhotoUrl:
-          (sourceApp.candidate as any)?.photo?.url ||
-          (sourceApp.candidate as any)?.photoAssetId ||
-          (sourceApp.candidate as any)?.avatar ||
-          null,
-        role: (sourceApp as any).role || "Assessor",
-      });
-      setActiveTab("Applications");
-      if (searchView === "evidence_vault") {
-        setApplicationSubView("evidence_vault");
-      } else {
-        setApplicationSubView("stages");
-      }
-    }
-  }, [
-    searchAppId,
-    searchView,
-    applicationsData,
-    directApplication,
-    selectedApplication?.id,
-    applicationSubView,
-  ]);
+    router.replace(
+      `/applications/${searchAppId}?from=assessor${searchView ? `&view=${searchView}` : ""}`,
+    );
+  }, [searchAppId, searchView, router]);
 
   const handleTabChange = (tab: AssessorNavTab) => {
     setActiveTab(tab);
@@ -372,6 +327,9 @@ export const AssessorDashboard: React.FC = () => {
       if (nsqNavState !== "overview") {
         setNsqNavState("overview");
         setNsqSubViewTitle(null);
+        if (searchParams.get("unit")) {
+          closeUrlSubView(router, pathname, searchParams);
+        }
       } else {
         setSelectedApplication(null);
         setNsqSubViewTitle(null);
@@ -391,6 +349,9 @@ export const AssessorDashboard: React.FC = () => {
 
     if (applicationSubView !== "stages") {
       setApplicationSubView("stages");
+      if (searchParams.get("view")) {
+        closeUrlSubView(router, pathname, searchParams, "view");
+      }
     } else {
       setSelectedApplication(null);
       setCanMarkAsComplete(false);
@@ -468,33 +429,7 @@ export const AssessorDashboard: React.FC = () => {
           <AssessorOverviewView
             onViewAllApplications={() => handleTabChange("Applications")}
             onSelectApplication={(app: Application) => {
-              setActiveTab("Applications");
-              setSelectedApplication({
-                id: app.id,
-                candidateName:
-                  app.candidate?.name ||
-                  (app.candidate?.firstName
-                    ? `${app.candidate.firstName} ${app.candidate.lastName || ""}`.trim()
-                    : app.candidateId),
-                trade:
-                  app.trade?.name ||
-                  app.tradeId ||
-                  (app.type === "NSQ" ? "Standard Assessment" : "RPL"),
-                assessmentType: app.type,
-                status:
-                  app.status === "certified"
-                    ? "Completed"
-                    : app.status === "in_progress"
-                      ? "Ongoing"
-                      : "Pending",
-                submittedAt: app.createdAt || app.submittedAt || "-",
-              });
-              setApplicationSubView("stages");
-              setNsqNavState("overview");
-              setNsqSubViewTitle(null);
-              setCanMarkAsComplete(false);
-              setTriggerMarkComplete(false);
-              router.push(`/assessor/dashboard/applications?appId=${app.id}`);
+              router.push(`/applications/${app.id}?from=assessor`);
             }}
             onApplyToCentre={() => setIsApplyModalOpen(true)}
           />
@@ -504,14 +439,7 @@ export const AssessorDashboard: React.FC = () => {
               centre={selectedCentre}
               onBack={() => setSelectedCentre(null)}
               onSelectApplication={(appRecord) => {
-                setActiveTab("Applications");
-                setSelectedApplication(appRecord);
-                setApplicationSubView("stages");
-                setNsqNavState("overview");
-                setNsqSubViewTitle(null);
-                setCanMarkAsComplete(false);
-                setTriggerMarkComplete(false);
-                router.push(`/assessor/dashboard/applications?appId=${appRecord.id}`);
+                router.push(`/applications/${appRecord.id}?from=assessor`);
               }}
             />
           ) : (
@@ -562,13 +490,7 @@ export const AssessorDashboard: React.FC = () => {
             <AssessorApplicationsView
               cardFilter={applicationsFilterTab}
               onSelectApplication={(app) => {
-                setSelectedApplication(app);
-                setApplicationSubView("stages");
-                setNsqNavState("overview");
-                setNsqSubViewTitle(null);
-                setCanMarkAsComplete(false);
-                setTriggerMarkComplete(false);
-                router.push(`/assessor/dashboard/applications?appId=${app.id}`);
+                router.push(`/applications/${app.id}?from=assessor`);
               }}
             />
           )

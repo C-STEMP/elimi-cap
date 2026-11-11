@@ -27,6 +27,7 @@ import { canCandidateWithdrawApplication } from "../../utils/applicationDetailsH
 import { getNsqScopedUnits } from "@/src/features/shared/applications/utils/nsqUnits";
 import type { ApplicationStage, InductionForm } from "@/src/features/shared/applications/api/types";
 import {
+  useGetApplicationById,
   useGetApplicationStages,
   useGetInductionForm,
   useScheduleDirectObservation,
@@ -34,6 +35,7 @@ import {
   useGetPaymentQuote,
   useGetApplicationReceipt,
   useWithdrawApplication,
+  useGetDirectObservations,
 } from "@/src/features/shared/applications/hooks";
 import {
   APPLICATION_QUERY_KEYS,
@@ -75,13 +77,20 @@ interface NsqApplicationDetailViewProps {
 }
 
 export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> = ({
-  application,
+  application: propApplication,
 }) => {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+
+  const appId = propApplication?.id || "nsq";
+  const { data: liveApp } = useGetApplicationById(appId, {
+    enabled: Boolean(appId && appId !== "nsq"),
+    refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
+  });
+  const application = liveApp || propApplication;
 
   const savedOnboarding = useAppSelector((state) => state.onboarding.nsqApplication);
 
@@ -113,8 +122,6 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
   const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
   const [isWithdrawnLocally, setIsWithdrawnLocally] = useState(false);
   const withdrawApplication = useWithdrawApplication();
-
-  const appId = application?.id || "nsq";
 
   // Stages for NSQ: prefer live stages from GET /applications/{id}/stages, fallback to application.stages
   const { data: remoteStages = [] } = useGetApplicationStages(appId, {
@@ -428,10 +435,23 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
     return id;
   };
 
+  const { data: candidateDirectObsList } = useGetDirectObservations(application?.id, {
+    enabled: Boolean(application?.id),
+    refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
+  });
+  const candidateDirectObsSessions = Array.isArray(candidateDirectObsList)
+    ? candidateDirectObsList
+    : (candidateDirectObsList as any)?.sessions ||
+      (candidateDirectObsList as any)?.items ||
+      (candidateDirectObsList as any)?.data ||
+      [];
+
   const rawSessions =
-    (application as any)?.directObservationSessions ||
-    (application as any)?.nsq?.directObservationSessions ||
-    ((application as any)?.directObservation ? [(application as any).directObservation] : []);
+    candidateDirectObsSessions.length > 0
+      ? candidateDirectObsSessions
+      : (application as any)?.directObservationSessions ||
+        (application as any)?.nsq?.directObservationSessions ||
+        ((application as any)?.directObservation ? [(application as any).directObservation] : []);
   const sortedSessions = rawSessions.slice().sort((a: any, b: any) => {
     const timeA = new Date(a.createdAt || a.scheduledAt || 0).getTime();
     const timeB = new Date(b.createdAt || b.scheduledAt || 0).getTime();
@@ -467,7 +487,11 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
           liveSitting.scheduledAt?.split("T")[1]?.slice(0, 5) || "",
         address: liveSitting.address,
         status: mapSittingStatus(liveSitting.status),
-        isSigned: Boolean(liveSitting.signatures?.learner),
+        isSigned: Boolean(
+          liveSitting.signatures?.learner?.signedAt ||
+            liveSitting.signatures?.learner ||
+            scheduledObservation?.isSigned,
+        ),
       }
     : scheduledObservation;
 

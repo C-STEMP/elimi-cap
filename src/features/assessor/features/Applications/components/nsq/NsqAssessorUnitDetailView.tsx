@@ -3,6 +3,7 @@
 import {
   useGetUnitCriteria,
   useReviewUnitEvidence,
+  APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
 } from "@/src/features/shared/applications/hooks";
 import React, { useEffect, useState } from "react";
 import {
@@ -22,7 +23,7 @@ import {
   type ObservationRequestDetails,
 } from "./NsqAssessorObservationModal";
 import { NsqAssessorSidebar } from "./NsqAssessorSidebar";
-import { useUrlModal } from "@/src/lib/hooks/usePersistentModal";
+import { useUrlModal, clearModalDraft } from "@/src/lib/hooks/usePersistentModal";
 import { REJECT_EVIDENCE_MODAL, NSQ_UNIT_ASSESSOR_OBSERVATION_MODAL, NSQ_UNIT_REJECT_OBSERVATION_MODAL } from "@/src/lib/modal-keys";
 
 interface NsqAssessorUnitDetailViewProps {
@@ -35,6 +36,13 @@ interface NsqAssessorUnitDetailViewProps {
   candidatePhotoUrl?: string | null;
   applicationId: string;
   observation: ObservationRequestDetails | null;
+  observationActionLabel?: string;
+  availableUnits?: Array<{
+    id: string;
+    label?: string;
+    title?: string;
+    unitNo?: string;
+  }>;
   onAcceptObservation: (requirements: string[]) => Promise<void>;
   onRejectObservation: (reason: string) => Promise<void>;
   onBack: () => void;
@@ -52,6 +60,8 @@ export const NsqAssessorUnitDetailView: React.FC<
   candidatePhotoUrl,
   applicationId,
   observation,
+  observationActionLabel,
+  availableUnits,
   onAcceptObservation,
   onRejectObservation,
   onBack,
@@ -64,6 +74,7 @@ export const NsqAssessorUnitDetailView: React.FC<
     isError: isCriteriaError,
   } = useGetUnitCriteria(applicationId, resolvedUnitId, {
     enabled: Boolean(applicationId && resolvedUnitId),
+    refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
   });
   const { mutateAsync: reviewEvidenceMutation } = useReviewUnitEvidence(
     applicationId,
@@ -340,6 +351,7 @@ export const NsqAssessorUnitDetailView: React.FC<
                 photoUrl: candidatePhotoUrl,
               }}
               observation={observation}
+              observationActionLabel={observationActionLabel}
               onOpenObservationModal={() => setIsObsModalOpen(true)}
               onFillObservationForm={onFillObservationForm}
             />
@@ -369,6 +381,7 @@ export const NsqAssessorUnitDetailView: React.FC<
           modalKey={NSQ_UNIT_ASSESSOR_OBSERVATION_MODAL}
           onClose={() => setIsObsModalOpen(false)}
           details={observation}
+          availableUnits={availableUnits}
           onAccept={(payload) => {
             setPendingAcceptRequirements(payload.requirements);
             setIsObsModalOpen(false);
@@ -388,6 +401,7 @@ export const NsqAssessorUnitDetailView: React.FC<
           setIsConfirmAcceptObsOpen(false);
           try {
             await onAcceptObservation(pendingAcceptRequirements);
+            clearModalDraft(NSQ_UNIT_ASSESSOR_OBSERVATION_MODAL);
           } catch {
             return;
           }

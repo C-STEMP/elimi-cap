@@ -7,9 +7,16 @@ import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
 import { UploadSignatureModal } from "../UploadSignatureModal";
 import { useCandidateProfileSignature } from "@/src/features/shared/onboarding/hooks";
-import { signDirectObservationApi } from "@/src/features/shared/applications/api";
-import { useGetDirectObservationSession } from "@/src/features/shared/applications/hooks";
-import { useModalDraft, useUrlModal } from "@/src/lib/hooks/usePersistentModal";
+import {
+  useGetDirectObservationSession,
+  useSignDirectObservation,
+  APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
+} from "@/src/features/shared/applications/hooks";
+import {
+  useModalDraft,
+  useUrlModal,
+  clearModalDraft,
+} from "@/src/lib/hooks/usePersistentModal";
 import { NSQ_OBSERVATION_REVIEW_MODAL, NSQ_OBSERVATION_SIGNATURE_MODAL } from "@/src/lib/modal-keys";
 
 export type ObservationStatus =
@@ -57,15 +64,51 @@ export const NsqObservationRequestReviewModal: React.FC<
   const { data: sessionDetail } = useGetDirectObservationSession(
     applicationId || "",
     details?.id || "",
-    { enabled: Boolean(applicationId && details?.id && isOpen) },
+    {
+      enabled: Boolean(applicationId && details?.id && isOpen),
+      refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
+    },
+  );
+  const { mutateAsync: signObservationMutation } = useSignDirectObservation(
+    applicationId || "",
+    details?.id || "",
   );
   const bothFormsSubmitted =
-    sessionDetail?.physicalStatus === "submitted" &&
-    sessionDetail?.oralStatus === "submitted";
-  const [isSigned, setIsSigned] = useModalDraft(NSQ_OBSERVATION_REVIEW_MODAL, "isSigned", details?.isSigned ?? false);
-  const [uploadedAssetId, setUploadedAssetId] = useModalDraft<string | null>(NSQ_OBSERVATION_REVIEW_MODAL, "uploadedAssetId", null);
+    (sessionDetail?.physicalStatus === "submitted" ||
+      sessionDetail?.physicalStatus === "completed" ||
+      Boolean(sessionDetail?.physical?.submittedAt)) &&
+    (sessionDetail?.oralStatus === "submitted" ||
+      sessionDetail?.oralStatus === "completed" ||
+      Boolean(sessionDetail?.oral?.submittedAt));
+
+  const [submittedLocally, setSubmittedLocally] = useState(false);
+  const isAlreadySigned = Boolean(
+    submittedLocally ||
+      sessionDetail?.signatures?.learner?.signedAt ||
+      sessionDetail?.signatures?.learner ||
+      (sessionDetail?.signatures as any)?.candidate ||
+      (sessionDetail as any)?.learnerSignedAt ||
+      (sessionDetail as any)?.candidateSignedAt ||
+      (sessionDetail as any)?.isSigned ||
+      details?.isSigned ||
+      sessionDetail?.status === "completed" ||
+      details?.status === "completed",
+  );
+
+  const [isSigned, setIsSigned] = useModalDraft(
+    NSQ_OBSERVATION_REVIEW_MODAL,
+    "isSigned",
+    details?.isSigned ?? false,
+  );
+  const [uploadedAssetId, setUploadedAssetId] = useModalDraft<string | null>(
+    NSQ_OBSERVATION_REVIEW_MODAL,
+    "uploadedAssetId",
+    null,
+  );
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-  const [isSignatureModalOpen, setIsSignatureModalOpen] = useUrlModal(NSQ_OBSERVATION_SIGNATURE_MODAL);
+  const [isSignatureModalOpen, setIsSignatureModalOpen] = useUrlModal(
+    NSQ_OBSERVATION_SIGNATURE_MODAL,
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!details) return null;
@@ -125,14 +168,20 @@ export const NsqObservationRequestReviewModal: React.FC<
     setIsSubmitting(true);
     try {
       if (applicationId && details.id) {
-        const useDefaultSig = Boolean(profileSignature?.assetId && !uploadedAssetId);
-        await signDirectObservationApi(applicationId, details.id, {
+        const useDefaultSig = Boolean(
+          profileSignature?.assetId && !uploadedAssetId,
+        );
+        await signObservationMutation({
           role: "learner",
           signatureMode: useDefaultSig ? "default" : "upload",
-          ...(useDefaultSig ? {} : { signatureAssetId: uploadedAssetId || undefined }),
+          ...(useDefaultSig
+            ? {}
+            : { signatureAssetId: uploadedAssetId || undefined }),
           signedAt: new Date().toISOString(),
         });
       }
+      setSubmittedLocally(true);
+      clearModalDraft(NSQ_OBSERVATION_REVIEW_MODAL);
       setIsConfirmModalOpen(false);
       onConfirmSchedule({
         ...details,
@@ -141,10 +190,37 @@ export const NsqObservationRequestReviewModal: React.FC<
       });
       onClose();
     } catch (err: any) {
+      const errorMsg = String(
+        err?.message ||
+          err?.data?.message ||
+          err?.response?.data?.message ||
+          "",
+      );
+      if (
+        /already.*been.*signed/i.test(errorMsg) ||
+        /already.*signed/i.test(errorMsg)
+      ) {
+        setSubmittedLocally(true);
+        clearModalDraft(NSQ_OBSERVATION_REVIEW_MODAL);
+        setIsConfirmModalOpen(false);
+        onConfirmSchedule({
+          ...details,
+          isSigned: true,
+          status: "scheduled",
+        });
+        toast({
+          type: "success",
+          title: "Observation Signed",
+          description: "This observation report has been signed.",
+        });
+        onClose();
+        return;
+      }
       toast({
         type: "error",
         title: "Confirmation Failed",
-        description: err?.message || "Could not confirm this schedule. Please try again.",
+        description:
+          errorMsg || "Could not confirm this schedule. Please try again.",
       });
     } finally {
       setIsSubmitting(false);
@@ -363,8 +439,8 @@ export const NsqObservationRequestReviewModal: React.FC<
                 Signature<span className="text-primary-solid ml-0.5">*</span>
               </label>
 
-              {isSigned ? (
-                <div className="w-full h-12 rounded-xl border-2 border-[#1E7F4C] bg-[#1E7F4C]/10 text-[#1E7F4C] flex items-center justify-center gap-2 font-bold text-sm shadow-2xs">
+              {isAlreadySigned || isSigned ? (
+                <div className="w-full h-12 rounded-xl border-2 border-[#1E7F4C] bg-[#1E7F4C]/10 text-[#1E7F4C] flex items-center justify-center gap-2 font-bold text-sm shadow-2xs select-none">
                   <FiCheck className="w-4 h-4 stroke-3" />
                   <span>Signed</span>
                 </div>
@@ -382,7 +458,23 @@ export const NsqObservationRequestReviewModal: React.FC<
           )}
 
           {/* Action Button */}
-          {!isClosed && bothFormsSubmitted && (
+          {isAlreadySigned ? (
+            <div className="flex flex-col gap-2.5 mt-2">
+              <div className="w-full py-2.5 px-4 bg-[#1E7F4C]/10 border border-[#1E7F4C]/20 text-[#1E7F4C] rounded-xl text-center text-xs font-bold flex items-center justify-center gap-2 select-none">
+                <FiCheck className="w-4 h-4" />
+                <span>Observation Report Signed &amp; Finalized</span>
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                size="lg"
+                onClick={onClose}
+                className="w-full h-11 border border-gray-200 text-neutral-primary hover:bg-gray-50 font-bold text-xs sm:text-sm rounded-xl cursor-pointer"
+              >
+                Close
+              </Button>
+            </div>
+          ) : !isClosed && bothFormsSubmitted ? (
             <Button
               type="button"
               variant="amber"
@@ -397,7 +489,7 @@ export const NsqObservationRequestReviewModal: React.FC<
             >
               Sign &amp; Confirm Report
             </Button>
-          )}
+          ) : null}
         </div>
       </Modal>
 

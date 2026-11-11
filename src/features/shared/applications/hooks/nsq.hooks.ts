@@ -41,12 +41,26 @@ import { APPLICATION_QUERY_KEYS } from "./queryKeys";
 
 export function useGetInductionForm(
   applicationId: string,
-  options?: { enabled?: boolean },
+  options?: {
+    enabled?: boolean;
+    refetchInterval?: number | false;
+    refetchOnWindowFocus?: boolean | "always";
+    staleTime?: number;
+  },
 ) {
   return useQuery({
     queryKey: APPLICATION_QUERY_KEYS.inductionForm(applicationId),
     queryFn: () => getInductionFormApi(applicationId),
     enabled: Boolean(applicationId) && (options?.enabled ?? true),
+    ...(options?.refetchInterval !== undefined && {
+      refetchInterval: options.refetchInterval,
+    }),
+    ...(options?.refetchOnWindowFocus !== undefined && {
+      refetchOnWindowFocus: options.refetchOnWindowFocus,
+    }),
+    ...(options?.staleTime !== undefined && {
+      staleTime: options.staleTime,
+    }),
   });
 }
 
@@ -112,12 +126,15 @@ export function useSubmitInductionForm(applicationId: string) {
 export function useGetUnitCriteria(
   applicationId: string,
   unitId: string,
-  options?: { enabled?: boolean },
+  options?: { enabled?: boolean; refetchInterval?: number | false },
 ) {
   return useQuery({
     queryKey: APPLICATION_QUERY_KEYS.unitCriteria(applicationId, unitId),
     queryFn: () => getUnitCriteriaApi(applicationId, unitId),
     enabled: Boolean(applicationId && unitId) && (options?.enabled ?? true),
+    ...(options?.refetchInterval !== undefined
+      ? { refetchInterval: options.refetchInterval }
+      : {}),
   });
 }
 
@@ -158,6 +175,9 @@ export function useSubmitUnitEvidence(applicationId: string, unitId: string) {
       });
       queryClient.invalidateQueries({
         queryKey: APPLICATION_QUERY_KEYS.stages(applicationId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: APPLICATION_QUERY_KEYS.all,
       });
       toast({
         type: "success",
@@ -207,6 +227,9 @@ export function useReviewUnitEvidence(applicationId: string, unitId: string) {
       queryClient.invalidateQueries({
         queryKey: APPLICATION_QUERY_KEYS.stages(applicationId),
       });
+      queryClient.invalidateQueries({
+        queryKey: APPLICATION_QUERY_KEYS.all,
+      });
       toast({
         type: "success",
         title:
@@ -255,6 +278,9 @@ export function useSubmitUnitSignoff(applicationId: string, unitId: string) {
       queryClient.invalidateQueries({
         queryKey: APPLICATION_QUERY_KEYS.stages(applicationId),
       });
+      queryClient.invalidateQueries({
+        queryKey: APPLICATION_QUERY_KEYS.all,
+      });
       toast({
         type: "success",
         title: "Unit Signed Off",
@@ -294,6 +320,9 @@ export function useAssignUnitAssessor(applicationId: string, unitId: string) {
       });
       queryClient.invalidateQueries({
         queryKey: APPLICATION_QUERY_KEYS.stages(applicationId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: APPLICATION_QUERY_KEYS.all,
       });
       toast({
         type: "success",
@@ -335,6 +364,9 @@ export function useAssignNsqAssessor(applicationId: string) {
       queryClient.invalidateQueries({
         queryKey: APPLICATION_QUERY_KEYS.stages(applicationId),
       });
+      queryClient.invalidateQueries({
+        queryKey: APPLICATION_QUERY_KEYS.all,
+      });
       toast({
         type: "success",
         title: "Assessor Assigned",
@@ -366,19 +398,38 @@ export function useAssignNsqAssessor(applicationId: string) {
 
 export function useGetDirectObservations(
   applicationId: string,
-  options?: { enabled?: boolean },
+  options?: {
+    enabled?: boolean;
+    refetchInterval?: number | false;
+    refetchOnWindowFocus?: boolean | "always";
+    staleTime?: number;
+  },
 ) {
   return useQuery({
     queryKey: APPLICATION_QUERY_KEYS.directObservations(applicationId),
     queryFn: () => getDirectObservationListApi(applicationId),
     enabled: Boolean(applicationId) && (options?.enabled ?? true),
+    ...(options?.refetchInterval !== undefined && {
+      refetchInterval: options.refetchInterval,
+    }),
+    ...(options?.refetchOnWindowFocus !== undefined && {
+      refetchOnWindowFocus: options.refetchOnWindowFocus,
+    }),
+    ...(options?.staleTime !== undefined && {
+      staleTime: options.staleTime,
+    }),
   });
 }
 
 export function useGetDirectObservationSession(
   applicationId: string,
   sessionId: string,
-  options?: { enabled?: boolean },
+  options?: {
+    enabled?: boolean;
+    refetchInterval?: number | false;
+    refetchOnWindowFocus?: boolean | "always";
+    staleTime?: number;
+  },
 ) {
   return useQuery({
     queryKey: APPLICATION_QUERY_KEYS.directObservationSession(
@@ -388,6 +439,15 @@ export function useGetDirectObservationSession(
     queryFn: () => getDirectObservationSessionApi(applicationId, sessionId),
     enabled:
       Boolean(applicationId && sessionId) && (options?.enabled ?? true),
+    ...(options?.refetchInterval !== undefined && {
+      refetchInterval: options.refetchInterval,
+    }),
+    ...(options?.refetchOnWindowFocus !== undefined && {
+      refetchOnWindowFocus: options.refetchOnWindowFocus,
+    }),
+    ...(options?.staleTime !== undefined && {
+      staleTime: options.staleTime,
+    }),
   });
 }
 
@@ -408,6 +468,9 @@ export function useScheduleDirectObservation(applicationId: string) {
       });
       queryClient.invalidateQueries({
         queryKey: APPLICATION_QUERY_KEYS.stages(applicationId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: APPLICATION_QUERY_KEYS.all,
       });
       toast({
         type: "success",
@@ -461,6 +524,9 @@ export function useReviewDirectObservation(
       queryClient.invalidateQueries({
         queryKey: APPLICATION_QUERY_KEYS.stages(applicationId),
       });
+      queryClient.invalidateQueries({
+        queryKey: APPLICATION_QUERY_KEYS.all,
+      });
       toast({
         type: "success",
         title:
@@ -502,12 +568,61 @@ export function useSaveDirectObservationForm(
     mutationFn: (payload: SaveObservationFormPayload) =>
       saveDirectObservationFormApi(applicationId, sessionId, payload),
 
-    onSuccess: (_, variables) => {
+    onSuccess: (updatedSession, variables) => {
+      queryClient.setQueryData(
+        APPLICATION_QUERY_KEYS.directObservationSession(
+          applicationId,
+          sessionId,
+        ),
+        (prev: any) => ({
+          ...prev,
+          ...(updatedSession || {}),
+          ...(variables.formKind === "physical"
+            ? {
+                physicalStatus: variables.submit
+                  ? "submitted"
+                  : prev?.physicalStatus || "draft",
+                physical: {
+                  ...prev?.physical,
+                  ...(updatedSession?.physical || {}),
+                  submittedAt: variables.submit
+                    ? new Date().toISOString()
+                    : prev?.physical?.submittedAt,
+                  rows: variables.rows,
+                },
+              }
+            : {
+                oralStatus: variables.submit
+                  ? "submitted"
+                  : prev?.oralStatus || "draft",
+                oral: {
+                  ...prev?.oral,
+                  ...(updatedSession?.oral || {}),
+                  submittedAt: variables.submit
+                    ? new Date().toISOString()
+                    : prev?.oral?.submittedAt,
+                  rows: variables.rows,
+                },
+              }),
+        }),
+      );
       queryClient.invalidateQueries({
         queryKey: APPLICATION_QUERY_KEYS.directObservationSession(
           applicationId,
           sessionId,
         ),
+      });
+      queryClient.invalidateQueries({
+        queryKey: APPLICATION_QUERY_KEYS.directObservations(applicationId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: APPLICATION_QUERY_KEYS.detail(applicationId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: APPLICATION_QUERY_KEYS.stages(applicationId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: APPLICATION_QUERY_KEYS.all,
       });
       toast({
         type: "success",
@@ -547,7 +662,16 @@ export function useSignDirectObservation(
     mutationFn: (payload: SignObservationPayload) =>
       signDirectObservationApi(applicationId, sessionId, payload),
 
-    onSuccess: () => {
+    onSuccess: (updatedSession) => {
+      if (updatedSession) {
+        queryClient.setQueryData(
+          APPLICATION_QUERY_KEYS.directObservationSession(
+            applicationId,
+            sessionId,
+          ),
+          updatedSession,
+        );
+      }
       queryClient.invalidateQueries({
         queryKey: APPLICATION_QUERY_KEYS.directObservationSession(
           applicationId,
@@ -563,6 +687,9 @@ export function useSignDirectObservation(
       queryClient.invalidateQueries({
         queryKey: APPLICATION_QUERY_KEYS.stages(applicationId),
       });
+      queryClient.invalidateQueries({
+        queryKey: APPLICATION_QUERY_KEYS.all,
+      });
       toast({
         type: "success",
         title: "Observation Signed",
@@ -571,6 +698,21 @@ export function useSignDirectObservation(
     },
 
     onError: (error: Error) => {
+      if (
+        /already.*been.*signed/i.test(error.message) ||
+        /already.*signed/i.test(error.message)
+      ) {
+        queryClient.invalidateQueries({
+          queryKey: APPLICATION_QUERY_KEYS.directObservationSession(
+            applicationId,
+            sessionId,
+          ),
+        });
+        queryClient.invalidateQueries({
+          queryKey: APPLICATION_QUERY_KEYS.directObservations(applicationId),
+        });
+        return;
+      }
       if (error instanceof ApiError) {
         toast({
           type: "error",

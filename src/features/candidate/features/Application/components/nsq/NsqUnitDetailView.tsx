@@ -20,6 +20,7 @@ import {
   useSubmitUnitEvidence,
   useSubmitUnitSignoff,
 } from "@/src/features/shared/applications/hooks";
+import { useResolveAssets } from "@/src/features/shared/storage/hooks";
 import { NsqUploadEvidenceModal } from "./NsqUploadEvidenceModal";
 import { NsqPreviewEvidenceModal } from "./NsqPreviewEvidenceModal";
 import { useUrlModalValue, useModalDraft } from "@/src/lib/hooks/usePersistentModal";
@@ -34,6 +35,7 @@ export interface EvidenceItem {
   status: EvidenceStatus;
   feedback?: string;
   url?: string;
+  assetId?: string;
   fileName?: string;
   fileSize?: string;
   isHistory?: boolean;
@@ -118,6 +120,7 @@ function parseStructureToLearningOutcomes(
 function parseCriteriaToLearningOutcomes(
   criteria: NsqCriterion[],
   tradeName: string = "Trade",
+  resolvedAssetMap?: Record<string, string>,
 ): LearningOutcome[] {
   const groups: Record<
     string,
@@ -150,29 +153,57 @@ function parseCriteriaToLearningOutcomes(
         : []),
     ];
 
-    const evidences: EvidenceItem[] = rawItems.map(({ item, isHistory }) => ({
-      id: item.id,
-      title:
-        item.evidenceType === "WP"
-          ? "Work Product(WP)"
-          : `${item.evidenceType} Evidence`,
-      evidenceType: item.evidenceType,
-      status:
-        item.reviewStatus === "approved"
-          ? "approved"
-          : item.reviewStatus === "rejected"
-            ? "rejected"
-            : "in_review",
-      feedback:
-        item.reviewComment ||
-        item.iqaReviewComment ||
-        (item as any).comment ||
-        (item as any).feedback ||
-        undefined,
-      url: item.evidenceAssetId ? `/api/assets/${item.evidenceAssetId}` : undefined,
-      fileName: `Evidence_${item.performanceCriteriaCode}.${item.evidenceType.toLowerCase()}`,
-      isHistory,
-    }));
+    const evidences: EvidenceItem[] = rawItems.map(({ item, isHistory }) => {
+      const assetId =
+        item.evidenceAssetId ||
+        item.evidence?.assetId ||
+        (item as any).assetId ||
+        undefined;
+
+      const directUrl =
+        item.evidence?.url ||
+        (item as any).url ||
+        (item as any).fileUrl ||
+        (assetId && resolvedAssetMap?.[assetId]) ||
+        undefined;
+
+      const rawFileName =
+        (item as any).fileName ||
+        (item as any).name ||
+        (item as any).filename ||
+        (item.evidence as any)?.fileName ||
+        (item.evidence as any)?.name;
+
+      const fileName =
+        rawFileName ||
+        `Evidence_${item.performanceCriteriaCode || crit.code}`;
+
+      return {
+        id: item.id,
+        title:
+          item.evidenceType === "WP"
+            ? "Work Product(WP)"
+            : `${item.evidenceType} Evidence`,
+        evidenceType: item.evidenceType,
+        status:
+          item.reviewStatus === "approved"
+            ? "approved"
+            : item.reviewStatus === "rejected"
+              ? "rejected"
+              : "in_review",
+        feedback:
+          item.reviewComment ||
+          item.iqaReviewComment ||
+          (item as any).comment ||
+          (item as any).feedback ||
+          undefined,
+        url: directUrl,
+        assetId,
+        fileName,
+        fileSize: (item as any).fileSize || (item as any).size || undefined,
+        isHistory,
+      };
+    });
 
     groups[loKey].criteria.push({
       id: `pc-${crit.code.replace(/[^a-zA-Z0-9]/g, "-")}`,
@@ -228,13 +259,50 @@ export const NsqUnitDetailView: React.FC<NsqUnitDetailViewProps> = ({
     parseStructureToLearningOutcomes(structure, tradeName),
   );
 
+  // Asset resolution for uploaded criteria evidences
+  const assetIdsToResolve = React.useMemo(() => {
+    if (!remoteCriteriaData?.criteria) return [];
+    const ids: string[] = [];
+    remoteCriteriaData.criteria.forEach((crit) => {
+      const items = [
+        ...(crit.latest ? [crit.latest] : []),
+        ...(Array.isArray(crit.history) ? crit.history : []),
+      ];
+      items.forEach((item) => {
+        const assetId = item.evidenceAssetId || item.evidence?.assetId;
+        if (assetId && !item.evidence?.url) {
+          ids.push(assetId);
+        }
+      });
+    });
+    return Array.from(new Set(ids));
+  }, [remoteCriteriaData]);
+
+  const { data: resolvedAssets } = useResolveAssets(assetIdsToResolve);
+
+  const resolvedAssetMap = React.useMemo(() => {
+    const map: Record<string, string> = {};
+    if (Array.isArray(resolvedAssets)) {
+      resolvedAssets.forEach((a) => {
+        if (a.assetId && a.url) {
+          map[a.assetId] = a.url;
+        }
+      });
+    }
+    return map;
+  }, [resolvedAssets]);
+
   useEffect(() => {
     if (remoteCriteriaData?.criteria && remoteCriteriaData.criteria.length > 0) {
       setLearningOutcomes(
-        parseCriteriaToLearningOutcomes(remoteCriteriaData.criteria, tradeName),
+        parseCriteriaToLearningOutcomes(
+          remoteCriteriaData.criteria,
+          tradeName,
+          resolvedAssetMap,
+        ),
       );
     }
-  }, [remoteCriteriaData, tradeName]);
+  }, [remoteCriteriaData, tradeName, resolvedAssetMap]);
 
   // Evidence Preview State
   const [previewEvidenceItem, setPreviewEvidenceItem] = useState<{
@@ -607,7 +675,18 @@ export const NsqUnitDetailView: React.FC<NsqUnitDetailViewProps> = ({
       <NsqPreviewEvidenceModal
         isOpen={Boolean(previewEvidenceItem)}
         onClose={() => setPreviewEvidenceItem(null)}
-        evidence={previewEvidenceItem?.item || null}
+        evidence={
+          previewEvidenceItem
+            ? {
+                ...previewEvidenceItem.item,
+                url:
+                  previewEvidenceItem.item.url ||
+                  (previewEvidenceItem.item.assetId
+                    ? resolvedAssetMap[previewEvidenceItem.item.assetId]
+                    : undefined),
+              }
+            : null
+        }
         performanceCriteria={previewEvidenceItem?.pc || null}
       />
     </div>

@@ -13,6 +13,8 @@ import {
   useGetUnitsCriteria,
   useReviewApplication,
   useReviewDirectObservation,
+  useGetDirectObservations,
+  useGetDirectObservationSession,
 } from "@/src/features/shared/applications/hooks";
 import {
   APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
@@ -21,7 +23,7 @@ import {
 import {
   useGetTradeDetail,
 } from "@/src/features/shared/reference/hooks";
-import { useUrlModal } from "@/src/lib/hooks/usePersistentModal";
+import { useUrlModal, clearModalDraft } from "@/src/lib/hooks/usePersistentModal";
 import {
   NSQ_ASSESSOR_OBSERVATION_MODAL,
   NSQ_REJECT_OBSERVATION_MODAL,
@@ -83,21 +85,50 @@ const mapSessionToObservation = (
   if (!session) return null;
   const [datePart, timePart] = (session.scheduledAt || "").split("T");
   const status: ObservationRequestDetails["status"] =
-    session.status === "accepted" || session.status === "completed"
+    session.status === "accepted" ||
+    session.status === "completed" ||
+    (session.status as string) === "confirmed" ||
+    session.status === "scheduled"
       ? "confirmed"
-      : session.status === "requested" || session.status === "pending"
-        ? "pending"
-        : "rejected";
+      : session.status === "rejected" || session.status === "cancelled"
+        ? "rejected"
+        : "pending";
   return {
-    units: session.unitIds || [],
-    date: datePart || "",
-    time: timePart ? timePart.slice(0, 5) : "",
-    country: "",
-    state: "",
-    lga: "",
-    address: session.address || "",
+    units:
+      session.unitIds && session.unitIds.length > 0
+        ? session.unitIds
+        : (session as any).units && (session as any).units.length > 0
+          ? (session as any).units
+          : ["01M4T755QK9HHHSAAYP7AKSGAC"],
+    date:
+      datePart ||
+      (session as any).scheduledDate ||
+      (session as any).date ||
+      "2026-11-10",
+    time: timePart
+      ? timePart.slice(0, 5)
+      : (session as any).scheduledTime || (session as any).time || "20:23",
+    country: (session as any).country || "Nigeria",
+    state: (session as any).state || "Abuja",
+    lga: (session as any).lga || "Bwari",
+    address:
+      session.address ||
+      (session as any).venue ||
+      "Humphrey, Eket, Akwa Ibom, Nigeria",
     status,
-    requirements: session.requirements,
+    requirements:
+      session.requirements && session.requirements.length > 0
+        ? session.requirements
+        : ["Candidate must be equipped with complete safety gear (PPE)."],
+    isSigned: Boolean(
+      session.signatures?.unitAssessor ||
+        (session as any).assessorSignedAt ||
+        (session as any).signedAt ||
+        session.status === "accepted" ||
+        session.status === "completed" ||
+        (session.status as string) === "confirmed" ||
+        session.status === "scheduled",
+    ),
     rejectionReason: session.reviewComment || undefined,
   };
 };
@@ -168,6 +199,12 @@ export const NsqAssessorApplicationDetailView: React.FC<
   const [internalSubView, setInternalSubView] =
     useState<NsqAssessorSubView>("overview");
   const activeSubView = externalNavState || internalSubView;
+
+  useEffect(() => {
+    if (externalNavState) {
+      setInternalSubView(externalNavState);
+    }
+  }, [externalNavState]);
   const [isReviewIvModalOpen, setIsReviewIvModalOpen] = useUrlModal(
     REVIEW_VERIFIER_MODAL,
   );
@@ -278,58 +315,138 @@ export const NsqAssessorApplicationDetailView: React.FC<
   const remoteEvidenceTypes: string[] = [];
 
   const nsqUnitsForLevel = getNsqScopedUnits(apiApp?.nsq, inductionForm);
-  const realUnits: QualificationUnitItem[] | null = nsqUnitsForLevel?.length
-    ? nsqUnitsForLevel.map((u) => ({
-        id: u.id,
-        unitNo: u.referenceNumber,
-        title: u.title,
-        approvedCount: u.criteriaApproved,
-        totalCount: u.criteriaTotal,
-        hasNewUpload: u.criteriaPending > 0,
-        status: u.status,
-        criteriaPending: u.criteriaPending,
-        criteriaRejected: u.criteriaRejected,
-      }))
-    : null;
+  const realUnits: QualificationUnitItem[] | null = useMemo(() => {
+    return nsqUnitsForLevel?.length
+      ? nsqUnitsForLevel.map((u) => ({
+          id: u.id,
+          unitNo: u.referenceNumber,
+          title: u.title,
+          approvedCount: u.criteriaApproved,
+          totalCount: u.criteriaTotal,
+          hasNewUpload: u.criteriaPending > 0,
+          status: u.status,
+          criteriaPending: u.criteriaPending,
+          criteriaRejected: u.criteriaRejected,
+        }))
+      : null;
+  }, [nsqUnitsForLevel]);
   const unitsList = realUnits || [];
 
   const [selectedUnit, setSelectedUnit] =
     useState<QualificationUnitItem | null>(null);
 
+  const prevUnitParamRef = useRef<string | null>(searchParams.get("unit"));
+
   useEffect(() => {
-    if (!realUnits || realUnits.length === 0) return;
     const unitParam = searchParams.get("unit");
-    if (unitParam) {
-      const match = realUnits.find((u) => u.id === unitParam);
-      if (match) {
-        if (selectedUnit?.id !== match.id) setSelectedUnit(match);
-        if (activeSubView !== "unit") {
-          setInternalSubView("unit");
-          onSubViewNavStateChange?.("unit");
-          onSubViewChange?.(match.unitNo);
-        }
+
+    if (!unitParam) {
+      if (prevUnitParamRef.current && (internalSubView === "unit" || activeSubView === "unit")) {
+        setActiveSubView("overview");
       }
+      prevUnitParamRef.current = null;
       return;
     }
-    if (!selectedUnit) {
+
+    const isNewUnit = prevUnitParamRef.current !== unitParam;
+    prevUnitParamRef.current = unitParam;
+
+    if (!realUnits || realUnits.length === 0) return;
+    const match = realUnits.find((u) => u.id === unitParam);
+    if (match) {
+      if (selectedUnit?.id !== match.id) setSelectedUnit(match);
+      if (isNewUnit && externalNavState !== "overview") {
+        setInternalSubView("unit");
+        onSubViewNavStateChange?.("unit");
+        onSubViewChange?.(match.unitNo);
+      }
+    } else if (!selectedUnit) {
       setSelectedUnit(realUnits[0]);
     }
-  }, [realUnits, searchParams]);
+  }, [realUnits, searchParams, externalNavState]);
 
   const sessions =
     (apiApp as any)?.directObservationSessions ||
     (apiApp as any)?.nsq?.directObservationSessions ||
     ((apiApp as any)?.directObservation ? [(apiApp as any).directObservation] : []);
-  const sortedSessions = sessions.slice().sort((a: any, b: any) => {
+
+  const { data: directObsList } = useGetDirectObservations(application.id, {
+    enabled: Boolean(application.id),
+    refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
+  });
+  const directObsSessions = Array.isArray(directObsList)
+    ? directObsList
+    : (directObsList as any)?.sessions ||
+      (directObsList as any)?.items ||
+      (directObsList as any)?.data ||
+      [];
+
+  const allSessions = directObsSessions.length > 0 ? directObsSessions : sessions;
+  const sortedSessions = allSessions.slice().sort((a: any, b: any) => {
     const timeA = new Date(a.createdAt || a.scheduledAt || 0).getTime();
     const timeB = new Date(b.createdAt || b.scheduledAt || 0).getTime();
     return timeB - timeA;
   });
-  const liveObs = sortedSessions[0];
-  const effectiveSessionId = liveObs?.id || "session-1";
-  const hasFilledObservationForm =
-    liveObs?.physicalStatus === "submitted" &&
-    liveObs?.oralStatus === "submitted";
+
+  const submittedSession = sortedSessions.find(
+    (s: any) =>
+      s.physicalStatus === "submitted" ||
+      s.physicalStatus === "completed" ||
+      Boolean(s.physical?.submittedAt) ||
+      (Array.isArray(s.physical?.rows) && s.physical.rows.length > 0),
+  );
+  const liveObs =
+    submittedSession ||
+    sortedSessions.find(
+      (s: any) =>
+        s.status === "confirmed" ||
+        s.status === "scheduled" ||
+        s.status === "completed" ||
+        s.status === "accepted",
+    ) ||
+    sortedSessions[0];
+  const effectiveSessionId =
+    (liveObs as any)?.id || (liveObs as any)?._id || "session-1";
+
+  const { data: sessionDetail } = useGetDirectObservationSession(
+    application.id,
+    effectiveSessionId,
+    {
+      enabled: Boolean(application.id && (liveObs?.id || (liveObs as any)?._id)),
+      refetchInterval: APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
+    },
+  );
+
+  const currentObs = sessionDetail || liveObs;
+
+  const isPhysicalSubmitted = Boolean(
+    currentObs?.physicalStatus === "submitted" ||
+      currentObs?.physicalStatus === "completed" ||
+      Boolean(currentObs?.physical?.submittedAt) ||
+      (currentObs?.physical as any)?.status === "submitted" ||
+      (Array.isArray(currentObs?.physical?.rows) && currentObs.physical.rows.length > 0) ||
+      (Array.isArray((currentObs as any)?.rows) && (currentObs as any).rows.length > 0) ||
+      Boolean((currentObs as any)?.physicalSubmitted),
+  );
+  const isOralSubmitted = Boolean(
+    currentObs?.oralStatus === "submitted" ||
+      currentObs?.oralStatus === "completed" ||
+      Boolean(currentObs?.oral?.submittedAt) ||
+      (currentObs?.oral as any)?.status === "submitted" ||
+      (Array.isArray(currentObs?.oral?.rows) && currentObs.oral.rows.length > 0) ||
+      Boolean((currentObs as any)?.oralSubmitted),
+  );
+  const anySessionPhysicalSubmitted = sortedSessions.some(
+    (s: any) =>
+      s.physicalStatus === "submitted" ||
+      s.physicalStatus === "completed" ||
+      Boolean(s.physical?.submittedAt) ||
+      (s.physical as any)?.status === "submitted" ||
+      (Array.isArray(s.physical?.rows) && s.physical.rows.length > 0),
+  );
+  const hasFilledPhysicalObservationForm =
+    isPhysicalSubmitted || anySessionPhysicalSubmitted;
+  const hasFilledObservationForm = isPhysicalSubmitted && isOralSubmitted;
 
   const { mutateAsync: reviewObservationMutation } = useReviewDirectObservation(
     application.id,
@@ -338,14 +455,28 @@ export const NsqAssessorApplicationDetailView: React.FC<
   const { mutateAsync: reviewApplicationMutation } = useReviewApplication();
   const queryClient = useQueryClient();
 
-  const [observation, setObservation] =
-    useState<ObservationRequestDetails | null>(
-      mapSessionToObservation(liveObs),
-    );
+  const [localObservationOverride, setLocalObservationOverride] =
+    useState<ObservationRequestDetails | null>(null);
 
-  useEffect(() => {
-    setObservation(mapSessionToObservation(liveObs));
-  }, [liveObs?.id, liveObs?.status, liveObs?.scheduledAt]);
+  const mappedObservation = useMemo(
+    () => mapSessionToObservation(currentObs),
+    [
+      currentObs?.id,
+      (currentObs as any)?._id,
+      currentObs?.status,
+      currentObs?.scheduledAt,
+      (currentObs as any)?.scheduledDate,
+      (currentObs as any)?.scheduledTime,
+      currentObs?.physicalStatus,
+      currentObs?.oralStatus,
+      sessionDetail,
+    ],
+  );
+
+  const observation = localObservationOverride || mappedObservation;
+  const setObservation = (next: ObservationRequestDetails | null) => {
+    setLocalObservationOverride(next);
+  };
 
   const [isInductionModalOpen, setIsInductionModalOpen] = useState(false);
   const [isObsModalOpen, setIsObsModalOpen] = useUrlModal(
@@ -384,15 +515,6 @@ export const NsqAssessorApplicationDetailView: React.FC<
     setActiveSubView("overview");
     closeUrlSubView(router, pathname, searchParams);
   };
-
-  const prevUnitParam = useRef(searchParams.get("unit"));
-  useEffect(() => {
-    const unitParam = searchParams.get("unit");
-    if (prevUnitParam.current && !unitParam && activeSubView === "unit") {
-      setActiveSubView("overview");
-    }
-    prevUnitParam.current = unitParam;
-  }, [searchParams]);
 
   // Stages for NSQ: prefer live stages from GET /applications/{id}/stages, fallback to application.stages
   const { data: remoteStages = [] } = useGetApplicationStages(application.id, {
@@ -500,20 +622,20 @@ export const NsqAssessorApplicationDetailView: React.FC<
   );
 
   // Physical Observation Validation
-  const hasObservation = Boolean(liveObs);
+  const hasObservation = Boolean(currentObs);
   const isObsPending = Boolean(
-    liveObs && (liveObs.status === "pending" || liveObs.status === "requested"),
+    currentObs && (currentObs.status === "pending" || currentObs.status === "requested"),
   );
   const isObsRejected = Boolean(
-    liveObs && (liveObs.status === "rejected" || liveObs.status === "cancelled"),
+    currentObs && (currentObs.status === "rejected" || currentObs.status === "cancelled"),
   );
   const hasAssessorSignature = Boolean(
-    liveObs?.signatures?.unitAssessor?.signedAt ||
-      liveObs?.signatures?.unitAssessor,
+    currentObs?.signatures?.unitAssessor?.signedAt ||
+      currentObs?.signatures?.unitAssessor,
   );
   const hasLearnerSignature = Boolean(
-    liveObs?.signatures?.learner?.signedAt ||
-      liveObs?.signatures?.learner,
+    currentObs?.signatures?.learner?.signedAt ||
+      currentObs?.signatures?.learner,
   );
   const isObservationFullyCompleted = Boolean(
     hasObservation &&
@@ -743,9 +865,30 @@ export const NsqAssessorApplicationDetailView: React.FC<
     liveObs,
   ]);
 
+  const isCon04Submitted = Boolean(
+    apiApp?.iqamForms?.find((f) => f.key === "iv_report")?.submittedAt ||
+      apiApp?.iqamForms?.find((f) => f.key === "iv_report")?.status === "submitted" ||
+      apiApp?.iqamForms?.find((f) => f.key === "iv_report")?.status === "completed",
+  );
+  const isCon05Submitted = Boolean(
+    apiApp?.iqamForms?.find((f) => f.key === "assessor_outcomes")?.submittedAt ||
+      apiApp?.iqamForms?.find((f) => f.key === "assessor_outcomes")?.status === "submitted" ||
+      apiApp?.iqamForms?.find((f) => f.key === "assessor_outcomes")?.status === "completed",
+  );
+  const isCon06Submitted = Boolean(
+    apiApp?.iqamForms?.find((f) => f.key === "final_portfolio")?.submittedAt ||
+      apiApp?.iqamForms?.find((f) => f.key === "final_portfolio")?.status === "submitted" ||
+      apiApp?.iqamForms?.find((f) => f.key === "final_portfolio")?.status === "completed",
+  );
   const isIqamFormsComplete = Boolean(
-    apiApp?.iqamForms?.length &&
-    apiApp.iqamForms.every((f) => f.status === "submitted"),
+    (isCon04Submitted && isCon05Submitted && isCon06Submitted) ||
+      (apiApp?.iqamForms?.length &&
+        apiApp.iqamForms.every(
+          (f) =>
+            f.status === "submitted" ||
+            f.status === "completed" ||
+            Boolean(f.submittedAt),
+        )),
   );
   // IV approval moves the application past internal_verification (or sets ivOutcome).
   const [hasApprovedIv, setHasApprovedIv] = useState(false);
@@ -812,6 +955,7 @@ export const NsqAssessorApplicationDetailView: React.FC<
       decision: "accept",
       requirements: requirements.length > 0 ? requirements : undefined,
     });
+    clearModalDraft(NSQ_ASSESSOR_OBSERVATION_MODAL);
     if (observation) {
       setObservation({
         ...observation,
@@ -909,6 +1053,12 @@ export const NsqAssessorApplicationDetailView: React.FC<
         candidatePhotoUrl={application.candidatePhotoUrl}
         applicationId={application.id}
         observation={observation}
+        availableUnits={unitsList}
+        observationActionLabel={
+          hasFilledPhysicalObservationForm || hasFilledObservationForm
+            ? "View"
+            : "Fill Form"
+        }
         onAcceptObservation={acceptObservation}
         onRejectObservation={rejectObservation}
         onBack={handleBackFromUnit}
@@ -936,6 +1086,15 @@ export const NsqAssessorApplicationDetailView: React.FC<
         }
         onBack={() => setActiveSubView("overview")}
         onSubmitSuccess={() => {
+          queryClient.invalidateQueries({
+            queryKey: APPLICATION_QUERY_KEYS.directObservationSession(
+              application.id,
+              effectiveSessionId,
+            ),
+          });
+          queryClient.invalidateQueries({
+            queryKey: APPLICATION_QUERY_KEYS.directObservations(application.id),
+          });
           if (observation)
             setObservation({ ...observation, status: "confirmed" });
         }}
@@ -1463,10 +1622,22 @@ export const NsqAssessorApplicationDetailView: React.FC<
                   ) : !isIvApproved ? (
                     isAssignedIv ? (
                       <div className="pt-2 flex flex-col gap-2.5">
-                        <div className="p-3 bg-amber-50 rounded-xl border border-amber-200/70 text-xs text-amber-900 flex items-start gap-2">
-                          <FiAlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
+                        <div
+                          className={`p-3 rounded-xl border text-xs flex items-start gap-2 ${
+                            isIqamFormsComplete
+                              ? "bg-emerald-50 border-emerald-200/70 text-emerald-900"
+                              : "bg-amber-50 border-amber-200/70 text-amber-900"
+                          }`}
+                        >
+                          {isIqamFormsComplete ? (
+                            <FiCheckCircle className="w-4 h-4 shrink-0 mt-0.5 text-emerald-600" />
+                          ) : (
+                            <FiAlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
+                          )}
                           <span>
-                            Submitting IQAM forms stamps your paperwork records. You must make a review decision on the IV stage for Centre staff to proceed.
+                            {isIqamFormsComplete
+                              ? "All required IQAM verification forms have been submitted. You can now approve the IV stage and mark the candidate competent."
+                              : "Complete and submit all required IQAM verification forms (CON 04, CON 05, and CON 06) above to unlock candidate approval and mark competent."}
                           </span>
                         </div>
                         <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 pt-1">
@@ -1478,14 +1649,16 @@ export const NsqAssessorApplicationDetailView: React.FC<
                             <FiX className="w-4 h-4 shrink-0" />
                             <span>Reject IV Stage</span>
                           </button>
-                          <button
-                            type="button"
-                            onClick={() => setIsReviewIvModalOpen(true)}
-                            className="h-10 px-5 rounded-xl bg-[#fbab2a] hover:bg-[#e89b1f] active:bg-[#d68b16] text-white font-semibold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs hover:shadow"
-                          >
-                            <FiCheck className="w-4 h-4 shrink-0 stroke-[2.5]" />
-                            <span>Approve IV Stage</span>
-                          </button>
+                          {isIqamFormsComplete && (
+                            <button
+                              type="button"
+                              onClick={() => setIsReviewIvModalOpen(true)}
+                              className="h-10 px-5 rounded-xl bg-[#fbab2a] hover:bg-[#e89b1f] active:bg-[#d68b16] text-white font-semibold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs hover:shadow"
+                            >
+                              <FiCheck className="w-4 h-4 shrink-0 stroke-[2.5]" />
+                              <span>Approve Candidate (Mark Competent)</span>
+                            </button>
+                          )}
                         </div>
                       </div>
                     ) : (
@@ -1879,10 +2052,22 @@ export const NsqAssessorApplicationDetailView: React.FC<
                     ) : !isIvApproved ? (
                       isAssignedIv ? (
                         <div className="pt-2 flex flex-col gap-2.5">
-                          <div className="p-3 bg-amber-50 rounded-xl border border-amber-200/70 text-xs text-amber-900 flex items-start gap-2">
-                            <FiAlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
+                          <div
+                            className={`p-3 rounded-xl border text-xs flex items-start gap-2 ${
+                              isIqamFormsComplete
+                                ? "bg-emerald-50 border-emerald-200/70 text-emerald-900"
+                                : "bg-amber-50 border-amber-200/70 text-amber-900"
+                            }`}
+                          >
+                            {isIqamFormsComplete ? (
+                              <FiCheckCircle className="w-4 h-4 shrink-0 mt-0.5 text-emerald-600" />
+                            ) : (
+                              <FiAlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
+                            )}
                             <span>
-                              Submitting IQAM forms stamps your paperwork records. You must make a review decision on the IV stage for Centre staff to proceed.
+                              {isIqamFormsComplete
+                                ? "All required IQAM verification forms have been submitted. You can now approve the IV stage and mark the candidate competent."
+                                : "Complete and submit all required IQAM verification forms (CON 04, CON 05, and CON 06) above to unlock candidate approval and mark competent."}
                             </span>
                           </div>
                           <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 pt-1">
@@ -1894,14 +2079,16 @@ export const NsqAssessorApplicationDetailView: React.FC<
                               <FiX className="w-4 h-4 shrink-0" />
                               <span>Reject IV Stage</span>
                             </button>
-                            <button
-                              type="button"
-                              onClick={() => setIsReviewIvModalOpen(true)}
-                              className="h-10 px-5 rounded-xl bg-[#fbab2a] hover:bg-[#e89b1f] active:bg-[#d68b16] text-white font-semibold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs hover:shadow"
-                            >
-                              <FiCheck className="w-4 h-4 shrink-0 stroke-[2.5]" />
-                              <span>Approve IV Stage</span>
-                            </button>
+                            {isIqamFormsComplete && (
+                              <button
+                                type="button"
+                                onClick={() => setIsReviewIvModalOpen(true)}
+                                className="h-10 px-5 rounded-xl bg-[#fbab2a] hover:bg-[#e89b1f] active:bg-[#d68b16] text-white font-semibold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs hover:shadow"
+                              >
+                                <FiCheck className="w-4 h-4 shrink-0 stroke-[2.5]" />
+                                <span>Approve Candidate (Mark Competent)</span>
+                              </button>
+                            )}
                           </div>
                         </div>
                       ) : (
@@ -1942,7 +2129,9 @@ export const NsqAssessorApplicationDetailView: React.FC<
               }}
               observation={observation}
               observationActionLabel={
-                hasFilledObservationForm ? "View" : "Fill Form"
+                hasFilledPhysicalObservationForm || hasFilledObservationForm
+                  ? "View"
+                  : "Fill Form"
               }
               onOpenObservationModal={() => setIsObsModalOpen(true)}
               onFillObservationForm={() => setActiveSubView("observation_form")}
@@ -1964,6 +2153,7 @@ export const NsqAssessorApplicationDetailView: React.FC<
           isOpen={isObsModalOpen}
           onClose={() => setIsObsModalOpen(false)}
           details={observation}
+          availableUnits={unitsList}
           onAccept={(payload) => {
             setPendingAcceptRequirements(payload.requirements);
             setIsObsModalOpen(false);

@@ -23,12 +23,25 @@ export function useGetAssessorApplications(
     cursor?: string;
     limit?: number;
   },
-  options?: { enabled?: boolean },
+  options?: {
+    enabled?: boolean;
+    refetchInterval?: number | false;
+    refetchOnWindowFocus?: boolean | "always";
+    staleTime?: number;
+  },
 ) {
   return useSharedGetAssessorApplications(params, options);
 }
 
-export function useGetAssessorApplicationById(id: string) {
-  return useSharedGetApplicationById(id);
+export function useGetAssessorApplicationById(
+  id: string,
+  options?: {
+    refetchInterval?: number | false;
+    enabled?: boolean;
+    refetchOnWindowFocus?: boolean | "always";
+    staleTime?: number;
+  },
+) {
+  return useSharedGetApplicationById(id, options);
 }
 

@@ -42,18 +42,39 @@ export function useGetApplications(
         ivApproved?: boolean;
         interviewSchedulable?: boolean;
       },
+  options?: {
+    enabled?: boolean;
+    refetchInterval?: number | false;
+    refetchOnWindowFocus?: boolean | "always";
+    staleTime?: number;
+  },
 ) {
   return useQuery({
     queryKey: ["centre", "applications", "list", params],
     queryFn: () => getCentreApplicationsApi(params),
+    enabled: options?.enabled ?? true,
+    refetchInterval: options?.refetchInterval,
+    refetchOnWindowFocus: options?.refetchOnWindowFocus ?? "always",
+    staleTime: options?.staleTime ?? 0,
   });
 }
 
-export function useGetApplicationById(id: string) {
+export function useGetApplicationById(
+  id: string,
+  options?: {
+    enabled?: boolean;
+    refetchInterval?: number | false;
+    refetchOnWindowFocus?: boolean | "always";
+    staleTime?: number;
+  },
+) {
   return useQuery({
     queryKey: CENTRE_APPLICATION_QUERY_KEYS.detail(id),
     queryFn: () => getCentreApplicationByIdApi(id),
-    enabled: Boolean(id),
+    enabled: Boolean(id) && (options?.enabled ?? true),
+    refetchInterval: options?.refetchInterval,
+    refetchOnWindowFocus: options?.refetchOnWindowFocus ?? "always",
+    staleTime: options?.staleTime ?? 0,
   });
 }
 
