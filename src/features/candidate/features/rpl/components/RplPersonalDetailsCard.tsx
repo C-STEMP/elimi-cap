@@ -106,7 +106,8 @@ export const RplPersonalDetailsCard: React.FC<RplPersonalDetailsCardProps> = ({
         <DatePicker
           label={<span>Date Of Birth<span className="text-primary-solid ml-0.5">*</span></span>}
           placeholder="dd/mm/yyyy"
-          maxYear={new Date().getFullYear() - 18}
+          minAge={14}
+          maxYear={new Date().getFullYear() - 14}
           value={form.dob}
           error={errors.dob}
           onChange={(val) => update("dob", val)}

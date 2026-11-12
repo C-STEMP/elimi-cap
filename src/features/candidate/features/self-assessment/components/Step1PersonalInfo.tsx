@@ -350,7 +350,8 @@ export const Step1PersonalInfo: React.FC<Step1Props> = ({
             }
             name="dob"
             placeholder="dd/mm/yyyy"
-            maxYear={new Date().getFullYear() - 18}
+            minAge={14}
+            maxYear={new Date().getFullYear() - 14}
             value={formData.dob}
             error={errors.dob}
             onChange={(val) => {

@@ -170,9 +170,9 @@ export const dobSchema = z
         age--;
       }
 
-      return age >= 18;
+      return age >= 14;
     },
-    { message: "Applicant must be 18 years or older" },
+    { message: "Applicant must be 14 years or older" },
   );
 
 export const personalInfoSchema = z.object({

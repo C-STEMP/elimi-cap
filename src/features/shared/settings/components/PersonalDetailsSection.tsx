@@ -64,7 +64,8 @@ export const PersonalDetailsSection: React.FC<PersonalDetailsSectionProps> = ({
             </span>
           }
           placeholder="dd/mm/yyyy"
-          maxYear={new Date().getFullYear() - 18}
+          minAge={14}
+          maxYear={new Date().getFullYear() - 14}
           value={formData.dateOfBirth}
           onChange={(val) => onChange("dateOfBirth", val)}
         />
