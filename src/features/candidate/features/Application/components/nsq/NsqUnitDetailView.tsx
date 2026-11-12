@@ -14,7 +14,10 @@ import {
 } from "react-icons/fi";
 import { HeaderBanner } from "@/features/candidate/features/Dashboard/components/HeaderBanner";
 import { submitUnitEvidenceApi } from "@/src/features/shared/applications/api";
-import type { NsqCriterion } from "@/src/features/shared/applications/api/types";
+import type {
+  NsqCriterion,
+  NsqEvidenceThreadItem,
+} from "@/src/features/shared/applications/api/types";
 import {
   useGetUnitCriteria,
   useSubmitUnitEvidence,
@@ -140,18 +143,26 @@ function parseCriteriaToLearningOutcomes(
       };
     }
 
-    // Show `latest` first, and keep any rejected rows from `history` visible as history.
-    const rawItems = [
-      ...(crit.latest ? [{ item: crit.latest, isHistory: false }] : []),
-      ...(Array.isArray(crit.history)
-        ? crit.history
-            .filter(
-              (h) =>
-                h.id !== crit.latest?.id && h.reviewStatus === "rejected",
-            )
-            .map((h) => ({ item: h, isHistory: true }))
-        : []),
-    ];
+    // Show `latest` first, followed by all remaining rows from `history`
+    // (marking older rejected rows as superseded history).
+    const seenIds = new Set<string>();
+    const rawItems: Array<{ item: NsqEvidenceThreadItem; isHistory: boolean }> =
+      [];
+    if (crit.latest) {
+      seenIds.add(crit.latest.id);
+      rawItems.push({ item: crit.latest, isHistory: false });
+    }
+    if (Array.isArray(crit.history)) {
+      crit.history.forEach((h) => {
+        if (!seenIds.has(h.id)) {
+          seenIds.add(h.id);
+          rawItems.push({
+            item: h,
+            isHistory: h.reviewStatus === "rejected",
+          });
+        }
+      });
+    }
 
     const evidences: EvidenceItem[] = rawItems.map(({ item, isHistory }) => {
       const assetId =
