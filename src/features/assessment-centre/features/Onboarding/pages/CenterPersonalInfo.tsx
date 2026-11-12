@@ -278,7 +278,8 @@ export const CenterPersonalInfo: React.FC = () => {
               </span>
             }
             placeholder="dd/mm/yyyy"
-            maxYear={new Date().getFullYear() - 18}
+            minAge={14}
+            maxYear={new Date().getFullYear() - 14}
             value={form.dob}
             error={errors.dob}
             onChange={(val) => update("dob", val)}

@@ -161,8 +161,8 @@ export const DatePicker: React.FC<DatePickerProps> = ({
     name === "dateOfBirth" ||
     /birth|dob/i.test(labelText);
 
-  // Enforce 18+ for DOB unless explicitly overridden
-  const effectiveMinAge = minAge !== undefined ? minAge : isDob ? 18 : undefined;
+  // Enforce 14+ for DOB unless explicitly overridden
+  const effectiveMinAge = minAge !== undefined ? minAge : isDob ? 14 : undefined;
 
   // Compute maximum allowable date
   const effectiveMaxDate: Date | undefined = maxDate
