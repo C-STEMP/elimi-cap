@@ -42,7 +42,13 @@ import { NsqAssessorObservationFormsView } from "@/src/features/assessor/feature
 import { CentreIqamFormViewer } from "./CentreIqamFormViewer";
 import { getNsqScopedUnits } from "@/src/features/shared/applications/utils/nsqUnits";
 import type { IqamToolId } from "@/src/features/assessor/features/iqam/types/iqam.types";
-import type { ApplicationDetail, ApplicationStage, InductionForm, NsqCriterion } from "@/src/features/shared/applications/api/types";
+import type {
+  ApplicationDetail,
+  ApplicationStage,
+  InductionForm,
+  NsqCriterion,
+  NsqEvidenceThreadItem,
+} from "@/src/features/shared/applications/api/types";
 import { useModalDraft, useUrlModal } from "@/src/lib/hooks/usePersistentModal";
 import { NSQ_ASSIGN_ASSESSOR_MODAL, NSQ_DECISION_MODAL } from "@/src/lib/modal-keys";
 import { useResolveAssets } from "@/src/features/shared/storage/hooks";
@@ -146,17 +152,24 @@ function groupCriteriaForCentreView(
       groups[loKey] = { title: loTitle, criteria: [] };
     }
 
-    const rawItems = [
-      ...(crit.latest ? [{ item: crit.latest, isHistory: false }] : []),
-      ...(Array.isArray(crit.history)
-        ? crit.history
-            .filter(
-              (h) =>
-                h.id !== crit.latest?.id && h.reviewStatus === "rejected",
-            )
-            .map((h) => ({ item: h, isHistory: true }))
-        : []),
-    ];
+    const seenIds = new Set<string>();
+    const rawItems: Array<{ item: NsqEvidenceThreadItem; isHistory: boolean }> =
+      [];
+    if (crit.latest) {
+      seenIds.add(crit.latest.id);
+      rawItems.push({ item: crit.latest, isHistory: false });
+    }
+    if (Array.isArray(crit.history)) {
+      crit.history.forEach((h) => {
+        if (!seenIds.has(h.id)) {
+          seenIds.add(h.id);
+          rawItems.push({
+            item: h,
+            isHistory: h.reviewStatus === "rejected",
+          });
+        }
+      });
+    }
 
     const evidences: CentreUnitEvidenceItem[] = rawItems.map(({ item, isHistory }) => {
       const assetId =

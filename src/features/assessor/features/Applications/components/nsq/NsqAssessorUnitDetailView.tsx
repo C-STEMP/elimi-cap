@@ -5,6 +5,8 @@ import {
   useReviewUnitEvidence,
   APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
 } from "@/src/features/shared/applications/hooks";
+import type { NsqEvidenceThreadItem } from "@/src/features/shared/applications/api/types";
+import { useResolveAssets } from "@/src/features/shared/storage/hooks";
 import React, { useEffect, useState } from "react";
 import {
   LearningOutcomeAccordionItem,
@@ -87,6 +89,38 @@ export const NsqAssessorUnitDetailView: React.FC<
   const [expandedLos, setExpandedLos] = useState<Record<string, boolean>>({});
   const [expandedPcs, setExpandedPcs] = useState<Record<string, boolean>>({});
 
+  const assetIdsToResolve = React.useMemo(() => {
+    if (!remoteCriteriaData?.criteria) return [];
+    const ids: string[] = [];
+    remoteCriteriaData.criteria.forEach((crit) => {
+      const items = [
+        ...(crit.latest ? [crit.latest] : []),
+        ...(Array.isArray(crit.history) ? crit.history : []),
+      ];
+      items.forEach((item) => {
+        const assetId = item.evidenceAssetId || item.evidence?.assetId;
+        if (assetId && !item.evidence?.url) {
+          ids.push(assetId);
+        }
+      });
+    });
+    return Array.from(new Set(ids));
+  }, [remoteCriteriaData]);
+
+  const { data: resolvedAssets } = useResolveAssets(assetIdsToResolve);
+
+  const resolvedAssetMap = React.useMemo(() => {
+    const map: Record<string, string> = {};
+    if (Array.isArray(resolvedAssets)) {
+      resolvedAssets.forEach((a) => {
+        if (a.assetId && a.url) {
+          map[a.assetId] = a.url;
+        }
+      });
+    }
+    return map;
+  }, [resolvedAssets]);
+
   useEffect(() => {
     if (
       remoteCriteriaData?.criteria &&
@@ -109,48 +143,75 @@ export const NsqAssessorUnitDetailView: React.FC<
               (h) => h.id !== crit.latest?.id && h.reviewStatus === "rejected",
             ),
         );
-        const rawItems = [
-          ...(crit.latest ? [{ ev: crit.latest, isHistory: false }] : []),
-          ...(Array.isArray(crit.history)
-            ? crit.history
-                .filter(
-                  (h) =>
-                    h.id !== crit.latest?.id && h.reviewStatus === "rejected",
-                )
-                .map((h) => ({ ev: h, isHistory: true }))
-            : []),
-        ];
+        const seenIds = new Set<string>();
+        const rawItems: Array<{ ev: NsqEvidenceThreadItem; isHistory: boolean }> =
+          [];
+        if (crit.latest) {
+          seenIds.add(crit.latest.id);
+          rawItems.push({ ev: crit.latest, isHistory: false });
+        }
+        if (Array.isArray(crit.history)) {
+          crit.history.forEach((h) => {
+            if (!seenIds.has(h.id)) {
+              seenIds.add(h.id);
+              rawItems.push({
+                ev: h,
+                isHistory: h.reviewStatus === "rejected",
+              });
+            }
+          });
+        }
 
-        const evidences = rawItems.map(({ ev, isHistory }) => ({
-          id: ev.id,
-          name:
-            ev.evidenceType === "WP"
-              ? "Work Product(WP)"
-              : `${ev.evidenceType} Evidence`,
-          type: ev.evidenceType,
-          status: ev.reviewStatus === "pending" ? "in_review" : ev.reviewStatus,
-          isHistory,
-          isReuploaded:
-            !isHistory &&
-            ev.reviewStatus === "pending" &&
-            hasRejectedHistory,
-          feedback:
-            ev.reviewComment ||
-            ev.iqaReviewComment ||
-            (ev as any).comment ||
-            (ev as any).feedback ||
-            undefined,
-          url: ev.evidence?.url || null,
-          refPage: ev.evidenceRefPage || null,
-        }));
+        const evidences = rawItems.map(({ ev, isHistory }) => {
+          const assetId =
+            ev.evidenceAssetId ||
+            ev.evidence?.assetId ||
+            (ev as any).assetId ||
+            undefined;
+          const resolvedUrl =
+            ev.evidence?.url ||
+            (ev as any).url ||
+            (ev as any).fileUrl ||
+            (assetId && resolvedAssetMap[assetId]) ||
+            null;
+
+          return {
+            id: ev.id,
+            name:
+              ev.evidenceType === "WP"
+                ? "Work Product(WP)"
+                : `${ev.evidenceType} Evidence`,
+            type: ev.evidenceType,
+            status:
+              ev.reviewStatus === "pending" ? "in_review" : ev.reviewStatus,
+            isHistory,
+            isReuploaded:
+              ev.id === crit.latest?.id &&
+              ev.reviewStatus === "pending" &&
+              hasRejectedHistory,
+            feedback:
+              ev.reviewComment ||
+              ev.iqaReviewComment ||
+              (ev as any).comment ||
+              (ev as any).feedback ||
+              undefined,
+            url: resolvedUrl,
+            refPage: ev.evidenceRefPage || null,
+          };
+        });
+
+        const hasPendingEvidence =
+          crit.status === "pending" ||
+          (crit.pendingCount ?? 0) > 0 ||
+          evidences.some((e) => e.status === "in_review");
 
         groups[loKey].criteria.push({
           id: `pc-${crit.code.replace(/[^a-zA-Z0-9]/g, "-")}`,
           code: crit.code.startsWith("PC") ? crit.code : `PC ${crit.code}`,
           description:
             crit.text || "",
-          hasNewUpload: crit.status === "pending",
-          hasReupload: crit.status === "pending" && hasRejectedHistory,
+          hasNewUpload: hasPendingEvidence,
+          hasReupload: hasPendingEvidence && hasRejectedHistory,
           evidences,
         });
       });
@@ -176,7 +237,7 @@ export const NsqAssessorUnitDetailView: React.FC<
         }
       }
     }
-  }, [remoteCriteriaData]);
+  }, [remoteCriteriaData, resolvedAssetMap]);
 
   const [targetEvidence, setTargetEvidence] = useState<{
     loId: string;
