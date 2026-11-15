@@ -61,17 +61,23 @@ export const PerformanceCriteriaAccordionItem: React.FC<
       </div>
 
       {/* Evidence Items for this PC */}
-      {isExpanded && criterion.evidences && criterion.evidences.length > 0 && (
-        <div className="flex flex-col gap-2.5 pt-1">
-          {criterion.evidences.map((ev) => (
-            <UnitEvidenceItemCard
-              key={ev.id}
-              evidence={ev}
-              onApprove={() => onApproveEvidence(ev.id)}
-              onReject={() => onRejectEvidence(ev.id)}
-            />
-          ))}
-        </div>
+      {isExpanded && (
+        criterion.evidences && criterion.evidences.length > 0 ? (
+          <div className="flex flex-col gap-2.5 pt-1">
+            {criterion.evidences.map((ev) => (
+              <UnitEvidenceItemCard
+                key={ev.id}
+                evidence={ev}
+                onApprove={() => onApproveEvidence(ev.id)}
+                onReject={() => onRejectEvidence(ev.id)}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="pt-2 text-xs text-gray-400 italic">
+            No evidence submitted for this criterion yet.
+          </div>
+        )
       )}
     </div>
   );
