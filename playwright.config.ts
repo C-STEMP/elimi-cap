@@ -7,12 +7,15 @@ const PORT = 3100;
 export const MOCK_CAP_URL = "http://cap.e2e.test/v1/cap";
 export const MOCK_ORCHESTRATOR_URL = "http://orchestrator.e2e.test/v1/ol";
 
+// Run against a production build both locally and in CI so tests never hit
+// slow cold-route dev compilations. Set E2E_SKIP_BUILD=1 to reuse the last
+// e2e build when iterating on test files only.
+const skipBuild = Boolean(process.env.CI || process.env.E2E_SKIP_BUILD);
+
 export default defineConfig({
   testDir: "./e2e",
-  // Locally the dev server compiles each page on first visit (can take ~50s for
-  // large onboarding pages); CI runs against a production build, so it's fast.
-  timeout: process.env.CI ? 60_000 : 120_000,
-  expect: { timeout: process.env.CI ? 15_000 : 60_000 },
+  timeout: 60_000,
+  expect: { timeout: 15_000 },
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
@@ -23,12 +26,12 @@ export default defineConfig({
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
-    command: process.env.CI
+    command: skipBuild
       ? `npx next start -p ${PORT}`
-      : `npx next dev -p ${PORT}`,
+      : `npx next build && npx next start -p ${PORT}`,
     url: `http://localhost:${PORT}`,
     reuseExistingServer: !process.env.CI,
-    timeout: 180_000,
+    timeout: 360_000,
     env: {
       NEXT_PUBLIC_CAP_URL: MOCK_CAP_URL,
       NEXT_PUBLIC_ORCHESTRATOR_URL: MOCK_ORCHESTRATOR_URL,

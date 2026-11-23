@@ -158,11 +158,14 @@ export function useGetBanks(country: string = "nigeria") {
   });
 }
 
+const ONE_DAY_MS = 1000 * 60 * 60 * 24;
+
 export function useGetCountries() {
   return useQuery({
     queryKey: REFERENCE_QUERY_KEYS.countries,
     queryFn: () => getCountriesApi(),
-    staleTime: 1000 * 60 * 60 * 24, // 24 hours caching per API spec
+    staleTime: (query) =>
+      query.state.data && query.state.data.length > 0 ? ONE_DAY_MS : 0,
   });
 }
 
@@ -171,7 +174,8 @@ export function useGetStates(country?: string) {
     queryKey: REFERENCE_QUERY_KEYS.states(country),
     queryFn: () => getStatesApi(country!),
     enabled: Boolean(country),
-    staleTime: 1000 * 60 * 60 * 24,
+    staleTime: (query) =>
+      query.state.data && query.state.data.length > 0 ? ONE_DAY_MS : 0,
   });
 }
 
@@ -180,7 +184,8 @@ export function useGetLgas(country?: string, state?: string) {
     queryKey: REFERENCE_QUERY_KEYS.lgas(country, state),
     queryFn: () => getLgasApi(country!, state!),
     enabled: Boolean(country && state),
-    staleTime: 1000 * 60 * 60 * 24,
+    staleTime: (query) =>
+      query.state.data && query.state.data.length > 0 ? ONE_DAY_MS : 0,
   });
 }
 

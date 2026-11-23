@@ -873,7 +873,95 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
               </button>
             </div>
 
-            {/* 5. Middle Cards Grid: NOS Details & Metrics */}
+            {/* 5. Units List (Promoted directly after Induction Form for visibility) */}
+            <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-md border-2 border-[#fbab2a]/40 flex flex-col gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-amber-100">
+                <div className="flex flex-col gap-0.5">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-base sm:text-lg font-extrabold text-neutral-primary tracking-tight">
+                      {levelName ? `${resolvedTradeName} ${levelName}` : resolvedTradeName}
+                    </h3>
+                    {unitsList.length > 0 && (
+                      <span className="px-2.5 py-0.5 rounded-full bg-[#fdf2f5] text-[#a31d38] text-[11px] font-bold">
+                        {unitsList.length} {unitsList.length === 1 ? "Unit" : "Units"}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500 font-medium">
+                    Tap any unit below to view performance criteria and upload your evidences.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-3">
+                {isLoadingUnits ? (
+                  Array.from({ length: 4 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="p-4 rounded-xl border border-gray-100/80 bg-[#f8f9fa] flex items-center justify-between gap-4 animate-pulse"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 min-w-0 flex-1">
+                        <div className="h-3.5 bg-gray-200 rounded w-16 shrink-0" />
+                        <div className="h-3.5 bg-gray-200 rounded w-48" />
+                      </div>
+                      <div className="flex items-center gap-2.5 shrink-0">
+                        <div className="h-5 bg-gray-200 rounded-full w-20" />
+                        <div className="w-4 h-4 bg-gray-200 rounded" />
+                      </div>
+                    </div>
+                  ))
+                ) : unitsList.length > 0 ? (
+                  unitsList.map((unit) => (
+                    <div
+                      key={unit.id}
+                      onClick={() => handleSelectUnit(unit)}
+                      className={`p-4 rounded-xl border border-gray-200/90 border-l-4 hover:border-[#fbab2a] bg-white hover:bg-[#fffdf7] flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer transition-all group shadow-xs hover:shadow-sm ${
+                        unit.status === "Approved"
+                          ? "border-l-[#10b981]"
+                          : "border-l-[#fbab2a]"
+                      }`}
+                    >
+                      <div className="flex flex-col gap-1 min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="px-2 py-0.5 rounded-md bg-[#fdf2f5] text-[#a31d38] font-extrabold text-[11px] uppercase shrink-0">
+                            {unit.unitNo}
+                          </span>
+                          <span
+                            className={`px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold ${
+                              unit.status === "Approved"
+                                ? "bg-[#ecfdf5] text-[#10b981]"
+                                : unit.status === "In Progress"
+                                  ? "bg-amber-50 text-amber-700"
+                                  : "bg-gray-100 text-gray-600"
+                            }`}
+                          >
+                            {unit.status}
+                          </span>
+                        </div>
+                        <span className="text-xs sm:text-sm text-neutral-primary font-semibold line-clamp-2">
+                          {unit.title}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between sm:justify-end gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100 shrink-0">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#fff8eb] group-hover:bg-[#fbab2a] text-[#b45309] group-hover:text-white text-xs font-bold transition-colors">
+                          <span>{unit.status === "Approved" ? "View Unit" : "Upload Evidence"}</span>
+                          <FiChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-xs text-gray-400 font-medium py-2">
+                    {isInductionCompleted
+                      ? "Units will appear here once your qualification standard is loaded."
+                      : "Complete and submit your Candidate Induction Form to view your selected qualification units."}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* 6. Middle Cards Grid: NOS Details & Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Left Card: NOS Details */}
               <div className="bg-[#fcfaf7] rounded-2xl p-4 sm:p-5 border border-amber-100/50 shadow-xs flex flex-col justify-between gap-4">
@@ -952,77 +1040,23 @@ export const NsqApplicationDetailView: React.FC<NsqApplicationDetailViewProps> =
                 </div>
               </div>
             </div>
-
-            {/* 6. Units List */}
-            <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-4">
-              <h3 className="text-base sm:text-lg font-extrabold text-neutral-primary tracking-tight">
-                {levelName ? `${resolvedTradeName} ${levelName}` : resolvedTradeName}
-              </h3>
-
-              <div className="flex flex-col gap-3">
-                {isLoadingUnits ? (
-                  Array.from({ length: 4 }).map((_, i) => (
-                    <div
-                      key={i}
-                      className="p-4 rounded-xl border border-gray-100/80 bg-[#f8f9fa] flex items-center justify-between gap-4 animate-pulse"
-                    >
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 min-w-0 flex-1">
-                        <div className="h-3.5 bg-gray-200 rounded w-16 shrink-0" />
-                        <div className="h-3.5 bg-gray-200 rounded w-48" />
-                      </div>
-                      <div className="flex items-center gap-2.5 shrink-0">
-                        <div className="h-5 bg-gray-200 rounded-full w-20" />
-                        <div className="w-4 h-4 bg-gray-200 rounded" />
-                      </div>
-                    </div>
-                  ))
-                ) : unitsList.length > 0 ? (
-                  unitsList.map((unit) => (
-                    <div
-                      key={unit.id}
-                      onClick={() => handleSelectUnit(unit)}
-                      className="p-4 rounded-xl border border-gray-100/80 hover:border-gray-200 bg-[#f8f9fa] hover:bg-white flex items-center justify-between gap-4 cursor-pointer transition-all group shadow-2xs"
-                    >
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 min-w-0">
-                        <span className="font-extrabold text-xs sm:text-sm text-neutral-primary uppercase shrink-0">
-                          {unit.unitNo}:
-                        </span>
-                        <span className="text-xs sm:text-sm text-gray-700 font-medium truncate">
-                          {unit.title}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-2.5 shrink-0">
-                        <span
-                          className={`px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold ${
-                            unit.status === "Approved"
-                              ? "bg-[#ecfdf5] text-[#10b981]"
-                              : unit.status === "In Progress"
-                                ? "bg-amber-50 text-amber-700"
-                                : "bg-gray-200/80 text-gray-600"
-                          }`}
-                        >
-                          {unit.status}
-                        </span>
-                        <FiChevronRight className="w-4 h-4 text-gray-400 group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-xs text-gray-400 font-medium py-2">
-                    {isInductionCompleted
-                      ? "Units will appear here once your qualification standard is loaded."
-                      : "Complete and submit your Candidate Induction Form to view your selected qualification units."}
-                  </p>
-                )}
-              </div>
-            </div>
           </div>
 
           {/* Right Sidebar Column */}
           <div className="lg:col-span-4 flex flex-col gap-6">
-            {/* Calendar */}
-            <CalendarWidget events={nsqCalendarEvents} />
+            {/* Calendar: collapsible on mobile so it doesn't overshadow units */}
+            <details className="lg:hidden bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden group">
+              <summary className="px-5 py-3.5 flex items-center justify-between cursor-pointer list-none select-none text-sm font-extrabold text-neutral-primary">
+                <span>Schedule &amp; Calendar</span>
+                <FiChevronRight className="w-4 h-4 text-gray-400 transition-transform group-open:rotate-90" />
+              </summary>
+              <div className="px-2 pb-2">
+                <CalendarWidget events={nsqCalendarEvents} />
+              </div>
+            </details>
+            <div className="hidden lg:block">
+              <CalendarWidget events={nsqCalendarEvents} />
+            </div>
 
             {/* Observation Request Card */}
             <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex flex-col gap-3">

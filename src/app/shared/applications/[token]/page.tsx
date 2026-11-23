@@ -1125,7 +1125,7 @@ export default function SharedApplicationDossierPage() {
 
         {/* Modal: Full Inspection of Assessment Form */}
         {activeFormModal && (
-          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto" onClick={(e) => { if (e.target === e.currentTarget) setActiveFormModal(null); }}>
             <div className="bg-white rounded-3xl w-full max-w-5xl my-auto max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
               <div className="p-4 sm:p-5 border-b border-gray-200 flex items-center justify-between bg-gray-50 shrink-0">
                 <div className="flex items-center gap-2.5">

@@ -24,7 +24,7 @@ test.describe("assessor information step", () => {
     }));
 
     await page.goto("/onboarding/assessor/assessor-info");
-    await page.getByPlaceholder("First name").fill("ASR-001");
+    await page.getByRole("textbox", { name: /Assessor ID/i }).fill("ASR-001");
 
     await uploadInto(page, "RPL Assessor Certificate", "rpl.pdf");
     await uploadInto(page, "CV / Resume", "cv.pdf");
@@ -62,7 +62,7 @@ test.describe("assessor information step", () => {
     }));
 
     await page.goto("/onboarding/assessor/assessor-info");
-    await page.getByPlaceholder("First name").fill("ASR-001");
+    await page.getByRole("textbox", { name: /Assessor ID/i }).fill("ASR-001");
     await uploadInto(page, "QAA Certificate", "qaa.pdf");
     await uploadInto(page, "RPL Assessor Certificate", "rpl.pdf");
     await uploadInto(page, "CV / Resume", "cv.pdf");

@@ -8,6 +8,7 @@ import { Select, SelectOption } from "@/src/components/ui/select";
 import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
 import { useUploadFile } from "@/src/features/shared/storage/hooks";
+import { useGetMeProfile } from "@/src/features/shared/account/hooks";
 import { useCandidateProfileSignature } from "@/src/features/shared/onboarding/hooks";
 import { useSubmitInductionForm } from "@/src/features/shared/applications/hooks";
 import { UploadSignatureModal } from "../UploadSignatureModal";
@@ -89,9 +90,12 @@ export const NsqCompleteInductionFormModal: React.FC<
   onSubmitted,
 }) => {
   const { toast } = useToast();
+  const { data: meProfile } = useGetMeProfile();
   const { data: profileSignature } = useCandidateProfileSignature();
   const uploadMutation = useUploadFile();
   const submitMutation = useSubmitInductionForm(applicationId);
+
+  const todayDate = new Date().toLocaleDateString("en-CA");
 
   const [nameParts] = useState(() => candidateName.trim().split(/\s+/));
   const [firstName, setFirstName] = useModalDraft(NSQ_INDUCTION_FORM_MODAL, "firstName", nameParts[0] || "");
@@ -103,7 +107,7 @@ export const NsqCompleteInductionFormModal: React.FC<
   const effectiveLastName = isNameLocked ? lockedName?.lastName ?? "" : lastName;
   const [registrationNo, setRegistrationNo] = useModalDraft(NSQ_INDUCTION_FORM_MODAL, "registrationNo", "");
   const [assessmentType, setAssessmentType] = useModalDraft(NSQ_INDUCTION_FORM_MODAL, "assessmentType", "Full Qualification");
-  const [courseStartDate, setCourseStartDate] = useModalDraft(NSQ_INDUCTION_FORM_MODAL, "courseStartDate", "");
+  const [courseStartDate, setCourseStartDate] = useModalDraft(NSQ_INDUCTION_FORM_MODAL, "courseStartDate", todayDate);
   const [selectedLevelId, setSelectedLevelId] = useModalDraft<string>(NSQ_INDUCTION_FORM_MODAL, "selectedLevelId", 
     defaultQualificationLevelId || qualificationLevels[0]?.id || "",
   );
@@ -174,7 +178,21 @@ export const NsqCompleteInductionFormModal: React.FC<
   const [newWeakness, setNewWeakness] = useModalDraft(NSQ_INDUCTION_FORM_MODAL, "newWeakness", "");
   const [passportAssetId, setPassportAssetId] = useModalDraft<string | null>(NSQ_INDUCTION_FORM_MODAL, "passportAssetId", null);
   const [passportPreview, setPassportPreview] = useModalDraft<string | null>(NSQ_INDUCTION_FORM_MODAL, "passportPreview", null);
+  const [localPassportPreview, setLocalPassportPreview] = useState<string | null>(null);
   const [isUploadingPassport, setIsUploadingPassport] = useState(false);
+
+  const profilePassportAssetId =
+    meProfile?.photoAssetId || meProfile?.personalDetails?.passportPhotoAssetId || null;
+  const profilePassportUrl =
+    meProfile?.photo?.url || meProfile?.personalDetails?.passportUrl || null;
+  const resolvedPassportAssetId = passportAssetId || profilePassportAssetId || null;
+  // Only trust a persisted draft preview when a corresponding assetId was also saved,
+  // avoiding stale blob: URLs or interrupted uploads showing a photo without an assetId.
+  const resolvedPassportPreview =
+    localPassportPreview ||
+    (passportAssetId ? passportPreview : null) ||
+    profilePassportUrl ||
+    null;
   const [signatureAssetId, setSignatureAssetId] = useModalDraft<string | null>(NSQ_INDUCTION_FORM_MODAL, "signatureAssetId", null);
   const [signatureUrl, setSignatureUrl] = useModalDraft<string | null>(NSQ_INDUCTION_FORM_MODAL, "signatureUrl", null);
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useUrlModal(NSQ_INDUCTION_SIGNATURE_MODAL);
@@ -209,16 +227,26 @@ export const NsqCompleteInductionFormModal: React.FC<
     const file = e.target.files?.[0];
     if (!file) return;
     const localUrl = URL.createObjectURL(file);
-    setPassportPreview(localUrl);
+    setLocalPassportPreview(localUrl);
     setIsUploadingPassport(true);
     try {
       const asset = await uploadMutation.mutateAsync({ file, purpose: "passport" });
       if (asset?.assetId) {
         setPassportAssetId(asset.assetId);
-        if (asset.url) setPassportPreview(asset.url);
+        if (asset.url) {
+          setPassportPreview(asset.url);
+          setLocalPassportPreview(null);
+        }
+      } else {
+        setLocalPassportPreview(null);
+        toast({
+          type: "error",
+          title: "Upload Incomplete",
+          description: "Passport photo did not return a valid file ID. Please try again.",
+        });
       }
     } catch {
-      setPassportPreview(null);
+      setLocalPassportPreview(null);
       toast({
         type: "error",
         title: "Upload Failed",
@@ -292,7 +320,11 @@ export const NsqCompleteInductionFormModal: React.FC<
       toast({ type: "error", title: "Learning Weakness Required", description: "Please add at least one learning weakness or area for improvement." });
       return;
     }
-    if (!passportAssetId) {
+    if (isUploadingPassport) {
+      toast({ type: "info", title: "Upload In Progress", description: "Please wait for your passport photo to finish uploading." });
+      return;
+    }
+    if (!resolvedPassportAssetId) {
       toast({ type: "error", title: "Passport Required", description: "Please upload your passport photo." });
       return;
     }
@@ -327,7 +359,7 @@ export const NsqCompleteInductionFormModal: React.FC<
           impairment: impairment !== "None" ? impairment : undefined,
           learningStrengths: strengths,
           learningWeaknesses: weaknesses,
-          passportAssetId,
+          passportAssetId: resolvedPassportAssetId,
           signatureAssetId: resolvedSignatureAssetId,
         },
       });
@@ -576,8 +608,24 @@ export const NsqCompleteInductionFormModal: React.FC<
                   className="hidden"
                   disabled={isUploadingPassport}
                 />
-                {passportPreview ? (
-                  <img src={passportPreview} alt="Passport preview" className="h-20 w-20 object-cover rounded-xl" />
+                {resolvedPassportPreview ? (
+                  <div className="relative flex flex-col items-center gap-1.5">
+                    <div className="relative">
+                      <img
+                        src={resolvedPassportPreview}
+                        alt="Passport preview"
+                        className={`h-20 w-20 object-cover rounded-xl ${isUploadingPassport ? "opacity-50" : ""}`}
+                      />
+                      {isUploadingPassport && (
+                        <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/30">
+                          <span className="h-5 w-5 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-[11px] font-semibold text-[#a31d38]">
+                      {isUploadingPassport ? "Uploading passport..." : "Click to change passport"}
+                    </span>
+                  </div>
                 ) : (
                   <div className="flex flex-col items-center gap-1.5">
                     <FiUploadCloud className="w-5 h-5 text-[#a31d38] group-hover:-translate-y-0.5 transition-transform" />
@@ -627,9 +675,10 @@ export const NsqCompleteInductionFormModal: React.FC<
               variant="amber"
               size="lg"
               loading={isSubmitting}
+              disabled={isSubmitting || isUploadingPassport}
               className="w-full h-12 text-white font-bold text-sm bg-[#fbab2a] hover:bg-[#e89b1f] rounded-xl shadow-md mt-2 cursor-pointer"
             >
-              Submit Application
+              {isUploadingPassport ? "Uploading Passport..." : "Submit Application"}
             </Button>
           </form>
         </div>

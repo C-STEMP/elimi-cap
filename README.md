@@ -4,9 +4,10 @@ The Competency Assessment Portal (CAP) is a platform aligned to the NOS/NSQ stan
 ## Checks before merging
 
 ```bash
-npm run typecheck   # TypeScript
-npm run test:e2e    # Playwright end-to-end tests (starts the dev server itself)
-npm run test:e2e:ui # same, with Playwright's interactive UI
+npm run typecheck                  # TypeScript
+npm run test:e2e                   # Playwright end-to-end tests (builds and starts the app)
+E2E_SKIP_BUILD=1 npm run test:e2e  # Re-run tests quickly against the existing E2E build
+npm run test:e2e:ui                # Same, with Playwright's interactive UI
 ```
 
 End-to-end tests live in `e2e/`. They never call the real backend: the app is

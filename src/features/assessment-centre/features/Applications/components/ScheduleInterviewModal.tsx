@@ -25,7 +25,7 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({ 
     <>
       <AnimatePresence>
         {isOpen && !s.isConfirmOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs overflow-y-auto py-6 sm:py-8">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs overflow-y-auto py-6 sm:py-8" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}

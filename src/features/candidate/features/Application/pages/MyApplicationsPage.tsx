@@ -19,74 +19,10 @@ import {
   APPLICATION_DETAIL_REFRESH_INTERVAL_MS,
 } from "@/src/features/candidate/features/Application/hooks";
 import { useCandidateProfile, useCandidateEvents } from "@/src/features/shared/onboarding/hooks";
+import { getCandidateApplicationStatusDisplay } from "@/src/features/shared/applications/utils/applicationStatusDisplay";
 import { markVerified } from "@/store/slices/authSlice";
 
 type FilterTab = "Active" | "Ongoing" | "Completed" | "Draft" | "Withdrawn" | "All";
-
-const getStatusDisplay = (status: string) => {
-  const statusMap: Record<
-    string,
-    { label: string; bg: string; text: string; border: string }
-  > = {
-    draft: {
-      label: "Draft",
-      bg: "bg-gray-100",
-      text: "text-gray-700",
-      border: "border-gray-300",
-    },
-    submitted: {
-      label: "Application Submitted",
-      bg: "bg-[#FFF7ED]",
-      text: "text-[#C2410C]",
-      border: "border-[#FFEDD5]",
-    },
-    pending: {
-      label: "Application Submitted",
-      bg: "bg-[#FFF7ED]",
-      text: "text-[#C2410C]",
-      border: "border-[#FFEDD5]",
-    },
-    approved: {
-      label: "Approved",
-      bg: "bg-emerald-50",
-      text: "text-emerald-700",
-      border: "border-emerald-200",
-    },
-    in_progress: {
-      label: "In Progress",
-      bg: "bg-blue-50",
-      text: "text-blue-700",
-      border: "border-blue-200",
-    },
-    certified: {
-      label: "Certified",
-      bg: "bg-emerald-50",
-      text: "text-emerald-700",
-      border: "border-emerald-200",
-    },
-    rejected: {
-      label: "Rejected",
-      bg: "bg-red-50",
-      text: "text-red-700",
-      border: "border-red-200",
-    },
-    withdrawn: {
-      label: "Withdrawn",
-      bg: "bg-gray-50",
-      text: "text-gray-700",
-      border: "border-gray-200",
-    },
-  };
-
-  return (
-    statusMap[status] ?? {
-      label: status.replace(/_/g, " "),
-      bg: "bg-gray-100",
-      text: "text-gray-700",
-      border: "border-gray-300",
-    }
-  );
-};
 
 export const MyApplicationsPage: React.FC = () => {
   const router = useRouter();
@@ -366,7 +302,10 @@ export const MyApplicationsPage: React.FC = () => {
               ) : (
                 <div className="flex flex-col gap-3.5 flex-1 justify-start pt-4 pb-2">
                   {filteredApplications.map((app) => {
-                    const statusDisplay = getStatusDisplay(app.status);
+                    const statusDisplay = getCandidateApplicationStatusDisplay(
+                      app.status,
+                      app.currentStageKey,
+                    );
                     return (
                       <div
                         key={app.id}

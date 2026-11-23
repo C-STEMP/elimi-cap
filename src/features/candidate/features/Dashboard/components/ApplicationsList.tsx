@@ -12,6 +12,7 @@ export interface ApplicationItem {
   subtitle: string;
   status: "Not Started" | "In Progress" | "Completed";
   statusLabel?: string;
+  statusBadgeClass?: string;
   rawStatus?: string;
   type?: string;
 }
@@ -139,14 +140,16 @@ export const ApplicationsList: React.FC<ApplicationsListProps> = ({
                     {app.title}
                   </span>
                   <span
-                    className={`text-[10px] sm:text-xs font-semibold px-2 sm:px-2.5 py-0.5 rounded-full shrink-0 ${
-                      app.statusLabel === "Withdrawn" || app.status === "Not Started"
-                        ? "bg-gray-100 text-gray-600"
-                        : app.statusLabel === "Rejected"
-                          ? "bg-red-50 text-red-700"
-                          : app.status === "Completed"
-                            ? "bg-emerald-100 text-emerald-800"
-                            : "bg-amber-100 text-amber-800"
+                    className={`text-[10px] sm:text-xs font-semibold px-2 sm:px-2.5 py-0.5 rounded-full border shrink-0 ${
+                      app.statusBadgeClass
+                        ? app.statusBadgeClass
+                        : app.statusLabel === "Withdrawn" || app.status === "Not Started"
+                          ? "bg-gray-100 text-gray-600 border-gray-200"
+                          : app.statusLabel === "Rejected"
+                            ? "bg-red-50 text-red-700 border-red-200"
+                            : app.status === "Completed"
+                              ? "bg-emerald-100 text-emerald-800 border-emerald-200"
+                              : "bg-amber-100 text-amber-800 border-amber-200"
                     }`}
                   >
                     {app.statusLabel || app.status}

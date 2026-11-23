@@ -94,7 +94,7 @@ export const AssignPanelistModal: React.FC<AssignPanelistModalProps> = (props) =
 
       <AnimatePresence>
         {s.isSuccessOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
             <motion.div initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.94 }} transition={{ duration: 0.22 }} className="bg-white rounded-[28px] p-8 sm:p-10 max-w-md w-full flex flex-col items-center text-center shadow-2xl border border-gray-100">
               <div className="relative mb-6"><div className="w-22 h-22 rounded-full bg-radial from-[#7CE05A] via-[#52B836] to-[#3B9B22] flex items-center justify-center shadow-lg shadow-green-600/30"><FiCheck className="w-11 h-11 text-white stroke-[3.5]" /></div></div>
               <h3 className="text-xl sm:text-2xl font-black text-black tracking-tight mb-2">

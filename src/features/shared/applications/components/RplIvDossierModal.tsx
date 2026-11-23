@@ -291,7 +291,7 @@ export const RplIvDossierModal: React.FC<RplIvDossierModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto select-text">
+    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto select-text" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[88vh] flex flex-col shadow-2xl border border-gray-100 overflow-hidden animate-in zoom-in-95 duration-200">
         {/* Clean Header */}
         <div className="px-6 pt-6 pb-4 flex items-start justify-between gap-4">
@@ -767,7 +767,7 @@ export const RplIvDossierModal: React.FC<RplIvDossierModalProps> = ({
 
       {/* Nested Modal: Full Form Document View */}
       {selectedFormForView && (
-        <div className="fixed inset-0 z-60 bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+        <div className="fixed inset-0 z-60 bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
           <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden relative">
             <div className="px-6 py-4 bg-white border-b border-gray-100 flex items-center justify-between">
               <span className="text-sm font-bold text-gray-900">
