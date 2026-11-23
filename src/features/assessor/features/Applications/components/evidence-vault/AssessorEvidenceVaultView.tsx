@@ -516,7 +516,7 @@ export const AssessorEvidenceVaultView: React.FC<
       />
 
       {openIqamTool && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-xs select-text">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-xs select-text" onClick={(e) => { if (e.target === e.currentTarget) setOpenIqamTool(null); }}>
           <div className="bg-white rounded-3xl w-full max-w-6xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden border border-gray-100">
             <div className="p-4 sm:p-5 border-b border-gray-100 flex items-center justify-between bg-[#F8F9FA] shrink-0">
               <div className="flex flex-col">
