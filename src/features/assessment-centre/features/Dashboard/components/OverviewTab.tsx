@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { motion } from "framer-motion";
+import { CancelOnboardingAction } from "@/src/features/shared/onboarding/components/CancelOnboardingButton";
 import { FiAward, FiX } from "react-icons/fi";
 import { RevenueChart } from "./RevenueChart";
 import { TradeChart } from "./TradeChart";
@@ -76,10 +77,18 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 self-start md:self-auto shrink-0">
+          <div className="flex items-center flex-wrap gap-2 self-start md:self-auto shrink-0">
             <span className="text-xs font-semibold text-[#92400E] bg-white/80 border border-[#F59E0B]/30 px-3.5 py-1.5 rounded-xl">
               Status: <span className="font-bold capitalize">Pending Approval</span>
             </span>
+            <CancelOnboardingAction
+              persona="centre"
+              label="Change Role"
+              modalTitle="Cancel centre profile & change role?"
+              modalDescription="Your unapproved assessment centre onboarding will be cancelled so you can select a different role."
+              confirmLabel="Yes, Change Role"
+              variant="banner-button"
+            />
           </div>
         </div>
       ) : !isApprovalDismissed ? (

@@ -3,6 +3,7 @@ import { useToast } from "@/src/components/ui/toast";
 import { ApiError } from "@/src/lib/api/client";
 import {
   startOnboardingApi,
+  cancelOnboardingApi,
   getOnboardingMineApi,
   getOnboardingPersonaApi,
   saveOnboardingApi,
@@ -49,6 +50,38 @@ export function useStartOnboarding() {
       if (!isConflict) {
         // Re-throw so the caller's onError fires with the original error
         throw error;
+      }
+    },
+  });
+}
+
+export function useCancelOnboarding() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (persona: PersonaType) => cancelOnboardingApi(persona),
+
+    onSuccess: (_data, persona) => {
+      queryClient.invalidateQueries({ queryKey: ONBOARDING_QUERY_KEYS.mine });
+      queryClient.removeQueries({
+        queryKey: ONBOARDING_QUERY_KEYS.persona(persona),
+      });
+    },
+
+    onError: (error: Error) => {
+      if (error instanceof ApiError) {
+        toast({
+          type: "error",
+          title: "Could Not Cancel Onboarding",
+          description: error.message,
+        });
+      } else {
+        toast({
+          type: "error",
+          title: "Network Error",
+          description: "Unable to cancel onboarding right now. Please try again.",
+        });
       }
     },
   });

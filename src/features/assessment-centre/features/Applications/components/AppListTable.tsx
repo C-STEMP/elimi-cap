@@ -15,7 +15,33 @@ interface AppRow {
   trade: string;
   assessmentType: string;
   status: string;
+  evidenceSummary?: { approved: number; total: number } | null;
   submittedAt: string;
+}
+
+function renderEvidenceSummaryBadge(
+  summary?: { approved: number; total: number } | null,
+) {
+  if (!summary) {
+    return <span className="text-xs text-gray-400">—</span>;
+  }
+  const { approved, total } = summary;
+  const badgeClass =
+    total === 0
+      ? "bg-gray-100 text-gray-500"
+      : approved >= total
+        ? "bg-[#1E7F4C]/10 text-[#1E7F4C]"
+        : approved > 0
+          ? "bg-[#F9A825]/15 text-[#B45309]"
+          : "bg-gray-100 text-gray-600";
+
+  return (
+    <span
+      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold tabular-nums ${badgeClass}`}
+    >
+      {approved}/{total}
+    </span>
+  );
 }
 
 interface Props {
@@ -101,6 +127,10 @@ export const AppListTable: React.FC<Props> = ({
                     <span className="text-xs text-gray-500">
                       Type: {app.assessmentType}
                     </span>
+                    <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                      <span>Evidences:</span>
+                      {renderEvidenceSummaryBadge(app.evidenceSummary)}
+                    </div>
                     <span className="text-xs text-gray-400">
                       Submitted: {app.submittedAt}
                     </span>
@@ -133,6 +163,7 @@ export const AppListTable: React.FC<Props> = ({
     "Assessor",
     "Trade",
     "Assessment Type",
+    "Evidences",
     "Status",
     "Submitted at",
     "Action",
@@ -166,7 +197,7 @@ export const AppListTable: React.FC<Props> = ({
             {isLoading
               ? Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="animate-pulse">
-                    {Array.from({ length: 8 }).map((__, j) => (
+                    {Array.from({ length: 9 }).map((__, j) => (
                       <td key={j} className="p-4">
                         <div className="h-3.5 bg-gray-200 rounded w-24" />
                       </td>
@@ -208,6 +239,9 @@ export const AppListTable: React.FC<Props> = ({
                     </td>
                     <td className="p-4 text-gray-600">{app.assessmentType}</td>
                     <td className="p-4">
+                      {renderEvidenceSummaryBadge(app.evidenceSummary)}
+                    </td>
+                    <td className="p-4">
                       <span
                         className={`text-xs font-semibold px-3 py-1 rounded-full ${getStatusBadgeClass(
                           app.status,
@@ -233,7 +267,7 @@ export const AppListTable: React.FC<Props> = ({
                 ))
               : (
                 <tr>
-                  <td colSpan={8} className="p-8 text-center text-gray-400">
+                  <td colSpan={9} className="p-8 text-center text-gray-400">
                     No applications found.
                   </td>
                 </tr>

@@ -82,6 +82,26 @@ export const AssessorApplicationGrid: React.FC<
                 <span className="font-semibold text-neutral-primary truncate text-right">{app.assessmentType}</span>
               </div>
               <div className="flex items-center justify-between gap-2">
+                <span className="shrink-0">Evidences:</span>
+                {app.evidenceSummary ? (
+                  <span
+                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold tabular-nums ${
+                      app.evidenceSummary.total === 0
+                        ? "bg-gray-100 text-gray-500"
+                        : app.evidenceSummary.approved >= app.evidenceSummary.total
+                          ? "bg-[#1E7F4C]/10 text-[#1E7F4C]"
+                          : app.evidenceSummary.approved > 0
+                            ? "bg-[#F9A825]/15 text-[#B45309]"
+                            : "bg-gray-100 text-gray-600"
+                    }`}
+                  >
+                    {app.evidenceSummary.approved}/{app.evidenceSummary.total}
+                  </span>
+                ) : (
+                  <span className="text-gray-400">—</span>
+                )}
+              </div>
+              <div className="flex items-center justify-between gap-2">
                 <span className="shrink-0">Assigned at:</span>
                 <span className="truncate text-right">{app.assignedAt || app.submittedAt || "07/22/2026"}</span>
               </div>

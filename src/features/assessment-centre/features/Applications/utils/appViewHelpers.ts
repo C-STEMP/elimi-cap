@@ -209,6 +209,15 @@ export function mapApplicationItem(app: any) {
         : "Pending",
     ivApproved: Boolean(rawApp.ivApproved),
     currentStageKey: rawApp.currentStageKey || null,
+    evidenceSummary:
+      rawApp.evidenceSummary &&
+      typeof rawApp.evidenceSummary.approved === "number" &&
+      typeof rawApp.evidenceSummary.total === "number"
+        ? {
+            approved: rawApp.evidenceSummary.approved,
+            total: rawApp.evidenceSummary.total,
+          }
+        : null,
     submittedAt: formatDate(rawApp.submittedAt || app.createdAt),
   };
 }

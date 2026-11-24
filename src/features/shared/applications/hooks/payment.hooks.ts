@@ -11,21 +11,32 @@ import {
 } from "../api";
 import { APPLICATION_QUERY_KEYS } from "./queryKeys";
 
+function buildPaymentCallbackUrl(applicationId: string): string | undefined {
+  if (typeof window === "undefined") return undefined;
+  const pathname = window.location.pathname || `/applications/${applicationId}`;
+  return `${window.location.origin}${pathname}?payment=success`;
+}
+
 export function useInitiateApplicationPayment() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: (id: string) => {
+    mutationFn: (input: string | { id: string; callbackUrl?: string }) => {
+      const id = typeof input === "string" ? input : input.id;
+      const callbackUrl =
+        (typeof input === "string" ? undefined : input.callbackUrl) ||
+        buildPaymentCallbackUrl(id);
       try {
         if (id && typeof window !== "undefined") {
           sessionStorage.setItem("pending_payment_application_id", id);
           localStorage.setItem("pending_payment_application_id", id);
         }
       } catch {}
-      return initiateApplicationPaymentApi(id);
+      return initiateApplicationPaymentApi(id, { callbackUrl });
     },
 
-    onSuccess: (_data, id) => {
+    onSuccess: (_data, input) => {
+      const id = typeof input === "string" ? input : input.id;
       try {
         if (id && typeof window !== "undefined") {
           sessionStorage.setItem("pending_payment_application_id", id);
@@ -95,24 +106,15 @@ interface PaystackCheckoutCallbacks {
 }
 
 /**
- * Opens the Paystack checkout in a pop-up and polls the application until the
- * backend reports it paid, then closes the pop-up. POST /pay takes no
- * callback URL, so Paystack's hosted page never redirects back by itself.
- * Falls back to a full-page redirect when the browser blocks the pop-up.
+ * Initiates Paystack checkout with a callbackUrl pointing back to the current
+ * application page (?payment=success), then navigates to Paystack's hosted
+ * checkout so users are automatically redirected back on completion across all
+ * browsers and mobile devices without pop-up blockers.
  */
 export function usePaystackCheckout() {
   const initiatePayment = useInitiateApplicationPayment();
   const queryClient = useQueryClient();
-  const [isAwaitingPayment, setIsAwaitingPayment] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const stopPolling = useCallback(() => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = null;
-    setIsAwaitingPayment(false);
-  }, []);
-
-  useEffect(() => stopPolling, [stopPolling]);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   const refreshApplication = useCallback(
     (id: string) => {
@@ -126,82 +128,38 @@ export function usePaystackCheckout() {
 
   const startCheckout = useCallback(
     (id: string, callbacks: PaystackCheckoutCallbacks) => {
-      // Open the window synchronously inside the click handler, before the
-      // async /pay call, so pop-up blockers treat it as user-initiated.
-      const width = 520;
-      const height = 720;
-      const left = Math.max(0, window.screenX + (window.outerWidth - width) / 2);
-      const top = Math.max(0, window.screenY + (window.outerHeight - height) / 2);
-      const popup = window.open(
-        "",
-        "elimi_paystack_checkout",
-        `popup=yes,width=${width},height=${height},left=${left},top=${top}`,
-      );
-      if (popup) {
-        try {
-          popup.document.title = "Secure checkout";
-          popup.document.body.innerHTML =
-            '<p style="font-family:sans-serif;text-align:center;margin-top:40vh;color:#555">Loading secure checkout…</p>';
-        } catch {}
-      }
+      const callbackUrl = buildPaymentCallbackUrl(id);
+      setIsRedirecting(true);
 
-      initiatePayment.mutate(id, {
-        onSuccess: (data) => {
-          const checkoutUrl =
-            data?.checkoutUrl ||
-            (data as { data?: { checkoutUrl?: string } } | undefined)?.data?.checkoutUrl;
+      initiatePayment.mutate(
+        { id, callbackUrl },
+        {
+          onSuccess: (data) => {
+            const checkoutUrl =
+              data?.checkoutUrl ||
+              (data as { data?: { checkoutUrl?: string } } | undefined)?.data?.checkoutUrl;
 
-          if (!checkoutUrl) {
-            popup?.close();
-            refreshApplication(id);
-            callbacks.onPaid();
-            return;
-          }
-
-          if (!popup || popup.closed) {
-            window.location.href = checkoutUrl;
-            return;
-          }
-
-          popup.location.href = checkoutUrl;
-          popup.focus();
-          setIsAwaitingPayment(true);
-
-          let checking = false;
-          let closedChecks = 0;
-          timerRef.current = setInterval(async () => {
-            if (checking) return;
-            checking = true;
-            try {
-              const paid = await isApplicationPaid(id);
-              if (paid) {
-                stopPolling();
-                if (!popup.closed) popup.close();
-                refreshApplication(id);
-                callbacks.onPaid();
-                return;
-              }
-              if (popup.closed && ++closedChecks >= CLOSED_GRACE_CHECKS) {
-                stopPolling();
-                refreshApplication(id);
-                callbacks.onClosedUnpaid?.();
-              }
-            } finally {
-              checking = false;
+            if (!checkoutUrl) {
+              setIsRedirecting(false);
+              refreshApplication(id);
+              callbacks.onPaid();
+              return;
             }
-          }, POLL_INTERVAL_MS);
+
+            window.location.href = checkoutUrl;
+          },
+          onError: (error) => {
+            setIsRedirecting(false);
+            callbacks.onError?.(error);
+          },
         },
-        onError: (error) => {
-          popup?.close();
-          callbacks.onError?.(error);
-        },
-      });
+      );
     },
-    [initiatePayment, refreshApplication, stopPolling],
+    [initiatePayment, refreshApplication],
   );
 
   return {
     startCheckout,
-    isPending: initiatePayment.isPending || isAwaitingPayment,
+    isPending: initiatePayment.isPending || isRedirecting,
   };
 }

@@ -1,6 +1,7 @@
 import React from "react";
 import { AuthSidebar } from "@/src/features/shared/authentication/components/AuthSidebar";
 import { Logo } from "@/src/components/ui/logo";
+import { CancelOnboardingBar } from "@/src/features/shared/onboarding/components/CancelOnboardingButton";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +32,7 @@ export default function OnboardingLayout({
           suppressHydrationWarning
           className="w-full flex flex-col items-center my-auto py-4 sm:py-8 shrink-0"
         >
+          <CancelOnboardingBar />
           {children}
         </div>
       </div>

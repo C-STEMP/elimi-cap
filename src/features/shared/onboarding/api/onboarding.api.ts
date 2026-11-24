@@ -28,6 +28,14 @@ export async function startOnboardingApi(
   });
 }
 
+export async function cancelOnboardingApi(
+  persona: PersonaType,
+): Promise<void> {
+  await capFetch<void>(`/onboarding/${persona}`, {
+    method: "DELETE",
+  });
+}
+
 export interface OnboardingMineResponse {
   onboardings: OnboardingSummary[];
 }

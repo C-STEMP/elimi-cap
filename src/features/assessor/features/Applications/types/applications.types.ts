@@ -19,6 +19,7 @@ export interface AssessorApplicationRecord {
   trade: string;
   assessmentType: "RPL" | "NSQ" | string;
   status: AssessorApplicationStatus;
+  evidenceSummary?: { approved: number; total: number } | null;
   assignedAt?: string;
   submittedAt: string;
 }
