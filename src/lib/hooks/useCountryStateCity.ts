@@ -67,11 +67,20 @@ export function useCountryStateCity(
       };
     }
 
+    // Wait for statesData to finish loading before falling back to the raw
+    // state name, so we don't fire a premature LGA request with an unresolved name.
+    if (isLoadingStates) {
+      return {
+        resolvedStateCode: "",
+        stateName: clean,
+      };
+    }
+
     return {
       resolvedStateCode: clean,
       stateName: clean,
     };
-  }, [resolvedCountryCode, stateInput, statesData]);
+  }, [resolvedCountryCode, stateInput, statesData, isLoadingStates]);
 
   const { data: lgasData, isLoading: isLoadingLgas } = useGetLgas(
     resolvedCountryCode,

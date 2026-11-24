@@ -38,6 +38,7 @@ export const AssessorApplicationTable: React.FC<
             <th className="py-3 px-4">Candidate Name</th>
             <th className="py-3 px-4">Trade</th>
             <th className="py-3 px-4">Assessment Type</th>
+            <th className="py-3 px-4 text-center">Evidences</th>
             <th className="py-3 px-4 text-center">Status</th>
             <th className="py-3 px-4">Assigned at</th>
             <th className="py-3 px-4 text-right">Action</th>
@@ -74,6 +75,25 @@ export const AssessorApplicationTable: React.FC<
                 </td>
                 <td className="py-3.5 px-4 text-neutral-secondary font-medium">
                   {app.assessmentType}
+                </td>
+                <td className="py-3.5 px-4 text-center">
+                  {app.evidenceSummary ? (
+                    <span
+                      className={`inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-semibold tabular-nums ${
+                        app.evidenceSummary.total === 0
+                          ? "bg-gray-100 text-gray-500"
+                          : app.evidenceSummary.approved >= app.evidenceSummary.total
+                            ? "bg-[#1E7F4C]/10 text-[#1E7F4C]"
+                            : app.evidenceSummary.approved > 0
+                              ? "bg-[#F9A825]/15 text-[#B45309]"
+                              : "bg-gray-100 text-gray-600"
+                      }`}
+                    >
+                      {app.evidenceSummary.approved}/{app.evidenceSummary.total}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-gray-400">—</span>
+                  )}
                 </td>
                 <td className="py-3.5 px-4 text-center">
                   {isCompleted ? (

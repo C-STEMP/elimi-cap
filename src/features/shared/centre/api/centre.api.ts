@@ -192,6 +192,7 @@ export interface CentreAssessorApplication {
   };
   currentStageKey?: string;
   roles?: CentreAssessorAssignmentRole[];
+  evidenceSummary?: { approved: number; total: number } | null;
   createdAt?: string;
   updatedAt?: string;
   [key: string]: any;

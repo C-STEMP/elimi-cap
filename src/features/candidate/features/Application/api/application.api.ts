@@ -64,8 +64,9 @@ export async function getCandidateApplicationStagesApi(
 
 export async function initiateCandidateApplicationPaymentApi(
   id: string,
+  payload?: { callbackUrl?: string },
 ): Promise<PaymentInitiationResponse> {
-  return initiateApplicationPaymentApi(id);
+  return initiateApplicationPaymentApi(id, payload);
 }
 
 export async function getCandidateApplicationReceiptApi(

@@ -12,6 +12,7 @@ import { CalendarWidget } from "@/features/candidate/features/Dashboard/componen
 import { VerifiedBadge } from "@/features/candidate/features/Dashboard/components/VerifiedBadge";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { useGetApplications } from "@/src/features/candidate/features/Application/hooks";
+import { getCandidateApplicationStatusDisplay } from "@/src/features/shared/applications/utils/applicationStatusDisplay";
 import {
   useCandidateEvents,
   useCandidateProfile,
@@ -128,23 +129,18 @@ export const Dashboard: React.FC = () => {
     const subtitle =
       app.type === "NSQ" ? "NSQ Standard Assessment" : "Recognition of Prior Learning";
 
-    const statusLabel =
-      app.status === "draft"
-        ? "Draft"
-        : app.status === "certified"
-          ? "Completed"
-          : app.status === "withdrawn"
-            ? "Withdrawn"
-            : app.status === "rejected"
-              ? "Rejected"
-              : "Awaiting Review";
+    const statusDisplay = getCandidateApplicationStatusDisplay(
+      app.status,
+      app.currentStageKey,
+    );
 
     return {
       id: app.id,
       title,
       subtitle,
       status,
-      statusLabel,
+      statusLabel: statusDisplay.label,
+      statusBadgeClass: `${statusDisplay.bg} ${statusDisplay.text} ${statusDisplay.border}`,
       rawStatus: app.status,
       type: app.type,
     };

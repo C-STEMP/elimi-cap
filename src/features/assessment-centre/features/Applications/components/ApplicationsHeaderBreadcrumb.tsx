@@ -279,7 +279,7 @@ export const ApplicationsHeaderBreadcrumb: React.FC<Props> = ({
         </div>
 
         {isLinkModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs select-text">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs select-text" onClick={(e) => { if (e.target === e.currentTarget) setIsLinkModalOpen(false); }}>
             <div className="bg-white rounded-3xl p-7 sm:p-9 max-w-md w-full shadow-2xl border border-gray-100 flex flex-col items-center text-center gap-4">
               <div className="w-20 h-20 rounded-full bg-linear-to-tr from-[#10B981] to-[#34D399] flex items-center justify-center shadow-lg shadow-emerald-500/30 text-white mb-1">
                 <FiCheck className="w-10 h-10 stroke-3" />

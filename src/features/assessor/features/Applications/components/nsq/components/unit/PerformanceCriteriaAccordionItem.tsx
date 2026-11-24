@@ -33,6 +33,8 @@ export const PerformanceCriteriaAccordionItem: React.FC<
   onApproveEvidence,
   onRejectEvidence,
 }) => {
+  const evidenceCount = criterion.evidences?.length ?? 0;
+
   return (
     <div className="border border-gray-100 bg-[#fbfcfd] rounded-2xl p-4 flex flex-col gap-3">
       {/* PC Header */}
@@ -53,11 +55,16 @@ export const PerformanceCriteriaAccordionItem: React.FC<
             </span>
           )}
         </div>
-        {isExpanded ? (
-          <FiChevronUp className="w-4 h-4 text-gray-400 shrink-0" />
-        ) : (
-          <FiChevronDown className="w-4 h-4 text-gray-400 shrink-0" />
-        )}
+        <div className="flex items-center gap-2.5 shrink-0">
+          <span className="bg-amber-100/70 text-amber-800 text-[11px] font-bold px-2.5 py-0.5 rounded-full">
+            {evidenceCount} {evidenceCount === 1 ? "Evidence" : "Evidences"}
+          </span>
+          {isExpanded ? (
+            <FiChevronUp className="w-4 h-4 text-gray-400 shrink-0" />
+          ) : (
+            <FiChevronDown className="w-4 h-4 text-gray-400 shrink-0" />
+          )}
+        </div>
       </div>
 
       {/* Evidence Items for this PC */}

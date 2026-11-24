@@ -31,6 +31,11 @@ export interface ApplicationNamedRef {
   slug?: string;
 }
 
+export interface ApplicationEvidenceSummary {
+  approved: number;
+  total: number;
+}
+
 export interface Application {
   id: string;
   candidateId: string;
@@ -48,6 +53,7 @@ export interface Application {
   centre?: ApplicationNamedRef;
   sector?: ApplicationNamedRef | null;
   trade?: ApplicationNamedRef | null;
+  evidenceSummary?: ApplicationEvidenceSummary | null;
 }
 
 export interface CreateApplicationPayload {

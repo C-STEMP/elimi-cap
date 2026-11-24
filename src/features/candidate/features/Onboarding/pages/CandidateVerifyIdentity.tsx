@@ -488,7 +488,7 @@ export const CandidateVerifyIdentity: React.FC = () => {
 
       {/* Save draft confirmation modal */}
       {showConfirmDraftModal && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) setShowConfirmDraftModal(false); }}>
           <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full text-center shadow-lg">
             <h3 className="text-xl font-bold text-neutral-primary mb-2">
               Save Draft?
@@ -520,7 +520,7 @@ export const CandidateVerifyIdentity: React.FC = () => {
 
       {/* Draft saved modal */}
       {showDraftModal && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) setShowDraftModal(false); }}>
           <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full text-center shadow-lg">
             <FiCheckCircle className="w-12 h-12 text-[#2E7D32] mx-auto mb-4" />
             <h3 className="text-xl font-bold text-neutral-primary mb-2">

@@ -447,7 +447,7 @@ export async function getCountriesApi(): Promise<Country[]> {
       return [];
     }
     console.error("Failed to fetch countries from orchestrator:", error);
-    return [];
+    throw error;
   }
 }
 
@@ -471,7 +471,7 @@ export async function getStatesApi(country: string): Promise<State[]> {
       return [];
     }
     console.error("Failed to fetch states from orchestrator:", error);
-    return [];
+    throw error;
   }
 }
 
@@ -498,7 +498,7 @@ export async function getLgasApi(
       return [];
     }
     console.error("Failed to fetch LGAs from orchestrator:", error);
-    return [];
+    throw error;
   }
 }
 

@@ -13,10 +13,11 @@ export async function getPaymentQuoteApi(id: string): Promise<PaymentQuote> {
 
 export async function initiateApplicationPaymentApi(
   id: string,
-  _payload?: { callbackUrl?: string },
+  payload?: { callbackUrl?: string },
 ): Promise<PaymentInitiationResponse> {
   return capFetch<PaymentInitiationResponse>(`/applications/${id}/pay`, {
     method: "POST",
+    ...(payload?.callbackUrl ? { data: { callbackUrl: payload.callbackUrl } } : {}),
   });
 }
 

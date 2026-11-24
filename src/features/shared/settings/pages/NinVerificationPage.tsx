@@ -219,7 +219,7 @@ export const NinVerificationPage: React.FC = () => {
 
       {/* 2. Identity Confirmed Modal */}
       {step === "success" && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={(e) => { if (e.target === e.currentTarget) handleSuccessDone(); }}>
           <div className="bg-white rounded-3xl p-8 max-w-md w-full text-center flex flex-col items-center shadow-2xl relative animate-in zoom-in-95 duration-200">
             <div className="relative w-25 h-25 mb-2 flex items-center justify-center mx-auto">
               {ASSETS_URL.successCheckmarkImg ? (
@@ -264,7 +264,7 @@ export const NinVerificationPage: React.FC = () => {
 
       {/* 3. Error Modal */}
       {step === "error" && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={(e) => { if (e.target === e.currentTarget) setStep("input"); }}>
           <div className="bg-white rounded-3xl p-6 lg:p-8 max-w-md w-full text-center flex flex-col items-center shadow-2xl relative animate-in zoom-in-95 duration-200">
             <div className="relative w-25 h-25 mb-2 flex items-center justify-center mx-auto">
               {ASSETS_URL.errorSymbolIcon ? (

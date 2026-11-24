@@ -34,7 +34,7 @@ export const ConfirmApprovePendingModal: React.FC<
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+      <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs" onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}>
         <motion.div
           initial={{ opacity: 0, scale: 0.94 }}
           animate={{ opacity: 1, scale: 1 }}

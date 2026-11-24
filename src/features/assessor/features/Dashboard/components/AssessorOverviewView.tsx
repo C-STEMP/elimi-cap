@@ -10,6 +10,7 @@ import { Avatar } from "@/src/components/ui/avatar";
 import { TablePagination } from "@/src/components/ui/table-pagination";
 import { DEFAULT_PAGE_SIZE, usePagination } from "@/src/lib/hooks/usePagination";
 import { getRejectionReason } from "@/src/utils/rejection";
+import { CancelOnboardingAction } from "@/src/features/shared/onboarding/components/CancelOnboardingButton";
 
 interface AssessorOverviewViewProps {
   onViewAllApplications: () => void;
@@ -86,10 +87,18 @@ export const AssessorOverviewView: React.FC<AssessorOverviewViewProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 self-start md:self-auto shrink-0">
+          <div className="flex items-center flex-wrap gap-2 self-start md:self-auto shrink-0">
             <span className="text-xs font-semibold text-[#92400E] bg-white/80 border border-[#F59E0B]/30 px-3.5 py-1.5 rounded-xl">
               Status: <span className="font-bold capitalize">Pending Approval</span>
             </span>
+            <CancelOnboardingAction
+              persona="assessor"
+              label="Change Role"
+              modalTitle="Cancel assessor profile & change role?"
+              modalDescription="Your unapproved assessor onboarding will be cancelled so you can choose a different role (such as Candidate or Assessment Centre)."
+              confirmLabel="Yes, Change Role"
+              variant="banner-button"
+            />
           </div>
         </div>
       ) : accreditationRejected ? (
@@ -187,6 +196,7 @@ export const AssessorOverviewView: React.FC<AssessorOverviewViewProps> = ({
                 <th className="p-3.5">Candidate Name</th>
                 <th className="p-3.5">Trade</th>
                 <th className="p-3.5">Assessment Type</th>
+                <th className="p-3.5">Evidences</th>
                 <th className="p-3.5">Status</th>
                 <th className="p-3.5">Stage</th>
                 <th className="p-3.5">Date</th>
@@ -223,6 +233,7 @@ export const AssessorOverviewView: React.FC<AssessorOverviewViewProps> = ({
                 <th className="p-3.5">Candidate Name</th>
                 <th className="p-3.5">Trade</th>
                 <th className="p-3.5">Assessment Type</th>
+                <th className="p-3.5">Evidences</th>
                 <th className="p-3.5">Status</th>
                 <th className="p-3.5">Stage</th>
                 <th className="p-3.5">Date</th>
@@ -270,6 +281,27 @@ export const AssessorOverviewView: React.FC<AssessorOverviewViewProps> = ({
                     </td>
                     <td className="p-3.5 text-gray-600">{tradeName}</td>
                     <td className="p-3.5 text-gray-600 font-medium">{app.type || "RPL"}</td>
+                    <td className="p-3.5">
+                      {rawApp.evidenceSummary &&
+                      typeof rawApp.evidenceSummary.approved === "number" &&
+                      typeof rawApp.evidenceSummary.total === "number" ? (
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold tabular-nums ${
+                            rawApp.evidenceSummary.total === 0
+                              ? "bg-gray-100 text-gray-500"
+                              : rawApp.evidenceSummary.approved >= rawApp.evidenceSummary.total
+                                ? "bg-[#1E7F4C]/10 text-[#1E7F4C]"
+                                : rawApp.evidenceSummary.approved > 0
+                                  ? "bg-[#F9A825]/15 text-[#B45309]"
+                                  : "bg-gray-100 text-gray-600"
+                          }`}
+                        >
+                          {rawApp.evidenceSummary.approved}/{rawApp.evidenceSummary.total}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-400">—</span>
+                      )}
+                    </td>
                     <td className="p-3.5">
                       <span
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${s.className}`}

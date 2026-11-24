@@ -479,7 +479,7 @@ export const NsqUnitDetailView: React.FC<NsqUnitDetailViewProps> = ({
 
                             <div className="flex items-center gap-3 shrink-0">
                               <span className="bg-amber-100/70 text-amber-800 text-[11px] font-bold px-2.5 py-0.5 rounded-full">
-                                {evidenceCount} Evidence
+                                {evidenceCount} {evidenceCount === 1 ? "Evidence" : "Evidences"}
                               </span>
                               <div className="text-gray-400">
                                 {isPcExpanded ? (

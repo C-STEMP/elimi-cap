@@ -56,6 +56,15 @@ function mapApplicationToRecord(app: any): AssessorApplicationRecord {
     trade: tradeName,
     assessmentType: app.type || "RPL",
     status: statusMap[app.status] ?? "Pending",
+    evidenceSummary:
+      app.evidenceSummary &&
+      typeof app.evidenceSummary.approved === "number" &&
+      typeof app.evidenceSummary.total === "number"
+        ? {
+            approved: app.evidenceSummary.approved,
+            total: app.evidenceSummary.total,
+          }
+        : null,
     assignedAt: app.submittedAt
       ? new Date(app.submittedAt).toLocaleDateString("en-GB")
       : app.createdAt

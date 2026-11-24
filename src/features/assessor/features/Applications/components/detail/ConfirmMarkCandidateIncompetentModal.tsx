@@ -99,7 +99,7 @@ export const ConfirmMarkCandidateIncompetentModal: React.FC<
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl flex flex-col items-center text-center animate-in zoom-in-95 duration-200 select-text max-h-[90vh] overflow-y-auto">
         <div className="w-20 h-20 mb-3 flex items-center justify-center">
           <Image
