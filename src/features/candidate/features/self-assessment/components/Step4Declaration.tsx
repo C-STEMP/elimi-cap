@@ -211,9 +211,15 @@ export const Step4Declaration: React.FC<Step4Props> = ({
               Terms & Conditions
             </span>{" "}
             and{" "}
-            <span className="text-primary font-bold underline cursor-pointer">
+            <a
+              href="/privacy-policy"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="text-primary font-bold underline cursor-pointer"
+            >
               Privacy Policy
-            </span>
+            </a>
             . <span className="text-primary-solid ml-0.5">*</span>
           </span>
         </label>

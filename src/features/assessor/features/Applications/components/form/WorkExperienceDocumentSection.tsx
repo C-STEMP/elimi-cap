@@ -126,9 +126,15 @@ export const WorkExperienceDocumentSection: React.FC<
                       Terms &amp; Conditions
                     </span>{" "}
                     and{" "}
-                    <span className="text-[#A31D38] font-semibold cursor-pointer hover:underline">
+                    <a
+                      href="/privacy-policy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-[#A31D38] font-semibold cursor-pointer hover:underline"
+                    >
                       Privacy Policy
-                    </span>
+                    </a>
                     .
                   </>
                 ) : (

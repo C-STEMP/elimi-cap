@@ -1,13 +1,18 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { FiUpload, FiCamera } from "react-icons/fi";
 import { useToast } from "@/src/components/ui/toast";
 import { useUploadFile } from "@/src/features/shared/storage/hooks";
 import type { StorageAsset } from "@/src/features/shared/storage/api";
 import { CameraCaptureModal } from "./camera-capture-modal";
 
-import { patchMeProfileApi } from "@/src/features/shared/account/api";
+import {
+  patchMeProfileApi,
+  type MeProfile,
+} from "@/src/features/shared/account/api";
+import { ACCOUNT_QUERY_KEYS } from "@/src/features/shared/account/hooks";
 
 export interface PassportUploadProps {
   onImageChange?: (file: File | null, asset?: StorageAsset | null) => void;
@@ -27,12 +32,16 @@ export const PassportUpload: React.FC<PassportUploadProps> = ({
   const [preview, setPreview] = useState<string | null>(defaultImage || null);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const uploadSeqRef = useRef(0);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const uploadFileMutation = useUploadFile();
 
   useEffect(() => {
     if (defaultImage) {
       setPreview(defaultImage);
+    } else if (defaultImage === "") {
+      setPreview(null);
     }
   }, [defaultImage]);
 
@@ -58,6 +67,7 @@ export const PassportUpload: React.FC<PassportUploadProps> = ({
       return;
     }
 
+    const seq = ++uploadSeqRef.current;
     const localPreview = URL.createObjectURL(file);
     setPreview(localPreview);
     onImageChange?.(file, {
@@ -73,16 +83,20 @@ export const PassportUpload: React.FC<PassportUploadProps> = ({
 
     try {
       const asset = await uploadFileMutation.mutateAsync({ file, purpose });
+      // Ignore if the user cleared or replaced the photo while upload was in flight
+      if (uploadSeqRef.current !== seq) return;
       if (asset?.url) {
         setPreview(asset.url);
       }
       if (asset?.assetId && purpose === "passport") {
         try {
           await patchMeProfileApi({ photoAssetId: asset.assetId });
+          queryClient.invalidateQueries({ queryKey: ACCOUNT_QUERY_KEYS.profile });
         } catch {
           // Non-blocking if meProfile cannot be patched yet
         }
       }
+      if (uploadSeqRef.current !== seq) return;
       onImageChange?.(file, asset);
     } catch {
       // Keep local preview even if server upload fails/is offline
@@ -106,9 +120,33 @@ export const PassportUpload: React.FC<PassportUploadProps> = ({
 
   const handleClear = (e: React.MouseEvent) => {
     e.stopPropagation();
+    uploadSeqRef.current += 1;
     setPreview(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
+    }
+    if (purpose === "passport") {
+      queryClient.setQueryData<MeProfile | undefined>(
+        ACCOUNT_QUERY_KEYS.profile,
+        (old) =>
+          old
+            ? {
+                ...old,
+                photoAssetId: null,
+                photo: null,
+                personalDetails: old.personalDetails
+                  ? {
+                      ...old.personalDetails,
+                      passportUrl: undefined,
+                      passportPhotoAssetId: undefined,
+                    }
+                  : old.personalDetails,
+              }
+            : old,
+      );
+      patchMeProfileApi({ photoAssetId: null }).catch(() => {
+        // Non-blocking if meProfile cannot be cleared yet
+      });
     }
     onImageChange?.(null, null);
   };

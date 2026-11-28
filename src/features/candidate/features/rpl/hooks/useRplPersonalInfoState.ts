@@ -92,7 +92,12 @@ export function useRplPersonalInfoState(onSuccess?: () => void) {
   const [otherImpairment, setOtherImpairment] = useState(initialImpairmentState.otherText);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [passportFile, setPassportFile] = useState<File | null>(null);
-  const [passportDefaultImage, setPassportDefaultImage] = useState<string>(initialPassportUrl);
+  const [passportDefaultImage, setPassportDefaultImageState] = useState<string>(initialPassportUrl);
+  const hasClearedPassportRef = React.useRef(false);
+  const setPassportDefaultImage = React.useCallback((url: string) => {
+    hasClearedPassportRef.current = !url;
+    setPassportDefaultImageState(url);
+  }, []);
   const [passportError, setPassportError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmDraftModal, setShowConfirmDraftModal] = useState(false);
@@ -105,6 +110,8 @@ export function useRplPersonalInfoState(onSuccess?: () => void) {
 
   // Synchronize passport photo from meProfile, candidateProfile, or saved state if initially missing
   useEffect(() => {
+    if (hasClearedPassportRef.current) return;
+
     const fallbackPhotoUrl =
       meProfile?.photo?.url ||
       meProfile?.personalDetails?.passportUrl ||
@@ -122,7 +129,7 @@ export function useRplPersonalInfoState(onSuccess?: () => void) {
       "";
 
     if (fallbackPhotoUrl && !passportDefaultImage) {
-      setPassportDefaultImage(fallbackPhotoUrl);
+      setPassportDefaultImageState(fallbackPhotoUrl);
       dispatch(
         setPersonalInfo({
           passportUrl: fallbackPhotoUrl,
@@ -292,11 +299,13 @@ export function useRplPersonalInfoState(onSuccess?: () => void) {
       setOtherImpairment((prev) => prev || parsed.otherText);
       dispatch(setPersonalInfo(hydrated));
 
-      if (passportAssetId || passportUrl) {
-        dispatch(setPersonalInfo({ passportAssetId, passportUrl }));
-        setPassportDefaultImage((prev) => prev || passportUrl);
-      } else if (savedPersonalInfo.passportUrl) {
-        setPassportDefaultImage((prev) => prev || savedPersonalInfo.passportUrl);
+      if (!hasClearedPassportRef.current) {
+        if (passportAssetId || passportUrl) {
+          dispatch(setPersonalInfo({ passportAssetId, passportUrl }));
+          setPassportDefaultImageState((prev) => prev || passportUrl);
+        } else if (savedPersonalInfo.passportUrl) {
+          setPassportDefaultImageState((prev) => prev || savedPersonalInfo.passportUrl);
+        }
       }
     } else if (authUser?.email && !form.email) {
       setForm((prev) => ({ ...prev, email: authUser.email || "" }));
@@ -365,7 +374,12 @@ export function useRplPersonalInfoState(onSuccess?: () => void) {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     let valid = true;
-    const hasPassport = Boolean(passportFile || passportDefaultImage || savedPersonalInfo.passportUrl || savedPersonalInfo.passportAssetId);
+    const hasPassport = Boolean(
+      passportFile ||
+        passportDefaultImage ||
+        (!hasClearedPassportRef.current &&
+          (savedPersonalInfo.passportUrl || savedPersonalInfo.passportAssetId)),
+    );
     if (!hasPassport) {
       setPassportError("Passport photograph is required");
       valid = false;

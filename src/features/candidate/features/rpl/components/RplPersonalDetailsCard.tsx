@@ -73,7 +73,15 @@ export const RplPersonalDetailsCard: React.FC<RplPersonalDetailsCardProps> = ({
               );
             } else {
               setPassportDefaultImage("");
-              dispatch(setPersonalInfo({ passportAssetId: "", passportUrl: "", passportFileName: "" }));
+              dispatch(
+                setPersonalInfo({
+                  passportAssetId: "",
+                  passportUrl: "",
+                  passportPreview: "",
+                  passportFileName: "",
+                }),
+              );
+              dispatch(updateUser({ passportUrl: "", avatarUrl: "" }));
             }
           }}
         />

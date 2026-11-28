@@ -3,7 +3,14 @@
 import React, { useState } from "react";
 import { Button } from "@/src/components/ui/button";
 import { useToast } from "@/src/components/ui/toast";
-import { FiArrowLeft, FiArrowRight, FiCheck, FiEdit2, FiEdit3 } from "react-icons/fi";
+import {
+  FiAlertCircle,
+  FiArrowLeft,
+  FiArrowRight,
+  FiCheck,
+  FiEdit2,
+  FiEdit3,
+} from "react-icons/fi";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -19,6 +26,7 @@ import {
   useCandidateProfile,
   useCandidateProfileSignature,
 } from "@/src/features/shared/onboarding/hooks";
+import { useGetMeProfile } from "@/src/features/shared/account/hooks";
 import {
   useGetApplications,
   useGetApplicationById,
@@ -28,6 +36,11 @@ import { UploadSignatureModal } from "@/src/features/candidate/features/Applicat
 import { markVerified } from "@/store/slices/authSlice";
 import { setPersonalInfo, setRPLExperienceTrade } from "@/store/slices/onboardingSlice";
 import { useRplApplicationSubmission } from "../hooks/useRplApplicationSubmission";
+import {
+  evaluateRplCompletion,
+  buildIncompleteApplicationMessage,
+  formatRplSubmissionError,
+} from "../utils/rplValidation";
 
 export interface RPLReviewSubmitProps {
   onBack?: () => void;
@@ -46,6 +59,7 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
   const { getOnboarding, submitOnboarding } = useOnboarding();
   const { data: candidateProfile } = useCandidateProfile(true);
   const { data: profileSignature } = useCandidateProfileSignature(true);
+  const { data: meProfile } = useGetMeProfile();
 
   const [signatureAppended, setSignatureAppended] = useState(false);
   const [appendedSignatureUrl, setAppendedSignatureUrl] = useState<string | null>(null);
@@ -110,33 +124,54 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
   const { data: appDetail } = useGetApplicationById(activeApp?.id || "");
 
   const obData = (getOnboarding.data?.data || (candidateProfile as any)?.onboarding?.data) as any;
-  const appPd = appDetail?.personalInformation?.personalDetails;
-  const effectiveFirstName =
-    personalInfo.firstName || obData?.personalDetails?.firstName || appPd?.firstName;
-  const effectiveLastName =
-    personalInfo.lastName || obData?.personalDetails?.lastName || appPd?.lastName;
-  const personalInfoCompleted = Boolean(
-    effectiveFirstName && effectiveLastName,
+  const obOcc = obData?.currentOccupation || obData?.rplExperienceTrade;
+
+  const completion = React.useMemo(
+    () =>
+      evaluateRplCompletion({
+        personalInfo,
+        rplExp,
+        rplIdentity: rplId,
+        user,
+        candidateProfile,
+        meProfile,
+        obData,
+        appDetail,
+      }),
+    [
+      personalInfo,
+      rplExp,
+      rplId,
+      user,
+      candidateProfile,
+      meProfile,
+      obData,
+      appDetail,
+    ],
   );
 
-  const obOcc = obData?.currentOccupation || obData?.rplExperienceTrade;
-  const appOcc = appDetail?.currentOccupation;
-  const effectiveOccupation =
-    rplExp.occupation ||
-    obOcc?.occupation ||
-    appOcc?.occupation ||
-    (!rplExp.qualificationTitle?.match(/^[0-9A-Z]{20,}$/) && rplExp.qualificationTitle);
-  const expCompleted = Boolean(
-    effectiveOccupation ||
-      rplExp.employments?.some((e) => e.companyName || e.jobTitle) ||
-      obOcc?.employmentHistory?.length > 0 ||
-      (appOcc?.employmentHistory?.length ?? 0) > 0,
-  );
-  const identityVerified = Boolean(
-    rplId.isVerified ||
-    user?.isVerified ||
-    candidateProfile?.identityVerified
-  );
+  const {
+    personalInfoCompleted,
+    personalInfoMissing,
+    expCompleted,
+    expMissing,
+    identityVerified,
+    incompleteSections,
+    isAllSectionsComplete,
+  } = completion;
+
+  const goToStep = (step: 1 | 2 | 3) => {
+    if (onEditStep) {
+      onEditStep(step);
+      return;
+    }
+    const routes: Record<1 | 2 | 3, string> = {
+      1: "/rpl/personal-info",
+      2: "/rpl/experience-trade",
+      3: "/rpl/verify-identity",
+    };
+    router.push(routes[step]);
+  };
 
   React.useEffect(() => {
     if (obData) {
@@ -179,7 +214,44 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
         dispatch(setRPLExperienceTrade(expPatch));
       }
     }
-  }, [obData, personalInfo, rplExp, user?.email, dispatch]);
+  }, [obData, obOcc, personalInfo, rplExp, user?.email, dispatch]);
+
+  React.useEffect(() => {
+    if (!appDetail) return;
+
+    const appPd = appDetail.personalInformation?.personalDetails;
+    const appCi = appDetail.personalInformation?.contactInformation;
+    const appRa = appDetail.personalInformation?.residentialAddress;
+    const pPatch: Record<string, string> = {};
+    if (!personalInfo.firstName && appPd?.firstName) pPatch.firstName = appPd.firstName;
+    if (!personalInfo.lastName && appPd?.lastName) pPatch.lastName = appPd.lastName;
+    if (!personalInfo.middleName && appPd?.middleName) pPatch.middleName = appPd.middleName;
+    if (!personalInfo.dob && appPd?.dob) pPatch.dob = appPd.dob;
+    if (!personalInfo.gender && appPd?.gender) pPatch.gender = appPd.gender;
+    if (!personalInfo.nationality && appPd?.nationality) pPatch.nationality = appPd.nationality;
+    if (!personalInfo.phoneNumber && appCi?.phoneNumber?.number) pPatch.phoneNumber = appCi.phoneNumber.number;
+    if (!personalInfo.email && appCi?.emailAddress) pPatch.email = appCi.emailAddress;
+    if (!personalInfo.country && appRa?.country) pPatch.country = appRa.country;
+    if (!personalInfo.state && appRa?.state) pPatch.state = appRa.state;
+    if (!personalInfo.lga && appRa?.lga) pPatch.lga = appRa.lga;
+    if (!personalInfo.streetAddress && appRa?.address) pPatch.streetAddress = appRa.address;
+    if (Object.keys(pPatch).length > 0) {
+      dispatch(setPersonalInfo(pPatch));
+    }
+
+    const appOcc = appDetail.currentOccupation;
+    const ePatch: Record<string, string> = {};
+    if (!rplExp.occupation && appOcc?.occupation) ePatch.occupation = appOcc.occupation;
+    if (!rplExp.reasonRPL && appDetail.reasonForSeekingRPL) {
+      ePatch.reasonRPL = appDetail.reasonForSeekingRPL;
+    }
+    if (appOcc?.yearsOfExperience !== undefined && !rplExp.yearsOfExperience) {
+      ePatch.yearsOfExperience = String(appOcc.yearsOfExperience);
+    }
+    if (Object.keys(ePatch).length > 0) {
+      dispatch(setRPLExperienceTrade(ePatch));
+    }
+  }, [appDetail, personalInfo, rplExp, dispatch]);
 
   React.useEffect(() => {
     if (identityVerified && !user?.isVerified) {
@@ -253,26 +325,40 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
       setShowDraftModal(true);
     } catch (err: any) {
       setShowSavingDraftModal(false);
-      const errorMsg =
-        (err?.details &&
-          Array.isArray(err.details) &&
-          err.details
-            .map((d: any) => d.issue || d.message)
-            .filter(Boolean)
-            .join(". ")) ||
-        err?.message ||
-        "Failed to save draft application.";
+      const errorMsg = formatRplSubmissionError(
+        err,
+        "Failed to save draft application.",
+      );
       toast({
         type: "error",
         title: "Draft Save Error",
         description: errorMsg,
+        duration: 6000,
       });
     }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!allChecked) return;
+    if (!isAllSectionsComplete) {
+      toast({
+        type: "error",
+        title: "Incomplete Application",
+        description: buildIncompleteApplicationMessage(incompleteSections),
+        duration: 7000,
+      });
+      return;
+    }
+    if (!allChecked) {
+      toast({
+        type: "error",
+        title: "Declaration Required",
+        description:
+          "Please confirm all four Assessment Declaration statements before submitting.",
+        duration: 5000,
+      });
+      return;
+    }
     setShowConfirmSubmitModal(true);
   };
 
@@ -291,8 +377,8 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
       const isMaxPolicy =
         msg.includes("in-progress") ||
         msg.includes("policy max") ||
-        err?.statusCode === 409 ||
-        err?.statusCode === 422;
+        err?.code === "application.max_in_progress" ||
+        err?.statusCode === 409;
 
       if (isMaxPolicy) {
         toast({
@@ -305,19 +391,15 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
         return;
       }
 
-      const errorMsg =
-        (err?.details &&
-          Array.isArray(err.details) &&
-          err.details
-            .map((d: any) => d.issue || d.message)
-            .filter(Boolean)
-            .join(". ")) ||
-        err?.message ||
-        "Failed to submit application. Please verify your selected units and try again.";
+      const errorMsg = formatRplSubmissionError(
+        err,
+        "Failed to submit application. Please verify all required sections and try again.",
+      );
       toast({
         type: "error",
         title: "Submission Error",
         description: errorMsg,
+        duration: 7000,
       });
     } finally {
       setIsSubmitting(false);
@@ -356,80 +438,154 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
         </h2>
 
         <div className="flex flex-col gap-3">
-          <div className="p-4 bg-gray-50/80 border border-gray-100 rounded-xl flex items-center justify-between transition-all">
-            <span className="text-sm xl:text-base font-medium text-neutral-primary">
-              Personal Information
-            </span>
-            <div className="flex items-center gap-3">
-              <span
-                className={`px-3 py-1 text-xs font-semibold rounded-full ${
-                  personalInfoCompleted
-                    ? "bg-[#E8F5E9] text-[#2E7D32]"
-                    : "bg-[#FEF3C7] text-[#D97706]"
-                }`}
-              >
-                {personalInfoCompleted ? "100% Completed" : "In Progress"}
+          <div
+            className={`p-4 rounded-xl border transition-all ${
+              personalInfoCompleted
+                ? "bg-gray-50/80 border-gray-100"
+                : "bg-amber-50/50 border-amber-200"
+            }`}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sm xl:text-base font-medium text-neutral-primary">
+                Personal Information
               </span>
-              <button
-                type="button"
-                onClick={() =>
-                  onEditStep ? onEditStep(1) : router.push("/rpl/personal-info")
-                }
-                className="text-neutral-secondary hover:text-neutral-primary p-1 transition-colors cursor-pointer"
-                title="Edit Personal Information"
-              >
-                <FiEdit2 className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-3 shrink-0">
+                <span
+                  className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                    personalInfoCompleted
+                      ? "bg-[#E8F5E9] text-[#2E7D32]"
+                      : "bg-[#FEF3C7] text-[#B45309]"
+                  }`}
+                >
+                  {personalInfoCompleted ? "100% Completed" : "Incomplete"}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => goToStep(1)}
+                  className={`flex items-center gap-1 p-1 transition-colors cursor-pointer ${
+                    personalInfoCompleted
+                      ? "text-neutral-secondary hover:text-neutral-primary"
+                      : "text-primary-solid hover:underline text-xs font-semibold"
+                  }`}
+                  title="Edit Personal Information"
+                >
+                  <FiEdit2 className="w-4 h-4" />
+                  {!personalInfoCompleted && <span>Fix</span>}
+                </button>
+              </div>
             </div>
+            {!personalInfoCompleted && (
+              <p className="mt-2 flex items-start gap-1.5 text-xs font-medium text-[#B45309]">
+                <FiAlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                <span>
+                  Missing required fields: {personalInfoMissing.join(", ")}
+                </span>
+              </p>
+            )}
           </div>
 
-          <div className="p-4 bg-gray-50/80 border border-gray-100 rounded-xl flex items-center justify-between transition-all">
-            <span className="text-sm xl:text-base font-medium text-neutral-primary">
-              Experience &amp; Trade
-            </span>
-            <div className="flex items-center gap-3">
-              <span
-                className={`px-3 py-1 text-xs font-semibold rounded-full ${
-                  expCompleted
-                    ? "bg-[#E8F5E9] text-[#2E7D32]"
-                    : "bg-[#FEF3C7] text-[#D97706]"
-                }`}
-              >
-                {expCompleted ? "100% Completed" : "In Progress"}
+          <div
+            className={`p-4 rounded-xl border transition-all ${
+              expCompleted
+                ? "bg-gray-50/80 border-gray-100"
+                : "bg-amber-50/50 border-amber-200"
+            }`}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sm xl:text-base font-medium text-neutral-primary">
+                Experience &amp; Trade
               </span>
-              <button
-                type="button"
-                onClick={() =>
-                  onEditStep
-                    ? onEditStep(2)
-                    : router.push("/rpl/experience-trade")
-                }
-                className="text-neutral-secondary hover:text-neutral-primary p-1 transition-colors cursor-pointer"
-                title="Edit Experience & Trade"
-              >
-                <FiEdit2 className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-3 shrink-0">
+                <span
+                  className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                    expCompleted
+                      ? "bg-[#E8F5E9] text-[#2E7D32]"
+                      : "bg-[#FEF3C7] text-[#B45309]"
+                  }`}
+                >
+                  {expCompleted ? "100% Completed" : "Incomplete"}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => goToStep(2)}
+                  className={`flex items-center gap-1 p-1 transition-colors cursor-pointer ${
+                    expCompleted
+                      ? "text-neutral-secondary hover:text-neutral-primary"
+                      : "text-primary-solid hover:underline text-xs font-semibold"
+                  }`}
+                  title="Edit Experience & Trade"
+                >
+                  <FiEdit2 className="w-4 h-4" />
+                  {!expCompleted && <span>Fix</span>}
+                </button>
+              </div>
             </div>
+            {!expCompleted && (
+              <p className="mt-2 flex items-start gap-1.5 text-xs font-medium text-[#B45309]">
+                <FiAlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                <span>Missing required fields: {expMissing.join(", ")}</span>
+              </p>
+            )}
           </div>
 
           {/* Card 3: Identity Verification (from Onboarding) */}
-          <div className="p-4 bg-gray-50/80 border border-gray-100 rounded-xl flex items-center justify-between transition-all">
-            <span className="text-sm xl:text-base font-medium text-neutral-primary">
-              Identity Verification (NIN)
-            </span>
-            <div className="flex items-center gap-3">
-              <span
-                className={`px-3 py-1 text-xs font-semibold rounded-full ${
-                  identityVerified
-                    ? "bg-[#E8F5E9] text-[#2E7D32]"
-                    : "bg-[#FEF3C7] text-[#D97706]"
-                }`}
-              >
-                {identityVerified ? "Verified" : "Pending"}
+          <div
+            className={`p-4 rounded-xl border transition-all ${
+              identityVerified
+                ? "bg-gray-50/80 border-gray-100"
+                : "bg-amber-50/50 border-amber-200"
+            }`}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sm xl:text-base font-medium text-neutral-primary">
+                Identity Verification (NIN)
               </span>
+              <div className="flex items-center gap-3 shrink-0">
+                <span
+                  className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                    identityVerified
+                      ? "bg-[#E8F5E9] text-[#2E7D32]"
+                      : "bg-[#FEF3C7] text-[#B45309]"
+                  }`}
+                >
+                  {identityVerified ? "Verified" : "Pending"}
+                </span>
+                {!identityVerified && (
+                  <button
+                    type="button"
+                    onClick={() => goToStep(3)}
+                    className="flex items-center gap-1 p-1 text-primary-solid hover:underline text-xs font-semibold transition-colors cursor-pointer"
+                    title="Complete Identity Verification"
+                  >
+                    <FiEdit2 className="w-4 h-4" />
+                    <span>Verify</span>
+                  </button>
+                )}
+              </div>
             </div>
+            {!identityVerified && (
+              <p className="mt-2 flex items-start gap-1.5 text-xs font-medium text-[#B45309]">
+                <FiAlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                <span>
+                  Please verify your National Identification Number (NIN) before
+                  submitting.
+                </span>
+              </p>
+            )}
           </div>
         </div>
+
+        {!isAllSectionsComplete && (
+          <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-2.5 text-xs sm:text-sm text-[#92400E]">
+            <FiAlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-[#D97706]" />
+            <span>
+              Some required information is still missing. Use the{" "}
+              <strong className="font-semibold">Fix</strong> button on the
+              highlighted section{incompleteSections.length > 1 ? "s" : ""}{" "}
+              above to complete your application before submitting.
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Assessment Declaration */}
@@ -530,7 +686,15 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
                 Terms &amp; Conditions
               </span>{" "}
               and{" "}
-              <span className="font-bold text-primary">Privacy Policy.</span>
+              <a
+                href="/privacy-policy"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="font-bold text-primary hover:underline"
+              >
+                Privacy Policy.
+              </a>
             </span>
           </label>
         </div>
@@ -604,7 +768,7 @@ export const RPLReviewSubmit: React.FC<RPLReviewSubmitProps> = ({
             variant="amber"
             size="md"
             onClick={handleSubmit}
-            disabled={!allChecked}
+            disabled={!allChecked || isSubmitting}
             rightIcon={<FiArrowRight className="w-4.5 h-4.5" />}
             className="px-8 h-11 text-white font-bold text-sm rounded-xl shadow-lg cursor-pointer whitespace-nowrap"
           >

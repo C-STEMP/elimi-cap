@@ -242,6 +242,7 @@ export const AssessorPersonalInfo: React.FC = () => {
                     passportUrl: "",
                   }),
                 );
+                dispatch(updateUser({ avatar: "", passportUrl: "" }));
               }
             }}
             error={passportError}

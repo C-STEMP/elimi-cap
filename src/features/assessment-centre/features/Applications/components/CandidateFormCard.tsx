@@ -274,7 +274,7 @@ export const CandidateFormCard: React.FC<CandidateFormCardProps> = ({
             ))}
             <label className="flex items-center gap-2.5 cursor-default">
               <input type="checkbox" checked readOnly className="w-4 h-4 accent-[#a31d38] rounded" />
-              <span className="font-medium">I agree to the ELIMI <span className="text-[#a31d38] font-bold">Terms &amp; Conditions</span> and <span className="text-[#a31d38] font-bold">Privacy Policy</span>.</span>
+              <span className="font-medium">I agree to the ELIMI <span className="text-[#a31d38] font-bold">Terms &amp; Conditions</span> and <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-[#a31d38] font-bold hover:underline">Privacy Policy</a>.</span>
             </label>
           </div>
         </div>

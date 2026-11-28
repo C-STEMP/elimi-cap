@@ -23,7 +23,6 @@ import {
 import { useCountryStateCity } from "@/src/lib/hooks/useCountryStateCity";
 import { useOnboarding } from "@/src/features/candidate/features/Onboarding/hooks";
 import { useGetMeProfile } from "@/src/features/shared/account/hooks";
-import { useCandidateProfile } from "@/src/features/shared/onboarding/hooks";
 
 import {
   IMPAIRMENT_OPTIONS,
@@ -48,7 +47,6 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
   const authUser = useAppSelector((s) => s.auth.user);
   const savedPersonalInfo = useAppSelector((s) => s.onboarding.personalInfo);
   const { data: meProfile } = useGetMeProfile();
-  const { data: candidateProfile } = useCandidateProfile(true);
 
   const initialEmail =
     savedPersonalInfo.email || authUser?.email || "";
@@ -58,8 +56,6 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
     savedPersonalInfo.passportPreview ||
     meProfile?.photo?.url ||
     meProfile?.personalDetails?.passportUrl ||
-    (candidateProfile as any)?.passportPhoto?.url ||
-    (candidateProfile as any)?.photo?.url ||
     authUser?.passportUrl ||
     authUser?.avatarUrl ||
     "";
@@ -136,14 +132,16 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
       setOtherImpairment(parsed.otherText);
       dispatch(setPersonalInfo(hydrated));
 
-      // Restore passport photo from API data
-      if (passportAssetId || passportUrl) {
-        dispatch(setPersonalInfo({ passportAssetId, passportUrl }));
-        setPassportDefaultImage(
-          passportUrl || savedPersonalInfo.passportUrl || "",
-        );
-      } else if (savedPersonalInfo.passportUrl) {
-        setPassportDefaultImage(savedPersonalInfo.passportUrl);
+      // Restore passport photo from API data unless the user explicitly cleared it
+      if (!hasClearedPassportRef.current) {
+        if (passportAssetId || passportUrl) {
+          dispatch(setPersonalInfo({ passportAssetId, passportUrl }));
+          setPassportDefaultImage(
+            passportUrl || savedPersonalInfo.passportUrl || "",
+          );
+        } else if (savedPersonalInfo.passportUrl) {
+          setPassportDefaultImage(savedPersonalInfo.passportUrl);
+        }
       }
     } else if (authUser?.email && !form.email) {
       setForm((prev) => ({ ...prev, email: authUser.email || "" }));
@@ -162,16 +160,17 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
   const [passportDefaultImage, setPassportDefaultImage] = useState<string>(
     initialPassportUrl,
   );
+  const hasClearedPassportRef = React.useRef(false);
   const [passportError, setPassportError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Synchronize passport photo from meProfile, candidateProfile, or saved state if initially missing
+  // Synchronize passport photo from meProfile or saved state if initially missing
   useEffect(() => {
+    if (hasClearedPassportRef.current) return;
+
     const fallbackPhotoUrl =
       meProfile?.photo?.url ||
       meProfile?.personalDetails?.passportUrl ||
-      (candidateProfile as any)?.passportPhoto?.url ||
-      (candidateProfile as any)?.photo?.url ||
       authUser?.passportUrl ||
       authUser?.avatarUrl ||
       savedPersonalInfo.passportUrl ||
@@ -194,7 +193,6 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
     }
   }, [
     meProfile,
-    candidateProfile,
     authUser?.passportUrl,
     authUser?.avatarUrl,
     savedPersonalInfo.passportUrl,
@@ -293,9 +291,9 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
     // Allow proceeding if an existing passport URL/file/asset is already present
     const hasPassport = Boolean(
       passportFile ||
-      passportDefaultImage ||
-      savedPersonalInfo.passportUrl ||
-      savedPersonalInfo.passportAssetId
+        passportDefaultImage ||
+        (!hasClearedPassportRef.current &&
+          (savedPersonalInfo.passportUrl || savedPersonalInfo.passportAssetId)),
     );
 
     if (!hasPassport) {
@@ -506,6 +504,7 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
               const previewUrl =
                 asset?.url || (file ? URL.createObjectURL(file) : "");
               if (file || previewUrl) {
+                hasClearedPassportRef.current = false;
                 setPassportError("");
                 setPassportDefaultImage(
                   previewUrl || savedPersonalInfo.passportUrl || "",
@@ -518,6 +517,8 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
                       "",
                     passportUrl:
                       previewUrl || savedPersonalInfo.passportUrl || "",
+                    passportPreview:
+                      previewUrl || savedPersonalInfo.passportPreview || "",
                     passportFileName:
                       file?.name ?? savedPersonalInfo.passportFileName ?? "",
                   }),
@@ -531,12 +532,20 @@ export const PersonalInfo: React.FC<PersonalInfoProps> = ({
                   }),
                 );
               } else {
+                hasClearedPassportRef.current = true;
                 setPassportDefaultImage("");
                 dispatch(
                   setPersonalInfo({
                     passportAssetId: "",
                     passportUrl: "",
+                    passportPreview: "",
                     passportFileName: "",
+                  }),
+                );
+                dispatch(
+                  updateUser({
+                    passportUrl: "",
+                    avatarUrl: "",
                   }),
                 );
               }

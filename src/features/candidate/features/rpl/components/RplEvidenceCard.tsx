@@ -10,6 +10,7 @@ interface RplEvidenceCardProps {
   reasonRPL: string;
   selectedEvidence: string[];
   otherEvidenceText: string;
+  errors?: Record<string, string>;
   update: (field: string, val: any) => void;
   toggleEvidence: (item: string) => void;
 }
@@ -18,6 +19,7 @@ export const RplEvidenceCard: React.FC<RplEvidenceCardProps> = ({
   reasonRPL,
   selectedEvidence,
   otherEvidenceText,
+  errors = {},
   update,
   toggleEvidence,
 }) => {
@@ -32,14 +34,26 @@ export const RplEvidenceCard: React.FC<RplEvidenceCardProps> = ({
         <div className="flex flex-col gap-1.5 w-full">
           <label className="font-sans text-text-dark font-medium text-xs xl:text-sm leading-[1.4] select-none">
             Reason for Seeking RPL
+            <span className="text-primary-solid ml-0.5">*</span>
           </label>
           <textarea
             placeholder="Explain why you are seeking Recognition of Prior Learning and what you hope to achieve after certification."
             rows={4}
             value={reasonRPL}
+            aria-required="true"
+            aria-invalid={Boolean(errors.reasonRPL)}
             onChange={(e) => update("reasonRPL", e.target.value)}
-            className="w-full p-3.5 bg-input-bg text-text-dark font-normal text-sm border border-transparent rounded-radius-200 outline-none focus:border-primary-solid/40 focus:ring-2 focus:ring-primary-solid/10 placeholder:text-gray-400 transition-all resize-none"
+            className={`w-full p-3.5 bg-input-bg text-text-dark font-normal text-sm border rounded-radius-200 outline-none placeholder:text-gray-400 transition-all resize-none ${
+              errors.reasonRPL
+                ? "border-primary-solid ring-2 ring-border-secondary"
+                : "border-transparent focus:border-primary-solid/40 focus:ring-2 focus:ring-primary-solid/10"
+            }`}
           />
+          {errors.reasonRPL && (
+            <span className="text-primary-solid text-xs font-semibold leading-[1.4] transition-all duration-200 animate-fadeIn">
+              {errors.reasonRPL}
+            </span>
+          )}
         </div>
       </div>
 

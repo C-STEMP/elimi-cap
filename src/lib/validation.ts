@@ -195,6 +195,7 @@ export const rplExperienceTradeSchema = z.object({
   assessmentType: requiredSchema("Assessment type"),
   occupation: requiredSchema("Occupation"),
   yearsOfExperience: requiredSchema("Years of experience"),
+  reasonRPL: requiredSchema("Reason for seeking RPL"),
 });
 
 export const selfAssessmentStep1Schema = z.object({
