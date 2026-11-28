@@ -77,6 +77,7 @@ export const RPLExperienceTrade: React.FC<RPLExperienceTradeProps> = ({
           reasonRPL={state.form.reasonRPL}
           selectedEvidence={state.form.selectedEvidence}
           otherEvidenceText={state.form.otherEvidenceText}
+          errors={state.errors}
           update={state.update}
           toggleEvidence={state.toggleEvidence}
         />

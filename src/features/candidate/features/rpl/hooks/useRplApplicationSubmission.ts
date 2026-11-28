@@ -39,6 +39,7 @@ import {
   mapEvidenceFlagsToLabels,
   normalizeGenderForForm,
 } from "@/src/features/candidate/features/Application/utils/applicationDetailsHelpers";
+import { formatRplSubmissionError } from "../utils/rplValidation";
 
 export interface SaveDraftOverrides {
   personalInfo?: Partial<PersonalInfoState>;
@@ -865,15 +866,13 @@ export function useRplApplicationSubmission() {
         );
         await patchApplicationDraftApi(appId, retryPayload).catch(() => {});
       } else {
-        const issues = err?.details
-          ?.map?.((d: any) => d.issue || d.message)
-          .filter(Boolean);
-        const combinedMsg =
-          (issues && issues.length > 0 ? issues.join(". ") : "") ||
-          err?.message ||
-          "Failed to update application draft";
+        const combinedMsg = formatRplSubmissionError(
+          err,
+          "Failed to update application draft",
+        );
         const errorObj = new Error(combinedMsg);
         (errorObj as any).code = err?.code;
+        (errorObj as any).statusCode = err?.statusCode;
         (errorObj as any).details = err?.details;
         throw errorObj;
       }
@@ -928,15 +927,13 @@ export function useRplApplicationSubmission() {
         );
         await patchApplicationDraftApi(appId, retryPayload).catch(() => {});
       } else {
-        const issues = err?.details
-          ?.map?.((d: any) => d.issue || d.message)
-          .filter(Boolean);
-        const combinedMsg =
-          (issues && issues.length > 0 ? issues.join(". ") : "") ||
-          err?.message ||
-          "Failed to update application draft";
+        const combinedMsg = formatRplSubmissionError(
+          err,
+          "Failed to update application draft",
+        );
         const errorObj = new Error(combinedMsg);
         (errorObj as any).code = err?.code;
+        (errorObj as any).statusCode = err?.statusCode;
         (errorObj as any).details = err?.details;
         throw errorObj;
       }
@@ -946,15 +943,13 @@ export function useRplApplicationSubmission() {
       await submitApplicationApi(appId);
     } catch (err: any) {
       console.error("submitApplicationApi error:", err);
-      const issues = err?.details
-        ?.map?.((d: any) => d.issue || d.message)
-        .filter(Boolean);
-      const combinedMsg =
-        (issues && issues.length > 0 ? issues.join(". ") : "") ||
-        err?.message ||
-        "Failed to submit application";
+      const combinedMsg = formatRplSubmissionError(
+        err,
+        "Failed to submit application",
+      );
       const errorObj = new Error(combinedMsg);
       (errorObj as any).code = err?.code;
+      (errorObj as any).statusCode = err?.statusCode;
       (errorObj as any).details = err?.details;
       throw errorObj;
     }

@@ -600,7 +600,7 @@ export function useRplExperienceState(onContinue?: () => void) {
       }
     });
     setErrors(newErrors);
-    return valid;
+    return { valid, errors: newErrors };
   };
 
   const handleConfirmSaveDraft = async () => {
@@ -618,8 +618,34 @@ export function useRplExperienceState(onContinue?: () => void) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm()) {
-      toast({ type: "error", title: "Input Required", description: "Please check form errors. End date must be greater than start date." });
+    const { valid, errors: formErrors } = validateForm();
+    if (!valid) {
+      const fieldLabels: Record<string, string> = {
+        qualificationTitle: "Qualification Title",
+        assessmentType: "Assessment Type",
+        individualUnit: "Individual Unit",
+        occupation: "Occupation",
+        yearsOfExperience: "Years of Experience",
+        reasonRPL: "Reason for Seeking RPL",
+      };
+      const dateErrorKey = Object.keys(formErrors).find((k) =>
+        k.startsWith("empDate_"),
+      );
+      const missingFields = Object.keys(formErrors)
+        .filter((k) => !k.startsWith("empDate_"))
+        .map((k) => fieldLabels[k] || k);
+
+      let desc = "";
+      if (missingFields.length > 0 && dateErrorKey) {
+        desc = `Please complete required fields: ${missingFields.join(", ")}. Also check employment dates (end date must be greater than start date).`;
+      } else if (missingFields.length > 0) {
+        desc = `Please complete required fields: ${missingFields.join(", ")}.`;
+      } else if (dateErrorKey) {
+        desc = formErrors[dateErrorKey];
+      } else {
+        desc = "Please check the highlighted fields and try again.";
+      }
+      toast({ type: "error", title: "Input Required", description: desc, duration: 6000 });
       return;
     }
     update("isSubmitting", true);

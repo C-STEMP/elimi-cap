@@ -68,6 +68,7 @@ export const Step1PersonalInfo: React.FC<Step1Props> = ({
   const [passportPreview, setPassportPreview] = useState<string | null>(
     profileAvatar || null,
   );
+  const hasClearedPassportRef = React.useRef(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [formData, setFormData] = useState({
@@ -161,7 +162,7 @@ export const Step1PersonalInfo: React.FC<Step1Props> = ({
       address: prev.address || address?.address || "",
     }));
 
-    if (!passportPreview && profileAvatar) {
+    if (!hasClearedPassportRef.current && !passportPreview && profileAvatar) {
       setPassportPreview(profileAvatar);
     }
   }, [application, meProfile, profileAvatar, passportPreview]);
@@ -190,11 +191,12 @@ export const Step1PersonalInfo: React.FC<Step1Props> = ({
 
     const hasPassport = Boolean(
       passportFile ||
-      passportPreview ||
-      profileAvatar ||
-      savedPersonalInfo.passportUrl ||
-      savedPersonalInfo.passportAssetId ||
-      application?.personalInformation?.passportAsset?.url
+        passportPreview ||
+        (!hasClearedPassportRef.current &&
+          (profileAvatar ||
+            savedPersonalInfo.passportUrl ||
+            savedPersonalInfo.passportAssetId ||
+            application?.personalInformation?.passportAsset?.url)),
     );
 
     if (!hasPassport) {
@@ -289,12 +291,18 @@ export const Step1PersonalInfo: React.FC<Step1Props> = ({
 
         <PassportUpload
           required
-          defaultImage={passportPreview || undefined}
+          defaultImage={passportPreview ?? ""}
           error={errors.passport}
           onImageChange={(file, asset) => {
             setPassportFile(file);
-            if (asset?.url) {
-              setPassportPreview(asset.url);
+            if (file || asset?.url) {
+              hasClearedPassportRef.current = false;
+              if (asset?.url) {
+                setPassportPreview(asset.url);
+              }
+            } else {
+              hasClearedPassportRef.current = true;
+              setPassportPreview(null);
             }
             if (errors.passport) {
               setErrors((prev) => ({ ...prev, passport: "" }));

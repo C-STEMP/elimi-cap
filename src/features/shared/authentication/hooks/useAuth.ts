@@ -24,7 +24,6 @@ import {
 import {
   getOnboardingMineApi,
   parseOnboardingMine,
-  getCandidateProfileApi,
 } from "@/src/features/shared/onboarding/api";
 import { getMeApi } from "@/src/features/shared/account/api";
 import { useToast } from "@/src/components/ui/toast";
@@ -233,15 +232,13 @@ export function useLogin() {
       });
 
       try {
-        const [res, profile, meRes] = await Promise.allSettled([
+        const [res, meRes] = await Promise.allSettled([
           getOnboardingMineApi(),
-          getCandidateProfileApi(),
           getMeApi(),
         ]);
 
         const isIdentityVerified = Boolean(
-          (profile.status === "fulfilled" && profile.value?.identityVerified) ||
-          (meRes.status === "fulfilled" && meRes.value?.identityVerified)
+          meRes.status === "fulfilled" && meRes.value?.identityVerified,
         );
         dispatch(setVerified(isIdentityVerified));
 
@@ -547,15 +544,13 @@ export function useGoogleAuth() {
       });
 
       try {
-        const [res, profile, meRes] = await Promise.allSettled([
+        const [res, meRes] = await Promise.allSettled([
           getOnboardingMineApi(),
-          getCandidateProfileApi(),
           getMeApi(),
         ]);
 
         const isIdentityVerified = Boolean(
-          (profile.status === "fulfilled" && profile.value?.identityVerified) ||
-          (meRes.status === "fulfilled" && meRes.value?.identityVerified)
+          meRes.status === "fulfilled" && meRes.value?.identityVerified,
         );
         dispatch(setVerified(isIdentityVerified));
 

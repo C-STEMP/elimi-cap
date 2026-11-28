@@ -180,6 +180,24 @@ import {
   setAssessorIdentity,
 } from "@/store/slices/onboardingSlice";
 import { ACCOUNT_QUERY_KEYS } from "@/src/features/shared/account/hooks";
+import { getOnboardedStatus, getPersona } from "@/src/lib/auth-storage";
+
+function canQueryCandidateProfile(): boolean {
+  if (typeof window === "undefined") return false;
+  const pathname = window.location.pathname || "";
+  const isPreOnboardingRoute =
+    pathname.startsWith("/onboarding") &&
+    !pathname.startsWith("/onboarding/success") &&
+    !pathname.startsWith("/onboarding/start-application") &&
+    !pathname.startsWith("/onboarding/assessment-type");
+  if (isPreOnboardingRoute) return false;
+
+  const isOnboarded = getOnboardedStatus();
+  if (!isOnboarded) return false;
+
+  const persona = getPersona();
+  return !persona || persona === "candidate";
+}
 
 export function useVerifyIdentity() {
   const queryClient = useQueryClient();
@@ -235,19 +253,23 @@ export function useVerifyIdentity() {
 }
 
 export function useCandidateProfile(enabled = false) {
+  const isActiveCandidate = canQueryCandidateProfile();
   return useQuery({
     queryKey: ONBOARDING_QUERY_KEYS.candidateProfile,
     queryFn: () => getCandidateProfileApi(),
-    enabled,
+    enabled: Boolean(enabled && isActiveCandidate),
+    retry: false,
   });
 }
 
 export function useCandidateProfileSignature(enabled = true) {
+  const isActiveCandidate = canQueryCandidateProfile();
   return useQuery({
     queryKey: ONBOARDING_QUERY_KEYS.candidateSignature,
     queryFn: () => getCandidateProfileSignatureApi(),
-    enabled,
+    enabled: Boolean(enabled && isActiveCandidate),
     staleTime: 1000 * 60 * 5,
+    retry: false,
   });
 }
 
